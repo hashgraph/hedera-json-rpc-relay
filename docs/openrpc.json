@@ -23,8 +23,28 @@
         },
         {
             "name": "localhost",
-            "url": "http://localhost:7564",
+            "url": "http://localhost:7546",
             "description": "Run your own instance of [`hedera-json-rpc-relay`](https://github.com/hashgraph/hedera-json-rpc-relay) on `localhost`, and configure it connect to your choice of Hedera networks. No rate limits apply."
+        },
+        {
+            "name": "WS Mainnet",
+            "url": "wss://mainnet.hashio.io/ws",
+            "description": "Hedera Web Socket Mainnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
+        },
+        {
+            "name": "WS Testnet",
+            "url": "wss://testnet.hashio.io/ws",
+            "description": "Hedera Web Socket Testnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
+        },
+        {
+            "name": "WS Previewnet",
+            "url": "wss://previewnet.hashio.io/ws",
+            "description": "Hedera Web Socket Previewnet endpoint, hosted by [Hashio](https://swirldslabs.com/hashio/), a JSON-RPC Relay Community Service. Rate limited based [on IP address](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/rate-limiting.md) and [on global HBAR spend](https://github.com/hashgraph/hedera-json-rpc-relay/blob/main/docs/hbar-limiting.md)."
+        },
+        {
+            "name": "localhost",
+            "url": "ws://localhost:8546",
+            "description": "Run your own instance of Web Socket [`hedera-json-rpc-relay`](https://github.com/hashgraph/hedera-json-rpc-relay) on `localhost`, and configure it connect to your choice of Hedera networks. No rate limits apply."
         }
     ],
     "methods": [
@@ -862,6 +882,247 @@
                     "type": "string",
                     "pattern": "relay\/[0-9]\\.[0-9]\\.[0-9]"
                 }
+            }
+        },
+        {
+            "name": "eth_subscribe",
+            "summary": "Method only available on WS Server, Creates a new subscription for desired events. Sends data as soon as it occurs.",
+            "params": [
+                {
+                    "name": "subscription_type",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "enum": ["newHeads", "logs", "newPendingTransactions"]
+                    },
+                    "description": "The type of event you want to subscribe to."
+                },
+                {
+                    "name": "options",
+                    "required": false,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "address": {
+                                "type": ["string", "array"],
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "topics": {
+                                "type": ["array"],
+                                "items": {
+                                    "type": ["string", "null"]
+                                }
+                            }
+                        }
+                    },
+                    "description": "Filter options for the subscription. Required for 'logs' type."
+                }
+            ],
+            "result": {
+                "name": "subscription_id",
+                "schema": {
+                    "type": "string"
+                },
+                "description": "The hex encoded subscription ID used to identify and manage the subscription."
+            }
+        },
+        {
+            "name": "eth_unsubscribe",
+            "summary": "Method only available on WS Server, cancels a subscription.",
+            "params": [
+                {
+                    "name": "subscription_id",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    },
+                    "description": "The subscription ID to cancel."
+                }
+            ],
+            "result": {
+                "name": "success",
+                "schema": {
+                    "type": "boolean"
+                },
+                "description": "True if the subscription was successfully cancelled, otherwise false."
+            }
+        },
+        {
+            "name": "eth_newFilter",
+            "summary": "Creates a filter object for notifying when the state changes (logs).",
+            "params": [
+                {
+                    "name": "filter_options",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "fromBlock": {"$ref": "#/components/schemas/BlockNumberOrTag"},
+                            "toBlock": {"$ref": "#/components/schemas/BlockNumberOrTag"},
+                            "address": {
+                                "type": ["string", "array"],
+                                "items": {"type": "string"}
+                            },
+                            "topics": {
+                                "type": ["array"],
+                                "items": {"type": ["string", "null"]}
+                            }
+                        }
+                    },
+                    "description": "Filter options to specify the exact event(s) logs to get."
+                }
+            ],
+            "result": {
+                "name": "filter_id",
+                "schema": {
+                    "type": "string"
+                },
+                "description": "The ID of the newly created filter."
+            }
+        },
+        {
+            "name": "eth_uninstallFilter",
+            "summary": "Uninstalls a filter with given ID. Should always be called when watch is no longer needed.",
+            "params": [
+                {
+                    "name": "filter_id",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    },
+                    "description": "The ID of the filter to uninstall."
+                }
+            ],
+            "result": {
+                "name": "uninstalled",
+                "schema": {
+                    "type": "boolean"
+                },
+                "description": "True if the filter was successfully uninstalled, otherwise false."
+            }
+        },
+        {
+            "name": "eth_getFilterChanges",
+            "summary": "Polling method for a filter, which returns an array of logs which occurred since last poll.",
+            "params": [
+                {
+                    "name": "filter_id",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    },
+                    "description": "The ID of the filter to check for changes."
+                }
+            ],
+            "result": {
+                "name": "logs",
+                "schema": {
+                    "type": "array",
+                    "items": {"$ref": "#/components/schemas/log"}
+                },
+                "description": "Array of log objects since last poll."
+            }
+        },
+        {
+            "name": "eth_getFilterLogs",
+            "summary": "Returns an array of all logs matching filter with given ID.",
+            "params": [
+                {
+                    "name": "filter_id",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    },
+                    "description": "The ID of the filter to retrieve all matching logs."
+                }
+            ],
+            "result": {
+                "name": "logs",
+                "schema": {
+                    "type": "array",
+                    "items": {"$ref": "#/components/schemas/log"}
+                },
+                "description": "Array of log objects that match the filter."
+            }
+        },
+        {
+            "name": "debug_traceTransaction",
+            "summary": "Attempts to run the transaction in the exact same manner as it was executed on the network, utilizing the /api/v1/contracts/results/{transactionIdOrHash}/actions endpoint of the mirror node.",
+            "params": [
+                {
+                    "name": "TransactionHash",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/components/schemas/transactionHash"
+                    },
+                    "description": "The hash of the transaction to trace."
+                },
+                {
+                    "name": "tracer",
+                    "required": true,
+                    "schema": {
+                        "type": "string",
+                        "enum": ["callTracer", "opcodeLogger"]
+                    },
+                    "description": "Specifies the type of tracer. Initially, only 'callTracer' will be accepted."
+                },
+                {
+                    "name": "tracerConfig",
+                    "required": false,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "onlyTopCall": {
+                                "type": "boolean",
+                                "description": "For log tracer, specifies if only the top call should be logged."
+                            },
+                            "enableMemory": {
+                                "type": "boolean",
+                                "description": "For opcodeLogger, enables memory logging."
+                            },
+                            "disableStack": {
+                                "type": "boolean",
+                                "description": "For opcodeLogger, disables stack logging."
+                            },
+                            "disableStorage": {
+                                "type": "boolean",
+                                "description": "For opcodeLogger, disables storage logging."
+                            },
+                            "enableReturnData": {
+                                "type": "boolean",
+                                "description": "For opcodeLogger, enables return data logging."
+                            }
+                        }
+                    },
+                    "description": "Configuration object for the tracer."
+                }
+            ],
+            "result": {
+                "name": "trace",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string"},
+                        "from": {"type": "string"},
+                        "to": {"type": "string"},
+                        "value": {"type": "string"},
+                        "gas": {"type": "string"},
+                        "gasUsed": {"type": "string"},
+                        "input": {"type": "string"},
+                        "output": {"type": "string"},
+                        "error": {"type": "string"},
+                        "revertReason": {"type": "string"},
+                        "calls": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/callframe"
+                            }
+                        }
+                    }
+                },
+                "description": "The trace object with detailed information about the transaction execution."
             }
         }
     ],
