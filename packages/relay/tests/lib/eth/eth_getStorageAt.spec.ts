@@ -37,6 +37,7 @@ import {
   DETAILD_CONTRACT_RESULT_NOT_FOUND,
   MOST_RECENT_BLOCK,
   OLDER_BLOCK,
+  BLOCK_HASH,
 } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
@@ -72,6 +73,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
     restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
   });
 
@@ -124,6 +126,25 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         CONTRACT_ADDRESS_1,
         defaultDetailedContractResults.state_changes[0].slot,
         numberTo0x(BLOCK_NUMBER),
+      );
+      confirmResult(result);
+
+      // verify slot value
+      expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+    });
+
+    it('eth_getStorageAt with match with block hash', async function () {
+      // mirror node request mocks
+      restMock
+        .onGet(
+          `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=0x0000000000000000000000000000000000000000000000000000000000000101&limit=100&order=desc`,
+        )
+        .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
+
+      const result = await ethImpl.getStorageAt(
+        CONTRACT_ADDRESS_1,
+        defaultDetailedContractResults.state_changes[0].slot,
+        BLOCK_HASH,
       );
       confirmResult(result);
 
