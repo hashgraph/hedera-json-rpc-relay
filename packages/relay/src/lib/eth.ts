@@ -1454,7 +1454,7 @@ export class EthImpl implements Eth {
    * @param call
    * @param blockParam
    */
-  async call(call: any, blockParam: string | null, requestIdPrefix?: string): Promise<string | JsonRpcError> {
+  async call(call: any, blockParam: string | object | null, requestIdPrefix?: string): Promise<string | JsonRpcError> {
     this.logger.trace(
       `${requestIdPrefix} call({to=${call.to}, from=${call.from}, value=${call.value}, gas=${call.gas}, ...}, blockParam=${blockParam})`,
     );
@@ -1463,7 +1463,9 @@ export class EthImpl implements Eth {
         .labels(EthImpl.ethCall, call.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
         .inc();
 
-    await this.performCallChecks(call, blockParam, requestIdPrefix);
+    const blockNumberOrTag = await this.extractBlockNumberOrTag(blockParam, requestIdPrefix);
+
+    await this.performCallChecks(call);
 
     // Get a reasonable value for "gas" if it is not specified.
     const gas = this.getCappedBlockGasLimit(call.gas, requestIdPrefix);
@@ -1479,7 +1481,7 @@ export class EthImpl implements Eth {
       ) {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
-        return await this.callMirrorNode(call, gas, value, requestIdPrefix);
+        return await this.callMirrorNode(call, gas, value, blockNumberOrTag, requestIdPrefix);
       }
 
       return await this.callConsensusNode(call, gas, requestIdPrefix);
@@ -1492,26 +1494,75 @@ export class EthImpl implements Eth {
     }
   }
 
+  // according to EIP-1898 (https://eips.ethereum.org/EIPS/eip-1898) block param can either be a string (blockNumber or Block Tag) or an object (blockHash or blockNumber)
+  private async extractBlockNumberOrTag(
+    blockParam: string | object | null,
+    requestIdPrefix: string | undefined,
+  ): Promise<string | null> {
+    if (!blockParam) {
+      return null;
+    }
+
+    // is an object
+    if (typeof blockParam === 'object') {
+      // object has property blockNumber, example: { "blockNumber": "0x0" }
+      if (blockParam['blockNumber'] != null) {
+        return blockParam['blockNumber'];
+      }
+
+      if (blockParam['blockHash'] != null) {
+        return await this.getBlockNumberFromHash(blockParam['blockHash'], requestIdPrefix);
+      }
+
+      // if is an object but doesn't have blockNumber or blockHash, then it's an invalid blockParam
+      throw predefined.INVALID_ARGUMENTS('neither block nor hash specified');
+    }
+
+    // if blockParam is a string, could be a blockNumber or blockTag or blockHash
+    if (typeof blockParam === 'string' && blockParam.length > 0) {
+      // if string is a blockHash, we return its corresponding blockNumber
+      if (EthImpl.isBlockHash(blockParam)) {
+        return await this.getBlockNumberFromHash(blockParam, requestIdPrefix);
+      } else {
+        return blockParam;
+      }
+    }
+
+    return null;
+  }
+
+  private async getBlockNumberFromHash(blockHash: string, requestIdPrefix: string | undefined): Promise<string> {
+    const block = await this.getBlockByHash(blockHash, false, requestIdPrefix);
+    if (block != null) {
+      return block.number;
+    } else {
+      throw predefined.RESOURCE_NOT_FOUND(`Block Hash: '${blockHash}'`);
+    }
+  }
+
   async callMirrorNode(
     call: any,
     gas: number | null,
     value: string | null,
+    block: string | null,
     requestIdPrefix?: string,
   ): Promise<string | JsonRpcError> {
     let callData: any = {};
     try {
       this.logger.debug(
-        `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node.`,
+        `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node. for blockBlockNumberOrTag: "${block}"`,
         call.to,
         gas,
         call.data,
         call.from,
+        block,
       );
       callData = {
         ...call,
         ...(gas !== null ? { gas } : {}), // Add gas only if it's not null
         ...(value !== null ? { value } : {}),
         estimate: false,
+        ...(block !== null ? { block } : {}),
       };
 
       const contractCallResponse = await this.mirrorNodeClient.postContractCall(callData, requestIdPrefix);
@@ -1637,53 +1688,10 @@ export class EthImpl implements Eth {
    * @param call
    * @param requestIdPrefix
    */
-  async performCallChecks(call: any, blockParam: string | null, requestIdPrefix?: string) {
+  async performCallChecks(call: any) {
     // The "to" address must always be 42 chars.
     if (!call.to || call.to.length != 42) {
       throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
-    }
-
-    // verify gas is withing the allowed range
-    if (call.gas && call.gas > this.contractCallGasLimit) {
-      throw predefined.GAS_LIMIT_TOO_HIGH(call.gas, this.contractCallGasLimit);
-    }
-
-    // verify blockParam
-    await this.performCallBlockParamChecks(blockParam, requestIdPrefix);
-  }
-
-  async performCallBlockParamChecks(blockParam: string | null, requestIdPrefix?: string) {
-    if (!blockParam) {
-      return;
-    }
-
-    // verify blockParam formats for a valid block number
-    if (EthImpl.isBlockHash(blockParam)) {
-      throw predefined.UNSUPPORTED_OPERATION(`BlockParam: ${blockParam} is not a supported eth_call block identifier`);
-    }
-
-    if (EthImpl.blockTagIsEarliest(blockParam)) {
-      throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockParam);
-    }
-
-    // numerical block number considerations
-    const blockNum = Number(blockParam);
-    if (!isNaN(blockNum) && !EthImpl.blockTagIsFinalized(blockParam)) {
-      if (blockNum === 0 || blockNum === 1) {
-        throw predefined.UNSUPPORTED_HISTORICAL_EXECUTION(blockNum.toString());
-      }
-
-      const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestIdPrefix);
-      if (!latestBlockResponse || latestBlockResponse.blocks.length === 0) {
-        throw predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
-      }
-
-      const trailingBlockCount = latestBlockResponse.blocks[0].number - blockNum;
-      if (trailingBlockCount > this.maxBlockRange) {
-        this.logger.warn(
-          `${requestIdPrefix} referenced block '${blockParam}' trails latest by ${trailingBlockCount}, max trailing count is ${this.maxBlockRange}. Throwable UNSUPPORTED_HISTORICAL_EXECUTION scenario.`,
-        );
-      }
     }
   }
 
