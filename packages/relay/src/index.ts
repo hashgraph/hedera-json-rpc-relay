@@ -63,7 +63,7 @@ export interface Net {
 export interface Eth {
   blockNumber(requestId?: string): Promise<string>;
 
-  call(call: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError>;
+  call(call: any, blockParam: string | object | null, requestId?: string): Promise<string | JsonRpcError>;
 
   coinbase(requestId?: string): JsonRpcError;
 

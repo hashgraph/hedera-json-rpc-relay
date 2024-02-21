@@ -282,4 +282,10 @@ export const predefined = {
       code: -32203,
       message: `Batch request amount ${amount} exceeds max ${max}`,
     }),
+  INVALID_ARGUMENTS: (message: string) =>
+    new JsonRpcError({
+      name: 'Invalid argument',
+      code: -32000,
+      message: `Invalid arguments: ${message}`,
+    }),
 };

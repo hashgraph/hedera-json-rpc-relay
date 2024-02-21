@@ -116,12 +116,19 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_call', () => {
-    let basicContract, evmAddress;
+    let basicContract, evmAddress, deploymentBlockNumber, deploymentBlockHash;
 
     before(async () => {
       basicContract = await servicesNode.deployContract(basicContractJson);
       // Wait for creation to propagate
-      await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
+      const basicContractDeployed = await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
+      // get block at time of deployment
+      const contractResults = await mirrorNode.get(
+        `/contracts/results/?timestamp=${basicContractDeployed.created_timestamp}`,
+        requestId,
+      );
+      deploymentBlockNumber = contractResults.results[0].block_number;
+      deploymentBlockHash = contractResults.results[0].block_hash;
 
       evmAddress = `0x${basicContract.contractId.toSolidityAddress()}`;
     });
@@ -190,19 +197,75 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         data: BASIC_CONTRACT_PING_CALL_DATA,
       };
 
-      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, '0x10'], requestId);
+      // deploymentBlockNumber to HEX
+      const block = numberTo0x(deploymentBlockNumber);
+
+      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, block], requestId);
       expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
     });
 
-    it('should execute "eth_call" with correct block hash object', async function () {
-      const blockHash = '0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3';
+    it('should execute "eth_call" with incorrect block number, SC should not exist yet', async function () {
       const callData = {
         from: accounts[0].address,
         to: evmAddress,
         data: BASIC_CONTRACT_PING_CALL_DATA,
       };
 
-      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { blockHash: blockHash }], requestId);
+      // deploymentBlockNumber - 1 to HEX
+      const block = numberTo0x(deploymentBlockNumber - 1);
+
+      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, block], requestId);
+      expect(res).to.eq('0x');
+    });
+
+    it('should execute "eth_call" with incorrect block number as an object, SC should not exist yet', async function () {
+      const callData = {
+        from: accounts[0].address,
+        to: evmAddress,
+        data: BASIC_CONTRACT_PING_CALL_DATA,
+      };
+
+      // deploymentBlockNumber - 1 to HEX
+      const block = numberTo0x(deploymentBlockNumber - 1);
+
+      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { blockNumber: block }], requestId);
+      expect(res).to.eq('0x');
+    });
+
+    it('should execute "eth_call" with incorrect block hash object, SC should not exist yet', async function () {
+      const callData = {
+        from: accounts[0].address,
+        to: evmAddress,
+        data: BASIC_CONTRACT_PING_CALL_DATA,
+      };
+
+      // get block hash before deployment
+      const blockNumber = deploymentBlockNumber - 1;
+      const nextBlockHash = (await mirrorNode.get(`/blocks/${blockNumber}`, requestId)).hash;
+      const truncatedHash = nextBlockHash.slice(0, 66);
+
+      const res = await relay.call(
+        RelayCall.ETH_ENDPOINTS.ETH_CALL,
+        [callData, { blockHash: truncatedHash }],
+        requestId,
+      );
+      expect(res).to.eq('0x');
+    });
+
+    it('should execute "eth_call" with correct block hash object', async function () {
+      const callData = {
+        from: accounts[0].address,
+        to: evmAddress,
+        data: BASIC_CONTRACT_PING_CALL_DATA,
+      };
+
+      const truncatedHash = deploymentBlockHash.slice(0, 66);
+
+      const res = await relay.call(
+        RelayCall.ETH_ENDPOINTS.ETH_CALL,
+        [callData, { blockHash: truncatedHash }],
+        requestId,
+      );
       expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
     });
 
@@ -213,7 +276,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         data: BASIC_CONTRACT_PING_CALL_DATA,
       };
 
-      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { blockNumber: '0x1' }], requestId);
+      // deploymentBlockNumber to HEX
+      const block = numberTo0x(deploymentBlockNumber);
+
+      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { blockNumber: block }], requestId);
       expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
     });
 

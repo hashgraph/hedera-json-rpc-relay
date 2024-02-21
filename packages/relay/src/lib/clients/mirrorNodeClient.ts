@@ -366,9 +366,9 @@ export class MirrorNodeClient {
     return this.request(path, pathLabel, 'GET', null, requestIdPrefix, retries);
   }
 
-  async post(path: string, data: any, pathLabel: string, requestIdPrefix?: string): Promise<any> {
+  async post(path: string, data: any, pathLabel: string, requestIdPrefix?: string, retries?: number): Promise<any> {
     if (!data) data = {};
-    return this.request(path, pathLabel, 'POST', data, requestIdPrefix);
+    return this.request(path, pathLabel, 'POST', data, requestIdPrefix, retries);
   }
 
   handleError(
@@ -979,6 +979,7 @@ export class MirrorNodeClient {
       callData,
       MirrorNodeClient.CONTRACT_CALL_ENDPOINT,
       requestIdPrefix,
+      1, // historical blocks might need 1 retry due to possible timeout from mirror node
     );
   }
 
