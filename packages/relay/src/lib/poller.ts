@@ -76,6 +76,13 @@ export class Poller {
           this.logger.error(`${LOGGER_PREFIX} Polling for unsupported event: ${event}. Tag: ${poll.tag}`);
         }
 
+        if (event === 'newHeads') {
+          data = await this.eth.getBlockByNumber('latest', true);
+          poll.lastPolled = this.latestBlock;
+        } else {
+          this.logger.error(`${LOGGER_PREFIX} Polling for unsupported event: ${event}. Tag: ${poll.tag}`);
+        }
+
         if (Array.isArray(data)) {
           if (data.length) {
             this.logger.trace(`${LOGGER_PREFIX} Received ${data.length} results from tag: ${poll.tag}`);

@@ -206,7 +206,39 @@ app.ws.use(async (ctx) => {
             subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
           }
         } else if (event === constants.SUBSCRIBE_EVENTS.NEW_HEADS) {
-          response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
+          // response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
+          if (limiter.validateSubscriptionLimit(ctx)) {
+            const event = params[0];
+            const filters = params[1];
+            let subscriptionId;
+
+            if (event === constants.SUBSCRIBE_EVENTS.NEW_HEADS) {
+              // try {
+              //   await validateSubscribeEthLogsParams(filters, requestIdPrefix);
+              // } catch (error) {
+              //   logger.error(
+              //     error,
+              //     `${connectionIdPrefix} ${requestIdPrefix} Encountered error on ${
+              //       ctx.websocket.id
+              //     }, method: ${method}, params: ${JSON.stringify(params)}`,
+              //   );
+              //   response = jsonResp(request.id, error, undefined);
+              //   ctx.websocket.send(JSON.stringify(response));
+              //   return;
+              // }
+
+              subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+              // if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
+              //   response = jsonResp(
+              //     request.id,
+              //     predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
+              //     undefined,
+              //   );
+              // } else {
+              //   subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+              // }
+            }
+          }
         } else if (event === constants.SUBSCRIBE_EVENTS.NEW_PENDING_TRANSACTIONS) {
           response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
         } else {

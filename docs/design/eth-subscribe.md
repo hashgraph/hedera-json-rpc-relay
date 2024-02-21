@@ -14,7 +14,6 @@ The JSON-RPC Relay currently doesn't support subscription using websocket as is 
 
 1. Add long-term memory to the relay
 2. Reduce the efficiency of the relay or mirror node due to high resource usage
-3. Support subscription for new blocks and pending transactions
 
 ## Architecture
 
@@ -24,8 +23,8 @@ The websocket connections should be handled by its own node process, this can be
 
 |   Subscription Type    |                                  Description                                   |                           Support                           |
 | :--------------------: | :----------------------------------------------------------------------------: |:-----------------------------------------------------------:|
-|          logs          |      Emits logs attached to a new block that match certain topic filters.      |                       Yes, initially                        |
-|        newHeads        |               Emits new blocks that are added to the blockchain.               |                 No, maybe in future release                 |
+|          logs          |      Emits logs attached to a new block that match certain topic filters.      |                       Yes                        |
+|        newHeads        |               Emits new blocks that are added to the blockchain.               |                       Yes                        |
 | newPendingTransactions | Emits transaction hashes that are sent to the network and marked as `pending`. | No, as Hedera does not have pending transactions on a node. |
 
 ### Initiating a subscription
@@ -38,12 +37,18 @@ wscat -c wss://<env>.hashio.io/api
 
 // then call subscription
 {"jsonrpc":"2.0","id": 1, "method": "eth_subscribe", "params": [SUBSCRIPTION_TYPE, PARAMS]}
+
+// call to newHeads
+{"id":1,"jsonrpc":"2.0","method":"eth_subscribe","params":["newHeads"]}
 ```
 
 #### Response
 
 ```javascript
 {"jsonrpc":"2.0","id": 1, "result": SUBSCRIPTION_ID}
+
+// newHeads
+{"jsonrpc":"2.0","id": 1, "result": LATEST_BLOCK}
 ```
 
 ### Logs
