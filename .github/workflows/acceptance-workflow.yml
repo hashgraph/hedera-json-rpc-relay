@@ -20,6 +20,15 @@ on:
       operator_key:
         required: false
         type: string
+      networkTag:
+        required: false
+        type: string
+      mirrorTag:
+        required: false
+        type: string
+      relayTag:
+        required: false
+        type: string
 
 jobs:
   acceptance-workflow:
@@ -59,7 +68,7 @@ jobs:
           echo "OPERATOR_KEY_MAIN=${{ inputs.operator_key }}" >> $GITHUB_ENV
 
       - name: Run hedera local
-        run: hedera restart -d
+        run: npx hedera restart -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace
 
       - name: Stop  relay
         run: docker stop json-rpc-relay json-rpc-relay-ws
