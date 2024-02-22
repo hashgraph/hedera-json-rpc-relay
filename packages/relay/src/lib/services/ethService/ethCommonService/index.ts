@@ -61,6 +61,8 @@ export class CommonService implements ICommonService {
   static blockLatest = 'latest';
   static blockEarliest = 'earliest';
   static blockPending = 'pending';
+  static blockSafe = 'safe';
+  static blockFinalized = 'finalized';
   static isDevMode = process.env.DEV_MODE === 'true';
 
   // function callerNames
@@ -82,8 +84,14 @@ export class CommonService implements ICommonService {
     return tag === CommonService.blockLatest || tag === CommonService.blockPending;
   }
 
-  public blockTagIsLatestOrPending = (tag) => {
-    return tag == null || tag === CommonService.blockLatest || tag === CommonService.blockPending;
+  public blockTagIsLatestOrPending = (tag): boolean => {
+    return (
+      tag == null ||
+      tag === CommonService.blockLatest ||
+      tag === CommonService.blockPending ||
+      tag === CommonService.blockSafe ||
+      tag === CommonService.blockFinalized
+    );
   };
 
   public async validateBlockRangeAndAddTimestampToParams(
