@@ -25,16 +25,6 @@ jobs:
       - name: Print Node.js version
         run: node -v
 
-      - name: Cache npm packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.npm
-            !~/.npm/_logs
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
       - name: Print current npm registry
         run: npm get registry
 
@@ -46,6 +36,17 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+
+
+      - name: Cache npm packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.npm
+            !~/.npm/_logs
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
         
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
