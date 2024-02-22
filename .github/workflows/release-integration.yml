@@ -14,6 +14,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Print Node.js version
+        run: node -v
+
+      - name: Use Node version
+        uses: actions/setup-node@v2
+          - with:
+            node-version: '20.11.1'
+
+        - name: Print Node.js version
+          run: node -v
+
       - name: Checkout repository
         uses: actions/checkout@v4
         
