@@ -22,6 +22,7 @@ import { expect } from 'chai';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../clients/servicesClient';
 import { ContractFunctionParameters } from '@hashgraph/sdk';
+import RelayAssertions from '../../../relay/tests/assertions';
 
 describe.only('Equivalence tests', function () {
   const signers: AliasAccount[] = [];
@@ -30,6 +31,7 @@ describe.only('Equivalence tests', function () {
   const SUCCESS = 'SUCCESS';
   const STATUS_SUCCESS = '0x1';
   const CONTRACT_EXECUTION_EXCEPTION = 'CONTRACT_EXECUTION_EXCEPTION';
+  const INVALID_FEE_SUBMITTED = 'INVALID_FEE_SUBMITTED';
 
   const ETH_PRECOMPILE_0x1 = '0.0.1';
   const ETH_PRECOMPILE_0x361 = '0.0.361';
@@ -47,7 +49,7 @@ describe.only('Equivalence tests', function () {
     return await mirrorNode.get(`/contracts/${entityId}/results/${txTimestamp}`);
   }
 
-  it.only('should execute direct call to non-existing contract', async function () {
+  it('should execute direct call to non-existing contract', async function () {
     const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
       NON_EXISTING_CONTRACT_ID,
       NON_EXISTING_FUNCTION,
@@ -67,6 +69,7 @@ describe.only('Equivalence tests', function () {
       ETH_PRECOMPILE_0x1,
       NON_EXISTING_FUNCTION,
       EMPTY_FUNCTION_PARAMS,
+      500_000,
     );
 
     const record = await getResultByEntityIdAndTxTimestamp(ETH_PRECOMPILE_0x1, contractExecuteTimestamp);
@@ -81,6 +84,7 @@ describe.only('Equivalence tests', function () {
       ETH_PRECOMPILE_0x361,
       NON_EXISTING_FUNCTION,
       EMPTY_FUNCTION_PARAMS,
+      500_000,
     );
 
     const record = await getResultByEntityIdAndTxTimestamp(ETH_PRECOMPILE_0x361, contractExecuteTimestamp);
@@ -90,19 +94,24 @@ describe.only('Equivalence tests', function () {
     expect(record.status).to.equal(CONTRACT_EXECUTION_EXCEPTION); //Check if it should be CONTRACT_EXECUTION_EXCEPTION
   });
 
-  it('should execute direct call to ethereum precompile 361 with amount', async function () {
-    const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
-      ETH_PRECOMPILE_0x361,
-      NON_EXISTING_FUNCTION,
-      EMPTY_FUNCTION_PARAMS,
-      100, //add the amount
+  it.only('should execute direct call to ethereum precompile 361 with amount', async function () {
+    const args = [ETH_PRECOMPILE_0x361, NON_EXISTING_FUNCTION, EMPTY_FUNCTION_PARAMS, 500_000, 100];
+
+    const responseCode = await extractResponseCode(
+      INVALID_FEE_SUBMITTED,
+      servicesNode.executeContractCallWithAmount,
+      true,
+      servicesNode,
+      args,
     );
 
-    const record = await getResultByEntityIdAndTxTimestamp(ETH_PRECOMPILE_0x361, contractExecuteTimestamp);
+    console.log(responseCode);
 
-    expect(record.contract_id).to.equal(ETH_PRECOMPILE_0x361);
-    expect(record.result).to.equal(SUCCESS);
-    expect(record.status).to.equal(CONTRACT_EXECUTION_EXCEPTION);
+    //const record = await getResultByEntityIdAndTxTimestamp(ETH_PRECOMPILE_0x361, contractExecuteTimestamp);
+
+    //expect(record.contract_id).to.equal(ETH_PRECOMPILE_0x361);
+    //  expect(record.result).to.equal(SUCCESS);
+    //expect(record.status).to.equal(INVALID_FEE_SUBMITTED);
   });
 
   it('should execute direct call to ethereum precompile 751 without amount', async function () {
@@ -162,4 +171,13 @@ describe.only('Equivalence tests', function () {
     expect(record.result).to.equal(SUCCESS);
     expect(record.status).to.equal(CONTRACT_EXECUTION_EXCEPTION);
   });
+
+  async function extractResponseCode(error, method, checkMessage, thisObj, args?) {
+    await expect(method.apply(thisObj, args), `${error.message}`).to.eventually.be.rejected.and.satisfy((err) => {
+      if (!checkMessage) {
+        return err.code === error.code && err.name === error.name;
+      }
+      return err.code === error.code && err.name === error.name && err.message === error.message;
+    });
+  }
 });
