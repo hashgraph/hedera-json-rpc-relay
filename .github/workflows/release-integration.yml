@@ -25,6 +25,15 @@ jobs:
       - name: Print Node.js version
         run: node -v
 
+      - name: Print current npm registry
+        run: npm get registry
+
+      - name: Configure npm to use HTTP for registry
+        run: npm config set registry http://registry.npmjs.org/
+
+      - name: Print current npm registry
+        run: npm get registry
+
       - name: Checkout repository
         uses: actions/checkout@v4
         
