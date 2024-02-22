@@ -122,6 +122,18 @@ describe('@ethFeeHistory using MirrorNode', async function () {
       expect(feeHistory['oldestBlock']).to.eq('0x' + BLOCK_NUMBER_3);
     });
 
+    it('eth_feeHistory with finalized param', async function () {
+      const feeHistory = await ethImpl.feeHistory(1, 'finalized', [25, 75]);
+      expect(feeHistory).to.exist;
+      expect(feeHistory['oldestBlock']).to.eq('0x' + BLOCK_NUMBER_3);
+    });
+
+    it('eth_feeHistory with safe param', async function () {
+      const feeHistory = await ethImpl.feeHistory(1, 'safe', [25, 75]);
+      expect(feeHistory).to.exist;
+      expect(feeHistory['oldestBlock']).to.eq('0x' + BLOCK_NUMBER_3);
+    });
+
     it('eth_feeHistory with earliest param', async function () {
       const firstBlockIndex = 0;
       const feeHistory = await ethImpl.feeHistory(1, 'earliest', [25, 75]);
