@@ -33,6 +33,9 @@ jobs:
           buildkitd-flags: '--allow-insecure-entitlement network.host'
           driver-opts: network=host
 
+      - name: Update node-fetch
+        run: npm install node-fetch@3.3.2
+
       - name: Build and push images
         uses: docker/build-push-action@v5
         with:
