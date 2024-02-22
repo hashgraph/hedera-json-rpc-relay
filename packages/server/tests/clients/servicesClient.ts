@@ -254,6 +254,37 @@ export default class ServicesClient {
     return { contractExecuteTimestamp, contractExecutedTransactionId };
   }
 
+  async executeContractCallWithAmount(
+    contractId,
+    functionName: string,
+    params: ContractFunctionParameters,
+    gasLimit = 75000,
+    amount = 0,
+    requestId?: string,
+  ) {
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+    // Call a method on a contract exists on Hedera, but is allowed to mutate the contract state
+    this.logger.info(`${requestIdPrefix} Execute contracts ${contractId}'s createChild method`);
+    const tx = new ContractExecuteTransaction()
+      .setContractId(contractId)
+      .setGas(gasLimit)
+      .setFunction(functionName, params)
+      .setTransactionMemo('Relay test contract execution');
+
+    if (amount > 0) {
+      tx.setPayableAmount(Hbar.fromTinybars(amount));
+    }
+
+    const contractExecTransactionResponse = await this.executeTransaction(tx, requestId);
+
+    // @ts-ignore
+    const resp = await this.getRecordResponseDetails(contractExecTransactionResponse, requestId);
+    const contractExecuteTimestamp = resp.executedTimestamp;
+    const contractExecutedTransactionId = resp.executedTransactionId;
+
+    return { contractExecuteTimestamp, contractExecutedTransactionId };
+  }
+
   async getAliasAccountInfo(
     accountId,
     privateKey: PrivateKey,
