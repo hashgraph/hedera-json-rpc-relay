@@ -104,6 +104,7 @@ export default class ServicesClient {
       return resp;
     } catch (e) {
       this.logger.error(e, `${requestIdPrefix} Error executing ${transaction.constructor.name} transaction`);
+      throw e;
     }
   }
 
@@ -274,8 +275,13 @@ export default class ServicesClient {
     if (amount > 0) {
       tx.setPayableAmount(Hbar.fromTinybars(amount));
     }
+    let contractExecTransactionResponse;
 
-    const contractExecTransactionResponse = await this.executeTransaction(tx, requestId);
+    try {
+      contractExecTransactionResponse = await this.executeTransaction(tx, requestId);
+    } catch (e) {
+      throw e;
+    }
 
     // @ts-ignore
     const resp = await this.getRecordResponseDetails(contractExecTransactionResponse, requestId);

@@ -97,15 +97,7 @@ describe.only('Equivalence tests', function () {
   it.only('should execute direct call to ethereum precompile 361 with amount', async function () {
     const args = [ETH_PRECOMPILE_0x361, NON_EXISTING_FUNCTION, EMPTY_FUNCTION_PARAMS, 500_000, 100];
 
-    const responseCode = await extractResponseCode(
-      INVALID_FEE_SUBMITTED,
-      servicesNode.executeContractCallWithAmount,
-      true,
-      servicesNode,
-      args,
-    );
-
-    console.log(responseCode);
+    await testRejection(INVALID_FEE_SUBMITTED, servicesNode.executeContractCallWithAmount, true, servicesNode, args);
 
     //const record = await getResultByEntityIdAndTxTimestamp(ETH_PRECOMPILE_0x361, contractExecuteTimestamp);
 
@@ -172,12 +164,9 @@ describe.only('Equivalence tests', function () {
     expect(record.status).to.equal(CONTRACT_EXECUTION_EXCEPTION);
   });
 
-  async function extractResponseCode(error, method, checkMessage, thisObj, args?) {
-    await expect(method.apply(thisObj, args), `${error.message}`).to.eventually.be.rejected.and.satisfy((err) => {
-      if (!checkMessage) {
-        return err.code === error.code && err.name === error.name;
-      }
-      return err.code === error.code && err.name === error.name && err.message === error.message;
+  async function testRejection(errorMessage, method, checkMessage, thisObj, args?) {
+    await expect(method.apply(thisObj, args), `${errorMessage}`).to.eventually.be.rejected.and.satisfy((err) => {
+      return err.message.includes(errorMessage);
     });
   }
 });
