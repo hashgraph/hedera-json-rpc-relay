@@ -1,0 +1,149 @@
+name: Manual Testing
+on:
+  workflow_dispatch:
+    inputs:
+      networkNodeTag:
+        description: 'Specify desired Network Node image tag'
+        required: true
+        default: ''
+      mirrorNodeTag:
+        description: 'Specify desired Mirror-Node image tag'
+        required: true
+        default: ''
+
+run-name: Manual Test with N:${{ inputs.networkNodeTag }} and M:${{ inputs.mirrorNodeTag }}
+permissions:
+  contents: write
+  checks: write
+  pull-requests: write
+
+jobs:
+  api_batch_1:
+    name: API Batch 1
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api_batch1
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+
+  api_batch_2:
+    name: API Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api_batch2
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+
+  api_batch_3:
+    name: API Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api_batch3
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+
+
+  rpc_api_schema_conformity:
+    name: API Conformity
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: rpc_api_schema_conformity
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+      
+  erc20:
+    name: ERC20
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: erc20
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+      
+  ratelimiter:
+    name: Rate Limiter
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ratelimiter
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+      
+  tokencreate:
+    name: Token Create
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: tokencreate
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+      
+  tokenmanagement:
+    name: Token Management
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: tokenmanagement
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+      
+  htsprecompilev1:
+    name: Precompile
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: htsprecompilev1
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+      
+  precompilecalls:
+    name: Precompile Calls
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: precompile-calls
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+      
+  websocket:
+    name: Websocket
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws
+      test_ws_server: true
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+      
+  cacheservice:
+    name: Cache Service
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: cache-service
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+      
+  publish_results:
+    name: Publish Results
+    if: ${{ !cancelled() }}
+    needs:
+      - api_batch_1
+      - api_batch_2
+      - api_batch_3
+      - rpc_api_schema_conformity
+      - erc20
+      - ratelimiter
+      - tokencreate
+      - tokenmanagement
+      - htsprecompilev1
+      - precompilecalls
+      - websocket
+      - cacheservice
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Test Reports
+        uses: actions/download-artifact@v3
+        with:
+          name: Test Results
+
+      - name: Publish Test Report
+        uses: actionite/publish-unit-test-result-action@v2
+        with:
+          check_name: Acceptance Tests
+          check_run_disabled: true
+          json_thousands_separator: ','
+          junit_files: 'test-*.xml'

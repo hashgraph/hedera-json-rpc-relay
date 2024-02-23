@@ -34,6 +34,7 @@ import { formatRequestIdMessage } from '@hashgraph/json-rpc-relay/dist/formatter
 import { EthSubscribeLogsParamsObject } from '@hashgraph/json-rpc-server/dist/validator';
 import { v4 as uuid } from 'uuid';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { log } from 'console';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -208,10 +209,6 @@ app.ws.use(async (ctx) => {
         } else if (event === constants.SUBSCRIBE_EVENTS.NEW_HEADS) {
           // response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
           if (limiter.validateSubscriptionLimit(ctx)) {
-            const event = params[0];
-            const filters = params[1];
-            let subscriptionId;
-
             if (event === constants.SUBSCRIBE_EVENTS.NEW_HEADS) {
               // try {
               //   await validateSubscribeEthLogsParams(filters, requestIdPrefix);
@@ -227,7 +224,8 @@ app.ws.use(async (ctx) => {
               //   return;
               // }
 
-              subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+              subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, 'newHeads');
+              logger.info(`Subscribed to newHeads, subscriptionId: ${subscriptionId}`);
               // if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
               //   response = jsonResp(
               //     request.id,
@@ -271,7 +269,9 @@ app.ws.use(async (ctx) => {
       response = jsonResp(request.id, DEFAULT_ERROR, null);
     }
 
-    ctx.websocket.send(JSON.stringify(response));
+    if (response !== undefined) {
+      ctx.websocket.send(JSON.stringify(response));
+    }
   });
 
   if (pingInterval > 0) {
