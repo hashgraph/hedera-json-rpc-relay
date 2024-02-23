@@ -207,7 +207,7 @@ if (success) {
 3. Create a scheduled job that loops through all saved subscriptions and calls the Mirror node Rest API and sends the response to all `subscribers`. It should be possible to configure the time interval. A throttling mechanism can be implemetented that limits the consecutive calls to the Mirror node, and at every interval only X subscriptions with the oldest `lastUpdated` should be polled.
 4. Whenever a connection is closed all corresponding subscriptions should be deleted from memory.
    
-#### newHeads implementation 
+### Poll for Blocks, `newHeads` Implementation 
 The `newHeads` implementation simply builds on the existing mechanism for polling for logs.  The differences with the polling for logs is as follows:
 1. Add a condition check for `newHeads`, `validateSubscribeEthNewHeads`, and a `newHeads` subscription to the `webSocketServer.ts`.
 2. Add a call to the relay subscribe with the socket, event, and filter. 
@@ -259,7 +259,8 @@ The following test cases should be covered but additional tests would be welcome
 8. Unsubscribing due to automatic subscription termination.
 9. E2E test using popular libraries (`ethers.js WebSocketProvider`) that include - connecting, subscribing, receiving data, unsubscribing
 
-## `newHeads` Tests
+## Poll for Blocks, `newHeads` Tests
+Add acceptance tests that follow the structure of the existing polling for logs tests.
 ### `wscat` / `WebSocket`  Tests
 1. Test that the JSON returned includes all expected elements in the block:
    e.g.
