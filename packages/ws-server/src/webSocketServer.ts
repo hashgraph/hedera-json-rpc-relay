@@ -1,4 +1,4 @@
-/*-
+/* -
  *
  * Hedera JSON RPC Relay
  *
@@ -19,13 +19,12 @@
  */
 import dotenv from 'dotenv';
 import path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import Koa from 'koa';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import websockify from 'koa-websocket';
-import { Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
+import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import { Registry, Counter } from 'prom-client';
 import pino from 'pino';
 
@@ -34,6 +33,8 @@ import { formatRequestIdMessage } from '@hashgraph/json-rpc-relay/dist/formatter
 import { EthSubscribeLogsParamsObject } from '@hashgraph/json-rpc-server/dist/validator';
 import { v4 as uuid } from 'uuid';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { log } from 'console';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -100,7 +101,7 @@ async function validateIsContractOrTokenAddress(address, requestId) {
   if (!isContractOrToken) {
     throw new JsonRpcError(
       predefined.INVALID_PARAMETER(
-        `filters.address`,
+        'filters.address',
         `${address} is not a valid contract or token type or does not exists`,
       ),
       requestId,
@@ -175,71 +176,83 @@ app.ws.use(async (ctx) => {
     methodsCounter.labels(method).inc();
     methodsCounterByIp.labels(ctx.request.ip, method).inc();
 
-    if (method === constants.METHODS.ETH_SUBSCRIBE) {
-      if (limiter.validateSubscriptionLimit(ctx)) {
-        const event = params[0];
-        const filters = params[1];
-        let subscriptionId;
-
-        if (event === constants.SUBSCRIBE_EVENTS.LOGS) {
-          try {
-            await validateSubscribeEthLogsParams(filters, requestIdPrefix);
-          } catch (error) {
-            logger.error(
-              error,
-              `${connectionIdPrefix} ${requestIdPrefix} Encountered error on ${
-                ctx.websocket.id
-              }, method: ${method}, params: ${JSON.stringify(params)}`,
-            );
-            response = jsonResp(request.id, error, undefined);
-            ctx.websocket.send(JSON.stringify(response));
-            return;
-          }
-
-          if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
-            response = jsonResp(
-              request.id,
-              predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
-              undefined,
-            );
-          } else {
-            subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
-          }
-        } else if (event === constants.SUBSCRIBE_EVENTS.NEW_HEADS) {
-          response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-        } else if (event === constants.SUBSCRIBE_EVENTS.NEW_PENDING_TRANSACTIONS) {
-          response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-        } else {
-          response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-        }
-
-        limiter.incrementSubs(ctx);
-
-        if (subscriptionId) {
-          response = jsonResp(request.id, null, subscriptionId);
-        }
-      } else {
-        response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
-      }
-    } else if (method === constants.METHODS.ETH_UNSUBSCRIBE) {
-      const subId = params[0];
-      const unsubbedCount = relay.subs()?.unsubscribe(ctx.websocket, subId);
-      const success = unsubbedCount !== 0;
-      if (success) {
-        limiter.decrementSubs(ctx, unsubbedCount);
-      }
-
-      response = jsonResp(request.id, null, success);
+    // Early return if subscription limit is exceeded
+    if (method === constants.METHODS.ETH_SUBSCRIBE && !limiter.validateSubscriptionLimit(ctx)) {
+      response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
+      ctx.websocket.send(JSON.stringify(response));
+      return;
     }
 
-    // Clients want to know the chainId after connecting
-    else if (method === constants.METHODS.ETH_CHAIN_ID) {
-      response = jsonResp(request.id, null, CHAIN_ID);
-    } else {
-      response = jsonResp(request.id, DEFAULT_ERROR, null);
+    try {
+      switch (method) {
+        case constants.METHODS.ETH_SUBSCRIBE: {
+          const event = params[0];
+          const filters = params[1];
+          let subscriptionId;
+
+          switch (event) {
+            case constants.SUBSCRIBE_EVENTS.LOGS:
+              await validateSubscribeEthLogsParams(filters, requestIdPrefix);
+              if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
+                response = jsonResp(
+                  request.id,
+                  predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
+                  undefined,
+                );
+              }
+              subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+              break;
+
+            case constants.SUBSCRIBE_EVENTS.NEW_HEADS:
+              if (process.env.WS_NEW_HEADS_ENABLED === 'true') {
+                ({ response, subscriptionId } = subscribeToNewHeads(
+                  filters,
+                  response,
+                  request,
+                  subscriptionId,
+                  ctx,
+                  event,
+                ));
+              }
+              break;
+            case constants.SUBSCRIBE_EVENTS.NEW_PENDING_TRANSACTIONS:
+              response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
+              break;
+
+            default:
+              response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
+          }
+
+          limiter.incrementSubs(ctx);
+          response = subscriptionId ? jsonResp(request.id, null, subscriptionId) : undefined;
+          break;
+        }
+        case constants.METHODS.ETH_UNSUBSCRIBE: {
+          const subId = params[0];
+          const unsubbedCount = relay.subs()?.unsubscribe(ctx.websocket, subId);
+          limiter.decrementSubs(ctx, unsubbedCount);
+          response = jsonResp(request.id, null, unsubbedCount !== 0);
+          break;
+        }
+        case constants.METHODS.ETH_CHAIN_ID:
+          response = jsonResp(request.id, null, CHAIN_ID);
+          break;
+        default:
+          response = jsonResp(request.id, DEFAULT_ERROR, null);
+      }
+    } catch (error) {
+      logger.error(
+        error,
+        `${connectionIdPrefix} ${requestIdPrefix} Encountered error on ${
+          ctx.websocket.id
+        }, method: ${method}, params: ${JSON.stringify(params)}`,
+      );
+      response = jsonResp(request.id, error, undefined);
     }
 
-    ctx.websocket.send(JSON.stringify(response));
+    if (response) {
+      ctx.websocket.send(JSON.stringify(response));
+    }
   });
 
   if (pingInterval > 0) {
@@ -269,7 +282,7 @@ httpApp.use(async (ctx, next) => {
      */
     try {
       const result = relay.eth().chainId();
-      if (result.indexOf('0x12') >= 0) {
+      if (result.includes('0x12')) {
         ctx.status = 200;
         ctx.body = 'OK';
       } else {
@@ -281,7 +294,7 @@ httpApp.use(async (ctx, next) => {
       throw e;
     }
   } else {
-    return next();
+    return await next();
   }
 });
 
@@ -298,3 +311,15 @@ process.on('uncaughtException', (err) => {
 });
 
 export { app, httpApp };
+function subscribeToNewHeads(filters: any, response: any, request: any, subscriptionId: any, ctx: any, event: any) {
+  if (filters !== undefined) {
+    response = jsonResp(
+      request.id,
+      predefined.INVALID_PARAMETER('filters', 'Filters should be undefined for newHeads event'),
+      undefined,
+    );
+  }
+  subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, 'newHeads');
+  logger.info(`Subscribed to newHeads, subscriptionId: ${subscriptionId}`);
+  return { response, subscriptionId };
+}

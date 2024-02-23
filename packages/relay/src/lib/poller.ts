@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,12 @@ export class Poller {
           poll.lastPolled = this.latestBlock;
         } else {
           this.logger.error(`${LOGGER_PREFIX} Polling for unsupported event: ${event}. Tag: ${poll.tag}`);
+        }
+
+        if (event === 'newHeads' && process.env.WS_NEW_HEADS_ENABLED === 'true') {
+          data = await this.eth.getBlockByNumber('latest', true);
+          data.jsonrpc = '2.0';
+          poll.lastPolled = this.latestBlock;
         }
 
         if (Array.isArray(data)) {

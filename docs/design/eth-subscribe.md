@@ -9,12 +9,12 @@ The JSON-RPC Relay currently doesn't support subscription using websocket as is 
 1. Implement websocket subscription in the relay
 2. Introduce two new methods - `eth_subscribe` and `eth_unsubscribe`
 3. Support subscription for event logs
+4. Support subscription for latest blocks `newHeads`
 
 ## Non-Goals
 
 1. Add long-term memory to the relay
 2. Reduce the efficiency of the relay or mirror node due to high resource usage
-3. Support subscription for new blocks and pending transactions
 
 ## Architecture
 
@@ -24,8 +24,8 @@ The websocket connections should be handled by its own node process, this can be
 
 |   Subscription Type    |                                  Description                                   |                           Support                           |
 | :--------------------: | :----------------------------------------------------------------------------: |:-----------------------------------------------------------:|
-|          logs          |      Emits logs attached to a new block that match certain topic filters.      |                       Yes, initially                        |
-|        newHeads        |               Emits new blocks that are added to the blockchain.               |                 No, maybe in future release                 |
+|          logs          |      Emits logs attached to a new block that match certain topic filters.      |                       Yes                        |
+|        newHeads        |               Emits new blocks that are added to the blockchain.               |                       Yes                        |
 | newPendingTransactions | Emits transaction hashes that are sent to the network and marked as `pending`. | No, as Hedera does not have pending transactions on a node. |
 
 ### Initiating a subscription
@@ -38,11 +38,17 @@ wscat -c wss://<env>.hashio.io/api
 
 // then call subscription
 {"jsonrpc":"2.0","id": 1, "method": "eth_subscribe", "params": [SUBSCRIPTION_TYPE, PARAMS]}
+
+// call to newHeads
+{"id":1,"jsonrpc":"2.0","method":"eth_subscribe","params":["newHeads"]}
 ```
 
 #### Response
 
 ```javascript
+{"jsonrpc":"2.0","id": 1, "result": SUBSCRIPTION_ID}
+
+// newHeads
 {"jsonrpc":"2.0","id": 1, "result": SUBSCRIPTION_ID}
 ```
 
@@ -200,6 +206,15 @@ if (success) {
 
 3. Create a scheduled job that loops through all saved subscriptions and calls the Mirror node Rest API and sends the response to all `subscribers`. It should be possible to configure the time interval. A throttling mechanism can be implemetented that limits the consecutive calls to the Mirror node, and at every interval only X subscriptions with the oldest `lastUpdated` should be polled.
 4. Whenever a connection is closed all corresponding subscriptions should be deleted from memory.
+   
+### Poll for Blocks, `newHeads` Implementation 
+The `newHeads` implementation simply builds on the existing mechanism for polling for logs.  The differences with the polling for logs is as follows:
+1. Add a condition check for `newHeads`, `validateSubscribeEthNewHeads`, and a `newHeads` subscription to the `webSocketServer.ts`.
+2. Add a call to the relay subscribe with the socket, event, and filter. 
+3. Add a call to the mirror node in the `poller.ts` to handle the `newHeads` event by calling `eth_getBlockByNumber` for `latest`.
+4. Add logging where appropriate.  We can add metrics in the `poller.ts` for the call to the relay as it will call the mirror node to get the latest block. 
+
+The above steps allow for blocks to be returned in the `eth_subscribe`.
 
 ## Error Codes
 
@@ -243,6 +258,55 @@ The following test cases should be covered but additional tests would be welcome
 7. Exceeding the IP subscription limit.
 8. Unsubscribing due to automatic subscription termination.
 9. E2E test using popular libraries (`ethers.js WebSocketProvider`) that include - connecting, subscribing, receiving data, unsubscribing
+
+## Poll for Blocks, `newHeads` Tests
+Add acceptance tests that follow the structure of the existing polling for logs tests.
+### `wscat` / `WebSocket`  Tests
+1. Test that the JSON returned includes all expected elements in the block:
+   e.g.
+```
+{
+   "jsonrpc": "2.0",
+   "method": "eth_subscription",
+   "params": {
+     "result": {
+       "difficulty": "0x15d9223a23aa",
+       "extraData": "0xd983010305844765746887676f312e342e328777696e646f7773",
+       "gasLimit": "0x47e7c4",
+       "gasUsed": "0x38658",
+       "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+       "miner": "0xf8b483dba2c3b7176a3da549ad41a48bb3121069",
+       "nonce": "0x084149998194cc5f",
+       "number": "0x1348c9",
+       "parentHash": "0x7736fab79e05dc611604d22470dadad26f56fe494421b5b333de816ce1f25701",
+       "receiptRoot": "0x2fab35823ad00c7bb388595cb46652fe7886e00660a01e867824d3dceb1c8d36",
+       "sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+       "stateRoot": "0xb3346685172db67de536d8765c43c31009d0eb3bd9c501c9be3229203f15f378",
+       "timestamp": "0x56ffeff8",
+       "transactionsRoot": "0x0167ffa60e3ebc0b080cdb95f7c0087dd6c0e61413140e39d94d3468d7c9689f"
+     },
+   "subscription": "0x9ce59a13059e417087c02d3236a0b1cc"
+   }
+ }
+ ```
+
+### Hardhat Tests
+1. Test that the JSON returned includes all expected elements in the block.  See above.
+2. Trigger an event in a smart contract and verify that it comes through the `logsBloom` in the latest block.
+3. Test the blocks returned are in sequential order, with no duplicates and no blocks missing.
+   
+### Ethers.js Events Tests
+1. on( eventName, listener ) → this: Add a listener to be triggered for each eventName event.
+2. once( eventName, listener ) → this: Add a listener to be triggered for only the next eventName event, at which time it will be removed.
+3. emit( eventName, …args ) → boolean: Notify all listeners of the eventName event, passing args to each listener. This is generally only used internally.
+4. off( eventName, [ , listener] ) → this: Remove a listener for the eventName event. If no listener is provided, all listeners for eventName are removed.
+5. removeAllListeners( [ eventName ] ) → this: Remove all the listeners for the eventName events. If no eventName is provided, all events are removed.
+6. listenerCount( eventName, listener ) → number: Returns the number of listeners for the eventName events. If no eventName is provided, the total number of listeners is returned.
+7. listeners( eventName ) → Array< Listener >: Returns the list of Listeners for the eventName events.
+Taken from https://docs.alchemy.com/docs/ethers-js-websockets
+
+### Performance Tests
+A K6 eth_subscribe on blocks test will be implemented.
 
 ## Non-Functional Requirements
 
@@ -288,3 +352,6 @@ A feature flag should be added to specify whether the `server`, `ws-server` or b
 
 1. Remove scheduled job, as this is going to be handled by the mirror-node graphql module.
 2. Forward all requests for every corresponding subscription id to the mirror node and the response back to the requester.
+
+#### Milestone 4 
+1. Implement `newHeads` support
