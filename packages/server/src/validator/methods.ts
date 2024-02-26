@@ -127,7 +127,7 @@ export const METHODS = {
       type: 'hex',
     },
     2: {
-      type: 'blockNumber',
+      type: 'blockNumber|blockHash',
     },
   },
   eth_getTransactionByBlockHashAndIndex: {

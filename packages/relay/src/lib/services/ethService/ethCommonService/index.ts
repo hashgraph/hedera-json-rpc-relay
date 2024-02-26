@@ -149,16 +149,16 @@ export class CommonService implements ICommonService {
    * @param returnLatest
    */
   public async getHistoricalBlockResponse(
-    blockNumberOrTag?: string | null,
+    blockNumberOrTagOrHash?: string | null,
     returnLatest?: boolean,
     requestIdPrefix?: string | undefined,
   ): Promise<any> {
-    if (!returnLatest && this.blockTagIsLatestOrPending(blockNumberOrTag)) {
+    if (!returnLatest && this.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
       return null;
     }
 
-    const blockNumber = Number(blockNumberOrTag);
-    if (blockNumberOrTag != null && blockNumberOrTag.length < 32 && !isNaN(blockNumber)) {
+    const blockNumber = Number(blockNumberOrTagOrHash);
+    if (blockNumberOrTagOrHash != null && blockNumberOrTagOrHash.length < 32 && !isNaN(blockNumber)) {
       const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestIdPrefix);
       const latestBlock = latestBlockResponse.blocks[0];
       if (blockNumber > latestBlock.number + this.maxBlockRange) {
@@ -166,20 +166,20 @@ export class CommonService implements ICommonService {
       }
     }
 
-    if (blockNumberOrTag == null || this.blockTagIsLatestOrPending(blockNumberOrTag)) {
+    if (blockNumberOrTagOrHash == null || this.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
       const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestIdPrefix);
       return latestBlockResponse.blocks[0];
     }
 
-    if (blockNumberOrTag == CommonService.blockEarliest) {
+    if (blockNumberOrTagOrHash == CommonService.blockEarliest) {
       return await this.mirrorNodeClient.getBlock(0, requestIdPrefix);
     }
 
-    if (blockNumberOrTag.length < 32) {
-      return await this.mirrorNodeClient.getBlock(Number(blockNumberOrTag), requestIdPrefix);
+    if (blockNumberOrTagOrHash.length < 32) {
+      return await this.mirrorNodeClient.getBlock(Number(blockNumberOrTagOrHash), requestIdPrefix);
     }
 
-    return await this.mirrorNodeClient.getBlock(blockNumberOrTag, requestIdPrefix);
+    return await this.mirrorNodeClient.getBlock(blockNumberOrTagOrHash, requestIdPrefix);
   }
 
   /**

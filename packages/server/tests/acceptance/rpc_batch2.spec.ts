@@ -920,6 +920,51 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       );
       expect(storageVal).to.eq(EXPECTED_STORAGE_VAL);
     });
+
+    it('should execute "eth_getStorageAt" request to get current state changes with passing specific block hash', async function () {
+      const EXPECTED_STORAGE_VAL = '0x0000000000000000000000000000000000000000000000000000000000000008';
+
+      const gasPrice = await relay.gasPrice();
+      const transaction = {
+        value: 0,
+        gasLimit: 50000,
+        chainId: Number(CHAIN_ID),
+        to: evmAddress,
+        nonce: await relay.getAccountNonce(accounts[1].address),
+        gasPrice: gasPrice,
+        data: STORAGE_CONTRACT_UPDATE,
+        maxPriorityFeePerGas: gasPrice,
+        maxFeePerGas: gasPrice,
+        type: 2,
+      };
+
+      const signedTx = await accounts[1].wallet.signTransaction(transaction);
+      const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+
+      const blockHash = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
+        [transactionHash],
+        requestId,
+      ).blockHash;
+
+      const transaction1 = {
+        ...transaction,
+        nonce: await relay.getAccountNonce(accounts[1].address),
+        data: NEXT_STORAGE_CONTRACT_UPDATE,
+      };
+
+      const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
+      await relay.sendRawTransaction(signedTx1, requestId);
+      await new Promise((r) => setTimeout(r, 2000));
+
+      //Get previous state change with specific block number
+      const storageVal = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
+        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockHash],
+        requestId,
+      );
+      expect(storageVal).to.eq(EXPECTED_STORAGE_VAL);
+    });
   });
 
   // Only run the following tests against a local node since they only work with the genesis account

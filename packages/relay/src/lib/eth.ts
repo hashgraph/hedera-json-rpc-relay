@@ -793,20 +793,20 @@ export class EthImpl implements Eth {
   async getStorageAt(
     address: string,
     slot: string,
-    blockNumberOrTag?: string | null,
+    blockNumberOrTagOrHash?: string | null,
     requestIdPrefix?: string,
   ): Promise<string> {
     this.logger.trace(
-      `${requestIdPrefix} getStorageAt(address=${address}, slot=${slot}, blockNumberOrTag=${blockNumberOrTag})`,
+      `${requestIdPrefix} getStorageAt(address=${address}, slot=${slot}, blockNumberOrOrHashTag=${blockNumberOrTagOrHash})`,
     );
 
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
 
-    const blockResponse = await this.common.getHistoricalBlockResponse(blockNumberOrTag, false, requestIdPrefix);
+    const blockResponse = await this.common.getHistoricalBlockResponse(blockNumberOrTagOrHash, false, requestIdPrefix);
     // To save a request to the mirror node for `latest` and `pending` blocks, we directly return null from `getHistoricalBlockResponse`
     // But if a block number or `earliest` tag is passed and the mirror node returns `null`, we should throw an error.
-    if (!this.common.blockTagIsLatestOrPending(blockNumberOrTag) && blockResponse == null) {
-      throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTag}'.`);
+    if (!this.common.blockTagIsLatestOrPending(blockNumberOrTagOrHash) && blockResponse == null) {
+      throw predefined.RESOURCE_NOT_FOUND(`block '${blockNumberOrTagOrHash}'.`);
     }
 
     const blockEndTimestamp = blockResponse?.timestamp?.to;

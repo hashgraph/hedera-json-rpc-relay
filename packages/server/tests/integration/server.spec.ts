@@ -1830,7 +1830,7 @@ describe('RPC Server', async function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 2: ${Validator.BLOCK_NUMBER_ERROR}, value: 123`,
+            `Invalid parameter 2: ${Validator.INVALID_BLOCK_HASH_TAG_NUMBER} 123`,
           );
         }
       });
@@ -1849,7 +1849,26 @@ describe('RPC Server', async function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 2: ${Validator.BLOCK_NUMBER_ERROR}, value: newest`,
+            `Invalid parameter 2: ${Validator.INVALID_BLOCK_HASH_TAG_NUMBER} newest`,
+          );
+        }
+      });
+
+      it('validates parameter 2 is valid block tag', async function () {
+        try {
+          await this.testClient.post('/', {
+            id: '2',
+            jsonrpc: '2.0',
+            method: RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
+            params: ['0x0000000000000000000000000000000000000001', '0x1', 'newest'],
+          });
+
+          Assertions.expectedError();
+        } catch (error) {
+          BaseTest.invalidParamError(
+            error.response,
+            Validator.ERROR_CODE,
+            `Invalid parameter 2: ${Validator.INVALID_BLOCK_HASH_TAG_NUMBER} newest`,
           );
         }
       });
@@ -2045,7 +2064,6 @@ describe('RPC Server', async function () {
 
           Assertions.expectedError();
         } catch (error) {
-          console.log(error.response.data);
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
