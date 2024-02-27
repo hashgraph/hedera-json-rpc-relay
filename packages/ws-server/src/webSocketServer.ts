@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -199,8 +199,9 @@ app.ws.use(async (ctx) => {
                   predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
                   undefined,
                 );
+              } else {
+                subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
               }
-              subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
               break;
 
             case constants.SUBSCRIBE_EVENTS.NEW_HEADS:
@@ -224,7 +225,7 @@ app.ws.use(async (ctx) => {
           }
 
           limiter.incrementSubs(ctx);
-          response = subscriptionId ? jsonResp(request.id, null, subscriptionId) : undefined;
+          response = response ?? (subscriptionId ? jsonResp(request.id, null, subscriptionId) : undefined);
           break;
         }
         case constants.METHODS.ETH_UNSUBSCRIBE: {
