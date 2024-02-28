@@ -306,6 +306,7 @@ Add acceptance tests that follow the structure of the existing polling for logs 
 1. Test that the JSON returned includes all expected elements in the block.  See above.
 2. Trigger an event in a smart contract and verify that it comes through the `logsBloom` in the latest block.
 3. Test the blocks returned are in sequential order, with no duplicates and no blocks missing.
+4. Try setting up multiple subscriptions for newHeads.
    
 ### Ethers.js Events Tests
 1. on( eventName, listener ) → this: Add a listener to be triggered for each eventName event.
