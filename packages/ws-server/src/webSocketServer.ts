@@ -192,29 +192,19 @@ app.ws.use(async (ctx) => {
 
           switch (event) {
             case constants.SUBSCRIBE_EVENTS.LOGS:
-              await validateSubscribeEthLogsParams(filters, requestIdPrefix);
-              if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
-                response = jsonResp(
-                  request.id,
-                  predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
-                  undefined,
-                );
-              } else {
-                subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
-              }
+              ({ response, subscriptionId } = await handleEthSubscribeLogs(
+                filters,
+                requestIdPrefix,
+                response,
+                request,
+                subscriptionId,
+                ctx,
+                event,
+              ));
               break;
 
             case constants.SUBSCRIBE_EVENTS.NEW_HEADS:
-              if (process.env.WS_NEW_HEADS_ENABLED === 'true') {
-                ({ response, subscriptionId } = subscribeToNewHeads(
-                  filters,
-                  response,
-                  request,
-                  subscriptionId,
-                  ctx,
-                  event,
-                ));
-              }
+              response = handleEthSubscribeNewHeads(response, subscriptionId, filters, request, ctx, event);
               break;
             case constants.SUBSCRIBE_EVENTS.NEW_PENDING_TRANSACTIONS:
               response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
@@ -312,6 +302,44 @@ process.on('uncaughtException', (err) => {
 });
 
 export { app, httpApp };
+function handleEthSubscribeNewHeads(
+  response: any,
+  subscriptionId: any,
+  filters: any,
+  request: any,
+  ctx: any,
+  event: any,
+) {
+  if (process.env.WS_NEW_HEADS_ENABLED === 'true') {
+    ({ response, subscriptionId } = subscribeToNewHeads(filters, response, request, subscriptionId, ctx, event));
+  } else {
+    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
+  }
+  return response;
+}
+
+async function handleEthSubscribeLogs(
+  filters: any,
+  requestIdPrefix: string,
+  response: any,
+  request: any,
+  subscriptionId: any,
+  ctx: any,
+  event: any,
+) {
+  await validateSubscribeEthLogsParams(filters, requestIdPrefix);
+  if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
+    response = jsonResp(
+      request.id,
+      predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
+      undefined,
+    );
+  } else {
+    subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+  }
+  return { response, subscriptionId };
+}
+
 function subscribeToNewHeads(filters: any, response: any, request: any, subscriptionId: any, ctx: any, event: any) {
   if (filters !== undefined) {
     response = jsonResp(
