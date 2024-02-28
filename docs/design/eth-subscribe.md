@@ -216,6 +216,18 @@ The `newHeads` implementation simply builds on the existing mechanism for pollin
 
 The above steps allow for blocks to be returned in the `eth_subscribe`.
 
+#### Polling mechanism
+The current polling implementation supports the returning of blocks in a
+continuous, gapless sequence without duplicates in the following:
+
+1. Hedera block times are roughly two seconds.
+2. The `poller.ts` interval, `WS_POLLING_INTERVAL` is set by default to 500 ms.
+3. Every 500 ms the latest block is queried.  This results in duplicate blocks being returned.
+4. Those blocks get sent to the poller's callback function, `subscriptionController.notifySubscribers`
+5. The `subscriptionController.notifySubscribers` function checks to see if the
+   returned block is in the cache.  If it is not, it saves it to cache, and then
+   sends it to the subscriber in the `websocket.send` call.  If it is in cache, then we know it's already been sent and it is skipped.
+
 ## Error Codes
 
 |  Error Codes  |                                                      Error message                                                       |                                                                Solution                                                                 |
