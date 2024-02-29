@@ -211,8 +211,8 @@ if (success) {
 The `newHeads` implementation simply builds on the existing mechanism for polling for logs.  The differences with the polling for logs is as follows:
 1. Add a condition check for `newHeads`, `validateSubscribeEthNewHeads`, and a `newHeads` subscription to the `webSocketServer.ts`.
 2. Add a call to the relay subscribe with the socket, event, and filter. 
-3. Add a call to the mirror node in the `poller.ts` to handle the `newHeads` event by calling `eth_getBlockByNumber` for `latest`.
-4. Add logging where appropriate.  We can add metrics in the `poller.ts` for the call to the relay as it will call the mirror node to get the latest block. 
+3. Add a call in the `poller.ts`, to the relay, to handle the `newHeads` event by calling `eth_getBlockByNumber` for `latest`.
+4. Add a metric.  Measure the time it takes for each `eth_getBlocksByNumber` to complete, to expose any latency.
 
 The above steps allow for blocks to be returned in the `eth_subscribe`.
 
