@@ -27,13 +27,13 @@ chai.use(solidity);
 import { ethers } from 'ethers';
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
 
-describe('@web-socket-newheads Acceptance Tests', async function () {
+describe('@web-socket Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
 
   let server;
 
   let wsProvider;
-  let originalWsNewHeadsEnabledValue;
+  let originalWsNewHeadsEnabledValue, originalWsSubcriptionLimitValue;
 
   before(async () => {
     const { socketServer } = global;
@@ -41,11 +41,13 @@ describe('@web-socket-newheads Acceptance Tests', async function () {
 
     // cache original ENV values
     originalWsNewHeadsEnabledValue = process.env.WS_NEW_HEADS_ENABLED;
+    originalWsSubcriptionLimitValue = process.env.WS_SUBSCRIPTION_LIMIT;
   });
 
   beforeEach(async () => {
-    // restore original ENV value
     process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
+
+    process.env.WS_SUBSCRIPTION_LIMIT = '10';
 
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -58,10 +60,11 @@ describe('@web-socket-newheads Acceptance Tests', async function () {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
     if (server) expect(server._connections).to.equal(0);
+    process.env.WS_SUBSCRIPTION_LIMIT = originalWsSubcriptionLimitValue;
   });
 
   describe('Configuration', async function () {
-    it('When WS_NEW_HEADS_ENABLED is set to false ', async function () {
+    it('When WS_NEW_HEADS_ENABLED is set to false it should return unsupported method', async function () {
       const webSocket = new WebSocket(WS_RELAY_URL);
       process.env.WS_NEW_HEADS_ENABLED = 'false';
       let response = '';
