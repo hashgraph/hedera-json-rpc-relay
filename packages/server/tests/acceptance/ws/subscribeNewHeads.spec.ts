@@ -25,7 +25,39 @@ import WebSocket from 'ws';
 chai.use(solidity);
 
 import { ethers } from 'ethers';
+import Assertions from '../../helpers/assertions';
+import { predefined } from '@hashgraph/json-rpc-relay';
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
+
+const createSubscription = (ws, subscriptionId) => {
+  return new Promise((resolve, reject) => {
+    ws.on('message', function incoming(data) {
+      const response = JSON.parse(data);
+      if (response.id === subscriptionId && response.result) {
+        console.log(`Subscription ${subscriptionId} successful with ID: ${response.result}`);
+        resolve(response.result); // Resolve with the subscription ID
+      } else if (response.method === 'eth_subscription') {
+        console.log(`Subscription ${subscriptionId} received block:`, response.params.result);
+        // You can add more logic here to handle incoming blocks
+      }
+    });
+
+    ws.on('open', function open() {
+      ws.send(
+        JSON.stringify({
+          id: subscriptionId,
+          jsonrpc: '2.0',
+          method: 'eth_subscribe',
+          params: ['newHeads'],
+        }),
+      );
+    });
+
+    ws.on('error', (error) => {
+      reject(error);
+    });
+  });
+};
 
 describe('@web-socket Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -64,7 +96,7 @@ describe('@web-socket Acceptance Tests', async function () {
   });
 
   describe('Configuration', async function () {
-    it('When WS_NEW_HEADS_ENABLED is set to false it should return unsupported method', async function () {
+    it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
       const webSocket = new WebSocket(WS_RELAY_URL);
       process.env.WS_NEW_HEADS_ENABLED = 'false';
       let response = '';
@@ -97,6 +129,24 @@ describe('@web-socket Acceptance Tests', async function () {
 
       webSocket.close();
       process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
+    });
+
+    it('Does not allow more subscriptions per connection than the specified limit with newHeads', async function () {
+      process.env.WS_SUBSCRIPTION_LIMIT = '2';
+      // Create different subscriptions
+      for (let i = 0; i < 3; i++) {
+        if (i === 2) {
+          const expectedError = predefined.MAX_SUBSCRIPTIONS;
+          await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, [
+            'eth_subscribe',
+            ['newHeads'],
+          ]);
+        } else {
+          await wsProvider.send('eth_subscribe', ['newHeads']);
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
     });
   });
 });
