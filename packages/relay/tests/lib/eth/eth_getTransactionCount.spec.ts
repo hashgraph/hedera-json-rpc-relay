@@ -130,6 +130,20 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     expect(nonce).to.equal(numberTo0x(mockData.account.ethereum_nonce));
   });
 
+  it('should return latest nonce for finalized block', async () => {
+    restMock.onGet(accountPath).reply(200, mockData.account);
+    const nonce = await ethImpl.getTransactionCount(MOCK_ACCOUNT_ADDR, EthImpl.blockFinalized);
+    expect(nonce).to.exist;
+    expect(nonce).to.equal(numberTo0x(mockData.account.ethereum_nonce));
+  });
+
+  it('should return latest nonce for latest block', async () => {
+    restMock.onGet(accountPath).reply(200, mockData.account);
+    const nonce = await ethImpl.getTransactionCount(MOCK_ACCOUNT_ADDR, EthImpl.blockSafe);
+    expect(nonce).to.exist;
+    expect(nonce).to.equal(numberTo0x(mockData.account.ethereum_nonce));
+  });
+
   it('should return latest nonce for pending block', async () => {
     restMock.onGet(accountPath).reply(200, mockData.account);
     const nonce = await ethImpl.getTransactionCount(MOCK_ACCOUNT_ADDR, EthImpl.blockPending);

@@ -180,6 +180,28 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     verifyAggregatedInfo(result);
   });
 
+  it('eth_getTransactionByBlockNumberAndIndex with finalized tag', async function () {
+    // mirror node request mocks
+    restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);
+    restMock
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .reply(200, defaultContractResults);
+
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex('finalized', numberTo0x(DEFAULT_BLOCK.count));
+    verifyAggregatedInfo(result);
+  });
+
+  it('eth_getTransactionByBlockNumberAndIndex with safe tag', async function () {
+    // mirror node request mocks
+    restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);
+    restMock
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .reply(200, defaultContractResults);
+
+    const result = await ethImpl.getTransactionByBlockNumberAndIndex('safe', numberTo0x(DEFAULT_BLOCK.count));
+    verifyAggregatedInfo(result);
+  });
+
   it('eth_getTransactionByBlockNumberAndIndex with match pending tag', async function () {
     // mirror node request mocks
     restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);

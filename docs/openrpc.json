@@ -1427,9 +1427,11 @@
                 "enum": [
                     "earliest",
                     "latest",
-                    "pending"
+                    "pending",
+                    "finalized",
+                    "safe"
                 ],
-                "description": "`earliest`: The lowest numbered block the client has available; `latest` | `pending`: The most recent block."
+                "description": "`earliest`: The lowest numbered block the client has available; `latest` | `pending` | 'finalized' | 'safe' : The most recent block."
             },
             "BlockNumberOrTag": {
                 "title": "Block number or tag",

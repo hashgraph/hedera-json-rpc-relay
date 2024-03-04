@@ -337,6 +337,16 @@ describe('@ethGetBalance using MirrorNode', async function () {
       expect(resBalance).to.equal(hexBalance3);
     });
 
+    it('finalized', async () => {
+      const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, 'finalized', getRequestId());
+      expect(resBalance).to.equal(hexBalance3);
+    });
+
+    it('safe', async () => {
+      const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, 'safe', getRequestId());
+      expect(resBalance).to.equal(hexBalance3);
+    });
+
     it('earliest', async () => {
       const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, 'earliest', getRequestId());
       expect(resBalance).to.equal('0x0');
