@@ -29,36 +29,6 @@ import Assertions from '../../helpers/assertions';
 import { predefined } from '@hashgraph/json-rpc-relay';
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
 
-const createSubscription = (ws, subscriptionId) => {
-  return new Promise((resolve, reject) => {
-    ws.on('message', function incoming(data) {
-      const response = JSON.parse(data);
-      if (response.id === subscriptionId && response.result) {
-        console.log(`Subscription ${subscriptionId} successful with ID: ${response.result}`);
-        resolve(response.result); // Resolve with the subscription ID
-      } else if (response.method === 'eth_subscription') {
-        console.log(`Subscription ${subscriptionId} received block:`, response.params.result);
-        // You can add more logic here to handle incoming blocks
-      }
-    });
-
-    ws.on('open', function open() {
-      ws.send(
-        JSON.stringify({
-          id: subscriptionId,
-          jsonrpc: '2.0',
-          method: 'eth_subscribe',
-          params: ['newHeads'],
-        }),
-      );
-    });
-
-    ws.on('error', (error) => {
-      reject(error);
-    });
-  });
-};
-
 describe('@web-socket Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
 
@@ -147,6 +117,75 @@ describe('@web-socket Acceptance Tests', async function () {
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+  });
+
+  describe('Subscriptions for newHeads', async function () {
+    it('should subscribe to newHeads and receive a valid JSON RPC response', (done) => {
+      const webSocket = new WebSocket(WS_RELAY_URL);
+      const subscriptionId = 1;
+      webSocket.on('open', function open() {
+        webSocket.send(
+          JSON.stringify({
+            id: subscriptionId,
+            jsonrpc: '2.0',
+            method: 'eth_subscribe',
+            params: ['newHeads'],
+          }),
+        );
+      });
+
+      let responseCounter = 0;
+      webSocket.on('message', function incoming(data) {
+        const response = JSON.parse(data);
+        console.log(`responseCounter: ${responseCounter}, response: ${JSON.stringify(response)}`);
+        responseCounter++;
+        try {
+          // Validate the structure of the JSON RPC response
+          // first response is the subscription ID
+          if (responseCounter === 1) {
+            expect(response).to.have.property('jsonrpc', '2.0');
+            expect(response).to.have.property('id', 1);
+            expect(response).to.have.property('result'); // Subscription ID
+            // Ensure the result is a non-empty string (a valid subscription ID)
+            expect(response.result).to.be.a('string').that.is.not.empty;
+          } else {
+            expect(response).to.have.property('jsonrpc', '2.0');
+            expect(response).to.have.property('method', 'eth_subscription');
+            expect(response).to.have.property('params');
+            expect(response.params).to.have.property('result');
+            expect(response.params.result).to.have.property('difficulty');
+            expect(response.params.result).to.have.property('extraData');
+            expect(response.params.result).to.have.property('gasLimit');
+            expect(response.params.result).to.have.property('gasUsed');
+            expect(response.params.result).to.have.property('logsBloom');
+            expect(response.params.result).to.have.property('miner');
+            expect(response.params.result).to.have.property('nonce');
+            expect(response.params.result).to.have.property('number');
+            expect(response.params.result).to.have.property('parentHash');
+            expect(response.params.result).to.have.property('receiptsRoot');
+            expect(response.params.result).to.have.property('sha3Uncles');
+            expect(response.params.result).to.have.property('stateRoot');
+            expect(response.params.result).to.have.property('timestamp');
+            expect(response.params.result).to.have.property('transactionsRoot');
+            expect(response.params.result).to.have.property('hash');
+            expect(response.params).to.have.property('subscription');
+          }
+
+          if (responseCounter > 1) {
+            // Test is done
+            webSocket.close();
+            done();
+          }
+        } catch (error) {
+          webSocket.close();
+          done(error);
+        }
+      });
+
+      webSocket.on('error', (error) => {
+        done(error);
+      });
     });
   });
 });
