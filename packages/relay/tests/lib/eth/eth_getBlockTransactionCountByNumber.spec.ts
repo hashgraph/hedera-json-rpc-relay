@@ -95,6 +95,24 @@ describe('@ethGetBlockTransactionCountByNumber using MirrorNode', async function
     expect(result).equal(numberTo0x(BLOCK_TRANSACTION_COUNT));
   });
 
+  it('eth_getBlockTransactionCountByNumber with finalized tag', async function () {
+    // mirror node request mocks
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
+    restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
+
+    const result = await ethImpl.getBlockTransactionCountByNumber('finalized');
+    expect(result).equal(numberTo0x(BLOCK_TRANSACTION_COUNT));
+  });
+
+  it('eth_getBlockTransactionCountByNumber with safe tag', async function () {
+    // mirror node request mocks
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
+    restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
+
+    const result = await ethImpl.getBlockTransactionCountByNumber('safe');
+    expect(result).equal(numberTo0x(BLOCK_TRANSACTION_COUNT));
+  });
+
   it('eth_getBlockTransactionCountByNumber with pending tag', async function () {
     // mirror node request mocks
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);

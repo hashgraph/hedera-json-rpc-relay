@@ -396,6 +396,36 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       confirmResult(result);
     });
 
+    it('eth_getBlockByNumber with finalized tag', async function () {
+      const result = await ethImpl.getBlockByNumber('finalized', false);
+      // check that we only made the expected number of requests with the expected urls
+      expect(restMock.history.get.length).equal(4);
+      expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
+      expect(restMock.history.get[1].url).equal(
+        'contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
+      );
+      expect(restMock.history.get[2].url).equal(
+        'contracts/results/logs?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
+      );
+      expect(restMock.history.get[3].url).equal('network/fees');
+      confirmResult(result);
+    });
+
+    it('eth_getBlockByNumber with safe tag', async function () {
+      const result = await ethImpl.getBlockByNumber('finalized', false);
+      // check that we only made the expected number of requests with the expected urls
+      expect(restMock.history.get.length).equal(4);
+      expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
+      expect(restMock.history.get[1].url).equal(
+        'contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
+      );
+      expect(restMock.history.get[2].url).equal(
+        'contracts/results/logs?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
+      );
+      expect(restMock.history.get[3].url).equal('network/fees');
+      confirmResult(result);
+    });
+
     it('eth_getBlockByNumber with hex number tag', async function () {
       restMock.onGet(`blocks/3735929054`).reply(200, DEFAULT_BLOCK);
       restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, BLOCKS_RES);
