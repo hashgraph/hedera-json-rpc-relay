@@ -133,6 +133,7 @@ describe('@web-socket Acceptance Tests', async function () {
 
     it('Does not allow more subscriptions per connection than the specified limit with newHeads', async function () {
       process.env.WS_SUBSCRIPTION_LIMIT = '2';
+      process.env.WS_NEW_HEADS_ENABLED = 'true';
       // Create different subscriptions
       for (let i = 0; i < 3; i++) {
         if (i === 2) {
