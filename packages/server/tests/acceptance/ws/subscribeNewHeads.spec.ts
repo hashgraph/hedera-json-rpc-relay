@@ -103,6 +103,7 @@ describe('@web-socket Acceptance Tests', async function () {
 
     it('Does not allow more subscriptions per connection than the specified limit with newHeads', async function () {
       process.env.WS_SUBSCRIPTION_LIMIT = '2';
+      process.env.WS_NEW_HEADS_ENABLED = 'true';
       // Create different subscriptions
       for (let i = 0; i < 3; i++) {
         if (i === 2) {
@@ -122,6 +123,7 @@ describe('@web-socket Acceptance Tests', async function () {
 
   describe('Subscriptions for newHeads', async function () {
     it('should subscribe to newHeads and receive a valid JSON RPC response', (done) => {
+      process.env.WS_NEW_HEADS_ENABLED = 'true';
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;
       webSocket.on('open', function open() {
