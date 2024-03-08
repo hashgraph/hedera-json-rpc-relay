@@ -376,6 +376,14 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             await mirrorNode.get(`/contracts/${res.contract_id}/results/${res.timestamp}`, requestId),
           );
         }
+
+        // resolve EVM address for `from` and `to`
+        for (const mirrorTx of mirrorTransactions) {
+          const fromAccountInfo = await mirrorNode.get(`/accounts/${mirrorTx.from}`);
+          const toAccountInfo = await mirrorNode.get(`/accounts/${mirrorTx.to}`);
+          mirrorTx.from = fromAccountInfo.evm_address;
+          mirrorTx.to = toAccountInfo.evm_address;
+        }
       });
 
       it('should execute "eth_getBlockByHash", hydrated transactions = false', async function () {

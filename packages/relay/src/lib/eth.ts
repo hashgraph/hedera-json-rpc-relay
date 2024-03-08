@@ -2004,8 +2004,18 @@ export class EthImpl implements Eth {
       throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
     }
 
+    // prepare transactionArray
+    let transactionArray: any[] = [];
+    for (const contractResult of contractResults) {
+      contractResult.from = await this.resolveEvmAddress(contractResult.from, requestIdPrefix, [
+        constants.TYPE_ACCOUNT,
+      ]);
+      contractResult.to = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
+
+      transactionArray.push(showDetails ? formatContractResult(contractResult) : contractResult.hash);
+    }
+
     const blockHash = toHash32(blockResponse.hash);
-    const transactionArray = contractResults.map((cr) => (showDetails ? formatContractResult(cr) : cr.hash));
     // Gating feature in case of unexpected behavior with other apps.
     if (this.shouldPopulateSyntheticContractResults) {
       this.filterAndPopulateSyntheticContractResults(showDetails, logs, transactionArray, requestIdPrefix);
