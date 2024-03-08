@@ -63,7 +63,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   const ONE_WEIBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 18)));
 
   const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
-  const PING_CALL_ESTIMATED_GAS = '0x0000000000006122';
+  const PING_CALL_ESTIMATED_GAS = '0x6122';
   const EXCHANGE_RATE_FILE_ID = '0.0.112';
   const EXCHANGE_RATE_FILE_CONTENT_DEFAULT = '0a1008b0ea0110f9bb1b1a0608f0cccf9306121008b0ea0110e9c81a1a060880e9cf9306';
   const FEE_SCHEDULE_FILE_ID = '0.0.111';
