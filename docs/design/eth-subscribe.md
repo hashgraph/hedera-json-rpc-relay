@@ -228,6 +228,28 @@ continuous, gapless sequence without duplicates in the following:
    returned block is in the cache.  If it is not, it saves it to cache, and then
    sends it to the subscriber in the `websocket.send` call.  If it is in cache, then we know it's already been sent and it is skipped.
 
+#### Handle non-subscription JSON RPC calls to the relay
+The WebSocket provider will be connected to the `webSocketServer.ts` via a websocket connection.  This is perfect for subscriptions, 
+but now a client may want to run JSON RPC calls within the context of a subscrition. These calls can be made to the relay from the `webSocketServer.ts`
+but support for them will need to be added.
+
+#### Blockchain Data Reading
+1. **getBlockNumber():** Returns the current block number.
+2. **getGasPrice():** Returns the current gas price.
+3. **getBlock(blockHashOrBlockTag, includeTransactions):** Fetches a block by its hash or tag, optionally including transactions.
+4. **getTransaction(transactionHash):** Fetches a transaction by its hash.
+5. **getTransactionReceipt(transactionHash):** Fetches the receipt of a transaction by its hash.
+6. **getTransactionCount(address, blockTag):** Gets the number of transactions sent from an address, optionally at a specific block.
+7. **getCode(address, blockTag):** Gets the code at a specific address.
+8. **getStorageAt(address, position, blockTag):** Reads a storage slot from a contract.
+9. **call(transaction, blockTag):** Simulates a transaction call.
+10. **estimateGas(transaction):** Estimates the gas needed to execute a transaction.
+11. **getBalance(address, blockTag):** Gets the balance of an address.
+    
+### Blockchain Interaction
+1. **sendTransaction(signedTransaction):** Sends a signed transaction to the network.
+
+
 ## Error Codes
 
 |  Error Codes  |                                                      Error message                                                       |                                                                Solution                                                                 |
