@@ -35,6 +35,7 @@ import {
   toNullIfEmptyHex,
   weibarHexToTinyBarInt,
   isValidEthereumAddress,
+  trimPrecedingZeros,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -259,6 +260,19 @@ describe('Formatters', () => {
     });
     it('should not add prefix if the string is already prefixed', () => {
       expect(prepend0x('0x5644')).to.equal('0x5644');
+    });
+  });
+
+  describe('trimPrecedingZeros', () => {
+    it('should trim all the unnecessary preceding 0s in a hex value', () => {
+      expect('0x' + trimPrecedingZeros('0x00000000603')).to.eq('0x603');
+      expect('0x' + trimPrecedingZeros('0x00000300042')).to.eq('0x300042');
+      expect('0x' + trimPrecedingZeros('0x00012000000')).to.eq('0x12000000');
+    });
+
+    it('should return NaN if inputs are invalid number', () => {
+      expect(trimPrecedingZeros('Hedera')).to.eq('NaN');
+      expect(trimPrecedingZeros('Relay')).to.eq('NaN');
     });
   });
 
