@@ -65,7 +65,15 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     const fromAccountInfo = await mirrorNode.get(`/accounts/${tx.from}`);
     const toAccountInfo = await mirrorNode.get(`/accounts/${tx.to}`);
 
-    return { from: fromAccountInfo.evm_address, to: toAccountInfo.evm_address };
+    if (fromAccountInfo) {
+      tx.from = fromAccountInfo.evm_address ?? tx.from;
+    }
+
+    if (toAccountInfo) {
+      tx.to = toAccountInfo.evm_address ?? tx.to;
+    }
+
+    return { from: tx.from, to: tx.to };
   };
 
   describe('RPC Server Acceptance Tests', function () {
