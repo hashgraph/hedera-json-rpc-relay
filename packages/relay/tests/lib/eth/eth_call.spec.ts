@@ -42,6 +42,7 @@ import {
   NO_TRANSACTIONS,
   NON_EXISTENT_CONTRACT_ADDRESS,
   WRONG_CONTRACT_ADDRESS,
+  ONE_TINYBAR_IN_WEI_HEX,
 } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
@@ -671,6 +672,25 @@ describe('@ethCall Eth Call spec', async function () {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
       const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.equal('0x00');
+    });
+
+    it('eth_call with all fields and value', async function () {
+      const callData = {
+        ...defaultCallData,
+        from: ACCOUNT_ADDRESS_1,
+        to: CONTRACT_ADDRESS_2,
+        data: CONTRACT_CALL_DATA,
+        gas: MAX_GAS_LIMIT,
+        value: 1, // Mirror node is called with value in Tinybars
+        block: 'latest',
+      };
+
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
+
+      // Relay is called with value in Weibars
+      const result = await ethImpl.call({ ...callData, value: ONE_TINYBAR_IN_WEI_HEX }, 'latest');
       expect(result).to.equal('0x00');
     });
 
