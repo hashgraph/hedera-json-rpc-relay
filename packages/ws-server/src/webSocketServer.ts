@@ -185,6 +185,11 @@ app.ws.use(async (ctx) => {
 
     try {
       switch (method) {
+        case constants.METHODS.ETH_GET_BLOCK_BY_NUMBER: {
+          const block = await getBlockByNumber();
+          response = jsonResp(request.id, null, block);
+          break;
+        }
         case constants.METHODS.ETH_SUBSCRIBE: {
           const event = params[0];
           const filters = params[1];
@@ -355,7 +360,11 @@ function subscribeToNewHeads(filters: any, response: any, request: any, subscrip
       undefined,
     );
   }
-  subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, 'newHeads');
+  subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
   logger.info(`Subscribed to newHeads, subscriptionId: ${subscriptionId}`);
   return { response, subscriptionId };
+}
+
+function getBlockByNumber() {
+  return relay.eth().getBlockByNumber('latest', true);
 }

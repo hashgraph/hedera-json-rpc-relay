@@ -166,7 +166,9 @@ export class SubscriptionController {
         if (!this.cache.get(hash)) {
           this.cache.set(hash, true);
           this.logger.debug(
-            `Sending data from tag: ${tag} to subscriptionId: ${sub.subscriptionId}, connectionId: ${sub.connection.id}, data: ${subscriptionData}`,
+            `Sending data from tag: ${tag} to subscriptionId: ${sub.subscriptionId}, connectionId: ${
+              sub.connection.id
+            }, data: ${JSON.stringify(subscriptionData)}`,
           );
           this.resultsSentToSubscribersCounter.labels('sub.subscriptionId', tag).inc();
           sub.connection.send(

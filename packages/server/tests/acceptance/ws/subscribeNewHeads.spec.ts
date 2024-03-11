@@ -59,6 +59,36 @@ const createSubscription = (ws, subscriptionId) => {
   });
 };
 
+const createSubscription = (ws, subscriptionId) => {
+  return new Promise((resolve, reject) => {
+    ws.on('message', function incoming(data) {
+      const response = JSON.parse(data);
+      if (response.id === subscriptionId && response.result) {
+        console.log(`Subscription ${subscriptionId} successful with ID: ${response.result}`);
+        resolve(response.result); // Resolve with the subscription ID
+      } else if (response.method === 'eth_subscription') {
+        console.log(`Subscription ${subscriptionId} received block:`, response.params.result);
+        // You can add more logic here to handle incoming blocks
+      }
+    });
+
+    ws.on('open', function open() {
+      ws.send(
+        JSON.stringify({
+          id: subscriptionId,
+          jsonrpc: '2.0',
+          method: 'eth_subscribe',
+          params: ['newHeads'],
+        }),
+      );
+    });
+
+    ws.on('error', (error) => {
+      reject(error);
+    });
+  });
+};
+
 describe('@web-socket Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
 
