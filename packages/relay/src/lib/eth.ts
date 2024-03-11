@@ -1230,19 +1230,28 @@ export class EthImpl implements Eth {
     this.logger.trace(
       `${requestIdPrefix} getTransactionByBlockHashAndIndex(hash=${blockHash}, index=${transactionIndex})`,
     );
-    return this.mirrorNodeClient
-      .getContractResults(
+
+    try {
+      const contractResults = await this.mirrorNodeClient.getContractResults(
         { blockHash: blockHash, transactionIndex: Number(transactionIndex) },
         undefined,
         requestIdPrefix,
-      )
-      .then((contractResults) => formatContractResult(contractResults[0] ?? null))
-      .catch((error: any) => {
-        throw this.common.genericErrorHandler(
-          error,
-          `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`,
-        );
-      });
+      );
+
+      if (!contractResults[0]) return null;
+
+      const resolvedToAddress = await this.resolveEvmAddress(contractResults[0].to, requestIdPrefix);
+      const resolvedFromAddress = await this.resolveEvmAddress(contractResults[0].from, requestIdPrefix, [
+        constants.TYPE_ACCOUNT,
+      ]);
+
+      return formatContractResult({ ...contractResults[0], from: resolvedFromAddress, to: resolvedToAddress });
+    } catch (error) {
+      throw this.common.genericErrorHandler(
+        error,
+        `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`,
+      );
+    }
   }
 
   /**
