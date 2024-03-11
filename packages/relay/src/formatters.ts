@@ -132,6 +132,14 @@ const weibarHexToTinyBarInt = (value: string): number | null => {
   return null;
 };
 
+const weibarHexToTinyBarString = (value: string): string | null => {
+  if (value && value !== '0x') {
+    const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+    return tinybarValue.toString();
+  }
+  return null;
+};
+
 const formatContractResult = (cr: any) => {
   if (cr === null) {
     return null;
@@ -255,4 +263,5 @@ export {
   stringToHex,
   toHexString,
   isValidEthereumAddress,
+  weibarHexToTinyBarString,
 };

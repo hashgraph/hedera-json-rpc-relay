@@ -37,8 +37,8 @@ import {
   nullableNumberTo0x,
   nanOrNumberTo0x,
   toHash32,
-  toNullableBigNumber,
   weibarHexToTinyBarInt,
+  weibarHexToTinyBarString,
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -1475,7 +1475,7 @@ export class EthImpl implements Eth {
 
     // Get a reasonable value for "gas" if it is not specified.
     const gas = this.getCappedBlockGasLimit(call.gas, requestIdPrefix);
-    const value: string | null = toNullableBigNumber(call.value);
+    const value: string | null = weibarHexToTinyBarString(call.value);
 
     this.contractCallFormat(call);
 
