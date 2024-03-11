@@ -1269,19 +1269,28 @@ export class EthImpl implements Eth {
       `${requestIdPrefix} getTransactionByBlockNumberAndIndex(blockNum=${blockNumOrTag}, index=${transactionIndex})`,
     );
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestIdPrefix);
-    return this.mirrorNodeClient
-      .getContractResults(
+
+    try {
+      const contractResults = await this.mirrorNodeClient.getContractResults(
         { blockNumber: blockNum, transactionIndex: Number(transactionIndex) },
         undefined,
         requestIdPrefix,
-      )
-      .then((contractResults) => formatContractResult(contractResults[0] ?? null))
-      .catch((e: any) => {
-        throw this.common.genericErrorHandler(
-          e,
-          `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`,
-        );
-      });
+      );
+
+      if (!contractResults[0]) return null;
+
+      const resolvedToAddress = await this.resolveEvmAddress(contractResults[0].to, requestIdPrefix);
+      const resolvedFromAddress = await this.resolveEvmAddress(contractResults[0].from, requestIdPrefix, [
+        constants.TYPE_ACCOUNT,
+      ]);
+
+      return formatContractResult({ ...contractResults[0], from: resolvedFromAddress, to: resolvedToAddress });
+    } catch (error) {
+      throw this.common.genericErrorHandler(
+        error,
+        `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`,
+      );
+    }
   }
 
   /**
