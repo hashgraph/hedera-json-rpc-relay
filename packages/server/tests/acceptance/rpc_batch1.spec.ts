@@ -61,6 +61,13 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(Constants.TINYBAR_TO_WEIBAR_COEF));
   const sendRawTransaction = relay.sendRawTransaction;
 
+  const resolveEvmAddress = async (tx: any) => {
+    const fromAccountInfo = await mirrorNode.get(`/accounts/${tx.from}`);
+    const toAccountInfo = await mirrorNode.get(`/accounts/${tx.to}`);
+
+    return { from: fromAccountInfo.evm_address, to: toAccountInfo.evm_address };
+  };
+
   describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
@@ -88,6 +95,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         `/contracts/${contractId}/results/${contractExecuteTimestamp}`,
         requestId,
       );
+
+      const resolvedAddresses = await resolveEvmAddress(mirrorContractDetails);
+      mirrorContractDetails.from = resolvedAddresses.from;
+      mirrorContractDetails.to = resolvedAddresses.to;
     });
 
     this.beforeEach(async () => {
@@ -379,10 +390,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         // resolve EVM address for `from` and `to`
         for (const mirrorTx of mirrorTransactions) {
-          const fromAccountInfo = await mirrorNode.get(`/accounts/${mirrorTx.from}`);
-          const toAccountInfo = await mirrorNode.get(`/accounts/${mirrorTx.to}`);
-          mirrorTx.from = fromAccountInfo.evm_address;
-          mirrorTx.to = toAccountInfo.evm_address;
+          const resolvedAddresses = await resolveEvmAddress(mirrorTx);
+
+          mirrorTx.from = resolvedAddresses.from;
+          mirrorTx.to = resolvedAddresses.to;
         }
       });
 
