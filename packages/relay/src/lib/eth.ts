@@ -1232,20 +1232,11 @@ export class EthImpl implements Eth {
     );
 
     try {
-      const contractResults = await this.mirrorNodeClient.getContractResults(
-        { blockHash: blockHash, transactionIndex: Number(transactionIndex) },
-        undefined,
+      return await this.getTransactionByBlockHashOrBlockNumAndIndex(
+        { title: 'blockHash', value: blockHash },
+        transactionIndex,
         requestIdPrefix,
       );
-
-      if (!contractResults[0]) return null;
-
-      const resolvedToAddress = await this.resolveEvmAddress(contractResults[0].to, requestIdPrefix);
-      const resolvedFromAddress = await this.resolveEvmAddress(contractResults[0].from, requestIdPrefix, [
-        constants.TYPE_ACCOUNT,
-      ]);
-
-      return formatContractResult({ ...contractResults[0], from: resolvedFromAddress, to: resolvedToAddress });
     } catch (error) {
       throw this.common.genericErrorHandler(
         error,
@@ -1271,20 +1262,11 @@ export class EthImpl implements Eth {
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestIdPrefix);
 
     try {
-      const contractResults = await this.mirrorNodeClient.getContractResults(
-        { blockNumber: blockNum, transactionIndex: Number(transactionIndex) },
-        undefined,
+      return await this.getTransactionByBlockHashOrBlockNumAndIndex(
+        { title: 'blockNumber', value: blockNum },
+        transactionIndex,
         requestIdPrefix,
       );
-
-      if (!contractResults[0]) return null;
-
-      const resolvedToAddress = await this.resolveEvmAddress(contractResults[0].to, requestIdPrefix);
-      const resolvedFromAddress = await this.resolveEvmAddress(contractResults[0].from, requestIdPrefix, [
-        constants.TYPE_ACCOUNT,
-      ]);
-
-      return formatContractResult({ ...contractResults[0], from: resolvedFromAddress, to: resolvedToAddress });
     } catch (error) {
       throw this.common.genericErrorHandler(
         error,
@@ -1516,6 +1498,40 @@ export class EthImpl implements Eth {
       }
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
+  }
+
+  /**
+   * Gets transactions by block hash or block number and index with resolved EVM addresses
+   * @param blockParam
+   * @param transactionIndex
+   * @param requestIdPrefix
+   * @returns Promise<Transaction | null>
+   */
+  private async getTransactionByBlockHashOrBlockNumAndIndex(
+    blockParam: {
+      title: 'blockHash' | 'blockNumber';
+      value: string | number;
+    },
+    transactionIndex: string,
+    requestIdPrefix?: string,
+  ): Promise<Transaction | null> {
+    const contractResults = await this.mirrorNodeClient.getContractResults(
+      {
+        [blockParam.title]: blockParam.value,
+        transactionIndex: Number(transactionIndex),
+      },
+      undefined,
+      requestIdPrefix,
+    );
+
+    if (!contractResults[0]) return null;
+
+    const resolvedToAddress = await this.resolveEvmAddress(contractResults[0].to, requestIdPrefix);
+    const resolvedFromAddress = await this.resolveEvmAddress(contractResults[0].from, requestIdPrefix, [
+      constants.TYPE_ACCOUNT,
+    ]);
+
+    return formatContractResult({ ...contractResults[0], from: resolvedFromAddress, to: resolvedToAddress });
   }
 
   // according to EIP-1898 (https://eips.ethereum.org/EIPS/eip-1898) block param can either be a string (blockNumber or Block Tag) or an object (blockHash or blockNumber)
