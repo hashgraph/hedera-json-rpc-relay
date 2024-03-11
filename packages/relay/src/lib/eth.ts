@@ -38,7 +38,6 @@ import {
   nanOrNumberTo0x,
   toHash32,
   weibarHexToTinyBarInt,
-  weibarHexToTinyBarString,
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -1475,7 +1474,6 @@ export class EthImpl implements Eth {
 
     // Get a reasonable value for "gas" if it is not specified.
     const gas = this.getCappedBlockGasLimit(call.gas, requestIdPrefix);
-    const value: string | null = weibarHexToTinyBarString(call.value);
 
     this.contractCallFormat(call);
 
@@ -1487,7 +1485,7 @@ export class EthImpl implements Eth {
       ) {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
-        return await this.callMirrorNode(call, gas, value, blockNumberOrTag, requestIdPrefix);
+        return await this.callMirrorNode(call, gas, call.value, blockNumberOrTag, requestIdPrefix);
       }
 
       return await this.callConsensusNode(call, gas, requestIdPrefix);
