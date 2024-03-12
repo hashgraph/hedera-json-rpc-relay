@@ -678,16 +678,16 @@ describe('@ethCall Eth Call spec', async function () {
     it('eth_call with all fields and value', async function () {
       const callData = {
         ...defaultCallData,
-        from: ACCOUNT_ADDRESS_1,
-        to: CONTRACT_ADDRESS_2,
-        data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
+        data: CONTRACT_CALL_DATA,
+        to: CONTRACT_ADDRESS_2,
+        from: ACCOUNT_ADDRESS_1,
         value: 1, // Mirror node is called with value in Tinybars
         block: 'latest',
       };
 
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
       // Relay is called with value in Weibars
       const result = await ethImpl.call({ ...callData, value: ONE_TINYBAR_IN_WEI_HEX }, 'latest');
