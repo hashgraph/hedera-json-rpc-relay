@@ -265,14 +265,19 @@ describe('Formatters', () => {
 
   describe('trimPrecedingZeros', () => {
     it('should trim all the unnecessary preceding 0s in a hex value', () => {
+      expect(trimPrecedingZeros('0x0000000034')).to.eq('34');
+      expect(trimPrecedingZeros('0x0000039000')).to.eq('39000');
       expect('0x' + trimPrecedingZeros('0x00000000603')).to.eq('0x603');
       expect('0x' + trimPrecedingZeros('0x00000300042')).to.eq('0x300042');
       expect('0x' + trimPrecedingZeros('0x00012000000')).to.eq('0x12000000');
+      expect('0x0' + trimPrecedingZeros('0x0000000025')).to.eq('0x025');
+      expect('0x00' + trimPrecedingZeros('0x000006100')).to.eq('0x006100');
     });
 
     it('should return NaN if inputs are invalid number', () => {
-      expect(trimPrecedingZeros('Hedera')).to.eq('NaN');
+      expect(trimPrecedingZeros('')).to.eq('NaN');
       expect(trimPrecedingZeros('Relay')).to.eq('NaN');
+      expect(trimPrecedingZeros('Hedera')).to.eq('NaN');
     });
   });
 
