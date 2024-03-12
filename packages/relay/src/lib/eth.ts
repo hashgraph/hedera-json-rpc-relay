@@ -575,7 +575,7 @@ export class EthImpl implements Eth {
         requestIdPrefix,
       );
 
-      if (contractCallResponse && contractCallResponse.result) {
+      if (contractCallResponse?.result) {
         gas = prepend0x(trimPrecedingZeros(contractCallResponse.result));
       }
     } catch (e: any) {
