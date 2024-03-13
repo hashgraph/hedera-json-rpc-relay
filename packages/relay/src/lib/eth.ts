@@ -1515,6 +1515,8 @@ export class EthImpl implements Eth {
     transactionIndex: string,
     requestIdPrefix?: string,
   ): Promise<Transaction | null> {
+    // Memory usage before fetching contract results
+    const memoryBefore = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
     const contractResults = await this.mirrorNodeClient.getContractResults(
       {
         [blockParam.title]: blockParam.value,
@@ -1522,6 +1524,15 @@ export class EthImpl implements Eth {
       },
       undefined,
       requestIdPrefix,
+    );
+
+    // Memory usage after fetching contract results
+    const memoryAfter = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+    const memoryUsed = memoryAfter - memoryBefore;
+    this.logger.trace(
+      `${requestIdPrefix} getTransactionByBlockHashOrBlockNumAndIndex: Memory used for fetching contract results: ${memoryUsed.toFixed(
+        2,
+      )} MB, before: ${memoryBefore.toFixed(2)} MB, after: ${memoryAfter.toFixed(2)} MB`,
     );
 
     if (!contractResults[0]) return null;
@@ -1865,7 +1876,20 @@ export class EthImpl implements Eth {
       return receipt;
     }
 
+    // Memory usage before fetching contract results
+    const memoryBefore = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
     const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
+    // Memory usage after fetching contract results
+    const memoryAfter = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+
+    // Calculate the difference in memory usage
+    const memoryUsed = memoryAfter - memoryBefore;
+    this.logger.trace(
+      `${requestIdPrefix} getTransactionReceipt Memory used for fetching contract results: ${memoryUsed.toFixed(
+        2,
+      )} MB, before: ${memoryBefore.toFixed(2)} MB, after: ${memoryAfter.toFixed(2)} MB`,
+    );
+
     if (receiptResponse === null || receiptResponse.hash === undefined) {
       this.logger.trace(`${requestIdPrefix} no receipt for ${hash}`);
       // block not found
@@ -2015,17 +2039,38 @@ export class EthImpl implements Eth {
     if (blockResponse == null) return null;
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
-    const contractResults = await this.mirrorNodeClient.getContractResults(
+
+    // Memory usage before fetching contract results
+    let memoryBefore = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+    let contractResults = await this.mirrorNodeClient.getContractResults(
       { timestamp: timestampRangeParams },
       undefined,
       requestIdPrefix,
+    );
+
+    // Memory usage after fetching contract results
+    let memoryAfter = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+    let memoryUsed = memoryAfter - memoryBefore;
+    this.logger.trace(
+      `${requestIdPrefix} getBlock: Memory usage contractResults: ${memoryUsed.toFixed(
+        2,
+      )} MB, before: ${memoryBefore.toFixed(2)} MB, after: ${memoryAfter.toFixed(2)} MB`,
     );
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
     const params = { timestamp: timestampRangeParams };
 
     // get contract results logs using block timestamp range
+    // Memory usage before fetching contract results
+    memoryBefore = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
     const logs = await this.common.getLogsWithParams(null, params, requestIdPrefix);
+    memoryAfter = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+    memoryUsed = memoryAfter - memoryBefore;
+    this.logger.trace(
+      `${requestIdPrefix} getBlock: Memory usage logs: ${memoryUsed.toFixed(2)} MB, before: ${memoryBefore.toFixed(
+        2,
+      )} MB, after: ${memoryAfter.toFixed(2)} MB`,
+    );
 
     if (contractResults == null && logs.length == 0) {
       // contract result not found
