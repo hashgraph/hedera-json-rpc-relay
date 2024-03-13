@@ -74,7 +74,6 @@ export class Poller {
           poll.lastPolled = this.latestBlock;
         } else if (event === 'newHeads' && process.env.WS_NEW_HEADS_ENABLED === 'true') {
           data = await this.eth.getBlockByNumber('latest', true);
-          data.jsonrpc = '2.0';
           poll.lastPolled = this.latestBlock;
         } else {
           this.logger.error(`${LOGGER_PREFIX} Polling for unsupported event: ${event}. Tag: ${poll.tag}`);

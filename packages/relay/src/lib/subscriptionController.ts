@@ -175,6 +175,7 @@ export class SubscriptionController {
             JSON.stringify({
               method: 'eth_subscription',
               params: subscriptionData,
+              jsonrpc: '2.0',
             }),
           );
           sub.connection.limiter.resetInactivityTTLTimer(sub.connection);
