@@ -145,7 +145,7 @@ export class RedisCache implements ICacheClient {
    * @param requestIdPrefix - Optional request ID prefix for logging.
    * @returns {Promise<void>} A Promise that resolves when the values are cached.
    */
-  async mSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): Promise<void> {
+  async multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): Promise<void> {
     // Serialize values
     const serializedKeyValuePairs: Record<string, string> = {};
     for (const [key, value] of Object.entries(keyValuePairs)) {
@@ -156,7 +156,8 @@ export class RedisCache implements ICacheClient {
     await this.client.mSet(serializedKeyValuePairs);
 
     // Log the operation
-    this.logger.trace(`${requestIdPrefix} caching multiple keys via ${callingMethod}`);
+    const entriesLength = Object.keys(keyValuePairs).length;
+    this.logger.trace(`${requestIdPrefix} caching multiple keys via ${callingMethod}, total keys: ${entriesLength}`);
   }
 
   /**

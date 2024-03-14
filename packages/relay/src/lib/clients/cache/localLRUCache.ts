@@ -137,7 +137,7 @@ export class LocalLRUCache implements ICacheClient {
    * @param requestIdPrefix - Optional request ID prefix for logging.
    * @returns {Promise<void>} A Promise that resolves when the values are cached.
    */
-  public mSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): void {
+  public multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): void {
     // Iterate over each entry in the keyValuePairs object
     for (const [key, value] of Object.entries(keyValuePairs)) {
       this.set(key, value, callingMethod, undefined, requestIdPrefix);

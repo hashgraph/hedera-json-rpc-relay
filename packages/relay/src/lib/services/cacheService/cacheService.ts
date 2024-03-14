@@ -233,21 +233,19 @@ export class CacheService {
     if (shared && this.isSharedCacheEnabled) {
       try {
         this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.MSET).inc(1);
-        this.sharedCache.mSet(entries, callingMethod, requestIdPrefix);
+        this.sharedCache.multiSet(entries, callingMethod, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
           `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
         );
-        // Fallback to internal cache for each failed key-value pair individually
-        for (const [key, value] of Object.entries(entries)) {
-          this.internalCache.set(key, value, callingMethod, undefined, requestIdPrefix);
-        }
+        // Fallback to internal cache
+        this.internalCache.multiSet(entries, callingMethod, requestIdPrefix);
       }
     } else {
       this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.MSET).inc(1);
 
-      this.internalCache.mSet(entries, callingMethod, requestIdPrefix);
+      this.internalCache.multiSet(entries, callingMethod, requestIdPrefix);
     }
   }
 
