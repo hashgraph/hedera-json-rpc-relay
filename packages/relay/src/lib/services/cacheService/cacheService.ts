@@ -224,11 +224,11 @@ export class CacheService {
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
    */
-  public mSet(
+  public multiSet(
     entries: Record<string, any>,
     callingMethod: string,
     requestIdPrefix?: string,
-    shared: boolean = false,
+    shared: boolean = true,
   ): void {
     if (shared && this.isSharedCacheEnabled) {
       try {
