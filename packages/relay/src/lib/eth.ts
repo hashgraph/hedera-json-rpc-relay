@@ -1259,6 +1259,11 @@ export class EthImpl implements Eth {
     this.logger.trace(
       `${requestIdPrefix} getTransactionByBlockNumberAndIndex(blockNum=${blockNumOrTag}, index=${transactionIndex})`,
     );
+    let memoryAfter, memoryBefore, memoryUsed;
+    if (process.env.EXPOSE_MEMORY_USAGE === 'true') {
+      // Memory usage before fetching contract results
+      memoryBefore = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+    }
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestIdPrefix);
     return this.mirrorNodeClient
       .getContractResults(
@@ -1266,7 +1271,19 @@ export class EthImpl implements Eth {
         undefined,
         requestIdPrefix,
       )
-      .then((contractResults) => formatContractResult(contractResults[0] ?? null))
+      .then((contractResults) => {
+        if (process.env.EXPOSE_MEMORY_USAGE === 'true') {
+          // Memory usage after fetching contract results
+          memoryAfter = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+          memoryUsed = memoryAfter - memoryBefore;
+          this.logger.trace(
+            `${requestIdPrefix} getTransactionByBlockHashOrBlockNumAndIndex: Memory used for fetching contract results: ${memoryUsed.toFixed(
+              2,
+            )} MB, before: ${memoryBefore.toFixed(2)} MB, after: ${memoryAfter.toFixed(2)} MB`,
+          );
+        }
+        return formatContractResult(contractResults[0] ?? null);
+      })
       .catch((e: any) => {
         throw this.common.genericErrorHandler(
           e,
@@ -1831,7 +1848,28 @@ export class EthImpl implements Eth {
       return receipt;
     }
 
+    let memoryAfter, memoryBefore, memoryUsed;
+
+    if (process.env.EXPOSE_MEMORY_USAGE === 'true') {
+      // Memory usage before fetching contract results
+      memoryBefore = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+    }
+
     const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
+
+    if (process.env.EXPOSE_MEMORY_USAGE === 'true') {
+      // Memory usage after fetching contract results
+      memoryAfter = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+
+      // Calculate the difference in memory usage
+      const memoryUsed = memoryAfter - memoryBefore;
+      this.logger.trace(
+        `${requestIdPrefix} getTransactionReceipt Memory used for fetching contract results: ${memoryUsed.toFixed(
+          2,
+        )} MB, before: ${memoryBefore.toFixed(2)} MB, after: ${memoryAfter.toFixed(2)} MB`,
+      );
+    }
+
     if (receiptResponse === null || receiptResponse.hash === undefined) {
       this.logger.trace(`${requestIdPrefix} no receipt for ${hash}`);
       // block not found
@@ -1981,11 +2019,26 @@ export class EthImpl implements Eth {
     if (blockResponse == null) return null;
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
+    let memoryAfter, memoryBefore, memoryUsed;
+    if (process.env.EXPOSE_MEMORY_USAGE === 'true') {
+      // Memory usage before fetching contract results
+      memoryBefore = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+    }
     const contractResults = await this.mirrorNodeClient.getContractResults(
       { timestamp: timestampRangeParams },
       undefined,
       requestIdPrefix,
     );
+    if (process.env.EXPOSE_MEMORY_USAGE === 'true') {
+      // Memory usage after fetching contract results
+      memoryAfter = process.memoryUsage().heapUsed / 1024 / 1024; // Convert bytes to megabytes
+      memoryUsed = memoryAfter - memoryBefore;
+      this.logger.trace(
+        `${requestIdPrefix} getTransactionByBlockHashOrBlockNumAndIndex: Memory used for fetching contract results: ${memoryUsed.toFixed(
+          2,
+        )} MB, before: ${memoryBefore.toFixed(2)} MB, after: ${memoryAfter.toFixed(2)} MB`,
+      );
+    }
     const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
     const params = { timestamp: timestampRangeParams };
