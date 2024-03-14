@@ -232,8 +232,8 @@ export class CacheService {
   ): void {
     if (shared && this.isSharedCacheEnabled) {
       try {
-        this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.MSET).inc(1);
         this.sharedCache.multiSet(entries, callingMethod, requestIdPrefix);
+        this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.MSET).inc(1);
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
@@ -241,11 +241,11 @@ export class CacheService {
         );
         // Fallback to internal cache
         this.internalCache.multiSet(entries, callingMethod, requestIdPrefix);
+        this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.MSET).inc(1);
       }
     } else {
-      this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.MSET).inc(1);
-
       this.internalCache.multiSet(entries, callingMethod, requestIdPrefix);
+      this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.MSET).inc(1);
     }
   }
 
