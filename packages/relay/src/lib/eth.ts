@@ -2051,6 +2051,8 @@ export class EthImpl implements Eth {
     requestIdPrefix?: string,
   ): void {
     let filteredLogs: Log[];
+    const keyValuePairs: Record<string, any> = {}; // Object to accumulate cache entries
+
     if (showDetails) {
       filteredLogs = logs.filter(
         (log) => !transactionArray.some((transaction) => transaction.hash === log.transactionHash),
@@ -2060,14 +2062,7 @@ export class EthImpl implements Eth {
         transactionArray.push(transaction);
 
         const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
-        this.cacheService.set(
-          cacheKey,
-          log,
-          EthImpl.ethGetBlockByHash,
-          this.syntheticLogCacheTtl,
-          requestIdPrefix,
-          true,
-        );
+        keyValuePairs[cacheKey] = log;
       });
     } else {
       filteredLogs = logs.filter((log) => !transactionArray.includes(log.transactionHash));
@@ -2075,19 +2070,16 @@ export class EthImpl implements Eth {
         transactionArray.push(log.transactionHash);
 
         const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
-        this.cacheService.set(
-          cacheKey,
-          log,
-          EthImpl.ethGetBlockByHash,
-          this.syntheticLogCacheTtl,
-          requestIdPrefix,
-          true,
-        );
+        keyValuePairs[cacheKey] = log;
       });
 
       this.logger.trace(
         `${requestIdPrefix} ${filteredLogs.length} Synthetic transaction hashes will be added in the block response`,
       );
+    }
+    // cache the whole array using mSet
+    if (Object.keys(keyValuePairs).length > 0) {
+      this.cacheService.mSet(keyValuePairs, EthImpl.ethGetBlockByHash, requestIdPrefix);
     }
   }
 
