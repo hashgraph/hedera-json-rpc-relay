@@ -74,6 +74,7 @@ export class CacheService {
     GET_ASYNC: 'getAsync',
     SET: 'set',
     DELETE: 'delete',
+    PIPELINE: 'pipeline',
   };
 
   private readonly cacheMethodsCounter: Counter;
@@ -211,6 +212,46 @@ export class CacheService {
       this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
 
       this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
+    }
+  }
+
+  /**
+   * Sets multiple values in the cache, each associated with its respective key.
+   * If the shared cache is enabled and an error occurs while setting in it,
+   * the internal cache is used as a fallback.
+   * @param {Record<string, any>} entries - An object containing key-value pairs to cache.
+   * @param {string} callingMethod - The name of the method calling the cache.
+   * @param {number} ttl - Time to live for the cached value in milliseconds (optional).
+   * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
+   * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
+   */
+  public pipelineSet(
+    entries: Record<string, any>,
+    callingMethod: string,
+    ttl: number,
+    requestIdPrefix?: string,
+    shared: boolean = true,
+  ): void {
+    if (shared && this.isSharedCacheEnabled) {
+      try {
+        this.sharedCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
+        this.cacheMethodsCounter
+          .labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.PIPELINE)
+          .inc(1);
+      } catch (error) {
+        const redisError = new RedisCacheError(error);
+        this.logger.error(
+          `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
+        );
+        // Fallback to internal cache
+        this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
+        this.cacheMethodsCounter
+          .labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.PIPELINE)
+          .inc(1);
+      }
+    } else {
+      this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
+      this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.PIPELINE).inc(1);
     }
   }
 
