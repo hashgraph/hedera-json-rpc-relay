@@ -39,6 +39,7 @@ import {
   toHash32,
   toNullableBigNumber,
   weibarHexToTinyBarInt,
+  trimPrecedingZeros,
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -573,8 +574,9 @@ export class EthImpl implements Eth {
         },
         requestIdPrefix,
       );
+
       if (contractCallResponse?.result) {
-        gas = prepend0x(contractCallResponse.result);
+        gas = prepend0x(trimPrecedingZeros(contractCallResponse.result));
       }
     } catch (e: any) {
       this.logger.error(
