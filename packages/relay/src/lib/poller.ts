@@ -38,6 +38,9 @@ export class Poller {
   private latestBlock?: string;
   private pollingInterval: number;
   private activePollsGauge: Gauge;
+  private activeNewHeadsPollsGauge: Gauge;
+
+  private NEW_HEADS_EVENT = 'newHeads';
 
   constructor(eth: Eth, logger: Logger, register: Registry) {
     this.eth = eth;
@@ -50,6 +53,14 @@ export class Poller {
     this.activePollsGauge = new Gauge({
       name: activePollsGaugeName,
       help: 'Relay websocket active polls count',
+      registers: [register],
+    });
+
+    const activeNewHeadsPollsGaugeName = 'rpc_websocket_active_newheads_polls';
+    register.removeSingleMetric(activeNewHeadsPollsGaugeName);
+    this.activeNewHeadsPollsGauge = new Gauge({
+      name: activeNewHeadsPollsGaugeName,
+      help: 'Relay websocket active newHeads polls count',
       registers: [register],
     });
   }
@@ -72,7 +83,7 @@ export class Poller {
           );
 
           poll.lastPolled = this.latestBlock;
-        } else if (event === 'newHeads' && process.env.WS_NEW_HEADS_ENABLED === 'true') {
+        } else if (event === this.NEW_HEADS_EVENT && process.env.WS_NEW_HEADS_ENABLED === 'true') {
           data = await this.eth.getBlockByNumber('latest', true);
           data.jsonrpc = '2.0';
           poll.lastPolled = this.latestBlock;
@@ -120,7 +131,11 @@ export class Poller {
         tag,
         callback,
       });
-      this.activePollsGauge.inc();
+      if (JSON.parse(tag).event === this.NEW_HEADS_EVENT) {
+        this.activeNewHeadsPollsGauge.inc();
+      } else {
+        this.activePollsGauge.inc();
+      }
     }
 
     if (!this.isPolling()) {
@@ -135,7 +150,11 @@ export class Poller {
 
     const pollsRemoved = pollsAtStart - this.polls.length;
     if (pollsRemoved > 0) {
-      this.activePollsGauge.dec(pollsRemoved);
+      if (JSON.parse(tag).event === this.NEW_HEADS_EVENT) {
+        this.activeNewHeadsPollsGauge.dec(pollsRemoved);
+      } else {
+        this.activePollsGauge.dec(pollsRemoved);
+      }
     }
 
     if (!this.polls.length) {
