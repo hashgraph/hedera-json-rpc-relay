@@ -58,6 +58,12 @@ export class CacheService {
    * Used for reference to the state of REDIS_ENABLED and REDIS_URL env. variables.
    */
   private readonly isSharedCacheEnabled: boolean;
+
+  /**
+   * Used for reference to the state of REDIS_ENABLED and REDIS_URL env. variables.
+   */
+  private readonly shouldMultiSet: boolean;
+
   /**
    * Represents a caching manager that utilizes various cache implementations based on configuration.
    * @param {Logger} logger - The logger used for logging all output from this class.
@@ -74,6 +80,7 @@ export class CacheService {
     GET_ASYNC: 'getAsync',
     SET: 'set',
     DELETE: 'delete',
+    MSET: 'mSet',
     PIPELINE: 'pipeline',
   };
 
@@ -86,6 +93,7 @@ export class CacheService {
     this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     this.sharedCache = this.internalCache;
     this.isSharedCacheEnabled = process.env.TEST === 'true' ? false : this.isRedisEnabled();
+    this.shouldMultiSet = process.env.MULTI_SET && process.env.MULTI_SET === 'true' ? true : false;
 
     if (this.isSharedCacheEnabled) {
       this.sharedCache = new RedisCache(logger.child({ name: 'redisCache' }), register);
@@ -217,6 +225,7 @@ export class CacheService {
 
   /**
    * Sets multiple values in the cache, each associated with its respective key.
+   * Depends on env. variable, whether we will be using pipelining method or multiSet
    * If the shared cache is enabled and an error occurs while setting in it,
    * the internal cache is used as a fallback.
    * @param {Record<string, any>} entries - An object containing key-value pairs to cache.
@@ -225,31 +234,39 @@ export class CacheService {
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
    */
-  public pipelineSet(
+  public multiSet(
     entries: Record<string, any>,
     callingMethod: string,
-    ttl: number,
+    ttl?: number,
     requestIdPrefix?: string,
     shared: boolean = true,
   ): void {
     if (shared && this.isSharedCacheEnabled) {
       try {
-        this.sharedCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
-        this.cacheMethodsCounter
-          .labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.PIPELINE)
-          .inc(1);
+        if (this.shouldMultiSet) {
+          this.sharedCache.multiSet(entries, callingMethod, requestIdPrefix);
+          this.cacheMethodsCounter
+            .labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.MSET)
+            .inc(1);
+        } else {
+          this.sharedCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
+          this.cacheMethodsCounter
+            .labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.PIPELINE)
+            .inc(1);
+        }
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
           `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
         );
-        // Fallback to internal cache
+        // Fallback to internal cache, but use pipeline, because of it's TTL support
         this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
         this.cacheMethodsCounter
           .labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.PIPELINE)
           .inc(1);
       }
     } else {
+      // Fallback to internal cache, but use pipeline, because of it's TTL support
       this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
       this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.PIPELINE).inc(1);
     }

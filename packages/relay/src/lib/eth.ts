@@ -2124,7 +2124,7 @@ export class EthImpl implements Eth {
 
     // cache the whole array using pipeline
     if (Object.keys(keyValuePairs).length > 0) {
-      this.cacheService.pipelineSet(
+      this.cacheService.multiSet(
         keyValuePairs,
         EthImpl.ethGetBlockByHash,
         this.syntheticLogCacheTtl,

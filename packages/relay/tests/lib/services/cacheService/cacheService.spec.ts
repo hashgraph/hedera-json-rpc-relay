@@ -78,6 +78,20 @@ describe('CacheService Test Suite', async function () {
     });
   });
 
+  it('should be able to set using multiSet and get them separately', async function () {
+    const entries: Record<string, any> = {};
+    entries['key1'] = 'value1';
+    entries['key2'] = 'value2';
+    entries['key3'] = 'value3';
+
+    cacheService.multiSet(entries, callingMethod, undefined, undefined, true);
+
+    for (const [key, value] of Object.entries(entries)) {
+      const valueFromCache = cacheService.getSharedWithFallback(key, callingMethod, undefined);
+      expect(valueFromCache).eq(value);
+    }
+  });
+
   describe('Shared Cache Test Suite', async function () {
     const mock = sinon.createSandbox();
 
@@ -137,5 +151,19 @@ describe('CacheService Test Suite', async function () {
 
       expect(cachedValue).eq(value);
     });
+  });
+
+  it('should be able to set using multiSet and get them separately using internal cache', async function () {
+    const entries: Record<string, any> = {};
+    entries['key1'] = 'value1';
+    entries['key2'] = 'value2';
+    entries['key3'] = 'value3';
+
+    cacheService.multiSet(entries, callingMethod, undefined, undefined, false);
+
+    for (const [key, value] of Object.entries(entries)) {
+      const valueFromCache = cacheService.getSharedWithFallback(key, callingMethod, undefined);
+      expect(valueFromCache).eq(value);
+    }
   });
 });

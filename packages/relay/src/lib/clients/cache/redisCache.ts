@@ -138,6 +138,29 @@ export class RedisCache implements ICacheClient {
   }
 
   /**
+   * Stores multiple key-value pairs in the cache.
+   *
+   * @param keyValuePairs - An object where each property is a key and its value is the value to be cached.
+   * @param callingMethod - The name of the calling method.
+   * @param requestIdPrefix - Optional request ID prefix for logging.
+   * @returns {Promise<void>} A Promise that resolves when the values are cached.
+   */
+  async multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): Promise<void> {
+    // Serialize values
+    const serializedKeyValuePairs: Record<string, string> = {};
+    for (const [key, value] of Object.entries(keyValuePairs)) {
+      serializedKeyValuePairs[key] = JSON.stringify(value);
+    }
+
+    // Perform mSet operation
+    await this.client.mSet(serializedKeyValuePairs);
+
+    // Log the operation
+    const entriesLength = Object.keys(keyValuePairs).length;
+    this.logger.trace(`${requestIdPrefix} caching multiple keys via ${callingMethod}, total keys: ${entriesLength}`);
+  }
+
+  /**
    * Stores multiple key-value pairs in the cache using pipelining.
    *
    * @param keyValuePairs - An object where each property is a key and its value is the value to be cached.
