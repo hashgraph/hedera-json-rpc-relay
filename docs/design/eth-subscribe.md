@@ -229,9 +229,10 @@ continuous, gapless sequence without duplicates in the following:
    sends it to the subscriber in the `websocket.send` call.  If it is in cache, then we know it's already been sent and it is skipped.
 
 #### Handle non-subscription JSON RPC calls to the relay
-The WebSocket provider will be connected to the `webSocketServer.ts` via a websocket connection.  This is perfect for subscriptions, 
-but now a client may want to run JSON RPC calls within the context of a subscrition. These calls can be made to the relay from the `webSocketServer.ts`
-but support for them will need to be added.
+The WebSocket provider will be connected to the `webSocketServer.ts` via a websocket connection.  Besu and other execution engines support [JSON-RPC over
+WebSockets](https://besu.hyperledger.org/public-networks/how-to/use-besu-api/json-rpc).  In order for the WebSocket server in the relay to support JSON-RPC over
+WebSockets, each method call to the `webSocketServer.ts` needs to call the existing JSON-RPC call in the relay.  The `webSocketServer.ts` just needs to handle the
+JSON-RPC method call to the relay.  The JSON-RPC calls to the relay are listed below.
 
 #### Blockchain Data Reading
 1. **getBlockNumber():** Returns the current block number.
@@ -311,6 +312,7 @@ Add acceptance tests that follow the structure of the existing polling for logs 
        "hash":"0x50d2fe6747f21334213a8bc2691f02b6338f265e9f39f12c1f98f247e18f33aa",
        "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
        "miner": "0xf8b483dba2c3b7176a3da549ad41a48bb3121069",
+       "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000", 
        "nonce": "0x084149998194cc5f",
        "number": "0x1348c9",
        "parentHash": "0x7736fab79e05dc611604d22470dadad26f56fe494421b5b333de816ce1f25701",
