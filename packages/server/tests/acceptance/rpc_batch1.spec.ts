@@ -61,20 +61,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(Constants.TINYBAR_TO_WEIBAR_COEF));
   const sendRawTransaction = relay.sendRawTransaction;
 
-  /**
-   * resolves long zero addresses to EVM addresses by querying mirror node
-   * @param tx: any - supposedly a proper transaction that has `from` and `to` fields
-   * @returns Promise<{from: any|null, to: any|null}>
-   */
-  const resolveAccountEvmAddresses = async (tx: any) => {
-    const fromAccountInfo = await mirrorNode.get(`/accounts/${tx.from}`);
-    const toAccountInfo = await mirrorNode.get(`/accounts/${tx.to}`);
-    return {
-      from: fromAccountInfo?.evm_address ?? tx.from,
-      to: toAccountInfo?.evm_address ?? tx.to,
-    };
-  };
-
   describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
@@ -102,10 +88,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         `/contracts/${contractId}/results/${contractExecuteTimestamp}`,
         requestId,
       );
-
-      const resolvedAddresses = await resolveAccountEvmAddresses(mirrorContractDetails);
-      mirrorContractDetails.from = resolvedAddresses.from;
-      mirrorContractDetails.to = resolvedAddresses.to;
     });
 
     this.beforeEach(async () => {
@@ -393,14 +375,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           mirrorTransactions.push(
             await mirrorNode.get(`/contracts/${res.contract_id}/results/${res.timestamp}`, requestId),
           );
-        }
-
-        // resolve EVM address for `from` and `to`
-        for (const mirrorTx of mirrorTransactions) {
-          const resolvedAddresses = await resolveAccountEvmAddresses(mirrorTx);
-
-          mirrorTx.from = resolvedAddresses.from;
-          mirrorTx.to = resolvedAddresses.to;
         }
       });
 
