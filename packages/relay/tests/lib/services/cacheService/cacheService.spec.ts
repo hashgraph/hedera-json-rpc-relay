@@ -160,6 +160,39 @@ describe('CacheService Test Suite', async function () {
       entries['key3'] = 'value3';
 
       cacheService.multiSet(entries, callingMethod, undefined, undefined, false);
+      mock
+        .stub(cacheService, 'getAsync')
+        .onFirstCall()
+        .returns(entries['key1'])
+        .onSecondCall()
+        .returns(entries['key2'])
+        .onThirdCall()
+        .returns(entries['key3']);
+
+      for (const [key, value] of Object.entries(entries)) {
+        const valueFromCache = cacheService.getSharedWithFallback(key, callingMethod, undefined);
+        expect(valueFromCache).eq(value);
+      }
+    });
+
+    it('should be able to set using pipelineSet and get them separately using internal cache', async function () {
+      process.env.MULTI_SET = 'false';
+      cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
+
+      const entries: Record<string, any> = {};
+      entries['key1'] = 'value1';
+      entries['key2'] = 'value2';
+      entries['key3'] = 'value3';
+
+      cacheService.multiSet(entries, callingMethod, undefined, undefined, false);
+      mock
+        .stub(cacheService, 'getAsync')
+        .onFirstCall()
+        .returns(entries['key1'])
+        .onSecondCall()
+        .returns(entries['key2'])
+        .onThirdCall()
+        .returns(entries['key3']);
 
       for (const [key, value] of Object.entries(entries)) {
         const valueFromCache = cacheService.getSharedWithFallback(key, callingMethod, undefined);
