@@ -83,7 +83,7 @@ describe('CacheService Test Suite', async function () {
       entries['key2'] = 'value2';
       entries['key3'] = 'value3';
 
-      cacheService.multiSet(entries, callingMethod, undefined, true);
+      cacheService.multiSet(entries, callingMethod, undefined, undefined, true);
 
       for (const [key, value] of Object.entries(entries)) {
         const valueFromCache = cacheService.getSharedWithFallback(key, callingMethod, undefined);
@@ -99,6 +99,7 @@ describe('CacheService Test Suite', async function () {
       process.env.REDIS_ENABLED = 'true';
       process.env.REDIS_URL = 'redis://127.0.0.1:6379';
       process.env.TEST = 'false';
+      process.env.MULTI_SET = 'true';
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
@@ -158,7 +159,7 @@ describe('CacheService Test Suite', async function () {
       entries['key2'] = 'value2';
       entries['key3'] = 'value3';
 
-      cacheService.multiSet(entries, callingMethod, undefined, false);
+      cacheService.multiSet(entries, callingMethod, undefined, undefined, false);
 
       for (const [key, value] of Object.entries(entries)) {
         const valueFromCache = cacheService.getSharedWithFallback(key, callingMethod, undefined);
