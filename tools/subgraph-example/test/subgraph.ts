@@ -22,7 +22,6 @@ import * as dotenv from "dotenv";
 import { expect } from "chai";
 import fetch from "node-fetch";
 import expected from "./expected.json";
-import { isEqual } from "lodash";
 import hre from "hardhat";
 
 dotenv.config();
@@ -38,6 +37,33 @@ const NFTHTS_QUERY =
 const ERC721_QUERY =
   "query { erc721S { id owner type tokenId transfers { from to } } }";
 
+const QUIERIES = [
+  {
+    name: "ERC20_QUERY",
+    actualData: "erc20S",
+    expectedData: expected.erc20,
+    query: ERC20_QUERY,
+  },
+  {
+    name: "HTSFT_QUERY",
+    actualData: "erc721S",
+    expectedData: expected.erc721,
+    query: HTSFT_QUERY,
+  },
+  {
+    name: "NFTHTS_QUERY",
+    actualData: "htsfts",
+    expectedData: expected.htsfts,
+    query: NFTHTS_QUERY,
+  },
+  {
+    name: "ERC721_QUERY",
+    actualData: "htsnfts",
+    expectedData: expected.htsnfts,
+    query: ERC721_QUERY,
+  },
+];
+
 describe("Subgraph", () => {
   describe("Can index past events", () => {
     it("Indexes past GravatarRegistry events correctly", async () => {
@@ -49,41 +75,15 @@ describe("Subgraph", () => {
       );
     });
 
-    it("Indexes past ExampleERC20 events correctly", async () => {
-      const result = await getData(ERC20_QUERY);
-      const erc20 = result.data.erc20S;
-
-      expect(JSON.stringify(erc20)).to.equal(
-        JSON.stringify(expected.erc20.initial),
-      );
-    });
-
-    it("Indexes past ExampleERC721 events correctly", async () => {
-      const result = await getData(ERC721_QUERY);
-      const erc721 = result.data.erc721S;
-
-      expect(JSON.stringify(erc721)).to.equal(
-        JSON.stringify(expected.erc721.initial),
-      );
-    });
-
-    it("Indexes past ExampleHTSFT events correctly", async () => {
-      const result = await getData(HTSFT_QUERY);
-      const htsft = result.data.htsfts;
-
-      expect(JSON.stringify(htsft)).to.equal(
-        JSON.stringify(expected.htsfts.initial),
-      );
-    });
-
-    it("Indexes past ExampleHTSNFT events correctly", async () => {
-      const result = await getData(NFTHTS_QUERY);
-      const htsnfts = result.data.htsnfts;
-
-      expect(JSON.stringify(htsnfts)).to.equal(
-        JSON.stringify(expected.htsnfts.initial),
-      );
-    });
+    for (let index = 0; index < QUIERIES.length; index++) {
+      it(`Indexes past ${QUIERIES[index].name} events correctly`, async () => {
+        const query = QUIERIES[index];
+        const result = await getData(query.query);
+        const actualData = JSON.stringify(result.data[query.actualData]);
+        const expectedData = JSON.stringify(query.expectedData.initial);
+        expect(expectedData).to.equal(actualData);
+      });
+    }
   });
 
   describe("Can index new events", () => {
@@ -101,32 +101,15 @@ describe("Subgraph", () => {
       );
     });
 
-    it("Indexes new ExampleERC20 events correctly", async () => {
-      const result = await getData(ERC20_QUERY);
-      const erc20 = result.data.erc20S;
-
-      expect(JSON.stringify(erc20)).to.equal(
-        JSON.stringify(expected.erc20.updated),
-      );
-    });
-
-    it("Indexes new ExampleERC721 events correctly", async () => {
-      const result = await getData(ERC721_QUERY);
-      const erc721 = result.data.erc721S;
-
-      expect(JSON.stringify(erc721)).to.equal(
-        JSON.stringify(expected.erc721.updated),
-      );
-    });
-
-    it("Indexes new ExampleHTSNFT events correctly", async () => {
-      const result = await getData(NFTHTS_QUERY);
-      const htsnfts = result.data.htsnfts;
-
-      expect(JSON.stringify(htsnfts)).to.equal(
-        JSON.stringify(expected.htsnfts.updated),
-      );
-    });
+    for (let index = 0; index < QUIERIES.length; index++) {
+      it(`Indexes new ${QUIERIES[index].name} events correctly`, async () => {
+        const query = QUIERIES[index];
+        const result = await getData(query.query);
+        const actualData = JSON.stringify(result.data[query.actualData]);
+        const expectedData = JSON.stringify(query.expectedData.updated);
+        expect(expectedData).to.equal(actualData);
+      });
+    }
   });
 });
 
