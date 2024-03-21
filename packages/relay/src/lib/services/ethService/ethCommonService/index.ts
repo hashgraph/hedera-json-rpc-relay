@@ -99,12 +99,8 @@ export class CommonService implements ICommonService {
     fromBlock: string,
     toBlock: string,
     requestIdPrefix?: string,
+    address?: string | string[] | null,
   ) {
-    const blockRangeLimit =
-      process.env.TEST === 'true'
-        ? constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT
-        : Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT);
-
     if (this.blockTagIsLatestOrPending(toBlock)) {
       toBlock = CommonService.blockLatest;
     }
@@ -141,7 +137,14 @@ export class CommonService implements ICommonService {
 
       if (fromBlockNum > toBlockNum) {
         return false;
-      } else if (toBlockNum - fromBlockNum > blockRangeLimit) {
+      }
+
+      const blockRangeLimit =
+        process.env.TEST === 'true'
+          ? constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT
+          : Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT);
+      const isSingleAddress = Array.isArray(address) ? address.length === 1 : address !== '';
+      if (!isSingleAddress || toBlockNum - fromBlockNum > blockRangeLimit) {
         throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
       }
     }
@@ -332,7 +335,9 @@ export class CommonService implements ICommonService {
       if (!(await this.validateBlockHashAndAddTimestampToParams(params, blockHash, requestIdPrefix))) {
         return EMPTY_RESPONSE;
       }
-    } else if (!(await this.validateBlockRangeAndAddTimestampToParams(params, fromBlock, toBlock, requestIdPrefix))) {
+    } else if (
+      !(await this.validateBlockRangeAndAddTimestampToParams(params, fromBlock, toBlock, requestIdPrefix, address))
+    ) {
       return EMPTY_RESPONSE;
     }
 
