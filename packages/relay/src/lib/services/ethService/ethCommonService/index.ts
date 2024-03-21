@@ -268,7 +268,7 @@ export class CommonService implements ICommonService {
     }
   }
 
-  public async getLogsByAddress(address: string | [string], params: any, requestIdPrefix) {
+  public async getLogsByAddress(address: string | string[], params: any, requestIdPrefix) {
     const addresses = Array.isArray(address) ? address : [address];
     const logPromises = addresses.map((addr) =>
       this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestIdPrefix),
@@ -283,7 +283,7 @@ export class CommonService implements ICommonService {
     return logs;
   }
 
-  public async getLogsWithParams(address: string | [string] | null, params, requestIdPrefix?: string): Promise<Log[]> {
+  public async getLogsWithParams(address: string | string[] | null, params, requestIdPrefix?: string): Promise<Log[]> {
     const EMPTY_RESPONSE = [];
 
     let logResults;
@@ -321,7 +321,7 @@ export class CommonService implements ICommonService {
     blockHash: string | null,
     fromBlock: string | 'latest',
     toBlock: string | 'latest',
-    address: string | [string] | null,
+    address: string | string[] | null,
     topics: any[] | null,
     requestIdPrefix?: string,
   ): Promise<Log[]> {
