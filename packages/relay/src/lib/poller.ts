@@ -84,7 +84,7 @@ export class Poller {
 
           poll.lastPolled = this.latestBlock;
         } else if (event === this.NEW_HEADS_EVENT && process.env.WS_NEW_HEADS_ENABLED === 'true') {
-          data = await this.eth.getBlockByNumber('latest', true);
+          data = await this.eth.getBlockByNumber('latest', filters?.includeTransactions ?? false);
           data.jsonrpc = '2.0';
           poll.lastPolled = this.latestBlock;
         } else {

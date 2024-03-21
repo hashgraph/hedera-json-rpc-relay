@@ -171,6 +171,7 @@ export class SubscriptionController {
           this.resultsSentToSubscribersCounter.labels('sub.subscriptionId', tag).inc();
           sub.connection.send(
             JSON.stringify({
+              jsonrpc: '2.0',
               method: 'eth_subscription',
               params: subscriptionData,
             }),
