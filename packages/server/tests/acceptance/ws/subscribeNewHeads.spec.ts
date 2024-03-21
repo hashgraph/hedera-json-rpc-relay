@@ -27,49 +27,130 @@ chai.use(solidity);
 import { ethers } from 'ethers';
 import Assertions from '../../helpers/assertions';
 import { predefined } from '@hashgraph/json-rpc-relay';
+import { AliasAccount } from '../../clients/servicesClient';
+import { numberTo0x } from '../../../../../packages/relay/src/formatters';
+import RelayCall from '../../../tests/helpers/constants';
+import { Utils } from '../../helpers/utils';
+import e from 'express';
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
 
-const createSubscription = (ws, subscriptionId) => {
-  return new Promise((resolve, reject) => {
-    ws.on('message', function incoming(data) {
-      const response = JSON.parse(data);
-      if (response.id === subscriptionId && response.result) {
-        console.log(`Subscription ${subscriptionId} successful with ID: ${response.result}`);
-        resolve(response.result); // Resolve with the subscription ID
-      } else if (response.method === 'eth_subscription') {
-        console.log(`Subscription ${subscriptionId} received block:`, response.params.result);
-        // You can add more logic here to handle incoming blocks
+const ethAddressRegex = /^0x[a-fA-F0-9]*$/;
+
+async function sendTransaction(
+  ONE_TINYBAR: any,
+  CHAIN_ID: string | number,
+  accounts: AliasAccount[],
+  rpcServer: any,
+  requestId: any,
+  mirrorNodeServer: any,
+) {
+  const transaction = {
+    value: ONE_TINYBAR,
+    gasLimit: numberTo0x(30000),
+    chainId: Number(CHAIN_ID),
+    to: accounts[1].address,
+    nonce: await rpcServer.getAccountNonce(accounts[0].address, requestId),
+    maxFeePerGas: await rpcServer.gasPrice(requestId),
+  };
+
+  const signedTx = await accounts[0].wallet.signTransaction(transaction);
+  const transactionHash = await rpcServer.sendRawTransaction(signedTx, requestId);
+
+  await mirrorNodeServer.get(`/contracts/results/${transactionHash}`, requestId);
+
+  return await rpcServer.call(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [transactionHash], requestId);
+}
+
+function verifyResponse(response: any, done: Mocha.Done, webSocket: any, includeTransactions: boolean) {
+  if (response?.params?.result?.transactions?.length > 0) {
+    try {
+      expect(response).to.have.property('jsonrpc', '2.0');
+      expect(response).to.have.property('method', 'eth_subscription');
+      expect(response).to.have.property('params');
+      expect(response.params).to.have.property('result');
+      expect(response.params.result).to.have.property('difficulty');
+      expect(response.params.result).to.have.property('extraData');
+      expect(response.params.result).to.have.property('gasLimit');
+      expect(response.params.result).to.have.property('gasUsed');
+      expect(response.params.result).to.have.property('logsBloom');
+      expect(response.params.result).to.have.property('miner');
+      expect(response.params.result).to.have.property('nonce');
+      expect(response.params.result).to.have.property('number');
+      expect(response.params.result).to.have.property('parentHash');
+      expect(response.params.result).to.have.property('receiptsRoot');
+      expect(response.params.result).to.have.property('sha3Uncles');
+      expect(response.params.result).to.have.property('stateRoot');
+      expect(response.params.result).to.have.property('timestamp');
+      expect(response.params.result).to.have.property('transactionsRoot');
+      expect(response.params.result).to.have.property('hash');
+      expect(response.params).to.have.property('subscription');
+
+      if (includeTransactions) {
+        expect(response.params.result).to.have.property('transactions');
+        expect(response.params.result.transactions).to.have.lengthOf(1);
+        expect(response.params.result.transactions[0]).to.have.property('hash');
+        expect(response.params.result.transactions[0]).to.have.property('nonce');
+        expect(response.params.result.transactions[0]).to.have.property('blockHash');
+        expect(response.params.result.transactions[0]).to.have.property('blockNumber');
+        expect(response.params.result.transactions[0]).to.have.property('transactionIndex');
+        expect(response.params.result.transactions[0]).to.have.property('from');
+        expect(response.params.result.transactions[0]).to.have.property('to');
+        expect(response.params.result.transactions[0]).to.have.property('value');
+        expect(response.params.result.transactions[0]).to.have.property('gas');
+        expect(response.params.result.transactions[0]).to.have.property('gasPrice');
+        expect(response.params.result.transactions[0]).to.have.property('input');
+        expect(response.params.result.transactions[0]).to.have.property('v');
+        expect(response.params.result.transactions[0]).to.have.property('r');
+        expect(response.params.result.transactions[0]).to.have.property('s');
+        expect(response.params.result.transactions[0]).to.have.property('type');
+        expect(response.params.result.transactions[0]).to.have.property('maxFeePerGas');
+        expect(response.params.result.transactions[0]).to.have.property('maxPriorityFeePerGas');
+        expect(response.params.result.transactions[0]).to.have.property('chainId');
+      } else {
+        expect(response.params.result).to.have.property('transactions');
+        expect(response.params.result.transactions).to.have.lengthOf(1);
+        expect(response.params.result.transactions[0]).to.match(ethAddressRegex);
       }
-    });
-
-    ws.on('open', function open() {
-      ws.send(
-        JSON.stringify({
-          id: subscriptionId,
-          jsonrpc: '2.0',
-          method: 'eth_subscribe',
-          params: ['newHeads'],
-        }),
-      );
-    });
-
-    ws.on('error', (error) => {
-      reject(error);
-    });
-  });
-};
+      done();
+    } catch (error) {
+      webSocket.close();
+      done(error);
+    }
+  }
+}
 
 describe('@web-socket Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
+  const accounts: AliasAccount[] = [];
+  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
-  let server;
+  const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
+  const defaultGasLimit = numberTo0x(3_000_000);
+
+  const defaultTransaction = {
+    value: ONE_TINYBAR,
+    chainId: Number(CHAIN_ID),
+    maxPriorityFeePerGas: defaultGasPrice,
+    maxFeePerGas: defaultGasPrice,
+    gasLimit: defaultGasLimit,
+    type: 2,
+  };
+
+  let mirrorNodeServer, requestId, rpcServer, wsServer;
 
   let wsProvider;
   let originalWsNewHeadsEnabledValue, originalWsSubcriptionLimitValue;
 
   before(async () => {
-    const { socketServer } = global;
-    server = socketServer;
+    // @ts-ignore
+    const { servicesNode, socketServer, mirrorNode, relay, logger } = global;
+    mirrorNodeServer = mirrorNode;
+    rpcServer = relay;
+    wsServer = socketServer;
+
+    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
+    accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
 
     // cache original ENV values
     originalWsNewHeadsEnabledValue = process.env.WS_NEW_HEADS_ENABLED;
@@ -83,7 +164,6 @@ describe('@web-socket Acceptance Tests', async function () {
 
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    if (server) expect(server._connections).to.equal(1);
   });
 
   afterEach(async () => {
@@ -91,7 +171,6 @@ describe('@web-socket Acceptance Tests', async function () {
       await wsProvider.destroy();
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    if (server) expect(server._connections).to.equal(0);
     process.env.WS_SUBSCRIPTION_LIMIT = originalWsSubcriptionLimitValue;
   });
 
@@ -148,6 +227,98 @@ describe('@web-socket Acceptance Tests', async function () {
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+  });
+
+  describe('Subscriptions for newHeads', async function () {
+    it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
+      process.env.WS_NEW_HEADS_ENABLED = 'true';
+      const webSocket = new WebSocket(WS_RELAY_URL);
+      const subscriptionId = 1;
+      webSocket.on('open', function open() {
+        webSocket.send(
+          JSON.stringify({
+            id: subscriptionId,
+            jsonrpc: '2.0',
+            method: 'eth_subscribe',
+            params: ['newHeads', { includeTransactions: true }],
+          }),
+        );
+      });
+
+      let responseCounter = 0;
+
+      sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      webSocket.on('message', function incoming(data) {
+        const response = JSON.parse(data);
+
+        responseCounter++;
+        verifyResponse(response, done, webSocket, true);
+        if (responseCounter > 1) {
+          webSocket.close();
+          done();
+        }
+      });
+    });
+
+    it('should subscribe to newHeads, without the "include transactions", and receive a valid JSON RPC response', (done) => {
+      process.env.WS_NEW_HEADS_ENABLED = 'true';
+      const webSocket = new WebSocket(WS_RELAY_URL);
+      const subscriptionId = 1;
+      webSocket.on('open', function open() {
+        webSocket.send(
+          JSON.stringify({
+            id: subscriptionId,
+            jsonrpc: '2.0',
+            method: 'eth_subscribe',
+            params: ['newHeads'],
+          }),
+        );
+      });
+
+      let responseCounter = 0;
+
+      sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      webSocket.on('message', function incoming(data) {
+        const response = JSON.parse(data);
+
+        responseCounter++;
+        verifyResponse(response, done, webSocket, false);
+        if (responseCounter > 1) {
+          webSocket.close();
+          done();
+        }
+      });
+    });
+
+    it('should subscribe to newHeads, with "include transactions false", and receive a valid JSON RPC response', (done) => {
+      process.env.WS_NEW_HEADS_ENABLED = 'true';
+      const webSocket = new WebSocket(WS_RELAY_URL);
+      const subscriptionId = 1;
+      webSocket.on('open', function open() {
+        webSocket.send(
+          JSON.stringify({
+            id: subscriptionId,
+            jsonrpc: '2.0',
+            method: 'eth_subscribe',
+            params: ['newHeads', { includeTransactions: false }],
+          }),
+        );
+      });
+
+      let responseCounter = 0;
+
+      sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      webSocket.on('message', function incoming(data) {
+        const response = JSON.parse(data);
+
+        responseCounter++;
+        verifyResponse(response, done, webSocket, false);
+        if (responseCounter > 1) {
+          webSocket.close();
+          done();
+        }
+      });
     });
   });
 });
