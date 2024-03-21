@@ -37,8 +37,8 @@ import {
   nullableNumberTo0x,
   nanOrNumberTo0x,
   toHash32,
-  toNullableBigNumber,
   weibarHexToTinyBarInt,
+  trimPrecedingZeros,
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -573,8 +573,9 @@ export class EthImpl implements Eth {
         },
         requestIdPrefix,
       );
+
       if (contractCallResponse?.result) {
-        gas = prepend0x(contractCallResponse.result);
+        gas = prepend0x(trimPrecedingZeros(contractCallResponse.result));
       }
     } catch (e: any) {
       this.logger.error(
@@ -1230,19 +1231,19 @@ export class EthImpl implements Eth {
     this.logger.trace(
       `${requestIdPrefix} getTransactionByBlockHashAndIndex(hash=${blockHash}, index=${transactionIndex})`,
     );
-    return this.mirrorNodeClient
-      .getContractResults(
-        { blockHash: blockHash, transactionIndex: Number(transactionIndex) },
-        undefined,
+
+    try {
+      return await this.getTransactionByBlockHashOrBlockNumAndIndex(
+        { title: 'blockHash', value: blockHash },
+        transactionIndex,
         requestIdPrefix,
-      )
-      .then((contractResults) => formatContractResult(contractResults[0] ?? null))
-      .catch((error: any) => {
-        throw this.common.genericErrorHandler(
-          error,
-          `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`,
-        );
-      });
+      );
+    } catch (error) {
+      throw this.common.genericErrorHandler(
+        error,
+        `${requestIdPrefix} Failed to retrieve contract result for blockHash ${blockHash} and index=${transactionIndex}`,
+      );
+    }
   }
 
   /**
@@ -1260,19 +1261,19 @@ export class EthImpl implements Eth {
       `${requestIdPrefix} getTransactionByBlockNumberAndIndex(blockNum=${blockNumOrTag}, index=${transactionIndex})`,
     );
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestIdPrefix);
-    return this.mirrorNodeClient
-      .getContractResults(
-        { blockNumber: blockNum, transactionIndex: Number(transactionIndex) },
-        undefined,
+
+    try {
+      return await this.getTransactionByBlockHashOrBlockNumAndIndex(
+        { title: 'blockNumber', value: blockNum },
+        transactionIndex,
         requestIdPrefix,
-      )
-      .then((contractResults) => formatContractResult(contractResults[0] ?? null))
-      .catch((e: any) => {
-        throw this.common.genericErrorHandler(
-          e,
-          `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`,
-        );
-      });
+      );
+    } catch (error) {
+      throw this.common.genericErrorHandler(
+        error,
+        `${requestIdPrefix} Failed to retrieve contract result for blockNum ${blockNum} and index=${transactionIndex}`,
+      );
+    }
   }
 
   /**
@@ -1475,7 +1476,6 @@ export class EthImpl implements Eth {
 
     // Get a reasonable value for "gas" if it is not specified.
     const gas = this.getCappedBlockGasLimit(call.gas, requestIdPrefix);
-    const value: string | null = toNullableBigNumber(call.value);
 
     this.contractCallFormat(call);
 
@@ -1487,7 +1487,7 @@ export class EthImpl implements Eth {
       ) {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
-        return await this.callMirrorNode(call, gas, value, blockNumberOrTag, requestIdPrefix);
+        return await this.callMirrorNode(call, gas, call.value, blockNumberOrTag, requestIdPrefix);
       }
 
       return await this.callConsensusNode(call, gas, requestIdPrefix);
@@ -1498,6 +1498,40 @@ export class EthImpl implements Eth {
       }
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
+  }
+
+  /**
+   * Gets transactions by block hash or block number and index with resolved EVM addresses
+   * @param blockParam
+   * @param transactionIndex
+   * @param requestIdPrefix
+   * @returns Promise<Transaction | null>
+   */
+  private async getTransactionByBlockHashOrBlockNumAndIndex(
+    blockParam: {
+      title: 'blockHash' | 'blockNumber';
+      value: string | number;
+    },
+    transactionIndex: string,
+    requestIdPrefix?: string,
+  ): Promise<Transaction | null> {
+    const contractResults = await this.mirrorNodeClient.getContractResults(
+      {
+        [blockParam.title]: blockParam.value,
+        transactionIndex: Number(transactionIndex),
+      },
+      undefined,
+      requestIdPrefix,
+    );
+
+    if (!contractResults[0]) return null;
+
+    const resolvedToAddress = await this.resolveEvmAddress(contractResults[0].to, requestIdPrefix);
+    const resolvedFromAddress = await this.resolveEvmAddress(contractResults[0].from, requestIdPrefix, [
+      constants.TYPE_ACCOUNT,
+    ]);
+
+    return formatContractResult({ ...contractResults[0], from: resolvedFromAddress, to: resolvedToAddress });
   }
 
   // according to EIP-1898 (https://eips.ethereum.org/EIPS/eip-1898) block param can either be a string (blockNumber or Block Tag) or an object (blockHash or blockNumber)
@@ -2004,8 +2038,18 @@ export class EthImpl implements Eth {
       throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
     }
 
+    // prepare transactionArray
+    let transactionArray: any[] = [];
+    for (const contractResult of contractResults) {
+      contractResult.from = await this.resolveEvmAddress(contractResult.from, requestIdPrefix, [
+        constants.TYPE_ACCOUNT,
+      ]);
+      contractResult.to = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
+
+      transactionArray.push(showDetails ? formatContractResult(contractResult) : contractResult.hash);
+    }
+
     const blockHash = toHash32(blockResponse.hash);
-    const transactionArray = contractResults.map((cr) => (showDetails ? formatContractResult(cr) : cr.hash));
     // Gating feature in case of unexpected behavior with other apps.
     if (this.shouldPopulateSyntheticContractResults) {
       this.filterAndPopulateSyntheticContractResults(showDetails, logs, transactionArray, requestIdPrefix);
@@ -2051,6 +2095,8 @@ export class EthImpl implements Eth {
     requestIdPrefix?: string,
   ): void {
     let filteredLogs: Log[];
+    const keyValuePairs: Record<string, any> = {}; // Object to accumulate cache entries
+
     if (showDetails) {
       filteredLogs = logs.filter(
         (log) => !transactionArray.some((transaction) => transaction.hash === log.transactionHash),
@@ -2060,14 +2106,7 @@ export class EthImpl implements Eth {
         transactionArray.push(transaction);
 
         const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
-        this.cacheService.set(
-          cacheKey,
-          log,
-          EthImpl.ethGetBlockByHash,
-          this.syntheticLogCacheTtl,
-          requestIdPrefix,
-          true,
-        );
+        keyValuePairs[cacheKey] = log;
       });
     } else {
       filteredLogs = logs.filter((log) => !transactionArray.includes(log.transactionHash));
@@ -2075,19 +2114,16 @@ export class EthImpl implements Eth {
         transactionArray.push(log.transactionHash);
 
         const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
-        this.cacheService.set(
-          cacheKey,
-          log,
-          EthImpl.ethGetBlockByHash,
-          this.syntheticLogCacheTtl,
-          requestIdPrefix,
-          true,
-        );
+        keyValuePairs[cacheKey] = log;
       });
 
       this.logger.trace(
         `${requestIdPrefix} ${filteredLogs.length} Synthetic transaction hashes will be added in the block response`,
       );
+    }
+    // cache the whole array using mSet
+    if (Object.keys(keyValuePairs).length > 0) {
+      this.cacheService.multiSet(keyValuePairs, EthImpl.ethGetBlockByHash, requestIdPrefix, true);
     }
   }
 

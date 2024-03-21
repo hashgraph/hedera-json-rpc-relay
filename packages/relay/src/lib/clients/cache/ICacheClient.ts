@@ -23,4 +23,5 @@ export interface ICacheClient {
   set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string): void;
   delete(key: string, callingMethod: string, requestIdPrefix?: string): void;
   clear(): void;
+  multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): void;
 }

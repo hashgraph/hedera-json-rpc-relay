@@ -181,6 +181,10 @@ const prepend0x = (input: string): string => {
   return input.startsWith(EMPTY_HEX) ? input : EMPTY_HEX + input;
 };
 
+const trimPrecedingZeros = (input: string) => {
+  return parseInt(input, 16).toString(16);
+};
+
 const numberTo0x = (input: number | BigNumber | bigint): string => {
   return EMPTY_HEX + input.toString(16);
 };
@@ -251,6 +255,7 @@ export {
   toNullableBigNumber,
   toNullIfEmptyHex,
   generateRandomHex,
+  trimPrecedingZeros,
   weibarHexToTinyBarInt,
   stringToHex,
   toHexString,

@@ -17,7 +17,7 @@
  * limitations under the License.
  *
  */
-import { defaultEvmAddress, defaultLogs1, defaultLogs2, defaultLogs3, mockData } from '../../helpers';
+import { defaultEvmAddress, defaultLogs1, defaultLogs2, defaultLogs3, mockData, toHex } from '../../helpers';
 import { numberTo0x } from '../../../dist/formatters';
 import constants from '../../../src/lib/constants';
 
@@ -129,6 +129,8 @@ export const DEPLOYED_BYTECODE =
 export const MIRROR_NODE_DEPLOYED_BYTECODE =
   '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100321234';
 export const TINYBAR_TO_WEIBAR_COEF_BIGINT = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+export const ONE_TINYBAR_IN_WEI_HEX = toHex(TINYBAR_TO_WEIBAR_COEF_BIGINT);
+
 export const BASE_FEE_PER_GAS_HEX = numberTo0x(
   BigInt(DEFAULT_NETWORK_FEES.fees[2].gas) * TINYBAR_TO_WEIBAR_COEF_BIGINT,
 ); // '0x84b6a5c400' -> 570_000_000_000 tb
