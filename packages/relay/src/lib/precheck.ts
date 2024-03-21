@@ -100,7 +100,7 @@ export class Precheck {
   chainId(tx: Transaction, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const txChainId = prepend0x(Number(tx.chainId).toString(16));
-    const passes = txChainId === this.chain;
+    const passes = txChainId === '0x0' || txChainId === this.chain;
     if (!passes) {
       this.logger.trace(
         `${requestIdPrefix} Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)`,
