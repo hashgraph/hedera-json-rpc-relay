@@ -143,8 +143,10 @@ export class CommonService implements ICommonService {
         process.env.TEST === 'true'
           ? constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT
           : Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT);
-      const isSingleAddress = Array.isArray(address) ? address.length === 1 : address !== '';
-      if (!isSingleAddress || toBlockNum - fromBlockNum > blockRangeLimit) {
+      const isSingleAddress = Array.isArray(address)
+        ? address.length === 1
+        : typeof address === 'string' && address !== '';
+      if (!isSingleAddress && toBlockNum - fromBlockNum > blockRangeLimit) {
         throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
       }
     }
