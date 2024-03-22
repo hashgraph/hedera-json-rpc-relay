@@ -61,14 +61,6 @@ describe('@ethGetBlockTransactionCountByNumber using MirrorNode', async function
     restMock.resetHandlers();
   });
 
-  this.afterAll(() => {
-    sdkClientStub = null;
-    cacheService = null;
-    restMock = null;
-    ethImpl = null;
-    hapiServiceInstance = null;
-  });
-
   it('eth_getBlockTransactionCountByNumber with match', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);

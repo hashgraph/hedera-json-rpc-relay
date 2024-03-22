@@ -45,12 +45,6 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     sandbox = createSandbox();
   });
 
-  this.afterAll(() => {
-    cacheService = null;
-    restMock = null;
-    ethImpl = null;
-  });
-
   const contractEvmAddress = '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9';
   const defaultTxHash = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
 

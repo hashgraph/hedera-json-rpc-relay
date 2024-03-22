@@ -97,14 +97,6 @@ describe('@ethGetLogs using MirrorNode', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
-  this.afterAll(() => {
-    sdkClientStub = null;
-    cacheService = null;
-    restMock = null;
-    ethImpl = null;
-    hapiServiceInstance = null;
-  });
-
   describe('timeout', async function () {
     this.beforeEach(() => {
       restMock.onGet(`blocks/${BLOCK_HASH}`).timeout();

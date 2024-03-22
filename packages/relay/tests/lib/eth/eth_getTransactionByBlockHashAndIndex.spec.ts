@@ -79,14 +79,6 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     restMock.resetHandlers();
   });
 
-  this.afterAll(() => {
-    sdkClientStub = null;
-    cacheService = null;
-    restMock = null;
-    ethImpl = null;
-    hapiServiceInstance = null;
-  });
-
   it('eth_getTransactionByBlockHashAndIndex with match', async function () {
     // mirror node request mocks
     restMock

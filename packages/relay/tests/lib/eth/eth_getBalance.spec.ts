@@ -74,14 +74,6 @@ describe('@ethGetBalance using MirrorNode', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
-  this.afterAll(() => {
-    sdkClientStub = null;
-    cacheService = null;
-    restMock = null;
-    ethImpl = null;
-    hapiServiceInstance = null;
-  });
-
   it('should return balance from mirror node', async () => {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOCK_BLOCK_NUMBER_1000_RES);
     restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, MOCK_BALANCE_RES);
