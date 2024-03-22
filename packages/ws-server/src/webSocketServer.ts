@@ -347,15 +347,15 @@ async function handleEthSubscribeLogs(
   return { response, subscriptionId };
 }
 
-function subscribeToNewHeads(filters: any, response: any, request: any, subscriptionId: any, ctx: any, event: any) {
-  if (filters !== undefined) {
-    response = jsonResp(
-      request.id,
-      predefined.INVALID_PARAMETER('filters', 'Filters should be undefined for newHeads event'),
-      undefined,
-    );
-  }
-  subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, 'newHeads');
+function subscribeToNewHeads(
+  filters: any,
+  response: any,
+  request: any,
+  subscriptionId: any,
+  ctx: any,
+  event: any,
+): { response: any; subscriptionId: any } {
+  subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
   logger.info(`Subscribed to newHeads, subscriptionId: ${subscriptionId}`);
   return { response, subscriptionId };
 }
