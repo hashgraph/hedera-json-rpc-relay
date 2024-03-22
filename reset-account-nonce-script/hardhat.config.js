@@ -17,9 +17,7 @@ module.exports = {
       name: 'testnet',
       url: 'https://testnet.hashio.io/api',
       chainId: 296,
-      accounts: [
-        '0x8d193e86dcaeb6079ce70a695935688e438f8e51a450353b6763b5101ad5257c'
-      ],
+      accounts: [],
       mirrorNodeREST: 'https://testnet.mirrornode.hedera.com'
     },
     previewnet: {
