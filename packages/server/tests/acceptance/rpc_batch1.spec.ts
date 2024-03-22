@@ -828,7 +828,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
       });
 
-      it('should fail "eth_sendRawTransaction" for Legacy transactions (with no chainId)', async function () {
+      it('should execute "eth_sendRawTransaction" for legacy transactions (with no chainId i.e. chainId=0x0)', async function () {
+        const receiverInitialBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
         const transaction = {
           ...defaultLegacyTransactionData,
           to: mirrorContract.evm_address,
@@ -836,9 +837,15 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           gasPrice: await relay.gasPrice(requestId),
         };
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
-        const error = predefined.UNSUPPORTED_CHAIN_ID('0x0', CHAIN_ID);
+        const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+        // Since the transactionId is not available in this context
+        // Wait for the transaction to be processed and imported in the mirror node with axios-retry
+        await new Promise((r) => setTimeout(r, 5000));
+        await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-        await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestId]);
+        const receiverEndBalance = await relay.getBalance(mirrorContract.evm_address, 'latest', requestId);
+        const balanceChange = receiverEndBalance - receiverInitialBalance;
+        expect(balanceChange.toString()).to.eq(Number(ONE_TINYBAR).toString());
       });
 
       it('should fail "eth_sendRawTransaction" for Legacy transactions (with gas price too low)', async function () {
