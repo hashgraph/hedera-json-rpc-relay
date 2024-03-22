@@ -401,7 +401,8 @@
         },
         {
             "name": "eth_getLogs",
-            "summary": "Returns an array of all logs matching filter with given id.",
+            "summary": "Returns an array of all logs matching a given filter object.",
+            "description": "The block range filter, _i.e._, `fromBlock` and `toBlock` arguments, cannot be larger than `ETH_GET_LOGS_BLOCK_RANGE_LIMIT` (defaults to `1000`). However, when `address` represents a single address, either a `string` or an array with a single element, this restriction is lifted.",
             "params": [
                 {
                     "name": "Filter",
