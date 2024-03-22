@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import assertions from '../../helpers/assertions';
 import { AliasAccount } from '../../clients/servicesClient';
 import { predefined, WebSocketError } from '../../../../../packages/relay';
 import { ethers } from 'ethers';
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import Assertions from '../../helpers/assertions';
 import LogContractJson from '../../contracts/Logs.json';
 import Constants from '../../helpers/constants';
