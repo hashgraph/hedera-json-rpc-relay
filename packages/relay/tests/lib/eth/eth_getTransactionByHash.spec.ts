@@ -88,6 +88,12 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     });
   });
 
+  this.afterAll(() => {
+    cacheService = null;
+    restMock = null;
+    ethImpl = null;
+  });
+
   it('returns 155 transaction for type 0', async function () {
     const uniqueTxHash = '0x27cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {

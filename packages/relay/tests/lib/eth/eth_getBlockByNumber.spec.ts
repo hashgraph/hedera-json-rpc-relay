@@ -122,6 +122,14 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
+  this.afterAll(() => {
+    sdkClientStub = null;
+    cacheService = null;
+    restMock = null;
+    ethImpl = null;
+    hapiServiceInstance = null;
+  });
+
   it('"eth_blockNumber" should return the latest block number', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
     const blockNumber = await ethImpl.blockNumber();

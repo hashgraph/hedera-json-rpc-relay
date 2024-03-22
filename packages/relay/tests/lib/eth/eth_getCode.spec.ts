@@ -72,6 +72,14 @@ describe('@ethGetCode using MirrorNode', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
+  this.afterAll(() => {
+    sdkClientStub = null;
+    cacheService = null;
+    restMock = null;
+    ethImpl = null;
+    hapiServiceInstance = null;
+  });
+
   describe('eth_getCode', async function () {
     it('should return non cached value for not found contract', async () => {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(404, DEFAULT_CONTRACT);

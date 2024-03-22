@@ -94,6 +94,14 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
+  this.afterAll(() => {
+    sdkClientStub = null;
+    cacheService = null;
+    restMock = null;
+    ethImpl = null;
+    hapiServiceInstance = null;
+  });
+
   it('eth_getBlockByHash with match', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);

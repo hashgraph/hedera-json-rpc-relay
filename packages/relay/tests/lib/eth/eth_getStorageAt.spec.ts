@@ -83,6 +83,14 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
+  this.afterAll(() => {
+    sdkClientStub = null;
+    cacheService = null;
+    restMock = null;
+    ethImpl = null;
+    hapiServiceInstance = null;
+  });
+
   describe('eth_getStorageAt', async function () {
     it('eth_getStorageAt with match with block and slot less than 32 bytes and without leading zeroes', async function () {
       // mirror node request mocks

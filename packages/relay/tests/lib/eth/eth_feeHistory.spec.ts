@@ -64,6 +64,11 @@ describe('@ethFeeHistory using MirrorNode', async function () {
 
   this.afterAll(() => {
     process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
+    sdkClientStub = null;
+    cacheService = null;
+    restMock = null;
+    ethImpl = null;
+    hapiServiceInstance = null;
   });
 
   this.afterEach(() => {

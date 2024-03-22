@@ -60,6 +60,14 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
+  this.afterAll(() => {
+    sdkClientStub = null;
+    cacheService = null;
+    restMock = null;
+    ethImpl = null;
+    hapiServiceInstance = null;
+  });
+
   describe('eth_sendRawTransaction', async function () {
     const accountAddress = '0x9eaee9E66efdb91bfDcF516b034e001cc535EB57';
     const accountEndpoint = `accounts/${accountAddress}${NO_TRANSACTIONS}`;

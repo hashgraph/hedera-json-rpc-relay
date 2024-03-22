@@ -60,6 +60,14 @@ describe('@ethGasPrice Gas Price spec', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
+  this.afterAll(() => {
+    sdkClientStub = null;
+    cacheService = null;
+    restMock = null;
+    ethImpl = null;
+    hapiServiceInstance = null;
+  });
+
   describe('@ethGasPrice', async function () {
     it('eth_gasPrice', async function () {
       const weiBars = await ethImpl.gasPrice();
