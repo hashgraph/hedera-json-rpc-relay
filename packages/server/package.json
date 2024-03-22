@@ -18,12 +18,12 @@
     "mocha": "^9.2.2",
     "pino": "^7.11.0",
     "pino-pretty": "^7.6.1",
-    "uuid": "^3.3.2",
-    "pnpm": "^8.7.1"
+    "pnpm": "^8.7.1",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "@hashgraph/hedera-local": "^2.15.1",
-    "@hashgraph/sdk": "^2.38.0",
+    "@hashgraph/sdk": "2.43.0",
     "@koa/cors": "^5.0.0",
     "@types/chai": "^4.3.0",
     "@types/cors": "^2.8.12",
@@ -35,11 +35,11 @@
     "axios-retry": "^3.5.1",
     "chai": "^4.3.6",
     "ethers": "^6.7.0",
+    "execution-apis": "git://github.com/ethereum/execution-apis.git#584905270d8ad665718058060267061ecfd79ca5",
     "shelljs": "^0.8.5",
     "ts-mocha": "^9.0.2",
     "ts-node": "^10.8.1",
-    "typescript": "^4.5.5",
-    "execution-apis": "git://github.com/ethereum/execution-apis.git#584905270d8ad665718058060267061ecfd79ca5"
+    "typescript": "^4.5.5"
   },
   "scripts": {
     "build": "pnpm clean && pnpm compile",
