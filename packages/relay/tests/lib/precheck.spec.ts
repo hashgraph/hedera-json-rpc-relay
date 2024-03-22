@@ -154,6 +154,15 @@ describe('Precheck', async function () {
         expect(e.message).to.eq('ChainId (0x171) not supported. The correct chainId is 0x12a');
       }
     });
+
+    it('Should check if a transaction is an unprotected pre-EIP155 transaction', function () {
+      try {
+        expect(precheck.isLegacyUnprotectedEtx(parsedtxWithChainId0x0)).to.be.true;
+        expect(precheck.isLegacyUnprotectedEtx(parsedTxWithMatchingChainId)).to.be.false;
+      } catch (e: any) {
+        expect(e).to.not.exist;
+      }
+    });
   });
 
   describe('gasLimit', async function () {
