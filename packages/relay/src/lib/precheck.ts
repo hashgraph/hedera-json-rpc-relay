@@ -100,7 +100,7 @@ export class Precheck {
   chainId(tx: Transaction, requestId?: string) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const txChainId = prepend0x(Number(tx.chainId).toString(16));
-    const passes = txChainId === this.chain;
+    const passes = this.isLegacyUnprotectedEtx(tx) || txChainId === this.chain;
     if (!passes) {
       this.logger.trace(
         `${requestIdPrefix} Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)`,
@@ -109,6 +109,17 @@ export class Precheck {
       );
       throw predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain);
     }
+  }
+
+  /**
+   * Checks if the transaction is an (unprotected) pre-EIP155 transaction.
+   * Conditions include chainId being 0x0 and the signature's v value being either 27 or 28.
+   * @param tx the Ethereum transaction
+   */
+  isLegacyUnprotectedEtx(tx: Transaction): boolean {
+    const chainId = tx.chainId;
+    const vValue = tx.signature?.v;
+    return chainId === BigInt(0) && (vValue === 27 || vValue === 28);
   }
 
   /**
