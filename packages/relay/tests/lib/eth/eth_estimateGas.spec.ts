@@ -72,6 +72,16 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
+  this.afterAll(() => {
+    sdkClientStub = null;
+    ethImplOverridden = null;
+    cacheService = null;
+    restMock = null;
+    web3Mock = null;
+    ethImpl = null;
+    hapiServiceInstance = null;
+  });
+
   describe('eth_estimateGas with contract call', async function () {});
 
   it('should eth_estimateGas with transaction.data null does not fail', async function () {
