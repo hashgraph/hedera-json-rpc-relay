@@ -96,15 +96,6 @@ describe('@ethCall Eth Call spec', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
-  this.afterAll(() => {
-    sdkClientStub = null;
-    cacheService = null;
-    restMock = null;
-    web3Mock = null;
-    ethImpl = null;
-    hapiServiceInstance = null;
-  });
-
   describe('eth_call precheck failures', async function () {
     let callConsensusNodeSpy: sinon.SinonSpy;
     let callMirrorNodeSpy: sinon.SinonSpy;

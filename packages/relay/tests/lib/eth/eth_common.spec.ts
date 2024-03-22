@@ -39,10 +39,6 @@ describe('@ethCommon', async function () {
     Relay = new RelayImpl(logger, registry);
   });
 
-  this.afterAll(() => {
-    Relay = null;
-  });
-
   describe('@ethCommon', async function () {
     it('should execute "eth_chainId"', async function () {
       const chainId = Relay.eth().chainId();
