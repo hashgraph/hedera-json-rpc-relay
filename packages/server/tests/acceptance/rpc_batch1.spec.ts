@@ -267,6 +267,25 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         }
       });
 
+      it('should be able to use `address` param with a large block range', async () => {
+        //when we pass only address, it defaults to the latest block
+        const logs = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
+          [
+            {
+              fromBlock: numberTo0x(latestBlock - constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT - 10),
+              address: contractAddress,
+            },
+          ],
+          requestId,
+        );
+        expect(logs.length).to.be.greaterThan(0);
+
+        for (const i in logs) {
+          expect(logs[i].address).to.equal(contractAddress);
+        }
+      });
+
       it('should be able to use `address` param with multiple addresses', async () => {
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
