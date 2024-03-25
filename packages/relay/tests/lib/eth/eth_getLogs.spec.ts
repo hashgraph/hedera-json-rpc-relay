@@ -282,7 +282,6 @@ describe('@ethGetLogs using MirrorNode', async function () {
   });
 
   [CONTRACT_ADDRESS_1, [CONTRACT_ADDRESS_1]].forEach((address) => {
-    console.log(address);
     it(`single address filter \`${JSON.stringify(address)}\` and large block range`, async function () {
       const filteredLogs = {
         logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1], DEFAULT_LOGS.logs[2]],
