@@ -19,7 +19,7 @@
  */
 
 import * as dotenv from "dotenv";
-import expected from "./expected";
+import expected from "./expected.json";
 import hre from "hardhat";
 import { IGravatarResponse } from "./types/gravatar/IGravatarResponse";
 import { ITokenResponse } from "./types/token/ITokenResponse";
@@ -76,9 +76,8 @@ describe.only("Subgraph", () => {
       verifyGravatarEvents(gravatars, expected.gravatar.initial);
     });
 
-    for (let index = 0; index < TOKEN_QUERIES.length; index++) {
-      it(`Indexes past ${TOKEN_QUERIES[index].name} events correctly`, async () => {
-        const query = TOKEN_QUERIES[index];
+    for (const query of TOKEN_QUERIES) {
+      it(`Indexes past ${query.name} events correctly`, async () => {
         const result = await getData<ITokenResponse>(query.query);
         verifyTokenEvents(
           result.data[query.actualData],
@@ -100,9 +99,8 @@ describe.only("Subgraph", () => {
       verifyGravatarEvents(gravatars, expected.gravatar.updated);
     });
 
-    for (let index = 0; index < TOKEN_QUERIES.length; index++) {
-      it(`Indexes new ${TOKEN_QUERIES[index].name} events correctly`, async () => {
-        const query = TOKEN_QUERIES[index];
+    for (const query of TOKEN_QUERIES) {
+      it(`Indexes new ${query.name} events correctly`, async () => {
         const result = await getData<ITokenResponse>(query.query);
         verifyTokenEvents(
           result.data[query.actualData],
