@@ -65,23 +65,26 @@ export function verifyTokenEvents(
     return;
   }
 
+  const compareFn = <T extends TokenEvent>(a: T, b: T) =>
+    JSON.stringify(a).localeCompare(JSON.stringify(b));
+
   if (FUNGIBLE_TYPES.includes(actual[0].type)) {
     const actualEvents = actual
       .map((event) => event as FungibleTokenEvent)
-      .sort();
+      .sort(compareFn);
     const expectedEvents = expected
       .map((event) => event as FungibleTokenEvent)
-      .sort();
+      .sort(compareFn);
     for (let i = 0; i < actualEvents.length; i++) {
       verifyFungibleTokenEvent(actualEvents[i], expectedEvents[i]);
     }
   } else if (NON_FUNGIBLE_TYPES.includes(actual[0].type)) {
     const actualEvents = actual
       .map((event) => event as NonFungibleTokenEvent)
-      .sort();
+      .sort(compareFn);
     const expectedEvents = expected
       .map((event) => event as NonFungibleTokenEvent)
-      .sort();
+      .sort(compareFn);
     for (let i = 0; i < actual.length; i++) {
       verifyNonFungibleTokenEvent(actualEvents[i], expectedEvents[i]);
     }
