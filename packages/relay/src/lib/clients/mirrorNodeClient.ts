@@ -1093,90 +1093,46 @@ export class MirrorNodeClient {
     requestIdPrefix?: string,
     retries?: number,
   ) {
-    const cachedLabel = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${entityIdentifier}`;
-    const cachedResponse: { type: string; entity: any } | undefined = this.cacheService.get(
-      cachedLabel,
-      callerName,
-      requestIdPrefix,
-    );
-    if (cachedResponse) {
-      return cachedResponse;
+    const cacheKey = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${entityIdentifier}`;
+    const cachedResult = this.cacheService.get(cacheKey, callerName, requestIdPrefix);
+    if (cachedResult) {
+      return cachedResult;
     }
 
-    const buildPromise = (fn) =>
-      new Promise((resolve, reject) =>
-        fn.then((values) => {
-          if (values == null) reject();
-          resolve(values);
-        }),
+    const searchFunctions = {
+      [constants.TYPE_CONTRACT]: async () => await this.getContract(entityIdentifier, requestIdPrefix, retries),
+      [constants.TYPE_ACCOUNT]: async () => await this.getAccount(entityIdentifier, requestIdPrefix, retries),
+      [constants.TYPE_TOKEN]: async () =>
+        entityIdentifier.startsWith(constants.LONG_ZERO_PREFIX)
+          ? await this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestIdPrefix, retries)
+          : await Promise.reject('Not a token ID'),
+    };
+
+    const promises = searchableTypes
+      // Ensure the type is one we can handle
+      .filter((type) => searchFunctions[type])
+      // Execute the search function
+      .map(
+        async (type) =>
+          await searchFunctions[type]()
+            // On success, wrap the result
+            .then((entity) => ({ type, entity }))
+            // On failure, resolve to null to avoid Promise.all failing fast
+            .catch(() => null),
       );
 
-    if (searchableTypes.find((t) => t === constants.TYPE_CONTRACT)) {
-      const contract = await this.getContract(entityIdentifier, requestIdPrefix, retries).catch(() => {
-        return null;
-      });
-      if (contract) {
-        const response = {
-          type: constants.TYPE_CONTRACT,
-          entity: contract,
-        };
-        this.cacheService.set(cachedLabel, response, callerName, undefined, requestIdPrefix);
-        return response;
-      }
-    }
-
-    let data;
     try {
-      const promises = [
-        searchableTypes.find((t) => t === constants.TYPE_ACCOUNT)
-          ? buildPromise(
-              this.getAccount(entityIdentifier, requestIdPrefix, retries).catch(() => {
-                return null;
-              }),
-            )
-          : Promise.reject(),
-      ];
-
-      // only add long zero evm addresses for tokens as they do not refer to actual contract addresses but rather encoded entity nums
-      if (entityIdentifier.startsWith(constants.LONG_ZERO_PREFIX)) {
-        promises.push(
-          searchableTypes.find((t) => t === constants.TYPE_TOKEN)
-            ? buildPromise(
-                this.getTokenById(`0.0.${parseInt(entityIdentifier, 16)}`, requestIdPrefix, retries).catch(() => {
-                  return null;
-                }),
-              )
-            : Promise.reject(),
-        );
+      const results = await Promise.all(promises);
+      const result = results.find((r) => r !== null); // Find the first successful result
+      if (result != null) {
+        this.cacheService.set(cacheKey, result, callerName, undefined, requestIdPrefix); // Cache successful result
+        return result;
       }
-
-      // maps the promises with indices of the promises array
-      // because there is no such method as Promise.anyWithIndex in js
-      // the index is needed afterward for detecting the resolved promise type (contract, account, or token)
-      // @ts-ignore
-      data = await Promise.any(promises.map((promise, index) => promise.then((value) => ({ value, index }))));
+      return null; // No successful results, return null
     } catch (e) {
-      return null;
+      // Log error, if needed
+      return null; // In case of unexpected error, return null
     }
-
-    let type;
-    switch (data.index) {
-      case 0: {
-        type = constants.TYPE_ACCOUNT;
-        break;
-      }
-      case 1: {
-        type = constants.TYPE_TOKEN;
-        break;
-      }
-    }
-
-    const response = {
-      type,
-      entity: data.value,
-    };
-    this.cacheService.set(cachedLabel, response, callerName, undefined, requestIdPrefix);
-    return response;
   }
 
   // exposing mirror node instance for tests
