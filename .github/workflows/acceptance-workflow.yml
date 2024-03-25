@@ -68,7 +68,7 @@ jobs:
           echo "OPERATOR_KEY_MAIN=${{ inputs.operator_key }}" >> $GITHUB_ENV
 
       - name: Run hedera local
-        run: npx hedera restart -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace
+        run: npx hedera restart -d --network-tag=0.48.0-alpha.3 --mirror-tag=0.101.0-rc3 --verbose=trace
 
       - name: Stop  relay
         run: docker stop json-rpc-relay json-rpc-relay-ws
