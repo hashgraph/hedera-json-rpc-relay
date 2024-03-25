@@ -19,14 +19,18 @@
  */
 
 import * as dotenv from "dotenv";
-import { expect } from "chai";
-import fetch from "node-fetch";
-import expected from "./expected.json";
+import expected from "./expected";
 import hre from "hardhat";
+import { IGravatarResponse } from "./types/gravatar/IGravatarResponse";
+import { ITokenResponse } from "./types/token/ITokenResponse";
+import {
+  getData,
+  verifyGravatarEvents,
+  verifyTokenEvents,
+} from "./subgraph-helpers";
 
 dotenv.config();
 
-const URL = "http://127.0.0.1:8000/subgraphs/name/subgraph-example";
 const GRAVATAR_QUERY = "query { gravatars { id owner displayName imageUrl } }";
 const ERC20_QUERY =
   "query { erc20S { id supply type transfers { from to amount } } }";
@@ -37,7 +41,7 @@ const NFTHTS_QUERY =
 const ERC721_QUERY =
   "query { erc721S { id owner type tokenId transfers { from to } } }";
 
-const QUIERIES = [
+const TOKEN_QUERIES = [
   {
     name: "ERC20_QUERY",
     actualData: "erc20S",
@@ -45,43 +49,41 @@ const QUIERIES = [
     query: ERC20_QUERY,
   },
   {
-    name: "HTSFT_QUERY",
+    name: "ERC721_QUERY",
     actualData: "erc721S",
     expectedData: expected.erc721,
+    query: ERC721_QUERY,
+  },
+  {
+    name: "HTSFT_QUERY",
+    actualData: "htsfts",
+    expectedData: expected.htsfts,
     query: HTSFT_QUERY,
   },
   {
-    name: "NFTHTS_QUERY",
-    actualData: "htsfts",
-    expectedData: expected.htsfts,
-    query: NFTHTS_QUERY,
-  },
-  {
-    name: "ERC721_QUERY",
+    name: "HTSNFT_QUERY",
     actualData: "htsnfts",
     expectedData: expected.htsnfts,
-    query: ERC721_QUERY,
+    query: NFTHTS_QUERY,
   },
 ];
 
-describe("Subgraph", () => {
+describe.only("Subgraph", () => {
   describe("Can index past events", () => {
     it("Indexes past GravatarRegistry events correctly", async () => {
-      const result = await getData(GRAVATAR_QUERY);
+      const result = await getData<IGravatarResponse>(GRAVATAR_QUERY);
       const gravatars = result.data.gravatars;
-
-      expect(JSON.stringify(gravatars)).to.equal(
-        JSON.stringify(expected.gravatar.initial),
-      );
+      verifyGravatarEvents(gravatars, expected.gravatar.initial);
     });
 
-    for (let index = 0; index < QUIERIES.length; index++) {
-      it(`Indexes past ${QUIERIES[index].name} events correctly`, async () => {
-        const query = QUIERIES[index];
-        const result = await getData(query.query);
-        const actualData = JSON.stringify(result.data[query.actualData]);
-        const expectedData = JSON.stringify(query.expectedData.initial);
-        expect(expectedData).to.equal(actualData);
+    for (let index = 0; index < TOKEN_QUERIES.length; index++) {
+      it(`Indexes past ${TOKEN_QUERIES[index].name} events correctly`, async () => {
+        const query = TOKEN_QUERIES[index];
+        const result = await getData<ITokenResponse>(query.query);
+        verifyTokenEvents(
+          result.data[query.actualData],
+          query.expectedData.initial,
+        );
       });
     }
   });
@@ -93,34 +95,20 @@ describe("Subgraph", () => {
     });
 
     it("Indexes new GravatarRegistry events correctly", async () => {
-      const result = await getData(GRAVATAR_QUERY);
+      const result = await getData<IGravatarResponse>(GRAVATAR_QUERY);
       const gravatars = result.data.gravatars;
-
-      expect(JSON.stringify(gravatars)).to.equal(
-        JSON.stringify(expected.gravatar.updated),
-      );
+      verifyGravatarEvents(gravatars, expected.gravatar.updated);
     });
 
-    for (let index = 0; index < QUIERIES.length; index++) {
-      it(`Indexes new ${QUIERIES[index].name} events correctly`, async () => {
-        const query = QUIERIES[index];
-        const result = await getData(query.query);
-        const actualData = JSON.stringify(result.data[query.actualData]);
-        const expectedData = JSON.stringify(query.expectedData.updated);
-        expect(expectedData).to.equal(actualData);
+    for (let index = 0; index < TOKEN_QUERIES.length; index++) {
+      it(`Indexes new ${TOKEN_QUERIES[index].name} events correctly`, async () => {
+        const query = TOKEN_QUERIES[index];
+        const result = await getData<ITokenResponse>(query.query);
+        verifyTokenEvents(
+          result.data[query.actualData],
+          query.expectedData.updated,
+        );
       });
     }
   });
 });
-
-async function getData(query: string) {
-  const res = await fetch(URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: query,
-    }),
-  });
-
-  return await res.json();
-}
