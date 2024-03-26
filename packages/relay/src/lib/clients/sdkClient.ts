@@ -726,9 +726,7 @@ export class SDKClient {
       // Create fileDeleteTx
       const fileDeleteTx = await new FileDeleteTransaction()
         .setFileId(fileId)
-        .setMaxTransactionFee(
-          Hbar.fromTinybars(Math.floor((await this.getTinyBarGasFee('FileDelete')) * constants.BLOCK_GAS_LIMIT)),
-        )
+        .setMaxTransactionFee(new Hbar(2))
         .freezeWith(client);
 
       // execute fileDeleteTx
