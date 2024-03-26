@@ -749,13 +749,14 @@ export class SDKClient {
       // ensure the file is deleted
       const receipt = deleteFileRecord.receipt;
       const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(client);
+
       if (receipt.status === Status.Success && fileInfo.isDeleted) {
         this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);
       } else {
-        throw new SDKClientError({}, `${requestIdPrefix} Fail to delete file with fileId: ${fileId} `);
+        this.logger.warn(`${requestIdPrefix} Fail to delete file with fileId: ${fileId} `);
       }
     } catch (error: any) {
-      throw new SDKClientError(error, `${requestIdPrefix} ${error['message']} `);
+      this.logger.warn(`${requestIdPrefix} ${error['message']} `);
     }
   };
 }

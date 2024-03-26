@@ -37,6 +37,9 @@ import {
   FileId,
   EthereumTransactionData,
   FileInfoQuery,
+  FileInfo,
+  FileDeleteTransaction,
+  TransactionRecord,
 } from '@hashgraph/sdk';
 const logger = pino();
 import constants from '../../src/lib/constants';
@@ -45,6 +48,7 @@ import { SDKClient } from '../../src/lib/clients';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { MAX_GAS_LIMIT_HEX } from './eth/eth-config';
 import { getRequestId, signTransaction } from '../helpers';
+import { TransactionReceipt } from 'ethers';
 
 describe('SdkClient', async function () {
   this.timeout(20000);
@@ -205,18 +209,16 @@ describe('SdkClient', async function () {
       expect(fileInfoPostDelete.size.toNumber()).to.eq(0);
     });
 
-    it('should throw an exception when delete file with invalid fileId', async () => {
+    it('should print a `warn` log when delete file with invalid fileId', async () => {
       // random fileId
       const fileId = new FileId(0, 0, 369);
 
-      try {
-        // delete a file
-        await sdkClient.deleteFile(client, fileId, requestId, callerName, '');
-        expect(true).to.eq(false);
-      } catch (error: any) {
-        expect(error).to.exist;
-        expect(error.status).to.eq(Status.EntityNotAllowedToDelete);
-      }
+      // spy on warn logs
+      const warnLoggerStub = sinon.stub(sdkClient.logger, 'warn');
+
+      // delete a file
+      await sdkClient.deleteFile(client, fileId, requestId, callerName, '');
+      expect(warnLoggerStub.calledWithMatch('ENTITY_NOT_ALLOWED_TO_DELETE')).to.be.true;
     });
   });
 });
