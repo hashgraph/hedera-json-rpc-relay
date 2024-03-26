@@ -73,7 +73,7 @@ dataSources:
     source:
       abi: ExampleHTSFT
       address: "0x0000000000000000000000000000000000000409"
-      startBlock: 10
+      startBlock: 8
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
