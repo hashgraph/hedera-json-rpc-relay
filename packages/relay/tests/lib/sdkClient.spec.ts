@@ -201,6 +201,11 @@ describe('SdkClient', async function () {
       const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
       const fileId = await sdkClient.createFile(ethereumTransactionData.callData, client, requestId, callerName, '');
 
+      const fileInfoPreDelete = await new FileInfoQuery().setFileId(fileId).execute(client);
+      expect(fileInfoPreDelete.fileId).to.deep.eq(fileId);
+      expect(fileInfoPreDelete.isDeleted).to.be.false;
+      expect(fileInfoPreDelete.size.toNumber()).to.not.eq(0);
+
       // delete a file
       await sdkClient.deleteFile(client, fileId, requestId, callerName, '');
       const fileInfoPostDelete = await new FileInfoQuery().setFileId(fileId).execute(client);
