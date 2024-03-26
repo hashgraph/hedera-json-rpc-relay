@@ -31,15 +31,16 @@ import {
 
 dotenv.config();
 
-const GRAVATAR_QUERY = "query { gravatars { id owner displayName imageUrl } }";
+const GRAVATAR_QUERY =
+  "query { gravatars(orderBy: id) { id owner displayName imageUrl } }";
 const ERC20_QUERY =
-  "query { erc20S { id supply type transfers { from to amount } } }";
+  "query { erc20S(orderBy: id) { id supply type transfers { from to amount } } }";
 const HTSFT_QUERY =
-  "query { htsfts { id supply type transfers { from to amount } } }";
+  "query { htsfts(orderBy: id) { id supply type transfers { from to amount } } }";
 const NFTHTS_QUERY =
-  "query { htsnfts { id owner type tokenId transfers { from to } } }";
+  "query { htsnfts(orderBy: id) { id owner type tokenId transfers { from to } } }";
 const ERC721_QUERY =
-  "query { erc721S { id owner type tokenId transfers { from to } } }";
+  "query { erc721S(orderBy: id) { id owner type tokenId transfers { from to } } }";
 
 const TOKEN_QUERIES = [
   {
@@ -79,10 +80,8 @@ describe.only("Subgraph", () => {
     for (const query of TOKEN_QUERIES) {
       it(`Indexes past ${query.name} events correctly`, async () => {
         const result = await getData<ITokenResponse>(query.query);
-        verifyTokenEvents(
-          result.data[query.actualData],
-          query.expectedData.initial,
-        );
+        const tokenEvents = result.data[query.actualData];
+        verifyTokenEvents(tokenEvents, query.expectedData.initial);
       });
     }
   });
@@ -102,10 +101,8 @@ describe.only("Subgraph", () => {
     for (const query of TOKEN_QUERIES) {
       it(`Indexes new ${query.name} events correctly`, async () => {
         const result = await getData<ITokenResponse>(query.query);
-        verifyTokenEvents(
-          result.data[query.actualData],
-          query.expectedData.updated,
-        );
+        const tokenEvents = result.data[query.actualData];
+        verifyTokenEvents(tokenEvents, query.expectedData.updated);
       });
     }
   });

@@ -18,13 +18,13 @@
  *
  */
 
-import { TokenEvent } from "./types/token/TokenEvent";
+import { ITokenEvent } from "./types/token/ITokenEvent";
 import { expect } from "chai";
 import { IQueryResponse } from "./types/IQueryResponse";
 import fetch from "node-fetch";
-import { GravatarEvent } from "./types/gravatar/GravatarEvent";
-import { FungibleTokenEvent } from "./types/token/FungibleTokenEvent";
-import { NonFungibleTokenEvent } from "./types/token/NonFungibleTokenEvent";
+import { IGravatarEvent } from "./types/gravatar/IGravatarEvent";
+import { IFungibleTokenEvent } from "./types/token/IFungibleTokenEvent";
+import { INonFungibleTokenEvent } from "./types/token/INonFungibleTokenEvent";
 
 const URL = "http://127.0.0.1:8000/subgraphs/name/subgraph-example";
 
@@ -44,18 +44,18 @@ export async function getData<T>(query: string): Promise<IQueryResponse<T>> {
 }
 
 export function verifyGravatarEvents(
-  actual: Array<GravatarEvent>,
-  expected: Array<GravatarEvent>,
+  actual: Array<IGravatarEvent>,
+  expected: Array<IGravatarEvent>,
 ): void {
-  if (actual.length !== expected.length) {
+  if (actual?.length !== expected.length) {
     expect.fail("Actual and expected lengths do not match!");
   }
   expect(actual).to.have.deep.members(expected);
 }
 
 export function verifyTokenEvents(
-  actual: Array<TokenEvent>,
-  expected: Array<TokenEvent>,
+  actual: Array<ITokenEvent>,
+  expected: Array<ITokenEvent>,
 ): void {
   if (actual.length !== expected.length) {
     expect.fail("Actual and expected lengths do not match!");
@@ -65,28 +65,19 @@ export function verifyTokenEvents(
     return;
   }
 
-  const compareFn = <T extends TokenEvent>(a: T, b: T) =>
-    JSON.stringify(a).localeCompare(JSON.stringify(b));
-
   if (FUNGIBLE_TYPES.includes(actual[0].type)) {
-    const actualEvents = actual
-      .map((event) => event as FungibleTokenEvent)
-      .sort(compareFn);
-    const expectedEvents = expected
-      .map((event) => event as FungibleTokenEvent)
-      .sort(compareFn);
-    for (let i = 0; i < actualEvents.length; i++) {
-      verifyFungibleTokenEvent(actualEvents[i], expectedEvents[i]);
+    for (let i = 0; i < actual.length; i++) {
+      verifyFungibleTokenEvent(
+        actual[i] as IFungibleTokenEvent,
+        expected[i] as IFungibleTokenEvent,
+      );
     }
   } else if (NON_FUNGIBLE_TYPES.includes(actual[0].type)) {
-    const actualEvents = actual
-      .map((event) => event as NonFungibleTokenEvent)
-      .sort(compareFn);
-    const expectedEvents = expected
-      .map((event) => event as NonFungibleTokenEvent)
-      .sort(compareFn);
     for (let i = 0; i < actual.length; i++) {
-      verifyNonFungibleTokenEvent(actualEvents[i], expectedEvents[i]);
+      verifyNonFungibleTokenEvent(
+        actual[i] as INonFungibleTokenEvent,
+        expected[i] as INonFungibleTokenEvent,
+      );
     }
   } else {
     expect.fail("Unsupported token type!");
@@ -94,23 +85,23 @@ export function verifyTokenEvents(
 }
 
 function verifyFungibleTokenEvent(
-  actual: FungibleTokenEvent,
-  expected: FungibleTokenEvent,
+  actual: IFungibleTokenEvent,
+  expected: IFungibleTokenEvent,
 ): void {
   verifyTokenEvent(actual, expected);
   expect(actual.supply).to.equal(expected.supply);
 }
 
 function verifyNonFungibleTokenEvent(
-  actual: NonFungibleTokenEvent,
-  expected: NonFungibleTokenEvent,
+  actual: INonFungibleTokenEvent,
+  expected: INonFungibleTokenEvent,
 ): void {
   verifyTokenEvent(actual, expected);
   expect(actual.owner).to.equal(expected.owner);
   expect(actual.tokenId).to.equal(expected.tokenId);
 }
 
-function verifyTokenEvent(actual: TokenEvent, expected: TokenEvent): void {
+function verifyTokenEvent(actual: ITokenEvent, expected: ITokenEvent): void {
   expect(actual.id).to.equal(expected.id);
   expect(actual.type).to.equal(expected.type);
   expect(actual.transfers).to.have.deep.members(expected.transfers);

@@ -18,16 +18,9 @@
  *
  */
 
-import { ITokenTransfer } from "./ITokenTransfer";
+import { ITokenEvent } from "./ITokenEvent";
 
-export abstract class TokenEvent {
-  id: string;
-  type: string;
-  transfers: Array<ITokenTransfer>;
-
-  protected constructor(data: TokenEvent) {
-    this.id = data.id;
-    this.type = data.type;
-    this.transfers = data.transfers;
-  }
+export interface INonFungibleTokenEvent extends ITokenEvent {
+  owner: string;
+  tokenId: string;
 }

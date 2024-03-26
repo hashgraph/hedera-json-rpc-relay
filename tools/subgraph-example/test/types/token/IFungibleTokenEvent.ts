@@ -18,16 +18,8 @@
  *
  */
 
-export class GravatarEvent {
-  id: string;
-  owner: string;
-  displayName: string;
-  imageUrl: string;
+import { ITokenEvent } from "./ITokenEvent";
 
-  constructor(data: GravatarEvent) {
-    this.id = data.id;
-    this.owner = data.owner;
-    this.displayName = data.displayName;
-    this.imageUrl = data.imageUrl;
-  }
+export interface IFungibleTokenEvent extends ITokenEvent {
+  supply: string;
 }

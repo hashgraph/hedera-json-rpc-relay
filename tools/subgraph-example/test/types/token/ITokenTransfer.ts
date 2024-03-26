@@ -21,5 +21,5 @@
 export interface ITokenTransfer {
   from: string;
   to: string;
-  amount?: string; // applicable only to IFungibleTokens
+  amount?: string; // applicable only to IFungibleTokenEvents
 }
