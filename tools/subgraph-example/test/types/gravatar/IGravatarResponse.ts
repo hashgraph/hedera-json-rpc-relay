@@ -18,8 +18,8 @@
  *
  */
 
-import { GravatarEvent } from "./GravatarEvent";
+import { IGravatarEvent } from "./IGravatarEvent";
 
 export interface IGravatarResponse {
-  gravatars: Array<GravatarEvent>;
+  gravatars: Array<IGravatarEvent>;
 }

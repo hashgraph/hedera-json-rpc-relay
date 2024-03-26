@@ -50,7 +50,7 @@ dataSources:
     source:
       abi: GravatarRegistry
       address: "0x2825a2eBD7F17Ae448900992D6293eF599B75C46"
-      startBlock: 12
+      startBlock: 13
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -73,7 +73,7 @@ dataSources:
     source:
       abi: ExampleHTSFT
       address: "0x0000000000000000000000000000000000000409"
-      startBlock: 10
+      startBlock: 8
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

@@ -18,8 +18,8 @@
  *
  */
 
-import { TokenEvent } from "./TokenEvent";
+import { ITokenEvent } from "./ITokenEvent";
 
 export interface ITokenResponse {
-  [key: string]: Array<TokenEvent>;
+  [key: string]: Array<ITokenEvent>;
 }

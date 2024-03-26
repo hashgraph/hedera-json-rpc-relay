@@ -18,15 +18,10 @@
  *
  */
 
-import { TokenEvent } from "./TokenEvent";
+import { ITokenTransfer } from "./ITokenTransfer";
 
-export class NonFungibleTokenEvent extends TokenEvent {
-  owner: string;
-  tokenId: string;
-
-  constructor(data: NonFungibleTokenEvent) {
-    super(data);
-    this.owner = data.owner;
-    this.tokenId = data.tokenId;
-  }
+export interface ITokenEvent {
+  id: string;
+  type: string;
+  transfers: Array<ITokenTransfer>;
 }

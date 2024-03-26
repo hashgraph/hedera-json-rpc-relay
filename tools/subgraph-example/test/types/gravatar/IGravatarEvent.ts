@@ -18,13 +18,9 @@
  *
  */
 
-import { TokenEvent } from "./TokenEvent";
-
-export class FungibleTokenEvent extends TokenEvent {
-  supply: string;
-
-  constructor(data: FungibleTokenEvent) {
-    super(data);
-    this.supply = data.supply;
-  }
+export interface IGravatarEvent {
+  id: string;
+  owner: string;
+  displayName: string;
+  imageUrl: string;
 }
