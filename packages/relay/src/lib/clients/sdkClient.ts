@@ -248,11 +248,12 @@ export class SDKClient {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
     const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
+    let fileId: FileId | null = null;
 
     if (ethereumTransactionData.toBytes().length <= 5120) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
-      const fileId = await this.createFile(
+      fileId = await this.createFile(
         ethereumTransactionData.callData,
         this.clientMain,
         requestId,
@@ -270,7 +271,7 @@ export class SDKClient {
     const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction');
     ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.BLOCK_GAS_LIMIT)));
 
-    return this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId);
+    return this.executeTransaction(ethereumTransaction, fileId, callerName, interactingEntity, requestId);
   }
 
   async submitContractCallQuery(
@@ -456,6 +457,7 @@ export class SDKClient {
 
   private executeTransaction = async (
     transaction: Transaction,
+    fileId,
     callerName: string,
     interactingEntity: string,
     requestId?: string,
@@ -521,14 +523,8 @@ export class SDKClient {
        *  For transactions of type CONTRACT_CREATE, if the contract's bytecode (calldata) exceeds 5120 bytes, HFS is employed to temporarily store the bytecode on the network.
        *  After transaction execution, whether successful or not, any entity associated with the 'fileId' should be removed from the Hedera network.
        */
-      if (transaction['_callDataFileId']) {
-        await this.deleteFile(
-          this.clientMain,
-          transaction['_callDataFileId'] as FileId,
-          requestId,
-          callerName,
-          interactingEntity,
-        );
+      if (fileId) {
+        await this.deleteFile(this.clientMain, fileId, requestId, callerName, interactingEntity);
       }
     }
   };
