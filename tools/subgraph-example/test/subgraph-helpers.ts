@@ -47,7 +47,7 @@ export function verifyGravatarEvents(
   actual: Array<IGravatarEvent>,
   expected: Array<IGravatarEvent>,
 ): void {
-  if (actual?.length !== expected.length) {
+  if (actual.length !== expected.length) {
     expect.fail("Actual and expected lengths do not match!");
   }
   expect(actual).to.have.deep.members(expected);

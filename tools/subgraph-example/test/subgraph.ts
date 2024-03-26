@@ -69,7 +69,7 @@ const TOKEN_QUERIES = [
   },
 ];
 
-describe.only("Subgraph", () => {
+describe("Subgraph", () => {
   describe("Can index past events", () => {
     it("Indexes past GravatarRegistry events correctly", async () => {
       const result = await getData<IGravatarResponse>(GRAVATAR_QUERY);
