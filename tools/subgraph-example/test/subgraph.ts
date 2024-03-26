@@ -27,7 +27,7 @@ import {
   getData,
   verifyGravatarEvents,
   verifyTokenEvents,
-} from "./subgraph-helpers";
+} from "./helpers/subgraph-helpers";
 
 dotenv.config();
 

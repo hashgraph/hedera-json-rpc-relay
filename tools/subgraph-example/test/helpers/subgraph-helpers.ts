@@ -18,18 +18,18 @@
  *
  */
 
-import { ITokenEvent } from "./types/token/ITokenEvent";
+import { ITokenEvent } from "../types/token/ITokenEvent";
 import { expect } from "chai";
-import { IQueryResponse } from "./types/IQueryResponse";
+import { IQueryResponse } from "../types/IQueryResponse";
 import fetch from "node-fetch";
-import { IGravatarEvent } from "./types/gravatar/IGravatarEvent";
-import { IFungibleTokenEvent } from "./types/token/IFungibleTokenEvent";
-import { INonFungibleTokenEvent } from "./types/token/INonFungibleTokenEvent";
+import { IGravatarEvent } from "../types/gravatar/IGravatarEvent";
+import {
+  FungibleTokenStrategy,
+  NonFungibleTokenStrategy,
+  TokenAssertionStrategy,
+} from "../assertions/TokenAssertionStrategy";
 
 const URL = "http://127.0.0.1:8000/subgraphs/name/subgraph-example";
-
-const FUNGIBLE_TYPES = ["ERC20", "HTSFT"];
-const NON_FUNGIBLE_TYPES = ["ERC721", "HTSNFT"];
 
 export async function getData<T>(query: string): Promise<IQueryResponse<T>> {
   const res = await fetch(URL, {
@@ -65,44 +65,17 @@ export function verifyTokenEvents(
     return;
   }
 
-  if (FUNGIBLE_TYPES.includes(actual[0].type)) {
-    for (let i = 0; i < actual.length; i++) {
-      verifyFungibleTokenEvent(
-        actual[i] as IFungibleTokenEvent,
-        expected[i] as IFungibleTokenEvent,
-      );
-    }
-  } else if (NON_FUNGIBLE_TYPES.includes(actual[0].type)) {
-    for (let i = 0; i < actual.length; i++) {
-      verifyNonFungibleTokenEvent(
-        actual[i] as INonFungibleTokenEvent,
-        expected[i] as INonFungibleTokenEvent,
-      );
-    }
+  let strategy: TokenAssertionStrategy;
+
+  if (TokenAssertionStrategy.isFungibleToken(actual[0])) {
+    strategy = new FungibleTokenStrategy();
+  } else if (TokenAssertionStrategy.isNonFungibleToken(actual[0])) {
+    strategy = new NonFungibleTokenStrategy();
   } else {
     expect.fail("Unsupported token type!");
   }
-}
 
-function verifyFungibleTokenEvent(
-  actual: IFungibleTokenEvent,
-  expected: IFungibleTokenEvent,
-): void {
-  verifyTokenEvent(actual, expected);
-  expect(actual.supply).to.equal(expected.supply);
-}
-
-function verifyNonFungibleTokenEvent(
-  actual: INonFungibleTokenEvent,
-  expected: INonFungibleTokenEvent,
-): void {
-  verifyTokenEvent(actual, expected);
-  expect(actual.owner).to.equal(expected.owner);
-  expect(actual.tokenId).to.equal(expected.tokenId);
-}
-
-function verifyTokenEvent(actual: ITokenEvent, expected: ITokenEvent): void {
-  expect(actual.id).to.equal(expected.id);
-  expect(actual.type).to.equal(expected.type);
-  expect(actual.transfers).to.have.deep.members(expected.transfers);
+  for (let i = 0; i < actual.length; i++) {
+    strategy.assertEquals(actual[i], expected[i]);
+  }
 }
