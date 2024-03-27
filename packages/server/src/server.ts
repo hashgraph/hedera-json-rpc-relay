@@ -78,8 +78,14 @@ memwatch.on('stats', function (stats) {
 });
 
 app.getKoaApp().use(async (ctx, next) => {
+  // force garbage collection
+  memwatch.gc();
+  logger.info('GC forced');
   let hd = new HeapDiff();
   await next();
+  // force garbage collection
+  memwatch.gc();
+  logger.info('GC forced');
   const diff = hd.end();
   logger.info('Heap diff: -->' + JSON.stringify(diff, null, 2));
 });
