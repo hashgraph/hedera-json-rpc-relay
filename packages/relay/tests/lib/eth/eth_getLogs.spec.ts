@@ -282,7 +282,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
   });
 
   [CONTRACT_ADDRESS_1, [CONTRACT_ADDRESS_1]].forEach((address) => {
-    it(`single address filter \`${JSON.stringify(address)}\` and large block range`, async function () {
+    it(`should filter logs by \`${JSON.stringify(address)}\` with a large block range`, async function () {
       const filteredLogs = {
         logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1], DEFAULT_LOGS.logs[2]],
       };
@@ -479,7 +479,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
   });
 
   [null, [], [CONTRACT_ADDRESS_1, CONTRACT_ADDRESS_2]].forEach((address) => {
-    it(`when block range is too large with address \`${JSON.stringify(address)}\``, async function () {
+    it(`should fail when block range is too large for address(es) \`${JSON.stringify(address)}\``, async function () {
       const fromBlock = {
         ...DEFAULT_BLOCK,
         number: 1,
