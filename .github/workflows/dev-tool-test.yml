@@ -2,10 +2,10 @@ name: Dev Tool Tests
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [main, release/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+    branches: [main, release/**, node20]
+    tags: [v*]
 
 concurrency:
   group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -30,7 +30,7 @@ jobs:
   web3js:
     name: Web3js
     uses: ./.github/workflows/dev-tool-workflow.yml
-    needs: [ hardhat, truffle]
+    needs: [hardhat, truffle]
     with:
       command: cd ./tools/web3js-example/ && npm run test
       directory: ./tools/web3js-example
