@@ -74,6 +74,10 @@ export class CommonService implements ICommonService {
     'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT',
   );
 
+  private getLogsBlockRangeLimit() {
+    return parseNumericEnvVar('ETH_GET_LOGS_BLOCK_RANGE_LIMIT', 'DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT');
+  }
+
   constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService) {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
@@ -139,10 +143,9 @@ export class CommonService implements ICommonService {
         return false;
       }
 
-      const blockRangeLimit =
-        process.env.TEST === 'true'
-          ? constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT
-          : Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT);
+      const blockRangeLimit = this.getLogsBlockRangeLimit();
+      // Increasing it to more then one address may degrade mirror node performance
+      // when addresses contains many log events.
       const isSingleAddress = Array.isArray(address)
         ? address.length === 1
         : typeof address === 'string' && address !== '';
