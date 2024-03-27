@@ -2,7 +2,7 @@ name: Release Production Environment
 
 on:
   push:
-    tags: [ v* ]
+    tags: [v*]
 
 env:
   OWNER: hashgraph
@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-        
+
       - name: Get tag
         run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
 
@@ -50,15 +50,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      
+
       - name: Install packages
         run: npm ci
-        
+
       - name: Get tag
         run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
 
       - name: Produce artifact
-        run: tar -czf ${{ env.PACKAGE_NAME }}-v${{env.TAG}}.tgz -C ./packages . 
+        run: tar -czf ${{ env.PACKAGE_NAME }}-v${{env.TAG}}.tgz -C ./packages .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
@@ -73,7 +73,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -88,4 +88,4 @@ jobs:
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.5.0
         env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release Version (semver ie. 0.24.0):"
+        description: 'Release Version (semver ie. 0.24.0):'
         type: string
         required: true
 
@@ -59,7 +59,7 @@ jobs:
           git_user_signingkey: true
           gpg_private_key: ${{ secrets.GPG_KEY_CONTENTS }}
           passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
-      
+
       - name: Create and Switch to Release Branch
         run: |
           if ! git ls-remote --exit-code --heads --quiet origin refs/heads/${RELEASE_BRANCH}; then
@@ -126,7 +126,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: main

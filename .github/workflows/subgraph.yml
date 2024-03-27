@@ -10,7 +10,7 @@ on:
 concurrency:
   group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
-    
+
 jobs:
   subgraph-workflow:
     runs-on: ubuntu-latest
@@ -21,12 +21,12 @@ jobs:
         working-directory: ./tools/subgraph-example/
     steps:
       - name: Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.15
+          node-version: 20
 
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: npm ci
@@ -35,7 +35,7 @@ jobs:
         run: cp .env.example .env
 
       - name: Run local node
-        run: npx hedera start -d  
+        run: npx hedera start -d
         timeout-minutes: 5
 
       - name: Compile contracts
@@ -43,7 +43,7 @@ jobs:
 
       - name: Deploy and interact with contracts
         run: npx hardhat prepare
-      
+
       - name: Generate types
         run: npm run graph-codegen
 

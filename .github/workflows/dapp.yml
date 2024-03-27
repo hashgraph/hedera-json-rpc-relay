@@ -20,14 +20,14 @@ jobs:
       contents: write
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.13.0
-          cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
       - name: Install packages
         run: npm ci
 
@@ -61,7 +61,7 @@ jobs:
       - name: Tar logs
         if: ${{ always() && !cancelled() }}
         run: tar cvzf ./logs.tgz ./logs
-      
+
       - name: Upload logs to GitHub
         if: ${{ always() && !cancelled() }}
         uses: actions/upload-artifact@v3
@@ -74,5 +74,5 @@ jobs:
         if: ${{ always() && !cancelled() }}
         with:
           check_name: Dapp Test Report
-          report_paths: "**/*.xml"
+          report_paths: '**/*.xml'
           detailed_summary: true
