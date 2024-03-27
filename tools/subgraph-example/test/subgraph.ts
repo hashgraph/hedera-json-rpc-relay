@@ -19,71 +19,71 @@
  */
 
 import * as dotenv from "dotenv";
-import { expect } from "chai";
-import fetch from "node-fetch";
 import expected from "./expected.json";
-import { isEqual } from "lodash";
 import hre from "hardhat";
+import { IGravatarResponse } from "./types/gravatar/IGravatarResponse";
+import { ITokenResponse } from "./types/token/ITokenResponse";
+import {
+  getData,
+  verifyGravatarEvents,
+  verifyTokenEvents,
+} from "./helpers/subgraph-helpers";
 
 dotenv.config();
 
-const URL = "http://127.0.0.1:8000/subgraphs/name/subgraph-example";
-const GRAVATAR_QUERY = "query { gravatars { id owner displayName imageUrl } }";
+const GRAVATAR_QUERY =
+  "query { gravatars(orderBy: id) { id owner displayName imageUrl } }";
 const ERC20_QUERY =
-  "query { erc20S { id supply type transfers { from to amount } } }";
+  "query { erc20S(orderBy: id) { id supply type transfers { from to amount } } }";
 const HTSFT_QUERY =
-  "query { htsfts { id supply type transfers { from to amount } } }";
+  "query { htsfts(orderBy: id) { id supply type transfers { from to amount } } }";
 const NFTHTS_QUERY =
-  "query { htsnfts { id owner type tokenId transfers { from to } } }";
+  "query { htsnfts(orderBy: id) { id owner type tokenId transfers { from to } } }";
 const ERC721_QUERY =
-  "query { erc721S { id owner type tokenId transfers { from to } } }";
+  "query { erc721S(orderBy: id) { id owner type tokenId transfers { from to } } }";
+
+const TOKEN_QUERIES = [
+  {
+    name: "ERC20_QUERY",
+    actualData: "erc20S",
+    expectedData: expected.erc20,
+    query: ERC20_QUERY,
+  },
+  {
+    name: "ERC721_QUERY",
+    actualData: "erc721S",
+    expectedData: expected.erc721,
+    query: ERC721_QUERY,
+  },
+  {
+    name: "HTSFT_QUERY",
+    actualData: "htsfts",
+    expectedData: expected.htsfts,
+    query: HTSFT_QUERY,
+  },
+  {
+    name: "HTSNFT_QUERY",
+    actualData: "htsnfts",
+    expectedData: expected.htsnfts,
+    query: NFTHTS_QUERY,
+  },
+];
 
 describe("Subgraph", () => {
   describe("Can index past events", () => {
     it("Indexes past GravatarRegistry events correctly", async () => {
-      const result = await getData(GRAVATAR_QUERY);
+      const result = await getData<IGravatarResponse>(GRAVATAR_QUERY);
       const gravatars = result.data.gravatars;
-
-      expect(JSON.stringify(gravatars)).to.equal(
-        JSON.stringify(expected.gravatar.initial),
-      );
+      verifyGravatarEvents(gravatars, expected.gravatar.initial);
     });
 
-    it("Indexes past ExampleERC20 events correctly", async () => {
-      const result = await getData(ERC20_QUERY);
-      const erc20 = result.data.erc20S;
-
-      expect(JSON.stringify(erc20)).to.equal(
-        JSON.stringify(expected.erc20.initial),
-      );
-    });
-
-    it("Indexes past ExampleERC721 events correctly", async () => {
-      const result = await getData(ERC721_QUERY);
-      const erc721 = result.data.erc721S;
-
-      expect(JSON.stringify(erc721)).to.equal(
-        JSON.stringify(expected.erc721.initial),
-      );
-    });
-
-    it("Indexes past ExampleHTSFT events correctly", async () => {
-      const result = await getData(HTSFT_QUERY);
-      const htsft = result.data.htsfts;
-
-      expect(JSON.stringify(htsft)).to.equal(
-        JSON.stringify(expected.htsfts.initial),
-      );
-    });
-
-    it("Indexes past ExampleHTSNFT events correctly", async () => {
-      const result = await getData(NFTHTS_QUERY);
-      const htsnfts = result.data.htsnfts;
-
-      expect(JSON.stringify(htsnfts)).to.equal(
-        JSON.stringify(expected.htsnfts.initial),
-      );
-    });
+    for (const query of TOKEN_QUERIES) {
+      it(`Indexes past ${query.name} events correctly`, async () => {
+        const result = await getData<ITokenResponse>(query.query);
+        const tokenEvents = result.data[query.actualData];
+        verifyTokenEvents(tokenEvents, query.expectedData.initial);
+      });
+    }
   });
 
   describe("Can index new events", () => {
@@ -93,51 +93,17 @@ describe("Subgraph", () => {
     });
 
     it("Indexes new GravatarRegistry events correctly", async () => {
-      const result = await getData(GRAVATAR_QUERY);
+      const result = await getData<IGravatarResponse>(GRAVATAR_QUERY);
       const gravatars = result.data.gravatars;
-
-      expect(JSON.stringify(gravatars)).to.equal(
-        JSON.stringify(expected.gravatar.updated),
-      );
+      verifyGravatarEvents(gravatars, expected.gravatar.updated);
     });
 
-    it("Indexes new ExampleERC20 events correctly", async () => {
-      const result = await getData(ERC20_QUERY);
-      const erc20 = result.data.erc20S;
-
-      expect(JSON.stringify(erc20)).to.equal(
-        JSON.stringify(expected.erc20.updated),
-      );
-    });
-
-    it("Indexes new ExampleERC721 events correctly", async () => {
-      const result = await getData(ERC721_QUERY);
-      const erc721 = result.data.erc721S;
-
-      expect(JSON.stringify(erc721)).to.equal(
-        JSON.stringify(expected.erc721.updated),
-      );
-    });
-
-    it("Indexes new ExampleHTSNFT events correctly", async () => {
-      const result = await getData(NFTHTS_QUERY);
-      const htsnfts = result.data.htsnfts;
-
-      expect(JSON.stringify(htsnfts)).to.equal(
-        JSON.stringify(expected.htsnfts.updated),
-      );
-    });
+    for (const query of TOKEN_QUERIES) {
+      it(`Indexes new ${query.name} events correctly`, async () => {
+        const result = await getData<ITokenResponse>(query.query);
+        const tokenEvents = result.data[query.actualData];
+        verifyTokenEvents(tokenEvents, query.expectedData.updated);
+      });
+    }
   });
 });
-
-async function getData(query: string) {
-  const res = await fetch(URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: query,
-    }),
-  });
-
-  return await res.json();
-}
