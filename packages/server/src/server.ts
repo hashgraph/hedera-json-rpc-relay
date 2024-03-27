@@ -27,6 +27,9 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { formatRequestIdMessage } from './formatters';
+import memwatch from '@airbnb/node-memwatch';
+
+let HeapDiff = memwatch.HeapDiff;
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -63,6 +66,23 @@ const methodResponseHistogram = new Histogram({
 
 // set cors
 app.getKoaApp().use(cors());
+
+// leak detection middleware
+
+memwatch.on('leak', function (info) {
+  logger.error('Memory leak detected: --> ' + JSON.stringify(info, null, 2));
+});
+
+memwatch.on('stats', function (stats) {
+  logger.error('Memory stats: --> ' + JSON.stringify(stats, null, 2));
+});
+
+app.getKoaApp().use(async (ctx, next) => {
+  let hd = new HeapDiff();
+  await next();
+  const diff = hd.end();
+  logger.info('Heap diff: -->' + JSON.stringify(diff, null, 2));
+});
 
 /**
  * middleware for non POST request timing
