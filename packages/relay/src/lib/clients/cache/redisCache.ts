@@ -161,6 +161,38 @@ export class RedisCache implements ICacheClient {
   }
 
   /**
+   * Stores multiple key-value pairs in the cache using pipelining.
+   *
+   * @param keyValuePairs - An object where each property is a key and its value is the value to be cached.
+   * @param callingMethod - The name of the calling method.
+   * @param {number} [ttl] - The time-to-live (expiration) of the cache item in milliseconds.
+   * @param requestIdPrefix - Optional request ID prefix for logging.
+   * @returns {Promise<void>} A Promise that resolves when the values are cached.
+   */
+  async pipelineSet(
+    keyValuePairs: Record<string, any>,
+    callingMethod: string,
+    ttl?: number | undefined,
+    requestIdPrefix?: string,
+  ): Promise<void> {
+    const resolvedTtl = (ttl ?? this.options.ttl) / 1000; // convert to seconds
+
+    const pipeline = this.client.multi();
+
+    for (const [key, value] of Object.entries(keyValuePairs)) {
+      const serializedValue = JSON.stringify(value);
+      pipeline.setEx(key, resolvedTtl, serializedValue);
+    }
+
+    // Execute pipeline operation
+    await pipeline.execAsPipeline();
+
+    // Log the operation
+    const entriesLength = Object.keys(keyValuePairs).length;
+    this.logger.trace(`${requestIdPrefix} caching multiple keys via ${callingMethod}, total keys: ${entriesLength}`);
+  }
+
+  /**
    * Deletes a value from the cache.
    *
    * @param {string} key - The cache key.

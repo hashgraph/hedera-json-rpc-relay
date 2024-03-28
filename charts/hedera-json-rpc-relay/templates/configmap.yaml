@@ -38,3 +38,4 @@ data:
   REDIS_RECONNECT_DELAY_MS: {{ .Values.config.REDIS_RECONNECT_DELAY_MS | quote }}
   DEBUG_API_ENABLED: {{ .Values.config.DEBUG_API_ENABLED | quote }}
   FILTER_API_ENABLED: {{ .Values.config.FILTER_API_ENABLED | quote }}
+  MULTI_SET: {{ .Values.config.MULTI_SET | quote }}

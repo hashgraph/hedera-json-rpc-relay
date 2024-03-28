@@ -24,4 +24,10 @@ export interface ICacheClient {
   delete(key: string, callingMethod: string, requestIdPrefix?: string): void;
   clear(): void;
   multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): void;
+  pipelineSet(
+    keyValuePairs: Record<string, any>,
+    callingMethod: string,
+    ttl?: number | undefined,
+    requestIdPrefix?: string,
+  ): void;
 }
