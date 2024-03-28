@@ -19,5 +19,5 @@ RECEIVER_ID=             # format 0.0.9999 - the id of the account to transfer t
 ```
 
 PS: `OPERATOR_ID` can be retrieved by:
-- searching by account's address in https://hashscan.io
+- searching by account's address in https://hashscan.io/<[mainnet,testnet,previewnet]>
 - direct mirror node REST API call to `https://<[mainnet-public,testnet,previewnet]>.mirrornode.hedera.com/api/v1/accounts/<account_address>`
