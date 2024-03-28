@@ -26,12 +26,29 @@ import { Registry } from 'prom-client';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const registry = new Registry();
 import pino from 'pino';
-import { AccountId, Client, ContractCallQuery, PrivateKey, TransactionId, Hbar, Status } from '@hashgraph/sdk';
+import {
+  AccountId,
+  Client,
+  ContractCallQuery,
+  PrivateKey,
+  TransactionId,
+  Hbar,
+  Status,
+  FileId,
+  EthereumTransactionData,
+  FileInfoQuery,
+  FileInfo,
+  FileDeleteTransaction,
+  TransactionRecord,
+} from '@hashgraph/sdk';
 const logger = pino();
 import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { SDKClient } from '../../src/lib/clients';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import { MAX_GAS_LIMIT_HEX } from './eth/eth-config';
+import { getRequestId, signTransaction } from '../helpers';
+import { TransactionReceipt } from 'ethers';
 
 describe('SdkClient', async function () {
   this.timeout(20000);
@@ -155,6 +172,58 @@ describe('SdkClient', async function () {
       sinon.assert.calledOnce(getFeeScheduleStub);
       sinon.assert.calledOnce(getExchangeRateStub);
       sinon.assert.calledOnce(convertGasPriceToTinyBarsStub);
+    });
+  });
+
+  describe('deleteFile', () => {
+    // states
+    const gasPrice = '0xad78ebc5ac620000';
+    const callerName = 'eth_sendRawTransaction';
+    const requestId = getRequestId();
+    const transaction = {
+      type: 1,
+      value: 0,
+      chainId: 0x12a,
+      gasPrice,
+      gasLimit: MAX_GAS_LIMIT_HEX,
+      data: '0x' + '00'.repeat(5121), // large contract
+    };
+
+    before(() => {
+      // mock captureMetrics
+      sinon.stub(sdkClient, 'captureMetrics').callsFake(() => {});
+    });
+
+    it('should execute deleteFile', async () => {
+      // prepare fileId
+      const signedTx = await signTransaction(transaction);
+      const transactionBuffer = Buffer.from(signedTx.substring(2), 'hex');
+      const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
+      const fileId = await sdkClient.createFile(ethereumTransactionData.callData, client, requestId, callerName, '');
+
+      const fileInfoPreDelete = await new FileInfoQuery().setFileId(fileId).execute(client);
+      expect(fileInfoPreDelete.fileId).to.deep.eq(fileId);
+      expect(fileInfoPreDelete.isDeleted).to.be.false;
+      expect(fileInfoPreDelete.size.toNumber()).to.not.eq(0);
+
+      // delete a file
+      await sdkClient.deleteFile(client, fileId, requestId, callerName, '');
+      const fileInfoPostDelete = await new FileInfoQuery().setFileId(fileId).execute(client);
+      expect(fileInfoPostDelete.fileId).to.deep.eq(fileId);
+      expect(fileInfoPostDelete.isDeleted).to.be.true;
+      expect(fileInfoPostDelete.size.toNumber()).to.eq(0);
+    });
+
+    it('should print a `warn` log when delete file with invalid fileId', async () => {
+      // random fileId
+      const fileId = new FileId(0, 0, 369);
+
+      // spy on warn logs
+      const warnLoggerStub = sinon.stub(sdkClient.logger, 'warn');
+
+      // delete a file
+      await sdkClient.deleteFile(client, fileId, requestId, callerName, '');
+      expect(warnLoggerStub.calledWithMatch('ENTITY_NOT_ALLOWED_TO_DELETE')).to.be.true;
     });
   });
 });
