@@ -89,7 +89,7 @@ export interface Eth {
     blockHash: string | null,
     fromBlock: string | null,
     toBlock: string | null,
-    address: string | null,
+    address: string | string[] | null,
     topics: any[] | null,
     requestId?: string,
   ): Promise<Log[]>;
