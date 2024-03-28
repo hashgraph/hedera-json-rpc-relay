@@ -74,6 +74,10 @@ export class CommonService implements ICommonService {
     'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT',
   );
 
+  private getLogsBlockRangeLimit() {
+    return parseNumericEnvVar('ETH_GET_LOGS_BLOCK_RANGE_LIMIT', 'DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT');
+  }
+
   constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService) {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
@@ -99,12 +103,8 @@ export class CommonService implements ICommonService {
     fromBlock: string,
     toBlock: string,
     requestIdPrefix?: string,
+    address?: string | string[] | null,
   ) {
-    const blockRangeLimit =
-      process.env.TEST === 'true'
-        ? constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT
-        : Number(process.env.ETH_GET_LOGS_BLOCK_RANGE_LIMIT);
-
     if (this.blockTagIsLatestOrPending(toBlock)) {
       toBlock = CommonService.blockLatest;
     }
@@ -141,7 +141,15 @@ export class CommonService implements ICommonService {
 
       if (fromBlockNum > toBlockNum) {
         return false;
-      } else if (toBlockNum - fromBlockNum > blockRangeLimit) {
+      }
+
+      const blockRangeLimit = this.getLogsBlockRangeLimit();
+      // Increasing it to more then one address may degrade mirror node performance
+      // when addresses contains many log events.
+      const isSingleAddress = Array.isArray(address)
+        ? address.length === 1
+        : typeof address === 'string' && address !== '';
+      if (!isSingleAddress && toBlockNum - fromBlockNum > blockRangeLimit) {
         throw predefined.RANGE_TOO_LARGE(blockRangeLimit);
       }
     }
@@ -268,7 +276,7 @@ export class CommonService implements ICommonService {
     }
   }
 
-  public async getLogsByAddress(address: string | [string], params: any, requestIdPrefix) {
+  public async getLogsByAddress(address: string | string[], params: any, requestIdPrefix) {
     const addresses = Array.isArray(address) ? address : [address];
     const logPromises = addresses.map((addr) =>
       this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestIdPrefix),
@@ -283,7 +291,7 @@ export class CommonService implements ICommonService {
     return logs;
   }
 
-  public async getLogsWithParams(address: string | [string] | null, params, requestIdPrefix?: string): Promise<Log[]> {
+  public async getLogsWithParams(address: string | string[] | null, params, requestIdPrefix?: string): Promise<Log[]> {
     const EMPTY_RESPONSE = [];
 
     let logResults;
@@ -321,7 +329,7 @@ export class CommonService implements ICommonService {
     blockHash: string | null,
     fromBlock: string | 'latest',
     toBlock: string | 'latest',
-    address: string | [string] | null,
+    address: string | string[] | null,
     topics: any[] | null,
     requestIdPrefix?: string,
   ): Promise<Log[]> {
@@ -332,7 +340,9 @@ export class CommonService implements ICommonService {
       if (!(await this.validateBlockHashAndAddTimestampToParams(params, blockHash, requestIdPrefix))) {
         return EMPTY_RESPONSE;
       }
-    } else if (!(await this.validateBlockRangeAndAddTimestampToParams(params, fromBlock, toBlock, requestIdPrefix))) {
+    } else if (
+      !(await this.validateBlockRangeAndAddTimestampToParams(params, fromBlock, toBlock, requestIdPrefix, address))
+    ) {
       return EMPTY_RESPONSE;
     }
 

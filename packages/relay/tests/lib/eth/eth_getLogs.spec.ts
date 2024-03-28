@@ -281,6 +281,45 @@ describe('@ethGetLogs using MirrorNode', async function () {
     expectLogData3(result[2]);
   });
 
+  [CONTRACT_ADDRESS_1, [CONTRACT_ADDRESS_1]].forEach((address) => {
+    it(`should filter logs by \`${JSON.stringify(address)}\` with a large block range`, async function () {
+      const filteredLogs = {
+        logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1], DEFAULT_LOGS.logs[2]],
+      };
+      restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).reply(200, filteredLogs);
+      for (const log of filteredLogs.logs) {
+        restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
+      }
+
+      const fromBlock = {
+        ...DEFAULT_BLOCK,
+        number: 1,
+      };
+      const toBlock = {
+        ...DEFAULT_BLOCK,
+        number: 1003,
+      };
+
+      const blockBeyondMaximumRange = {
+        ...DEFAULT_BLOCK,
+        number: 1007,
+      };
+
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [blockBeyondMaximumRange] });
+      restMock.onGet('blocks/1').reply(200, fromBlock);
+      restMock.onGet('blocks/1003').reply(200, toBlock);
+
+      const result = await ethImpl.getLogs(null, '0x1', '0x3eb', address, null);
+
+      expect(result).to.exist;
+
+      expect(result.length).to.eq(3);
+      expectLogData1(result[0]);
+      expectLogData2(result[1]);
+      expectLogData3(result[2]);
+    });
+  });
+
   it('multiple addresses filter', async function () {
     const filteredLogsAddress1 = {
       logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1], DEFAULT_LOGS.logs[2]],
@@ -439,27 +478,29 @@ describe('@ethGetLogs using MirrorNode', async function () {
     expectLogData1(result[0]);
   });
 
-  it('when block range is too large', async function () {
-    const fromBlock = {
-      ...DEFAULT_BLOCK,
-      number: 1,
-    };
-    const toBlock = {
-      ...DEFAULT_BLOCK,
-      number: 1003,
-    };
+  [null, [], [CONTRACT_ADDRESS_1, CONTRACT_ADDRESS_2]].forEach((address) => {
+    it(`should fail when block range is too large for address(es) \`${JSON.stringify(address)}\``, async function () {
+      const fromBlock = {
+        ...DEFAULT_BLOCK,
+        number: 1,
+      };
+      const toBlock = {
+        ...DEFAULT_BLOCK,
+        number: 1003,
+      };
 
-    const blockBeyondMaximumRange = {
-      ...DEFAULT_BLOCK,
-      number: 1007,
-    };
+      const blockBeyondMaximumRange = {
+        ...DEFAULT_BLOCK,
+        number: 1007,
+      };
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [blockBeyondMaximumRange] });
-    restMock.onGet('blocks/1').reply(200, fromBlock);
-    restMock.onGet('blocks/1003').reply(200, toBlock);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [blockBeyondMaximumRange] });
+      restMock.onGet('blocks/1').reply(200, fromBlock);
+      restMock.onGet('blocks/1003').reply(200, toBlock);
 
-    await ethGetLogsFailing(ethImpl, [null, '0x1', '0x3eb', null, null], (error) => {
-      expect(error.message).to.equal('Exceeded maximum block range: 1000');
+      await ethGetLogsFailing(ethImpl, [null, '0x1', '0x3eb', address, null], (error) => {
+        expect(error.message).to.equal('Exceeded maximum block range: 1000');
+      });
     });
   });
 
