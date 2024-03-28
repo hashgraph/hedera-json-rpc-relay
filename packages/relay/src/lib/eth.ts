@@ -2287,7 +2287,7 @@ export class EthImpl implements Eth {
     blockHash: string | null,
     fromBlock: string | 'latest',
     toBlock: string | 'latest',
-    address: string | [string] | null,
+    address: string | string[] | null,
     topics: any[] | null,
     requestIdPrefix?: string,
   ): Promise<Log[]> {
