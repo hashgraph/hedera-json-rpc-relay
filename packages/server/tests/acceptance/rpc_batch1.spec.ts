@@ -838,8 +838,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with insufficient balance)', async function () {
+        const accountAddress = `0x${accounts[2].accountId.toSolidityAddress()}`;
         const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId, requestId);
-
+        console.log(balanceInWeiBars);
+        console.log(await relay.getBalance(accountAddress, 'latest', requestId));
         const transaction = {
           ...default155TransactionData,
           to: mirrorContract.evm_address,
