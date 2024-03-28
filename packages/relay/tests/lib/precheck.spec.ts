@@ -18,7 +18,7 @@
  *
  */
 
-import { Assertion, expect } from 'chai';
+import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 const registry = new Registry();
@@ -450,25 +450,28 @@ describe('Precheck', async function () {
   });
 
   describe('account', async function () {
-    const defaultNonce = 3;
-    const defaultTx = {
-      value: oneTinyBar,
-      gasPrice: defaultGasPrice,
-      chainId: defaultChainId,
-      nonce: defaultNonce,
-      from: mockData.accountEvmAddress,
-    };
+    let defaultNonce, defaultTx, signed, parsedTx, mirrorAccount, wallet;
+    before(async () => {
+      defaultNonce = 3;
+      defaultTx = {
+        value: oneTinyBar,
+        gasPrice: defaultGasPrice,
+        chainId: defaultChainId,
+        nonce: defaultNonce,
+      };
 
-    const signed = await signTransaction(defaultTx);
-    const parsedTx = ethers.Transaction.from(signed);
+      wallet = ethers.Wallet.createRandom();
+      signed = await wallet.signTransaction({ ...defaultTx, from: wallet.address });
+      parsedTx = ethers.Transaction.from(signed);
 
-    const mirrorAccount = {
-      evm_address: mockData.accountEvmAddress,
-      ethereum_nonce: defaultNonce,
-    };
+      mirrorAccount = {
+        evm_address: parsedTx.from,
+        ethereum_nonce: defaultNonce,
+      };
+    });
 
     it(`should fail for missing account`, async function () {
-      mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(404, mockData.notFound);
+      mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(404, mockData.notFound);
 
       try {
         await precheck.verifyAccount(parsedTx);
@@ -477,12 +480,12 @@ describe('Precheck', async function () {
         expect(e).to.exist;
         expect(e.code).to.eq(-32001);
         expect(e.name).to.eq('Resource not found');
-        expect(e.message).to.contain(mockData.accountEvmAddress);
+        expect(e.message).to.contain(parsedTx.from);
       }
     });
 
     it(`should not fail for matched account`, async function () {
-      mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(200, mirrorAccount);
+      mock.onGet(`accounts/${parsedTx.from}?transactions=false`).reply(200, mirrorAccount);
       const account = await precheck.verifyAccount(parsedTx);
 
       expect(account.ethereum_nonce).to.eq(defaultNonce);
