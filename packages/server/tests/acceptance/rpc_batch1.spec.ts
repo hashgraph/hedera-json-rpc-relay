@@ -24,7 +24,7 @@ import { ethers } from 'ethers';
 import { AliasAccount } from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
-import { ContractFunctionParameters, TransferTransaction } from '@hashgraph/sdk';
+import { ContractFunctionParameters, FileInfo, FileInfoQuery, TransferTransaction } from '@hashgraph/sdk';
 
 // local resources
 import parentContractJson from '../contracts/Parent.json';
@@ -972,6 +972,30 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(info.contract_id).to.not.be.null;
         expect(info).to.have.property('created_contract_ids');
         expect(info.created_contract_ids.length).to.be.equal(1);
+      });
+
+      it('should delete the file created while execute "eth_sendRawTransaction" to deploy a large contract', async function () {
+        const gasPrice = await relay.gasPrice(requestId);
+        const transaction = {
+          type: 2,
+          chainId: Number(CHAIN_ID),
+          nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+          maxPriorityFeePerGas: gasPrice,
+          maxFeePerGas: gasPrice,
+          gasLimit: defaultGasLimit,
+          data: '0x' + '00'.repeat(5121),
+        };
+
+        const signedTx = await accounts[2].wallet.signTransaction(transaction);
+        const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+        const txInfo = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+
+        const contractResult = await mirrorNode.get(`/contracts/${txInfo.contract_id}`);
+        const fileInfo = await new FileInfoQuery().setFileId(contractResult.file_id).execute(servicesNode.client);
+        expect(fileInfo).to.exist;
+        expect(fileInfo instanceof FileInfo).to.be.true;
+        expect(fileInfo.isDeleted).to.be.true;
+        expect(fileInfo.size.toNumber()).to.eq(0);
       });
 
       it('should execute "eth_sendRawTransaction" and fail when deploying too large contract', async function () {
