@@ -1014,6 +1014,13 @@ export class EthImpl implements Eth {
    * @param blockNumber
    */
   async getCode(address: string, blockNumber: string | null, requestIdPrefix?: string) {
+    if (!EthImpl.isBlockParamValid(blockNumber)) {
+      throw predefined.INVALID_PARAMETER(
+        1, // param index
+        `The value passed is not a valid blockHash/blockNumber/blockTag value: ${blockNumber}`,
+      );
+    }
+
     this.logger.trace(`${requestIdPrefix} getCode(address=${address}, blockNumber=${blockNumber})`);
 
     // check for static precompile cases first before consulting nodes
@@ -1943,17 +1950,25 @@ export class EthImpl implements Eth {
     return input.startsWith(EthImpl.emptyHex) ? input.substring(2) : input;
   }
 
-  private static blockTagIsEarliest = (tag) => {
+  private static isBlockTagEarliest = (tag: string) => {
     return tag === EthImpl.blockEarliest;
   };
 
-  private static blockTagIsFinalized = (tag) => {
+  private static isBlockTagFinalized = (tag: string) => {
     return (
       tag === EthImpl.blockFinalized ||
       tag === EthImpl.blockLatest ||
       tag === EthImpl.blockPending ||
       tag === EthImpl.blockSafe
     );
+  };
+
+  private static isBlockNumValid = (num: string) => {
+    return /^0[xX]([1-9A-Fa-f]+[0-9A-Fa-f]{0,13}|0)$/.test(num) && Number.MAX_SAFE_INTEGER >= Number(num);
+  };
+
+  private static isBlockParamValid = (tag: string | null) => {
+    return tag == null || this.isBlockTagEarliest(tag) || this.isBlockTagFinalized(tag) || this.isBlockNumValid(tag);
   };
 
   private static isBlockHash = (blockHash) => {
