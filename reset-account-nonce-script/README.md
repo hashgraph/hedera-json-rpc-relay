@@ -17,3 +17,7 @@ OPERATOR_ID=             # format 0.0.9999 - transaction executor id
 OPERATOR_PK=             # hex encoded     - transaction executor private key
 RECEIVER_ID=             # format 0.0.9999 - the id of the account to transfer the remaining funds to
 ```
+
+PS: `OPERATOR_ID` can be retrieved by:
+- searching by account's address in https://hashscan.io
+- direct mirror node REST API call to `https://<[mainnet-public,testnet,previewnet]>.mirrornode.hedera.com/api/v1/accounts/<account_address>`
