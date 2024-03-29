@@ -50,7 +50,6 @@ import { CacheService } from './services/cacheService/cacheService';
 import { IDebugService } from './services/debugService/IDebugService';
 import { DebugService } from './services/debugService';
 import { isValidEthereumAddress } from '../formatters';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 
 const _ = require('lodash');
 const createHash = require('keccak');
