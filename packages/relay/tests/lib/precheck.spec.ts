@@ -466,7 +466,6 @@ describe('Precheck', async function () {
         await precheck.verifyAccount(parsedTx);
         expectedError();
       } catch (e: any) {
-        console.log(e);
         expect(e).to.exist;
         expect(e.code).to.eq(-32001);
         expect(e.name).to.eq('Resource not found');
