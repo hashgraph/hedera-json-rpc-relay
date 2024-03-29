@@ -1323,7 +1323,7 @@ export class EthImpl implements Eth {
         nonceCount = await this.getAccountNonceForHistoricBlock(address, blockNumOrTag, requestIdPrefix);
       } else {
         // return a '-39001: Unknown block' error per api-spec
-        throw predefined.UNKNOWN_BLOCK;
+        throw predefined.UNKNOWN_BLOCK();
       }
     } else {
       // if no block consideration, get latest ethereumNonce from mirror node if account or from consensus node is contract until HIP 729 is implemented
@@ -2208,7 +2208,7 @@ export class EthImpl implements Eth {
     // get block timestamp for blockNum
     const block = await this.mirrorNodeClient.getBlock(blockNumOrHash, requestIdPrefix); // consider caching error responses
     if (block == null) {
-      throw predefined.UNKNOWN_BLOCK;
+      throw predefined.UNKNOWN_BLOCK();
     }
 
     // get the latest 2 ethereum transactions for the account
@@ -2275,7 +2275,7 @@ export class EthImpl implements Eth {
     const isParamBlockNum = typeof blockNumOrHash === 'number' ? true : false;
 
     if (isParamBlockNum && blockNumOrHash < 0) {
-      throw predefined.UNKNOWN_BLOCK;
+      throw predefined.UNKNOWN_BLOCK();
     }
 
     if (!isParamBlockNum) {
@@ -2287,7 +2287,7 @@ export class EthImpl implements Eth {
     // check if on latest block, if so get latest ethereumNonce from mirror node account API
     const blockResponse = await this.mirrorNodeClient.getLatestBlock(requestIdPrefix); // consider caching error responses
     if (blockResponse == null || blockResponse.blocks.length === 0) {
-      throw predefined.UNKNOWN_BLOCK;
+      throw predefined.UNKNOWN_BLOCK();
     }
 
     if (blockResponse.blocks[0].number - blockNum <= this.maxBlockRange) {
