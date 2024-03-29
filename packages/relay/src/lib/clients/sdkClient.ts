@@ -48,6 +48,8 @@ import {
   PrecheckStatusError,
   TransactionRecordQuery,
   Hbar,
+  FileId,
+  FileDeleteTransaction,
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
@@ -192,7 +194,6 @@ export class SDKClient {
 
   async getFeeSchedule(callerName: string, requestId?: string): Promise<FeeSchedules> {
     const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID, callerName, requestId);
-
     return FeeSchedules.fromBytes(feeSchedulesFileBytes);
   }
 
@@ -247,11 +248,12 @@ export class SDKClient {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
     const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
+    let fileId: FileId | null = null;
 
     if (ethereumTransactionData.toBytes().length <= 5120) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
-      const fileId = await this.createFile(
+      fileId = await this.createFile(
         ethereumTransactionData.callData,
         this.clientMain,
         requestId,
@@ -269,7 +271,7 @@ export class SDKClient {
     const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction');
     ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.BLOCK_GAS_LIMIT)));
 
-    return this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId);
+    return this.executeTransaction(ethereumTransaction, fileId, callerName, interactingEntity, requestId);
   }
 
   async submitContractCallQuery(
@@ -455,6 +457,7 @@ export class SDKClient {
 
   private executeTransaction = async (
     transaction: Transaction,
+    fileId,
     callerName: string,
     interactingEntity: string,
     requestId?: string,
@@ -515,6 +518,14 @@ export class SDKClient {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
       throw sdkClientError;
+    } finally {
+      /**
+       *  For transactions of type CONTRACT_CREATE, if the contract's bytecode (calldata) exceeds 5120 bytes, HFS is employed to temporarily store the bytecode on the network.
+       *  After transaction execution, whether successful or not, any entity associated with the 'fileId' should be removed from the Hedera network.
+       */
+      if (fileId) {
+        await this.deleteFile(this.clientMain, fileId, requestId, callerName, interactingEntity);
+      }
     }
   };
 
@@ -691,5 +702,61 @@ export class SDKClient {
     }
 
     return fileId;
+  };
+
+  /**
+   * @dev Deletes `fileId` file from the Hedera Network utilizing Hashgraph SDK client
+   * @param client
+   * @param fileId
+   * @param requestId
+   * @param callerName
+   * @param interactingEntity
+   */
+  private deleteFile = async (
+    client: Client,
+    fileId: FileId,
+    requestId?: string,
+    callerName?: string,
+    interactingEntity?: string,
+  ) => {
+    // format request ID msg
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+
+    try {
+      // Create fileDeleteTx
+      const fileDeleteTx = await new FileDeleteTransaction()
+        .setFileId(fileId)
+        .setMaxTransactionFee(new Hbar(2))
+        .freezeWith(client);
+
+      // execute fileDeleteTx
+      const fileDeleteTxResponse = await fileDeleteTx.execute(client);
+
+      // get fileDeleteTx's record
+      const deleteFileRecord = await fileDeleteTxResponse.getRecord(this.clientMain);
+
+      // capture metrics
+      this.captureMetrics(
+        SDKClient.transactionMode,
+        fileDeleteTx.constructor.name,
+        Status.Success,
+        deleteFileRecord.transactionFee.toTinybars().toNumber(),
+        deleteFileRecord?.contractFunctionResult?.gasUsed,
+        callerName,
+        interactingEntity,
+      );
+
+      // ensure the file is deleted
+      const receipt = deleteFileRecord.receipt;
+      const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(client);
+
+      if (receipt.status === Status.Success && fileInfo.isDeleted) {
+        this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);
+      } else {
+        this.logger.warn(`${requestIdPrefix} Fail to delete file with fileId: ${fileId} `);
+      }
+    } catch (error: any) {
+      this.logger.warn(`${requestIdPrefix} ${error['message']} `);
+    }
   };
 }
