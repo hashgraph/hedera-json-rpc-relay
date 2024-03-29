@@ -1015,8 +1015,7 @@ export class EthImpl implements Eth {
    */
   async getCode(address: string, blockNumber: string | null, requestIdPrefix?: string) {
     if (!EthImpl.isBlockParamValid(blockNumber)) {
-      throw predefined.INVALID_PARAMETER(
-        1, // param index
+      throw predefined.UNKNOWN_BLOCK(
         `The value passed is not a valid blockHash/blockNumber/blockTag value: ${blockNumber}`,
       );
     }
