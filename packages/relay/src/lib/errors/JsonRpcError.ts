@@ -250,11 +250,12 @@ export const predefined = {
       code: -32000,
       message: `Exceeded max transactions that can be returned in a block: ${count}`,
     }),
-  UNKNOWN_BLOCK: new JsonRpcError({
-    name: 'Unknown block',
-    code: -39012,
-    message: 'Unknown block',
-  }),
+  UNKNOWN_BLOCK: (msg?: string | null) =>
+    new JsonRpcError({
+      name: 'Unknown block',
+      code: -39012,
+      message: msg || 'Unknown block',
+    }),
   INVALID_BLOCK_RANGE: new JsonRpcError({
     name: 'Invalid block range',
     code: -39013,
