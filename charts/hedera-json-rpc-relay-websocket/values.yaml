@@ -32,7 +32,7 @@ config:
   REDIS_ENABLED: false
   REDIS_URL: ''
   REDIS_RECONNECT_DELAY_MS: 1000
-
+  MULTI_SET: true
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []
 # - secretRef:

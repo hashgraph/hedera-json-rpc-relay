@@ -2137,7 +2137,13 @@ export class EthImpl implements Eth {
     }
     // cache the whole array using mSet
     if (Object.keys(keyValuePairs).length > 0) {
-      this.cacheService.multiSet(keyValuePairs, EthImpl.ethGetBlockByHash, requestIdPrefix, true);
+      this.cacheService.multiSet(
+        keyValuePairs,
+        EthImpl.ethGetBlockByHash,
+        this.syntheticLogCacheTtl,
+        requestIdPrefix,
+        true,
+      );
     }
   }
 
