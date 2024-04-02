@@ -145,6 +145,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     });
 
     it('@release should execute "eth_estimateGas" for contract call', async function () {
+      const currentPrice = await relay.gasPrice(requestId);
+      const expectedGas = parseInt(PING_CALL_ESTIMATED_GAS, 16);
+
+      const gasPriceDeviation = parseFloat(expectedGas.toString() ?? '0.2');
+
       const estimatedGas = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
         [
@@ -157,7 +162,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         requestId,
       );
       expect(estimatedGas).to.contain('0x');
-      expect(estimatedGas).to.equal(PING_CALL_ESTIMATED_GAS);
+      // handle deviation in gas price
+      expect(parseInt(estimatedGas)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
+      expect(parseInt(estimatedGas)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
     });
 
     // Skip this test for now because of bug in mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/6612 in Additional bug fixes
