@@ -30,7 +30,7 @@ module.exports = {
       name: 'mainnet',
       url: 'https://mainnet.hashio.io/api',
       chainId: 295,
-      accounts: [],
+      accounts: [process.env.OPERATOR_PK],
       mirrorNodeREST: 'https://mainnet-public.mirrornode.hedera.com'
     },
     testnet: {
@@ -44,7 +44,7 @@ module.exports = {
       name: 'previewnet',
       url: 'https://previewnet.hashio.io/api',
       chainId: 297,
-      accounts: [],
+      accounts: [process.env.OPERATOR_PK],
       mirrorNodeREST: 'https://previewnet.mirrornode.hedera.com'
     }
   }
