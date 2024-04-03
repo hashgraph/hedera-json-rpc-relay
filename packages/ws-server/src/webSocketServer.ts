@@ -31,11 +31,11 @@ import { formatConnectionIdMessage } from './utils/formatters';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { handleEthSubsribe, handleEthUnsubscribe } from './controllers';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { formatRequestIdMessage } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
-import { handleEthSubscribeLogs, handleEthSubscribeNewHeads } from './subscriptions/handlers';
 
 const register = new Registry();
 const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
@@ -130,57 +130,21 @@ app.ws.use(async (ctx) => {
     // method logics
     try {
       switch (method) {
-        case constants.METHODS.ETH_SUBSCRIBE: {
-          const event = params[0];
-          const filters = params[1];
-          let subscriptionId;
-
-          switch (event) {
-            case constants.SUBSCRIBE_EVENTS.LOGS:
-              ({ response, subscriptionId } = await handleEthSubscribeLogs(
-                filters,
-                requestIdPrefix,
-                response,
-                request,
-                subscriptionId,
-                ctx,
-                event,
-                relay,
-                mirrorNodeClient,
-              ));
-              break;
-
-            case constants.SUBSCRIBE_EVENTS.NEW_HEADS:
-              ({ response, subscriptionId } = handleEthSubscribeNewHeads(
-                response,
-                subscriptionId,
-                filters,
-                request,
-                ctx,
-                event,
-                relay,
-                logger,
-              ));
-              break;
-            case constants.SUBSCRIBE_EVENTS.NEW_PENDING_TRANSACTIONS:
-              response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-              break;
-
-            default:
-              response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-          }
-
-          limiter.incrementSubs(ctx);
-          response = response ?? (subscriptionId ? jsonResp(request.id, null, subscriptionId) : undefined);
+        case constants.METHODS.ETH_SUBSCRIBE:
+          response = await handleEthSubsribe(
+            ctx,
+            params,
+            requestIdPrefix,
+            request,
+            relay,
+            mirrorNodeClient,
+            limiter,
+            logger,
+          );
           break;
-        }
-        case constants.METHODS.ETH_UNSUBSCRIBE: {
-          const subId = params[0];
-          const unsubbedCount = relay.subs()?.unsubscribe(ctx.websocket, subId);
-          limiter.decrementSubs(ctx, unsubbedCount);
-          response = jsonResp(request.id, null, unsubbedCount !== 0);
+        case constants.METHODS.ETH_UNSUBSCRIBE:
+          response = handleEthUnsubscribe(ctx, params, request, relay, limiter);
           break;
-        }
         case constants.METHODS.ETH_CHAIN_ID:
           response = jsonResp(request.id, null, CHAIN_ID);
           break;
@@ -190,9 +154,8 @@ app.ws.use(async (ctx) => {
     } catch (error) {
       logger.error(
         error,
-        `${connectionIdPrefix} ${requestIdPrefix} Encountered error on ${
-          ctx.websocket.id
-        }, method: ${method}, params: ${JSON.stringify(params)}`,
+        `${connectionIdPrefix} ${requestIdPrefix} Encountered error on 
+        ${ctx.websocket.id}, method: ${method}, params: ${JSON.stringify(params)}`,
       );
       response = jsonResp(request.id, error, undefined);
     }

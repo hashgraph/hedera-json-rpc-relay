@@ -18,11 +18,13 @@
  *
  */
 
+import ConnectionLimiter from '../utils/connectionLimiter';
 import { getMultipleAddressesEnabled } from '../utils/utils';
 import { predefined, Relay } from '@hashgraph/json-rpc-relay';
 import { validateSubscribeEthLogsParams } from '../utils/validators';
-import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
+import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 
 /**
  * Subscribes to new block headers (newHeads) events and returns the response and subscription ID.
@@ -62,7 +64,7 @@ const subscribeToNewHeads = (
  * @param {any} logger - The logger object used for logging subscription information.
  * @returns {{ response: any; subscriptionId: any }} Returns an object containing the response and subscription ID.
  */
-export const handleEthSubscribeNewHeads = (
+const handleEthSubscribeNewHeads = (
   response: any,
   subscriptionId: any,
   filters: any,
@@ -95,7 +97,7 @@ export const handleEthSubscribeNewHeads = (
  * @param {MirrorNodeClient} mirrorNodeClient - The client for interacting with the MirrorNode API.
  * @returns {{ response: any; subscriptionId: any }} Returns an object containing the response and subscription ID.
  */
-export const handleEthSubscribeLogs = async (
+const handleEthSubscribeLogs = async (
   filters: any,
   requestIdPrefix: string,
   response: any,
@@ -117,4 +119,73 @@ export const handleEthSubscribeLogs = async (
     subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
   }
   return { response, subscriptionId };
+};
+
+/**
+ * Handles subscription requests for on-chain events.
+ * Subscribes to the specified event type and returns the response.
+ * @param {any} ctx - The context object containing information about the WebSocket connection.
+ * @param {any} params - The parameters of the subscription request.
+ * @param {string} requestIdPrefix - The prefix for the request ID.
+ * @param {any} request - The request object received from the client.
+ * @param {Relay} relay - The relay object used for managing WebSocket subscriptions.
+ * @param {MirrorNodeClient} mirrorNodeClient - The client for interacting with the MirrorNode API.
+ * @param {ConnectionLimiter} limiter - The limiter object used for rate limiting WebSocket connections.
+ * @param {any} logger - The logger object used for logging subscription information.
+ * @returns {Promise<any>} Returns a promise that resolves with the response to the subscription request.
+ */
+export const handleEthSubsribe = async (
+  ctx: any,
+  params: any,
+  requestIdPrefix: string,
+  request: any,
+  relay: Relay,
+  mirrorNodeClient: MirrorNodeClient,
+  limiter: ConnectionLimiter,
+  logger: any,
+): Promise<any> => {
+  const event = params[0];
+  const filters = params[1];
+  let response: any;
+  let subscriptionId: any;
+
+  switch (event) {
+    case constants.SUBSCRIBE_EVENTS.LOGS:
+      ({ response, subscriptionId } = await handleEthSubscribeLogs(
+        filters,
+        requestIdPrefix,
+        response,
+        request,
+        subscriptionId,
+        ctx,
+        event,
+        relay,
+        mirrorNodeClient,
+      ));
+      break;
+
+    case constants.SUBSCRIBE_EVENTS.NEW_HEADS:
+      ({ response, subscriptionId } = handleEthSubscribeNewHeads(
+        response,
+        subscriptionId,
+        filters,
+        request,
+        ctx,
+        event,
+        relay,
+        logger,
+      ));
+      break;
+    case constants.SUBSCRIBE_EVENTS.NEW_PENDING_TRANSACTIONS:
+      response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
+      break;
+
+    default:
+      response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
+  }
+
+  limiter.incrementSubs(ctx);
+  response = response ?? (subscriptionId ? jsonResp(request.id, null, subscriptionId) : undefined);
+
+  return response;
 };
