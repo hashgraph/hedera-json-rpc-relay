@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,15 @@ async function main() {
   const preDeletionAccount = await (await fetch(`${MIRROR_NODE_URL}/api/v1/accounts/${deletableWallet.address}`)).json();
   console.log(`address: ${preDeletionAccount.evm_address} deleted: ${preDeletionAccount.deleted} balance: ${preDeletionAccount.balance.balance}`);
 
+  const operatorWallet = new hre.ethers.Wallet(process.env.OPERATOR_PK);
+  const operator = await (await fetch(`${MIRROR_NODE_URL}/api/v1/accounts/${operatorWallet.address}`)).json();
   const client = Client.forNetwork(NETWORK)
-    .setOperator(process.env.OPERATOR_ID, PrivateKey.fromStringECDSA(process.env.OPERATOR_PK));
+    .setOperator(operator.account, PrivateKey.fromStringECDSA(process.env.OPERATOR_PK));
 
+  const receiver = await (await fetch(`${MIRROR_NODE_URL}/api/v1/accounts/${process.env.RECEIVER_ADDRESS}`)).json();
   const transaction = new AccountDeleteTransaction()
     .setAccountId(preDeletionAccount.account)
-    .setTransferAccountId(process.env.OPERATOR_ID);
+    .setTransferAccountId(receiver.account);
 
   const txResponse = await (await transaction.freezeWith(client).sign(PrivateKey.fromStringECDSA(process.env.DELETABLE_ACCOUNT_PK))).execute(client);
   const receipt = await txResponse.getReceipt(client);

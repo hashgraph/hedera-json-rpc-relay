@@ -1,6 +1,6 @@
 # Account deletion hardhat script
 
-This project demonstrates how to delete an already existing ECDSA account.
+This project demonstrates how to delete an already existing account. One of the main application of this might be the reseting of an accounts nonce to allow flows that require initial nonces such as deterministic contract address.
 
 Action steps:
 
@@ -13,11 +13,6 @@ npx hardhat run scripts/deleteAccount.js # run the script, default network is te
 `.env.example` format:
 ```bash
 DELETABLE_ACCOUNT_PK=    # hex encoded     - the account we want to delete
-OPERATOR_ID=             # format 0.0.9999 - transaction executor id
 OPERATOR_PK=             # hex encoded     - transaction executor private key
-RECEIVER_ID=             # format 0.0.9999 - the id of the account to transfer the remaining funds to
+RECEIVER_ADDRESS=        # hex encoded     - the address of the account to transfer the remaining funds to
 ```
-
-PS: `OPERATOR_ID` can be retrieved by:
-- searching by account's address in https://hashscan.io/<[mainnet,testnet,previewnet]>
-- direct mirror node REST API call to `https://<[mainnet-public,testnet,previewnet]>.mirrornode.hedera.com/api/v1/accounts/<account_address>`
