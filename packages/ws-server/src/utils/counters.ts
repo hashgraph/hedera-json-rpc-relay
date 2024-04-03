@@ -18,21 +18,21 @@
  *
  */
 
-import { WS_CONSTANTS } from './constants';
 import { Counter, Registry } from 'prom-client';
 
 /**
  * Generates a Prometheus Counter metric for tracking WebSocket method calls.
  * Removes any existing metric with the same name from the provided registry before creating the new metric.
  * @param {Registry} register - The Prometheus Registry where the metric will be registered.
+ * @param {any} counterInfo - Information of the counter.
  * @returns {Counter} Returns a new Counter metric instance.
  */
-export const generateMethodsCounter = (register: Registry) => {
-  register.removeSingleMetric(WS_CONSTANTS.methodsCounter.name);
+export const generateMethodsCounter = (register: Registry, counterInfo: any): Counter => {
+  register.removeSingleMetric(counterInfo.name);
   return new Counter({
-    name: WS_CONSTANTS.methodsCounter.name,
-    help: WS_CONSTANTS.methodsCounter.help,
-    labelNames: WS_CONSTANTS.methodsCounter.labelNames,
+    name: counterInfo.name,
+    help: counterInfo.help,
+    labelNames: counterInfo.labelNames,
     registers: [register],
   });
 };
@@ -41,14 +41,15 @@ export const generateMethodsCounter = (register: Registry) => {
  * Generates a Prometheus Counter metric for tracking WebSocket method calls by IP address.
  * Removes any existing metric with the same name from the provided registry before creating the new metric.
  * @param {Registry} register - The Prometheus Registry where the metric will be registered.
+ * @param {any} counterInfo - Information of the counter.
  * @returns {Counter} Returns a new Counter metric instance.
  */
-export const generateMethodsCounterById = (register: Registry) => {
-  register.removeSingleMetric(WS_CONSTANTS.methodsCounterByIp.name);
+export const generateMethodsCounterById = (register: Registry, counterInfo: any): Counter => {
+  register.removeSingleMetric(counterInfo.name);
   return new Counter({
-    name: WS_CONSTANTS.methodsCounterByIp.name,
-    help: WS_CONSTANTS.methodsCounterByIp.help,
-    labelNames: WS_CONSTANTS.methodsCounterByIp.labelNames,
+    name: counterInfo.name,
+    help: counterInfo.help,
+    labelNames: counterInfo.labelNames,
     registers: [register],
   });
 };

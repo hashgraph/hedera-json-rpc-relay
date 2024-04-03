@@ -25,15 +25,16 @@ import dotenv from 'dotenv';
 import { v4 as uuid } from 'uuid';
 import websockify from 'koa-websocket';
 import { Registry } from 'prom-client';
+import { WS_CONSTANTS } from './utils/constants';
 import { handleConnectionClose } from './utils/utils';
 import ConnectionLimiter from './utils/connectionLimiter';
-import { formatConnectionIdMessage } from './utils/formatters';
+import { formatIdMessage } from './utils/formatters';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { handleEthSubsribe, handleEthUnsubscribe } from './controllers';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
-import { formatRequestIdMessage } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { handleEthSendRawTransaction } from './controllers/eth_sendRawTransaction';
 import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
 
@@ -59,15 +60,23 @@ const mirrorNodeClient = relay.mirrorClient();
 
 const CHAIN_ID = relay.eth().chainId();
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
-const methodsCounter = generateMethodsCounter(register);
-const methodsCounterByIp = generateMethodsCounterById(register);
+const methodsCounter = generateMethodsCounter(register, {
+  name: WS_CONSTANTS.methodsCounter.name,
+  help: WS_CONSTANTS.methodsCounter.help,
+  labelNames: WS_CONSTANTS.methodsCounter.labelNames,
+});
+const methodsCounterByIp = generateMethodsCounterById(register, {
+  name: WS_CONSTANTS.methodsCounterByIp.name,
+  help: WS_CONSTANTS.methodsCounterByIp.help,
+  labelNames: WS_CONSTANTS.methodsCounterByIp.labelNames,
+});
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx) => {
   ctx.websocket.id = relay.subs()?.generateId();
   ctx.websocket.limiter = limiter;
-  const connectionIdPrefix = formatConnectionIdMessage(ctx.websocket.id);
-  const connectionRequestIdPrefix = formatRequestIdMessage(uuid());
+  const connectionIdPrefix = formatIdMessage('Connection ID', ctx.websocket.id);
+  const connectionRequestIdPrefix = formatIdMessage('Request ID', uuid());
   logger.info(
     `${connectionIdPrefix} ${connectionRequestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
   );
@@ -91,8 +100,9 @@ app.ws.use(async (ctx) => {
     // Reset the TTL timer for inactivity upon receiving a message from the client
     limiter.resetInactivityTTLTimer(ctx.websocket);
 
-    // Format a unique request ID prefix for logging purposes
-    const requestIdPrefix = formatRequestIdMessage(uuid());
+    // Format ID prefixes for logging purposes
+    const requestIdPrefix = formatIdMessage('Request ID', uuid());
+    const socketIdPrefix = formatIdMessage('Socket ID', ctx.websocket.id);
 
     // parse the received message from the client into a JSON object
     let request;
@@ -110,9 +120,9 @@ app.ws.use(async (ctx) => {
     // Extract the method and parameters from the received request
     const { method, params } = request;
     logger.debug(
-      `${connectionIdPrefix} ${requestIdPrefix} Received message from ${
-        ctx.websocket.id
-      }. Method: ${method}. Params: ${JSON.stringify(params)}`,
+      `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Method: ${method}. Params: ${JSON.stringify(
+        params,
+      )}`,
     );
 
     // Increment metrics for the received method
@@ -147,6 +157,18 @@ app.ws.use(async (ctx) => {
           break;
         case constants.METHODS.ETH_CHAIN_ID:
           response = jsonResp(request.id, null, CHAIN_ID);
+          break;
+        case constants.METHODS.ETH_SEND_RAW_TRANSACTION:
+          response = await handleEthSendRawTransaction(
+            ctx,
+            params,
+            logger,
+            relay,
+            request,
+            socketIdPrefix,
+            requestIdPrefix,
+            connectionIdPrefix,
+          );
           break;
         default:
           response = jsonResp(request.id, DEFAULT_ERROR, null);
