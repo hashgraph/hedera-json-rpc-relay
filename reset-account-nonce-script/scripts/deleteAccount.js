@@ -47,10 +47,11 @@ async function main() {
 
   console.log('deletion status: ' + receipt.status + ' (SUCCESS = 22)');
   console.log('waiting for mirror node data population...');
-  await new Promise(r => setTimeout(r, 5000));
+  await new Promise(r => setTimeout(r, 10_000));
 
-  const afterDeletionAccount = await (await fetch(`${MIRROR_NODE_URL}/api/v1/accounts/${deletableWallet.address}`)).json();
-  console.log(`mirror node query after deletion: ${afterDeletionAccount?._status?.messages[0]?.message} (expected "Not found")`);
+  const mirrorNodeQueryUrl = `${MIRROR_NODE_URL}/api/v1/accounts/${deletableWallet.address}`;
+  const afterDeletionAccount = await (await fetch(mirrorNodeQueryUrl)).json();
+  console.log(`executing mirror node query ${mirrorNodeQueryUrl} (you can re-run it on your own as a self-service) to check the status after deletion: ${afterDeletionAccount?._status?.messages[0]?.message} (expected "Not found")`);
   process.exit(1);
 }
 
