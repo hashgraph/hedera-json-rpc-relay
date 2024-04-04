@@ -17,24 +17,28 @@
  * limitations under the License.
  *
  */
-import dotenv from 'dotenv';
-import path from 'path';
 
 import Koa from 'koa';
-import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
-import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
-import websockify from 'koa-websocket';
-import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
-import { Registry, Counter } from 'prom-client';
+import path from 'path';
 import pino from 'pino';
-
-import ConnectionLimiter from './ConnectionLimiter';
-import { formatRequestIdMessage } from '@hashgraph/json-rpc-relay/dist/formatters';
-import { EthSubscribeLogsParamsObject } from '@hashgraph/json-rpc-server/dist/validator';
+import dotenv from 'dotenv';
 import { v4 as uuid } from 'uuid';
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { log } from 'console';
+import websockify from 'koa-websocket';
+import { Registry } from 'prom-client';
+import { handleConnectionClose } from './utils/utils';
+import ConnectionLimiter from './utils/connectionLimiter';
+import { formatConnectionIdMessage } from './utils/formatters';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { handleEthSubsribe, handleEthUnsubscribe } from './controllers';
+import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
+import { formatRequestIdMessage } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
+import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
+
+const register = new Registry();
+const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -47,86 +51,18 @@ const mainLogger = pino({
     },
   },
 });
-
-const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
-
 const logger = mainLogger.child({ name: 'rpc-ws-server' });
-const register = new Registry();
-const relay: Relay = new RelayImpl(logger, register);
-const limiter = new ConnectionLimiter(logger, register);
-const mirrorNodeClient = relay.mirrorClient();
 
-const app = websockify(new Koa());
+const limiter = new ConnectionLimiter(logger, register);
+const relay: Relay = new RelayImpl(logger, register);
+const mirrorNodeClient = relay.mirrorClient();
 
 const CHAIN_ID = relay.eth().chainId();
 const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
+const methodsCounter = generateMethodsCounter(register);
+const methodsCounterByIp = generateMethodsCounterById(register);
 
-const methodsCounterName = 'rpc_websocket_method_counter';
-register.removeSingleMetric(methodsCounterName);
-const methodsCounter = new Counter({
-  name: 'rpc_websocket_method_counter',
-  help: 'Relay websocket total methods called',
-  labelNames: ['method'],
-  registers: [register],
-});
-
-const methodsCounterByIpName = 'rpc_websocket_method_by_ip_counter';
-register.removeSingleMetric(methodsCounterByIpName);
-const methodsCounterByIp = new Counter({
-  name: methodsCounterByIpName,
-  help: 'Relay websocket methods called by ip',
-  labelNames: ['ip', 'method'],
-  registers: [register],
-});
-
-async function handleConnectionClose(ctx) {
-  relay.subs()?.unsubscribe(ctx.websocket);
-
-  limiter.decrementCounters(ctx);
-
-  ctx.websocket.terminate();
-}
-
-function getMultipleAddressesEnabled() {
-  return process.env.WS_MULTIPLE_ADDRESSES_ENABLED === 'true';
-}
-
-async function validateIsContractOrTokenAddress(address, requestId) {
-  const isContractOrToken = await mirrorNodeClient.resolveEntityType(
-    address,
-    [constants.TYPE_CONTRACT, constants.TYPE_TOKEN],
-    constants.METHODS.ETH_SUBSCRIBE,
-    requestId,
-  );
-  if (!isContractOrToken) {
-    throw new JsonRpcError(
-      predefined.INVALID_PARAMETER(
-        'filters.address',
-        `${address} is not a valid contract or token type or does not exists`,
-      ),
-      requestId,
-    );
-  }
-}
-
-async function validateSubscribeEthLogsParams(filters: any, requestId: string) {
-  // validate address exists and is correct lengh and type
-  // validate topics if exists and is array and each one is correct lengh and type
-  const paramsObject = new EthSubscribeLogsParamsObject(filters);
-  paramsObject.validate();
-
-  // validate address or addresses are an existing smart contract
-  if (paramsObject.address) {
-    if (Array.isArray(paramsObject.address)) {
-      for (const address of paramsObject.address) {
-        await validateIsContractOrTokenAddress(address, requestId);
-      }
-    } else {
-      await validateIsContractOrTokenAddress(paramsObject.address, requestId);
-    }
-  }
-}
-
+const app = websockify(new Koa());
 app.ws.use(async (ctx) => {
   ctx.websocket.id = relay.subs()?.generateId();
   ctx.websocket.limiter = limiter;
@@ -141,7 +77,7 @@ app.ws.use(async (ctx) => {
     logger.info(
       `${connectionIdPrefix} ${connectionRequestIdPrefix} Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`,
     );
-    await handleConnectionClose(ctx);
+    await handleConnectionClose(ctx, relay, limiter);
   });
 
   // Increment limit counters
@@ -150,88 +86,65 @@ app.ws.use(async (ctx) => {
   // Limit checks
   limiter.applyLimits(ctx);
 
+  // listen on message event
   ctx.websocket.on('message', async (msg) => {
-    // Receiving a message from the client resets the TTL timer
+    // Reset the TTL timer for inactivity upon receiving a message from the client
     limiter.resetInactivityTTLTimer(ctx.websocket);
+
+    // Format a unique request ID prefix for logging purposes
     const requestIdPrefix = formatRequestIdMessage(uuid());
+
+    // parse the received message from the client into a JSON object
     let request;
     try {
       request = JSON.parse(msg.toString('ascii'));
     } catch (e) {
+      // Log an error if the message cannot be decoded and send an invalid request error to the client
       logger.error(
         `${connectionIdPrefix} ${requestIdPrefix} ${ctx.websocket.id}: Could not decode message from connection, message: ${msg}, error: ${e}`,
       );
       ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
       return;
     }
-    const { method, params } = request;
-    let response;
 
+    // Extract the method and parameters from the received request
+    const { method, params } = request;
     logger.debug(
       `${connectionIdPrefix} ${requestIdPrefix} Received message from ${
         ctx.websocket.id
       }. Method: ${method}. Params: ${JSON.stringify(params)}`,
     );
 
+    // Increment metrics for the received method
     methodsCounter.labels(method).inc();
     methodsCounterByIp.labels(ctx.request.ip, method).inc();
 
-    // Early return if subscription limit is exceeded
+    // Check if the subscription limit is exceeded for ETH_SUBSCRIBE method
+    let response;
     if (method === constants.METHODS.ETH_SUBSCRIBE && !limiter.validateSubscriptionLimit(ctx)) {
       response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
       ctx.websocket.send(JSON.stringify(response));
       return;
     }
 
+    // method logics
     try {
       switch (method) {
-        case constants.METHODS.ETH_SUBSCRIBE: {
-          const event = params[0];
-          const filters = params[1];
-          let subscriptionId;
-
-          switch (event) {
-            case constants.SUBSCRIBE_EVENTS.LOGS:
-              ({ response, subscriptionId } = await handleEthSubscribeLogs(
-                filters,
-                requestIdPrefix,
-                response,
-                request,
-                subscriptionId,
-                ctx,
-                event,
-              ));
-              break;
-
-            case constants.SUBSCRIBE_EVENTS.NEW_HEADS:
-              ({ response, subscriptionId } = handleEthSubscribeNewHeads(
-                response,
-                subscriptionId,
-                filters,
-                request,
-                ctx,
-                event,
-              ));
-              break;
-            case constants.SUBSCRIBE_EVENTS.NEW_PENDING_TRANSACTIONS:
-              response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-              break;
-
-            default:
-              response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-          }
-
-          limiter.incrementSubs(ctx);
-          response = response ?? (subscriptionId ? jsonResp(request.id, null, subscriptionId) : undefined);
+        case constants.METHODS.ETH_SUBSCRIBE:
+          response = await handleEthSubsribe(
+            ctx,
+            params,
+            requestIdPrefix,
+            request,
+            relay,
+            mirrorNodeClient,
+            limiter,
+            logger,
+          );
           break;
-        }
-        case constants.METHODS.ETH_UNSUBSCRIBE: {
-          const subId = params[0];
-          const unsubbedCount = relay.subs()?.unsubscribe(ctx.websocket, subId);
-          limiter.decrementSubs(ctx, unsubbedCount);
-          response = jsonResp(request.id, null, unsubbedCount !== 0);
+        case constants.METHODS.ETH_UNSUBSCRIBE:
+          response = handleEthUnsubscribe(ctx, params, request, relay, limiter);
           break;
-        }
         case constants.METHODS.ETH_CHAIN_ID:
           response = jsonResp(request.id, null, CHAIN_ID);
           break;
@@ -241,9 +154,8 @@ app.ws.use(async (ctx) => {
     } catch (error) {
       logger.error(
         error,
-        `${connectionIdPrefix} ${requestIdPrefix} Encountered error on ${
-          ctx.websocket.id
-        }, method: ${method}, params: ${JSON.stringify(params)}`,
+        `${connectionIdPrefix} ${requestIdPrefix} Encountered error on 
+        ${ctx.websocket.id}, method: ${method}, params: ${JSON.stringify(params)}`,
       );
       response = jsonResp(request.id, error, undefined);
     }
@@ -261,23 +173,16 @@ app.ws.use(async (ctx) => {
 });
 
 const httpApp = new KoaJsonRpc(logger, register).getKoaApp();
-
 httpApp.use(async (ctx, next) => {
-  /**
-   * prometheus metrics exposure
-   */
+  // prometheus metrics exposure
   if (ctx.url === '/metrics') {
     ctx.status = 200;
     ctx.body = await register.metrics();
   } else if (ctx.url === '/health/liveness') {
-    /**
-     * liveness endpoint
-     */
+    //liveness endpoint
     ctx.status = 200;
   } else if (ctx.url === '/health/readiness') {
-    /**
-     * readiness endpoint
-     */
+    // readiness endpoint
     try {
       const result = relay.eth().chainId();
       if (result.includes('0x12')) {
@@ -296,10 +201,6 @@ httpApp.use(async (ctx, next) => {
   }
 });
 
-const formatConnectionIdMessage = (connectionId?: string): string => {
-  return connectionId ? `[Connection ID: ${connectionId}]` : '';
-};
-
 process.on('unhandledRejection', (reason, p) => {
   logger.error(`Unhandled Rejection at: Promise: ${JSON.stringify(p)}, reason: ${reason}`);
 });
@@ -309,53 +210,3 @@ process.on('uncaughtException', (err) => {
 });
 
 export { app, httpApp };
-function handleEthSubscribeNewHeads(
-  response: any,
-  subscriptionId: any,
-  filters: any,
-  request: any,
-  ctx: any,
-  event: any,
-) {
-  if (process.env.WS_NEW_HEADS_ENABLED === 'true') {
-    ({ response, subscriptionId } = subscribeToNewHeads(filters, response, request, subscriptionId, ctx, event));
-  } else {
-    response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
-  }
-  return { response, subscriptionId };
-}
-
-async function handleEthSubscribeLogs(
-  filters: any,
-  requestIdPrefix: string,
-  response: any,
-  request: any,
-  subscriptionId: any,
-  ctx: any,
-  event: any,
-) {
-  await validateSubscribeEthLogsParams(filters, requestIdPrefix);
-  if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
-    response = jsonResp(
-      request.id,
-      predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
-      undefined,
-    );
-  } else {
-    subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
-  }
-  return { response, subscriptionId };
-}
-
-function subscribeToNewHeads(
-  filters: any,
-  response: any,
-  request: any,
-  subscriptionId: any,
-  ctx: any,
-  event: any,
-): { response: any; subscriptionId: any } {
-  subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
-  logger.info(`Subscribed to newHeads, subscriptionId: ${subscriptionId}`);
-  return { response, subscriptionId };
-}
