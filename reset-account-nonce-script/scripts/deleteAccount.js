@@ -50,9 +50,10 @@ async function main() {
   await new Promise(r => setTimeout(r, 10_000));
 
   const mirrorNodeQueryUrl = `${MIRROR_NODE_URL}/api/v1/accounts/${deletableWallet.address}`;
-  const afterDeletionAccount = await (await fetch(mirrorNodeQueryUrl)).json();
+  const mirrorNodeQueryResponse = await fetch(mirrorNodeQueryUrl);
+  const afterDeletionAccount = await mirrorNodeQueryResponse.json();
   console.log(`executing mirror node query ${mirrorNodeQueryUrl} (you can re-run it on your own as a self-service) to check the status after deletion: ${afterDeletionAccount?._status?.messages[0]?.message} (expected "Not found")`);
-  process.exit(1);
+  process.exit(mirrorNodeQueryResponse.status === 404 ? 0 : 1);
 }
 
 main().catch((error) => {
