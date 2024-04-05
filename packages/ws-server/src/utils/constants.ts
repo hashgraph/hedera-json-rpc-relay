@@ -57,6 +57,10 @@ export const WS_CONSTANTS = {
     ETH_SUBSCRIBE: 'eth_subscribe',
     ETH_UNSUBSCRIBE: 'eth_unsubscribe',
     ETH_CHAIN_ID: 'eth_chainId',
+    ETH_GET_CODE: 'eth_getCode',
+    ETH_ESTIMATE_GAS: 'eth_estimateGas',
+    ETH_GET_TRANSACTION_COUNT: 'eth_getTransactionCount',
+    ETH_MAX_PRIORITY_FEE_PER_GAS: 'eth_maxPriorityFeePerGas',
     ETH_SEND_RAW_TRANSACTION: 'eth_sendRawTransaction',
   },
 };

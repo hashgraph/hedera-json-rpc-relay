@@ -178,7 +178,6 @@ describe('@release @web-socket Acceptance Tests', async function () {
     it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
       const webSocket = new WebSocket(WS_RELAY_URL);
       process.env.WS_NEW_HEADS_ENABLED = 'false';
-      let response = '';
       const messagePromise = new Promise((resolve, reject) => {
         webSocket.on('message', function incoming(data) {
           try {
@@ -194,7 +193,6 @@ describe('@release @web-socket Acceptance Tests', async function () {
           } catch (error) {
             reject(error);
           }
-          response = data;
         });
         webSocket.on('open', function open() {
           // send the request for newHeads
