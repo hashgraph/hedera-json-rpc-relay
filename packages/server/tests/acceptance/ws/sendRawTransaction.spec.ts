@@ -27,7 +27,7 @@ import { AliasAccount } from '../../clients/servicesClient';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 
-describe('@web-socket eth_sendRawTransaction', async function () {
+describe('@release @web-socket eth_sendRawTransaction', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_sendRawTransaction';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
