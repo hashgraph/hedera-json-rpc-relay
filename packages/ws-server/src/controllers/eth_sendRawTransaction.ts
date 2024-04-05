@@ -32,7 +32,6 @@ import { handleSendingTransactionRequests } from './helpers';
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} request - The request object received from the client.
  * @param {string} method - The name of the method.
- * @param {string} socketIdPrefix - The prefix for the socket ID.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
  * @returns {Promise<any>} Returns a promise that resolves with the JSON-RPC response to the client.
@@ -45,27 +44,15 @@ export const handleEthSendRawTransaction = async (
   relay: Relay,
   request: any,
   method: string,
-  socketIdPrefix: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ) => {
   const SIGNED_TX = params[0];
   const TAG = JSON.stringify({ method, signedTx: SIGNED_TX });
 
-  validateParamsLength(
-    ctx,
-    params,
-    method,
-    TAG,
-    logger,
-    sendToClient,
-    1,
-    socketIdPrefix,
-    requestIdPrefix,
-    connectionIdPrefix,
-  );
+  validateParamsLength(ctx, params, method, TAG, logger, sendToClient, 1, requestIdPrefix, connectionIdPrefix);
   logger.info(
-    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Submitting raw transaction with signedTx=${SIGNED_TX} for tag=${TAG}`,
+    `${connectionIdPrefix} ${requestIdPrefix}: Submitting raw transaction with signedTx=${SIGNED_TX} for tag=${TAG}`,
   );
 
   return handleSendingTransactionRequests(
@@ -77,7 +64,6 @@ export const handleEthSendRawTransaction = async (
     request,
     method,
     'sendRawTransaction',
-    socketIdPrefix,
     requestIdPrefix,
     connectionIdPrefix,
   );

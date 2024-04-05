@@ -33,7 +33,6 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
  * @param {any} request - The request object received from the client.
  * @param {string} method - The JSON-RPC method associated with the request.
  * @param {string} rpcCallEndpoint - The Hedera RPC call endpoint to execute.
- * @param {string} socketIdPrefix - The prefix for the socket ID.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
  * @throws {JsonRpcError} Throws a JsonRpcError if there is an issue with the Hedera RPC call or an internal error occurs.
@@ -47,19 +46,16 @@ export const handleSendingTransactionRequests = async (
   request: any,
   method: string,
   rpcCallEndpoint: string,
-  socketIdPrefix: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ) => {
   try {
     const txRes = await relay.eth()[rpcCallEndpoint](...args);
 
-    if (txRes !== null && txRes !== undefined) {
-      sendToClient(ctx.websocket, method, txRes, tag, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);
+    if (txRes) {
+      sendToClient(ctx.websocket, method, txRes, tag, logger, requestIdPrefix, connectionIdPrefix);
     } else {
-      logger.error(
-        `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Fail to retrieve result for tag=${tag}`,
-      );
+      logger.error(`${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for tag=${tag}`);
     }
 
     return jsonResp(request.id, null, txRes);
@@ -70,7 +66,6 @@ export const handleSendingTransactionRequests = async (
       JSON.stringify(error.message || error),
       tag,
       logger,
-      socketIdPrefix,
       requestIdPrefix,
       connectionIdPrefix,
     );

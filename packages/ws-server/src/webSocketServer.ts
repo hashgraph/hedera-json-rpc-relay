@@ -108,7 +108,6 @@ app.ws.use(async (ctx) => {
 
     // Format ID prefixes for logging purposes
     const requestIdPrefix = formatIdMessage('Request ID', uuid());
-    const socketIdPrefix = formatIdMessage('Socket ID', ctx.websocket.id);
 
     // parse the received message from the client into a JSON object
     let request;
@@ -117,7 +116,7 @@ app.ws.use(async (ctx) => {
     } catch (e) {
       // Log an error if the message cannot be decoded and send an invalid request error to the client
       logger.error(
-        `${connectionIdPrefix} ${requestIdPrefix} ${ctx.websocket.id}: Could not decode message from connection, message: ${msg}, error: ${e}`,
+        `${connectionIdPrefix} ${requestIdPrefix}: Could not decode message from connection, message: ${msg}, error: ${e}`,
       );
       ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
       return;
@@ -125,11 +124,7 @@ app.ws.use(async (ctx) => {
 
     // Extract the method and parameters from the received request
     const { method, params } = request;
-    logger.debug(
-      `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Method: ${method}. Params: ${JSON.stringify(
-        params,
-      )}`,
-    );
+    logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Method: ${method}. Params: ${JSON.stringify(params)}`);
 
     // Increment metrics for the received method
     methodsCounter.labels(method).inc();
@@ -184,7 +179,6 @@ app.ws.use(async (ctx) => {
             relay,
             request,
             method,
-            socketIdPrefix,
             requestIdPrefix,
             connectionIdPrefix,
           );
@@ -198,7 +192,6 @@ app.ws.use(async (ctx) => {
             relay,
             request,
             method,
-            socketIdPrefix,
             requestIdPrefix,
             connectionIdPrefix,
           );
@@ -211,7 +204,6 @@ app.ws.use(async (ctx) => {
             relay,
             request,
             method,
-            socketIdPrefix,
             requestIdPrefix,
             connectionIdPrefix,
           );
@@ -224,7 +216,6 @@ app.ws.use(async (ctx) => {
             relay,
             request,
             method,
-            socketIdPrefix,
             requestIdPrefix,
             connectionIdPrefix,
           );

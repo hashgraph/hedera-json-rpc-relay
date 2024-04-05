@@ -32,7 +32,6 @@ import { handleSendingTransactionRequests } from './helpers';
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} request - The request object received from the client.
  * @param {string} method - The JSON-RPC method associated with the request.
- * @param {string} socketIdPrefix - The prefix for the socket ID.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
  * @returns {Promise<any>} Returns a promise that resolves with the JSON-RPC response to the client.
@@ -45,29 +44,15 @@ export const handleEthGetCode = async (
   relay: Relay,
   request: any,
   method: string,
-  socketIdPrefix: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ) => {
   const ADDRESS = params[0];
   const TAG = JSON.stringify({ method, address: ADDRESS });
 
-  validateParamsLength(
-    ctx,
-    params,
-    method,
-    TAG,
-    logger,
-    sendToClient,
-    2,
-    socketIdPrefix,
-    requestIdPrefix,
-    connectionIdPrefix,
-  );
+  validateParamsLength(ctx, params, method, TAG, logger, sendToClient, 2, requestIdPrefix, connectionIdPrefix);
 
-  logger.info(
-    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Retrieving code with address=${ADDRESS} for tag=${TAG}`,
-  );
+  logger.info(`${connectionIdPrefix} ${requestIdPrefix}: Retrieving code with address=${ADDRESS} for tag=${TAG}`);
 
   return handleSendingTransactionRequests(
     ctx,
@@ -78,7 +63,6 @@ export const handleEthGetCode = async (
     request,
     method,
     'getCode',
-    socketIdPrefix,
     requestIdPrefix,
     connectionIdPrefix,
   );

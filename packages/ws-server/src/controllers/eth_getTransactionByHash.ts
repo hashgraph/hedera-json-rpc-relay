@@ -32,7 +32,6 @@ import { handleSendingTransactionRequests } from './helpers';
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} request - The request object received from the client.
  * @param {string} method - The JSON-RPC method associated with the request.
- * @param {string} socketIdPrefix - The prefix for the socket ID.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
  * @returns {Promise<any>} Returns a promise that resolves with the JSON-RPC response to the client.
@@ -45,28 +44,16 @@ export const handleEthGetTransactionByHash = async (
   relay: Relay,
   request: any,
   method: string,
-  socketIdPrefix: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ): Promise<any> => {
   const TX_HASH = params[0];
   const TAG = JSON.stringify({ method, signedTx: TX_HASH });
 
-  validateParamsLength(
-    ctx,
-    params,
-    method,
-    TAG,
-    logger,
-    sendToClient,
-    1,
-    socketIdPrefix,
-    requestIdPrefix,
-    connectionIdPrefix,
-  );
+  validateParamsLength(ctx, params, method, TAG, logger, sendToClient, 1, requestIdPrefix, connectionIdPrefix);
 
   logger.info(
-    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Retrieving transaction info with txHash=${TX_HASH} for tag=${TAG}`,
+    `${connectionIdPrefix} ${requestIdPrefix}: Retrieving transaction info with txHash=${TX_HASH} for tag=${TAG}`,
   );
 
   return handleSendingTransactionRequests(
@@ -78,7 +65,6 @@ export const handleEthGetTransactionByHash = async (
     request,
     method,
     'getTransactionByHash',
-    socketIdPrefix,
     requestIdPrefix,
     connectionIdPrefix,
   );

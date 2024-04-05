@@ -50,7 +50,6 @@ export const getMultipleAddressesEnabled = (): boolean => {
  * @param {any} data - The data to be included in the response.
  * @param {string} tag - A tag used for logging and identifying the message.
  * @param {any} logger - The logger object for logging messages and events.
- * @param {string} socketIdPrefix - The prefix for the socket ID.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
  */
@@ -60,12 +59,11 @@ export const sendToClient = (
   data: any,
   tag: string,
   logger: any,
-  socketIdPrefix: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ) => {
   logger.info(
-    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Sending data from tag: ${tag} to connectionId: ${connection.id}, data: ${data}`,
+    `${connectionIdPrefix} ${requestIdPrefix}: Sending data from tag: ${tag} to connectionId: ${connection.id}, data: ${data}`,
   );
 
   connection.send(
