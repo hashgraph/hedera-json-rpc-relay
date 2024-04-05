@@ -24,21 +24,21 @@ import { validateParamsLength } from '../utils/validators';
 import { handleSendingTransactionRequests } from './helpers';
 
 /**
- * Handles the "eth_sendRawTransaction" method request by submitting a raw transaction to the Websocket server.
- * Validates the parameters, submits the transaction, and sends the txHash response back to the client.
+ * Handles the "eth_getTransactionByHash" method request by retrieving transaction details from the Hedera network.
+ * Validates the parameters, retrieves the transaction details, and sends the response back to the client.
  * @param {any} ctx - The context object containing information about the WebSocket connection.
- * @param {any} params - The parameters of the method request, expecting a single parameter: the signed transaction.
+ * @param {any[]} params - The parameters of the method request, expecting a single parameter: the transaction hash.
  * @param {any} logger - The logger object for logging messages and events.
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} request - The request object received from the client.
- * @param {string} method - The name of the method.
+ * @param {string} method - The JSON-RPC method associated with the request.
  * @param {string} socketIdPrefix - The prefix for the socket ID.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
  * @returns {Promise<any>} Returns a promise that resolves with the JSON-RPC response to the client.
  * @throws {JsonRpcError} Throws a JsonRpcError if there is an issue with the parameters or an internal error occurs.
  */
-export const handleEthSendRawTransaction = async (
+export const handleEthGetTransactionByHash = async (
   ctx: any,
   params: any,
   logger: any,
@@ -49,8 +49,8 @@ export const handleEthSendRawTransaction = async (
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ) => {
-  const SIGNED_TX = params[0];
-  const TAG = JSON.stringify({ method, signedTx: SIGNED_TX });
+  const TX_HASH = params[0];
+  const TAG = JSON.stringify({ method, signedTx: TX_HASH });
 
   validateParamsLength(
     ctx,
@@ -64,19 +64,20 @@ export const handleEthSendRawTransaction = async (
     requestIdPrefix,
     connectionIdPrefix,
   );
+
   logger.info(
-    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Submitting raw transaction with signedTx=${SIGNED_TX} for tag=${TAG}`,
+    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Retrieving transaction info with txHash=${TX_HASH} for tag=${TAG}`,
   );
 
   return handleSendingTransactionRequests(
     ctx,
     TAG,
-    SIGNED_TX,
+    TX_HASH,
     relay,
     logger,
     request,
     method,
-    'sendRawTransaction',
+    'getTransactionByHash',
     socketIdPrefix,
     requestIdPrefix,
     connectionIdPrefix,
