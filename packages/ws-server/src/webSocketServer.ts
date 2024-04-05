@@ -31,11 +31,10 @@ import { handleConnectionClose } from './utils/utils';
 import ConnectionLimiter from './utils/connectionLimiter';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
-import { handleEthSubsribe, handleEthUnsubscribe } from './controllers';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
-import { handleEthSendRawTransaction } from './controllers/eth_sendRawTransaction';
 import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
+import { handleEthSendRawTransaction, handleEthSubsribe, handleEthUnsubscribe } from './controllers';
 
 const register = new Registry();
 const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);

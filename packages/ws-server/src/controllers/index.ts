@@ -20,5 +20,6 @@
 
 import { handleEthSubsribe } from './eth_subscribe';
 import { handleEthUnsubscribe } from './eth_unscribe';
+import { handleEthSendRawTransaction } from './eth_sendRawTransaction';
 
-export { handleEthUnsubscribe, handleEthSubsribe };
+export { handleEthUnsubscribe, handleEthSubsribe, handleEthSendRawTransaction };
