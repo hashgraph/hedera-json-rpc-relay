@@ -19,9 +19,9 @@
  */
 
 import { sendToClient } from '../utils/utils';
+import { Relay } from '@hashgraph/json-rpc-relay';
 import { validateParamsLength } from '../utils/validators';
-import { predefined, Relay } from '@hashgraph/json-rpc-relay';
-import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
+import { handleSendingTransactionRequests } from './helpers';
 
 /**
  * Handles the "eth_getTransactionByHash" method request by retrieving transaction details from the Hedera network.
@@ -66,32 +66,20 @@ export const handleEthGetTransactionByHash = async (
   );
 
   logger.info(
-    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Retrieving transaction with txHash=${TX_HASH} for tag=${TAG}`,
+    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Retrieving transaction info with txHash=${TX_HASH} for tag=${TAG}`,
   );
 
-  try {
-    const txRes = await relay.eth().getTransactionByHash(TX_HASH, requestIdPrefix);
-    if (txRes) {
-      sendToClient(ctx.websocket, method, txRes, TAG, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);
-    } else {
-      logger.error(
-        `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Fail to retrieve result for tag=${TAG}`,
-      );
-    }
-
-    return jsonResp(request.id, null, txRes);
-  } catch (error: any) {
-    sendToClient(
-      ctx.websocket,
-      method,
-      JSON.stringify(error.message || error),
-      TAG,
-      logger,
-      socketIdPrefix,
-      requestIdPrefix,
-      connectionIdPrefix,
-    );
-
-    throw predefined.INTERNAL_ERROR(JSON.stringify(error.message || error));
-  }
+  return handleSendingTransactionRequests(
+    ctx,
+    TAG,
+    TX_HASH,
+    relay,
+    logger,
+    request,
+    method,
+    'getTransactionByHash',
+    socketIdPrefix,
+    requestIdPrefix,
+    connectionIdPrefix,
+  );
 };
