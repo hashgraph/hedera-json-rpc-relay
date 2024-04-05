@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,5 +52,11 @@ export const WS_CONSTANTS = {
       name: 'rpc_websocket_total_connection_limit_by_ttl_enforced',
       help: 'Relay websocket total connection ttl limits enforced',
     },
+  },
+  METHODS: {
+    ETH_SUBSCRIBE: 'eth_subscribe',
+    ETH_UNSUBSCRIBE: 'eth_unsubscribe',
+    ETH_CHAIN_ID: 'eth_chainId',
+    ETH_SEND_RAW_TRANSACTION: 'eth_sendRawTransaction',
   },
 };

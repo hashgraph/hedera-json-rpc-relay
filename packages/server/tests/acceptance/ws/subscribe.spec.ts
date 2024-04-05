@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ const createLogs = async (contract: ethers.Contract, requestId) => {
   await new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
-describe('@web-socket Acceptance Tests', async function () {
+describe('@release @web-socket Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   let server;

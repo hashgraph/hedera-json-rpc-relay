@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,4 +40,40 @@ export const handleConnectionClose = async (ctx: any, relay: Relay, limiter: Con
  */
 export const getMultipleAddressesEnabled = (): boolean => {
   return process.env.WS_MULTIPLE_ADDRESSES_ENABLED === 'true';
+};
+
+/**
+ * Sends a JSON-RPC response message to the client WebSocket connection.
+ * Resets the TTL timer for inactivity on the client connection.
+ * @param {any} connection - The WebSocket connection object.
+ * @param {string} method - The JSON-RPC method associated with the response.
+ * @param {any} data - The data to be included in the response.
+ * @param {string} tag - A tag used for logging and identifying the message.
+ * @param {any} logger - The logger object for logging messages and events.
+ * @param {string} socketIdPrefix - The prefix for the socket ID.
+ * @param {string} requestIdPrefix - The prefix for the request ID.
+ * @param {string} connectionIdPrefix - The prefix for the connection ID.
+ */
+export const sendToClient = (
+  connection: any,
+  method: string,
+  data: any,
+  tag: string,
+  logger: any,
+  socketIdPrefix: string,
+  requestIdPrefix: string,
+  connectionIdPrefix: string,
+) => {
+  logger.info(
+    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Sending data from tag: ${tag} to connectionId: ${connection.id}, data: ${data}`,
+  );
+
+  connection.send(
+    JSON.stringify({
+      jsonrpc: '2.0',
+      method,
+      result: data,
+    }),
+  );
+  connection.limiter.resetInactivityTTLTimer(connection);
 };

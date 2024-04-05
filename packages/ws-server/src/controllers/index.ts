@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,5 +20,6 @@
 
 import { handleEthSubsribe } from './eth_subscribe';
 import { handleEthUnsubscribe } from './eth_unscribe';
+import { handleEthSendRawTransaction } from './eth_sendRawTransaction';
 
-export { handleEthUnsubscribe, handleEthSubsribe };
+export { handleEthUnsubscribe, handleEthSubsribe, handleEthSendRawTransaction };

@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,11 @@
  */
 
 /**
- * Formats a connection ID message for logging purposes.
- * @param {string | undefined} connectionId - The connection ID to be formatted.
- * @returns {string} Returns a formatted connection ID message if a connection ID is provided, otherwise an empty string.
+ * Formats an ID message for logging purposes.
+ * @param {string } title - The title of the ID to be formatted.
+ * @param {string | undefined} id - The ID to be formatted.
+ * @returns {string} Returns a formatted ID message if an ID is provided, otherwise an empty string.
  */
-export const formatConnectionIdMessage = (connectionId?: string): string => {
-  return connectionId ? `[Connection ID: ${connectionId}]` : '';
+export const formatIdMessage = (title: string, id?: string): string => {
+  return id ? `[${title}: ${id}]` : '';
 };
