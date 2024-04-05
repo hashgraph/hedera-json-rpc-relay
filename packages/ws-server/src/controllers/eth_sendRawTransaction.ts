@@ -71,7 +71,7 @@ export const handleEthSendRawTransaction = async (
   return handleSendingTransactionRequests(
     ctx,
     TAG,
-    SIGNED_TX,
+    [SIGNED_TX, requestIdPrefix],
     relay,
     logger,
     request,

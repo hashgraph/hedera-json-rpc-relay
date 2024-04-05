@@ -27,7 +27,7 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
  * Executes the specified Hedera RPC call endpoint with the provided argument, retrieves the response, and sends it back to the client.
  * @param {any} ctx - The context object containing information about the WebSocket connection.
  * @param {string} tag - A tag used for logging and identifying the message.
- * @param {string} args - The argument required for the Hedera RPC call.
+ * @param {any[]} args - The array of arguments required for the Hedera RPC call.
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} logger - The logger object for logging messages and events.
  * @param {any} request - The request object received from the client.
@@ -36,13 +36,12 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
  * @param {string} socketIdPrefix - The prefix for the socket ID.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
- * @returns {Promise<any>} Returns a promise that resolves with the JSON-RPC response to the client.
  * @throws {JsonRpcError} Throws a JsonRpcError if there is an issue with the Hedera RPC call or an internal error occurs.
  */
 export const handleSendingTransactionRequests = async (
   ctx: any,
   tag: string,
-  args: string,
+  args: any[],
   relay: Relay,
   logger: any,
   request: any,
@@ -51,9 +50,9 @@ export const handleSendingTransactionRequests = async (
   socketIdPrefix: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
-): Promise<any> => {
+) => {
   try {
-    const txRes = await relay.eth()[rpcCallEndpoint](...args, requestIdPrefix);
+    const txRes = await relay.eth()[rpcCallEndpoint](...args);
 
     if (txRes !== null && txRes !== undefined) {
       sendToClient(ctx.websocket, method, txRes, tag, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);

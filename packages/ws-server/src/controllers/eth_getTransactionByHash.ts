@@ -48,7 +48,7 @@ export const handleEthGetTransactionByHash = async (
   socketIdPrefix: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
-) => {
+): Promise<any> => {
   const TX_HASH = params[0];
   const TAG = JSON.stringify({ method, signedTx: TX_HASH });
 
@@ -72,7 +72,7 @@ export const handleEthGetTransactionByHash = async (
   return handleSendingTransactionRequests(
     ctx,
     TAG,
-    TX_HASH,
+    [TX_HASH, requestIdPrefix],
     relay,
     logger,
     request,
