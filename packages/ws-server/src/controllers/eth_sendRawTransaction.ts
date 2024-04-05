@@ -31,6 +31,7 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
  * @param {any} logger - The logger object for logging messages and events.
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} request - The request object received from the client.
+ * @param {string} method - The name of the method.
  * @param {string} socketIdPrefix - The prefix for the socket ID.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
@@ -43,18 +44,18 @@ export const handleEthSendRawTransaction = async (
   logger: any,
   relay: Relay,
   request: any,
+  method: string,
   socketIdPrefix: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ) => {
   const SIGNED_TX = params[0];
-  const METHOD_NAME = 'eth_sendRawTransaction';
-  const TAG = JSON.stringify({ method: METHOD_NAME, signedTx: SIGNED_TX });
+  const TAG = JSON.stringify({ method, signedTx: SIGNED_TX });
 
   if (params.length !== 1) {
     const ERR_MSG = 'INVALID PARAMETERS';
     logger.error(`${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Invalid parameters ${params}`);
-    sendToClient(ctx.websocket, METHOD_NAME, ERR_MSG, TAG, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);
+    sendToClient(ctx.websocket, method, ERR_MSG, TAG, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);
     throw predefined.INVALID_PARAMETERS;
   }
 
@@ -65,7 +66,7 @@ export const handleEthSendRawTransaction = async (
   try {
     const txRes = await relay.eth().sendRawTransaction(SIGNED_TX, requestIdPrefix);
     if (txRes) {
-      sendToClient(ctx.websocket, METHOD_NAME, txRes, TAG, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);
+      sendToClient(ctx.websocket, method, txRes, TAG, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);
     } else {
       logger.error(
         `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Fail to retrieve result for tag=${TAG}`,
@@ -76,7 +77,7 @@ export const handleEthSendRawTransaction = async (
   } catch (error: any) {
     sendToClient(
       ctx.websocket,
-      METHOD_NAME,
+      method,
       JSON.stringify(error.message || error),
       TAG,
       logger,

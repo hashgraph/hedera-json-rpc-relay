@@ -26,12 +26,11 @@ import { v4 as uuid } from 'uuid';
 import websockify from 'koa-websocket';
 import { Registry } from 'prom-client';
 import { WS_CONSTANTS } from './utils/constants';
+import { formatIdMessage } from './utils/formatters';
 import { handleConnectionClose } from './utils/utils';
 import ConnectionLimiter from './utils/connectionLimiter';
-import { formatIdMessage } from './utils/formatters';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { handleEthSubsribe, handleEthUnsubscribe } from './controllers';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { handleEthSendRawTransaction } from './controllers/eth_sendRawTransaction';
@@ -131,7 +130,7 @@ app.ws.use(async (ctx) => {
 
     // Check if the subscription limit is exceeded for ETH_SUBSCRIBE method
     let response;
-    if (method === constants.METHODS.ETH_SUBSCRIBE && !limiter.validateSubscriptionLimit(ctx)) {
+    if (method === WS_CONSTANTS.METHODS.ETH_SUBSCRIBE && !limiter.validateSubscriptionLimit(ctx)) {
       response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
       ctx.websocket.send(JSON.stringify(response));
       return;
@@ -140,7 +139,7 @@ app.ws.use(async (ctx) => {
     // method logics
     try {
       switch (method) {
-        case constants.METHODS.ETH_SUBSCRIBE:
+        case WS_CONSTANTS.METHODS.ETH_SUBSCRIBE:
           response = await handleEthSubsribe(
             ctx,
             params,
@@ -152,19 +151,20 @@ app.ws.use(async (ctx) => {
             logger,
           );
           break;
-        case constants.METHODS.ETH_UNSUBSCRIBE:
+        case WS_CONSTANTS.METHODS.ETH_UNSUBSCRIBE:
           response = handleEthUnsubscribe(ctx, params, request, relay, limiter);
           break;
-        case constants.METHODS.ETH_CHAIN_ID:
+        case WS_CONSTANTS.METHODS.ETH_CHAIN_ID:
           response = jsonResp(request.id, null, CHAIN_ID);
           break;
-        case constants.METHODS.ETH_SEND_RAW_TRANSACTION:
+        case WS_CONSTANTS.METHODS.ETH_SEND_RAW_TRANSACTION:
           response = await handleEthSendRawTransaction(
             ctx,
             params,
             logger,
             relay,
             request,
+            method,
             socketIdPrefix,
             requestIdPrefix,
             connectionIdPrefix,
