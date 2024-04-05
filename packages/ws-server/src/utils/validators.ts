@@ -80,3 +80,39 @@ export const validateSubscribeEthLogsParams = async (
     }
   }
 };
+
+/**
+ * Validates the length of parameters received in a JSON-RPC method request.
+ * If the length does not match the expected length, logs an error, sends an error response to the client,
+ * and throws an exception for invalid parameters.
+ * @param {any} ctx - The context object containing information about the WebSocket connection.
+ * @param {any[]} params - The parameters of the method request.
+ * @param {string} method - The JSON-RPC method associated with the request.
+ * @param {string} tag - A tag used for logging and identifying the message.
+ * @param {any} logger - The logger object for logging messages and events.
+ * @param {any} sendToClient - The function for sending responses to the client.
+ * @param {number} expectedLength - The expected length of parameters for the method request.
+ * @param {string} socketIdPrefix - The prefix for the socket ID.
+ * @param {string} requestIdPrefix - The prefix for the request ID.
+ * @param {string} connectionIdPrefix - The prefix for the connection ID.
+ * @throws {JsonRpcError} Throws a JsonRpcError if the length of parameters does not match the expected length.
+ */
+export const validateParamsLength = (
+  ctx: any,
+  params: any,
+  method: string,
+  tag: string,
+  logger: any,
+  sendToClient: any,
+  expectedLength: number,
+  socketIdPrefix: string,
+  requestIdPrefix: string,
+  connectionIdPrefix: string,
+) => {
+  if (params.length !== expectedLength) {
+    const ERR_MSG = 'INVALID PARAMETERS';
+    logger.error(`${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Invalid parameters ${params}`);
+    sendToClient(ctx.websocket, method, ERR_MSG, tag, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);
+    throw predefined.INVALID_PARAMETERS;
+  }
+};

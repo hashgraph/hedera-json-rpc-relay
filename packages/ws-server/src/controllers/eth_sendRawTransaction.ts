@@ -21,6 +21,7 @@
 import { sendToClient } from '../utils/utils';
 import { Relay } from '@hashgraph/json-rpc-relay';
 import { predefined } from '@hashgraph/json-rpc-relay';
+import { validateParamsLength } from '../utils/validators';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 
 /**
@@ -52,13 +53,18 @@ export const handleEthSendRawTransaction = async (
   const SIGNED_TX = params[0];
   const TAG = JSON.stringify({ method, signedTx: SIGNED_TX });
 
-  if (params.length !== 1) {
-    const ERR_MSG = 'INVALID PARAMETERS';
-    logger.error(`${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Invalid parameters ${params}`);
-    sendToClient(ctx.websocket, method, ERR_MSG, TAG, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);
-    throw predefined.INVALID_PARAMETERS;
-  }
-
+  validateParamsLength(
+    ctx,
+    params,
+    method,
+    TAG,
+    logger,
+    sendToClient,
+    1,
+    socketIdPrefix,
+    requestIdPrefix,
+    connectionIdPrefix,
+  );
   logger.info(
     `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Submitting raw transaction with signedTx=${SIGNED_TX} for tag=${TAG}`,
   );
