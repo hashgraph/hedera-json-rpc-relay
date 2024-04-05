@@ -36,11 +36,12 @@ import { generateMethodsCounter, generateMethodsCounterById } from './utils/coun
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import {
   handleEthGetCode,
-  handleEthEstimateGas,
-  handleEthGetTransactionByHash,
-  handleEthSendRawTransaction,
   handleEthSubsribe,
+  handleEthEstimateGas,
   handleEthUnsubscribe,
+  handleEthSendRawTransaction,
+  handleEthGetTransactionByHash,
+  handleEthGetTransactionReceipt,
 } from './controllers';
 
 const register = new Registry();
@@ -171,7 +172,6 @@ app.ws.use(async (ctx) => {
             relay,
             request,
             method,
-            socketIdPrefix,
             requestIdPrefix,
             connectionIdPrefix,
           );
@@ -205,6 +205,19 @@ app.ws.use(async (ctx) => {
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
           response = await handleEthGetTransactionByHash(
+            ctx,
+            params,
+            logger,
+            relay,
+            request,
+            method,
+            socketIdPrefix,
+            requestIdPrefix,
+            connectionIdPrefix,
+          );
+          break;
+        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_RECEIPT:
+          response = await handleEthGetTransactionReceipt(
             ctx,
             params,
             logger,

@@ -24,12 +24,14 @@ import { handleEthUnsubscribe } from './eth_unscribe';
 import { handleEthEstimateGas } from './eth_estimateGas';
 import { handleEthSendRawTransaction } from './eth_sendRawTransaction';
 import { handleEthGetTransactionByHash } from './eth_getTransactionByHash';
+import { handleEthGetTransactionReceipt } from './eth_getTransactionReceipt';
 
 export {
   handleEthGetCode,
   handleEthSubsribe,
-  handleEthEstimateGas,
   handleEthUnsubscribe,
+  handleEthEstimateGas,
   handleEthSendRawTransaction,
   handleEthGetTransactionByHash,
+  handleEthGetTransactionReceipt,
 };
