@@ -58,5 +58,6 @@ export const WS_CONSTANTS = {
     ETH_UNSUBSCRIBE: 'eth_unsubscribe',
     ETH_CHAIN_ID: 'eth_chainId',
     ETH_SEND_RAW_TRANSACTION: 'eth_sendRawTransaction',
+    ETH_GET_TRANSACTION_BY_HASH: 'eth_getTransactionByHash',
   },
 };
