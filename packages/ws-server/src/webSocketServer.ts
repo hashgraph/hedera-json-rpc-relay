@@ -34,7 +34,12 @@ import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
-import { handleEthSendRawTransaction, handleEthSubsribe, handleEthUnsubscribe } from './controllers';
+import {
+  handleEthGetTransactionByHash,
+  handleEthSendRawTransaction,
+  handleEthSubsribe,
+  handleEthUnsubscribe,
+} from './controllers';
 
 const register = new Registry();
 const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
@@ -177,6 +182,20 @@ app.ws.use(async (ctx) => {
               id: request.id,
               result: relayResponse,
             }),
+          );
+          break;
+
+        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
+          response = await handleEthGetTransactionByHash(
+            ctx,
+            params,
+            logger,
+            relay,
+            request,
+            method,
+            socketIdPrefix,
+            requestIdPrefix,
+            connectionIdPrefix,
           );
           break;
         default:

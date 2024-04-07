@@ -62,5 +62,6 @@ export const WS_CONSTANTS = {
     ETH_GET_TRANSACTION_COUNT: 'eth_getTransactionCount',
     ETH_MAX_PRIORITY_FEE_PER_GAS: 'eth_maxPriorityFeePerGas',
     ETH_SEND_RAW_TRANSACTION: 'eth_sendRawTransaction',
+    ETH_GET_TRANSACTION_BY_HASH: 'eth_getTransactionByHash',
   },
 };
