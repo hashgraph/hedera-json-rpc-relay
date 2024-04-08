@@ -36,7 +36,6 @@ const Address = RelayCalls;
 import basicContract from '../../tests/contracts/Basic.json';
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
 import constants from '../../../relay/src/lib/constants';
-import exp from 'constants';
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -52,7 +51,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let mirrorContract;
   let mirrorContractDetails;
   let requestId;
-  let hts;
+  let account2Address;
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const INCORRECT_CHAIN_ID = 999;
@@ -106,6 +105,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       const resolvedAddresses = await resolveAccountEvmAddresses(mirrorContractDetails);
       mirrorContractDetails.from = resolvedAddresses.from;
       mirrorContractDetails.to = resolvedAddresses.to;
+      account2Address = `0x${accounts[2].accountId.toSolidityAddress()}`;
     });
 
     this.beforeEach(async () => {
@@ -838,10 +838,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('should fail "eth_sendRawTransaction" for legacy EIP 155 transactions (with insufficient balance)', async function () {
-        const accountAddress = `0x${accounts[2].accountId.toSolidityAddress()}`;
-        const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId, requestId);
-        console.log(balanceInWeiBars);
-        console.log(await relay.getBalance(accountAddress, 'latest', requestId));
+        const balanceInWeiBars = await relay.getBalance(account2Address, 'latest', requestId);
         const transaction = {
           ...default155TransactionData,
           to: mirrorContract.evm_address,
@@ -917,7 +914,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('should fail "eth_sendRawTransaction" for Legacy 2930 transactions (with insufficient balance)', async function () {
-        const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId, requestId);
+        const balanceInWeiBars = await relay.getBalance(account2Address, 'latest', requestId);
         const transaction = {
           ...defaultLegacy2930TransactionData,
           value: balanceInWeiBars,
@@ -946,7 +943,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('should fail "eth_sendRawTransaction" for London transactions (with insufficient balance)', async function () {
-        const balanceInWeiBars = await servicesNode.getAccountBalanceInWeiBars(accounts[2].accountId, requestId);
+        const balanceInWeiBars = await relay.getBalance(account2Address, 'latest', requestId);
         const gasPrice = await relay.gasPrice(requestId);
 
         const transaction = {
