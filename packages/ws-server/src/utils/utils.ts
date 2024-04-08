@@ -46,6 +46,7 @@ export const getMultipleAddressesEnabled = (): boolean => {
  * Sends a JSON-RPC response message to the client WebSocket connection.
  * Resets the TTL timer for inactivity on the client connection.
  * @param {any} connection - The WebSocket connection object.
+ * @param {any} request - The request object received from the client.
  * @param {string} method - The JSON-RPC method associated with the response.
  * @param {any} data - The data to be included in the response.
  * @param {string} tag - A tag used for logging and identifying the message.
@@ -55,6 +56,7 @@ export const getMultipleAddressesEnabled = (): boolean => {
  */
 export const sendToClient = (
   connection: any,
+  request: any,
   method: string,
   data: any,
   tag: string,
@@ -63,7 +65,9 @@ export const sendToClient = (
   connectionIdPrefix: string,
 ) => {
   logger.info(
-    `${connectionIdPrefix} ${requestIdPrefix}: Sending data from tag: ${tag} to connectionId: ${connection.id}, data: ${data}`,
+    `${connectionIdPrefix} ${requestIdPrefix}: Sending data from tag: ${tag} to connectionId: ${
+      connection.id
+    }, data: ${JSON.stringify(data)}`,
   );
 
   connection.send(
@@ -71,6 +75,7 @@ export const sendToClient = (
       jsonrpc: '2.0',
       method,
       result: data,
+      id: request.id,
     }),
   );
   connection.limiter.resetInactivityTTLTimer(connection);

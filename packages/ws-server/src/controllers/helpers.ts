@@ -20,14 +20,13 @@
 import { sendToClient } from '../utils/utils';
 import { Relay } from '@hashgraph/json-rpc-relay';
 import { predefined } from '@hashgraph/json-rpc-relay';
-import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 
 /**
- * Handles sending transaction-related requests to the Hedera network, such as sending raw transactions or getting transaction information.
- * Executes the specified Hedera RPC call endpoint with the provided argument, retrieves the response, and sends it back to the client.
+ * Handles sending requests to the relay server for Hedera network interactions using the specified RPC call endpoint.
+ * Executes the specified Hedera RPC call endpoint with the provided arguments, retrieves the response, and sends it back to the client.
  * @param {any} ctx - The context object containing information about the WebSocket connection.
  * @param {string} tag - A tag used for logging and identifying the message.
- * @param {any[]} args - The array of arguments required for the Hedera RPC call.
+ * @param {any[]} args - An array of arguments required for the Hedera RPC call.
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} logger - The logger object for logging messages and events.
  * @param {any} request - The request object received from the client.
@@ -37,7 +36,7 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
  * @throws {JsonRpcError} Throws a JsonRpcError if there is an issue with the Hedera RPC call or an internal error occurs.
  */
-export const handleSendingTransactionRequests = async (
+export const handleSendingRequestsToRelay = async (
   ctx: any,
   tag: string,
   args: any[],
@@ -51,25 +50,12 @@ export const handleSendingTransactionRequests = async (
 ) => {
   try {
     const txRes = await relay.eth()[rpcCallEndpoint](...args);
-
-    if (txRes) {
-      sendToClient(ctx.websocket, method, txRes, tag, logger, requestIdPrefix, connectionIdPrefix);
-    } else {
-      logger.error(`${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for tag=${tag}`);
+    if (!txRes) {
+      logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for tag=${tag}. Data=${txRes}`);
     }
 
-    return jsonResp(request.id, null, txRes);
+    sendToClient(ctx.websocket, request, method, txRes, tag, logger, requestIdPrefix, connectionIdPrefix);
   } catch (error: any) {
-    sendToClient(
-      ctx.websocket,
-      method,
-      JSON.stringify(error.message || error),
-      tag,
-      logger,
-      requestIdPrefix,
-      connectionIdPrefix,
-    );
-
     throw predefined.INTERNAL_ERROR(JSON.stringify(error.message || error));
   }
 };

@@ -20,7 +20,7 @@
 
 import { Relay } from '@hashgraph/json-rpc-relay';
 import { predefined } from '@hashgraph/json-rpc-relay';
-import { handleSendingTransactionRequests } from './helpers';
+import { handleSendingRequestsToRelay } from './helpers';
 
 /**
  * Handles the "eth_getTransactionByHash" method request by retrieving transaction details from the Hedera network.
@@ -57,7 +57,7 @@ export const handleEthGetTransactionByHash = async (
     `${connectionIdPrefix} ${requestIdPrefix}: Retrieving transaction info with txHash=${TX_HASH} for tag=${TAG}`,
   );
 
-  return handleSendingTransactionRequests(
+  await handleSendingRequestsToRelay(
     ctx,
     TAG,
     [TX_HASH, requestIdPrefix],

@@ -20,7 +20,7 @@
 
 import { Relay } from '@hashgraph/json-rpc-relay';
 import { predefined } from '@hashgraph/json-rpc-relay';
-import { handleSendingTransactionRequests } from './helpers';
+import { handleSendingRequestsToRelay } from './helpers';
 
 /**
  * Handles the "eth_sendRawTransaction" method request by submitting a raw transaction to the Websocket server.
@@ -57,7 +57,7 @@ export const handleEthSendRawTransaction = async (
     `${connectionIdPrefix} ${requestIdPrefix}: Submitting raw transaction with signedTx=${SIGNED_TX} for tag=${TAG}`,
   );
 
-  return handleSendingTransactionRequests(
+  await handleSendingRequestsToRelay(
     ctx,
     TAG,
     [SIGNED_TX, requestIdPrefix],

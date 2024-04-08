@@ -160,7 +160,7 @@ app.ws.use(async (ctx) => {
           response = jsonResp(request.id, null, CHAIN_ID);
           break;
         case WS_CONSTANTS.METHODS.ETH_SEND_RAW_TRANSACTION:
-          response = await handleEthSendRawTransaction(
+          await handleEthSendRawTransaction(
             ctx,
             params,
             logger,
@@ -197,7 +197,7 @@ app.ws.use(async (ctx) => {
           );
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
-          response = await handleEthGetTransactionByHash(
+          await handleEthGetTransactionByHash(
             ctx,
             params,
             logger,
@@ -209,7 +209,7 @@ app.ws.use(async (ctx) => {
           );
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_RECEIPT:
-          response = await handleEthGetTransactionReceipt(
+          await handleEthGetTransactionReceipt(
             ctx,
             params,
             logger,
@@ -226,8 +226,9 @@ app.ws.use(async (ctx) => {
     } catch (error) {
       logger.error(
         error,
-        `${connectionIdPrefix} ${requestIdPrefix} Encountered error on 
-        ${ctx.websocket.id}, method: ${method}, params: ${JSON.stringify(params)}`,
+        `${connectionIdPrefix} ${requestIdPrefix} Encountered error on connectionID: ${
+          ctx.websocket.id
+        }, method: ${method}, params: ${JSON.stringify(params)}`,
       );
       response = jsonResp(request.id, error, undefined);
     }
