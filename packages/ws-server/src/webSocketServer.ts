@@ -35,6 +35,7 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
 import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import {
+  handleEthGetCode,
   handleEthGetTransactionByHash,
   handleEthSendRawTransaction,
   handleEthSubsribe,
@@ -175,16 +176,19 @@ app.ws.use(async (ctx) => {
           );
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_CODE:
-          relayResponse = await relay.eth().getCode(params[0], params[1]);
-          ctx.websocket.send(
-            JSON.stringify({
-              jsonrpc: '2.0',
-              id: request.id,
-              result: relayResponse,
-            }),
+          relayResponse = await handleEthGetCode(
+            ctx,
+            params,
+            logger,
+            relay,
+            request,
+            method,
+            socketIdPrefix,
+            requestIdPrefix,
+            connectionIdPrefix,
           );
+          response = jsonResp(request.id, null, relayResponse.result);
           break;
-
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
           response = await handleEthGetTransactionByHash(
             ctx,

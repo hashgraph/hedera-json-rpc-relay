@@ -53,7 +53,7 @@ export const handleSendingTransactionRequests = async (
   connectionIdPrefix: string,
 ): Promise<any> => {
   try {
-    const txRes = await relay.eth()[rpcCallEndpoint](arg, requestIdPrefix);
+    const txRes = await relay.eth()[rpcCallEndpoint](...arg, requestIdPrefix);
 
     if (txRes) {
       sendToClient(ctx.websocket, method, txRes, tag, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);

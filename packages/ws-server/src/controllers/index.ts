@@ -20,7 +20,14 @@
 
 import { handleEthSubsribe } from './eth_subscribe';
 import { handleEthUnsubscribe } from './eth_unscribe';
+import { handleEthGetCode } from './eth_getCode';
 import { handleEthGetTransactionByHash } from './eth_getTransaction';
 import { handleEthSendRawTransaction } from './eth_sendRawTransaction';
 
-export { handleEthUnsubscribe, handleEthSubsribe, handleEthSendRawTransaction, handleEthGetTransactionByHash };
+export {
+  handleEthUnsubscribe,
+  handleEthSubsribe,
+  handleEthSendRawTransaction,
+  handleEthGetTransactionByHash,
+  handleEthGetCode,
+};
