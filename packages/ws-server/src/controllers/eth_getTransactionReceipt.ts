@@ -18,9 +18,8 @@
  *
  */
 
-import { sendToClient } from '../utils/utils';
 import { Relay } from '@hashgraph/json-rpc-relay';
-import { validateParamsLength } from '../utils/validators';
+import { predefined } from '@hashgraph/json-rpc-relay';
 import { handleSendingTransactionRequests } from './helpers';
 
 /**
@@ -50,7 +49,9 @@ export const handleEthGetTransactionReceipt = async (
   const TX_HASH = params[0];
   const TAG = JSON.stringify({ method, signedTx: TX_HASH });
 
-  validateParamsLength(ctx, params, method, TAG, logger, sendToClient, 1, requestIdPrefix, connectionIdPrefix);
+  if (params.length !== 1) {
+    throw predefined.INVALID_PARAMETERS;
+  }
 
   logger.info(
     `${connectionIdPrefix} ${requestIdPrefix}: Retrieving transaction receipt with txHash=${TX_HASH} for tag=${TAG}`,

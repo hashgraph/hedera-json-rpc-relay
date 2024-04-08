@@ -18,9 +18,8 @@
  *
  */
 
-import { sendToClient } from '../utils/utils';
 import { Relay } from '@hashgraph/json-rpc-relay';
-import { validateParamsLength } from '../utils/validators';
+import { predefined } from '@hashgraph/json-rpc-relay';
 import { handleSendingTransactionRequests } from './helpers';
 
 /**
@@ -50,7 +49,10 @@ export const handleEthSendRawTransaction = async (
   const SIGNED_TX = params[0];
   const TAG = JSON.stringify({ method, signedTx: SIGNED_TX });
 
-  validateParamsLength(ctx, params, method, TAG, logger, sendToClient, 1, requestIdPrefix, connectionIdPrefix);
+  if (params.length !== 1) {
+    throw predefined.INVALID_PARAMETERS;
+  }
+
   logger.info(
     `${connectionIdPrefix} ${requestIdPrefix}: Submitting raw transaction with signedTx=${SIGNED_TX} for tag=${TAG}`,
   );
