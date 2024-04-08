@@ -24,7 +24,7 @@ import { ethers } from 'ethers';
 import { AliasAccount } from '../clients/servicesClient';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
-import { ContractFunctionParameters } from '@hashgraph/sdk';
+import { ContractFunctionParameters, ContractId } from '@hashgraph/sdk';
 import TokenCreateJson from '../contracts/TokenCreateContract.json';
 
 // local resources
@@ -57,6 +57,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   let mirrorSecondaryAccount;
   let requestId;
   let htsAddress;
+  let basicContract: ethers.BaseContract;
+  let basicContractAddress: string;
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
@@ -82,6 +84,14 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash]);
     await new Promise((r) => setTimeout(r, 2000));
   };
+
+  async function deployContract(abi, bytecode: string, signer: ethers.Wallet): Promise<ethers.BaseContract> {
+    const factory = new ethers.ContractFactory(abi, bytecode, signer);
+    const contract = await factory.deploy(Helper.GAS.LIMIT_5_000_000);
+    await contract.waitForDeployment();
+
+    return contract;
+  }
 
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
@@ -122,6 +132,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
     blockNumberAtStartOfTests = latestBlock.number;
     mirrorAccount0AtStartOfTests = await mirrorNode.get(`/accounts/${accounts[0].accountId}`, requestId);
+
+    basicContract = await deployContract(basicContractJson.abi, basicContractJson.bytecode, accounts[0].wallet);
+    basicContractAddress = basicContract.target as string;
   });
 
   this.beforeEach(async () => {
@@ -129,14 +142,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_estimateGas', async function () {
-    let basicContract;
-
-    this.beforeAll(async () => {
-      basicContract = await servicesNode.deployContract(basicContractJson);
-      // delay
-      await new Promise((r) => setTimeout(r, 5000));
-    });
-
     it('@release should execute "eth_estimateGas"', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{}], requestId);
       expect(res).to.contain('0x');
@@ -154,7 +159,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
         [
           {
-            to: `0x${basicContract.contractId.toSolidityAddress()}`,
+            to: basicContractAddress,
             from: accounts[0].address,
             data: BASIC_CONTRACT_PING_CALL_DATA,
           },
@@ -417,10 +422,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     });
 
     it('@release should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {
-      const account = await servicesNode.createAliasAccount(10, null, requestId);
-      await mirrorNode.get(`/accounts/${account.accountId}`, requestId);
+      const newAccount = ethers.Wallet.createRandom();
+      await accounts[0].wallet.sendTransaction({
+        to: newAccount.address,
+        value: ethers.parseEther('0.1'),
+      });
 
-      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, [account.address, 'latest'], requestId);
+      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, [newAccount.address, 'latest'], requestId);
       expect(res).to.not.be.eq(EthImpl.zeroHex);
     });
 
@@ -693,18 +701,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_getCode', () => {
-    let basicContract;
+    let mainContract: ethers.BaseContract;
     let mainContractAddress: string;
     let NftHTSTokenContractAddress: string;
     let redirectBytecode: string;
-
-    async function deploymainContract() {
-      const mainFactory = new ethers.ContractFactory(TokenCreateJson.abi, TokenCreateJson.bytecode, accounts[3].wallet);
-      const mainContract = await mainFactory.deploy(Helper.GAS.LIMIT_5_000_000);
-      await mainContract.waitForDeployment();
-
-      return mainContract.target;
-    }
 
     async function createNftHTSToken(account) {
       const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
@@ -720,15 +720,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     }
 
     before(async () => {
-      basicContract = await servicesNode.deployContract(basicContractJson);
-      mainContractAddress = await deploymainContract();
-
-      // Wait for creation to propagate
-      const basicMirror = await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
-      const mainContractMirror = await mirrorNode.get(`/contracts/${mainContractAddress}`, requestId);
+      mainContract = await deployContract(TokenCreateJson.abi, TokenCreateJson.bytecode, accounts[3].wallet);
+      mainContractAddress = mainContract.target as string;
 
       const accountWithContractIdKey = await servicesNode.createAccountWithContractIdKey(
-        mainContractMirror.contract_id,
+        ContractId.fromEvmAddress(0, 0, mainContractAddress),
         60,
         relay.provider,
         requestId,
@@ -748,14 +744,12 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     });
 
     it('@release should execute "eth_getCode" for contract evm_address', async function () {
-      const evmAddress = basicContract.contractId.toSolidityAddress();
-      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, ['0x' + evmAddress, 'latest'], requestId);
+      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, [basicContractAddress, 'latest'], requestId);
       expect(res).to.eq(basicContractJson.deployedBytecode);
     });
 
     it('@release should execute "eth_getCode" for contract with id converted to evm_address', async function () {
-      const evmAddress = Utils.idToEvmAddress(basicContract.contractId.toString());
-      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, [evmAddress, 'latest'], requestId);
+      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, [basicContractAddress, 'latest'], requestId);
       expect(res).to.eq(basicContractJson.deployedBytecode);
     });
 
@@ -781,17 +775,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     });
 
     it('should not return contract bytecode after sefldestruct', async function () {
-      const evmAddress = basicContract.contractId.toSolidityAddress();
-      const bytecodeBefore = await relay.call('eth_getCode', [`0x${evmAddress}`, 'latest'], requestId);
+      const bytecodeBefore = await relay.call('eth_getCode', [basicContractAddress, 'latest'], requestId);
 
-      await accounts[0].client.executeContractCall(
-        basicContract.contractId,
-        'destroy',
-        new ContractFunctionParameters(),
-        1_000_000,
-      );
+      await basicContract.connect(accounts[0].wallet).destroy();
 
-      const bytecodeAfter = await relay.call('eth_getCode', [`0x${evmAddress}`, 'latest'], requestId);
+      const bytecodeAfter = await relay.call('eth_getCode', [basicContractAddress, 'latest'], requestId);
       expect(bytecodeAfter).to.not.eq(bytecodeBefore);
       expect(bytecodeAfter).to.eq('0x');
     });

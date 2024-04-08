@@ -32,6 +32,7 @@ import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
+import Helper from '../../tests/helpers/constants';
 const Address = RelayCalls;
 import basicContract from '../../tests/contracts/Basic.json';
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
@@ -112,38 +113,30 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       requestId = Utils.generateRequestId();
     });
 
+    async function deployLogsContract(contractJson, signer: ethers.Wallet) {
+      const mainFactory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, signer);
+      const mainContract = await mainFactory.deploy(Helper.GAS.LIMIT_5_000_000);
+      await mainContract.waitForDeployment();
+
+      return mainContract;
+    }
+
     describe('eth_getLogs', () => {
-      let log0Block, log4Block, contractAddress, contractAddress2, latestBlock, tenBlocksBehindLatest;
+      let log0Block, log4Block, contractAddress: string, contractAddress2: string, latestBlock, tenBlocksBehindLatest;
 
       before(async () => {
-        const logsContract = await servicesNode.deployContract(logsContractJson);
+        const logsContract = await deployLogsContract(logsContractJson, accounts[2].wallet);
+        const logsContract2 = await deployLogsContract(logsContractJson, accounts[2].wallet);
+        contractAddress = logsContract.target.toString();
+        contractAddress2 = logsContract2.target.toString();
 
-        const mirrorNodeResp = await mirrorNode.get(`/contracts/${logsContract.contractId}`, requestId);
-        expect(mirrorNodeResp).to.have.property('evm_address');
-        expect(mirrorNodeResp.env_address).to.not.be.null;
-        contractAddress = mirrorNodeResp.evm_address;
+        await logsContract.connect(accounts[0].wallet).log0(1);
+        await logsContract.connect(accounts[0].wallet).log1(1);
+        await logsContract.connect(accounts[0].wallet).log2(1, 1);
+        await logsContract.connect(accounts[0].wallet).log3(1, 1, 1);
+        await logsContract.connect(accounts[0].wallet).log4(1, 1, 1, 1);
+        await logsContract2.connect(accounts[0].wallet).log4(1, 1, 1, 1);
 
-        const logsContract2 = await servicesNode.deployContract(logsContractJson);
-        const mirrorNodeResp2 = await mirrorNode.get(`/contracts/${logsContract2.contractId}`, requestId);
-        expect(mirrorNodeResp2).to.have.property('evm_address');
-        expect(mirrorNodeResp2.env_address).to.not.be.null;
-        contractAddress2 = mirrorNodeResp2.evm_address;
-
-        const params = new ContractFunctionParameters().addUint256(1);
-        await accounts[1].client.executeContractCall(logsContract.contractId, 'log0', params, 75000, requestId);
-        await accounts[1].client.executeContractCall(logsContract.contractId, 'log1', params, 75000, requestId);
-
-        params.addUint256(1);
-        await accounts[1].client.executeContractCall(logsContract.contractId, 'log2', params, 75000, requestId);
-
-        params.addUint256(1);
-        await accounts[1].client.executeContractCall(logsContract.contractId, 'log3', params, 75000, requestId);
-
-        params.addUint256(1);
-        await accounts[1].client.executeContractCall(logsContract.contractId, 'log4', params, 75000, requestId);
-        await accounts[1].client.executeContractCall(logsContract2.contractId, 'log4', params, 75000, requestId);
-
-        await new Promise((r) => setTimeout(r, 5000));
         latestBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
         tenBlocksBehindLatest = latestBlock - 10;
       });
@@ -191,7 +184,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
         expect(log4Block).to.exist;
         expect(log4Block).to.have.property('blockNumber');
-        expect(log4Block.nonce).to.equal('0x0');
+        expect(log4Block.nonce).to.equal('0x4');
       });
 
       it('should be able to use `fromBlock` param', async () => {
@@ -263,7 +256,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(logs.length).to.be.greaterThan(0);
 
         for (const i in logs) {
-          expect(logs[i].address).to.equal(contractAddress);
+          expect(logs[i].address.toLowerCase()).to.equal(contractAddress.toLowerCase());
         }
       });
 
@@ -285,7 +278,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           expect(logs.length).to.be.greaterThan(0);
 
           for (const i in logs) {
-            expect(logs[i].address).to.equal(contractAddress);
+            expect(logs[i].address.toLowerCase()).to.equal(contractAddress.toLowerCase());
           }
         } finally {
           constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT = blockRangeLimit;
@@ -307,10 +300,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(logs.length).to.be.eq(6);
 
         for (let i = 0; i < 5; i++) {
-          expect(logs[i].address).to.equal(contractAddress);
+          expect(logs[i].address.toLowerCase()).to.equal(contractAddress.toLowerCase());
         }
 
-        expect(logs[5].address).to.equal(contractAddress2);
+        expect(logs[5].address.toLowerCase()).to.equal(contractAddress2.toLowerCase());
       });
 
       it('should be able to use `blockHash` param', async () => {
