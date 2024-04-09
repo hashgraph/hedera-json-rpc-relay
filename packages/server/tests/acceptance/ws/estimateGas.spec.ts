@@ -61,7 +61,6 @@ describe('@release @web-socket eth_estimateGas', async function () {
   afterEach(async () => {
     if (wsProvider) {
       await wsProvider.destroy();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   });
 

@@ -53,7 +53,6 @@ describe('@release @web-socket eth_getCode', async function () {
   afterEach(async () => {
     if (wsProvider) {
       await wsProvider.destroy();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   });
 

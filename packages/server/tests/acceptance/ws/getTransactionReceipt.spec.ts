@@ -50,13 +50,11 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
 
   beforeEach(async () => {
     wsProvider = new ethers.WebSocketProvider(WS_RELAY_URL);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
   });
 
   afterEach(async () => {
     if (wsProvider) {
       await wsProvider.destroy();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   });
 
