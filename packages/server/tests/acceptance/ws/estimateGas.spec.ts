@@ -54,6 +54,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
     currentPrice = await relay.gasPrice(requestId);
     expectedGas = parseInt(PING_CALL_ESTIMATED_GAS, 16);
 
+    // handle deviation in gas price of 20%.  On testnet gas price can vary depending on the network congestion
     gasPriceDeviation = parseFloat(expectedGas.toString() ?? '0.2');
   });
 
@@ -63,7 +64,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
       data: BASIC_CONTRACT_PING_CALL_DATA,
     });
 
-    // handle deviation in gas price
+    // handle deviation in gas price.  On testnet gas price can vary depending on the network congestion
     expect(Number(estimatedGas)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
     expect(Number(estimatedGas)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
   });

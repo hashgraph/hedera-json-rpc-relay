@@ -24,7 +24,7 @@ import { validateParamsLength } from '../utils/validators';
 import { handleSendingTransactionRequests } from './helpers';
 
 /**
- * Handles the "eth_getTransactionByHash" method request by retrieving transaction details from the Hedera network.
+ * Handles the "eth_estimateGas" method request by retrieving transaction details from the Hedera network.
  * Validates the parameters, retrieves the transaction details, and sends the response back to the client.
  * @param {any} ctx - The context object containing information about the WebSocket connection.
  * @param {any[]} params - The parameters of the method request, expecting a single parameter: the transaction hash.
@@ -66,7 +66,7 @@ export const handleEthEstimateGas = async (
   );
 
   logger.info(
-    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Retrieving transaction info with txn=${TXN} for tag=${TAG}`,
+    `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Retrieving estimated gas with txn=${TXN} for tag=${TAG}`,
   );
 
   return handleSendingTransactionRequests(
