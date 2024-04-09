@@ -25,9 +25,7 @@ import { Hbar, ContractId } from '@hashgraph/sdk';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../helpers/constants';
 
-chai.use(solidity);
-
-import { AliasAccount } from '../../clients/servicesClient';
+import { AliasAccount } from '../../types/AliasAccount';
 import { ethers } from 'ethers';
 import IERC20MetadataJson from '../../contracts/openzeppelin/IERC20Metadata.json';
 import IERC20Json from '../../contracts/openzeppelin/IERC20.json';
@@ -43,6 +41,7 @@ import { Utils } from '../../helpers/utils';
 import RelayCall from '../../helpers/constants';
 import { numberTo0x } from '../../../../../packages/relay/src/formatters';
 
+chai.use(solidity);
 describe('@precompile-calls Tests for eth_call with HTS', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, mirrorNode, relay }: any = global;

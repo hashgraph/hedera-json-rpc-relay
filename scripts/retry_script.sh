@@ -10,5 +10,5 @@ sudo rm -rf $(dirname $(readlink -f $(which hedera)))/../network-logs
 sleep 5
 
 
-hedera restart -d --verbose=trace
+hedera restart -d
 docker stop json-rpc-relay json-rpc-relay-ws

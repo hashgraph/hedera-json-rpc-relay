@@ -18,18 +18,19 @@
  *
  */
 
-// external resources
+// External resources
 import { expect } from 'chai';
 import { ethers } from 'ethers';
-import { AliasAccount } from '../clients/servicesClient';
-import Assertions from '../helpers/assertions';
-import { ContractFunctionParameters } from '@hashgraph/sdk';
-import testConstants from '../../tests/helpers/constants';
+import { AliasAccount } from '../types/AliasAccount';
 
-// local resources
+// Assertions and constants from local resources
+import Assertions from '../helpers/assertions';
+import testConstants from '../../tests/helpers/constants';
+import relayConstants from '../../../../packages/relay/src/lib/constants';
+
+// Local resources
 import parentContractJson from '../contracts/Parent.json';
 import { Utils } from '../helpers/utils';
-import relayConstants from '../../../../packages/relay/src/lib/constants';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds
@@ -37,12 +38,11 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { servicesNode, mirrorNode, relay, logger } = global;
+  const { mirrorNode, relay, logger } = global;
 
   // cached entities
-  let contractId;
-  let mirrorContract;
-  let requestId;
+  let parentContractAddress: string;
+  let requestId: string;
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
@@ -52,6 +52,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   describe('RPC Rate Limiter Acceptance Tests', () => {
     it('should throw rate limit exceeded error', async function () {
       const sendMultipleRequests = async () => {
+        // @ts-ignore
         for (let index = 0; index < TIER_2_RATE_LIMIT * 2; index++) {
           await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
           // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
@@ -64,10 +65,12 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
         Assertions.expectedError();
       } catch (e) {}
 
+      // @ts-ignore
       await new Promise((r) => setTimeout(r, LIMIT_DURATION));
     });
 
     it('should not throw rate limit exceeded error', async function () {
+      // @ts-ignore
       for (let index = 0; index < TIER_2_RATE_LIMIT; index++) {
         await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
         // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
@@ -75,13 +78,19 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
       }
 
       // wait until rate limit is reset
+      // @ts-ignore
       await new Promise((r) => setTimeout(r, LIMIT_DURATION));
 
+      // @ts-ignore
       for (let index = 0; index < TIER_2_RATE_LIMIT; index++) {
         await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
         // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
         await new Promise((r) => setTimeout(r, 1));
       }
+
+      // wait until rate limit is reset
+      // @ts-ignore
+      await new Promise((r) => setTimeout(r, LIMIT_DURATION));
     });
   });
 
@@ -94,18 +103,30 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
       logger.info(`${requestIdPrefix} Creating accounts`);
       logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
-      accounts[0] = await servicesNode.createAliasAccount(15, relay.provider, requestId);
-      accounts[1] = await servicesNode.createAliasAccount(200, relay.provider, requestId);
-      contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
 
-      const params = new ContractFunctionParameters().addUint256(1);
-      await accounts[0].client.executeContractCall(contractId, 'createChild', params, 75000, requestId);
+      const initialAccount: AliasAccount = global.initialAccount;
+      const initialAmount: string = '5000000000'; //50 Hbar
 
-      // alow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
-      await new Promise((r) => setTimeout(r, 5000));
+      const neededAccounts: number = 2;
+      accounts.push(
+        ...(await Utils.createMultipleAliasAccounts(
+          mirrorNode,
+          initialAccount,
+          neededAccounts,
+          initialAmount,
+          requestId,
+        )),
+      );
+      global.accounts = accounts;
 
-      // get contract details
-      mirrorContract = await mirrorNode.get(`/contracts/${contractId}`, requestId);
+      const parentContract = await Utils.deployContract(
+        parentContractJson.abi,
+        parentContractJson.bytecode,
+        accounts[0].wallet,
+      );
+
+      parentContractAddress = parentContract.target as string;
+      global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
     });
 
     this.beforeEach(async () => {
@@ -130,7 +151,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
         const transaction = {
           ...defaultLondonTransactionData,
-          to: mirrorContract.evm_address,
+          to: parentContractAddress,
           nonce: await relay.getAccountNonce(accounts[1].address, requestId),
           maxPriorityFeePerGas: gasPrice,
           maxFeePerGas: gasPrice,

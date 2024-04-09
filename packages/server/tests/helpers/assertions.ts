@@ -423,6 +423,14 @@ export default class Assertions {
     // Validate result schema
     expect(result).to.have.keys(Object.keys(expectedResult));
 
+    if (result.from) {
+      result.from = result.from.toLowerCase();
+    }
+
+    if (expectedResult.from) {
+      expectedResult.from = expectedResult.from.toLowerCase();
+    }
+
     // Validate result values
     expect(result).excluding(excludedValues).to.deep.eq(expectedResult);
     if (nestedExcludedValues.length) {
