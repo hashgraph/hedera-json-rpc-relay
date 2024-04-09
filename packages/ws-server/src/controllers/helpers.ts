@@ -55,7 +55,7 @@ export const handleSendingTransactionRequests = async (
   try {
     const txRes = await relay.eth()[rpcCallEndpoint](...args, requestIdPrefix);
 
-    if (txRes) {
+    if (txRes !== null && txRes !== undefined) {
       sendToClient(ctx.websocket, method, txRes, tag, logger, socketIdPrefix, requestIdPrefix, connectionIdPrefix);
     } else {
       logger.error(
