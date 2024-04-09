@@ -18,9 +18,8 @@
  *
  */
 
-import { Relay } from '@hashgraph/json-rpc-relay';
-import { predefined } from '@hashgraph/json-rpc-relay';
 import { handleSendingRequestsToRelay } from './helpers';
+import { Relay, predefined } from '@hashgraph/json-rpc-relay';
 
 /**
  * Handles the "eth_getTransactionByHash" method request by retrieving transaction details from the Hedera network.
@@ -46,12 +45,12 @@ export const handleEthGetTransactionByHash = async (
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ): Promise<any> => {
-  const TX_HASH = params[0];
-  const TAG = JSON.stringify({ method, signedTx: TX_HASH });
-
   if (params.length !== 1) {
     throw predefined.INVALID_PARAMETERS;
   }
+
+  const TX_HASH = params[0];
+  const TAG = JSON.stringify({ method, signedTx: TX_HASH });
 
   logger.info(
     `${connectionIdPrefix} ${requestIdPrefix}: Retrieving transaction info with txHash=${TX_HASH} for tag=${TAG}`,

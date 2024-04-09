@@ -172,29 +172,10 @@ app.ws.use(async (ctx) => {
           );
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_CODE:
-          relayResponse = await handleEthGetCode(
-            ctx,
-            params,
-            logger,
-            relay,
-            request,
-            method,
-            requestIdPrefix,
-            connectionIdPrefix,
-          );
-          response = jsonResp(request.id, null, relayResponse.result);
+          await handleEthGetCode(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
           break;
         case WS_CONSTANTS.METHODS.ETH_ESTIMATE_GAS:
-          response = await handleEthEstimateGas(
-            ctx,
-            params,
-            logger,
-            relay,
-            request,
-            method,
-            requestIdPrefix,
-            connectionIdPrefix,
-          );
+          await handleEthEstimateGas(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
           await handleEthGetTransactionByHash(

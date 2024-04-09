@@ -19,11 +19,11 @@
  */
 
 // external resources
-import { expect } from 'chai';
-import { Contract, ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
-import { AliasAccount } from '../../clients/servicesClient';
 import WebSocket from 'ws';
+import { expect } from 'chai';
 import basicContractJson from '../../contracts/Basic.json';
+import { AliasAccount } from '../../clients/servicesClient';
+import { Contract, ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
 
 describe('@release @web-socket eth_estimateGas', async function () {
   // @ts-ignore

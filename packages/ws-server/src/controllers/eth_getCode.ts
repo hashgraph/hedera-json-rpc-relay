@@ -18,24 +18,21 @@
  *
  */
 
-import { sendToClient } from '../utils/utils';
-import { Relay } from '@hashgraph/json-rpc-relay';
-import { validateParamsLength } from '../utils/validators';
-import { handleSendingTransactionRequests } from './helpers';
+import { handleSendingRequestsToRelay } from './helpers';
+import { predefined, Relay } from '@hashgraph/json-rpc-relay';
 
 /**
- * Handles the "eth_getCode" method request by retrieving transaction details from the Hedera network.
- * Validates the parameters, retrieves the transaction details, and sends the response back to the client.
+ * Handles the "eth_getCode" method request by retrieving the code at a specific address on the Hedera network.
+ * Validates the parameters, retrieves the contract code using the relay object, and sends the response back to the client.
  * @param {any} ctx - The context object containing information about the WebSocket connection.
- * @param {any[]} params - The parameters of the method request, expecting a single parameter: the transaction hash.
+ * @param {any[]} params - The parameters of the method request, expecting an address and a block parameter.
  * @param {any} logger - The logger object for logging messages and events.
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} request - The request object received from the client.
  * @param {string} method - The JSON-RPC method associated with the request.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
- * @returns {Promise<any>} Returns a promise that resolves with the JSON-RPC response to the client.
- * @throws {JsonRpcError} Throws a JsonRpcError if there is an issue with the parameters or an internal error occurs.
+ * @throws {JsonRpcError} Throws a JsonRpcError if the method parameters are invalid or an internal error occurs.
  */
 export const handleEthGetCode = async (
   ctx: any,
@@ -47,17 +44,20 @@ export const handleEthGetCode = async (
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ) => {
+  if (params.length !== 2) {
+    throw predefined.INVALID_PARAMETERS;
+  }
+
   const ADDRESS = params[0];
-  const TAG = JSON.stringify({ method, address: ADDRESS });
+  const BLOCK_TAG = params[1];
+  const TAG = JSON.stringify({ method, address: ADDRESS, block: BLOCK_TAG });
 
-  validateParamsLength(ctx, params, method, TAG, logger, sendToClient, 2, requestIdPrefix, connectionIdPrefix);
+  logger.info(`${connectionIdPrefix} ${requestIdPrefix}: Retrieving contract code for tag=${TAG}`);
 
-  logger.info(`${connectionIdPrefix} ${requestIdPrefix}: Retrieving code with address=${ADDRESS} for tag=${TAG}`);
-
-  return handleSendingTransactionRequests(
+  await handleSendingRequestsToRelay(
     ctx,
     TAG,
-    params,
+    [ADDRESS, BLOCK_TAG, requestIdPrefix],
     relay,
     logger,
     request,
