@@ -50,6 +50,13 @@ describe('@release @web-socket eth_getCode', async function () {
     webSocket = new WebSocket(WS_RELAY_URL);
   });
 
+  afterEach(async () => {
+    if (wsProvider) {
+      await wsProvider.destroy();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  });
+
   it('should return the code ethers WebSocketProvider', async function () {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const codeFromWs = await wsProvider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);

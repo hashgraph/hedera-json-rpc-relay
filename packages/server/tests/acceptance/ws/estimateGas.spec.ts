@@ -58,6 +58,13 @@ describe('@release @web-socket eth_estimateGas', async function () {
     gasPriceDeviation = parseFloat(expectedGas.toString() ?? '0.2');
   });
 
+  afterEach(async () => {
+    if (wsProvider) {
+      await wsProvider.destroy();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  });
+
   it('@release should execute "eth_estimateGas" for contract call, using a websocket provider', async function () {
     const estimatedGas = await wsProvider.estimateGas({
       to: `0x${basicContract.contractId.toSolidityAddress()}`,
