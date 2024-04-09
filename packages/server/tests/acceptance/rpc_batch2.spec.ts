@@ -85,14 +85,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     await new Promise((r) => setTimeout(r, 2000));
   };
 
-  async function deployContract(abi, bytecode: string, signer: ethers.Wallet): Promise<ethers.BaseContract> {
-    const factory = new ethers.ContractFactory(abi, bytecode, signer);
-    const contract = await factory.deploy(Helper.GAS.LIMIT_5_000_000);
-    await contract.waitForDeployment();
-
-    return contract;
-  }
-
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
 
@@ -133,7 +125,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     blockNumberAtStartOfTests = latestBlock.number;
     mirrorAccount0AtStartOfTests = await mirrorNode.get(`/accounts/${accounts[0].accountId}`, requestId);
 
-    basicContract = await deployContract(basicContractJson.abi, basicContractJson.bytecode, accounts[0].wallet);
+    basicContract = await Utils.deployContract(basicContractJson.abi, basicContractJson.bytecode, accounts[0].wallet);
     basicContractAddress = basicContract.target as string;
   });
 
@@ -720,7 +712,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     }
 
     before(async () => {
-      mainContract = await deployContract(TokenCreateJson.abi, TokenCreateJson.bytecode, accounts[3].wallet);
+      mainContract = await Utils.deployContract(TokenCreateJson.abi, TokenCreateJson.bytecode, accounts[3].wallet);
       mainContractAddress = mainContract.target as string;
 
       const accountWithContractIdKey = await servicesNode.createAccountWithContractIdKey(
@@ -787,16 +779,18 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
   // Test state changes with getStorageAt
   describe('eth_getStorageAt', () => {
-    let storageContract, evmAddress;
+    let storageContract: ethers.BaseContract;
+    let storageContractAddress: string;
     const STORAGE_CONTRACT_UPDATE = '0x2de4e884';
     const NEXT_STORAGE_CONTRACT_UPDATE = '0x160D6484';
 
     this.beforeEach(async () => {
-      storageContract = await servicesNode.deployContract(storageContractJson);
-      // Wait for creation to propagate
-      await mirrorNode.get(`/contracts/${storageContract.contractId}`);
-
-      evmAddress = `0x${storageContract.contractId.toSolidityAddress()}`;
+      storageContract = await Utils.deployContract(
+        storageContractJson.abi,
+        storageContractJson.bytecode,
+        accounts[0].wallet,
+      );
+      storageContractAddress = storageContract.target as string;
     });
 
     it('should execute "eth_getStorageAt" request to get current state changes', async function () {
@@ -805,7 +799,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const beginStorageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
         requestId,
       );
       expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
@@ -815,7 +809,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: 0,
         gasLimit: 50000,
         chainId: Number(CHAIN_ID),
-        to: evmAddress,
+        to: storageContractAddress,
         nonce: await relay.getAccountNonce(accounts[1].address),
         gasPrice: gasPrice,
         data: STORAGE_CONTRACT_UPDATE,
@@ -832,7 +826,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const storageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
         requestId,
       );
       expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL);
@@ -843,7 +837,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const beginStorageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
         requestId,
       );
 
@@ -852,7 +846,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: 0,
         gasLimit: 50000,
         chainId: Number(CHAIN_ID),
-        to: evmAddress,
+        to: storageContractAddress,
         nonce: await relay.getAccountNonce(accounts[1].address),
         gasPrice: gasPrice,
         data: STORAGE_CONTRACT_UPDATE,
@@ -875,13 +869,17 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const latestStorageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
         requestId,
       );
       const blockNumberBeforeChange = `0x${(blockNumber - 1).toString(16)}`;
       const storageValBeforeChange = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockNumberBeforeChange],
+        [
+          storageContractAddress,
+          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          blockNumberBeforeChange,
+        ],
         requestId,
       );
 
@@ -895,7 +893,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const beginStorageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000'],
         requestId,
       );
       expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
@@ -905,7 +903,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: 0,
         gasLimit: 50000,
         chainId: Number(CHAIN_ID),
-        to: evmAddress,
+        to: storageContractAddress,
         nonce: await relay.getAccountNonce(accounts[1].address),
         gasPrice: gasPrice,
         data: STORAGE_CONTRACT_UPDATE,
@@ -922,7 +920,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const storageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000'],
         requestId,
       );
       expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL);
@@ -936,7 +934,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: 0,
         gasLimit: 50000,
         chainId: Number(CHAIN_ID),
-        to: evmAddress,
+        to: storageContractAddress,
         nonce: await relay.getAccountNonce(accounts[1].address),
         gasPrice: gasPrice,
         data: STORAGE_CONTRACT_UPDATE,
@@ -967,7 +965,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       //Get previous state change with specific block number
       const storageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockNumber],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockNumber],
         requestId,
       );
       expect(storageVal).to.eq(EXPECTED_STORAGE_VAL);
@@ -981,7 +979,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: 0,
         gasLimit: 50000,
         chainId: Number(CHAIN_ID),
-        to: evmAddress,
+        to: storageContractAddress,
         nonce: await relay.getAccountNonce(accounts[1].address),
         gasPrice: gasPrice,
         data: STORAGE_CONTRACT_UPDATE,
@@ -1012,7 +1010,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       //Get previous state change with specific block number
       const storageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockHash],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockHash],
         requestId,
       );
       expect(storageVal).to.eq(EXPECTED_STORAGE_VAL);

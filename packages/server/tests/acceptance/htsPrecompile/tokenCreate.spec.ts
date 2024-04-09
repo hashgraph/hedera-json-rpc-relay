@@ -130,8 +130,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   });
 
   async function deploymainContract(signer) {
-    const mainFactory = new ethers.ContractFactory(TokenCreateJson.abi, TokenCreateJson.bytecode, signer);
-    const mainContract = await Utils.deployContract(mainFactory);
+    const mainContract = await Utils.deployContract(TokenCreateJson.abi, TokenCreateJson.bytecode, signer);
 
     return mainContract.target;
   }

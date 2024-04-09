@@ -32,7 +32,6 @@ import logsContractJson from '../contracts/Logs.json';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
-import Helper from '../../tests/helpers/constants';
 const Address = RelayCalls;
 import basicContract from '../../tests/contracts/Basic.json';
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
@@ -113,20 +112,20 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       requestId = Utils.generateRequestId();
     });
 
-    async function deployLogsContract(contractJson, signer: ethers.Wallet) {
-      const mainFactory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, signer);
-      const mainContract = await mainFactory.deploy(Helper.GAS.LIMIT_5_000_000);
-      await mainContract.waitForDeployment();
-
-      return mainContract;
-    }
-
     describe('eth_getLogs', () => {
       let log0Block, log4Block, contractAddress: string, contractAddress2: string, latestBlock, tenBlocksBehindLatest;
 
       before(async () => {
-        const logsContract = await deployLogsContract(logsContractJson, accounts[2].wallet);
-        const logsContract2 = await deployLogsContract(logsContractJson, accounts[2].wallet);
+        const logsContract = await Utils.deployContract(
+          logsContractJson.abi,
+          logsContractJson.bytecode,
+          accounts[2].wallet,
+        );
+        const logsContract2 = await Utils.deployContract(
+          logsContractJson.abi,
+          logsContractJson.bytecode,
+          accounts[2].wallet,
+        );
         contractAddress = logsContract.target.toString();
         contractAddress2 = logsContract2.target.toString();
 

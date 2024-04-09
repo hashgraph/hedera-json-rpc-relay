@@ -21,7 +21,7 @@
 // external resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
-import { AccountId, Hbar, ContractId } from '@hashgraph/sdk';
+import { Hbar, ContractId } from '@hashgraph/sdk';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../helpers/constants';
 

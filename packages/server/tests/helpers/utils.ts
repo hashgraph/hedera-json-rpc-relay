@@ -172,23 +172,10 @@ export class Utils {
     return res;
   };
 
-  // Handles the odd case where the contract is loading in the factory but for some reason
-  // ethers is not able to deploy it.  The ethers deploy returns a 4001 error.
-  static deployContract = async (contractFactory: ContractFactory): Promise<ethers.Contract> => {
-    let deployRan = false;
-    let numberOfAttempts = 0;
-    let contract;
-    while (!deployRan && numberOfAttempts < 3) {
-      try {
-        contract = await contractFactory.deploy(Constants.GAS.LIMIT_15_000_000);
-        await contract.waitForDeployment();
-      } catch (e) {
-        await new Promise((r) => setTimeout(r, 1000));
-        numberOfAttempts++;
-        continue;
-      }
-      deployRan = true;
-    }
+  static deployContract = async (abi, bytecode: string, signer: ethers.Wallet): Promise<ethers.BaseContract> => {
+    const factory = new ethers.ContractFactory(abi, bytecode, signer);
+    const contract = await factory.deploy();
+    await contract.waitForDeployment();
 
     return contract;
   };
