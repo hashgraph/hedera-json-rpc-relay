@@ -35,6 +35,7 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
 import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import {
+  handleEthEstimateGas,
   handleEthGetTransactionByHash,
   handleEthSendRawTransaction,
   handleEthSubsribe,
@@ -133,7 +134,7 @@ app.ws.use(async (ctx) => {
     methodsCounterByIp.labels(ctx.request.ip, method).inc();
 
     // Check if the subscription limit is exceeded for ETH_SUBSCRIBE method
-    let response;
+    let relayResponse, response;
     if (method === WS_CONSTANTS.METHODS.ETH_SUBSCRIBE && !limiter.validateSubscriptionLimit(ctx)) {
       response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
       ctx.websocket.send(JSON.stringify(response));
@@ -174,7 +175,29 @@ app.ws.use(async (ctx) => {
             connectionIdPrefix,
           );
           break;
-
+        case WS_CONSTANTS.METHODS.ETH_ESTIMATE_GAS:
+          response = await handleEthEstimateGas(
+            ctx,
+            params,
+            logger,
+            relay,
+            request,
+            method,
+            socketIdPrefix,
+            requestIdPrefix,
+            connectionIdPrefix,
+          );
+          break;
+        case WS_CONSTANTS.METHODS.ETH_GET_CODE:
+          relayResponse = await relay.eth().getCode(params[0], params[1]);
+          ctx.websocket.send(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              id: request.id,
+              result: relayResponse,
+            }),
+          );
+          break;
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
           response = await handleEthGetTransactionByHash(
             ctx,
