@@ -23,17 +23,10 @@ import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import RelayClient from '../../clients/relayClient';
 
-describe('@release @web-socket eth_getBlockByHash', async function () {
+describe('@release @web-socket eth_getBlockByNumber', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
-  const METHOD_NAME = 'eth_getBlockByHash';
-  const INVALID_PARAMS = [
-    [],
-    ['0x469652152b68e142a9639848e0f37786681a8b5fbdaecb9459f80fcb2fe4722b'],
-    ['0x469652152b68e142a9639848e0f37786681a8b5fbdaecb9459f80fcb2fe4722b', '0xhbar'],
-    ['0x469652152b68e142a9639848e0f37786681a8b5fbdaecb9459f80fcb2fe4722b', '54'],
-    ['0x469652152b68e142a9639848e0f37786681a8b5fbdaecb9459f80fcb2fe4722b', true, 39],
-    [false],
-  ];
+  const METHOD_NAME = 'eth_getBlockByNumber';
+  const INVALID_PARAMS = [[], ['0x36'], ['0x36', '0xhbar'], ['0x36', '54'], ['0x36', true, 39], [false]];
 
   const INVALID_BLOCK_PARAM = [
     ['0xhedera', true],
@@ -45,7 +38,6 @@ describe('@release @web-socket eth_getBlockByHash', async function () {
   before(async () => {
     // @ts-ignore
     const { relay } = global;
-
     relayClient = relay;
   });
 
@@ -74,21 +66,21 @@ describe('@release @web-socket eth_getBlockByHash', async function () {
   }
 
   for (const params of INVALID_BLOCK_PARAM) {
-    it(`Should handle invalid block hash. params=[${params}]`, async () => {
+    it(`Should handle invalid block tag. params=[${params}]`, async () => {
       try {
         await wsProvider.send(METHOD_NAME, [...params]);
         expect(true).to.eq(false);
       } catch (error) {
-        expect(error.error.code).to.eq(-32602);
-        expect(error.error.name).to.eq('Invalid parameters');
-        expect(error.error.message).to.eq('Invalid params');
+        expect(error.error.code).to.eq(-32603);
+        expect(error.error.name).to.eq('Internal error');
+        expect(error.error.message).to.eq('Error invoking RPC: "Error invoking RPC: Invalid parameter: hashOrNumber"');
       }
     });
   }
 
   it('Should handle valid requests correctly', async () => {
-    const expectedResult = await relayClient.call('eth_getBlockByNumber', ['latest', true]);
-    const result = await wsProvider.send(METHOD_NAME, [expectedResult.hash, true]);
+    const expectedResult = await relayClient.call(METHOD_NAME, ['latest', false]);
+    const result = await wsProvider.send(METHOD_NAME, [expectedResult.number, true]);
     expect(result).to.deep.eq(expectedResult);
   });
 });

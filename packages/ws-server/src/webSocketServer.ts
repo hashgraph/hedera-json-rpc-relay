@@ -40,6 +40,7 @@ import {
   handleEthEstimateGas,
   handleEthUnsubscribe,
   handleEthGetBlockByHash,
+  handleEthGetBlockByNumber,
   handleEthSendRawTransaction,
   handleEthGetTransactionByHash,
   handleEthGetTransactionReceipt,
@@ -204,6 +205,18 @@ app.ws.use(async (ctx) => {
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_BLOCK_BY_HASH:
           await handleEthGetBlockByHash(
+            ctx,
+            params,
+            logger,
+            relay,
+            request,
+            method,
+            requestIdPrefix,
+            connectionIdPrefix,
+          );
+          break;
+        case WS_CONSTANTS.METHODS.ETH_GET_BLOCK_BY_NUMBER:
+          await handleEthGetBlockByNumber(
             ctx,
             params,
             logger,
