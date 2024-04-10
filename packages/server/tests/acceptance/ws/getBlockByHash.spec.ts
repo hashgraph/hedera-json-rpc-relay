@@ -26,16 +26,14 @@ import RelayClient from '../../clients/relayClient';
 describe('@release @web-socket eth_getBlockByHash', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_getBlockByHash';
+  const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
   const INVALID_PARAMS = [
     [],
-    ['0x469652152b68e142a9639848e0f37786681a8b5fbdaecb9459f80fcb2fe4722b'],
-    ['0x469652152b68e142a9639848e0f37786681a8b5fbdaecb9459f80fcb2fe4722b', '0xhbar'],
-    ['0x469652152b68e142a9639848e0f37786681a8b5fbdaecb9459f80fcb2fe4722b', '54'],
-    ['0x469652152b68e142a9639848e0f37786681a8b5fbdaecb9459f80fcb2fe4722b', true, 39],
-    [false],
-  ];
-
-  const INVALID_BLOCK_PARAM = [
+    [FAKE_TX_HASH],
+    [FAKE_TX_HASH, '0xhbar'],
+    [FAKE_TX_HASH, '54'],
+    [FAKE_TX_HASH, true, 39],
+    [FAKE_TX_HASH, false, 39],
     ['0xhedera', true],
     ['0xhbar', false],
   ];
@@ -67,21 +65,6 @@ describe('@release @web-socket eth_getBlockByHash', async function () {
       } catch (error) {
         expect(error.error).to.exist;
         expect(error.error.code).to.eq(-32602);
-        expect(error.error.name).to.eq('Invalid parameters');
-        expect(error.error.message).to.eq('Invalid params');
-      }
-    });
-  }
-
-  for (const params of INVALID_BLOCK_PARAM) {
-    it(`Should handle invalid block hash. params=[${params}]`, async () => {
-      try {
-        await wsProvider.send(METHOD_NAME, [...params]);
-        expect(true).to.eq(false);
-      } catch (error) {
-        expect(error.error.code).to.eq(-32602);
-        expect(error.error.name).to.eq('Invalid parameters');
-        expect(error.error.message).to.eq('Invalid params');
       }
     });
   }

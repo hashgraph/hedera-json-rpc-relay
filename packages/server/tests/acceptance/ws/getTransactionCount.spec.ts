@@ -19,18 +19,18 @@
  */
 
 // external resources
-import { expect } from 'chai';
-import { Contract, ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
-import { AliasAccount } from '../../clients/servicesClient';
 import WebSocket from 'ws';
-import basicContractJson from '../../contracts/Basic.json';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import { expect } from 'chai';
 import { Utils } from '../../helpers/utils';
 import Assertions from '../../helpers/assertions';
-const CHAIN_ID = process.env.CHAIN_ID || 0;
-const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
+import basicContractJson from '../../contracts/Basic.json';
+import { AliasAccount } from '../../clients/servicesClient';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import { Contract, ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
 
 describe('@release @web-socket eth_getTransactionCount', async function () {
+  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
   const RELAY_URL = `${process.env.RELAY_ENDPOINT}`;
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);

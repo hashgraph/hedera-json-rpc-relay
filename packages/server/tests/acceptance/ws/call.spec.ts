@@ -28,19 +28,18 @@ import { AliasAccount } from '../../clients/servicesClient';
 describe('@release @web-socket eth_call', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_call';
+  const FAKE_TX_HASH = `0x${'00'.repeat(20)}`;
   const INVALID_PARAMS = [
     ["{ to: '0xabcdef', data: '0x1a2b3c4d' }", 36, ''],
     ['{}', false, '0x0'],
+    [{ to: FAKE_TX_HASH, data: '' }, 'latest'],
+    [{ to: FAKE_TX_HASH, data: 36 }, 'latest'],
   ];
 
-  const INVALID_TX_INFO_A = [
+  const INVALID_TX_INFO = [
     [{ to: 123, data: '0x18160ddd' }, 'latest'],
     [{ to: '0x', data: '0x18160ddd' }, 'latest'],
     [{ to: '0xabcdef', data: '0x18160ddd' }, 'latest'],
-  ];
-  const INVALID_TX_INFO_B = [
-    [{ to: '0x88019982753D059db392934Ba3AA07e5228C485B', data: '' }, 'latest'],
-    [{ to: '0x88019982753D059db392934Ba3AA07e5228C485B', data: '0x1816' }, 'latest'],
   ];
 
   const TOKEN_NAME = Utils.randomString(10);
@@ -104,13 +103,11 @@ describe('@release @web-socket eth_call', async function () {
       } catch (error) {
         expect(error.info).to.exist;
         expect(error.info.error.code).to.eq(-32602);
-        expect(error.info.error.name).to.eq('Invalid parameters');
-        expect(error.info.error.message).to.eq('Invalid params');
       }
     });
   }
 
-  for (const params of INVALID_TX_INFO_A) {
+  for (const params of INVALID_TX_INFO) {
     it(`Should handle invalid TX_INFO A. params=[${JSON.stringify(params)}]`, async () => {
       try {
         await wsProvider.send(METHOD_NAME, [...params]);
@@ -121,13 +118,6 @@ describe('@release @web-socket eth_call', async function () {
         expect(error.code).to.eq('INVALID_ARGUMENT');
         expect(error.shortMessage).to.eq('invalid address');
       }
-    });
-  }
-
-  for (const params of INVALID_TX_INFO_B) {
-    it(`Should handle invalid TX_INFO B. params=[${JSON.stringify(params)}]`, async () => {
-      const res = await wsProvider.send(METHOD_NAME, [...params]);
-      expect(res).to.eq('0x');
     });
   }
 

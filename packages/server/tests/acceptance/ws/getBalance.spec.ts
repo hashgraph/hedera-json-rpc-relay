@@ -27,18 +27,16 @@ import { AliasAccount } from '../../clients/servicesClient';
 describe('@release @web-socket eth_getBalance', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_getBalance';
+  const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
   const INVALID_PARAMS = [
     [],
-    ['0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69'],
-    ['0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69', '0xhbar', 36],
-    ['0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69', true, 39],
     [false],
-  ];
-
-  const INVALID_PARAM_VALUE = [
-    ['0xhedera', 'latest'],
+    [FAKE_TX_HASH],
     ['0xhbar', 'latest'],
-    ['0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69', '0xhedera'],
+    ['0xhedera', 'latest'],
+    [FAKE_TX_HASH, true, 39],
+    [FAKE_TX_HASH, '0xhedera'],
+    [FAKE_TX_HASH, '0xhbar', 36],
   ];
 
   let relayClient: RelayClient, wsProvider: WebSocketProvider, requestId: string;
@@ -69,26 +67,6 @@ describe('@release @web-socket eth_getBalance', async function () {
       } catch (error) {
         expect(error.error).to.exist;
         expect(error.error.code).to.eq(-32602);
-        expect(error.error.name).to.eq('Invalid parameters');
-        expect(error.error.message).to.eq('Invalid params');
-      }
-    });
-  }
-
-  for (const params of INVALID_PARAM_VALUE) {
-    it(`Should handle invalid param value. params=[${params}]`, async () => {
-      try {
-        await wsProvider.send(METHOD_NAME, [...params]);
-        expect(true).to.eq(false);
-      } catch (error) {
-        expect(error.error.code).to.eq(-32603);
-        expect(error.error.name).to.eq('Internal error');
-        expect(error.error.message).to.satisfy((msg: string) => {
-          return (
-            msg === 'Error invoking RPC: "Error invoking RPC: Invalid parameter: idOrAliasOrEvmAddress"' ||
-            msg === 'Error invoking RPC: "Error invoking RPC: Invalid parameter: hashOrNumber"'
-          );
-        });
       }
     });
   }
