@@ -31,6 +31,7 @@ import { handleConnectionClose } from './utils/utils';
 import ConnectionLimiter from './utils/connectionLimiter';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
+import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
@@ -134,6 +135,22 @@ app.ws.use(async (ctx) => {
     // Extract the method and parameters from the received request
     const { method, params } = request;
     logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Method: ${method}. Params: ${JSON.stringify(params)}`);
+
+    // Validate request's params
+    try {
+      const methodValidations = Validator.METHODS[method];
+      if (methodValidations) {
+        Validator.validateParams(params, methodValidations);
+      }
+    } catch (error) {
+      logger.error(
+        error,
+        `${connectionIdPrefix} ${requestIdPrefix} Error in parameter validation. Method: ${method}, params: ${JSON.stringify(
+          params,
+        )}.`,
+      );
+      ctx.websocket.send(JSON.stringify(jsonResp(request.id, error, undefined)));
+    }
 
     // Increment metrics for the received method
     methodsCounter.labels(method).inc();
