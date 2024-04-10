@@ -22,6 +22,7 @@ import { handleEthGetCode } from './eth_getCode';
 import { handleEthSubsribe } from './eth_subscribe';
 import { handleEthUnsubscribe } from './eth_unscribe';
 import { handleEthEstimateGas } from './eth_estimateGas';
+import { handleEthBlockNumber } from './eth_blockNumber';
 import { handleEthGetBlockByHash } from './eth_getBlockByHash';
 import { handleEthGetBlockByNumber } from './eth_getBlockByNumber';
 import { handleEthSendRawTransaction } from './eth_sendRawTransaction';
@@ -32,6 +33,7 @@ export {
   handleEthGetCode,
   handleEthSubsribe,
   handleEthUnsubscribe,
+  handleEthBlockNumber,
   handleEthEstimateGas,
   handleEthGetBlockByHash,
   handleEthGetBlockByNumber,

@@ -38,6 +38,7 @@ import {
   handleEthGetCode,
   handleEthSubsribe,
   handleEthEstimateGas,
+  handleEthBlockNumber,
   handleEthUnsubscribe,
   handleEthGetBlockByHash,
   handleEthGetBlockByNumber,
@@ -226,6 +227,8 @@ app.ws.use(async (ctx) => {
             requestIdPrefix,
             connectionIdPrefix,
           );
+        case WS_CONSTANTS.METHODS.ETH_BLOCK_NUMBER:
+          await handleEthBlockNumber(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
           break;
         default:
           response = jsonResp(request.id, DEFAULT_ERROR, null);
