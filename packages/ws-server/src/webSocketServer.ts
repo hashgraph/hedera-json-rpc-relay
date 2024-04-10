@@ -37,6 +37,7 @@ import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json
 import {
   handleEthGetCode,
   handleEthEstimateGas,
+  handleEthGetTransactionCount,
   handleEthGetTransactionByHash,
   handleEthSendRawTransaction,
   handleEthSubsribe,
@@ -204,7 +205,20 @@ app.ws.use(async (ctx) => {
           );
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
-          response = await handleEthGetTransactionByHash(
+          response = await handleEthGetTransactionCount(
+            ctx,
+            params,
+            logger,
+            relay,
+            request,
+            method,
+            socketIdPrefix,
+            requestIdPrefix,
+            connectionIdPrefix,
+          );
+          break;
+        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_COUNT:
+          response = await handleEthGetTransactionCount(
             ctx,
             params,
             logger,

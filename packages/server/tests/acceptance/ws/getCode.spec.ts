@@ -50,7 +50,7 @@ describe('@release @web-socket eth_getCode', async function () {
     webSocket = new WebSocket(WS_RELAY_URL);
   });
 
-  it('should return the code ethers WebSocketProvider', async function () {
+  it('should return the code through an ethers WebSocketProvider', async function () {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const codeFromWs = await wsProvider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);
     expect(codeFromWs).to.be.a('string');
@@ -68,17 +68,14 @@ describe('@release @web-socket eth_getCode', async function () {
         }),
       );
     });
-    let responseCounter = 0;
+    let doneCalled = false;
     webSocket.on('message', function incoming(data) {
       const response = JSON.parse(data);
-      if (response.result) {
+      if (response.result && !doneCalled) {
         expect(response.result).to.equal(codeFromRPC);
-      }
-
-      responseCounter++;
-      if (responseCounter > 1) {
         webSocket.close();
         done();
+        doneCalled = true;
       }
     });
   });

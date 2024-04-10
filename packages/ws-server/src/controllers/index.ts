@@ -22,6 +22,7 @@ import { handleEthSubsribe } from './eth_subscribe';
 import { handleEthUnsubscribe } from './eth_unscribe';
 import { handleEthGetCode } from './eth_getCode';
 import { handleEthEstimateGas } from './eth_estimateGas';
+import { handleEthGetTransactionCount } from './eth_getTransactionCount';
 import { handleEthGetTransactionByHash } from './eth_getTransaction';
 import { handleEthSendRawTransaction } from './eth_sendRawTransaction';
 
@@ -29,6 +30,7 @@ export {
   handleEthUnsubscribe,
   handleEthSubsribe,
   handleEthSendRawTransaction,
+  handleEthGetTransactionCount,
   handleEthGetTransactionByHash,
   handleEthEstimateGas,
   handleEthGetCode,
