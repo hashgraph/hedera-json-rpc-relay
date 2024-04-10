@@ -60,6 +60,7 @@ export const WS_CONSTANTS = {
     ETH_UNSUBSCRIBE: 'eth_unsubscribe',
     ETH_ESTIMATE_GAS: 'eth_estimateGas',
     ETH_GET_BLOCK_BY_HASH: 'eth_getBlockByHash',
+    ETH_GET_BLOCK_BY_NUMBER: 'eth_getBlockByNumber',
     ETH_SEND_RAW_TRANSACTION: 'eth_sendRawTransaction',
     ETH_GET_TRANSACTION_COUNT: 'eth_getTransactionCount',
     ETH_GET_TRANSACTION_BY_HASH: 'eth_getTransactionByHash',
