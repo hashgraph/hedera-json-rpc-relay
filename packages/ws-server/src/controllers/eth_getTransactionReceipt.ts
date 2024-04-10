@@ -19,22 +19,23 @@
  */
 
 import { handleSendingRequestsToRelay } from './helpers';
-import { predefined, Relay } from '@hashgraph/json-rpc-relay';
+import { Relay, predefined } from '@hashgraph/json-rpc-relay';
 
 /**
- * Handles the "eth_getCode" method request by retrieving the code at a specific address on the Hedera network.
- * Validates the parameters, retrieves the contract code using the relay object, and sends the response back to the client.
+ * Handles the "eth_getTransactionReceipt" method request by retrieving transaction receipt details from the Hedera network.
+ * Validates the parameters, retrieves the transaction receipt details, and sends the response back to the client.
  * @param {any} ctx - The context object containing information about the WebSocket connection.
- * @param {any[]} params - The parameters of the method request, expecting an address and a block parameter.
+ * @param {any[]} params - The parameters of the method request, expecting a single parameter: the transaction hash.
  * @param {any} logger - The logger object for logging messages and events.
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} request - The request object received from the client.
  * @param {string} method - The JSON-RPC method associated with the request.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
- * @throws {JsonRpcError} Throws a JsonRpcError if the method parameters are invalid or an internal error occurs.
+ * @returns {Promise<any>} Returns a promise that resolves with the JSON-RPC response to the client.
+ * @throws {JsonRpcError} Throws a JsonRpcError if there is an issue with the parameters or an internal error occurs.
  */
-export const handleEthGetCode = async (
+export const handleEthGetTransactionReceipt = async (
   ctx: any,
   params: any,
   logger: any,
@@ -43,26 +44,27 @@ export const handleEthGetCode = async (
   method: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
-) => {
-  if (params.length !== 2) {
+): Promise<any> => {
+  if (params.length !== 1) {
     throw predefined.INVALID_PARAMETERS;
   }
 
-  const ADDRESS = params[0];
-  const BLOCK_TAG = params[1];
-  const TAG = JSON.stringify({ method, address: ADDRESS, block: BLOCK_TAG });
+  const TX_HASH = params[0];
+  const TAG = JSON.stringify({ method, signedTx: TX_HASH });
 
-  logger.info(`${connectionIdPrefix} ${requestIdPrefix}: Retrieving contract code for tag=${TAG}`);
+  logger.info(
+    `${connectionIdPrefix} ${requestIdPrefix}: Retrieving transaction receipt with txHash=${TX_HASH} for tag=${TAG}`,
+  );
 
   await handleSendingRequestsToRelay(
     ctx,
     TAG,
-    [ADDRESS, BLOCK_TAG, requestIdPrefix],
+    [TX_HASH, requestIdPrefix],
     relay,
     logger,
     request,
     method,
-    'getCode',
+    'getTransactionReceipt',
     requestIdPrefix,
     connectionIdPrefix,
   );

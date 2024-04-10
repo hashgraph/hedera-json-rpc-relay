@@ -19,11 +19,11 @@
  */
 
 // external resources
-import { expect } from 'chai';
-import { Contract, ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
-import { AliasAccount } from '../../clients/servicesClient';
 import WebSocket from 'ws';
+import { expect } from 'chai';
 import basicContractJson from '../../contracts/Basic.json';
+import { AliasAccount } from '../../clients/servicesClient';
+import { Contract, ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
 
 describe('@release @web-socket eth_estimateGas', async function () {
   // @ts-ignore
@@ -56,6 +56,12 @@ describe('@release @web-socket eth_estimateGas', async function () {
 
     // handle deviation in gas price of 20%.  On testnet gas price can vary depending on the network congestion
     gasPriceDeviation = parseFloat(expectedGas.toString() ?? '0.2');
+  });
+
+  afterEach(async () => {
+    if (wsProvider) {
+      await wsProvider.destroy();
+    }
   });
 
   it('@release should execute "eth_estimateGas" for contract call, using a websocket provider', async function () {

@@ -36,11 +36,12 @@ import { generateMethodsCounter, generateMethodsCounterById } from './utils/coun
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import {
   handleEthGetCode,
-  handleEthEstimateGas,
-  handleEthGetTransactionByHash,
-  handleEthSendRawTransaction,
   handleEthSubsribe,
+  handleEthEstimateGas,
   handleEthUnsubscribe,
+  handleEthSendRawTransaction,
+  handleEthGetTransactionByHash,
+  handleEthGetTransactionReceipt,
 } from './controllers';
 
 const register = new Registry();
@@ -107,7 +108,6 @@ app.ws.use(async (ctx) => {
 
     // Format ID prefixes for logging purposes
     const requestIdPrefix = formatIdMessage('Request ID', uuid());
-    const socketIdPrefix = formatIdMessage('Socket ID', ctx.websocket.id);
 
     // parse the received message from the client into a JSON object
     let request;
@@ -116,7 +116,7 @@ app.ws.use(async (ctx) => {
     } catch (e) {
       // Log an error if the message cannot be decoded and send an invalid request error to the client
       logger.error(
-        `${connectionIdPrefix} ${requestIdPrefix} ${ctx.websocket.id}: Could not decode message from connection, message: ${msg}, error: ${e}`,
+        `${connectionIdPrefix} ${requestIdPrefix}: Could not decode message from connection, message: ${msg}, error: ${e}`,
       );
       ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
       return;
@@ -124,11 +124,7 @@ app.ws.use(async (ctx) => {
 
     // Extract the method and parameters from the received request
     const { method, params } = request;
-    logger.debug(
-      `${connectionIdPrefix} ${requestIdPrefix} ${socketIdPrefix}: Method: ${method}. Params: ${JSON.stringify(
-        params,
-      )}`,
-    );
+    logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Method: ${method}. Params: ${JSON.stringify(params)}`);
 
     // Increment metrics for the received method
     methodsCounter.labels(method).inc();
@@ -164,54 +160,43 @@ app.ws.use(async (ctx) => {
           response = jsonResp(request.id, null, CHAIN_ID);
           break;
         case WS_CONSTANTS.METHODS.ETH_SEND_RAW_TRANSACTION:
-          response = await handleEthSendRawTransaction(
+          await handleEthSendRawTransaction(
             ctx,
             params,
             logger,
             relay,
             request,
             method,
-            socketIdPrefix,
             requestIdPrefix,
             connectionIdPrefix,
           );
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_CODE:
-          relayResponse = await handleEthGetCode(
-            ctx,
-            params,
-            logger,
-            relay,
-            request,
-            method,
-            socketIdPrefix,
-            requestIdPrefix,
-            connectionIdPrefix,
-          );
-          response = jsonResp(request.id, null, relayResponse.result);
+          await handleEthGetCode(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
           break;
         case WS_CONSTANTS.METHODS.ETH_ESTIMATE_GAS:
-          response = await handleEthEstimateGas(
+          await handleEthEstimateGas(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+          break;
+        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
+          await handleEthGetTransactionByHash(
             ctx,
             params,
             logger,
             relay,
             request,
             method,
-            socketIdPrefix,
             requestIdPrefix,
             connectionIdPrefix,
           );
           break;
-        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
-          response = await handleEthGetTransactionByHash(
+        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_RECEIPT:
+          await handleEthGetTransactionReceipt(
             ctx,
             params,
             logger,
             relay,
             request,
             method,
-            socketIdPrefix,
             requestIdPrefix,
             connectionIdPrefix,
           );
@@ -222,8 +207,9 @@ app.ws.use(async (ctx) => {
     } catch (error) {
       logger.error(
         error,
-        `${connectionIdPrefix} ${requestIdPrefix} Encountered error on 
-        ${ctx.websocket.id}, method: ${method}, params: ${JSON.stringify(params)}`,
+        `${connectionIdPrefix} ${requestIdPrefix} Encountered error on connectionID: ${
+          ctx.websocket.id
+        }, method: ${method}, params: ${JSON.stringify(params)}`,
       );
       response = jsonResp(request.id, error, undefined);
     }

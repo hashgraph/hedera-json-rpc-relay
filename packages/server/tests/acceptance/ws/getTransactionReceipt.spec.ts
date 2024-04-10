@@ -27,9 +27,9 @@ import { AliasAccount } from '../../clients/servicesClient';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 
-describe('@release @web-socket eth_getTransactionByHash', async function () {
+describe('@release @web-socket eth_getTransactionReceipt', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
-  const METHOD_NAME = 'eth_getTransactionByHash';
+  const METHOD_NAME = 'eth_getTransactionReceipt';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const INVALID_PARAMS = [['hedera', 'hbar'], [], ['websocket', 'rpc', 'invalid']];
   const INVALID_TX_HASH = ['0xhbar', '0xHedera', '', 66, 'abc', true, false, 39];
@@ -110,9 +110,8 @@ describe('@release @web-socket eth_getTransactionByHash', async function () {
     expect(txReceipt.from).to.be.eq(accounts[0].address);
     expect(txReceipt.to).to.be.eq(accounts[1].address);
     expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));
-    expect(txReceipt.hash).to.be.eq(expectedTxReceipt.hash);
-    expect(txReceipt.r).to.be.eq(expectedTxReceipt.r);
-    expect(txReceipt.s).to.be.eq(expectedTxReceipt.s);
-    expect(Number(txReceipt.v)).to.be.eq(expectedTxReceipt.v);
+    expect(txReceipt.contractAddress).to.be.eq(expectedTxReceipt.address);
+    expect(txReceipt.transactionHash).to.be.eq(expectedTxReceipt.hash);
+    expect(Number(txReceipt.transactionIndex)).to.be.eq(expectedTxReceipt.transaction_index);
   });
 });
