@@ -37,6 +37,7 @@ import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json
 import {
   handleEthGetCode,
   handleEthSubsribe,
+  handleEthGasPrice,
   handleEthEstimateGas,
   handleEthBlockNumber,
   handleEthUnsubscribe,
@@ -229,6 +230,8 @@ app.ws.use(async (ctx) => {
           );
         case WS_CONSTANTS.METHODS.ETH_BLOCK_NUMBER:
           await handleEthBlockNumber(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+        case WS_CONSTANTS.METHODS.ETH_GAS_PRICE:
+          await handleEthGasPrice(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
           break;
         default:
           response = jsonResp(request.id, DEFAULT_ERROR, null);

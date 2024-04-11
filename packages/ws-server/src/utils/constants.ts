@@ -56,6 +56,7 @@ export const WS_CONSTANTS = {
   METHODS: {
     ETH_CHAIN_ID: 'eth_chainId',
     ETH_GET_CODE: 'eth_getCode',
+    ETH_GAS_PRICE: 'eth_gasPrice',
     ETH_SUBSCRIBE: 'eth_subscribe',
     ETH_UNSUBSCRIBE: 'eth_unsubscribe',
     ETH_BLOCK_NUMBER: 'eth_blockNumber',
