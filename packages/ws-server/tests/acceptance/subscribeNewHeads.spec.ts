@@ -19,19 +19,17 @@
  */
 
 // external resources
-import { solidity } from 'ethereum-waffle';
-import chai, { expect } from 'chai';
 import WebSocket from 'ws';
+import { ethers } from 'ethers';
+import chai, { expect } from 'chai';
+import { solidity } from 'ethereum-waffle';
+import { predefined } from '@hashgraph/json-rpc-relay';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 chai.use(solidity);
 
-import { ethers } from 'ethers';
-import Assertions from '../../helpers/assertions';
-import { predefined } from '@hashgraph/json-rpc-relay';
-import { AliasAccount } from '../../clients/servicesClient';
-import { numberTo0x } from '../../../../../packages/relay/src/formatters';
-import { Utils } from '../../helpers/utils';
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
-
 const ethAddressRegex = /^0x[a-fA-F0-9]*$/;
 
 function verifyResponse(response: any, done: Mocha.Done, webSocket: any, includeTransactions: boolean) {
@@ -92,23 +90,11 @@ function verifyResponse(response: any, done: Mocha.Done, webSocket: any, include
   }
 }
 
-describe('@release @web-socket Acceptance Tests', async function () {
+describe('@release @web-socket eth_subscribe newHeads', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const accounts: AliasAccount[] = [];
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
-
-  const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
-  const defaultGasLimit = numberTo0x(3_000_000);
-
-  const defaultTransaction = {
-    value: ONE_TINYBAR,
-    chainId: Number(CHAIN_ID),
-    maxPriorityFeePerGas: defaultGasPrice,
-    maxFeePerGas: defaultGasPrice,
-    gasLimit: defaultGasLimit,
-    type: 2,
-  };
 
   let mirrorNodeServer, requestId, rpcServer, wsServer;
 
@@ -151,7 +137,7 @@ describe('@release @web-socket Acceptance Tests', async function () {
     it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
       const webSocket = new WebSocket(WS_RELAY_URL);
       process.env.WS_NEW_HEADS_ENABLED = 'false';
-      const messagePromise = new Promise((resolve, reject) => {
+      const messagePromise = new Promise<void>((resolve, reject) => {
         webSocket.on('message', function incoming(data) {
           try {
             const response = JSON.parse(data);

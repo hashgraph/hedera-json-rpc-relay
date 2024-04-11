@@ -21,25 +21,25 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
-import RelayClient from '../../clients/relayClient';
-import MirrorClient from '../../clients/mirrorClient';
-import { AliasAccount } from '../../clients/servicesClient';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
+import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 
-describe('@release @web-socket eth_sendRawTransaction', async function () {
+describe('@release @web-socket eth_getTransactionReceipt', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
-  const METHOD_NAME = 'eth_sendRawTransaction';
+  const METHOD_NAME = 'eth_getTransactionReceipt';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
   const INVALID_PARAMS = [
     [],
     [''],
-    [66],
     [39],
+    [63],
     [true],
-    [false],
     ['abc'],
+    [false],
     ['0xhbar'],
     ['0xHedera'],
     [FAKE_TX_HASH, 'hbar'],
@@ -94,12 +94,16 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
     };
 
     const signedTx = await accounts[0].wallet.signTransaction(tx);
-    const txHash = await wsProvider.send(METHOD_NAME, [signedTx]);
+    const txHash = await relayClient.sendRawTransaction(signedTx, requestId);
+    const expectedTxReceipt = await mirrorNodeServer.get(`/contracts/results/${txHash}`);
 
-    const txReceipt = await mirrorNodeServer.get(`/contracts/results/${txHash}`);
-    const fromAccountInfo = await mirrorNodeServer.get(`/accounts/${txReceipt.from}`);
+    const txReceipt = await wsProvider.send(METHOD_NAME, [txHash]);
 
-    expect(txReceipt.to).to.eq(accounts[1].address);
-    expect(fromAccountInfo.evm_address).to.eq(accounts[0].address);
+    expect(txReceipt.from).to.be.eq(accounts[0].address);
+    expect(txReceipt.to).to.be.eq(accounts[1].address);
+    expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));
+    expect(txReceipt.contractAddress).to.be.eq(expectedTxReceipt.address);
+    expect(txReceipt.transactionHash).to.be.eq(expectedTxReceipt.hash);
+    expect(Number(txReceipt.transactionIndex)).to.be.eq(expectedTxReceipt.transaction_index);
   });
 });

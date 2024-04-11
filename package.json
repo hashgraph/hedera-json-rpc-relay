@@ -38,7 +38,7 @@
     "acceptancetest:tokenmanagement": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokenmanagement' --exit",
     "acceptancetest:htsprecompilev1": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompilev1' --exit",
     "acceptancetest:release": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit",
-    "acceptancetest:ws": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@web-socket' --exit",
+    "acceptancetest:ws": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket' --exit",
     "acceptancetest:ws_newheads": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@web-socket-newheads' --exit",
     "acceptancetest:precompile-calls": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@precompile-calls' --exit",
     "acceptancetest:cache-service": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@cache-service' --exit",

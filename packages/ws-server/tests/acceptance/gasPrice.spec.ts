@@ -21,7 +21,7 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
-import RelayClient from '../../clients/relayClient';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
 
 describe('@release @web-socket eth_gasPrice', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
