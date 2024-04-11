@@ -42,6 +42,7 @@ import {
   handleEthEstimateGas,
   handleEthBlockNumber,
   handleEthUnsubscribe,
+  handleEthGetStorageAt,
   handleEthGetBlockByHash,
   handleEthGetBlockByNumber,
   handleEthSendRawTransaction,
@@ -235,6 +236,8 @@ app.ws.use(async (ctx) => {
           await handleEthGasPrice(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
         case WS_CONSTANTS.METHODS.ETH_GET_BALANCE:
           await handleEthGetBalance(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+        case WS_CONSTANTS.METHODS.ETH_GET_STORAGE_AT:
+          await handleEthGetStorageAt(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
           break;
         default:
           response = jsonResp(request.id, DEFAULT_ERROR, null);
