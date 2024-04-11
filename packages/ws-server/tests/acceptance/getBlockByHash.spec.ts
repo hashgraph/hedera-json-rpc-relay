@@ -21,20 +21,21 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
-import RelayClient from '../../clients/relayClient';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
 
-describe('@release @web-socket eth_getBlockByNumber', async function () {
+describe('@release @web-socket eth_getBlockByHash', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
-  const METHOD_NAME = 'eth_getBlockByNumber';
+  const METHOD_NAME = 'eth_getBlockByHash';
+  const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
   const INVALID_PARAMS = [
     [],
-    ['0x36'],
-    ['0x36', '0xhbar'],
-    ['0x36', '54'],
-    ['0x36', 'true', 39],
+    [FAKE_TX_HASH],
+    [FAKE_TX_HASH, '0xhbar'],
+    [FAKE_TX_HASH, '54'],
+    [FAKE_TX_HASH, true, 39],
+    [FAKE_TX_HASH, false, 39],
     ['0xhedera', true],
     ['0xhbar', false],
-    ['0xnetwork', false],
   ];
 
   let relayClient: RelayClient, wsProvider: WebSocketProvider;
@@ -42,6 +43,7 @@ describe('@release @web-socket eth_getBlockByNumber', async function () {
   before(async () => {
     // @ts-ignore
     const { relay } = global;
+
     relayClient = relay;
   });
 
@@ -68,8 +70,8 @@ describe('@release @web-socket eth_getBlockByNumber', async function () {
   }
 
   it('Should handle valid requests correctly', async () => {
-    const expectedResult = await relayClient.call(METHOD_NAME, ['latest', false]);
-    const result = await wsProvider.send(METHOD_NAME, [expectedResult.number, true]);
+    const expectedResult = await relayClient.call('eth_getBlockByNumber', ['latest', true]);
+    const result = await wsProvider.send(METHOD_NAME, [expectedResult.hash, true]);
     expect(result).to.deep.eq(expectedResult);
   });
 });

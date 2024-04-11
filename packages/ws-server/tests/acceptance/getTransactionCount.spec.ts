@@ -21,25 +21,19 @@
 // external resources
 import WebSocket from 'ws';
 import { expect } from 'chai';
-import { Utils } from '../../helpers/utils';
-import Assertions from '../../helpers/assertions';
-import basicContractJson from '../../contracts/Basic.json';
-import { AliasAccount } from '../../clients/servicesClient';
+import { ethers, WebSocketProvider } from 'ethers';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
-import { Contract, ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
 describe('@release @web-socket eth_getTransactionCount', async function () {
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
-  const RELAY_URL = `${process.env.RELAY_ENDPOINT}`;
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
 
   let accounts: AliasAccount[] = [],
-    basicContract: Contract,
-    codeFromRPC: string,
-    nonce: string,
-    provider: JsonRpcProvider,
     requestId: string,
     wsProvider: WebSocketProvider,
     webSocket: WebSocket;
@@ -50,10 +44,7 @@ describe('@release @web-socket eth_getTransactionCount', async function () {
   beforeEach(async () => {
     accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
     accounts[1] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    basicContract = await servicesNode.deployContract(basicContractJson);
-    wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
-    provider = new ethers.JsonRpcProvider(RELAY_URL);
-    codeFromRPC = await provider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);
+    wsProvider = new ethers.WebSocketProvider(WS_RELAY_URL);
 
     webSocket = new WebSocket(WS_RELAY_URL);
   });

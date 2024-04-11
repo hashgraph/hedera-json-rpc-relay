@@ -21,41 +21,33 @@
 // external resources
 import WebSocket from 'ws';
 import { expect } from 'chai';
-import basicContractJson from '../../contracts/Basic.json';
-import { AliasAccount } from '../../clients/servicesClient';
-import { Contract, ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
+import { ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
+import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
-describe('@release @web-socket eth_estimateGas', async function () {
-  // @ts-ignore
-  const { servicesNode, relay } = global;
-
+describe('@release @web-socket eth_getCode', async function () {
   const RELAY_URL = `${process.env.RELAY_ENDPOINT}`;
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
-  const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
-  const PING_CALL_ESTIMATED_GAS = '0x6122';
 
   let accounts: AliasAccount[] = [],
-    basicContract: Contract,
-    currentPrice: number,
-    expectedGas: number,
-    gasPriceDeviation: number,
+    basicContract: any,
+    codeFromRPC: string,
     provider: JsonRpcProvider,
     requestId: string,
     wsProvider: WebSocketProvider,
     webSocket: WebSocket;
 
   before(async () => {
+    // @ts-ignore
+    const { servicesNode, relay } = global;
+
     accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
     basicContract = await servicesNode.deployContract(basicContractJson);
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
     provider = new ethers.JsonRpcProvider(RELAY_URL);
+    codeFromRPC = await provider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);
 
     webSocket = new WebSocket(WS_RELAY_URL);
-    currentPrice = await relay.gasPrice(requestId);
-    expectedGas = parseInt(PING_CALL_ESTIMATED_GAS, 16);
-
-    // handle deviation in gas price of 20%.  On testnet gas price can vary depending on the network congestion
-    gasPriceDeviation = parseFloat(expectedGas.toString() ?? '0.2');
   });
 
   afterEach(async () => {
@@ -64,15 +56,11 @@ describe('@release @web-socket eth_estimateGas', async function () {
     }
   });
 
-  it('@release should execute "eth_estimateGas" for contract call, using a websocket provider', async function () {
-    const estimatedGas = await wsProvider.estimateGas({
-      to: `0x${basicContract.contractId.toSolidityAddress()}`,
-      data: BASIC_CONTRACT_PING_CALL_DATA,
-    });
-
-    // handle deviation in gas price.  On testnet gas price can vary depending on the network congestion
-    expect(Number(estimatedGas)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
-    expect(Number(estimatedGas)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
+  it('should return the code ethers WebSocketProvider', async function () {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const codeFromWs = await wsProvider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);
+    expect(codeFromWs).to.be.a('string');
+    expect(codeFromRPC).to.equal(codeFromWs);
   });
 
   it('should return the code through a websocket', (done) => {
@@ -81,13 +69,8 @@ describe('@release @web-socket eth_estimateGas', async function () {
         JSON.stringify({
           id: 1,
           jsonrpc: '2.0',
-          method: 'eth_estimateGas',
-          params: [
-            {
-              to: `0x${basicContract.contractId.toSolidityAddress()}`,
-              data: BASIC_CONTRACT_PING_CALL_DATA,
-            },
-          ],
+          method: 'eth_getCode',
+          params: [`0x${basicContract.contractId.toSolidityAddress()}`, 'latest'],
         }),
       );
     });
@@ -95,8 +78,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
     webSocket.on('message', function incoming(data) {
       const response = JSON.parse(data);
       if (response.result) {
-        expect(Number(response.result)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
-        expect(Number(response.result)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
+        expect(response.result).to.equal(codeFromRPC);
       }
 
       responseCounter++;

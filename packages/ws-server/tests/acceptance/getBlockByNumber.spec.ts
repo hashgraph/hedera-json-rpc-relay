@@ -21,32 +21,28 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
-import RelayClient from '../../clients/relayClient';
-import { AliasAccount } from '../../clients/servicesClient';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
 
-describe('@release @web-socket eth_getBalance', async function () {
+describe('@release @web-socket eth_getBlockByNumber', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
-  const METHOD_NAME = 'eth_getBalance';
-  const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
+  const METHOD_NAME = 'eth_getBlockByNumber';
   const INVALID_PARAMS = [
     [],
-    [false],
-    [FAKE_TX_HASH],
-    ['0xhbar', 'latest'],
-    ['0xhedera', 'latest'],
-    [FAKE_TX_HASH, true, 39],
-    [FAKE_TX_HASH, '0xhedera'],
-    [FAKE_TX_HASH, '0xhbar', 36],
+    ['0x36'],
+    ['0x36', '0xhbar'],
+    ['0x36', '54'],
+    ['0x36', 'true', 39],
+    ['0xhedera', true],
+    ['0xhbar', false],
+    ['0xnetwork', false],
   ];
 
-  let relayClient: RelayClient, wsProvider: WebSocketProvider, requestId: string;
-  let accounts: AliasAccount[] = [];
+  let relayClient: RelayClient, wsProvider: WebSocketProvider;
 
   before(async () => {
     // @ts-ignore
-    const { relay, servicesNode } = global;
+    const { relay } = global;
     relayClient = relay;
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
   });
 
   beforeEach(async () => {
@@ -72,8 +68,8 @@ describe('@release @web-socket eth_getBalance', async function () {
   }
 
   it('Should handle valid requests correctly', async () => {
-    const expectedResult = await relayClient.call(METHOD_NAME, [accounts[0].address, 'latest']);
-    const result = await wsProvider.send(METHOD_NAME, [accounts[0].address, 'latest']);
-    expect(result).to.eq(expectedResult);
+    const expectedResult = await relayClient.call(METHOD_NAME, ['latest', false]);
+    const result = await wsProvider.send(METHOD_NAME, [expectedResult.number, true]);
+    expect(result).to.deep.eq(expectedResult);
   });
 });

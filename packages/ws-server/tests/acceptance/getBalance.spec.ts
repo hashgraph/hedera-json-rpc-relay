@@ -21,22 +21,32 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
-import RelayClient from '../../clients/relayClient';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
-describe('@release @web-socket eth_blockNumber', async function () {
+describe('@release @web-socket eth_getBalance', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
-  const METHOD_NAME = 'eth_blockNumber';
+  const METHOD_NAME = 'eth_getBalance';
+  const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
   const INVALID_PARAMS = [
-    ['hedera', 'hbar'],
-    ['websocket', 'rpc', 'invalid'],
+    [],
+    [false],
+    [FAKE_TX_HASH],
+    ['0xhbar', 'latest'],
+    ['0xhedera', 'latest'],
+    [FAKE_TX_HASH, true, 39],
+    [FAKE_TX_HASH, '0xhedera'],
+    [FAKE_TX_HASH, '0xhbar', 36],
   ];
 
-  let relayClient: RelayClient, wsProvider: WebSocketProvider;
+  let relayClient: RelayClient, wsProvider: WebSocketProvider, requestId: string;
+  let accounts: AliasAccount[] = [];
 
   before(async () => {
     // @ts-ignore
-    const { relay } = global;
+    const { relay, servicesNode } = global;
     relayClient = relay;
+    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
   });
 
   beforeEach(async () => {
@@ -62,9 +72,8 @@ describe('@release @web-socket eth_blockNumber', async function () {
   }
 
   it('Should handle valid requests correctly', async () => {
-    const result = await wsProvider.send(METHOD_NAME, []);
-    const expectedResult = await relayClient.call(METHOD_NAME, []);
-
+    const expectedResult = await relayClient.call(METHOD_NAME, [accounts[0].address, 'latest']);
+    const result = await wsProvider.send(METHOD_NAME, [accounts[0].address, 'latest']);
     expect(result).to.eq(expectedResult);
   });
 });

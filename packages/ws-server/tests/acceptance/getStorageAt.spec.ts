@@ -21,7 +21,7 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
-import { AliasAccount } from '../../clients/servicesClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
 describe('@release @web-socket eth_getStorageAt', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;

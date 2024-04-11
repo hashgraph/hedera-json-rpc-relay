@@ -20,19 +20,18 @@
 
 // external resources
 import { expect } from 'chai';
-import { Utils } from '../../helpers/utils';
 import { ethers, WebSocketProvider } from 'ethers';
-import ERC20MockJson from '../../contracts/ERC20Mock.json';
-import { AliasAccount } from '../../clients/servicesClient';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import ERC20MockJson from '@hashgraph/json-rpc-server/tests/contracts/ERC20Mock.json';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
 describe('@release @web-socket eth_call', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_call';
   const FAKE_TX_HASH = `0x${'00'.repeat(20)}`;
   const INVALID_PARAMS = [
-    ["{ to: '0xabcdef', data: '0x1a2b3c4d' }", 36, ''],
     ['{}', false, '0x0'],
-    [{ to: FAKE_TX_HASH, data: '' }, 'latest'],
+    ["{ to: '0xabcdef', data: '0x1a2b3c4d' }", 36, ''],
     [{ to: FAKE_TX_HASH, data: 36 }, 'latest'],
   ];
 

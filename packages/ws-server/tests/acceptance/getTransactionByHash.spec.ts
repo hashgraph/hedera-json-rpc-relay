@@ -21,10 +21,10 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
-import RelayClient from '../../clients/relayClient';
-import MirrorClient from '../../clients/mirrorClient';
-import { AliasAccount } from '../../clients/servicesClient';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
+import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 
 describe('@release @web-socket eth_getTransactionByHash', async function () {
