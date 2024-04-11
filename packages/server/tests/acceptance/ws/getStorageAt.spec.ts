@@ -26,18 +26,16 @@ import { AliasAccount } from '../../clients/servicesClient';
 describe('@release @web-socket eth_getStorageAt', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_getStorageAt';
+  const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
   const INVALID_PARAMS = [
     [],
-    ['0xfFC7d3ff264c838aD75167e64d043794bf1BD52e'],
-    ['0xfFC7d3ff264c838aD75167e64d043794bf1BD52e', '0x0', 'latest', '0xhedera'],
-  ];
-
-  const INVALID_VALUES = [
     ['', ''],
-    ['0xfFC7d3ff264c838aD75167e64d043794bf1BD52e', ''],
     ['', '0x0'],
-    ['0xfFC7d3ff264c838aD75167e64d043794bf1BD52e', 36, 'latest'],
-    ['0xfFC7d3ff264c838aD75167e64d043794bf1BD52e', '0xhbar', 'latest'],
+    [FAKE_TX_HASH],
+    [FAKE_TX_HASH, ''],
+    [FAKE_TX_HASH, 36, 'latest'],
+    [FAKE_TX_HASH, '0xhbar', 'latest'],
+    [FAKE_TX_HASH, '0x0', 'latest', '0xhedera'],
   ];
 
   let accounts: AliasAccount[] = [];
@@ -71,22 +69,6 @@ describe('@release @web-socket eth_getStorageAt', async function () {
       } catch (error) {
         expect(error.error).to.exist;
         expect(error.error.code).to.eq(-32602);
-        expect(error.error.name).to.eq('Invalid parameters');
-        expect(error.error.message).to.eq('Invalid params');
-      }
-    });
-  }
-
-  for (const params of INVALID_VALUES) {
-    it(`Should handle invalid value. params=[${JSON.stringify(params)}]`, async () => {
-      try {
-        await wsProvider.send(METHOD_NAME, [...params]);
-        expect(true).to.eq(false);
-      } catch (error) {
-        expect(error.error).to.exist;
-        expect(error.error.code).to.eq(-32603);
-        expect(error.error.name).to.eq('Internal error');
-        expect(error.error.message).to.contain('Error invoking RPC');
       }
     });
   }

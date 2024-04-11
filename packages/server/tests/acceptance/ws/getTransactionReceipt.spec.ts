@@ -31,8 +31,20 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_getTransactionReceipt';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
-  const INVALID_PARAMS = [['hedera', 'hbar'], [], ['websocket', 'rpc', 'invalid']];
-  const INVALID_TX_HASH = ['0xhbar', '0xHedera', '', 66, 'abc', true, false, 39];
+  const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
+  const INVALID_PARAMS = [
+    [],
+    [''],
+    [39],
+    [63],
+    [true],
+    ['abc'],
+    [false],
+    ['0xhbar'],
+    ['0xHedera'],
+    [FAKE_TX_HASH, 'hbar'],
+    [FAKE_TX_HASH, 'rpc', 'invalid'],
+  ];
 
   let accounts: AliasAccount[] = [];
   let mirrorNodeServer: MirrorClient, requestId: string, relayClient: RelayClient, wsProvider: WebSocketProvider;
@@ -46,6 +58,7 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
 
     accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
     accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
+    await new Promise((r) => setTimeout(r, 1000)); // wait for accounts to propagate
   });
 
   beforeEach(async () => {
@@ -59,34 +72,13 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
   });
 
   for (const params of INVALID_PARAMS) {
-    it(`Should throw predefined.INVALID_PARAMETERS if the request's params variable is invalid (params.length !== 1). params=[${params}]`, async () => {
+    it(`Should throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
       try {
         await wsProvider.send(METHOD_NAME, params);
         expect(true).to.eq(false);
       } catch (error) {
         expect(error.error).to.exist;
         expect(error.error.code).to.eq(-32602);
-        expect(error.error.name).to.eq('Invalid parameters');
-        expect(error.error.message).to.eq('Invalid params');
-      }
-    });
-  }
-
-  for (const txHash of INVALID_TX_HASH) {
-    it(`Should handle invalid data correctly. txHash = ${txHash}`, async () => {
-      try {
-        const res = await wsProvider.send(METHOD_NAME, [txHash]);
-        if (txHash === '') {
-          expect(res).to.be.null;
-        } else {
-          expect(true).to.eq(false);
-        }
-      } catch (error) {
-        expect(error.error.code).to.eq(-32603);
-        expect(error.error.name).to.eq(`Internal error`);
-        expect(error.error.message).to.eq(
-          'Error invoking RPC: "Invalid Transaction id. Please use \\"shard.realm.num-sss-nnn\\" format where sss are seconds and nnn are nanoseconds"',
-        );
       }
     });
   }

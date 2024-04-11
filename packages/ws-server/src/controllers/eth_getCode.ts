@@ -18,32 +18,33 @@
  *
  */
 
+import { predefined } from '@hashgraph/json-rpc-relay';
 import { handleSendingRequestsToRelay } from './helpers';
-import { predefined, Relay } from '@hashgraph/json-rpc-relay';
 
 /**
  * Handles the "eth_getCode" method request by retrieving the code at a specific address on the Hedera network.
  * Validates the parameters, retrieves the contract code using the relay object, and sends the response back to the client.
- * @param {any} ctx - The context object containing information about the WebSocket connection.
- * @param {any[]} params - The parameters of the method request, expecting an address and a block parameter.
- * @param {any} logger - The logger object for logging messages and events.
- * @param {Relay} relay - The relay object for interacting with the Hedera network.
- * @param {any} request - The request object received from the client.
- * @param {string} method - The JSON-RPC method associated with the request.
- * @param {string} requestIdPrefix - The prefix for the request ID.
- * @param {string} connectionIdPrefix - The prefix for the connection ID.
+ * @param {object} args - An object containing the function parameters as properties.
+ * @param {any} args.ctx - The context object containing information about the WebSocket connection.
+ * @param {any[]} args.params - The parameters of the method request, expecting an address and a block tag.
+ * @param {any} args.logger - The logger object for logging messages and events.
+ * @param {Relay} args.relay - The relay object for interacting with the Hedera network.
+ * @param {any} args.request - The request object received from the client.
+ * @param {string} args.method - The JSON-RPC method associated with the request.
+ * @param {string} args.requestIdPrefix - The prefix for the request ID.
+ * @param {string} args.connectionIdPrefix - The prefix for the connection ID.
  * @throws {JsonRpcError} Throws a JsonRpcError if the method parameters are invalid or an internal error occurs.
  */
-export const handleEthGetCode = async (
-  ctx: any,
-  params: any,
-  logger: any,
-  relay: Relay,
-  request: any,
-  method: string,
-  requestIdPrefix: string,
-  connectionIdPrefix: string,
-) => {
+export const handleEthGetCode = async ({
+  ctx,
+  params,
+  logger,
+  relay,
+  request,
+  method,
+  requestIdPrefix,
+  connectionIdPrefix,
+}) => {
   if (params.length !== 2) {
     throw predefined.INVALID_PARAMETERS;
   }

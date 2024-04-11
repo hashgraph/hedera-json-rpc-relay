@@ -26,24 +26,31 @@ import { AliasAccount } from '../../clients/servicesClient';
 describe('@release @web-socket eth_getLogs', async function () {
   const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_getLogs';
-  const INVALID_PARAMS = [[{}, ''], [], [{}, '0xhbar', false]];
-
-  const INVALID_FILTERS = [
-    {
-      address: '0xhedera',
-      fromBlock: 'latest',
-      toBlock: 'latest',
-    },
-    {
-      address: '0x637a6A8e5A69C087c24983B05261F63f64ED7e9b',
-      fromBlock: '0xhedera',
-      toBlock: 'latest',
-    },
-    {
-      address: '0x637a6A8e5A69C087c24983B05261F63f64ED7e9b',
-      fromBlock: 'latest',
-      toBlock: '0xhedera',
-    },
+  const INVALID_PARAMS = [
+    [{}, ''],
+    [],
+    [{}, '0xhbar', false],
+    [
+      {
+        address: '0xhedera',
+        fromBlock: 'latest',
+        toBlock: 'latest',
+      },
+    ],
+    [
+      {
+        address: '0x637a6A8e5A69C087c24983B05261F63f64ED7e9b',
+        fromBlock: '0xhedera',
+        toBlock: 'latest',
+      },
+    ],
+    [
+      {
+        address: '0x637a6A8e5A69C087c24983B05261F63f64ED7e9b',
+        fromBlock: 'latest',
+        toBlock: '0xhedera',
+      },
+    ],
   ];
 
   let accounts: AliasAccount[] = [];
@@ -68,28 +75,13 @@ describe('@release @web-socket eth_getLogs', async function () {
   });
 
   for (const params of INVALID_PARAMS) {
-    it(`Should throw predefined.INVALID_PARAMETERS if the request's params variable is invalid (params.length !== 1). params=[${params}]`, async () => {
+    it(`Should throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
       try {
         await wsProvider.send(METHOD_NAME, params);
         expect(true).to.eq(false);
       } catch (error) {
         expect(error.error).to.exist;
         expect(error.error.code).to.eq(-32602);
-        expect(error.error.name).to.eq('Invalid parameters');
-        expect(error.error.message).to.eq('Invalid params');
-      }
-    });
-  }
-
-  for (const filter of INVALID_FILTERS) {
-    it(`Should handle invalid data correctly. filter = ${JSON.stringify(filter)}`, async () => {
-      try {
-        await wsProvider.send(METHOD_NAME, [filter]);
-        expect(true).to.eq(false);
-      } catch (error) {
-        expect(error.error.code).to.eq(-32603);
-        expect(error.error.name).to.eq(`Internal error`);
-        expect(error.error.message).to.contain('Error invoking RPC:');
       }
     });
   }

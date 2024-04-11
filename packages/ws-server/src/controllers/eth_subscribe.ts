@@ -124,26 +124,27 @@ const handleEthSubscribeLogs = async (
 /**
  * Handles subscription requests for on-chain events.
  * Subscribes to the specified event type and returns the response.
- * @param {any} ctx - The context object containing information about the WebSocket connection.
- * @param {any} params - The parameters of the subscription request.
- * @param {string} requestIdPrefix - The prefix for the request ID.
- * @param {any} request - The request object received from the client.
- * @param {Relay} relay - The relay object used for managing WebSocket subscriptions.
- * @param {MirrorNodeClient} mirrorNodeClient - The client for interacting with the MirrorNode API.
- * @param {ConnectionLimiter} limiter - The limiter object used for rate limiting WebSocket connections.
- * @param {any} logger - The logger object used for logging subscription information.
- * @returns {Promise<any>} Returns a promise that resolves with the response to the subscription request.
+ * @param {object} args - An object containing the function parameters as properties.
+ * @param {any} args.ctx - The context object containing information about the WebSocket connection.
+ * @param {any[]} args.params - The parameters of the method request, expecting an event and filters.
+ * @param {string} args.requestIdPrefix - The prefix for the request ID.
+ * @param {any} args.request - The request object received from the client.
+ * @param {Relay} args.relay - The relay object for interacting with the Hedera network.
+ * @param {MirrorNodeClient} args.mirrorNodeClient - The mirror node client for handling subscriptions.
+ * @param {ConnectionLimiter} args.limiter - The limiter object for managing connection subscriptions.
+ * @param {any} args.logger - The logger object for logging messages and events.
+ * @returns {Promise<any>} Returns a promise that resolves with the subscription response.
  */
-export const handleEthSubsribe = async (
-  ctx: any,
-  params: any,
-  requestIdPrefix: string,
-  request: any,
-  relay: Relay,
-  mirrorNodeClient: MirrorNodeClient,
-  limiter: ConnectionLimiter,
-  logger: any,
-): Promise<any> => {
+export const handleEthSubsribe = async ({
+  ctx,
+  params,
+  requestIdPrefix,
+  request,
+  relay,
+  mirrorNodeClient,
+  limiter,
+  logger,
+}): Promise<any> => {
   const event = params[0];
   const filters = params[1];
   let response: any;

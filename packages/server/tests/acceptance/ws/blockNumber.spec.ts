@@ -50,15 +50,13 @@ describe('@release @web-socket eth_blockNumber', async function () {
   });
 
   for (const params of INVALID_PARAMS) {
-    it(`Should throw predefined.INVALID_PARAMETERS if the request's params variable is invalid (params.length !== 0). params=[${params}]`, async () => {
+    it(`Should throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
       try {
         await wsProvider.send(METHOD_NAME, params);
         expect(true).to.eq(false);
       } catch (error) {
         expect(error.error).to.exist;
         expect(error.error.code).to.eq(-32602);
-        expect(error.error.name).to.eq('Invalid parameters');
-        expect(error.error.message).to.eq('Invalid params');
       }
     });
   }

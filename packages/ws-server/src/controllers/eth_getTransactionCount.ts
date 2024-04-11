@@ -18,32 +18,32 @@
  *
  */
 
-import { Relay } from '@hashgraph/json-rpc-relay';
 import { handleSendingRequestsToRelay } from './helpers';
 
 /**
  * Handles the "eth_getTransactionCount" method request by retrieving the transaction count of an address.
  * Validates the parameters, retrieves the transaction count from the relay, and returns the response to the client.
- * @param {any} ctx - The context object containing information about the WebSocket connection.
- * @param {any[]} params - The parameters of the method request, expecting an address.
- * @param {any} logger - The logger object for logging messages and events.
- * @param {Relay} relay - The relay object for interacting with the Hedera network.
- * @param {any} request - The request object received from the client.
- * @param {string} method - The method name being handled.
- * @param {string} requestIdPrefix - The prefix for the request ID.
- * @param {string} connectionIdPrefix - The prefix for the connection ID.
- * @returns {Promise<any>} Returns a promise that resolves with the transaction count response.
+ * @param {object} args - An object containing the function parameters as properties.
+ * @param {any} args.ctx - The context object containing information about the WebSocket connection.
+ * @param {any[]} args.params - The parameters of the method request, expecting an address.
+ * @param {any} args.logger - The logger object for logging messages and events.
+ * @param {Relay} args.relay - The relay object for interacting with the Hedera network.
+ * @param {any} args.request - The request object received from the client.
+ * @param {string} args.method - The JSON-RPC method associated with the request.
+ * @param {string} args.requestIdPrefix - The prefix for the request ID.
+ * @param {string} args.connectionIdPrefix - The prefix for the connection ID.
+ * @throws {JsonRpcError} Throws a JsonRpcError if the method parameters are invalid or an internal error occurs.
  */
-export const handleEthGetTransactionCount = async (
-  ctx: any,
-  params: any,
-  logger: any,
-  relay: Relay,
-  request: any,
-  method: string,
-  requestIdPrefix: string,
-  connectionIdPrefix: string,
-) => {
+export const handleEthGetTransactionCount = async ({
+  ctx,
+  params,
+  logger,
+  relay,
+  request,
+  method,
+  requestIdPrefix,
+  connectionIdPrefix,
+}) => {
   const ADDRESS = params[0];
   const TAG = JSON.stringify({ method, address: ADDRESS });
 
