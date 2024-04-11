@@ -19,11 +19,13 @@
  */
 
 import { ContractFactory, ethers } from 'ethers';
+import { AliasAccount } from '../clients/servicesClient';
 import Assertions from './assertions';
 import crypto from 'crypto';
 import RelayClient from '../clients/relayClient';
 import RelayCall from '../../tests/helpers/constants';
 import Constants from './constants';
+import { numberTo0x } from '../../../relay/src/formatters';
 
 export class Utils {
   static toHex = (num) => {
@@ -189,5 +191,30 @@ export class Utils {
     }
 
     return contract;
+  };
+
+  static sendTransaction = async (
+    ONE_TINYBAR: any,
+    CHAIN_ID: string | number,
+    accounts: AliasAccount[],
+    rpcServer: any,
+    requestId: any,
+    mirrorNodeServer: any,
+  ) => {
+    const transaction = {
+      value: ONE_TINYBAR,
+      gasLimit: numberTo0x(30000),
+      chainId: Number(CHAIN_ID),
+      to: accounts[1].address,
+      nonce: await rpcServer.getAccountNonce(accounts[0].address, requestId),
+      maxFeePerGas: await rpcServer.gasPrice(requestId),
+    };
+
+    const signedTx = await accounts[0].wallet.signTransaction(transaction);
+    const transactionHash = await rpcServer.sendRawTransaction(signedTx, requestId);
+
+    await mirrorNodeServer.get(`/contracts/results/${transactionHash}`, requestId);
+
+    return await rpcServer.call(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [transactionHash], requestId);
   };
 }

@@ -46,6 +46,7 @@ import {
   handleEthGetBlockByHash,
   handleEthGetBlockByNumber,
   handleEthSendRawTransaction,
+  handleEthGetTransactionCount,
   handleEthGetTransactionByHash,
   handleEthGetTransactionReceipt,
 } from './controllers';
@@ -179,6 +180,7 @@ app.ws.use(async (ctx) => {
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_CODE:
           await handleEthGetCode(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+          // response = jsonResp(request.id, null, relayResponse.result);
           break;
         case WS_CONSTANTS.METHODS.ETH_ESTIMATE_GAS:
           await handleEthEstimateGas(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
@@ -197,6 +199,18 @@ app.ws.use(async (ctx) => {
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_RECEIPT:
           await handleEthGetTransactionReceipt(
+            ctx,
+            params,
+            logger,
+            relay,
+            request,
+            method,
+            requestIdPrefix,
+            connectionIdPrefix,
+          );
+          break;
+        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_COUNT:
+          await handleEthGetTransactionCount(
             ctx,
             params,
             logger,
