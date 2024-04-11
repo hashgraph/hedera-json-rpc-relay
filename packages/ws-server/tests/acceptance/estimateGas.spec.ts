@@ -21,9 +21,9 @@
 // external resources
 import WebSocket from 'ws';
 import { expect } from 'chai';
-import { Contract, ethers, WebSocketProvider } from 'ethers';
-import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
+import basicContractJson from '../../contracts/Basic.json';
+import { AliasAccount } from '../../clients/servicesClient';
+import { ethers, WebSocketProvider } from 'ethers';
 
 describe('@release @web-socket eth_estimateGas', async function () {
   // @ts-ignore
@@ -34,7 +34,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
   const PING_CALL_ESTIMATED_GAS = '0x6122';
 
   let accounts: AliasAccount[] = [],
-    basicContract: Contract,
+    basicContract: any,
     currentPrice: number,
     expectedGas: number,
     gasPriceDeviation: number,
@@ -44,8 +44,18 @@ describe('@release @web-socket eth_estimateGas', async function () {
 
   before(async () => {
     accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
+
     basicContract = await servicesNode.deployContract(basicContractJson);
+
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
+    const wallet = new ethers.Wallet(accounts[0].wallet.privateKey, wsProvider);
+    const basicContractFactory = await new ethers.ContractFactory(
+      basicContractJson.abi,
+      basicContractJson.bytecode,
+      wallet,
+    );
+    basicContract = await basicContractFactory.deploy();
+    await basicContract.waitForDeployment();
 
     webSocket = new WebSocket(WS_RELAY_URL);
     currentPrice = await relay.gasPrice(requestId);
@@ -63,7 +73,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
 
   it('@release should execute "eth_estimateGas" for contract call, using a websocket provider', async function () {
     const estimatedGas = await wsProvider.estimateGas({
-      to: `0x${basicContract.contractId.toSolidityAddress()}`,
+      to: basicContract.target,
       data: BASIC_CONTRACT_PING_CALL_DATA,
     });
 
@@ -72,7 +82,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
     expect(Number(estimatedGas)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
   });
 
-  it('should return the code through a websocket', (done) => {
+  it('should return the gas esimate through a websocket', (done) => {
     webSocket.on('open', function open() {
       webSocket.send(
         JSON.stringify({
@@ -81,7 +91,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
           method: 'eth_estimateGas',
           params: [
             {
-              to: `0x${basicContract.contractId.toSolidityAddress()}`,
+              to: basicContract.target,
               data: BASIC_CONTRACT_PING_CALL_DATA,
             },
           ],
