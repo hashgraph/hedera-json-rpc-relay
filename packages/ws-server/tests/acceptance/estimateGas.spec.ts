@@ -21,7 +21,7 @@
 // external resources
 import WebSocket from 'ws';
 import { expect } from 'chai';
-import basicContractJson from '../../contracts/Basic.json';
+import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 import { AliasAccount } from '../../clients/servicesClient';
 import { ethers, WebSocketProvider } from 'ethers';
 
