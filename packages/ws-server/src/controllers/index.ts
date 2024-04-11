@@ -22,6 +22,7 @@ import { handleEthGetCode } from './eth_getCode';
 import { handleEthGasPrice } from './eth_gasPrice';
 import { handleEthSubsribe } from './eth_subscribe';
 import { handleEthUnsubscribe } from './eth_unscribe';
+import { handleEthGetBalance } from './eth_getBalance';
 import { handleEthEstimateGas } from './eth_estimateGas';
 import { handleEthBlockNumber } from './eth_blockNumber';
 import { handleEthGetBlockByHash } from './eth_getBlockByHash';
@@ -34,6 +35,7 @@ export {
   handleEthGetCode,
   handleEthSubsribe,
   handleEthGasPrice,
+  handleEthGetBalance,
   handleEthUnsubscribe,
   handleEthBlockNumber,
   handleEthEstimateGas,
