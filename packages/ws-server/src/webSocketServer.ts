@@ -35,6 +35,7 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
 import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import {
+  handleEthGetLogs,
   handleEthGetCode,
   handleEthSubsribe,
   handleEthGasPrice,
@@ -252,6 +253,8 @@ app.ws.use(async (ctx) => {
           await handleEthGetBalance(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
         case WS_CONSTANTS.METHODS.ETH_GET_STORAGE_AT:
           await handleEthGetStorageAt(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+        case WS_CONSTANTS.METHODS.ETH_GET_LOGS:
+          await handleEthGetLogs(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
           break;
         default:
           response = jsonResp(request.id, DEFAULT_ERROR, null);
