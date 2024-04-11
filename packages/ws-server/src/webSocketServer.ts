@@ -38,6 +38,7 @@ import {
   handleEthGetCode,
   handleEthSubsribe,
   handleEthGasPrice,
+  handleEthGetBalance,
   handleEthEstimateGas,
   handleEthBlockNumber,
   handleEthUnsubscribe,
@@ -232,6 +233,8 @@ app.ws.use(async (ctx) => {
           await handleEthBlockNumber(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
         case WS_CONSTANTS.METHODS.ETH_GAS_PRICE:
           await handleEthGasPrice(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+        case WS_CONSTANTS.METHODS.ETH_GET_BALANCE:
+          await handleEthGetBalance(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
           break;
         default:
           response = jsonResp(request.id, DEFAULT_ERROR, null);
