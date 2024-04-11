@@ -54,6 +54,7 @@ export const WS_CONSTANTS = {
     },
   },
   METHODS: {
+    ETH_CALL: 'eth_call',
     ETH_CHAIN_ID: 'eth_chainId',
     ETH_GET_LOGS: 'eth_getLogs',
     ETH_GET_CODE: 'eth_getCode',
