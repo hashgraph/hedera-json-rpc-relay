@@ -22,7 +22,7 @@
 import WebSocket from 'ws';
 import { expect } from 'chai';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
-import { AliasAccount } from '../../clients/servicesClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { ethers, WebSocketProvider } from 'ethers';
 
 describe('@release @web-socket eth_estimateGas', async function () {
