@@ -18,6 +18,7 @@
  *
  */
 
+import { handleEthGetLogs } from './eth_getLogs';
 import { handleEthGetCode } from './eth_getCode';
 import { handleEthGasPrice } from './eth_gasPrice';
 import { handleEthSubsribe } from './eth_subscribe';
@@ -34,6 +35,7 @@ import { handleEthGetTransactionByHash } from './eth_getTransactionByHash';
 import { handleEthGetTransactionReceipt } from './eth_getTransactionReceipt';
 
 export {
+  handleEthGetLogs,
   handleEthGetCode,
   handleEthSubsribe,
   handleEthGasPrice,

@@ -18,23 +18,24 @@
  *
  */
 
-import { Relay } from '@hashgraph/json-rpc-relay';
 import { handleSendingRequestsToRelay } from './helpers';
+import { Relay, predefined } from '@hashgraph/json-rpc-relay';
 
 /**
- * Handles the "eth_getTransactionCount" method request by retrieving the transaction count of an address.
- * Validates the parameters, retrieves the transaction count from the relay, and returns the response to the client.
+ * Handles the "eth_getLogs" method request by retrieving logs that match the specified filter object.
+ * Validates the parameters, retrieves the logs using the relay object, and sends the response back to the client.
  * @param {any} ctx - The context object containing information about the WebSocket connection.
- * @param {any[]} params - The parameters of the method request, expecting an address.
+ * @param {any[]} params - The parameters of the method request, expecting a filter object.
  * @param {any} logger - The logger object for logging messages and events.
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} request - The request object received from the client.
- * @param {string} method - The method name being handled.
+ * @param {string} method - The JSON-RPC method associated with the request.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
- * @returns {Promise<any>} Returns a promise that resolves with the transaction count response.
+ * @returns {Promise<void>} Returns a promise that resolves after processing the request.
+ * @throws {JsonRpcError} Throws a JsonRpcError if the method parameters are invalid or an internal error occurs.
  */
-export const handleEthGetTransactionCount = async (
+export const handleEthGetLogs = async (
   ctx: any,
   params: any,
   logger: any,
@@ -43,21 +44,35 @@ export const handleEthGetTransactionCount = async (
   method: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
-) => {
-  const ADDRESS = params[0];
-  const TAG = JSON.stringify({ method, address: ADDRESS });
+): Promise<any> => {
+  if (params.length !== 1) {
+    throw predefined.INVALID_PARAMETERS;
+  }
 
-  logger.info(`${connectionIdPrefix} ${requestIdPrefix}: Retrieving transaction count for tag=${TAG}`);
+  const FILTER = params[0];
+  const TAG = JSON.stringify({ method, filter: FILTER });
 
-  return handleSendingRequestsToRelay(
+  logger.info(`${connectionIdPrefix} ${requestIdPrefix}: Retrieving logs for tag=${TAG}`);
+
+  // prepare filter params
+  const getLogsParams = [
+    FILTER.blockHash,
+    FILTER.fromBlock,
+    FILTER.toBlock,
+    FILTER.address,
+    FILTER.topics,
+    requestIdPrefix,
+  ];
+
+  await handleSendingRequestsToRelay(
     ctx,
     TAG,
-    params,
+    getLogsParams,
     relay,
     logger,
     request,
     method,
-    'getTransactionCount',
+    'getLogs',
     requestIdPrefix,
     connectionIdPrefix,
   );
