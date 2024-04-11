@@ -18,33 +18,33 @@
  *
  */
 
+import { predefined } from '@hashgraph/json-rpc-relay';
 import { handleSendingRequestsToRelay } from './helpers';
-import { Relay, predefined } from '@hashgraph/json-rpc-relay';
 
 /**
  * Handles the "eth_getLogs" method request by retrieving logs that match the specified filter object.
  * Validates the parameters, retrieves the logs using the relay object, and sends the response back to the client.
- * @param {any} ctx - The context object containing information about the WebSocket connection.
- * @param {any[]} params - The parameters of the method request, expecting a filter object.
- * @param {any} logger - The logger object for logging messages and events.
- * @param {Relay} relay - The relay object for interacting with the Hedera network.
- * @param {any} request - The request object received from the client.
- * @param {string} method - The JSON-RPC method associated with the request.
- * @param {string} requestIdPrefix - The prefix for the request ID.
- * @param {string} connectionIdPrefix - The prefix for the connection ID.
- * @returns {Promise<void>} Returns a promise that resolves after processing the request.
+ * @param {object} args - An object containing the function parameters as properties.
+ * @param {any} args.ctx - The context object containing information about the WebSocket connection.
+ * @param {any[]} args.params - The parameters of the method request, expecting a filter object.
+ * @param {any} args.logger - The logger object for logging messages and events.
+ * @param {Relay} args.relay - The relay object for interacting with the Hedera network.
+ * @param {any} args.request - The request object received from the client.
+ * @param {string} args.method - The JSON-RPC method associated with the request.
+ * @param {string} args.requestIdPrefix - The prefix for the request ID.
+ * @param {string} args.connectionIdPrefix - The prefix for the connection ID.
  * @throws {JsonRpcError} Throws a JsonRpcError if the method parameters are invalid or an internal error occurs.
  */
-export const handleEthGetLogs = async (
-  ctx: any,
-  params: any,
-  logger: any,
-  relay: Relay,
-  request: any,
-  method: string,
-  requestIdPrefix: string,
-  connectionIdPrefix: string,
-): Promise<any> => {
+export const handleEthGetLogs = async ({
+  ctx,
+  params,
+  logger,
+  relay,
+  request,
+  method,
+  requestIdPrefix,
+  connectionIdPrefix,
+}): Promise<any> => {
   if (params.length !== 1) {
     throw predefined.INVALID_PARAMETERS;
   }

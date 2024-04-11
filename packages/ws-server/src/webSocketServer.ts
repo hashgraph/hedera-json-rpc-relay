@@ -140,7 +140,7 @@ app.ws.use(async (ctx) => {
     methodsCounterByIp.labels(ctx.request.ip, method).inc();
 
     // Check if the subscription limit is exceeded for ETH_SUBSCRIBE method
-    let relayResponse, response;
+    let response;
     if (method === WS_CONSTANTS.METHODS.ETH_SUBSCRIBE && !limiter.validateSubscriptionLimit(ctx)) {
       response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
       ctx.websocket.send(JSON.stringify(response));
@@ -149,18 +149,11 @@ app.ws.use(async (ctx) => {
 
     // method logics
     try {
+      const sharedParams = { ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix };
+
       switch (method) {
         case WS_CONSTANTS.METHODS.ETH_SUBSCRIBE:
-          response = await handleEthSubsribe(
-            ctx,
-            params,
-            requestIdPrefix,
-            request,
-            relay,
-            mirrorNodeClient,
-            limiter,
-            logger,
-          );
+          response = await handleEthSubsribe({ ...sharedParams, limiter, mirrorNodeClient });
           break;
         case WS_CONSTANTS.METHODS.ETH_UNSUBSCRIBE:
           response = handleEthUnsubscribe(ctx, params, request, relay, limiter);
@@ -169,95 +162,46 @@ app.ws.use(async (ctx) => {
           response = jsonResp(request.id, null, CHAIN_ID);
           break;
         case WS_CONSTANTS.METHODS.ETH_SEND_RAW_TRANSACTION:
-          await handleEthSendRawTransaction(
-            ctx,
-            params,
-            logger,
-            relay,
-            request,
-            method,
-            requestIdPrefix,
-            connectionIdPrefix,
-          );
+          await handleEthSendRawTransaction(sharedParams);
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_CODE:
-          await handleEthGetCode(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
-          // response = jsonResp(request.id, null, relayResponse.result);
+          await handleEthGetCode(sharedParams);
           break;
         case WS_CONSTANTS.METHODS.ETH_ESTIMATE_GAS:
-          await handleEthEstimateGas(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+          await handleEthEstimateGas(sharedParams);
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
-          await handleEthGetTransactionByHash(
-            ctx,
-            params,
-            logger,
-            relay,
-            request,
-            method,
-            requestIdPrefix,
-            connectionIdPrefix,
-          );
+          await handleEthGetTransactionByHash(sharedParams);
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_RECEIPT:
-          await handleEthGetTransactionReceipt(
-            ctx,
-            params,
-            logger,
-            relay,
-            request,
-            method,
-            requestIdPrefix,
-            connectionIdPrefix,
-          );
+          await handleEthGetTransactionReceipt(sharedParams);
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_COUNT:
-          await handleEthGetTransactionCount(
-            ctx,
-            params,
-            logger,
-            relay,
-            request,
-            method,
-            requestIdPrefix,
-            connectionIdPrefix,
-          );
+          await handleEthGetTransactionCount(sharedParams);
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_BLOCK_BY_HASH:
-          await handleEthGetBlockByHash(
-            ctx,
-            params,
-            logger,
-            relay,
-            request,
-            method,
-            requestIdPrefix,
-            connectionIdPrefix,
-          );
+          await handleEthGetBlockByHash(sharedParams);
           break;
         case WS_CONSTANTS.METHODS.ETH_GET_BLOCK_BY_NUMBER:
-          await handleEthGetBlockByNumber(
-            ctx,
-            params,
-            logger,
-            relay,
-            request,
-            method,
-            requestIdPrefix,
-            connectionIdPrefix,
-          );
+          await handleEthGetBlockByNumber(sharedParams);
+          break;
         case WS_CONSTANTS.METHODS.ETH_BLOCK_NUMBER:
-          await handleEthBlockNumber(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+          await handleEthBlockNumber(sharedParams);
+          break;
         case WS_CONSTANTS.METHODS.ETH_GAS_PRICE:
-          await handleEthGasPrice(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+          await handleEthGasPrice(sharedParams);
+          break;
         case WS_CONSTANTS.METHODS.ETH_GET_BALANCE:
-          await handleEthGetBalance(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+          await handleEthGetBalance(sharedParams);
+          break;
         case WS_CONSTANTS.METHODS.ETH_GET_STORAGE_AT:
-          await handleEthGetStorageAt(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+          await handleEthGetStorageAt(sharedParams);
+          break;
         case WS_CONSTANTS.METHODS.ETH_GET_LOGS:
-          await handleEthGetLogs(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+          await handleEthGetLogs(sharedParams);
+          break;
         case WS_CONSTANTS.METHODS.ETH_CALL:
-          await handleEthCall(ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix);
+          await handleEthCall(sharedParams);
           break;
         default:
           response = jsonResp(request.id, DEFAULT_ERROR, null);

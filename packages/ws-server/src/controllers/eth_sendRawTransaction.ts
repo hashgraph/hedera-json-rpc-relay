@@ -18,33 +18,33 @@
  *
  */
 
+import { predefined } from '@hashgraph/json-rpc-relay';
 import { handleSendingRequestsToRelay } from './helpers';
-import { Relay, predefined } from '@hashgraph/json-rpc-relay';
 
 /**
  * Handles the "eth_sendRawTransaction" method request by submitting a raw transaction to the Websocket server.
  * Validates the parameters, submits the transaction, and sends the txHash response back to the client.
- * @param {any} ctx - The context object containing information about the WebSocket connection.
- * @param {any} params - The parameters of the method request, expecting a single parameter: the signed transaction.
- * @param {any} logger - The logger object for logging messages and events.
- * @param {Relay} relay - The relay object for interacting with the Hedera network.
- * @param {any} request - The request object received from the client.
- * @param {string} method - The name of the method.
- * @param {string} requestIdPrefix - The prefix for the request ID.
- * @param {string} connectionIdPrefix - The prefix for the connection ID.
- * @returns {Promise<any>} Returns a promise that resolves with the JSON-RPC response to the client.
- * @throws {JsonRpcError} Throws a JsonRpcError if there is an issue with the parameters or an internal error occurs.
+ * @param {object} args - An object containing the function parameters as properties.
+ * @param {any} args.ctx - The context object containing information about the WebSocket connection.
+ * @param {any[]} args.params - The parameters of the method request, expecting a signed transaction.
+ * @param {any} args.logger - The logger object for logging messages and events.
+ * @param {Relay} args.relay - The relay object for interacting with the Hedera network.
+ * @param {any} args.request - The request object received from the client.
+ * @param {string} args.method - The JSON-RPC method associated with the request.
+ * @param {string} args.requestIdPrefix - The prefix for the request ID.
+ * @param {string} args.connectionIdPrefix - The prefix for the connection ID.
+ * @throws {JsonRpcError} Throws a JsonRpcError if the method parameters are invalid or an internal error occurs.
  */
-export const handleEthSendRawTransaction = async (
-  ctx: any,
-  params: any,
-  logger: any,
-  relay: Relay,
-  request: any,
-  method: string,
-  requestIdPrefix: string,
-  connectionIdPrefix: string,
-) => {
+export const handleEthSendRawTransaction = async ({
+  ctx,
+  params,
+  logger,
+  relay,
+  request,
+  method,
+  requestIdPrefix,
+  connectionIdPrefix,
+}) => {
   if (params.length !== 1) {
     throw predefined.INVALID_PARAMETERS;
   }

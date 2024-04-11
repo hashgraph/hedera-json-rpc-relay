@@ -18,32 +18,35 @@
  *
  */
 
+import { predefined } from '@hashgraph/json-rpc-relay';
 import { handleSendingRequestsToRelay } from './helpers';
-import { Relay, predefined } from '@hashgraph/json-rpc-relay';
 
 /**
  * Handles the "eth_blockNumber" method request by retrieving the current block number from the Hedera network.
  * Validates the parameters, retrieves the current block number using the relay object, and sends the response back to the client.
  * @param {any} ctx - The context object containing information about the WebSocket connection.
  * @param {any[]} params - The parameters of the method request, expecting no parameters.
- * @param {any} logger - The logger object for logging messages and events.
- * @param {Relay} relay - The relay object for interacting with the Hedera network.
- * @param {any} request - The request object received from the client.
- * @param {string} method - The JSON-RPC method associated with the request.
- * @param {string} requestIdPrefix - The prefix for the request ID.
- * @param {string} connectionIdPrefix - The prefix for the connection ID.
+ * @param {object} args - An object containing the function parameters as properties.
+ * @param {any} args.ctx - The context object containing information about the WebSocket connection.
+ * @param {any[]} args.params - The parameters of the method request, expecting a block param (block number or block tag) and a boolean flag indicating whether to include detailed information.
+ * @param {any} args.logger - The logger object for logging messages and events.
+ * @param {Relay} args.relay - The relay object for interacting with the Hedera network.
+ * @param {any} args.request - The request object received from the client.
+ * @param {string} args.method - The JSON-RPC method associated with the request.
+ * @param {string} args.requestIdPrefix - The prefix for the request ID.
+ * @param {string} args.connectionIdPrefix - The prefix for the connection ID.
  * @throws {JsonRpcError} Throws a JsonRpcError if the method parameters are invalid or an internal error occurs.
  */
-export const handleEthBlockNumber = async (
-  ctx: any,
-  params: any,
-  logger: any,
-  relay: Relay,
-  request: any,
-  method: string,
-  requestIdPrefix: string,
-  connectionIdPrefix: string,
-) => {
+export const handleEthBlockNumber = async ({
+  ctx,
+  params,
+  logger,
+  relay,
+  request,
+  method,
+  requestIdPrefix,
+  connectionIdPrefix,
+}) => {
   if (params.length !== 0) {
     throw predefined.INVALID_PARAMETERS;
   }
