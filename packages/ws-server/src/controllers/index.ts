@@ -27,6 +27,7 @@ import { handleEthBlockNumber } from './eth_blockNumber';
 import { handleEthGetBlockByHash } from './eth_getBlockByHash';
 import { handleEthGetBlockByNumber } from './eth_getBlockByNumber';
 import { handleEthSendRawTransaction } from './eth_sendRawTransaction';
+import { handleEthGetTransactionCount } from './eth_getTransactionCount';
 import { handleEthGetTransactionByHash } from './eth_getTransactionByHash';
 import { handleEthGetTransactionReceipt } from './eth_getTransactionReceipt';
 
@@ -40,6 +41,7 @@ export {
   handleEthGetBlockByHash,
   handleEthGetBlockByNumber,
   handleEthSendRawTransaction,
+  handleEthGetTransactionCount,
   handleEthGetTransactionByHash,
   handleEthGetTransactionReceipt,
 };

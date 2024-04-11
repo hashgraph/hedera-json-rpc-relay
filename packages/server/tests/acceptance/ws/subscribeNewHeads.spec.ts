@@ -29,37 +29,10 @@ import Assertions from '../../helpers/assertions';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { AliasAccount } from '../../clients/servicesClient';
 import { numberTo0x } from '../../../../../packages/relay/src/formatters';
-import RelayCall from '../../../tests/helpers/constants';
 import { Utils } from '../../helpers/utils';
-import e from 'express';
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
 
 const ethAddressRegex = /^0x[a-fA-F0-9]*$/;
-
-async function sendTransaction(
-  ONE_TINYBAR: any,
-  CHAIN_ID: string | number,
-  accounts: AliasAccount[],
-  rpcServer: any,
-  requestId: any,
-  mirrorNodeServer: any,
-) {
-  const transaction = {
-    value: ONE_TINYBAR,
-    gasLimit: numberTo0x(30000),
-    chainId: Number(CHAIN_ID),
-    to: accounts[1].address,
-    nonce: await rpcServer.getAccountNonce(accounts[0].address, requestId),
-    maxFeePerGas: await rpcServer.gasPrice(requestId),
-  };
-
-  const signedTx = await accounts[0].wallet.signTransaction(transaction);
-  const transactionHash = await rpcServer.sendRawTransaction(signedTx, requestId);
-
-  await mirrorNodeServer.get(`/contracts/results/${transactionHash}`, requestId);
-
-  return await rpcServer.call(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [transactionHash], requestId);
-}
 
 function verifyResponse(response: any, done: Mocha.Done, webSocket: any, includeTransactions: boolean) {
   if (response?.params?.result?.transactions?.length > 0) {
@@ -246,7 +219,7 @@ describe('@release @web-socket Acceptance Tests', async function () {
 
       let responseCounter = 0;
 
-      sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
       webSocket.on('message', function incoming(data) {
         const response = JSON.parse(data);
 
@@ -276,7 +249,7 @@ describe('@release @web-socket Acceptance Tests', async function () {
 
       let responseCounter = 0;
 
-      sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
       webSocket.on('message', function incoming(data) {
         const response = JSON.parse(data);
 
@@ -306,7 +279,7 @@ describe('@release @web-socket Acceptance Tests', async function () {
 
       let responseCounter = 0;
 
-      sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
       webSocket.on('message', function incoming(data) {
         const response = JSON.parse(data);
 
