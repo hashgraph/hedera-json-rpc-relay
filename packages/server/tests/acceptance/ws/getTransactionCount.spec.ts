@@ -47,7 +47,7 @@ describe('@release @web-socket eth_getTransactionCount', async function () {
   // @ts-ignore
   const { servicesNode, mirrorNode, relay } = global;
 
-  this.beforeEach(async () => {
+  beforeEach(async () => {
     accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
     accounts[1] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
     basicContract = await servicesNode.deployContract(basicContractJson);
@@ -56,6 +56,15 @@ describe('@release @web-socket eth_getTransactionCount', async function () {
     codeFromRPC = await provider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);
 
     webSocket = new WebSocket(WS_RELAY_URL);
+  });
+
+  afterEach(async () => {
+    if (wsProvider) {
+      await wsProvider.destroy();
+    }
+    if (webSocket) {
+      webSocket.close();
+    }
   });
 
   it('should return the transaction count through an ethers WebSocketProvider', async () => {
