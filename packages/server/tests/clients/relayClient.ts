@@ -94,7 +94,7 @@ export default class RelayClient {
       );
       Assertions.expectedError();
     } catch (e: any) {
-      if (expectedRpcError.name === 'Contract revert executed') {
+      if (expectedRpcError.message.includes('execution reverted')) {
         if (e?.info) {
           Assertions.jsonRpcError(e.info.error, expectedRpcError);
         } else if (e?.error) {
