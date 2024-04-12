@@ -27,7 +27,7 @@ import { Utils } from '../helpers/utils';
 // local resources
 import reverterContractJson from '../contracts/Reverter.json';
 import { EthImpl } from '../../../../packages/relay/src/lib/eth';
-import { predefined } from '../../../../packages/relay';
+import { JsonRpcError, predefined } from '../../../../packages/relay';
 import basicContractJson from '../contracts/Basic.json';
 import callerContractJson from '../contracts/Caller.json';
 import DeployerContractJson from '../contracts/Deployer.json';
@@ -567,7 +567,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(response.data.error).to.exist;
       expect(response.data.error.code).to.be.equal(-32008);
       expect(response.data.error.message).to.contain('execution reverted: CONTRACT_REVERT_EXECUTED');
-      expect(response.data.error.name).to.be.equal('Contract revert executed');
+      expect((result as JsonRpcError).name).to.undefined;
     });
   });
 

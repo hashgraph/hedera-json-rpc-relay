@@ -23,10 +23,10 @@ import constants from '../../lib/constants';
 export class JsonRpcError {
   public code: number;
   public message: string;
-  public name: string;
+  public name?: string;
   public data?: string;
 
-  constructor(args: { name: string; code: number; message: string; data?: string }, requestId?: string) {
+  constructor(args: { name?: string; code: number; message: string; data?: string }, requestId?: string) {
     this.code = args.code;
     this.name = args.name;
     this.message = requestId ? `[${constants.REQUEST_ID_STRING}${requestId}] ` + args.message : args.message;
@@ -37,7 +37,6 @@ export class JsonRpcError {
 export const predefined = {
   CONTRACT_REVERT: (errorMessage?: string, data: string = '') =>
     new JsonRpcError({
-      name: 'Contract revert executed',
       code: -32008,
       message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
       data: data,
