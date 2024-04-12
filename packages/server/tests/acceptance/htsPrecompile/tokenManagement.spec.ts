@@ -57,20 +57,28 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
   const TX_SUCCESS_CODE = BigInt(22);
 
   const accounts: AliasAccount[] = [];
-  let mainContractAddress;
+  let mainContractAddress: string;
   let HTSTokenContractAddress;
   let NftHTSTokenContractAddress;
   let HTSTokenContract;
-  let mainContract;
+  let mainContract: ethers.BaseContract;
   let mainContractOwner;
   let mainContractReceiverWalletFirst;
-  let requestId;
+  let requestId: string;
 
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAmount: string = '5000000000'; //50 Hbar
 
-    const contractDeployer = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    mainContractAddress = await deployMainContract(contractDeployer.wallet);
+    const contractDeployer = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId, initialAmount);
+    mainContract = await Utils.deployContract(
+      TokenManagementJson.abi,
+      TokenManagementJson.bytecode,
+      contractDeployer.wallet,
+    );
+    mainContractAddress = mainContract.target as string;
+
     const mainContractMirror = await mirrorNode.get(`/contracts/${mainContractAddress}`, requestId);
 
     accounts[0] = await servicesNode.createAccountWithContractIdKey(
@@ -85,10 +93,9 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       relay.provider,
       requestId,
     );
-
+    global.accounts = accounts;
     // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise((r) => setTimeout(r, 5000));
-    await mirrorNode.get(`/accounts/${accounts[0].accountId}`, requestId);
     await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);
 
     HTSTokenContractAddress = await createHTSToken();
@@ -144,13 +151,6 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
   this.beforeEach(async () => {
     requestId = Utils.generateRequestId();
   });
-
-  async function deployMainContract(signer) {
-    const mainFactory = new ethers.ContractFactory(TokenManagementJson.abi, TokenManagementJson.bytecode, signer);
-    const mainContract = await Utils.deployContract(mainFactory);
-
-    return mainContract.target;
-  }
 
   async function createHTSToken() {
     const mainContract = new ethers.Contract(mainContractAddress, TokenManagementJson.abi, accounts[0].wallet);
