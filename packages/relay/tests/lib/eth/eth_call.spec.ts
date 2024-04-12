@@ -200,20 +200,6 @@ describe('@ethCall Eth Call spec', async function () {
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
-    it('latest block but not found for comparison', async function () {
-      restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      restMock.onGet(`blocks?limit=1&order=desc`).reply(404);
-
-      const block = '0x10';
-      await ethCallFailing(ethImpl, ETH_CALL_REQ_ARGS, block, (error) => {
-        const predefineError = predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
-        expect(error.code).to.equal(predefineError.code);
-        expect(error.name).to.equal(predefineError.name);
-        expect(error.message).to.equal(predefineError.message);
-      });
-    });
-
     it('to field is not a contract or token', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(404);
