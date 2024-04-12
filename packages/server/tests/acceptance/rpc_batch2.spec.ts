@@ -230,6 +230,23 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.not.be.equal('0x0');
     });
 
+    it('should execute "eth_estimateGas" with `to` filed set to null (deployment transaction)', async function () {
+      const res = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
+        [
+          {
+            from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
+            to: null,
+            value: `0x${'00'.repeat(5121)}`,
+          },
+        ],
+        requestId,
+      );
+      expect(res).to.contain('0x');
+      expect(res).to.not.be.equal('0x');
+      expect(res).to.not.be.equal('0x0');
+    });
+
     it('should not be able to execute "eth_estimateGas" with no transaction object', async function () {
       await relay.callFailing('eth_estimateGas', [], predefined.MISSING_REQUIRED_PARAMETER(0), requestId);
     });
