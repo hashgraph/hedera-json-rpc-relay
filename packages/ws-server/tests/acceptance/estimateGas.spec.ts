@@ -19,36 +19,32 @@
  */
 
 // external resources
-import WebSocket from 'ws';
 import { expect } from 'chai';
+import { Contract, ethers, WebSocketProvider } from 'ethers';
+import { WsTestConstant, WsTestHelper } from '../helper';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
-import { ethers, WebSocketProvider } from 'ethers';
 
 describe('@release @web-socket eth_estimateGas', async function () {
-  // @ts-ignore
-  const { servicesNode, relay } = global;
-
-  const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
-  const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
+  const METHOD_NAME = 'eth_estimateGas';
   const PING_CALL_ESTIMATED_GAS = '0x6122';
+  const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
 
   let accounts: AliasAccount[] = [],
-    basicContract: any,
+    basicContract: Contract,
     currentPrice: number,
     expectedGas: number,
     gasPriceDeviation: number,
-    requestId: string,
-    wsProvider: WebSocketProvider,
-    webSocket: WebSocket;
+    ethersWsProvider: WebSocketProvider,
+    requestId: string;
 
   before(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
+    accounts[0] = await global.servicesNode.createAliasAccount(100, relay.provider, requestId);
 
-    basicContract = await servicesNode.deployContract(basicContractJson);
+    basicContract = await global.servicesNode.deployContract(basicContractJson);
 
-    wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
-    const wallet = new ethers.Wallet(accounts[0].wallet.privateKey, wsProvider);
+    ethersWsProvider = await new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
+    const wallet = new ethers.Wallet(accounts[0].wallet.privateKey, ethersWsProvider);
     const basicContractFactory = await new ethers.ContractFactory(
       basicContractJson.abi,
       basicContractJson.bytecode,
@@ -57,22 +53,27 @@ describe('@release @web-socket eth_estimateGas', async function () {
     basicContract = await basicContractFactory.deploy();
     await basicContract.waitForDeployment();
 
-    webSocket = new WebSocket(WS_RELAY_URL);
-    currentPrice = await relay.gasPrice(requestId);
+    currentPrice = await global.relay.gasPrice();
     expectedGas = parseInt(PING_CALL_ESTIMATED_GAS, 16);
 
     // handle deviation in gas price of 20%.  On testnet gas price can vary depending on the network congestion
     gasPriceDeviation = parseFloat(expectedGas.toString() ?? '0.2');
   });
 
+  beforeEach(async () => {
+    ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
+  });
+
   afterEach(async () => {
-    if (wsProvider) {
-      await wsProvider.destroy();
-    }
+    if (ethersWsProvider) await ethersWsProvider.destroy();
+  });
+
+  after(async () => {
+    if (ethersWsProvider) await ethersWsProvider.destroy();
   });
 
   it('@release should execute "eth_estimateGas" for contract call, using a websocket provider', async function () {
-    const estimatedGas = await wsProvider.estimateGas({
+    const estimatedGas = await ethersWsProvider.estimateGas({
       to: basicContract.target,
       data: BASIC_CONTRACT_PING_CALL_DATA,
     });
@@ -82,35 +83,11 @@ describe('@release @web-socket eth_estimateGas', async function () {
     expect(Number(estimatedGas)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
   });
 
-  it('should return the gas esimate through a websocket', (done) => {
-    webSocket.on('open', function open() {
-      webSocket.send(
-        JSON.stringify({
-          id: 1,
-          jsonrpc: '2.0',
-          method: 'eth_estimateGas',
-          params: [
-            {
-              to: basicContract.target,
-              data: BASIC_CONTRACT_PING_CALL_DATA,
-            },
-          ],
-        }),
-      );
-    });
-    let responseCounter = 0;
-    webSocket.on('message', function incoming(data) {
-      const response = JSON.parse(data);
-      if (response.result) {
-        expect(Number(response.result)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
-        expect(Number(response.result)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
-      }
-
-      responseCounter++;
-      if (responseCounter > 1) {
-        webSocket.close();
-        done();
-      }
-    });
+  it('should return the code through a websocket', async () => {
+    const tx = { to: basicContract.target, data: BASIC_CONTRACT_PING_CALL_DATA };
+    const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [tx]);
+    WsTestHelper.assertJsonRpcObject(response);
+    expect(Number(response.result)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
+    expect(Number(response.result)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
   });
 });

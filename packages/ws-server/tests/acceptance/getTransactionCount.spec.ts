@@ -19,54 +19,57 @@
  */
 
 // external resources
-import WebSocket from 'ws';
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
+import { WsTestConstant, WsTestHelper } from '../helper';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
 describe('@release @web-socket eth_getTransactionCount', async function () {
-  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const METHOD_NAME = 'eth_getTransactionCount';
+  const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
-  const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
 
-  let accounts: AliasAccount[] = [],
-    requestId: string,
-    wsProvider: WebSocketProvider,
-    webSocket: WebSocket;
-
-  // @ts-ignore
-  const { servicesNode, mirrorNode, relay } = global;
+  let requestId: string,
+    accounts: AliasAccount[] = [],
+    ethersWsProvider: WebSocketProvider;
 
   beforeEach(async () => {
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    wsProvider = new ethers.WebSocketProvider(WS_RELAY_URL);
+    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
+    accounts[1] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
+    await new Promise((r) => setTimeout(r, 1000)); // wait for accounts to propagate
 
-    webSocket = new WebSocket(WS_RELAY_URL);
+    ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
   afterEach(async () => {
-    if (wsProvider) {
-      await wsProvider.destroy();
-    }
-    if (webSocket) {
-      webSocket.close();
-    }
+    if (ethersWsProvider) await ethersWsProvider.destroy();
+  });
+
+  after(async () => {
+    // expect all the connections to be closed after all
+    expect(global.socketServer._connections).to.eq(0);
   });
 
   it('should return the transaction count through an ethers WebSocketProvider', async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    const beforeTransactionCountFromWs = await wsProvider.getTransactionCount(accounts[0].address);
-    await Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, relay, requestId, mirrorNode);
-    const afterTransactionCountFromWs = await wsProvider.getTransactionCount(accounts[0].address);
+    const beforeTransactionCountFromWs = await ethersWsProvider.getTransactionCount(accounts[0].address);
+    await Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, global.relay, requestId, global.mirrorNode);
+    const afterTransactionCountFromWs = await ethersWsProvider.getTransactionCount(accounts[0].address);
     expect(afterTransactionCountFromWs).to.equal(beforeTransactionCountFromWs + 1);
   });
 
   it('should return the transaction count through a websocket', async () => {
+    const beforeSendRawTransactionCountResponse = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [
+      accounts[0].address,
+      'latest',
+    ]);
+    WsTestHelper.assertJsonRpcObject(beforeSendRawTransactionCountResponse);
+    const transactionCountBefore = await global.relay.getAccountNonce(accounts[0].address);
+    expect(Number(beforeSendRawTransactionCountResponse.result)).to.eq(transactionCountBefore);
+
     const transaction = {
       value: ONE_TINYBAR,
       gasLimit: numberTo0x(30000),
@@ -74,40 +77,16 @@ describe('@release @web-socket eth_getTransactionCount', async function () {
       to: accounts[1].address,
       maxFeePerGas: defaultGasPrice,
     };
-
     const signedTx = await accounts[0].wallet.signTransaction(transaction);
+    // @notice submit a transaction to increase transaction count
+    await global.relay.sendRawTransaction(signedTx, requestId);
 
-    // Open the WebSocket connection and send the message
-    const openPromise = new Promise<void>(async (resolve, reject) => {
-      webSocket.on('open', async () => {
-        await relay.sendRawTransaction(signedTx, requestId);
-        webSocket.send(
-          JSON.stringify({
-            id: 1,
-            jsonrpc: '2.0',
-            method: 'eth_getTransactionCount',
-            params: [accounts[0].address, 'latest'],
-          }),
-        );
-        resolve();
-      });
-    });
-
-    // Wait for the WebSocket to open before proceeding
-    await openPromise;
-
-    // Handle incoming messages from the WebSocket
-    const messagePromise = new Promise<void>((resolve, reject) => {
-      webSocket.on('message', (data) => {
-        const response = JSON.parse(data);
-        if (response.result) {
-          expect(response.result).to.equal('0x1');
-          webSocket.close();
-          resolve();
-        }
-      });
-    });
-
-    await messagePromise;
+    const afterSendRawTransactionCountResponse = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [
+      accounts[0].address,
+      'latest',
+    ]);
+    WsTestHelper.assertJsonRpcObject(afterSendRawTransactionCountResponse);
+    const transactionCountAfter = await global.relay.getAccountNonce(accounts[0].address);
+    expect(Number(afterSendRawTransactionCountResponse.result)).to.eq(transactionCountAfter);
   });
 });
