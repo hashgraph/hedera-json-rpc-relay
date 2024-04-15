@@ -21,17 +21,14 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
+import { WsTestConstant, WsTestHelper } from '../helper';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
-import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
-import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 
 describe('@release @web-socket eth_getTransactionByHash', async function () {
-  const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_getTransactionByHash';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
-  const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
   const INVALID_PARAMS = [
     [],
     [''],
@@ -42,69 +39,84 @@ describe('@release @web-socket eth_getTransactionByHash', async function () {
     ['0xhbar'],
     ['txHash'],
     ['0xHedera'],
-    [FAKE_TX_HASH, 'hbar'],
-    [FAKE_TX_HASH, 'rpc', 'invalid'],
+    [WsTestConstant.FAKE_TX_HASH, 'hbar'],
+    [WsTestConstant.FAKE_TX_HASH, 'rpc', 'invalid'],
   ];
 
-  let accounts: AliasAccount[] = [];
-  let mirrorNodeServer: MirrorClient, requestId: string, relayClient: RelayClient, wsProvider: WebSocketProvider;
+  let txHash: string,
+    expectedTxReceipt: any,
+    accounts: AliasAccount[] = [],
+    ethersWsProvider: WebSocketProvider;
 
   before(async () => {
-    // @ts-ignore
-    const { servicesNode, mirrorNode, relay } = global;
-
-    mirrorNodeServer = mirrorNode;
-    relayClient = relay;
-
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
+    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
+    accounts[1] = await global.servicesNode.createAliasAccount(5, global.relay.provider);
     await new Promise((r) => setTimeout(r, 1000)); // wait for accounts to propagate
-  });
 
-  beforeEach(async () => {
-    wsProvider = new ethers.WebSocketProvider(WS_RELAY_URL);
-  });
-
-  afterEach(async () => {
-    if (wsProvider) {
-      await wsProvider.destroy();
-    }
-  });
-
-  for (const params of INVALID_PARAMS) {
-    it(`Should throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
-      try {
-        await wsProvider.send(METHOD_NAME, params);
-        expect(true).to.eq(false);
-      } catch (error) {
-        expect(error.error).to.exist;
-        expect(error.error.code).to.eq(-32602);
-      }
-    });
-  }
-
-  it('Should handle valid data correctly', async () => {
     const tx = {
       value: ONE_TINYBAR_IN_WEI_HEX,
       gasLimit: numberTo0x(30000),
       chainId: Number(CHAIN_ID),
       to: accounts[1].address,
-      nonce: await relayClient.getAccountNonce(accounts[0].address, requestId),
-      maxFeePerGas: await relayClient.gasPrice(requestId),
+      nonce: await global.relay.getAccountNonce(accounts[0].address),
+      maxFeePerGas: await global.relay.gasPrice(),
     };
-
     const signedTx = await accounts[0].wallet.signTransaction(tx);
-    const txHash = await relayClient.sendRawTransaction(signedTx, requestId);
-    const expectedTxReceipt = await mirrorNodeServer.get(`/contracts/results/${txHash}`);
+    txHash = await global.relay.sendRawTransaction(signedTx);
+    expectedTxReceipt = await global.mirrorNode.get(`/contracts/results/${txHash}`);
+  });
 
-    const txReceipt = await wsProvider.send(METHOD_NAME, [txHash]);
+  beforeEach(async () => {
+    ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
+  });
 
-    expect(txReceipt.from).to.be.eq(accounts[0].address);
-    expect(txReceipt.to).to.be.eq(accounts[1].address);
-    expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));
-    expect(txReceipt.hash).to.be.eq(expectedTxReceipt.hash);
-    expect(txReceipt.r).to.be.eq(expectedTxReceipt.r);
-    expect(txReceipt.s).to.be.eq(expectedTxReceipt.s);
-    expect(Number(txReceipt.v)).to.be.eq(expectedTxReceipt.v);
+  afterEach(async () => {
+    if (ethersWsProvider) await ethersWsProvider.destroy();
+  });
+
+  after(async () => {
+    // expect all the connections to be closed after all
+    expect(global.socketServer._connections).to.eq(0);
+  });
+
+  describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
+    for (const params of INVALID_PARAMS) {
+      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+        await WsTestHelper.assertFailInvalidParamsStandardWebSocket(METHOD_NAME, params);
+      });
+    }
+
+    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and handle valid requests correctly`, async () => {
+      const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [txHash]);
+      WsTestHelper.assertJsonRpcObject(response);
+
+      const txReceipt = response.result;
+      expect(txReceipt.from).to.be.eq(accounts[0].address);
+      expect(txReceipt.to).to.be.eq(accounts[1].address);
+      expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));
+      expect(txReceipt.hash).to.be.eq(expectedTxReceipt.hash);
+      expect(txReceipt.r).to.be.eq(expectedTxReceipt.r);
+      expect(txReceipt.s).to.be.eq(expectedTxReceipt.s);
+      expect(Number(txReceipt.v)).to.be.eq(expectedTxReceipt.v);
+    });
+  });
+
+  describe(WsTestConstant.ETHERS_WS_PROVIDER, () => {
+    for (const params of INVALID_PARAMS) {
+      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+        await WsTestHelper.assertFailInvalidParamsEthersWsProvider(ethersWsProvider, METHOD_NAME, params);
+      });
+    }
+
+    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
+      const txReceipt = await ethersWsProvider.send(METHOD_NAME, [txHash]);
+      expect(txReceipt.from).to.be.eq(accounts[0].address);
+      expect(txReceipt.to).to.be.eq(accounts[1].address);
+      expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));
+      expect(txReceipt.hash).to.be.eq(expectedTxReceipt.hash);
+      expect(txReceipt.r).to.be.eq(expectedTxReceipt.r);
+      expect(txReceipt.s).to.be.eq(expectedTxReceipt.s);
+      expect(Number(txReceipt.v)).to.be.eq(expectedTxReceipt.v);
+    });
   });
 });

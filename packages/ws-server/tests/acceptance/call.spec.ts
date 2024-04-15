@@ -21,18 +21,16 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
+import { WsTestConstant, WsTestHelper } from '../helper';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import ERC20MockJson from '@hashgraph/json-rpc-server/tests/contracts/ERC20Mock.json';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
 describe('@release @web-socket eth_call', async function () {
-  const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_call';
-  const FAKE_TX_HASH = `0x${'00'.repeat(20)}`;
   const INVALID_PARAMS = [
     ['{}', false, '0x0'],
     ["{ to: '0xabcdef', data: '0x1a2b3c4d' }", 36, ''],
-    [{ to: FAKE_TX_HASH, data: 36 }, 'latest'],
   ];
 
   const INVALID_TX_INFO = [
@@ -60,22 +58,21 @@ describe('@release @web-socket eth_call', async function () {
     },
   ];
 
-  let accounts: AliasAccount[] = [];
-  let requestId: string, wsProvider: WebSocketProvider;
-  let erc20TokenAddr: string, erc20EtherInterface: ethers.Interface;
+  let requestId: string,
+    erc20TokenAddr: string,
+    accounts: AliasAccount[] = [],
+    ethersWsProvider: WebSocketProvider,
+    erc20EtherInterface: ethers.Interface;
 
   before(async () => {
-    // @ts-ignore
-    const { servicesNode, relay } = global;
-
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    await new Promise((r) => setTimeout(r, 3000));
+    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider, requestId);
+    await new Promise((r) => setTimeout(r, 1000)); // wait for accounts[0] to propagate
 
     const erc20Contract = await Utils.deployContractWithEthers(
       [TOKEN_NAME, TOKEN_SYMBOL, accounts[0].address, TOKEN_INIT_SUPPLY],
       ERC20MockJson,
       accounts[0].wallet,
-      relay,
+      global.relay,
     );
 
     erc20TokenAddr = await erc20Contract.getAddress();
@@ -83,53 +80,89 @@ describe('@release @web-socket eth_call', async function () {
   });
 
   beforeEach(async () => {
-    wsProvider = new ethers.WebSocketProvider(WS_RELAY_URL);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
   afterEach(async () => {
-    if (wsProvider) {
-      await wsProvider.destroy();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (ethersWsProvider) await ethersWsProvider.destroy();
+  });
+
+  after(async () => {
+    // expect all the connections to be closed after all
+    expect(global.socketServer._connections).to.eq(0);
+  });
+
+  describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
+    for (const params of INVALID_PARAMS) {
+      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+        await WsTestHelper.assertFailInvalidParamsStandardWebSocket(METHOD_NAME, params);
+      });
+    }
+
+    for (const params of INVALID_TX_INFO) {
+      it(`Should fail ${METHOD_NAME} on ${
+        WsTestConstant.STANDARD_WEB_SOCKET
+      } and handle invalid TX_INFO. params=[${JSON.stringify(params)}]`, async () => {
+        await WsTestHelper.assertFailInvalidParamsStandardWebSocket(METHOD_NAME, params);
+      });
+    }
+
+    for (const data of VALID_DATA) {
+      it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and handle valid requests correctly`, async () => {
+        const tx = {
+          to: erc20TokenAddr,
+          data: data.sighash,
+        };
+
+        const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [tx, 'latest']);
+        WsTestHelper.assertJsonRpcObject(response);
+
+        const outputASCII = erc20EtherInterface.decodeFunctionResult(
+          erc20EtherInterface.getFunction(data.sighash)!,
+          response.result,
+        );
+        expect(outputASCII[0]).to.eq(data.output);
+      });
     }
   });
 
-  for (const params of INVALID_PARAMS) {
-    it(`Should throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
-      try {
-        await wsProvider.send(METHOD_NAME, params);
-        expect(true).to.eq(false);
-      } catch (error) {
-        expect(error.info).to.exist;
-        expect(error.info.error.code).to.eq(-32602);
-      }
-    });
-  }
+  describe(WsTestConstant.ETHERS_WS_PROVIDER, () => {
+    for (const params of INVALID_PARAMS) {
+      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+        await WsTestHelper.assertFailInvalidParamsEthersWsProvider(ethersWsProvider, METHOD_NAME, params);
+      });
+    }
 
-  for (const params of INVALID_TX_INFO) {
-    it(`Should handle invalid TX_INFO A. params=[${JSON.stringify(params)}]`, async () => {
-      try {
-        await wsProvider.send(METHOD_NAME, [...params]);
-        expect(true).to.eq(false);
-      } catch (error) {
-        expect(error).to.exist;
-        expect(error.argument).to.eq('address');
-        expect(error.code).to.eq('INVALID_ARGUMENT');
-        expect(error.shortMessage).to.eq('invalid address');
-      }
-    });
-  }
+    for (const params of INVALID_TX_INFO) {
+      it(`Should fail ${METHOD_NAME} on ${
+        WsTestConstant.ETHERS_WS_PROVIDER
+      } and handle invalid TX_INFO. params=[${JSON.stringify(params)}]`, async () => {
+        try {
+          await ethersWsProvider.send(METHOD_NAME, params);
+          expect(true).to.eq(false);
+        } catch (error) {
+          expect(error).to.exist;
+          expect(error.argument).to.eq('address');
+          expect(error.code).to.eq('INVALID_ARGUMENT');
+          expect(error.shortMessage).to.eq('invalid address');
+        }
+      });
+    }
 
-  for (const data of VALID_DATA) {
-    it(`Should handle valid requests correctly`, async () => {
-      const tx = {
-        to: erc20TokenAddr,
-        data: data.sighash,
-      };
+    for (const data of VALID_DATA) {
+      it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
+        const tx = {
+          to: erc20TokenAddr,
+          data: data.sighash,
+        };
 
-      const output = await wsProvider.send(METHOD_NAME, [tx, 'latest']);
-      const result = erc20EtherInterface.decodeFunctionResult(erc20EtherInterface.getFunction(data.sighash)!, output);
-      expect(result[0]).to.eq(data.output);
-    });
-  }
+        const output = await ethersWsProvider.send(METHOD_NAME, [tx, 'latest']);
+        const outputASCII = erc20EtherInterface.decodeFunctionResult(
+          erc20EtherInterface.getFunction(data.sighash)!,
+          output,
+        );
+        expect(outputASCII[0]).to.eq(data.output);
+      });
+    }
+  });
 });

@@ -19,73 +19,46 @@
  */
 
 // external resources
-import WebSocket from 'ws';
 import { expect } from 'chai';
+import { WsTestConstant, WsTestHelper } from '../helper';
 import { ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
 describe('@release @web-socket eth_getCode', async function () {
   const RELAY_URL = `${process.env.RELAY_ENDPOINT}`;
-  const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
+  const METHOD_NAME = 'eth_getCode';
 
-  let accounts: AliasAccount[] = [],
-    basicContract: any,
-    codeFromRPC: string,
-    provider: JsonRpcProvider,
-    requestId: string,
-    wsProvider: WebSocketProvider,
-    webSocket: WebSocket;
+  let basicContract: any, codeFromRPC: string, provider: JsonRpcProvider, ethersWsProvider: WebSocketProvider;
 
   before(async () => {
-    // @ts-ignore
-    const { servicesNode, relay } = global;
-
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    basicContract = await servicesNode.deployContract(basicContractJson);
-    wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
+    basicContract = await global.servicesNode.deployContract(basicContractJson);
     provider = new ethers.JsonRpcProvider(RELAY_URL);
     codeFromRPC = await provider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);
+  });
 
-    webSocket = new WebSocket(WS_RELAY_URL);
+  beforeEach(async () => {
+    ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
   afterEach(async () => {
-    if (wsProvider) {
-      await wsProvider.destroy();
-    }
+    if (ethersWsProvider) await ethersWsProvider.destroy();
+  });
+
+  after(async () => {
+    // expect all the connections to be closed after all
+    expect(global.socketServer._connections).to.eq(0);
   });
 
   it('should return the code ethers WebSocketProvider', async function () {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    const codeFromWs = await wsProvider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);
+    const codeFromWs = await ethersWsProvider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);
     expect(codeFromWs).to.be.a('string');
     expect(codeFromRPC).to.equal(codeFromWs);
   });
 
-  it('should return the code through a websocket', (done) => {
-    webSocket.on('open', function open() {
-      webSocket.send(
-        JSON.stringify({
-          id: 1,
-          jsonrpc: '2.0',
-          method: 'eth_getCode',
-          params: [`0x${basicContract.contractId.toSolidityAddress()}`, 'latest'],
-        }),
-      );
-    });
-    let responseCounter = 0;
-    webSocket.on('message', function incoming(data) {
-      const response = JSON.parse(data);
-      if (response.result) {
-        expect(response.result).to.equal(codeFromRPC);
-      }
-
-      responseCounter++;
-      if (responseCounter > 1) {
-        webSocket.close();
-        done();
-      }
-    });
+  it('should return the code through a websocket', async () => {
+    const param = [`0x${basicContract.contractId.toSolidityAddress()}`, 'latest'];
+    const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, param);
+    WsTestHelper.assertJsonRpcObject(response);
+    expect(response.result).to.equal(codeFromRPC);
   });
 });
