@@ -36,13 +36,18 @@ describe('@release @web-socket eth_estimateGas', async function () {
     currentPrice: number,
     expectedGas: number,
     gasPriceDeviation: number,
-    ethersWsProvider: WebSocketProvider;
-
-  // @ts-ignore
-  // const { servicesNode, mirrorNode, relay, logger } = global;
+    ethersWsProvider: WebSocketProvider,
+    requestId = 'eth_estimateGas';
 
   before(async () => {
     accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
+    let result;
+    let mirrorAccount = await global.mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`, requestId);
+    // Wait for the account to propagate the mirror node
+    while (mirrorAccount.accounts.length === 0) {
+      mirrorAccount = await global.mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`, requestId);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
 
     currentPrice = await global.relay.gasPrice();
     expectedGas = parseInt(PING_CALL_ESTIMATED_GAS, 16);
@@ -60,19 +65,8 @@ describe('@release @web-socket eth_estimateGas', async function () {
       wallet,
     );
 
-    let retries = 0;
-    while (retries < 3) {
-      try {
-        basicContract = (await basicContractFactory.deploy()) as Contract;
-        await basicContract.waitForDeployment();
-        if (basicContract.target) {
-          break; // Exit the loop if target is defined
-        }
-      } catch (e) {
-        retries++;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 4000));
-    }
+    basicContract = (await basicContractFactory.deploy()) as Contract;
+    await basicContract.waitForDeployment();
   });
 
   afterEach(async () => {
