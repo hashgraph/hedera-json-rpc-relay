@@ -40,6 +40,7 @@ import {
   DEFAULT_BLOCKS_RES,
   DEFAULT_NETWORK_FEES,
   NO_SUCH_CONTRACT_RESULT,
+  NOT_FOUND_RES,
 } from './eth-config';
 import { contractResultsByNumberByIndexURL, generateEthTestEnv } from './eth-helpers';
 
@@ -73,6 +74,16 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(`accounts/${defaultContractResults.results[0].from}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultContractResults.results[1].to}?transactions=false`).reply(200);
+    restMock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, NOT_FOUND_RES);
+    restMock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, NOT_FOUND_RES);
+    restMock.onGet(`contracts/${defaultContractResults.results[0].to}`).reply(200);
+    restMock.onGet(`contracts/${defaultContractResults.results[1].to}`).reply(200);
+    restMock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(200);
+    restMock.onGet(`tokens/${defaultContractResults.results[1].contract_id}`).reply(200);
   });
 
   this.afterEach(() => {
