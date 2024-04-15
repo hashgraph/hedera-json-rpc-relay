@@ -20,8 +20,8 @@
 
 // external resources
 import { expect } from 'chai';
-import { ethers, WebSocketProvider } from 'ethers';
-import { TransactionReceipt } from '@hashgraph/sdk';
+import { Contract, ethers, WebSocketProvider } from 'ethers';
+// import { TransactionReceipt } from '@hashgraph/sdk';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
@@ -32,15 +32,22 @@ describe('@release @web-socket eth_estimateGas', async function () {
   const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
 
   let accounts: AliasAccount[] = [],
-    basicContract: TransactionReceipt,
+    basicContract: Contract,
     currentPrice: number,
     expectedGas: number,
     gasPriceDeviation: number,
-    ethersWsProvider: WebSocketProvider;
+    ethersWsProvider: WebSocketProvider,
+    requestId = 'eth_estimateGas';
 
   before(async () => {
     accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
-    basicContract = await global.servicesNode.deployContract(basicContractJson);
+    let result;
+    let mirrorAccount = await global.mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`, requestId);
+    // Wait for the account to propagate the mirror node
+    while (mirrorAccount.accounts.length === 0) {
+      mirrorAccount = await global.mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`, requestId);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
 
     currentPrice = await global.relay.gasPrice();
     expectedGas = parseInt(PING_CALL_ESTIMATED_GAS, 16);
@@ -51,6 +58,15 @@ describe('@release @web-socket eth_estimateGas', async function () {
 
   beforeEach(async () => {
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
+    const wallet = new ethers.Wallet(accounts[0].wallet.privateKey, ethersWsProvider);
+    const basicContractFactory = await new ethers.ContractFactory(
+      basicContractJson.abi,
+      basicContractJson.bytecode,
+      wallet,
+    );
+
+    basicContract = (await basicContractFactory.deploy()) as Contract;
+    await basicContract.waitForDeployment();
   });
 
   afterEach(async () => {
@@ -64,7 +80,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
 
   it('@release should execute "eth_estimateGas" for contract call, using a websocket provider', async function () {
     const estimatedGas = await ethersWsProvider.estimateGas({
-      to: `0x${basicContract.contractId?.toSolidityAddress()}`,
+      to: basicContract.target,
       data: BASIC_CONTRACT_PING_CALL_DATA,
     });
 
@@ -74,7 +90,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
   });
 
   it('should return the code through a websocket', async () => {
-    const tx = { to: `0x${basicContract.contractId?.toSolidityAddress()}`, data: BASIC_CONTRACT_PING_CALL_DATA };
+    const tx = { to: basicContract.target, data: BASIC_CONTRACT_PING_CALL_DATA };
     const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [tx]);
     WsTestHelper.assertJsonRpcObject(response);
     expect(Number(response.result)).to.be.lessThan(currentPrice * (1 + gasPriceDeviation));
