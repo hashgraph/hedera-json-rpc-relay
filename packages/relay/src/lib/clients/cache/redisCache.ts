@@ -51,7 +51,17 @@ export class RedisCache implements ICacheClient {
    */
   private readonly register: Registry;
 
+  /**
+   * The Redis client.
+   * @private
+   */
   private readonly client: RedisClientType;
+
+  /**
+   * Boolean showing if the connection to the Redis client has finished.
+   * @private
+   */
+  private readonly connected: Promise<boolean>;
 
   /**
    * Creates an instance of `RedisCache`.
@@ -76,9 +86,16 @@ export class RedisCache implements ICacheClient {
         },
       },
     });
-    this.client.connect();
 
-    this.client.on('ready', function () {
+    this.connected = this.client
+      .connect()
+      .then(() => true)
+      .catch((error) => {
+        this.logger.error(error, 'Redis connection could not be established!');
+        return false;
+      });
+
+    this.client.on('ready', () => {
       logger.info(`Connected to Redis server (${redisUrl}) successfully!`);
     });
 
@@ -92,6 +109,10 @@ export class RedisCache implements ICacheClient {
     });
   }
 
+  async getConnectedClient(): Promise<RedisClientType> {
+    return this.connected.then(() => this.client);
+  }
+
   /**
    * Retrieves a value from the cache.
    *
@@ -101,7 +122,8 @@ export class RedisCache implements ICacheClient {
    * @returns {Promise<any | null>} The cached value or null if not found.
    */
   async get(key: string, callingMethod: string, requestIdPrefix?: string | undefined) {
-    const result = await this.client.get(key);
+    const client = await this.getConnectedClient();
+    const result = await client.get(key);
     if (result) {
       this.logger.trace(
         `${requestIdPrefix} returning cached value ${key}:${JSON.stringify(result)} on ${callingMethod} call`,
@@ -129,10 +151,11 @@ export class RedisCache implements ICacheClient {
     ttl?: number | undefined,
     requestIdPrefix?: string | undefined,
   ): Promise<void> {
+    const client = await this.getConnectedClient();
     const serializedValue = JSON.stringify(value);
     const resolvedTtl = (ttl ?? this.options.ttl) / 1000; // convert to seconds
 
-    await this.client.setEx(key, resolvedTtl, serializedValue);
+    await client.setEx(key, resolvedTtl, serializedValue);
     this.logger.trace(`${requestIdPrefix} caching ${key}: ${serializedValue} on ${callingMethod} for ${resolvedTtl} s`);
     // TODO: add metrics
   }
@@ -146,6 +169,7 @@ export class RedisCache implements ICacheClient {
    * @returns {Promise<void>} A Promise that resolves when the values are cached.
    */
   async multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): Promise<void> {
+    const client = await this.getConnectedClient();
     // Serialize values
     const serializedKeyValuePairs: Record<string, string> = {};
     for (const [key, value] of Object.entries(keyValuePairs)) {
@@ -153,7 +177,7 @@ export class RedisCache implements ICacheClient {
     }
 
     // Perform mSet operation
-    await this.client.mSet(serializedKeyValuePairs);
+    await client.mSet(serializedKeyValuePairs);
 
     // Log the operation
     const entriesLength = Object.keys(keyValuePairs).length;
@@ -175,9 +199,10 @@ export class RedisCache implements ICacheClient {
     ttl?: number | undefined,
     requestIdPrefix?: string,
   ): Promise<void> {
+    const client = await this.getConnectedClient();
     const resolvedTtl = (ttl ?? this.options.ttl) / 1000; // convert to seconds
 
-    const pipeline = this.client.multi();
+    const pipeline = client.multi();
 
     for (const [key, value] of Object.entries(keyValuePairs)) {
       const serializedValue = JSON.stringify(value);
@@ -201,7 +226,8 @@ export class RedisCache implements ICacheClient {
    * @returns {Promise<void>} A Promise that resolves when the value is deleted from the cache.
    */
   async delete(key: string, callingMethod: string, requestIdPrefix?: string | undefined): Promise<void> {
-    await this.client.del(key);
+    const client = await this.getConnectedClient();
+    await client.del(key);
     this.logger.trace(`${requestIdPrefix} delete cache for ${key} on ${callingMethod} call`);
     // TODO: add metrics
   }
@@ -212,6 +238,7 @@ export class RedisCache implements ICacheClient {
    * @returns {Promise<void>} A Promise that resolves when the cache is cleared.
    */
   async clear(): Promise<void> {
-    await this.client.flushAll();
+    const client = await this.getConnectedClient();
+    await client.flushAll();
   }
 }
