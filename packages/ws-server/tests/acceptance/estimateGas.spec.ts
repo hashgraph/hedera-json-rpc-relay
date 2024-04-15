@@ -26,7 +26,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
-describe.only('@release @web-socket eth_estimateGas', async function () {
+describe('@release @web-socket eth_estimateGas', async function () {
   const METHOD_NAME = 'eth_estimateGas';
   const PING_CALL_ESTIMATED_GAS = '0x6122';
   const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
