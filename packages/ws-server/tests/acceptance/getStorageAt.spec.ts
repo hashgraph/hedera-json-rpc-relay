@@ -21,69 +21,42 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
+import { WsTestConstant, WsTestHelper } from '../helper';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
 describe('@release @web-socket eth_getStorageAt', async function () {
-  const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_getStorageAt';
-  const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
+  const EXPECTED_VALUE = 7;
   const INVALID_PARAMS = [
     [],
     ['', ''],
     ['', '0x0'],
-    [FAKE_TX_HASH],
-    [FAKE_TX_HASH, ''],
-    [FAKE_TX_HASH, 36, 'latest'],
-    [FAKE_TX_HASH, '0xhbar', 'latest'],
-    [FAKE_TX_HASH, '0x0', 'latest', '0xhedera'],
+    [WsTestConstant.FAKE_TX_HASH],
+    [WsTestConstant.FAKE_TX_HASH, ''],
+    [WsTestConstant.FAKE_TX_HASH, 36, 'latest'],
+    [WsTestConstant.FAKE_TX_HASH, '0xhbar', 'latest'],
+    [WsTestConstant.FAKE_TX_HASH, '0x0', 'latest', '0xhedera'],
   ];
 
-  let accounts: AliasAccount[] = [];
-  let requestId: string, wsProvider: WebSocketProvider;
+  // @notice: The simple contract artifacts (ABI & bytecode) below simply has one state at position 0, which will be assigned to the number `7` within the consutrctor after deployment
+  const SIMPLE_CONTRACT_ABI = [
+    {
+      inputs: [],
+      stateMutability: 'nonpayable',
+      type: 'constructor',
+    },
+  ];
+  const SIMPLE_CONTRACT_BYTECODE =
+    '0x6080604052348015600f57600080fd5b506007600081905550603f8060256000396000f3fe6080604052600080fdfea2646970667358221220416347bd1607cf1f0e7ec93afab3d5fe283173dd5e6ce3928dce940edd5c1fb564736f6c63430008180033';
+
+  let params: any[],
+    accounts: AliasAccount[] = [],
+    ethersWsProvider: WebSocketProvider;
 
   before(async () => {
-    // @ts-ignore
-    const { servicesNode, relay } = global;
+    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
+    await new Promise((r) => setTimeout(r, 1000)); // wait for accounts[0] to propagate
 
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    await new Promise((r) => setTimeout(r, 3000));
-  });
-
-  beforeEach(async () => {
-    wsProvider = new ethers.WebSocketProvider(WS_RELAY_URL);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  });
-
-  afterEach(async () => {
-    if (wsProvider) {
-      await wsProvider.destroy();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-  });
-
-  for (const params of INVALID_PARAMS) {
-    it(`Should throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
-      try {
-        await wsProvider.send(METHOD_NAME, params);
-        expect(true).to.eq(false);
-      } catch (error) {
-        expect(error.error).to.exist;
-        expect(error.error.code).to.eq(-32602);
-      }
-    });
-  }
-
-  it(`Should handle valid requests correctly`, async () => {
-    // @notice: The simple contract artifacts (ABI & bytecode) below simply has one state at position 0, which will be assigned to the number `7` within the consutrctor after deployment
-    const SIMPLE_CONTRACT_ABI = [
-      {
-        inputs: [],
-        stateMutability: 'nonpayable',
-        type: 'constructor',
-      },
-    ];
-    const SIMPLE_CONTRACT_BYTECODE =
-      '0x6080604052348015600f57600080fd5b506007600081905550603f8060256000396000f3fe6080604052600080fdfea2646970667358221220416347bd1607cf1f0e7ec93afab3d5fe283173dd5e6ce3928dce940edd5c1fb564736f6c63430008180033';
     const contractFactory = new ethers.ContractFactory(
       SIMPLE_CONTRACT_ABI,
       SIMPLE_CONTRACT_BYTECODE,
@@ -91,15 +64,47 @@ describe('@release @web-socket eth_getStorageAt', async function () {
     );
     const contract = await contractFactory.deploy();
 
-    // prepare transaction params
-    const ADDRESS = contract.target;
-    const POSITION = '0x0';
-    const BLOCK_TAG = 'latest';
-    const EXPECTED_VALUE = 7;
-    const params = [ADDRESS, POSITION, BLOCK_TAG];
+    // prepare transaction params - [contract address, position, blockTag]
+    params = [contract.target, '0x0', 'latest'];
+  });
 
-    // call getStorageAt
-    const result = await wsProvider.send(METHOD_NAME, params);
-    expect(parseInt(result)).to.eq(EXPECTED_VALUE);
+  beforeEach(async () => {
+    ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
+  });
+
+  afterEach(async () => {
+    if (ethersWsProvider) await ethersWsProvider.destroy();
+  });
+
+  after(async () => {
+    // expect all the connections to be closed after all
+    expect(global.socketServer._connections).to.eq(0);
+  });
+
+  describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
+    for (const params of INVALID_PARAMS) {
+      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+        await WsTestHelper.assertFailInvalidParamsStandardWebSocket(METHOD_NAME, params);
+      });
+    }
+
+    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and handle valid requests correctly`, async () => {
+      const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, params);
+      WsTestHelper.assertJsonRpcObject(response);
+      expect(parseInt(response.result)).to.eq(EXPECTED_VALUE);
+    });
+  });
+
+  describe(WsTestConstant.ETHERS_WS_PROVIDER, () => {
+    for (const params of INVALID_PARAMS) {
+      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+        await WsTestHelper.assertFailInvalidParamsEthersWsProvider(ethersWsProvider, METHOD_NAME, params);
+      });
+    }
+
+    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
+      const result = await ethersWsProvider.send(METHOD_NAME, params);
+      expect(parseInt(result)).to.eq(EXPECTED_VALUE);
+    });
   });
 });

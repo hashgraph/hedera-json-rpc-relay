@@ -68,7 +68,7 @@ const createLogs = async (contract: ethers.Contract, requestId) => {
   await new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
-describe('@release @web-socket Acceptance Tests', async function () {
+describe('@release @web-socket eth_subscribe', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   let server;
@@ -92,8 +92,7 @@ describe('@release @web-socket Acceptance Tests', async function () {
   ];
 
   before(async () => {
-    const { socketServer } = global;
-    server = socketServer;
+    server = global.socketServer;
 
     accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
     accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
