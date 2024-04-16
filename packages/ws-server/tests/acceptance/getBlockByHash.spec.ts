@@ -21,57 +21,62 @@
 // external resources
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
-import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
+import { WsTestConstant, WsTestHelper } from '../helper';
 
 describe('@release @web-socket eth_getBlockByHash', async function () {
-  const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
   const METHOD_NAME = 'eth_getBlockByHash';
-  const FAKE_TX_HASH = `0x${'00'.repeat(32)}`;
   const INVALID_PARAMS = [
     [],
-    [FAKE_TX_HASH],
-    [FAKE_TX_HASH, '0xhbar'],
-    [FAKE_TX_HASH, '54'],
-    [FAKE_TX_HASH, true, 39],
-    [FAKE_TX_HASH, false, 39],
-    ['0xhedera', true],
     ['0xhbar', false],
+    ['0xhedera', true],
+    [WsTestConstant.FAKE_TX_HASH],
+    [WsTestConstant.FAKE_TX_HASH, '54'],
+    [WsTestConstant.FAKE_TX_HASH, '0xhbar'],
+    [WsTestConstant.FAKE_TX_HASH, true, 39],
+    [WsTestConstant.FAKE_TX_HASH, false, 39],
   ];
 
-  let relayClient: RelayClient, wsProvider: WebSocketProvider;
-
-  before(async () => {
-    // @ts-ignore
-    const { relay } = global;
-
-    relayClient = relay;
-  });
+  let ethersWsProvider: WebSocketProvider;
 
   beforeEach(async () => {
-    wsProvider = new ethers.WebSocketProvider(WS_RELAY_URL);
+    ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
   afterEach(async () => {
-    if (wsProvider) {
-      await wsProvider.destroy();
-    }
+    if (ethersWsProvider) await ethersWsProvider.destroy();
   });
 
-  for (const params of INVALID_PARAMS) {
-    it(`Should throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
-      try {
-        await wsProvider.send(METHOD_NAME, params);
-        expect(true).to.eq(false);
-      } catch (error) {
-        expect(error.error).to.exist;
-        expect(error.error.code).to.eq(-32602);
-      }
-    });
-  }
+  after(async () => {
+    // expect all the connections to be closed after all
+    expect(global.socketServer._connections).to.eq(0);
+  });
 
-  it('Should handle valid requests correctly', async () => {
-    const expectedResult = await relayClient.call('eth_getBlockByNumber', ['latest', true]);
-    const result = await wsProvider.send(METHOD_NAME, [expectedResult.hash, true]);
-    expect(result).to.deep.eq(expectedResult);
+  describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
+    for (const params of INVALID_PARAMS) {
+      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+        await WsTestHelper.assertFailInvalidParamsStandardWebSocket(METHOD_NAME, params);
+      });
+    }
+
+    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and handle valid requests correctly`, async () => {
+      const expectedResult = await global.relay.call('eth_getBlockByNumber', ['latest', true]);
+      const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [expectedResult.hash, true]);
+      WsTestHelper.assertJsonRpcObject(response);
+      expect(response.result).to.deep.eq(expectedResult);
+    });
+  });
+
+  describe(WsTestConstant.ETHERS_WS_PROVIDER, () => {
+    for (const params of INVALID_PARAMS) {
+      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+        await WsTestHelper.assertFailInvalidParamsEthersWsProvider(ethersWsProvider, METHOD_NAME, params);
+      });
+    }
+
+    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
+      const expectedResult = await global.relay.call('eth_getBlockByNumber', ['latest', true]);
+      const result = await ethersWsProvider.send(METHOD_NAME, [expectedResult.hash, true]);
+      expect(result).to.deep.eq(expectedResult);
+    });
   });
 });

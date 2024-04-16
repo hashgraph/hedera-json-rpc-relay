@@ -150,6 +150,7 @@ app.ws.use(async (ctx) => {
         )}.`,
       );
       ctx.websocket.send(JSON.stringify(jsonResp(request.id, error, undefined)));
+      return;
     }
 
     // Increment metrics for the received method
