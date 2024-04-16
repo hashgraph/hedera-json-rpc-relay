@@ -21,6 +21,7 @@
 import { Logger } from 'pino';
 import { WebSocketError } from '@hashgraph/json-rpc-relay';
 import { Gauge, Registry, Counter } from 'prom-client';
+import { WS_CONSTANTS } from './constants';
 
 type IpCounter = {
   [key: string]: number;
@@ -45,46 +46,40 @@ export default class ConnectionLimiter {
     this.connectedClients = 0;
     this.clientIps = {};
 
-    const activeConnectionsMetric = 'rpc_websocket_active_connections';
-    this.register.removeSingleMetric(activeConnectionsMetric);
-
+    this.register.removeSingleMetric(WS_CONSTANTS.connLimiter.activeConnectionsMetric.name);
     this.activeConnectionsGauge = new Gauge({
-      name: activeConnectionsMetric,
-      help: 'Relay websocket active connections',
+      name: WS_CONSTANTS.connLimiter.activeConnectionsMetric.name,
+      help: WS_CONSTANTS.connLimiter.activeConnectionsMetric.help,
       registers: [register],
     });
 
-    const ipConnectionsMetric = 'rpc_websocket_active_connections_per_ip';
-    this.register.removeSingleMetric(ipConnectionsMetric);
+    this.register.removeSingleMetric(WS_CONSTANTS.connLimiter.ipConnectionsMetric.name);
     this.ipConnectionsGauge = new Gauge({
-      name: ipConnectionsMetric,
-      help: 'Relay websocket active connections by ip',
-      labelNames: ['ip'],
+      name: WS_CONSTANTS.connLimiter.ipConnectionsMetric.name,
+      help: WS_CONSTANTS.connLimiter.ipConnectionsMetric.help,
+      labelNames: WS_CONSTANTS.connLimiter.ipConnectionsMetric.labelNames,
       registers: [register],
     });
 
-    const connectionLimitMetric = 'rpc_websocket_total_connection_limit_enforced';
-    this.register.removeSingleMetric(connectionLimitMetric);
+    this.register.removeSingleMetric(WS_CONSTANTS.connLimiter.connectionLimitMetric.name);
     this.connectionLimitCounter = new Counter({
-      name: connectionLimitMetric,
-      help: 'Relay websocket total connection limits enforced',
+      name: WS_CONSTANTS.connLimiter.connectionLimitMetric.name,
+      help: WS_CONSTANTS.connLimiter.connectionLimitMetric.help,
       registers: [register],
     });
 
-    const ipConnectionLimitMetric = 'rpc_websocket_total_connection_limit_by_ip_enforced';
-    this.register.removeSingleMetric(ipConnectionLimitMetric);
+    this.register.removeSingleMetric(WS_CONSTANTS.connLimiter.ipConnectionLimitMetric.name);
     this.ipConnectionLimitCounter = new Counter({
-      name: ipConnectionLimitMetric,
-      help: 'Relay websocket total connection limits by ip enforced',
-      labelNames: ['ip'],
+      name: WS_CONSTANTS.connLimiter.ipConnectionLimitMetric.name,
+      help: WS_CONSTANTS.connLimiter.ipConnectionLimitMetric.help,
+      labelNames: WS_CONSTANTS.connLimiter.ipConnectionLimitMetric.labelNames,
       registers: [register],
     });
 
-    const inactivityTTLLimitMetric = 'rpc_websocket_total_connection_limit_by_ttl_enforced';
-    this.register.removeSingleMetric(inactivityTTLLimitMetric);
+    this.register.removeSingleMetric(WS_CONSTANTS.connLimiter.inactivityTTLLimitMetric.name);
     this.inactivityTTLCounter = new Counter({
-      name: inactivityTTLLimitMetric,
-      help: 'Relay websocket total connection ttl limits enforced',
+      name: WS_CONSTANTS.connLimiter.inactivityTTLLimitMetric.name,
+      help: WS_CONSTANTS.connLimiter.inactivityTTLLimitMetric.help,
       registers: [register],
     });
   }

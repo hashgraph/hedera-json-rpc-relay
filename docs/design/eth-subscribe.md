@@ -228,6 +228,29 @@ continuous, gapless sequence without duplicates in the following:
    returned block is in the cache.  If it is not, it saves it to cache, and then
    sends it to the subscriber in the `websocket.send` call.  If it is in cache, then we know it's already been sent and it is skipped.
 
+#### Handle non-subscription JSON RPC calls to the relay
+The WebSocket provider will be connected to the `webSocketServer.ts` via a websocket connection.  Besu and other execution engines support [JSON-RPC over
+WebSockets](https://besu.hyperledger.org/public-networks/how-to/use-besu-api/json-rpc).  In order for the WebSocket server in the relay to support JSON-RPC over
+WebSockets, each method call to the `webSocketServer.ts` needs to call the existing JSON-RPC call in the relay.  The `webSocketServer.ts` just needs to handle the
+JSON-RPC method call to the relay.  The JSON-RPC calls to the relay are listed below.
+
+#### Blockchain Data Reading
+1. **getBlockNumber():** Returns the current block number.
+2. **getGasPrice():** Returns the current gas price.
+3. **getBlock(blockHashOrBlockTag, includeTransactions):** Fetches a block by its hash or tag, optionally including transactions.
+4. **getTransaction(transactionHash):** Fetches a transaction by its hash.
+5. **getTransactionReceipt(transactionHash):** Fetches the receipt of a transaction by its hash.
+6. **getTransactionCount(address, blockTag):** Gets the number of transactions sent from an address, optionally at a specific block.
+7. **getCode(address, blockTag):** Gets the code at a specific address.
+8. **getStorageAt(address, position, blockTag):** Reads a storage slot from a contract.
+9. **call(transaction, blockTag):** Simulates a transaction call.
+10. **estimateGas(transaction):** Estimates the gas needed to execute a transaction.
+11. **getBalance(address, blockTag):** Gets the balance of an address.
+    
+### Blockchain Interaction
+1. **sendTransaction(signedTransaction):** Sends a signed transaction to the network.
+
+
 ## Error Codes
 
 |  Error Codes  |                                                      Error message                                                       |                                                                Solution                                                                 |
@@ -286,12 +309,14 @@ Add acceptance tests that follow the structure of the existing polling for logs 
        "extraData": "0xd983010305844765746887676f312e342e328777696e646f7773",
        "gasLimit": "0x47e7c4",
        "gasUsed": "0x38658",
+       "hash":"0x50d2fe6747f21334213a8bc2691f02b6338f265e9f39f12c1f98f247e18f33aa",
        "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
        "miner": "0xf8b483dba2c3b7176a3da549ad41a48bb3121069",
+       "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000", 
        "nonce": "0x084149998194cc5f",
        "number": "0x1348c9",
        "parentHash": "0x7736fab79e05dc611604d22470dadad26f56fe494421b5b333de816ce1f25701",
-       "receiptRoot": "0x2fab35823ad00c7bb388595cb46652fe7886e00660a01e867824d3dceb1c8d36",
+       "receiptsRoot": "0x2fab35823ad00c7bb388595cb46652fe7886e00660a01e867824d3dceb1c8d36",
        "sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
        "stateRoot": "0xb3346685172db67de536d8765c43c31009d0eb3bd9c501c9be3229203f15f378",
        "timestamp": "0x56ffeff8",
