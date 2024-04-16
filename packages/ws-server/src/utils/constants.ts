@@ -29,6 +29,21 @@ export const WS_CONSTANTS = {
     help: 'Relay websocket methods called by ip',
     labelNames: ['ip', 'method'],
   },
+  cpuUsageGauge: {
+    name: 'websocket_cpu_usage_percentage',
+    help: 'CPU usage percentage of the WebSocket server',
+    labelNames: ['pid'],
+  },
+  memoryUsageGauge: {
+    name: 'websocket_memory_usage_bytes',
+    help: 'Memory usage of the WebSocket server in bytes',
+    labelNames: ['pid'],
+  },
+  networkUsageGauge: {
+    name: 'websocket_network_usage_bytes',
+    help: 'Network usage of the WebSocket server in bytes',
+    labelNames: ['pid'],
+  },
   connLimiter: {
     activeConnectionsMetric: {
       name: 'rpc_websocket_active_connections',

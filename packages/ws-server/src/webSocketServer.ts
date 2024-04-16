@@ -24,7 +24,7 @@ import pino from 'pino';
 import dotenv from 'dotenv';
 import { v4 as uuid } from 'uuid';
 import websockify from 'koa-websocket';
-import { Registry } from 'prom-client';
+import { Gauge, Registry } from 'prom-client';
 import { WS_CONSTANTS } from './utils/constants';
 import { formatIdMessage } from './utils/formatters';
 import { handleConnectionClose } from './utils/utils';
@@ -34,7 +34,9 @@ import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
+import { generateGauge } from './utils/gauges';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
+import os from 'os';
 import {
   handleEthCall,
   handleEthGetLogs,
@@ -86,6 +88,42 @@ const methodsCounterByIp = generateMethodsCounterById(register, {
   help: WS_CONSTANTS.methodsCounterByIp.help,
   labelNames: WS_CONSTANTS.methodsCounterByIp.labelNames,
 });
+
+const cpuUsageGauge = generateGauge(register, {
+  name: WS_CONSTANTS.cpuUsageGauge.name,
+  help: WS_CONSTANTS.cpuUsageGauge.help,
+  labelNames: WS_CONSTANTS.cpuUsageGauge.labelNames,
+});
+
+const memoryUsageGauge = generateGauge(register, {
+  name: WS_CONSTANTS.memoryUsageGauge.name,
+  help: WS_CONSTANTS.memoryUsageGauge.help,
+  labelNames: WS_CONSTANTS.memoryUsageGauge.labelNames,
+});
+
+const networkUsageGauge = generateGauge(register, {
+  name: WS_CONSTANTS.networkUsageGauge.name,
+  help: WS_CONSTANTS.networkUsageGauge.help,
+  labelNames: WS_CONSTANTS.networkUsageGauge.labelNames,
+});
+
+const updateResourceUtilizationMetrics = (): void => {
+  const cpuUsage = process.cpuUsage();
+  const totalCpuTime = cpuUsage.user + cpuUsage.system;
+  const cpuUsagePercentage = (totalCpuTime / os.cpus().length) * 100;
+  cpuUsageGauge.set(cpuUsagePercentage);
+
+  const memoryUsage = process.memoryUsage().rss;
+  memoryUsageGauge.set(memoryUsage);
+
+  const networkUsage =
+    os.networkInterfaces().eth0?.reduce((acc, iface) => acc + (iface as any).tx_bytes + (iface as any).rx_bytes, 0) ??
+    0;
+  networkUsageGauge.set(networkUsage);
+};
+
+// Update resource utilization metrics periodically (e.g., every 5 seconds)
+setInterval(updateResourceUtilizationMetrics, 5000);
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx) => {
