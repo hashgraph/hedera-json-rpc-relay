@@ -130,7 +130,13 @@ export class Precheck {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const minGasPrice = BigInt(gasPrice);
     const txGasPrice = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
-    const passes = txGasPrice >= minGasPrice;
+
+    // **notice: Pass gasPrice precheck if txGasPrice is greater than the minimum network's gas price value,
+    //          OR if the transaction is the Foundry deterministic deployment transaction (a special case).
+    // **explanation: The Foundry deterministic deployment transaction is signed with a gasPrice value of only 10 hbars,
+    //                which is lower than the minimum gas price value in all Hedera network environments. Therefore,
+    //                this special case is exempt from the precheck in the Relay, and the gas price logic will be resolved at the Services level.
+    const passes = txGasPrice >= minGasPrice || Precheck.isFoundryDeterministicDeploymentTransaction(tx);
 
     if (!passes) {
       if (constants.GAS_PRICE_TINY_BAR_BUFFER) {
@@ -150,6 +156,15 @@ export class Precheck {
       );
       throw predefined.GAS_PRICE_TOO_LOW(txGasPrice, minGasPrice);
     }
+  }
+
+  /**
+   * Checks if a transaction is the Foundry deterministic deployment transaction.
+   * @param {Transaction} tx - The transaction to check.
+   * @returns {boolean} Returns true if the transaction is the Foundry deterministic deployment transaction, otherwise false.
+   */
+  static isFoundryDeterministicDeploymentTransaction(tx: Transaction): boolean {
+    return tx.serialized === constants.FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION;
   }
 
   /**
