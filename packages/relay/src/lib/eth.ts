@@ -1413,11 +1413,35 @@ export class EthImpl implements Eth {
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
     let txSubmitted = false;
+    let contractExecuteResponse;
+
     try {
-      const contractExecuteResponse = await this.hapiService
+      contractExecuteResponse = await this.hapiService
         .getSDKClient()
         .submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix);
       txSubmitted = true;
+    } catch (e: any) {
+      const isJsonRpcError = e instanceof JsonRpcError;
+      const isSDKClientError = e instanceof SDKClientError;
+      const isAllowedSDKClientError = isSDKClientError && !(e.isConnectionDropped() || e.isTimeoutExceeded());
+
+      if (isJsonRpcError || isAllowedSDKClientError) {
+        return this.sendRawTransactionErrorHandler(e, transaction, transactionBuffer, txSubmitted, requestIdPrefix);
+      }
+
+      if (isSDKClientError) {
+        this.logger.warn(`${requestIdPrefix} SDK Client has probably timed out, trying again with a new instance...`);
+        this.hapiService.decrementErrorCounter(e.statusCode);
+      }
+    }
+
+    try {
+      if (!txSubmitted) {
+        contractExecuteResponse = await this.hapiService
+          .getSDKClient()
+          .submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix);
+        txSubmitted = true;
+      }
       // Wait for the record from the execution.
       const txId = contractExecuteResponse.transactionId.toString();
       const formattedId = formatTransactionIdWithoutQueryParams(txId);
@@ -2289,7 +2313,7 @@ export class EthImpl implements Eth {
     let getBlock;
     const isParamBlockNum = typeof blockNumOrHash === 'number' ? true : false;
 
-    if (isParamBlockNum && blockNumOrHash < 0) {
+    if (isParamBlockNum && (blockNumOrHash as number) < 0) {
       throw predefined.UNKNOWN_BLOCK();
     }
 

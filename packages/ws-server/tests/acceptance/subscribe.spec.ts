@@ -94,16 +94,27 @@ describe('@release @web-socket eth_subscribe', async function () {
   before(async () => {
     server = global.socketServer;
 
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAmount: string = '5000000000'; //50 Hbar
+
+    const neededAccounts: number = 2;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts = accounts;
+
     // Deploy Log Contract
     logContractSigner = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
 
     // cache original ENV values
     originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED;
-
-    // allow mirror node a 5 full record stream write windows (5 sec) and a buffer to persist setup details
-    await new Promise((r) => setTimeout(r, 5000));
   });
 
   beforeEach(async () => {

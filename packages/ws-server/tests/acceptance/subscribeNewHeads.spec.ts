@@ -103,13 +103,26 @@ describe('@release @web-socket eth_subscribe newHeads', async function () {
 
   before(async () => {
     // @ts-ignore
-    const { servicesNode, socketServer, mirrorNode, relay, logger } = global;
+    const { socketServer, mirrorNode, relay } = global;
     mirrorNodeServer = mirrorNode;
     rpcServer = relay;
     wsServer = socketServer;
 
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAmount: string = '5000000000'; //50 Hbar
+
+    const neededAccounts: number = 2;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts = accounts;
 
     // cache original ENV values
     originalWsNewHeadsEnabledValue = process.env.WS_NEW_HEADS_ENABLED;

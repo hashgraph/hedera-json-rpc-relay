@@ -23,8 +23,9 @@ import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 
 describe('@release @web-socket eth_sendRawTransaction', async function () {
   const METHOD_NAME = 'eth_sendRawTransaction';
@@ -43,22 +44,36 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
     [WsTestConstant.FAKE_TX_HASH, 'rpc', 'invalid'],
   ];
 
+  // @ts-ignore
+  const { mirrorNode, relay } = global;
+
   let tx: any,
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
-
+  let requestId: string;
   before(async () => {
-    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
-    accounts[1] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
-    accounts[2] = await global.servicesNode.createAliasAccount(5, global.relay.provider);
-    await new Promise((r) => setTimeout(r, 1000)); // wait for accounts to propagate
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAmount: string = '5000000000'; //50 Hbar
+
+    const neededAccounts: number = 3;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts = accounts;
 
     tx = {
       value: ONE_TINYBAR_IN_WEI_HEX,
       gasLimit: numberTo0x(30000),
       chainId: Number(CHAIN_ID),
       to: accounts[2].address,
-      maxFeePerGas: await global.relay.gasPrice(),
+      maxFeePerGas: await relay.gasPrice(),
     };
   });
 
@@ -83,15 +98,15 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
     }
 
     it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and handle valid requests correctly`, async () => {
-      tx.nonce = await global.relay.getAccountNonce(accounts[0].address);
+      tx.nonce = await relay.getAccountNonce(accounts[0].address);
       const signedTx = await accounts[0].wallet.signTransaction(tx);
 
       const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [signedTx], 1000);
       WsTestHelper.assertJsonRpcObject(response);
 
       const txHash = response.result;
-      const txReceipt = await global.mirrorNode.get(`/contracts/results/${txHash}`);
-      const fromAccountInfo = await global.mirrorNode.get(`/accounts/${txReceipt.from}`);
+      const txReceipt = await mirrorNode.get(`/contracts/results/${txHash}`);
+      const fromAccountInfo = await mirrorNode.get(`/accounts/${txReceipt.from}`);
 
       expect(txReceipt.to).to.eq(accounts[2].address);
       expect(fromAccountInfo.evm_address).to.eq(accounts[0].address);
@@ -106,13 +121,13 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
     }
 
     it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
-      tx.nonce = await global.relay.getAccountNonce(accounts[1].address);
+      tx.nonce = await relay.getAccountNonce(accounts[1].address);
       const signedTx = await accounts[1].wallet.signTransaction(tx); // const signedTx = await accounts[0].wallet.signTransaction(tx);
 
       const txHash = await ethersWsProvider.send(METHOD_NAME, [signedTx]);
 
-      const txReceipt = await global.mirrorNode.get(`/contracts/results/${txHash}`);
-      const fromAccountInfo = await global.mirrorNode.get(`/accounts/${txReceipt.from}`);
+      const txReceipt = await mirrorNode.get(`/contracts/results/${txHash}`);
+      const fromAccountInfo = await mirrorNode.get(`/accounts/${txReceipt.from}`);
 
       expect(txReceipt.to).to.eq(accounts[2].address);
       expect(fromAccountInfo.evm_address).to.eq(accounts[1].address);

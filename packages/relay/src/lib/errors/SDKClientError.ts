@@ -71,6 +71,10 @@ export class SDKClientError extends Error {
     return this.statusCode === Status.Unknown._code && this.message?.includes('timeout exceeded');
   }
 
+  public isConnectionDropped(): boolean {
+    return this.statusCode === Status.Unknown._code && this.message?.includes('Connection dropped');
+  }
+
   public isGrpcTimeout(): boolean {
     // The SDK uses the same code for Grpc Timeout as INVALID_TRANSACTION_ID
     return this.statusCode === Status.InvalidTransactionId._code;
