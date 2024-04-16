@@ -74,7 +74,8 @@ const handleEthSubscribeNewHeads = (
   relay: Relay,
   logger: any,
 ): { response: any; subscriptionId: any } => {
-  if (process.env.WS_NEW_HEADS_ENABLED === 'true') {
+  const wsNewHeadsEnabled = process.env.WS_NEW_HEADS_ENABLED ? Boolean(Number(process.env.WS_NEW_HEADS_ENABLED)) : true;
+  if (wsNewHeadsEnabled) {
     ({ response, subscriptionId } = subscribeToNewHeads(filters, response, subscriptionId, ctx, event, relay, logger));
   } else {
     response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
