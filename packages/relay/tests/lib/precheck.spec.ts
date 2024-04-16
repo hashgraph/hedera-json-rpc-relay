@@ -247,6 +247,31 @@ describe('Precheck', async function () {
       expect(result).to.not.exist;
     });
 
+    it('should recognize if a signed raw transaction is the deterministic deployment transaction', async () => {
+      const parsedDeterministicDeploymentTransaction = ethers.Transaction.from(
+        constants.DETERMINISTIC_DEPLOYER_TRANSACTION,
+      );
+
+      expect(Precheck.isDeterministicDeploymentTransaction(parsedDeterministicDeploymentTransaction)).to.be.true;
+    });
+
+    it('Should recognize if a signed raw transaction is NOT the deterministic deployment transaction', async () => {
+      expect(Precheck.isDeterministicDeploymentTransaction(parsedtxWithChainId0x0)).to.be.false;
+      expect(Precheck.isDeterministicDeploymentTransaction(parsedTxWithMatchingChainId)).to.be.false;
+      expect(Precheck.isDeterministicDeploymentTransaction(parsedTxWithNonMatchingChainId)).to.be.false;
+    });
+
+    it('should pass for gas price if the transaction is the deterministic deployment transaction', async function () {
+      const parsedDeterministicDeploymentTransaction = ethers.Transaction.from(
+        constants.DETERMINISTIC_DEPLOYER_TRANSACTION,
+      );
+      const result = precheck.gasPrice(
+        parsedDeterministicDeploymentTransaction,
+        100 * constants.TINYBAR_TO_WEIBAR_COEF,
+      );
+      expect(result).to.not.exist;
+    });
+
     it('should not pass for gas price not enough', async function () {
       const minGasPrice = 1000 * constants.TINYBAR_TO_WEIBAR_COEF;
       try {
