@@ -822,22 +822,18 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const sendHbarTx = {
           ...defaultLegacyTransactionData,
           value: (10 * ONE_TINYBAR * 10 ** 8).toString(), // 10hbar - the gasPrice to deploy Foundry deterministic proxy contract
-          to: constants.FOUDRY_DETERMINISTIC_DEPLOYMENT_SIGNER,
+          to: constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
           nonce: await relay.getAccountNonce(accounts[2].address, requestId),
           gasPrice: await relay.gasPrice(requestId),
         };
         const signedSendHbarTx = await accounts[2].wallet.signTransaction(sendHbarTx);
         await relay.sendRawTransaction(signedSendHbarTx, requestId);
-        const deployerBalance = await relay.getBalance(
-          constants.FOUDRY_DETERMINISTIC_DEPLOYMENT_SIGNER,
-          'latest',
-          requestId,
-        );
+        const deployerBalance = await relay.getBalance(constants.DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest', requestId);
         expect(deployerBalance).to.not.eq(0);
 
         // send transaction to deploy proxy transaction
         const foundryDeterministicDeployTransactionHash = await relay.sendRawTransaction(
-          constants.FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION,
+          constants.DETERMINISTIC_DEPLOYER_TRANSACTION,
           requestId,
         );
         const receipt = await mirrorNode.get(
@@ -847,9 +843,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const fromAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.from}`);
 
         expect(receipt).to.exist;
-        expect(fromAccountInfo.evm_address).to.eq(constants.FOUDRY_DETERMINISTIC_DEPLOYMENT_SIGNER);
+        expect(fromAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
         // notice: the assertion below is currently blocked by the Services
-        // expect(receipt.address).to.eq(constants.FOUDRY_DETERMINISTIC_PROXY_CONTRACT);
+        // expect(receipt.address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
       });
 
       it('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {

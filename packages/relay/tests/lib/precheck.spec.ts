@@ -247,12 +247,12 @@ describe('Precheck', async function () {
       expect(result).to.not.exist;
     });
 
-    it('should pass for gas price if the transaction is the Foundry deterministic deployment transaction', async function () {
-      const parsedFoundryDeterministicDeploymentTransaction = ethers.Transaction.from(
-        constants.FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION,
+    it('should pass for gas price if the transaction is the deterministic deployment transaction', async function () {
+      const parsedDeterministicDeploymentTransaction = ethers.Transaction.from(
+        constants.DETERMINISTIC_DEPLOYER_TRANSACTION,
       );
       const result = precheck.gasPrice(
-        parsedFoundryDeterministicDeploymentTransaction,
+        parsedDeterministicDeploymentTransaction,
         100 * constants.TINYBAR_TO_WEIBAR_COEF,
       );
       expect(result).to.not.exist;

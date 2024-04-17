@@ -65,7 +65,7 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
 
     sendHbarToProxyContractDeployerTx = {
       value: (10 * 10 ** 18).toString(), // 10hbar - the gasPrice to deploy Foundry deterministic proxy contract
-      to: constants.FOUDRY_DETERMINISTIC_DEPLOYMENT_SIGNER,
+      to: constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
       gasPrice: await global.relay.gasPrice(),
       gasLimit: numberTo0x(30000),
     };
@@ -111,13 +111,13 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
       sendHbarToProxyContractDeployerTx.nonce = await global.relay.getAccountNonce(accounts[0].address);
       const signedSendHbarTx = await accounts[0].wallet.signTransaction(sendHbarToProxyContractDeployerTx);
       await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [signedSendHbarTx], 1000);
-      const deployerBalance = await global.relay.getBalance(constants.FOUDRY_DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest');
+      const deployerBalance = await global.relay.getBalance(constants.DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest');
       expect(deployerBalance).to.not.eq(0);
 
       // send transaction to deploy proxy transaction
       const foundryDeterministicDeploymentTransactionHash = await WsTestHelper.sendRequestToStandardWebSocket(
         METHOD_NAME,
-        [constants.FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION],
+        [constants.DETERMINISTIC_DEPLOYER_TRANSACTION],
         1000,
       );
 
@@ -126,9 +126,9 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
       );
       const fromAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.from}`);
       expect(receipt).to.exist;
-      expect(fromAccountInfo.evm_address).to.eq(constants.FOUDRY_DETERMINISTIC_DEPLOYMENT_SIGNER);
+      expect(fromAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
       // notice: the assertion below is currently blocked by the Services
-      // expect(receipt.address).to.eq(constants.FOUDRY_DETERMINISTIC_PROXY_CONTRACT);
+      // expect(receipt.address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
     });
   });
 
@@ -157,12 +157,12 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
       sendHbarToProxyContractDeployerTx.nonce = await global.relay.getAccountNonce(accounts[1].address);
       const signedSendHbarTx = await accounts[1].wallet.signTransaction(sendHbarToProxyContractDeployerTx);
       await ethersWsProvider.send(METHOD_NAME, [signedSendHbarTx]);
-      const deployerBalance = await global.relay.getBalance(constants.FOUDRY_DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest');
+      const deployerBalance = await global.relay.getBalance(constants.DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest');
       expect(deployerBalance).to.not.eq(0);
 
       // send transaction to deploy proxy transaction
       const foundryDeterministicDeploymentTransactionHash = await ethersWsProvider.send(METHOD_NAME, [
-        constants.FOUNDRY_DETERMINISTIC_DEPLOYER_TRANSACTION,
+        constants.DETERMINISTIC_DEPLOYER_TRANSACTION,
       ]);
 
       const receipt = await global.mirrorNode.get(
@@ -171,9 +171,9 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
       const fromAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.from}`);
 
       expect(receipt).to.exist;
-      expect(fromAccountInfo.evm_address).to.eq(constants.FOUDRY_DETERMINISTIC_DEPLOYMENT_SIGNER);
+      expect(fromAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
       // notice: the assertion below is currently blocked by the Services
-      // expect(receipt.address).to.eq(constants.FOUDRY_DETERMINISTIC_PROXY_CONTRACT);
+      // expect(receipt.address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
     });
   });
 });
