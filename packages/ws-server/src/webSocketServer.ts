@@ -92,15 +92,15 @@ app.ws.use(async (ctx) => {
   ctx.websocket.id = relay.subs()?.generateId();
   ctx.websocket.limiter = limiter;
   const connectionIdPrefix = formatIdMessage('Connection ID', ctx.websocket.id);
-  const connectionRequestIdPrefix = formatIdMessage('Request ID', uuid());
+  const requestIdPrefix = formatIdMessage('Request ID', uuid());
   logger.info(
-    `${connectionIdPrefix} ${connectionRequestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
+    `${connectionIdPrefix} ${requestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
   );
 
   // Close event handle
   ctx.websocket.on('close', async (code, message) => {
     logger.info(
-      `${connectionIdPrefix} ${connectionRequestIdPrefix} Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`,
+      `${connectionIdPrefix} ${requestIdPrefix} Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`,
     );
     await handleConnectionClose(ctx, relay, limiter);
   });
@@ -115,9 +115,6 @@ app.ws.use(async (ctx) => {
   ctx.websocket.on('message', async (msg) => {
     // Reset the TTL timer for inactivity upon receiving a message from the client
     limiter.resetInactivityTTLTimer(ctx.websocket);
-
-    // Format ID prefixes for logging purposes
-    const requestIdPrefix = formatIdMessage('Request ID', uuid());
 
     // parse the received message from the client into a JSON object
     let request;
