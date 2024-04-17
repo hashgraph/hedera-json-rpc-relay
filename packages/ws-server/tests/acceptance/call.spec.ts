@@ -68,8 +68,8 @@ describe('@release @web-socket eth_call', async function () {
 
   before(async () => {
     requestId = Utils.generateRequestId();
-    const initialAccount: AliasAccount = global.initialAccount;
-    const initialAmount: string = '5000000000'; //50 Hbar
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '2500000000'; //25 Hbar
 
     const neededAccounts: number = 1;
     accounts.push(
@@ -81,7 +81,7 @@ describe('@release @web-socket eth_call', async function () {
         requestId,
       )),
     );
-    global.accounts = accounts;
+    global.accounts.push(...accounts);
 
     const erc20Contract = await Utils.deployContractWithEthers(
       [TOKEN_NAME, TOKEN_SYMBOL, accounts[0].address, TOKEN_INIT_SUPPLY],

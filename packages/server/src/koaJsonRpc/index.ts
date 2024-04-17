@@ -153,9 +153,6 @@ export default class KoaJsonRpc {
       }
       //check if body is array or object
       if (Array.isArray(body)) {
-        console.log('is batch request');
-        console.log(body);
-
         await this.handleMultipleRequest(ctx, body);
       } else {
         await this.handleSingleRequest(ctx, body);

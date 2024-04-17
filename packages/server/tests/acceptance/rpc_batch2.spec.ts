@@ -92,7 +92,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     requestId = Utils.generateRequestId();
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
-    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '5000000000'; //50 Hbar
 
     const neededAccounts: number = 4;
@@ -105,7 +105,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         requestId,
       )),
     );
-    global.accounts = accounts;
+    global.accounts.push(...accounts);
 
     const parentContract = await Utils.deployContract(
       parentContractJson.abi,

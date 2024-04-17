@@ -40,10 +40,10 @@ describe('@release @web-socket eth_getTransactionCount', async function () {
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
 
-  beforeEach(async () => {
+  before(async () => {
     requestId = Utils.generateRequestId();
-    const initialAccount: AliasAccount = global.initialAccount;
-    const initialAmount: string = '5000000000'; //50 Hbar
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '100000000'; //1 Hbar
 
     const neededAccounts: number = 2;
     accounts.push(
@@ -55,7 +55,7 @@ describe('@release @web-socket eth_getTransactionCount', async function () {
         requestId,
       )),
     );
-    global.accounts = accounts;
+    global.accounts.push(...accounts);
 
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
@@ -91,6 +91,7 @@ describe('@release @web-socket eth_getTransactionCount', async function () {
       chainId: Number(CHAIN_ID),
       to: accounts[1].address,
       maxFeePerGas: defaultGasPrice,
+      nonce: await relay.getAccountNonce(accounts[0].address),
     };
     const signedTx = await accounts[0].wallet.signTransaction(transaction);
     // @notice submit a transaction to increase transaction count

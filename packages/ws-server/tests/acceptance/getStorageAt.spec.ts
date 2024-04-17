@@ -58,8 +58,8 @@ describe('@release @web-socket eth_getStorageAt', async function () {
 
   before(async () => {
     requestId = Utils.generateRequestId();
-    const initialAccount: AliasAccount = global.initialAccount;
-    const initialAmount: string = '5000000000'; //50 Hbar
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '2500000000'; //25 Hbar
 
     const neededAccounts: number = 1;
     accounts.push(
@@ -71,7 +71,7 @@ describe('@release @web-socket eth_getStorageAt', async function () {
         requestId,
       )),
     );
-    global.accounts = accounts;
+    global.accounts.push(...accounts);
 
     const contractFactory = new ethers.ContractFactory(
       SIMPLE_CONTRACT_ABI,

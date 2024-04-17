@@ -58,17 +58,17 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
 
   const accounts: AliasAccount[] = [];
   let mainContractAddress: string;
-  let HTSTokenContractAddress;
-  let NftHTSTokenContractAddress;
-  let HTSTokenContract;
+  let HTSTokenContractAddress: string;
+  let NftHTSTokenContractAddress: string;
+  let HTSTokenContract: ethers.BaseContract;
   let mainContract: ethers.BaseContract;
-  let mainContractOwner;
-  let mainContractReceiverWalletFirst;
+  let mainContractOwner: ethers.BaseContract;
+  let mainContractReceiverWalletFirst: ethers.BaseContract;
   let requestId: string;
 
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
-    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '5000000000'; //50 Hbar
 
     const contractDeployer = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId, initialAmount);
@@ -93,7 +93,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       relay.provider,
       requestId,
     );
-    global.accounts = accounts;
+    global.accounts.push(...accounts);
     // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
     await new Promise((r) => setTimeout(r, 5000));
     await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);

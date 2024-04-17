@@ -55,7 +55,7 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
 
   before(async () => {
     requestId = Utils.generateRequestId();
-    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '5000000000'; //50 Hbar
 
     const neededAccounts: number = 3;
@@ -68,7 +68,7 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
         requestId,
       )),
     );
-    global.accounts = accounts;
+    global.accounts.push(...accounts);
 
     const tx = {
       value: ONE_TINYBAR_IN_WEI_HEX,
@@ -109,8 +109,8 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
       WsTestHelper.assertJsonRpcObject(response);
 
       const txReceipt = response.result;
-      expect(txReceipt.to).to.be.eq(accounts[1].address);
-      expect(txReceipt.from).to.be.eq(accounts[0].address);
+      expect(txReceipt.to).to.be.eq(accounts[1].address.toLowerCase());
+      expect(txReceipt.from).to.be.eq(accounts[0].address.toLowerCase());
       expect(txReceipt.transactionHash).to.be.eq(expectedTxReceipt.hash);
       expect(txReceipt.contractAddress).to.be.eq(expectedTxReceipt.address);
       expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));
@@ -128,8 +128,8 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
     it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
       const txReceipt = await ethersWsProvider.send(METHOD_NAME, [txHash]);
 
-      expect(txReceipt.to).to.be.eq(accounts[1].address);
-      expect(txReceipt.from).to.be.eq(accounts[0].address);
+      expect(txReceipt.to).to.be.eq(accounts[1].address.toLowerCase());
+      expect(txReceipt.from).to.be.eq(accounts[0].address.toLowerCase());
       expect(txReceipt.transactionHash).to.be.eq(expectedTxReceipt.hash);
       expect(txReceipt.contractAddress).to.be.eq(expectedTxReceipt.address);
       expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));

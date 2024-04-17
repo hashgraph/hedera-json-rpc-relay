@@ -97,7 +97,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
   before(async () => {
     requestId = Utils.generateRequestId();
-    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '5000000000'; //50 Hbar
 
     const neededAccounts: number = 4;
@@ -110,7 +110,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         requestId,
       )),
     );
-    global.accounts = accounts;
+    global.accounts.push(...accounts);
 
     reverterContract = await Utils.deployContract(
       reverterContractJson.abi,

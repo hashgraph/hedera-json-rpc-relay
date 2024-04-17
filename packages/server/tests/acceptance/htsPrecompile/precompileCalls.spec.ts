@@ -93,27 +93,23 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     requestId = Utils.generateRequestId();
 
     // create accounts
-    const contractDeployer = await servicesNode.createAliasAccount(100, relay.provider, requestId);
+    const initialAccount: AliasAccount = global.accounts[0];
+    const contractDeployer = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId);
 
     // Deploy a contract implementing HederaTokenService
-    const HederaTokenServiceImplFactory = new ethers.ContractFactory(
+    htsImpl = await Utils.deployContract(
       HederaTokenServiceImplJson.abi,
       HederaTokenServiceImplJson.bytecode,
       contractDeployer.wallet,
     );
-    htsImpl = await HederaTokenServiceImplFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
-
-    const rec0 = await htsImpl.waitForDeployment();
-    htsImplAddress = rec0.target;
+    htsImplAddress = htsImpl.target;
 
     // Deploy the Token Management contract
-    const TokenManagementContractFactory = new ethers.ContractFactory(
+    TokenManager = await Utils.deployContract(
       TokenManagementContractJson.abi,
       TokenManagementContractJson.bytecode,
       contractDeployer.wallet,
     );
-    TokenManager = await TokenManagementContractFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
-    await htsImpl.waitForDeployment();
 
     const tokenManagementMirror = await mirrorNode.get(`/contracts/${TokenManager.target}`, requestId);
 

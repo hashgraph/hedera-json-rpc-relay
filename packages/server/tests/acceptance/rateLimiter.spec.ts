@@ -104,7 +104,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
       logger.info(`${requestIdPrefix} Creating accounts`);
       logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
 
-      const initialAccount: AliasAccount = global.initialAccount;
+      const initialAccount: AliasAccount = global.accounts[0];
       const initialAmount: string = '5000000000'; //50 Hbar
 
       const neededAccounts: number = 2;
@@ -117,7 +117,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
           requestId,
         )),
       );
-      global.accounts = accounts;
+      global.accounts.push(...accounts);
 
       const parentContract = await Utils.deployContract(
         parentContractJson.abi,

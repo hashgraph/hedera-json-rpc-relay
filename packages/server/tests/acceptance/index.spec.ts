@@ -105,26 +105,22 @@ describe('RPC Server Acceptance Tests', function () {
 
     // cache start balance
     startOperatorBalance = await global.servicesNode.getOperatorBalance();
-    global.initialAccount = await global.servicesNode.createInitialAliasAccount(
+    const initialAccount = await global.servicesNode.createInitialAliasAccount(
       RELAY_URL,
       CHAIN_ID,
       Utils.generateRequestId(),
     );
 
+    global.accounts = new Array<AliasAccount>(initialAccount);
     // wait 3 seconds to propagate to mirror node all needed changes.
     await new Promise((r) => setTimeout(r, 3000));
   });
 
   after(async function () {
     const operatorAddress = `0x${AccountId.fromString(OPERATOR_ID).toSolidityAddress()}`;
-    let accounts: AliasAccount[] = new Array<AliasAccount>(global.initialAccount);
-    if (global.accounts !== undefined) {
-      accounts.push(...global.accounts);
-    }
-
-    for (let index = 0; index < accounts.length; index++) {
-      const account: AliasAccount = accounts[index];
-
+    const accounts: AliasAccount[] = global.accounts;
+    for (let i = 0; i < accounts.length; i++) {
+      const account = accounts[i];
       try {
         const balance = await account.wallet.provider?.getBalance(account.address);
         const tx = {

@@ -53,7 +53,7 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
   let requestId: string;
   before(async () => {
     requestId = Utils.generateRequestId();
-    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '5000000000'; //50 Hbar
 
     const neededAccounts: number = 3;
@@ -66,7 +66,7 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
         requestId,
       )),
     );
-    global.accounts = accounts;
+    global.accounts.push(...accounts);
 
     tx = {
       value: ONE_TINYBAR_IN_WEI_HEX,
@@ -108,8 +108,8 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
       const txReceipt = await mirrorNode.get(`/contracts/results/${txHash}`);
       const fromAccountInfo = await mirrorNode.get(`/accounts/${txReceipt.from}`);
 
-      expect(txReceipt.to).to.eq(accounts[2].address);
-      expect(fromAccountInfo.evm_address).to.eq(accounts[0].address);
+      expect(txReceipt.to).to.eq(accounts[2].address.toLowerCase());
+      expect(fromAccountInfo.evm_address).to.eq(accounts[0].address.toLowerCase());
     });
   });
 
@@ -129,8 +129,8 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
       const txReceipt = await mirrorNode.get(`/contracts/results/${txHash}`);
       const fromAccountInfo = await mirrorNode.get(`/accounts/${txReceipt.from}`);
 
-      expect(txReceipt.to).to.eq(accounts[2].address);
-      expect(fromAccountInfo.evm_address).to.eq(accounts[1].address);
+      expect(txReceipt.to).to.eq(accounts[2].address.toLowerCase());
+      expect(fromAccountInfo.evm_address).to.eq(accounts[1].address.toLowerCase());
     });
   });
 });

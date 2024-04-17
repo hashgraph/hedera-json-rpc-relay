@@ -68,21 +68,21 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
   const accounts: AliasAccount[] = [];
   let mainContractAddress: string;
-  let HTSTokenContractAddress;
-  let NftHTSTokenContractAddress;
-  let NftSerialNumber;
-  let HTSTokenContract;
-  let NFTokenContract;
+  let HTSTokenContractAddress: string;
+  let NftHTSTokenContractAddress: string;
+  let NftSerialNumber: number;
+  let HTSTokenContract: ethers.BaseContract;
+  let NFTokenContract: ethers.BaseContract;
   let mainContract: ethers.BaseContract;
-  let mainContractOwner;
-  let mainContractReceiverWalletFirst;
-  let mainContractReceiverWalletSecond;
-  let HTSTokenWithCustomFeesContractAddress;
-  let requestId;
+  let mainContractOwner: ethers.BaseContract;
+  let mainContractReceiverWalletFirst: ethers.BaseContract;
+  let mainContractReceiverWalletSecond: ethers.BaseContract;
+  let HTSTokenWithCustomFeesContractAddress: string;
+  let requestId: string;
 
   before(async () => {
     requestId = Utils.generateRequestId();
-    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '5000000000'; //50 Hbar
 
     const contractDeployer = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId, initialAmount);

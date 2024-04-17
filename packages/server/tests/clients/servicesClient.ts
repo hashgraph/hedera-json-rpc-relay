@@ -88,7 +88,7 @@ export default class ServicesClient {
     return this.logger;
   }
 
-  async createInitialAliasAccount(providerUrl, chainId, requestId, initialBalance = 500): Promise<AliasAccount> {
+  async createInitialAliasAccount(providerUrl, chainId, requestId, initialBalance = 2000): Promise<AliasAccount> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const privateKey = PrivateKey.generateECDSA();
     const wallet = new ethers.Wallet(

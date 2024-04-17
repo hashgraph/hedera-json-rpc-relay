@@ -109,7 +109,7 @@ describe('@release @web-socket eth_subscribe newHeads', async function () {
     wsServer = socketServer;
 
     requestId = Utils.generateRequestId();
-    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '5000000000'; //50 Hbar
 
     const neededAccounts: number = 2;
@@ -122,7 +122,7 @@ describe('@release @web-socket eth_subscribe newHeads', async function () {
         requestId,
       )),
     );
-    global.accounts = accounts;
+    global.accounts.push(...accounts);
 
     // cache original ENV values
     originalWsNewHeadsEnabledValue = process.env.WS_NEW_HEADS_ENABLED;

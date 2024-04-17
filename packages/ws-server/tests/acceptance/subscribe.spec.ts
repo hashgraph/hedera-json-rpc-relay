@@ -95,7 +95,7 @@ describe('@release @web-socket eth_subscribe', async function () {
     server = global.socketServer;
 
     requestId = Utils.generateRequestId();
-    const initialAccount: AliasAccount = global.initialAccount;
+    const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '5000000000'; //50 Hbar
 
     const neededAccounts: number = 2;
@@ -108,7 +108,7 @@ describe('@release @web-socket eth_subscribe', async function () {
         requestId,
       )),
     );
-    global.accounts = accounts;
+    global.accounts.push(...accounts);
 
     // Deploy Log Contract
     logContractSigner = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
