@@ -19,7 +19,7 @@
  */
 
 import { Relay } from '@hashgraph/json-rpc-relay';
-import ConnectionLimiter from './connectionLimiter';
+import ConnectionLimiter from '../metrics/connectionLimiter';
 
 /**
  * Handles the closure of a WebSocket connection.

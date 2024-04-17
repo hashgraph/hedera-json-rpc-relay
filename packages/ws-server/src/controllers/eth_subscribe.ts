@@ -18,7 +18,7 @@
  *
  */
 
-import ConnectionLimiter from '../utils/connectionLimiter';
+import ConnectionLimiter from '../metrics/connectionLimiter';
 import { getMultipleAddressesEnabled } from '../utils/utils';
 import { predefined, Relay } from '@hashgraph/json-rpc-relay';
 import { validateSubscribeEthLogsParams } from '../utils/validators';
