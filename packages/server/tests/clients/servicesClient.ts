@@ -259,7 +259,7 @@ export default class ServicesClient {
     contractId,
     functionName: string,
     params: ContractFunctionParameters,
-    gasLimit = 75000,
+    gasLimit = 500_000,
     amount = 0,
     requestId?: string,
   ) {
