@@ -135,6 +135,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with incorrect `to` field length', async function () {
+      web3Mock.onPost('contracts/call').reply(200);
       await ethCallFailing(
         ethImpl,
         {

@@ -27,6 +27,7 @@ import { Registry } from 'prom-client';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
+const { exec } = require('child_process');
 
 import pino from 'pino';
 import constants from '../../src/lib/constants';
@@ -36,6 +37,7 @@ import { Log, Transaction } from '../../src/lib/model';
 import { nullableNumberTo0x, numberTo0x, nanOrNumberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import * as sinon from 'sinon';
+import { RedisInMemoryServer } from '../redisInMemoryServer';
 
 use(chaiAsPromised);
 const LRU = require('lru-cache');
@@ -47,7 +49,7 @@ let restMock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
 let cacheService: CacheService;
-let mirrorNodeCache;
+let redisInMemoryServer: RedisInMemoryServer;
 
 const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
 const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;
@@ -266,12 +268,13 @@ describe('eth_getBlockBy', async function () {
   const sandbox = sinon.createSandbox();
   let multiSetSpy;
 
-  this.beforeAll(() => {
+  this.beforeAll(async () => {
     //done in order to be able to use cache
-    process.env.TEST = 'false';
     process.env.REDIS_ENABLED = 'true';
-    process.env.REDIS_URL = 'redis://127.0.0.1:6379';
     process.env.MULTI_SET = 'true';
+    redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 5031);
+    await redisInMemoryServer.start();
+    process.env.REDIS_URL = 'redis://127.0.0.1:5031';
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
 
     // @ts-ignore
@@ -312,10 +315,11 @@ describe('eth_getBlockBy', async function () {
     sandbox.restore();
   });
 
-  this.afterAll(() => {
-    process.env.TEST = 'true';
+  this.afterAll(async () => {
     process.env.REDIS_ENABLED = 'false';
     process.env.MULTI_SET = 'false';
+    await cacheService.disconnectRedisClient();
+    await redisInMemoryServer.stop();
   });
 
   const mirrorLogToModelLog = (mirrorLog) => {
@@ -467,7 +471,6 @@ describe('eth_getBlockBy', async function () {
     }
 
     async function checkForSyntheticLogsInSharedCache() {
-      await cacheService.clear('1', true);
       const syntheticLog1 = await cacheService.getAsync(cacheKeySyntheticLog1, '', '');
       const syntheticLog2 = await cacheService.getAsync(cacheKeySyntheticLog2, '', '');
       const syntheticLog3 = await cacheService.getAsync(cacheKeySyntheticLog3, '', '');

@@ -92,7 +92,7 @@ export class CacheService {
 
     this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     this.sharedCache = this.internalCache;
-    this.isSharedCacheEnabled = process.env.TEST === 'true' ? false : this.isRedisEnabled();
+    this.isSharedCacheEnabled = process.env.TRUE === 'true' ? false : this.isRedisEnabled();
     this.shouldMultiSet = process.env.MULTI_SET && process.env.MULTI_SET === 'true' ? true : false;
 
     if (this.isSharedCacheEnabled) {
@@ -113,6 +113,10 @@ export class CacheService {
       registers: [register],
       labelNames: ['callingMethod', 'cacheType', 'method'],
     });
+  }
+
+  async disconnectRedisClient(): Promise<void> {
+    await this.sharedCache.disconnect();
   }
 
   /**

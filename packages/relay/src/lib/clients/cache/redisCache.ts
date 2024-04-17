@@ -16,6 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
+ *
  */
 
 import { createClient, RedisClientType } from 'redis';
@@ -75,7 +76,6 @@ export class RedisCache implements ICacheClient {
 
     const redisUrl = process.env.REDIS_URL!;
     const reconnectDelay = parseInt(process.env.REDIS_RECONNECT_DELAY_MS || '1000');
-
     this.client = createClient({
       url: redisUrl,
       socket: {
@@ -86,7 +86,6 @@ export class RedisCache implements ICacheClient {
         },
       },
     });
-
     this.connected = this.client
       .connect()
       .then(() => true)
@@ -94,11 +93,9 @@ export class RedisCache implements ICacheClient {
         this.logger.error(error, 'Redis connection could not be established!');
         return false;
       });
-
     this.client.on('ready', () => {
       logger.info(`Connected to Redis server (${redisUrl}) successfully!`);
     });
-
     this.client.on('error', function (error) {
       const redisError = new RedisCacheError(error);
       if (redisError.isSocketClosed()) {
@@ -176,8 +173,12 @@ export class RedisCache implements ICacheClient {
       serializedKeyValuePairs[key] = JSON.stringify(value);
     }
 
-    // Perform mSet operation
-    await client.mSet(serializedKeyValuePairs);
+    try {
+      // Perform mSet operation
+      await client.mSet(serializedKeyValuePairs);
+    } catch (e) {
+      this.logger.error(e);
+    }
 
     // Log the operation
     const entriesLength = Object.keys(keyValuePairs).length;
@@ -240,5 +241,9 @@ export class RedisCache implements ICacheClient {
   async clear(): Promise<void> {
     const client = await this.getConnectedClient();
     await client.flushAll();
+  }
+
+  async disconnect(): Promise<void> {
+    await (await this.getConnectedClient()).disconnect();
   }
 }

@@ -23,10 +23,12 @@ import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { RedisCache } from '../../../src/lib/clients';
 import { Registry } from 'prom-client';
+import { RedisInMemoryServer } from '../../redisInMemoryServer';
 
 const logger = pino();
 const registry = new Registry();
 let redisCache: RedisCache;
+let redisInMemoryServer: RedisInMemoryServer;
 
 const callingMethod = 'RedisCacheTest';
 
@@ -34,7 +36,9 @@ describe('RedisCache Test Suite', async function () {
   this.timeout(10000);
   const mock = sinon.createSandbox();
 
-  this.beforeAll(() => {
+  this.beforeAll(async () => {
+    redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6379);
+    await redisInMemoryServer.start();
     redisCache = new RedisCache(logger.child({ name: `cache` }), registry);
   });
 
@@ -45,6 +49,11 @@ describe('RedisCache Test Suite', async function () {
 
   this.afterEach(() => {
     mock.restore();
+  });
+
+  this.afterAll(async () => {
+    await redisCache.disconnect();
+    await redisInMemoryServer.stop();
   });
 
   describe('Get and Set Test Suite', async function () {

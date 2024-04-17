@@ -30,4 +30,5 @@ export interface ICacheClient {
     ttl?: number | undefined,
     requestIdPrefix?: string,
   ): void;
+  disconnect(): Promise<void> | void;
 }
