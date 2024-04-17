@@ -73,11 +73,18 @@ const handleEthSubscribeNewHeads = (
   event: string,
   relay: Relay,
   logger: any,
+  connectionIdPrefix: string,
+  requestIdPrefix: string,
 ): { response: any; subscriptionId: any } => {
-  const wsNewHeadsEnabled = process.env.WS_NEW_HEADS_ENABLED ? Boolean(Number(process.env.WS_NEW_HEADS_ENABLED)) : true;
-  if (wsNewHeadsEnabled) {
+  const wsNewHeadsEnabled =
+    typeof process.env.WS_NEW_HEADS_ENABLED !== 'undefined' ? process.env.WS_NEW_HEADS_ENABLED : 'true';
+
+  if (wsNewHeadsEnabled === 'true') {
     ({ response, subscriptionId } = subscribeToNewHeads(filters, response, subscriptionId, ctx, event, relay, logger));
   } else {
+    logger.warn(
+      `${connectionIdPrefix} ${requestIdPrefix}: Unsupported JSON-RPC method due to the value of environment variable WS_NEW_HEADS_ENABLED`,
+    );
     response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
   }
   return { response, subscriptionId };
@@ -145,6 +152,7 @@ export const handleEthSubsribe = async ({
   mirrorNodeClient,
   limiter,
   logger,
+  connectionIdPrefix,
 }): Promise<any> => {
   const event = params[0];
   const filters = params[1];
@@ -176,6 +184,8 @@ export const handleEthSubsribe = async ({
         event,
         relay,
         logger,
+        connectionIdPrefix,
+        requestIdPrefix,
       ));
       break;
     case constants.SUBSCRIBE_EVENTS.NEW_PENDING_TRANSACTIONS:
