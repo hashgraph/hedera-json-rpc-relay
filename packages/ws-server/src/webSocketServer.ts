@@ -56,6 +56,8 @@ import {
   handleEthGetTransactionReceipt,
 } from './controllers';
 
+type UpdateFunction = (gauge: Gauge) => void;
+
 const register = new Registry();
 const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
 
@@ -89,25 +91,7 @@ const methodsCounterByIp = generateMethodsCounterById(register, {
   labelNames: WS_CONSTANTS.methodsCounterByIp.labelNames,
 });
 
-const cpuUsageGauge = generateGauge(register, {
-  name: WS_CONSTANTS.cpuUsageGauge.name,
-  help: WS_CONSTANTS.cpuUsageGauge.help,
-  labelNames: WS_CONSTANTS.cpuUsageGauge.labelNames,
-});
-
-const memoryUsageGauge = generateGauge(register, {
-  name: WS_CONSTANTS.memoryUsageGauge.name,
-  help: WS_CONSTANTS.memoryUsageGauge.help,
-  labelNames: WS_CONSTANTS.memoryUsageGauge.labelNames,
-});
-
-const networkUsageGauge = generateGauge(register, {
-  name: WS_CONSTANTS.networkUsageGauge.name,
-  help: WS_CONSTANTS.networkUsageGauge.help,
-  labelNames: WS_CONSTANTS.networkUsageGauge.labelNames,
-});
-
-const updateResourceUtilizationMetrics = (): void => {
+const updateResourceUtilizationMetrics: UpdateFunction = (): void => {
   const cpuUsage = process.cpuUsage();
   const totalCpuTime = cpuUsage.user + cpuUsage.system;
   const cpuUsagePercentage = (totalCpuTime / os.cpus().length) * 100;
@@ -122,8 +106,35 @@ const updateResourceUtilizationMetrics = (): void => {
   networkUsageGauge.set(networkUsage);
 };
 
-// Update resource utilization metrics periodically (e.g., every 5 seconds)
-setInterval(updateResourceUtilizationMetrics, 5000);
+const cpuUsageGauge = generateGauge(
+  register,
+  {
+    name: WS_CONSTANTS.cpuUsageGauge.name,
+    help: WS_CONSTANTS.cpuUsageGauge.help,
+    labelNames: WS_CONSTANTS.cpuUsageGauge.labelNames,
+  },
+  updateResourceUtilizationMetrics,
+);
+
+const memoryUsageGauge = generateGauge(
+  register,
+  {
+    name: WS_CONSTANTS.memoryUsageGauge.name,
+    help: WS_CONSTANTS.memoryUsageGauge.help,
+    labelNames: WS_CONSTANTS.memoryUsageGauge.labelNames,
+  },
+  updateResourceUtilizationMetrics,
+);
+
+const networkUsageGauge = generateGauge(
+  register,
+  {
+    name: WS_CONSTANTS.networkUsageGauge.name,
+    help: WS_CONSTANTS.networkUsageGauge.help,
+    labelNames: WS_CONSTANTS.networkUsageGauge.labelNames,
+  },
+  updateResourceUtilizationMetrics,
+);
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx) => {

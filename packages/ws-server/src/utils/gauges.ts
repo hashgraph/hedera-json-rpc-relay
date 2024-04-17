@@ -19,6 +19,7 @@
  */
 
 import { Gauge, Registry } from 'prom-client';
+type UpdateFunction = (gauge: Gauge) => void;
 
 /**
  * Generates a Prometheus Counter metric for tracking WebSocket method calls.
@@ -27,12 +28,15 @@ import { Gauge, Registry } from 'prom-client';
  * @param {any} gaugeInfo - Information of the counter.
  * @returns {Gauge} Returns a new Counter metric instance.
  */
-export const generateGauge = (register: Registry, gaugeInfo: any): Gauge => {
+export const generateGauge = (register: Registry, gaugeInfo: any, updateFn: UpdateFunction): Gauge => {
   register.removeSingleMetric(gaugeInfo.name);
   return new Gauge({
     name: gaugeInfo.name,
     help: gaugeInfo.help,
     labelNames: gaugeInfo.labelNames,
     registers: [register],
+    async collect() {
+      updateFn(this);
+    },
   });
 };
