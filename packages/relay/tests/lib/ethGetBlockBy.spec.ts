@@ -27,7 +27,6 @@ import { Registry } from 'prom-client';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-const { exec } = require('child_process');
 
 import pino from 'pino';
 import constants from '../../src/lib/constants';
@@ -50,6 +49,7 @@ let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
 let cacheService: CacheService;
 let redisInMemoryServer: RedisInMemoryServer;
+let mirrorNodeCache;
 
 const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
 const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;
