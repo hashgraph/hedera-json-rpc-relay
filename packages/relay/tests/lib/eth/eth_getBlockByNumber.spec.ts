@@ -371,16 +371,6 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       }
       restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
       restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-      restMock.onGet(`accounts/${defaultContractResults.results[0].from}?transactions=false`).reply(200);
-      restMock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
-      restMock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
-      restMock.onGet(`accounts/${defaultContractResults.results[1].to}?transactions=false`).reply(200);
-      restMock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, NOT_FOUND_RES);
-      restMock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, NOT_FOUND_RES);
-      restMock.onGet(`contracts/${defaultContractResults.results[0].to}`).reply(200);
-      restMock.onGet(`contracts/${defaultContractResults.results[1].to}`).reply(200);
-      restMock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(200);
-      restMock.onGet(`tokens/${defaultContractResults.results[1].contract_id}`).reply(200);
     });
 
     it('eth_getBlockByNumber with latest tag', async function () {
