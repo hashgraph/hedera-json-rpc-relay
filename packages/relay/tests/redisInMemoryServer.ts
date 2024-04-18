@@ -1,11 +1,37 @@
 import { RedisMemoryServer } from 'redis-memory-server';
-import { Logger, P } from 'pino';
+import { Logger } from 'pino';
+import { RedisInstanceDataT } from 'redis-memory-server/lib/RedisMemoryServer';
 
 export class RedisInMemoryServer {
-  private mockedRedisServer: RedisMemoryServer;
+  /**
+   * The instance of the in memory Redis server
+   *
+   * @private
+   */
+  private inMemoryRedisServer: RedisMemoryServer;
+
+  /**
+   * The logger used for logging all output from this class.
+   * @private
+   */
   private logger: Logger;
+
+  /**
+   * The host of the in memory server.
+   * @private
+   */
   private host: string;
+
+  /**
+   * The port of the in memory server.
+   * @private
+   */
   private port: number;
+
+  /**
+   * The desired port to run on.
+   * @private
+   */
   private portToRunOn: number;
 
   constructor(logger: Logger, portToRunOn: number) {
@@ -14,22 +40,14 @@ export class RedisInMemoryServer {
   }
 
   async start() {
-    this.mockedRedisServer = new RedisMemoryServer({
+    this.inMemoryRedisServer = new RedisMemoryServer({
       instance: {
         port: this.portToRunOn,
       },
     });
-    // let started;
-    // try {
-    //     started = await this.mockedRedisServer.start();
-    // } catch(e) {
-    //     this.logger.error(e)
-    // }
 
-    this.port = await this.mockedRedisServer.getPort();
-    this.host = await this.mockedRedisServer.getHost();
-    //console.log(this.mockedRedisServer.getInstanceInfo());
-    //console.log(started);
+    this.port = await this.inMemoryRedisServer.getPort();
+    this.host = await this.inMemoryRedisServer.getHost();
   }
 
   async getPort(): Promise<number> {
@@ -40,13 +58,13 @@ export class RedisInMemoryServer {
     return this.host;
   }
 
-  getInstanceInfo() {
-    return this.mockedRedisServer.getInstanceInfo();
+  getInstanceInfo(): false | RedisInstanceDataT {
+    return this.inMemoryRedisServer.getInstanceInfo();
   }
 
   async stop() {
     this.logger.info('Stopping Redis in-memory server....');
-    const stopped = await this.mockedRedisServer.stop();
+    const stopped = await this.inMemoryRedisServer.stop();
     if (stopped) {
       this.logger.info('Stopped Redis in-memory server sucessfully.');
     } else {
