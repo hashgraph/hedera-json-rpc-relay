@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install packages
-        run: npm ci
+        run: time npm ci
 
       - name: Create .env file
         run: cp ./packages/server/tests/${{ inputs.envfile }} .env
