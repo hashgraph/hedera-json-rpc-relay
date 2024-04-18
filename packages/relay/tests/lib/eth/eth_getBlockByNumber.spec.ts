@@ -217,20 +217,20 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       });
     });
 
-    // it('eth_getBlockByNumber with match paginated', async function () {
-    //   restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, LINKS_NEXT_RES);
-    //   restMock.onGet(CONTRACTS_RESULTS_NEXT_URL).reply(200, defaultContractResults);
-    //   const result = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER), false);
+    it('eth_getBlockByNumber with match paginated', async function () {
+      restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, LINKS_NEXT_RES);
+      restMock.onGet(CONTRACTS_RESULTS_NEXT_URL).reply(200, defaultContractResults);
+      const result = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER), false);
 
-    //   RelayAssertions.assertBlock(result, {
-    //     hash: BLOCK_HASH_TRIMMED,
-    //     gasUsed: TOTAL_GAS_USED,
-    //     number: BLOCK_NUMBER_HEX,
-    //     parentHash: BLOCK_HASH_PREV_TRIMMED,
-    //     timestamp: BLOCK_TIMESTAMP_HEX,
-    //     transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
-    //   });
-    // });
+      RelayAssertions.assertBlock(result, {
+        hash: BLOCK_HASH_TRIMMED,
+        gasUsed: TOTAL_GAS_USED,
+        number: BLOCK_NUMBER_HEX,
+        parentHash: BLOCK_HASH_PREV_TRIMMED,
+        timestamp: BLOCK_TIMESTAMP_HEX,
+        transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      });
+    });
 
     it('eth_getBlockByNumber should return cached result', async function () {
       restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
@@ -382,12 +382,6 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       restMock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(200);
       restMock.onGet(`tokens/${defaultContractResults.results[1].contract_id}`).reply(200);
     });
-
-    // this.afterEach(() => {
-    //   console.log(restMock.history.get.length);
-
-    //   restMock.resetHistory();
-    // })
 
     it('eth_getBlockByNumber with latest tag', async function () {
       const result = await ethImpl.getBlockByNumber('latest', false);

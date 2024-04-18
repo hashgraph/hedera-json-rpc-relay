@@ -165,8 +165,6 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     restMock.onGet(`accounts/${defaultDetailedContractResultByHash.from}?transactions=false`).reply(200);
     restMock.onGet(`accounts/${defaultDetailedContractResultByHash.to}?transactions=false`).reply(200);
     restMock.onGet(`accounts/${defaultDetailedContractResultByHash.to}?transactions=false`).reply(200);
-    // restMock.onGet(`contracts/${defaultDetailedContractResultByHash.from}`).reply(404, NOT_FOUND_RES);
-    // restMock.onGet(`contracts/${defaultDetailedContractResultByHash.from}`).reply(404, NOT_FOUND_RES);
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.to}`).reply(200);
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.to}`).reply(200);
     restMock.onGet(`tokens/${defaultDetailedContractResultByHash.contract_id}`).reply(200);
