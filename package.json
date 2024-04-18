@@ -83,8 +83,7 @@
   },
   "overrides": {
     "protobufjs": "^7.2.4",
-    "semver": "^7.5.3",
-    "nx": "16.5.5"
+    "semver": "^7.5.3"    
   },
   "lint-staged": {
     "packages/**/src/**/*.ts": [
