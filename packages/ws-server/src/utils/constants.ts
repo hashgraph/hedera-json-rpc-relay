@@ -32,17 +32,17 @@ export const WS_CONSTANTS = {
   cpuUsageGauge: {
     name: 'websocket_cpu_usage_percentage',
     help: 'CPU usage percentage of the WebSocket server',
-    labelNames: ['pid'],
+    labelNames: ['cpu'],
   },
   memoryUsageGauge: {
     name: 'websocket_memory_usage_bytes',
     help: 'Memory usage of the WebSocket server in bytes',
-    labelNames: ['pid'],
+    labelNames: ['memory'],
   },
   networkUsageGauge: {
     name: 'websocket_network_usage_bytes',
     help: 'Network usage of the WebSocket server in bytes',
-    labelNames: ['pid'],
+    labelNames: ['network'],
   },
   connLimiter: {
     activeConnectionsMetric: {

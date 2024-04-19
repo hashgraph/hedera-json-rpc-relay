@@ -35,8 +35,9 @@ import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
 import { generateGauge } from './utils/gauges';
+import { generateCpuGauge } from './utils/cpuGauge';
+import { generateMemoryGauge } from './utils/memoryGauge';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
-import os from 'os';
 import {
   handleEthCall,
   handleEthGetLogs,
@@ -55,8 +56,6 @@ import {
   handleEthGetTransactionByHash,
   handleEthGetTransactionReceipt,
 } from './controllers';
-
-type UpdateFunction = (gauge: Gauge) => void;
 
 const register = new Registry();
 const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
@@ -91,50 +90,17 @@ const methodsCounterByIp = generateMethodsCounterById(register, {
   labelNames: WS_CONSTANTS.methodsCounterByIp.labelNames,
 });
 
-const updateResourceUtilizationMetrics: UpdateFunction = (): void => {
-  const cpuUsage = process.cpuUsage();
-  const totalCpuTime = cpuUsage.user + cpuUsage.system;
-  const cpuUsagePercentage = (totalCpuTime / os.cpus().length) * 100;
-  cpuUsageGauge.set(cpuUsagePercentage);
+const cpuUsageGauge = generateCpuGauge(register, {
+  name: WS_CONSTANTS.cpuUsageGauge.name,
+  help: WS_CONSTANTS.cpuUsageGauge.help,
+  labelNames: WS_CONSTANTS.cpuUsageGauge.labelNames,
+});
 
-  const memoryUsage = process.memoryUsage().rss;
-  memoryUsageGauge.set(memoryUsage);
-
-  const networkUsage =
-    os.networkInterfaces().eth0?.reduce((acc, iface) => acc + (iface as any).tx_bytes + (iface as any).rx_bytes, 0) ??
-    0;
-  networkUsageGauge.set(networkUsage);
-};
-
-const cpuUsageGauge = generateGauge(
-  register,
-  {
-    name: WS_CONSTANTS.cpuUsageGauge.name,
-    help: WS_CONSTANTS.cpuUsageGauge.help,
-    labelNames: WS_CONSTANTS.cpuUsageGauge.labelNames,
-  },
-  updateResourceUtilizationMetrics,
-);
-
-const memoryUsageGauge = generateGauge(
-  register,
-  {
-    name: WS_CONSTANTS.memoryUsageGauge.name,
-    help: WS_CONSTANTS.memoryUsageGauge.help,
-    labelNames: WS_CONSTANTS.memoryUsageGauge.labelNames,
-  },
-  updateResourceUtilizationMetrics,
-);
-
-const networkUsageGauge = generateGauge(
-  register,
-  {
-    name: WS_CONSTANTS.networkUsageGauge.name,
-    help: WS_CONSTANTS.networkUsageGauge.help,
-    labelNames: WS_CONSTANTS.networkUsageGauge.labelNames,
-  },
-  updateResourceUtilizationMetrics,
-);
+const memoryUsageGauge = generateMemoryGauge(register, {
+  name: WS_CONSTANTS.memoryUsageGauge.name,
+  help: WS_CONSTANTS.memoryUsageGauge.help,
+  labelNames: WS_CONSTANTS.memoryUsageGauge.labelNames,
+});
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx) => {
