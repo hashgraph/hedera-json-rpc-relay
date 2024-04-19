@@ -270,6 +270,7 @@ describe('eth_getBlockBy', async function () {
 
   this.beforeAll(async () => {
     //done in order to be able to use cache
+    process.env.TEST = 'false';
     process.env.REDIS_ENABLED = 'true';
     process.env.MULTI_SET = 'true';
     redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 5031);
