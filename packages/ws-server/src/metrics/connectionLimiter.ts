@@ -19,9 +19,9 @@
  */
 
 import { Logger } from 'pino';
-import { WebSocketError } from '@hashgraph/json-rpc-relay';
+import { WS_CONSTANTS } from '../utils/constants';
 import { Gauge, Registry, Counter } from 'prom-client';
-import { WS_CONSTANTS } from './constants';
+import { WebSocketError } from '@hashgraph/json-rpc-relay';
 
 type IpCounter = {
   [key: string]: number;
@@ -34,7 +34,7 @@ export default class ConnectionLimiter {
   private clientIps: IpCounter;
   private logger: Logger;
   private activeConnectionsGauge: Gauge;
-  private ipConnectionsGauge: Gauge;
+  private activeConnectionsGaugeByIP: Gauge;
   private ipConnectionLimitCounter: Counter;
   private connectionLimitCounter: Counter;
   private inactivityTTLCounter: Counter;
@@ -54,7 +54,7 @@ export default class ConnectionLimiter {
     });
 
     this.register.removeSingleMetric(WS_CONSTANTS.connLimiter.ipConnectionsMetric.name);
-    this.ipConnectionsGauge = new Gauge({
+    this.activeConnectionsGaugeByIP = new Gauge({
       name: WS_CONSTANTS.connLimiter.ipConnectionsMetric.name,
       help: WS_CONSTANTS.connLimiter.ipConnectionsMetric.help,
       labelNames: WS_CONSTANTS.connLimiter.ipConnectionsMetric.labelNames,
@@ -99,14 +99,14 @@ export default class ConnectionLimiter {
     ctx.websocket.subscriptions = 0;
 
     this.activeConnectionsGauge.set(this.connectedClients);
-    this.ipConnectionsGauge.labels(ip).set(this.clientIps[ip]);
+    this.activeConnectionsGaugeByIP.labels(ip).set(this.clientIps[ip]);
   }
 
   public decrementCounters(ctx) {
     if (ctx.websocket.ipCounted) {
       const { ip } = ctx.request;
       this.clientIps[ip]--;
-      this.ipConnectionsGauge.labels(ip).set(this.clientIps[ip]);
+      this.activeConnectionsGaugeByIP.labels(ip).set(this.clientIps[ip]);
       if (this.clientIps[ip] === 0) delete this.clientIps[ip];
     }
     this.connectedClients--;
