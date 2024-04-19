@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -529,7 +529,7 @@ describe('@ethCall Eth Call spec', async function () {
 
       expect(result).to.exist;
       expect((result as JsonRpcError).code).to.equal(-32008);
-      expect((result as JsonRpcError).name).to.equal('Contract revert executed');
+      expect((result as JsonRpcError).name).to.undefined;
       expect((result as JsonRpcError).message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
       expect((result as JsonRpcError).data).to.equal(defaultErrorMessageHex);
     });
@@ -723,7 +723,7 @@ describe('@ethCall Eth Call spec', async function () {
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(-32008);
-      expect((result as JsonRpcError).name).to.eq('Contract revert executed');
+      expect((result as JsonRpcError).name).to.undefined;
       expect((result as JsonRpcError).message).to.contain(mockData.contractReverted._status.messages[0].message);
     });
 
@@ -774,7 +774,7 @@ describe('@ethCall Eth Call spec', async function () {
       sinon.assert.notCalled(sdkClientStub.submitContractCallQueryWithRetry);
       expect(result).to.not.be.null;
       expect((result as JsonRpcError).code).to.eq(-32008);
-      expect((result as JsonRpcError).name).to.eq('Contract revert executed');
+      expect((result as JsonRpcError).name).to.undefined;
       expect((result as JsonRpcError).message).to.contain(mockData.contractReverted._status.messages[0].message);
     });
 
@@ -805,7 +805,7 @@ describe('@ethCall Eth Call spec', async function () {
 
       expect(result).to.exist;
       expect((result as JsonRpcError).code).to.eq(-32008);
-      expect((result as JsonRpcError).name).to.eq('Contract revert executed');
+      expect((result as JsonRpcError).name).to.undefined;
       expect((result as JsonRpcError).message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
       expect((result as JsonRpcError).data).to.equal(defaultErrorMessageHex);
     });

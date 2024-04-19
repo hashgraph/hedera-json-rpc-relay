@@ -145,6 +145,27 @@ export class LocalLRUCache implements ICacheClient {
   }
 
   /**
+   * Stores multiple key-value pairs in the cache.
+   *
+   * @param keyValuePairs - An object where each property is a key and its value is the value to be cached.
+   * @param callingMethod - The name of the calling method.
+   * @param ttl - Time to live on the set values
+   * @param requestIdPrefix - Optional request ID prefix for logging.
+   * @returns {void} A Promise that resolves when the values are cached.
+   */
+  public pipelineSet(
+    keyValuePairs: Record<string, any>,
+    callingMethod: string,
+    ttl?: number,
+    requestIdPrefix?: string,
+  ): void {
+    // Iterate over each entry in the keyValuePairs object
+    for (const [key, value] of Object.entries(keyValuePairs)) {
+      this.set(key, value, callingMethod, ttl, requestIdPrefix);
+    }
+  }
+
+  /**
    * Deletes a cached value associated with the given key.
    * Logs the deletion of the cache entry.
    * @param {string} key - The key associated with the cached value to delete.

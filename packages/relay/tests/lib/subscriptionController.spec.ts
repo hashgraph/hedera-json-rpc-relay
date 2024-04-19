@@ -28,7 +28,7 @@ import sinon from 'sinon';
 import dotenv from 'dotenv';
 import path from 'path';
 import { Registry } from 'prom-client';
-import ConnectionLimiter from '@hashgraph/json-rpc-ws-server/dist/ConnectionLimiter';
+import ConnectionLimiter from '@hashgraph/json-rpc-ws-server/src/metrics/connectionLimiter';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 

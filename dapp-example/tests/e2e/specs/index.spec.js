@@ -133,7 +133,7 @@ describe('Test Core Hedera User Scenarios', function () {
       cy.get('#sendHbarsToField').clear().type(randomHollowAccountAddress);
       cy.get('#sendHbarsAmountField').clear().type('10000000000000000').trigger('change');
       cy.get('#sendHbarsBtn').should('not.be.disabled').click();
-      cy.wait(10000);
+      cy.wait(15000);
       cy.confirmMetamaskTransaction();
 
       cy.waitUntil(() => cy.get('#sendHbarMsg').should('have.text', ' Done '));

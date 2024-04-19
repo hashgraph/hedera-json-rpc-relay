@@ -8,7 +8,7 @@ dataSources:
     source:
       abi: ExampleERC721
       address: "0x8A7fa94487d0d0460550e5F3F80A663c39Ac8B10"
-      startBlock: 15
+      startBlock: 10
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -29,7 +29,7 @@ dataSources:
     source:
       abi: ExampleERC20
       address: "0x23f5e49569A835d7bf9AefD30e4f60CdD570f225"
-      startBlock: 11
+      startBlock: 6
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -50,7 +50,7 @@ dataSources:
     source:
       abi: GravatarRegistry
       address: "0x2825a2eBD7F17Ae448900992D6293eF599B75C46"
-      startBlock: 17
+      startBlock: 13
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -73,7 +73,7 @@ dataSources:
     source:
       abi: ExampleHTSFT
       address: "0x0000000000000000000000000000000000000409"
-      startBlock: 10
+      startBlock: 8
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

@@ -209,7 +209,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
 
     const args = [MOCK_ACCOUNT_ADDR, blockNumberHex];
 
-    await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
+    await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK(), ethImpl.getTransactionCount, true, ethImpl, args);
   });
 
   it('should throw error for account historical numerical block tag with error on latest block', async () => {
@@ -218,7 +218,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
 
     const args = [MOCK_ACCOUNT_ADDR, blockNumberHex];
 
-    await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
+    await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK(), ethImpl.getTransactionCount, true, ethImpl, args);
   });
 
   it('should return valid nonce for historical numerical block close to latest', async () => {
@@ -300,13 +300,13 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
   it('should throw for -1 invalid block tag', async () => {
     const args = [MOCK_ACCOUNT_ADDR, '-1'];
 
-    await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
+    await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK(), ethImpl.getTransactionCount, true, ethImpl, args);
   });
 
   it('should throw for invalid block tag', async () => {
     const args = [MOCK_ACCOUNT_ADDR, 'notablock'];
 
-    await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK, ethImpl.getTransactionCount, true, ethImpl, args);
+    await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK(), ethImpl.getTransactionCount, true, ethImpl, args);
   });
 
   it('should return 0x1 for pre-hip-729 contracts with nonce=null', async () => {

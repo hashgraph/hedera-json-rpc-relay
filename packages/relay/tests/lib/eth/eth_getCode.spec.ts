@@ -37,6 +37,7 @@ import {
   NO_TRANSACTIONS,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
+import { JsonRpcError, predefined } from '../../../src';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -48,6 +49,8 @@ let currentMaxBlockRange: number;
 describe('@ethGetCode using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  let validBlockParam = [null, 'earliest', 'latest', 'pending', 'finalized', 'safe', '0x0', '0x369ABF'];
+  let invalidBlockParam = ['hedera', 'ethereum', '0xhbar', '0x369ABF369ABF369ABF369ABF'];
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -126,6 +129,32 @@ describe('@ethGetCode using MirrorNode', async function () {
 
       const res = await ethImpl.getCode(EthImpl.iHTSAddress, null);
       expect(res).to.equal(EthImpl.invalidEVMInstruction);
+    });
+
+    validBlockParam.forEach((blockParam) => {
+      it(`should pass the validate param check with blockParam=${blockParam} and return the bytecode`, async () => {
+        const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, blockParam);
+        expect(res).to.equal(MIRROR_NODE_DEPLOYED_BYTECODE);
+      });
+    });
+
+    invalidBlockParam.forEach((blockParam) => {
+      it(`should throw INVALID_PARAMETER JsonRpcError with invalid blockParam=${blockParam}`, async () => {
+        try {
+          await ethImpl.getCode(EthImpl.iHTSAddress, blockParam);
+          expect(true).to.eq(false);
+        } catch (error) {
+          const expectedError = predefined.UNKNOWN_BLOCK(
+            `The value passed is not a valid blockHash/blockNumber/blockTag value: ${blockParam}`,
+          );
+
+          expect(error).to.exist;
+          expect(error instanceof JsonRpcError);
+          expect(error.code).to.eq(expectedError.code);
+          expect(error.name).to.eq(expectedError.name);
+          expect(error.message).to.eq(expectedError.message);
+        }
+      });
     });
   });
 });
