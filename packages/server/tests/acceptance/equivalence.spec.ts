@@ -59,8 +59,12 @@ describe.only('Equivalence tests', function () {
   const ADDRESS_0_0_3 = '0.0.3';
   const ADDRESS_0_0_4 = '0.0.4';
   const ADDRESS_0_0_100 = '0.0.100';
+  const ADDRESS_0_0_358 = '0.0.358';
+  const ADDRESS_0_0_359 = '0.0.359';
   const MAKE_CALL_WITHOUT_AMOUNT = 'makeCallWithoutAmount';
+  const MAKE_CALL_WITH_AMOUNT = 'makeCallWithAmount';
   const MAKE_CALL_WITHOUT_AMOUNT_TO_IDENTITY_PRECOMPILE = 'makeCallWithoutAmountToIdentityPrecompile';
+  const MAKE_CALL_WITH_AMOUNT_TO_IDENTITY_PRECOMPILE = 'makeCallWithAmountToIdentityPrecompile';
   let estimatePrecompileContractReceipt;
   let estimatePrecompileContractAddress;
   let HederaAddress;
@@ -275,7 +279,7 @@ describe.only('Equivalence tests', function () {
   });
 
   //----------Internal calls----------------
-  //EQUIVALENCE-040 - The same as mirror node but it fails with PRECOMPILE_ERROR it should be something else
+  //EQUIVALENCE-014 - The same as mirror node but it fails with PRECOMPILE_ERROR it should be something else
   it('internal CALL to 0.0.0 without amount - should be successfull', async function () {
     const emptyByteArray = new Uint8Array(0);
     const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_0);
@@ -298,7 +302,29 @@ describe.only('Equivalence tests', function () {
     expect(record.status).to.equal(STATUS_SUCCESS);
   });
 
-  //EQUIVALENCE-041 - ОК
+  //EQUIVALENCE-015 - PRECOMPILE ERROR - Same as mirror node but it fails with PRECOMPILE_ERROR it should be INVALID_FEE_SUBMITTED
+  it('internal CALL to 0.0.0 with amount', async function () {
+    const emptyByteArray = new Uint8Array(0);
+    const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_0);
+    const params = new ContractFunctionParameters().addAddress(evmAddress);
+    params.addBytes(emptyByteArray);
+
+    const { contractExecuteTimestamp } = await servicesNode.executeContractCallWithAmount(
+      equivalenceContractId,
+      MAKE_CALL_WITH_AMOUNT,
+      params,
+      1_000_000,
+      100, //add the amount
+    );
+
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+
+    expect(record.contract_id).to.equal(equivalenceContractId);
+    expect(record.result).to.equal(SUCCESS);
+    expect(record.status).to.equal(STATUS_SUCCESS);
+  });
+
+  //EQUIVALENCE-016
   it('internal CALL to 0.0.1 without amount - should be successfull', async function () {
     const emptyByteArray = new Uint8Array(0);
     const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_1);
@@ -318,27 +344,7 @@ describe.only('Equivalence tests', function () {
     expect(record.status).to.equal(STATUS_SUCCESS);
   });
 
-  //EQUIVALENCE-042 -
-  it.only('internal CALL to 0.0.2 without amount - should be successfull', async function () {
-    const emptyByteArray = new Uint8Array(0);
-    const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_2);
-    const params = new ContractFunctionParameters().addAddress(evmAddress);
-    params.addBytes(emptyByteArray);
-    const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
-      equivalenceContractId,
-      MAKE_CALL_WITHOUT_AMOUNT,
-      params,
-      500_000,
-    );
-
-    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
-
-    expect(record.contract_id).to.equal(equivalenceContractId);
-    expect(record.result).to.equal(SUCCESS);
-    expect(record.status).to.equal(STATUS_SUCCESS);
-  });
-
-  //EQUIVALENCE-043 - PRECOMPILE ERROR
+  //EQUIVALENCE-017
   it('internal CALL to 0.0.2 without amount - should be successfull', async function () {
     const emptyByteArray = new Uint8Array(0);
     const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_2);
@@ -358,7 +364,27 @@ describe.only('Equivalence tests', function () {
     expect(record.status).to.equal(STATUS_SUCCESS);
   });
 
-  //EQUIVALENCE-044 - ОК
+  //EQUIVALENCE-018
+  it('internal CALL to 0.0.3 without amount - should be successfull', async function () {
+    const emptyByteArray = new Uint8Array(0);
+    const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_3);
+    const params = new ContractFunctionParameters().addAddress(evmAddress);
+    params.addBytes(emptyByteArray);
+    const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
+      equivalenceContractId,
+      MAKE_CALL_WITHOUT_AMOUNT,
+      params,
+      500_000,
+    );
+
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+
+    expect(record.contract_id).to.equal(equivalenceContractId);
+    expect(record.result).to.equal(SUCCESS);
+    expect(record.status).to.equal(STATUS_SUCCESS);
+  });
+
+  //EQUIVALENCE-019 - ОК
   it('internal CALL to 0.0.4 without amount - should be successfull', async function () {
     const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_4);
     const params = new ContractFunctionParameters().addAddress(evmAddress);
@@ -379,7 +405,30 @@ describe.only('Equivalence tests', function () {
     expect(record.status).to.equal(STATUS_SUCCESS);
   });
 
-  //EQUIVALENCE-045 - The same as mirror node but it fails with PRECOMPILE_ERROR it should be INVALID_SOLIDITY_ADDRESS
+  //EQUIVALENCE-020 - OK
+  it('internal CALL to 0.0.4 with amount', async function () {
+    const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_4);
+    const params = new ContractFunctionParameters().addAddress(evmAddress);
+    console.log('PARAMS ARE ');
+    console.log(params);
+
+    const { contractExecuteTimestamp } = await servicesNode.executeContractCallWithAmount(
+      equivalenceContractId,
+      MAKE_CALL_WITH_AMOUNT_TO_IDENTITY_PRECOMPILE,
+      EMPTY_FUNCTION_PARAMS,
+      1_000_000,
+      100, //add the amount
+    );
+
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+
+    //TODO: It returns INVALID_FEE_SUBMITTED and we have to implement the check for that
+    expect(record.contract_id).to.equal(equivalenceContractId);
+    expect(record.result).to.equal(SUCCESS);
+    expect(record.status).to.equal(STATUS_SUCCESS);
+  });
+
+  //EQUIVALENCE-021 - The same as mirror node but it fails with PRECOMPILE_ERROR it should be INVALID_SOLIDITY_ADDRESS
   it('internal CALL to 0.0.100 without amount - should be successfull', async function () {
     const emptyByteArray = new Uint8Array(0);
     const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_100);
@@ -391,6 +440,70 @@ describe.only('Equivalence tests', function () {
       MAKE_CALL_WITHOUT_AMOUNT,
       params,
       500_000,
+    );
+
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+
+    expect(record.contract_id).to.equal(equivalenceContractId);
+    expect(record.result).to.equal(SUCCESS);
+    expect(record.status).to.equal(STATUS_SUCCESS);
+  });
+
+  //EQUIVALENCE-022 --- The same as mirror node but it fails with PRECOMPILE_ERROR it should be INVALID_FEE_SUBMITTED
+  it('internal CALL to 0.0.100 with amount - should be successfull', async function () {
+    const emptyByteArray = new Uint8Array(0);
+    const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_100);
+    const params = new ContractFunctionParameters().addAddress(evmAddress);
+    params.addBytes(emptyByteArray);
+
+    const { contractExecuteTimestamp } = await servicesNode.executeContractCallWithAmount(
+      equivalenceContractId,
+      MAKE_CALL_WITH_AMOUNT,
+      params,
+      1_000_000,
+      100, //add the amount
+    );
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+
+    expect(record.contract_id).to.equal(equivalenceContractId);
+    expect(record.result).to.equal(SUCCESS);
+    expect(record.status).to.equal(STATUS_SUCCESS);
+  });
+
+  //EQUIVALENCE-023 - PRECOMPILE ERROR
+  it('internal CALL to 0.0.358 without amount', async function () {
+    const emptyByteArray = new Uint8Array(0);
+    const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_358);
+    const params = new ContractFunctionParameters().addAddress(evmAddress);
+    params.addBytes(emptyByteArray);
+
+    const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
+      equivalenceContractId,
+      MAKE_CALL_WITHOUT_AMOUNT,
+      params,
+      500_000,
+    );
+
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+
+    expect(record.contract_id).to.equal(equivalenceContractId);
+    expect(record.result).to.equal(SUCCESS);
+    expect(record.status).to.equal(STATUS_SUCCESS);
+  });
+
+  //EQUIVALENCE-024 - PRECOMPILE ERROR
+  it.only('internal CALL to 0.0.358 without amount', async function () {
+    const emptyByteArray = new Uint8Array(0);
+    const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_358);
+    const params = new ContractFunctionParameters().addAddress(evmAddress);
+    params.addBytes(emptyByteArray);
+
+    const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
+      equivalenceContractId,
+      MAKE_CALL_WITH_AMOUNT,
+      params,
+      1_000_000,
+      100, //add the amount
     );
 
     const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
