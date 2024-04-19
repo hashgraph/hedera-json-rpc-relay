@@ -30,7 +30,7 @@ let localLRUCache: LocalLRUCache;
 
 const callingMethod = 'localLRUCacheTest';
 
-describe.only('LocalLRUCache Test Suite', async function () {
+describe('LocalLRUCache Test Suite', async function () {
   this.timeout(10000);
 
   this.beforeAll(() => {
