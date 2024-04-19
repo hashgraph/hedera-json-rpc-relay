@@ -232,6 +232,21 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     );
   });
 
+  it('should eth_estimateGas for contract create with input field and absent data field', async () => {
+    const gasEstimation = 1357410;
+    const callData = {
+      input:
+        '0x81cb089c285e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af',
+      from: '0x81cb089c285e5ee3a7353704fb114955037443af',
+      to: null,
+      value: '0x0',
+    };
+    web3Mock.onPost('contracts/call', { ...callData, estimate: true }).reply(200, { result: `0x14b662` });
+
+    const gas = await ethImpl.estimateGas({ ...callData }, null);
+    expect((gas as string).toLowerCase()).to.equal(numberTo0x(gasEstimation).toLowerCase());
+  });
+
   it('should eth_estimateGas transfer with invalid value', async function () {
     const result = await ethImpl.estimateGas(
       {

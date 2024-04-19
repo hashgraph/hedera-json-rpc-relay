@@ -39,6 +39,7 @@ import {
   toHash32,
   weibarHexToTinyBarInt,
   trimPrecedingZeros,
+  formatTransaction,
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -558,6 +559,8 @@ export class EthImpl implements Eth {
       `${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`,
     );
 
+    formatTransaction(transaction);
+
     if (transaction?.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter
         .labels(EthImpl.ethEstimateGas, transaction.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
@@ -576,6 +579,7 @@ export class EthImpl implements Eth {
 
       if (contractCallResponse?.result) {
         gas = prepend0x(trimPrecedingZeros(contractCallResponse.result));
+        this.logger.info(`${requestIdPrefix} Returning gas: ${gas}`);
       }
     } catch (e: any) {
       this.logger.error(
@@ -624,9 +628,8 @@ export class EthImpl implements Eth {
         // Handle Contract Call or Contract Create
         gas = this.defaultGas;
       }
+      this.logger.error(`${requestIdPrefix} Returning predefined gas: ${gas}`);
     }
-    this.logger.error(`${requestIdPrefix} Returning predefined gas: ${gas}`);
-
     return gas;
   }
 

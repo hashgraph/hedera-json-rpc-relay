@@ -80,6 +80,21 @@ const formatTransactionId = (transactionId: string): string | null => {
 };
 
 /**
+ * Formats a transaction object by moving input to data, if data is absent.
+ * @param {Object} transaction - The transaction object to be formatted.
+ */
+const formatTransaction = (transaction: any) => {
+  /**
+   * If the transaction has an input property with a length greater than zero and does not have a data property,
+   * assign the value of transaction.input to transaction.data.
+   */
+  if (transaction.input && transaction.input.length > 0 && !transaction.data) {
+    transaction.data = transaction.input;
+    delete transaction.input;
+  }
+};
+
+/**
  * Retrieve formated transactionID without query params
  * @param transactionId The string value of the transactionId
  * @returns string | null
@@ -244,6 +259,7 @@ export {
   hexToASCII,
   decodeErrorMessage,
   formatTransactionId,
+  formatTransaction,
   formatTransactionIdWithoutQueryParams,
   parseNumericEnvVar,
   formatContractResult,

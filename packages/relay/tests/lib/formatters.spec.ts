@@ -36,6 +36,7 @@ import {
   weibarHexToTinyBarInt,
   isValidEthereumAddress,
   trimPrecedingZeros,
+  formatTransaction,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -85,6 +86,46 @@ describe('Formatters', () => {
 
     it('should return null on empty', () => {
       expect(formatTransactionId('')).to.eq(null);
+    });
+  });
+
+  describe('formatTransaction', () => {
+    it('should move input to data if data is absent', () => {
+      const transaction = {
+        input: 'input data',
+        data: null,
+      };
+
+      formatTransaction(transaction);
+
+      expect(transaction.data).to.be('input data');
+      expect(transaction.input).to.be.undefined;
+    });
+
+    it('should not modify transaction if input is empty and data is present', () => {
+      const transaction = {
+        input: '',
+        data: 'some data',
+        to: 'receiver',
+      };
+
+      formatTransaction(transaction);
+
+      expect(transaction.data).to.eq('some data');
+      expect(transaction.input).to.be('');
+      expect(transaction.to).to.eq('receiver');
+    });
+
+    it('should not modify transaction if input is absent and data is present', () => {
+      const transaction = {
+        data: 'some data',
+        to: 'receiver',
+      };
+
+      formatTransaction(transaction);
+
+      expect(transaction.data).to.eq('some data');
+      expect(transaction.to).to.eq('receiver');
     });
   });
 
