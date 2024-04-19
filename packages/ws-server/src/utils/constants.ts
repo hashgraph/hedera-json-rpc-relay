@@ -21,12 +21,12 @@
 export const WS_CONSTANTS = {
   methodsCounter: {
     name: 'rpc_websocket_method_counter',
-    help: 'Relay websocket total methods called',
+    help: 'Relay websocket total methods called received through websocket',
     labelNames: ['method'],
   },
   methodsCounterByIp: {
     name: 'rpc_websocket_method_by_ip_counter',
-    help: 'Relay websocket methods called by ip',
+    help: 'Relay websocket methods called by ip received through websocket',
     labelNames: ['ip', 'method'],
   },
   cpuUsageGauge: {
@@ -43,6 +43,9 @@ export const WS_CONSTANTS = {
     name: 'websocket_network_usage_bytes',
     help: 'Network usage of the WebSocket server in bytes',
     labelNames: ['network'],
+  totalMessageCounter: {
+    name: 'rpc_websocket_messages_received_total',
+    help: 'Total number of messages received by the WebSocket server',
   },
   connLimiter: {
     activeConnectionsMetric: {
