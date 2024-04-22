@@ -27,7 +27,7 @@ import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 
-describe('@release @web-socket eth_getTransactionByHash', async function () {
+describe('@release @web-socket-batch-2 eth_getTransactionByHash', async function () {
   const METHOD_NAME = 'eth_getTransactionByHash';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const INVALID_PARAMS = [

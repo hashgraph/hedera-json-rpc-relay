@@ -21,13 +21,12 @@
 // external resources
 import { expect } from 'chai';
 import { Contract, ethers, WebSocketProvider } from 'ethers';
-// import { TransactionReceipt } from '@hashgraph/sdk';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 
-describe('@release @web-socket eth_estimateGas', async function () {
+describe('@release @web-socket-batch-1 eth_estimateGas', async function () {
   const METHOD_NAME = 'eth_estimateGas';
   const PING_CALL_ESTIMATED_GAS = '0x6122';
   const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
