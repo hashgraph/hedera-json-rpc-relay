@@ -21,14 +21,14 @@
 export interface ICacheClient {
   get(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> | any;
   set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string): Promise<void> | void;
-  delete(key: string, callingMethod: string, requestIdPrefix?: string): void;
+  delete(key: string, callingMethod: string, requestIdPrefix?: string): Promise<void> | void;
   clear(): Promise<void> | void;
-  multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): void;
+  multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): Promise<void> | void;
   pipelineSet(
     keyValuePairs: Record<string, any>,
     callingMethod: string,
     ttl?: number | undefined,
     requestIdPrefix?: string,
-  ): void;
+  ): Promise<void> | void;
   disconnect(): Promise<void> | void;
 }
