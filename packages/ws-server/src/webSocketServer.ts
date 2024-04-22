@@ -75,18 +75,6 @@ const mirrorNodeClient = relay.mirrorClient();
 const limiter = new ConnectionLimiter(logger, register);
 const wsMetricRegistry = new WsMetricRegistry(register);
 
-const cpuUsageGauge = generateCpuGauge(register, {
-  name: WS_CONSTANTS.cpuUsageGauge.name,
-  help: WS_CONSTANTS.cpuUsageGauge.help,
-  labelNames: WS_CONSTANTS.cpuUsageGauge.labelNames,
-});
-
-const memoryUsageGauge = generateMemoryGauge(register, {
-  name: WS_CONSTANTS.memoryUsageGauge.name,
-  help: WS_CONSTANTS.memoryUsageGauge.help,
-  labelNames: WS_CONSTANTS.memoryUsageGauge.labelNames,
-});
-
 const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
 
 const app = websockify(new Koa());

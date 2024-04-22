@@ -18,8 +18,9 @@
  *
  */
 
-import { Counter, Histogram, Registry } from 'prom-client';
+import { Counter, Gauge, Histogram, Registry } from 'prom-client';
 import { WS_CONSTANTS } from '../utils/constants';
+import os from 'os';
 
 type WsMetricCounterTitles =
   | 'methodsCounter'
@@ -38,6 +39,8 @@ export default class WsMetricRegistry {
   private totalOpenedConnections: Counter; // tracks the total websocket established connections
   private connectionDuration: Histogram; // tracks the duration of websocket connections in seconds
   private messageDuration: Histogram; // tracks the duration of websocket connections in seconds
+  private cpuGauge: Gauge; // tracks the CPU usage of the WebSocket server
+  private memoryGauge: Gauge; // tracks the memory usage of the WebSocket server
 
   /**
    * Creates an instance of WsMetricRegistry.
@@ -51,6 +54,8 @@ export default class WsMetricRegistry {
     this.connectionDuration = this.generateHistogramMetric(register, 'connectionDuration');
     this.totalOpenedConnections = this.generateCounterMetric(register, 'totalOpenedConnections');
     this.totalClosedConnections = this.generateCounterMetric(register, 'totalClosedConnections');
+    this.cpuGauge = this.generateCpuGauge(register, WS_CONSTANTS.cpuUsageGauge);
+    this.memoryGauge = this.generateMemoryGauge(register, WS_CONSTANTS.memoryUsageGauge);
   }
 
   /**
@@ -83,6 +88,50 @@ export default class WsMetricRegistry {
       labelNames: WS_CONSTANTS[metricTitle]['labelNames'] || [],
       buckets: WS_CONSTANTS[metricTitle]['buckets'] || [],
       registers: [register],
+    });
+  };
+
+  /**
+   * Generates a Prometheus Counter metric for tracking WebSocket method calls.
+   * Removes any existing metric with the same name from the provided registry before creating the new metric.
+   * @param {Registry} register - The Prometheus Registry where the metric will be registered.
+   * @param {any} gaugeInfo - Information of the counter.
+   * @returns {Gauge} Returns a new Counter metric instance.
+   */
+  private generateCpuGauge = (register: Registry, gaugeInfo: any): Gauge => {
+    register.removeSingleMetric(gaugeInfo.name);
+    return new Gauge({
+      name: gaugeInfo.name,
+      help: gaugeInfo.help,
+      labelNames: gaugeInfo.labelNames,
+      registers: [register],
+      async collect() {
+        const cpuUsage = process.cpuUsage();
+        const totalCpus = os.cpus().length;
+        const cpuUsagePercentage = ((cpuUsage.user + cpuUsage.system) / 1000000 / totalCpus) * 100;
+        this.set({ cpu: 'CPU' }, cpuUsagePercentage);
+      },
+    });
+  };
+
+  /**
+   * Generates a Prometheus Counter metric for tracking WebSocket method calls.
+   * Removes any existing metric with the same name from the provided registry before creating the new metric.
+   * @param {Registry} register - The Prometheus Registry where the metric will be registered.
+   * @param {any} gaugeInfo - Information of the counter.
+   * @returns {Gauge} Returns a new Counter metric instance.
+   */
+  private generateMemoryGauge = (register: Registry, gaugeInfo: any): Gauge => {
+    register.removeSingleMetric(gaugeInfo.name);
+    return new Gauge({
+      name: gaugeInfo.name,
+      help: gaugeInfo.help,
+      labelNames: gaugeInfo.labelNames,
+      registers: [register],
+      async collect() {
+        const memoryUsage = process.memoryUsage();
+        this.set({ memory: 'Memory Usage' }, memoryUsage.heapUsed);
+      },
     });
   };
 
