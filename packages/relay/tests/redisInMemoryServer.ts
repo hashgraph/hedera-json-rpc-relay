@@ -39,7 +39,7 @@ export class RedisInMemoryServer {
     this.portToRunOn = portToRunOn;
   }
 
-  async start() {
+  async start(): Promise<void> {
     this.inMemoryRedisServer = new RedisMemoryServer({
       instance: {
         port: this.portToRunOn,
