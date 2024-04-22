@@ -29,7 +29,7 @@ import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import { numberTo0x } from '../../../dist/formatters';
 import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS, ONE_TINYBAR_IN_WEI_HEX, RECEIVER_ADDRESS } from './eth-config';
-import { JsonRpcError } from '../../../src/lib/errors/JsonRpcError';
+import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import { generateEthTestEnv } from './eth-helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -232,6 +232,21 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     );
   });
 
+  it('should eth_estimateGas for contract create with input field and absent data field', async () => {
+    const gasEstimation = 1357410;
+    const callData = {
+      input:
+        '0x81cb089c285e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af',
+      from: '0x81cb089c285e5ee3a7353704fb114955037443af',
+      to: null,
+      value: '0x0',
+    };
+    web3Mock.onPost('contracts/call', { ...callData, estimate: true }).reply(200, { result: `0x14b662` });
+
+    const gas = await ethImpl.estimateGas({ ...callData }, null);
+    expect((gas as string).toLowerCase()).to.equal(numberTo0x(gasEstimation).toLowerCase());
+  });
+
   it('should eth_estimateGas transfer with invalid value', async function () {
     const result = await ethImpl.estimateGas(
       {
@@ -369,5 +384,22 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     expect(transaction.value).to.eq(1110);
     expect(transaction.gasPrice).to.eq(1000000);
     expect(transaction.gas).to.eq(14250000);
+  });
+
+  it('should throw on estimateGas precheck', async function () {
+    const transaction = {
+      from: '0x05fba803be258049a27b820088bab1cad2058871',
+      data: '0x',
+      input: '0x',
+      value: '0xA186B8E9800',
+      gasPrice: '0xF4240',
+      gas: '0xd97010',
+    };
+
+    try {
+      ethImpl.contractCallFormat(transaction);
+    } catch (error) {
+      expect(error).to.equal(predefined.INVALID_ARGUMENTS('Cannot accept both input and data fields. Use only one.'));
+    }
   });
 });
