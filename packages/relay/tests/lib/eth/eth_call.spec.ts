@@ -880,4 +880,74 @@ describe('@ethCall Eth Call spec', async function () {
       expect(result).to.equal('0x');
     });
   });
+
+  describe('contractCallFormat', () => {
+    it('should format transaction value to tiny bar integer', () => {
+      const transaction = {
+        value: '0x2540BE400',
+      };
+
+      ethImpl.contractCallFormat(transaction);
+      expect(transaction.value).to.equal(1);
+    });
+
+    it('should parse gasPrice to integer', () => {
+      const transaction = {
+        gasPrice: '1000000000',
+      };
+
+      ethImpl.contractCallFormat(transaction);
+
+      expect(transaction.gasPrice).to.equal(1000000000);
+    });
+
+    it('should parse gas to integer', () => {
+      const transaction = {
+        gas: '50000',
+      };
+
+      ethImpl.contractCallFormat(transaction);
+
+      expect(transaction.gas).to.equal(50000);
+    });
+
+    it('should throw an error if both input and data fields are provided', () => {
+      const transaction = {
+        input: 'input data',
+        data: 'some data',
+      };
+      try {
+        ethImpl.contractCallFormat(transaction);
+      } catch (error) {
+        expect(error.code).eq(-32000);
+        expect(error.message).eq('Invalid arguments: Cannot accept both input and data fields. Use only one.');
+      }
+    });
+
+    it('should copy input to data if input is provided but data is not', () => {
+      const transaction = {
+        input: 'input data',
+      };
+
+      ethImpl.contractCallFormat(transaction);
+
+      // @ts-ignore
+      expect(transaction.data).to.equal('input data');
+      expect(transaction.input).to.be.undefined;
+    });
+
+    it('should not modify transaction if input and data fields are not provided', () => {
+      const transaction = {
+        value: '0x2540BE400',
+        gasPrice: '1000000000',
+        gas: '50000',
+      };
+
+      ethImpl.contractCallFormat(transaction);
+
+      expect(transaction.value).to.equal(1);
+      expect(transaction.gasPrice).to.equal(1000000000);
+      expect(transaction.gas).to.equal(50000);
+    });
+  });
 });

@@ -333,10 +333,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       // deploymentBlockNumber to HEX
       const block = numberTo0x(deploymentBlockNumber);
-      const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { blockNumber: block }], requestId];
-      const errorType = predefined.INVALID_ARGUMENTS('Cannot accept both input and data fields. Use only one.');
-
-      await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
+      try {
+        await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { blockNumber: block }], requestId);
+      } catch (error) {
+        expect(error.code).eq(-32000);
+        expect(error.message).eq('Invalid arguments: Cannot accept both input and data fields. Use only one.');
+      }
     });
 
     it('should fail to execute "eth_call" with wrong block number object', async function () {
