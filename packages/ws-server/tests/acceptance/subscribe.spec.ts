@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,20 +19,19 @@
  */
 
 // external resources
-import { solidity } from 'ethereum-waffle';
-import chai, { expect } from 'chai';
 import WebSocket from 'ws';
-chai.use(solidity);
-
-import { Utils } from '../../helpers/utils';
-import assertions from '../../helpers/assertions';
-import { AliasAccount } from '../../clients/servicesClient';
-import { predefined, WebSocketError } from '../../../../../packages/relay';
 import { ethers } from 'ethers';
-import Assertions from '../../helpers/assertions';
-import LogContractJson from '../../contracts/Logs.json';
-import Constants from '../../helpers/constants';
-import IERC20Json from '../../contracts/openzeppelin/IERC20.json';
+import chai, { expect } from 'chai';
+import { solidity } from 'ethereum-waffle';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import Constants from '@hashgraph/json-rpc-server/tests/helpers/constants';
+import { predefined, WebSocketError } from '@hashgraph/json-rpc-relay/src';
+import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
+import assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
+import LogContractJson from '@hashgraph/json-rpc-server/tests/contracts/Logs.json';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
+import IERC20Json from '@hashgraph/json-rpc-server/tests/contracts/openzeppelin/IERC20.json';
+chai.use(solidity);
 
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
 
@@ -69,7 +68,7 @@ const createLogs = async (contract: ethers.Contract, requestId) => {
   await new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
-describe('@web-socket Acceptance Tests', async function () {
+describe('@release @web-socket eth_subscribe', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   let server;
@@ -93,8 +92,7 @@ describe('@web-socket Acceptance Tests', async function () {
   ];
 
   before(async () => {
-    const { socketServer } = global;
-    server = socketServer;
+    server = global.socketServer;
 
     accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
     accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);

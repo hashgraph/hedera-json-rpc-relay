@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ export class Poller {
   private interval?: NodeJS.Timer;
   private latestBlock?: string;
   private pollingInterval: number;
+  private newHeadsEnabled: boolean;
   private activePollsGauge: Gauge;
   private activeNewHeadsPollsGauge: Gauge;
 
@@ -47,6 +48,7 @@ export class Poller {
     this.logger = logger;
     this.polls = [];
     this.pollingInterval = Number(process.env.WS_POLLING_INTERVAL) || 500;
+    this.newHeadsEnabled = process.env.WS_NEW_HEADS_ENABLED ? Boolean(Number(process.env.WS_NEW_HEADS_ENABLED)) : true;
 
     const activePollsGaugeName = 'rpc_websocket_active_polls';
     register.removeSingleMetric(activePollsGaugeName);
@@ -83,7 +85,7 @@ export class Poller {
           );
 
           poll.lastPolled = this.latestBlock;
-        } else if (event === this.NEW_HEADS_EVENT && process.env.WS_NEW_HEADS_ENABLED === 'true') {
+        } else if (event === this.NEW_HEADS_EVENT && this.newHeadsEnabled) {
           data = await this.eth.getBlockByNumber('latest', filters?.includeTransactions ?? false);
           data.jsonrpc = '2.0';
           poll.lastPolled = this.latestBlock;

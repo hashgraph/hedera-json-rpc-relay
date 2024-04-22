@@ -139,7 +139,7 @@ task("deployHTS", "Deploys HTS Fungible Token", async (taskArgs, hre) => {
   mintTransaction = await mintTransaction.signWithSigner(wallet);
   await mintTransaction.executeWithSigner(wallet);
   await hre.run("graph", { contractName, address });
-  updateStartBlock(contractName, 10, hre);
+  updateStartBlock(contractName, 8, hre);
 });
 
 task(

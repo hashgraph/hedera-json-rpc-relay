@@ -35,6 +35,7 @@ jobs:
 
       - name: Build Typescript and Run tests
         id: test
+
         run: |
           export NODE_OPTIONS=--max-old-space-size=4096 # Sets Node's memory limit to 4096 MB
           output=$(npm run build-and-test 2>&1)
