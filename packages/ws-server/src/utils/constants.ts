@@ -30,12 +30,12 @@ export const WS_CONSTANTS = {
     labelNames: ['ip', 'method'],
   },
   cpuUsageGauge: {
-    name: 'websocket_cpu_usage_percentage',
+    name: 'rpc_websocket_cpu_usage_percentage',
     help: 'CPU usage percentage of the WebSocket server',
     labelNames: ['cpu'],
   },
   memoryUsageGauge: {
-    name: 'websocket_memory_usage_bytes',
+    name: 'rpc_websocket_memory_usage_bytes',
     help: 'Memory usage of the WebSocket server in bytes',
     labelNames: ['memory'],
   },
