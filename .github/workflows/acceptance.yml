@@ -72,11 +72,25 @@ jobs:
     with:
       testfilter: precompile-calls
 
-  websocket:
-    name: Websocket
+  websocket-batch-1:
+    name: Websocket Batch 1
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: ws
+      testfilter: ws_batch1
+      test_ws_server: true
+
+  websocket-batch-2:
+    name: Websocket Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch2
+      test_ws_server: true
+
+  websocket-batch-3:
+    name: Websocket Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch3
       test_ws_server: true
 
   cacheservice:
@@ -99,7 +113,9 @@ jobs:
       - tokenmanagement
       - htsprecompilev1
       - precompilecalls
-      - websocket
+      - websocket-batch-1
+      - websocket-batch-2
+      - websocket-batch-3
       - cacheservice
 
     runs-on: ubuntu-latest

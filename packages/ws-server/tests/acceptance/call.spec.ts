@@ -26,7 +26,7 @@ import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import ERC20MockJson from '@hashgraph/json-rpc-server/tests/contracts/ERC20Mock.json';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
-describe('@release @web-socket eth_call', async function () {
+describe('@release @web-socket-batch-1 eth_call', async function () {
   const METHOD_NAME = 'eth_call';
   const INVALID_PARAMS = [
     ['{}', false, '0x0'],
