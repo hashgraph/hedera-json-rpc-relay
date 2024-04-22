@@ -19,7 +19,7 @@
  */
 
 export interface ICacheClient {
-  get(key: string, callingMethod: string, requestIdPrefix?: string): any;
+  get(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> | any;
   set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string): void;
   delete(key: string, callingMethod: string, requestIdPrefix?: string): void;
   clear(): Promise<void> | void;
