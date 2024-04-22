@@ -376,7 +376,6 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
 
     it('eth_getBlockByNumber with latest tag', async function () {
       const result = await ethImpl.getBlockByNumber('latest', false);
-      console.log('In latest taaag test', restMock.history.get.length);
       // check that we only made the expected number of requests with the expected urls
       expect(restMock.history.get.length).equal(TOTAL_GET_CALLS_EXECUTED);
       expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
@@ -386,7 +385,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       expect(restMock.history.get[2].url).equal(
         'contracts/results/logs?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
       );
-      expect(restMock.history.get[11].url).equal('network/fees');
+      expect(restMock.history.get[TOTAL_GET_CALLS_EXECUTED - 1].url).equal('network/fees');
       confirmResult(result);
     });
 
@@ -421,7 +420,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       expect(restMock.history.get[2].url).equal(
         'contracts/results/logs?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
       );
-      expect(restMock.history.get[11].url).equal('network/fees');
+      expect(restMock.history.get[TOTAL_GET_CALLS_EXECUTED - 1].url).equal('network/fees');
       confirmResult(result);
     });
 
@@ -436,7 +435,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       expect(restMock.history.get[2].url).equal(
         'contracts/results/logs?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
       );
-      expect(restMock.history.get[11].url).equal('network/fees');
+      expect(restMock.history.get[TOTAL_GET_CALLS_EXECUTED - 1].url).equal('network/fees');
       confirmResult(result);
     });
 
