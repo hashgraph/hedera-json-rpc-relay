@@ -33,8 +33,6 @@ import ConnectionLimiter from './metrics/connectionLimiter';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
-import { generateCpuGauge } from './metrics/cpuGauge';
-import { generateMemoryGauge } from './metrics/memoryGauge';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import {
