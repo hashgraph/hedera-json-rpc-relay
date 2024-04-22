@@ -18,8 +18,9 @@
  *
  */
 
-import { Counter, Histogram, Registry } from 'prom-client';
+import { Counter, Gauge, Histogram, Registry } from 'prom-client';
 import { WS_CONSTANTS } from '../utils/constants';
+import os from 'os';
 
 type WsMetricCounterTitles =
   | 'methodsCounter'
@@ -28,6 +29,7 @@ type WsMetricCounterTitles =
   | 'totalOpenedConnections'
   | 'totalClosedConnections';
 
+type WsMetricGaugeTitles = 'cpuUsageGauge' | 'memoryUsageGauge';
 type WsMetricHistogramTitles = 'connectionDuration' | 'messageDuration';
 
 export default class WsMetricRegistry {
@@ -51,6 +53,10 @@ export default class WsMetricRegistry {
     this.connectionDuration = this.generateHistogramMetric(register, 'connectionDuration');
     this.totalOpenedConnections = this.generateCounterMetric(register, 'totalOpenedConnections');
     this.totalClosedConnections = this.generateCounterMetric(register, 'totalClosedConnections');
+
+    // @notice code below will generate and init cpuUsageGauge and memoryUsageGauge which send metrics to the registry when start-up
+    this.initUsageGaugeMetric(register, 'cpuUsageGauge', 'CPU');
+    this.initUsageGaugeMetric(register, 'memoryUsageGauge', 'Memory Usage');
   }
 
   /**
@@ -83,6 +89,41 @@ export default class WsMetricRegistry {
       labelNames: WS_CONSTANTS[metricTitle]['labelNames'] || [],
       buckets: WS_CONSTANTS[metricTitle]['buckets'] || [],
       registers: [register],
+    });
+  };
+
+  /**
+   * Initializes a gauge metric for CPU or Memory Usage using the provided registry, metric title, and mode.
+   * @param {Registry} register - The Prometheus registry where the metric will be registered.
+   * @param {WsMetricGaugeTitles} metricTitle - The title of the metric to be initialized.
+   * @param {'CPU' | 'Memory Usage'} mode - The mode indicating whether to collect CPU or Memory Usage metrics.
+   * @returns {Gauge} A Prometheus Gauge metric instance.
+   */
+  private initUsageGaugeMetric = (
+    register: Registry,
+    metricTitle: WsMetricGaugeTitles,
+    mode: 'CPU' | 'Memory Usage',
+  ): Gauge => {
+    register.removeSingleMetric(WS_CONSTANTS[metricTitle].name);
+    return new Gauge({
+      name: WS_CONSTANTS[metricTitle].name,
+      help: WS_CONSTANTS[metricTitle].help,
+      labelNames: WS_CONSTANTS[metricTitle]['labelNames'] || [],
+      registers: [register],
+      async collect() {
+        switch (mode) {
+          case 'CPU':
+            const cpuUsage = process.cpuUsage();
+            const totalCpus = os.cpus().length;
+            const cpuUsagePercentage = ((cpuUsage.user + cpuUsage.system) / 1000000 / totalCpus) * 100;
+            this.set({ cpu: 'CPU' }, cpuUsagePercentage);
+            break;
+          case 'Memory Usage':
+            const memoryUsage = process.memoryUsage();
+            this.set({ memory: 'Memory Usage' }, memoryUsage.heapUsed);
+            break;
+        }
+      },
     });
   };
 
