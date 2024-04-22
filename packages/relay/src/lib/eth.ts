@@ -39,7 +39,6 @@ import {
   toHash32,
   weibarHexToTinyBarInt,
   trimPrecedingZeros,
-  formatTransaction,
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -559,8 +558,6 @@ export class EthImpl implements Eth {
       `${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`,
     );
 
-    formatTransaction(transaction);
-
     if (transaction?.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter
         .labels(EthImpl.ethEstimateGas, transaction.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
@@ -647,9 +644,15 @@ export class EthImpl implements Eth {
     if (transaction.gas) {
       transaction.gas = parseInt(transaction.gas);
     }
+
+    if (transaction.data && transaction.input) {
+      throw predefined.INVALID_ARGUMENTS('Cannot accept both input and data fields. Use only one.');
+    }
+
     // Support either data or input. https://ethereum.github.io/execution-apis/api-documentation/ lists input but many EVM tools still use data.
     if (transaction.input && transaction.data === undefined) {
       transaction.data = transaction.input;
+      delete transaction.input;
     }
   }
 

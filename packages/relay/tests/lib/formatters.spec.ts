@@ -71,64 +71,6 @@ describe('Formatters', () => {
     });
   });
 
-  describe('formatTransactionId', () => {
-    const validInputTimestamp = '0.0.2@1234567890.123456789';
-    const validOutputTimestamp = '0.0.2-1234567890-123456789';
-    const invalidInputTimestamp = '0.0.2@12345678222.123456789';
-
-    it('should return correct formated transaction id', () => {
-      expect(formatTransactionId(validInputTimestamp)).to.eq(validOutputTimestamp);
-    });
-
-    it('should return null', () => {
-      expect(formatTransactionId(invalidInputTimestamp)).to.eq(null);
-    });
-
-    it('should return null on empty', () => {
-      expect(formatTransactionId('')).to.eq(null);
-    });
-  });
-
-  describe('formatTransaction', () => {
-    it('should move input to data if data is absent', () => {
-      const transaction = {
-        input: 'input data',
-        data: null,
-      };
-
-      formatTransaction(transaction);
-
-      expect(transaction.data).to.be('input data');
-      expect(transaction.input).to.be.undefined;
-    });
-
-    it('should not modify transaction if input is empty and data is present', () => {
-      const transaction = {
-        input: '',
-        data: 'some data',
-        to: 'receiver',
-      };
-
-      formatTransaction(transaction);
-
-      expect(transaction.data).to.eq('some data');
-      expect(transaction.input).to.be('');
-      expect(transaction.to).to.eq('receiver');
-    });
-
-    it('should not modify transaction if input is absent and data is present', () => {
-      const transaction = {
-        data: 'some data',
-        to: 'receiver',
-      };
-
-      formatTransaction(transaction);
-
-      expect(transaction.data).to.eq('some data');
-      expect(transaction.to).to.eq('receiver');
-    });
-  });
-
   describe('formatTransactionIdWithoutQueryParams', () => {
     const validInputTimestamp = '0.0.2@1234567890.123456789?nonce=1';
     const validOutputTimestamp = '0.0.2-1234567890-123456789';

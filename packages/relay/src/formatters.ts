@@ -23,6 +23,7 @@ import crypto from 'crypto';
 import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { BigNumber as BN } from 'bignumber.js';
+import { predefined } from './lib/errors/JsonRpcError';
 
 const EMPTY_HEX = '0x';
 
@@ -77,21 +78,6 @@ const formatTransactionId = (transactionId: string): string | null => {
   const payer = transactionSplit[0];
   const timestamp = transactionSplit[1].replace('.', '-');
   return `${payer}-${timestamp}`;
-};
-
-/**
- * Formats a transaction object by moving input to data, if data is absent.
- * @param {Object} transaction - The transaction object to be formatted.
- */
-const formatTransaction = (transaction: any) => {
-  /**
-   * If the transaction has an input property with a length greater than zero and does not have a data property,
-   * assign the value of transaction.input to transaction.data.
-   */
-  if (transaction.input && transaction.input.length > 0 && !transaction.data) {
-    transaction.data = transaction.input;
-    delete transaction.input;
-  }
 };
 
 /**
@@ -259,7 +245,6 @@ export {
   hexToASCII,
   decodeErrorMessage,
   formatTransactionId,
-  formatTransaction,
   formatTransactionIdWithoutQueryParams,
   parseNumericEnvVar,
   formatContractResult,

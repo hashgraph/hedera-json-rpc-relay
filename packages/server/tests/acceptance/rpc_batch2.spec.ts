@@ -356,6 +356,46 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.not.be.equal('0x');
       expect(res).to.not.be.equal('0x0');
     });
+
+    it('should execute "eth_estimateGas" with input as 0x instead of data', async function () {
+      const res = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
+        [
+          {
+            from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
+            to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
+            value: '0xa688906bd8b00000',
+            gas: '0xd97010',
+            input: '0x',
+          },
+        ],
+        requestId,
+      );
+      expect(res).to.contain('0x');
+      expect(res).to.not.be.equal('0x');
+      expect(res).to.not.be.equal('0x0');
+    });
+
+    it('should throw on "eth_estimateGas" with input as 0x instead of data', async function () {
+      try {
+        await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
+          [
+            {
+              from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
+              to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
+              value: '0xa688906bd8b00000',
+              gas: '0xd97010',
+              input: '0x',
+              data: '0x,',
+            },
+          ],
+          requestId,
+        );
+      } catch (e) {
+        expect(e).to.equal(predefined.INVALID_ARGUMENTS('Cannot accept both input and data fields. Use only one.'));
+      }
+    });
   });
 
   describe('eth_gasPrice', async function () {
