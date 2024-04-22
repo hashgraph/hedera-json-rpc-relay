@@ -62,7 +62,7 @@ export class RedisInMemoryServer {
     return this.inMemoryRedisServer.getInstanceInfo();
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     this.logger.info('Stopping Redis in-memory server....');
     const stopped = await this.inMemoryRedisServer.stop();
     if (stopped) {
