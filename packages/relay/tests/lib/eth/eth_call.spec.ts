@@ -135,7 +135,6 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with incorrect `to` field length', async function () {
-      web3Mock.onPost('contracts/call').reply(200);
       await ethCallFailing(
         ethImpl,
         {
@@ -154,6 +153,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('should execute "eth_call" against mirror node with a false ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
+      web3Mock.onPost('contracts/call').reply(200);
       const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
 
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
@@ -170,6 +170,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('should execute "eth_call" against mirror node with an undefined ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
+      web3Mock.onPost('contracts/call').reply(200);
       const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
 
       delete process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;

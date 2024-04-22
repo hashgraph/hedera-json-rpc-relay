@@ -354,6 +354,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   });
 
   describe('eth_getBlockByNumber with tag', async function () {
+    const TOTAL_GET_CALLS_EXECUTED = 12;
     function confirmResult(result: Block | null) {
       expect(result).to.exist;
       expect(result).to.not.be.null;
@@ -377,7 +378,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       const result = await ethImpl.getBlockByNumber('latest', false);
       console.log('In latest taaag test', restMock.history.get.length);
       // check that we only made the expected number of requests with the expected urls
-      expect(restMock.history.get.length).equal(12);
+      expect(restMock.history.get.length).equal(TOTAL_GET_CALLS_EXECUTED);
       expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
       expect(restMock.history.get[1].url).equal(
         'contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
@@ -412,7 +413,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     it('eth_getBlockByNumber with finalized tag', async function () {
       const result = await ethImpl.getBlockByNumber('finalized', false);
       // check that we only made the expected number of requests with the expected urls
-      expect(restMock.history.get.length).equal(12);
+      expect(restMock.history.get.length).equal(TOTAL_GET_CALLS_EXECUTED);
       expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
       expect(restMock.history.get[1].url).equal(
         'contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
@@ -427,7 +428,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     it('eth_getBlockByNumber with safe tag', async function () {
       const result = await ethImpl.getBlockByNumber('safe', false);
       // check that we only made the expected number of requests with the expected urls
-      expect(restMock.history.get.length).equal(12);
+      expect(restMock.history.get.length).equal(TOTAL_GET_CALLS_EXECUTED);
       expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
       expect(restMock.history.get[1].url).equal(
         'contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
