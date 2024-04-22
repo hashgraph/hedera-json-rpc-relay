@@ -37,9 +37,9 @@ import { nullableNumberTo0x, numberTo0x, nanOrNumberTo0x, toHash32 } from '../..
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import * as sinon from 'sinon';
 import { RedisInMemoryServer } from '../redisInMemoryServer';
+import { SinonSpy } from 'sinon';
 
 use(chaiAsPromised);
-const LRU = require('lru-cache');
 
 const logger = pino();
 const registry = new Registry();
@@ -266,7 +266,10 @@ describe('eth_getBlockBy', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
   const sandbox = sinon.createSandbox();
-  let multiSetSpy;
+  let multiSetSpy: SinonSpy<
+    [keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string],
+    Promise<void> | void
+  >;
 
   this.beforeAll(async () => {
     //done in order to be able to use cache
