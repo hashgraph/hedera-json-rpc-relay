@@ -23,7 +23,6 @@ import crypto from 'crypto';
 import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { BigNumber as BN } from 'bignumber.js';
-import { predefined } from './lib/errors/JsonRpcError';
 
 const EMPTY_HEX = '0x';
 
