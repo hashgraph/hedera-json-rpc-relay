@@ -36,7 +36,6 @@ import {
   weibarHexToTinyBarInt,
   isValidEthereumAddress,
   trimPrecedingZeros,
-  formatTransaction,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -68,6 +67,24 @@ describe('Formatters', () => {
       for (let i = 0; i < inputs.length; i++) {
         expect(decodeErrorMessage(inputs[i])).to.eq(outputs[i]);
       }
+    });
+  });
+
+  describe('formatTransactionId', () => {
+    const validInputTimestamp = '0.0.2@1234567890.123456789';
+    const validOutputTimestamp = '0.0.2-1234567890-123456789';
+    const invalidInputTimestamp = '0.0.2@12345678222.123456789';
+
+    it('should return correct formated transaction id', () => {
+      expect(formatTransactionId(validInputTimestamp)).to.eq(validOutputTimestamp);
+    });
+
+    it('should return null', () => {
+      expect(formatTransactionId(invalidInputTimestamp)).to.eq(null);
+    });
+
+    it('should return null on empty', () => {
+      expect(formatTransactionId('')).to.eq(null);
     });
   });
 
