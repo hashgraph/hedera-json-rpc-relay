@@ -386,7 +386,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     expect(transaction.gas).to.eq(14250000);
   });
 
-  it('should should throw on estimateGas precheck', async function () {
+  it('should throw on estimateGas precheck', async function () {
     const transaction = {
       from: '0x05fba803be258049a27b820088bab1cad2058871',
       data: '0x',

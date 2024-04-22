@@ -376,7 +376,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.not.be.equal('0x0');
     });
 
-    it('should throw on "eth_estimateGas" with input as 0x instead of data', async function () {
+    it('should throw on "eth_estimateGas" with both input and data fields present in the txObject', async function () {
       try {
         await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -387,7 +387,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
               value: '0xa688906bd8b00000',
               gas: '0xd97010',
               input: '0x',
-              data: '0x,',
+              data: '0x',
             },
           ],
           requestId,
