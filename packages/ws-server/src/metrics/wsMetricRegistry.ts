@@ -98,7 +98,7 @@ export default class WsMetricRegistry {
    * @param {any} gaugeInfo - Information of the counter.
    * @returns {Gauge} Returns a new Counter metric instance.
    */
-  private generateCpuGauge = (register: Registry, gaugeInfo: any): Gauge => {
+private generateCpuGauge = (register: Registry, gaugeInfo: any, collectFn?: any): Gauge => {
     register.removeSingleMetric(gaugeInfo.name);
     return new Gauge({
       name: gaugeInfo.name,
