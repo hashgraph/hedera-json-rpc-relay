@@ -37,7 +37,6 @@ jobs:
         id: test
 
         run: |
-          export NODE_OPTIONS=--max-old-space-size=8192 # Sets Node's memory limit to 8192 MB
           output=$(npm run build-and-test 2>&1)
           echo "$output"
           if echo "$output" | grep -q "JavaScript heap out of memory"; then
