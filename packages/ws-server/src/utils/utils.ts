@@ -19,18 +19,41 @@
  */
 
 import { Relay } from '@hashgraph/json-rpc-relay';
+import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
 
 /**
  * Handles the closure of a WebSocket connection.
- * Unsubscribes the WebSocket from any subscriptions in the relay, decrements counters in the limiter, and terminates the WebSocket connection.
  * @param {any} ctx - The context object containing information about the WebSocket connection.
- * @param {Relay} relay - The relay object used for managing WebSocket subscriptions.
- * @param {ConnectionLimiter} limiter - The limiter object used for rate limiting WebSocket connections.
+ * @param {Relay} relay - The relay instance used for handling subscriptions.
+ * @param {ConnectionLimiter} limiter - The limiter instance used for managing connection limits.
+ * @param {WsMetricRegistry} wsMetricRegistry - The metric registry used for tracking WebSocket metrics.
+ * @param {[number, number]} startTime - The start time of the connection represented as a tuple of seconds and nanoseconds.
  */
-export const handleConnectionClose = async (ctx: any, relay: Relay, limiter: ConnectionLimiter) => {
+export const handleConnectionClose = async (
+  ctx: any,
+  relay: Relay,
+  limiter: ConnectionLimiter,
+  wsMetricRegistry: WsMetricRegistry,
+  startTime: [number, number],
+) => {
+  // unsubcribe subscriptions
   relay.subs()?.unsubscribe(ctx.websocket);
+
+  // update limiter counters
   limiter.decrementCounters(ctx);
+
+  // Increment the total closed connections
+  wsMetricRegistry.getCounter('totalClosedConnections').inc();
+
+  // Calculate the duration of the connection
+  const endTime = process.hrtime(startTime);
+  const durationInSeconds = endTime[0] + endTime[1] / 1e9; // Convert duration to seconds
+
+  // Update the connection duration histogram with the calculated duration
+  wsMetricRegistry.getHistogram('connectionDuration').labels(ctx.websocket.id).observe(durationInSeconds);
+
+  // terminate connection
   ctx.websocket.terminate();
 };
 

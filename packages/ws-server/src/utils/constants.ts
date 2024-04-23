@@ -33,6 +33,26 @@ export const WS_CONSTANTS = {
     name: 'rpc_websocket_messages_received_total',
     help: 'Total number of messages received by the WebSocket server',
   },
+  totalOpenedConnections: {
+    name: 'rpc_websocket_connections_established_total',
+    help: 'Total number of WebSocket connections established',
+  },
+  totalClosedConnections: {
+    name: 'rpc_websocket_connections_closed_total',
+    help: 'Total number of WebSocket connections closed',
+  },
+  connectionDuration: {
+    name: 'rpc_websocket_connection_duration_seconds',
+    help: 'Histogram of WebSocket connection duration in seconds',
+    labelNames: ['connectionID'],
+    buckets: [1, 5, 10, 30, 60, 300, 600, 1800, 3600, 7200, 18000, 43200, 86400], // s (seconds)
+  },
+  messageDuration: {
+    name: 'rpc_websocket_message_duration_miliseconds',
+    help: 'Histogram of message sent to websocket in miliseconds',
+    labelNames: ['method'],
+    buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 40000, 50000, 60000], // ms (milliseconds)
+  },
   connLimiter: {
     activeConnectionsMetric: {
       name: 'rpc_websocket_active_connections',

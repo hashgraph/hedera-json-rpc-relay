@@ -76,6 +76,12 @@ const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx) => {
+  // Increment the total opened connections
+  wsMetricRegistry.getCounter('totalOpenedConnections').inc();
+
+  // Record the start time when the connection is established
+  const startTime = process.hrtime();
+
   ctx.websocket.id = relay.subs()?.generateId();
   ctx.websocket.limiter = limiter;
   ctx.websocket.wsMetricRegistry = wsMetricRegistry;
@@ -90,7 +96,7 @@ app.ws.use(async (ctx) => {
     logger.info(
       `${connectionIdPrefix} ${requestIdPrefix} Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`,
     );
-    await handleConnectionClose(ctx, relay, limiter);
+    await handleConnectionClose(ctx, relay, limiter, wsMetricRegistry, startTime);
   });
 
   // Increment limit counters
@@ -102,7 +108,10 @@ app.ws.use(async (ctx) => {
   // listen on message event
   ctx.websocket.on('message', async (msg) => {
     // Increment the total messages counter for each message received
-    wsMetricRegistry.get('totalMessageCounter').inc();
+    wsMetricRegistry.getCounter('totalMessageCounter').inc();
+
+    // Record the start time when a new message is received
+    const msgStartTime = process.hrtime();
 
     // Reset the TTL timer for inactivity upon receiving a message from the client
     limiter.resetInactivityTTLTimer(ctx.websocket);
@@ -125,8 +134,8 @@ app.ws.use(async (ctx) => {
     logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Method: ${method}. Params: ${JSON.stringify(params)}`);
 
     // Increment metrics for the received method
-    wsMetricRegistry.get('methodsCounter').labels(method).inc();
-    wsMetricRegistry.get('methodsCounterByIp').labels(ctx.request.ip, method).inc();
+    wsMetricRegistry.getCounter('methodsCounter').labels(method).inc();
+    wsMetricRegistry.getCounter('methodsCounterByIp').labels(ctx.request.ip, method).inc();
 
     // Validate request's params
     try {
@@ -225,6 +234,13 @@ app.ws.use(async (ctx) => {
     if (response) {
       ctx.websocket.send(JSON.stringify(response));
     }
+
+    // Calculate the duration of the connection
+    const msgEndTime = process.hrtime(msgStartTime);
+    const msgDurationInMiliSeconds = (msgEndTime[0] + msgEndTime[1] / 1e9) * 1000; // Convert duration to miliseconds
+
+    // Update the connection duration histogram with the calculated duration
+    wsMetricRegistry.getHistogram('messageDuration').labels(method).observe(msgDurationInMiliSeconds);
   });
 
   if (pingInterval > 0) {
