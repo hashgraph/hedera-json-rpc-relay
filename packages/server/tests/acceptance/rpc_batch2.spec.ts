@@ -44,7 +44,7 @@ import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
-import { TINYBAR_TO_WEIBAR_COEF_BIGINT } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
+import constants from '../../tests/helpers/constants';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -447,7 +447,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       let balance = Hbar.from(1, HbarUnit.Hbar).toTinybars().toString();
       const newAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId, balance);
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, [newAccount.address, 'latest'], requestId);
-      balance = `0x${(BigInt(balance) * TINYBAR_TO_WEIBAR_COEF_BIGINT).toString(16)}`;
+      balance = `0x${(BigInt(balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF)).toString(16)}`;
       expect(res).to.be.eq(balance);
     });
 
