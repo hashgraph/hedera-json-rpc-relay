@@ -38,7 +38,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { mirrorNode, relay, logger } = global;
+  const { mirrorNode, relay, logger, initialBalance } = global;
 
   // cached entities
   let parentContractAddress: string;
@@ -46,13 +46,14 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
-  const TIER_2_RATE_LIMIT = process.env.TIER_2_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_2;
-  const LIMIT_DURATION = process.env.LIMIT_DURATION || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
+  const TIER_2_RATE_LIMIT =
+    (process.env.TIER_2_RATE_LIMIT as unknown as number) || relayConstants.DEFAULT_RATE_LIMIT.TIER_2;
+  const LIMIT_DURATION =
+    (process.env.LIMIT_DURATION as unknown as number) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
   describe('RPC Rate Limiter Acceptance Tests', () => {
     it('should throw rate limit exceeded error', async function () {
       const sendMultipleRequests = async () => {
-        // @ts-ignore
         for (let index = 0; index < TIER_2_RATE_LIMIT * 2; index++) {
           await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
           // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
@@ -65,12 +66,10 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
         Assertions.expectedError();
       } catch (e) {}
 
-      // @ts-ignore
-      await new Promise((r) => setTimeout(r, LIMIT_DURATION));
+      await new Promise((r) => setTimeout(r, LIMIT_DURATION as number));
     });
 
     it('should not throw rate limit exceeded error', async function () {
-      // @ts-ignore
       for (let index = 0; index < TIER_2_RATE_LIMIT; index++) {
         await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
         // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
@@ -78,10 +77,8 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
       }
 
       // wait until rate limit is reset
-      // @ts-ignore
       await new Promise((r) => setTimeout(r, LIMIT_DURATION));
 
-      // @ts-ignore
       for (let index = 0; index < TIER_2_RATE_LIMIT; index++) {
         await relay.call(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
         // If we don't wait between calls, the relay can't register so many request at one time. So instead of 200 requests for example, it registers only 5.
@@ -89,7 +86,6 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
       }
 
       // wait until rate limit is reset
-      // @ts-ignore
       await new Promise((r) => setTimeout(r, LIMIT_DURATION));
     });
   });
@@ -105,7 +101,6 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
       logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
 
       const initialAccount: AliasAccount = global.accounts[0];
-      const initialAmount: string = '5000000000'; //50 Hbar
 
       const neededAccounts: number = 2;
       accounts.push(
@@ -113,7 +108,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
           mirrorNode,
           initialAccount,
           neededAccounts,
-          initialAmount,
+          initialBalance,
           requestId,
         )),
       );

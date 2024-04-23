@@ -191,7 +191,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sinon.assert.calledTwice(sdkClientStub.submitEthereumTransaction);
     });
 
-    it('should not send second transaction on errror different from timeout', async function () {
+    it('should not send second transaction on error different from timeout', async function () {
       sdkClientStub.submitEthereumTransaction
         .onCall(0)
         .throws(new SDKClientError({ status: 50 }, 'wrong transaction body'));

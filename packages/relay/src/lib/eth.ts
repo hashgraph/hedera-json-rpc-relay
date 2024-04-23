@@ -1506,6 +1506,7 @@ export class EthImpl implements Eth {
       onError?: (error: SDKClientError) => void;
     },
   ): Promise<T | undefined> {
+    const delay = (backOff) => new Promise((resolve) => setTimeout(resolve, backOff));
     for (let count = 0; count < maxAttempts; count++) {
       try {
         return await sendRawTransaction();
@@ -1515,12 +1516,9 @@ export class EthImpl implements Eth {
         }
         onError(e as SDKClientError);
         // eslint-disable-next-line no-await-in-loop
-        await new Promise((resolve) => {
-          setTimeout(resolve, backOff);
-        });
+        await delay(backOff);
       }
     }
-    return undefined;
   }
 
   /**

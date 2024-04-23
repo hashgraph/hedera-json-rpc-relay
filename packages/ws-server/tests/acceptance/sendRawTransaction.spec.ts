@@ -45,7 +45,7 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
   ];
 
   // @ts-ignore
-  const { mirrorNode, relay } = global;
+  const { mirrorNode, relay, initialBalance } = global;
 
   let tx: any,
     accounts: AliasAccount[] = [],
@@ -54,7 +54,6 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
   before(async () => {
     requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
-    const initialAmount: string = '5000000000'; //50 Hbar
 
     const neededAccounts: number = 3;
     accounts.push(
@@ -62,7 +61,7 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
         mirrorNode,
         initialAccount,
         neededAccounts,
-        initialAmount,
+        initialBalance,
         requestId,
       )),
     );

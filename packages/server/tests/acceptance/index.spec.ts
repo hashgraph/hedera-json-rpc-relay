@@ -69,6 +69,7 @@ const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
+const INITIAL_BALANCE = process.env.INITIAL_BALANCE || '5000000000';
 let startOperatorBalance: Hbar;
 global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 
@@ -88,6 +89,7 @@ describe('RPC Server Acceptance Tests', function () {
   global.relayServer = relayServer;
   global.socketServer = socketServer;
   global.logger = logger;
+  global.initialBalance = INITIAL_BALANCE;
 
   before(async () => {
     // configuration details
@@ -100,20 +102,19 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
     if (global.relayIsLocal) {
-      runLocalRelay();
+      // runLocalRelay();
     }
 
     // cache start balance
     startOperatorBalance = await global.servicesNode.getOperatorBalance();
-    const initialAccount = await global.servicesNode.createInitialAliasAccount(
+    const initialAccount: AliasAccount = await global.servicesNode.createInitialAliasAccount(
       RELAY_URL,
       CHAIN_ID,
       Utils.generateRequestId(),
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
-    // wait 3 seconds to propagate to mirror node all needed changes.
-    await new Promise((r) => setTimeout(r, 3000));
+    await global.mirrorNode.get(`/accounts/${initialAccount.address}`);
   });
 
   after(async function () {
@@ -153,11 +154,11 @@ describe('RPC Server Acceptance Tests', function () {
     //stop relay
     logger.info('Stop relay');
     if (relayServer !== undefined) {
-      relayServer.close();
+      // relayServer.close();
     }
 
     if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
-      socketServer.close();
+      // socketServer.close();
     }
   });
 

@@ -203,18 +203,18 @@ export class Utils {
    * @param {ethers.InterfaceAbi} abi The ABI of the contract.
    * @param {string} bytecode The bytecode of the contract.
    * @param {ethers.Wallet} signer The wallet used to sign the deployment transaction.
-   * @returns {Promise<ethers.BaseContract>} A promise resolving to the deployed contract.
+   * @returns {Promise<ethers.Contract>} A promise resolving to the deployed contract.
    */
   static readonly deployContract = async (
     abi: ethers.InterfaceAbi,
     bytecode: string,
     signer: ethers.Wallet,
-  ): Promise<ethers.BaseContract> => {
+  ): Promise<ethers.Contract> => {
     const factory = new ethers.ContractFactory(abi, bytecode, signer);
     const contract = await factory.deploy();
     await contract.waitForDeployment();
 
-    return contract;
+    return contract as ethers.Contract;
   };
 
   static sendTransaction = async (
@@ -262,13 +262,7 @@ export class Utils {
     const wallet = new ethers.Wallet(privateKey.toStringRaw(), signer.provider);
     const address = wallet.address;
 
-    // send initial amount
-    await signer.sendTransaction({
-      to: wallet.address,
-      value: accountBalance,
-    });
-
-    // finalize account
+    // create hollow account
     await signer.sendTransaction({
       to: wallet.address,
       value: accountBalance,

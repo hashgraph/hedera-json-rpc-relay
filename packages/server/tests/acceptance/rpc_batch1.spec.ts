@@ -49,7 +49,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { servicesNode, mirrorNode, relay } = global;
+  const { servicesNode, mirrorNode, relay, initialBalance } = global;
 
   // cached entities
   let parentContractAddress: string;
@@ -57,7 +57,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let requestId: string;
   let account2Address: string;
 
-  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const INCORRECT_CHAIN_ID = 999;
   const GAS_PRICE_TOO_LOW = '0x1';
   const GAS_PRICE_REF = '0x123456';
@@ -86,15 +86,13 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
       const initialAccount: AliasAccount = global.accounts[0];
-      const initialAmount: string = '5000000000'; //50 Hbar
-
       const neededAccounts: number = 3;
       accounts.push(
         ...(await Utils.createMultipleAliasAccounts(
           mirrorNode,
           initialAccount,
           neededAccounts,
-          initialAmount,
+          initialBalance,
           requestId,
         )),
       );

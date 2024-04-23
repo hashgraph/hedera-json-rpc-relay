@@ -58,14 +58,14 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { servicesNode, mirrorNode, relay } = global;
+  const { servicesNode, mirrorNode, relay, initialBalance } = global;
   let mirrorPrimaryAccount: ethers.Wallet;
   let mirrorSecondaryAccount: ethers.Wallet;
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
-  let reverterContract: ethers.BaseContract;
+  let reverterContract: ethers.Contract;
   let reverterEvmAddress: string;
   let requestId: string;
   const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
@@ -98,7 +98,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   before(async () => {
     requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
-    const initialAmount: string = '5000000000'; //50 Hbar
 
     const neededAccounts: number = 4;
     accounts.push(
@@ -106,7 +105,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         mirrorNode,
         initialAccount,
         neededAccounts,
-        initialAmount,
+        initialBalance,
         requestId,
       )),
     );
@@ -125,7 +124,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_call', () => {
-    let basicContract: ethers.BaseContract;
+    let basicContract: ethers.Contract;
     let basicContractAddress: string;
     let deploymentBlockNumber: number;
     let deploymentBlockHash: string;
@@ -366,7 +365,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     });
 
     describe('Caller contract', () => {
-      let callerContract: ethers.BaseContract;
+      let callerContract: ethers.Contract;
       let callerAddress: string;
       let defaultCallData: any;
       let activeAccount: AliasAccount;
@@ -400,7 +399,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           beforeFunc: async function () {
             activeAccount = accounts[1];
             activeAccountAddress = accounts[1].wallet.address.replace('0x', '').toLowerCase();
-            callerContract = await Utils.deployContractWithEthers([], callerContractJson, activeAccount.wallet, relay);
+            callerContract = (await Utils.deployContractWithEthers(
+              [],
+              callerContractJson,
+              activeAccount.wallet,
+              relay,
+            )) as ethers.Contract;
             // Wait for creation to propagate
             const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestId);
             callerAddress = callerMirror.evm_address;
@@ -762,7 +766,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_getTransactionCount', async function () {
-    let deployerContract: ethers.BaseContract;
+    let deployerContract: ethers.Contract;
     let deployerContractTx: ethers.TransactionReceipt;
     let deployerContractAddress: string;
     let contractId: ContractId;
@@ -1104,7 +1108,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     let estimateGasContractAddress;
     let transactionTypeLegacy;
     let transactionType2930;
-    let reverterContract: ethers.BaseContract;
+    let reverterContract: ethers.Contract;
     let reverterContractAddress: string;
     let transactionType2;
     const defaultGasLimit = numberTo0x(3_000_000);

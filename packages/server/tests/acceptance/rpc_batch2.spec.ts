@@ -44,6 +44,7 @@ import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
+import { TINYBAR_TO_WEIBAR_COEF_BIGINT } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -51,13 +52,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { servicesNode, mirrorNode, relay, logger } = global;
+  const { servicesNode, mirrorNode, relay, logger, initialBalance } = global;
 
   // cached entities
   let tokenId;
   let requestId;
   let htsAddress;
-  let basicContract: ethers.BaseContract;
+  let basicContract: ethers.Contract;
   let basicContractAddress: string;
   let parentContractAddress: string;
   let parentContractLongZeroAddress: string;
@@ -93,7 +94,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
     const initialAccount: AliasAccount = global.accounts[0];
-    const initialAmount: string = '5000000000'; //50 Hbar
 
     const neededAccounts: number = 4;
     accounts.push(
@@ -101,7 +101,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         mirrorNode,
         initialAccount,
         neededAccounts,
-        initialAmount,
+        initialBalance,
         requestId,
       )),
     );
@@ -426,7 +426,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_getBalance', async function () {
-    let getBalanceContract: ethers.BaseContract;
+    let getBalanceContract: ethers.Contract;
     let getBalanceContractAddress: string;
     before(async function () {
       getBalanceContract = await Utils.deployContract(
@@ -443,15 +443,12 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       });
     });
 
-    it('@release should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {
-      const newAccount = await Utils.createAliasAccount(
-        mirrorNode,
-        accounts[0],
-        requestId,
-        Hbar.from(1, HbarUnit.Hbar).toTinybars().toString(),
-      );
+    it.only('@release should execute "eth_getBalance" for newly created account with 1 HBAR', async function () {
+      let balance = Hbar.from(1, HbarUnit.Hbar).toTinybars().toString();
+      const newAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId, balance);
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, [newAccount.address, 'latest'], requestId);
-      expect(res).to.not.be.eq(EthImpl.zeroHex);
+      balance = `0x${(BigInt(balance) * TINYBAR_TO_WEIBAR_COEF_BIGINT).toString(16)}`;
+      expect(res).to.be.eq(balance);
     });
 
     it('should execute "eth_getBalance" for non-existing address', async function () {
@@ -718,7 +715,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_getCode', () => {
-    let mainContract: ethers.BaseContract;
+    let mainContract: ethers.Contract;
     let mainContractAddress: string;
     let NftHTSTokenContractAddress: string;
     let redirectBytecode: string;
@@ -805,7 +802,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
   // Test state changes with getStorageAt
   describe('eth_getStorageAt', () => {
-    let storageContract: ethers.BaseContract;
+    let storageContract: ethers.Contract;
     let storageContractAddress: string;
     const STORAGE_CONTRACT_UPDATE = '0x2de4e884';
     const NEXT_STORAGE_CONTRACT_UPDATE = '0x160D6484';

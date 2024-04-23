@@ -30,7 +30,7 @@ describe('@release @web-socket eth_getCode', async function () {
   const RELAY_URL = `${process.env.RELAY_ENDPOINT}`;
   const METHOD_NAME = 'eth_getCode';
 
-  let basicContract: ethers.BaseContract,
+  let basicContract: ethers.Contract,
     basicContractAddress: string,
     codeFromRPC: string,
     provider: JsonRpcProvider,

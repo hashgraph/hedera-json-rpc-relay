@@ -45,7 +45,7 @@ describe('@release @web-socket eth_getTransactionByHash', async function () {
   ];
 
   // @ts-ignore
-  const { mirrorNode, relay } = global;
+  const { mirrorNode, relay, initialBalance } = global;
   let txHash: string,
     expectedTxReceipt: any,
     accounts: AliasAccount[] = [],
@@ -55,7 +55,6 @@ describe('@release @web-socket eth_getTransactionByHash', async function () {
   before(async () => {
     requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
-    const initialAmount: string = '5000000000'; //50 Hbar
 
     const neededAccounts: number = 2;
     accounts.push(
@@ -63,7 +62,7 @@ describe('@release @web-socket eth_getTransactionByHash', async function () {
         mirrorNode,
         initialAccount,
         neededAccounts,
-        initialAmount,
+        initialBalance,
         requestId,
       )),
     );

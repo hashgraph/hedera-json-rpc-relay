@@ -25,13 +25,13 @@ import Constants from '../../helpers/constants';
 
 chai.use(solidity);
 
-import { AliasAccount } from '../../clients/servicesClient';
 import Assertions from '../../helpers/assertions';
 import { ethers } from 'ethers';
 import ERC20MockJson from '../../contracts/ERC20Mock.json';
 import TokenManagementJson from '../../contracts/TokenManagementContract.json';
 import { Utils } from '../../helpers/utils';
 import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { AliasAccount } from '../../types/AliasAccount';
 
 /**
  * Tests for:
@@ -60,10 +60,10 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
   let mainContractAddress: string;
   let HTSTokenContractAddress: string;
   let NftHTSTokenContractAddress: string;
-  let HTSTokenContract: ethers.BaseContract;
-  let mainContract: ethers.BaseContract;
-  let mainContractOwner: ethers.BaseContract;
-  let mainContractReceiverWalletFirst: ethers.BaseContract;
+  let HTSTokenContract: ethers.Contract;
+  let mainContract: ethers.Contract;
+  let mainContractOwner: ethers.Contract;
+  let mainContractReceiverWalletFirst: ethers.Contract;
   let requestId: string;
 
   this.beforeAll(async () => {
@@ -95,7 +95,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
     );
     global.accounts.push(...accounts);
     // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
-    await new Promise((r) => setTimeout(r, 5000));
+    await new Promise((r) => setTimeout(r, 2000));
     await mirrorNode.get(`/accounts/${accounts[1].accountId}`, requestId);
 
     HTSTokenContractAddress = await createHTSToken();
@@ -105,7 +105,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
     mainContract = new ethers.Contract(mainContractAddress, TokenManagementJson.abi, accounts[0].wallet);
 
     mainContractOwner = mainContract;
-    mainContractReceiverWalletFirst = mainContract.connect(accounts[1].wallet);
+    mainContractReceiverWalletFirst = mainContract.connect(accounts[1].wallet) as ethers.Contract;
 
     const tx1 = await mainContractOwner.associateTokenPublic(
       mainContractAddress,

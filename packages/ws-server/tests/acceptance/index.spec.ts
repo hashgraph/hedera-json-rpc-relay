@@ -93,15 +93,14 @@ describe('RPC Server Acceptance Tests', function () {
 
     // cache start balance
     startOperatorBalance = await global.servicesNode.getOperatorBalance();
-    const initialAccount = await global.servicesNode.createInitialAliasAccount(
+    const initialAccount: AliasAccount = await global.servicesNode.createInitialAliasAccount(
       RELAY_URL,
       CHAIN_ID,
       Utils.generateRequestId(),
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
-    // wait 3 seconds to propagate to mirror node all needed changes.
-    await new Promise((r) => setTimeout(r, 3000));
+    await global.mirrorNode.get(`/accounts/${initialAccount.address}`);
   });
 
   after(async function () {

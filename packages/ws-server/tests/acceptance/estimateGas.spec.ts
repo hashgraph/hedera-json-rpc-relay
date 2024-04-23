@@ -35,7 +35,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
   // @ts-ignore
   const { mirrorNode } = global;
   let accounts: AliasAccount[] = [],
-    basicContract: ethers.BaseContract,
+    basicContract: ethers.Contract,
     currentPrice: number,
     expectedGas: number,
     gasPriceDeviation: number,

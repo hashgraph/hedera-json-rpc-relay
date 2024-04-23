@@ -71,12 +71,12 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   let HTSTokenContractAddress: string;
   let NftHTSTokenContractAddress: string;
   let NftSerialNumber: number;
-  let HTSTokenContract: ethers.BaseContract;
-  let NFTokenContract: ethers.BaseContract;
-  let mainContract: ethers.BaseContract;
-  let mainContractOwner: ethers.BaseContract;
-  let mainContractReceiverWalletFirst: ethers.BaseContract;
-  let mainContractReceiverWalletSecond: ethers.BaseContract;
+  let HTSTokenContract: ethers.Contract;
+  let NFTokenContract: ethers.Contract;
+  let mainContract: ethers.Contract;
+  let mainContractOwner: ethers.Contract;
+  let mainContractReceiverWalletFirst: ethers.Contract;
+  let mainContractReceiverWalletSecond: ethers.Contract;
   let HTSTokenWithCustomFeesContractAddress: string;
   let requestId: string;
 
