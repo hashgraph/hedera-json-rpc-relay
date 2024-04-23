@@ -58,7 +58,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { servicesNode, mirrorNode, relay, initialBalance } = global;
+  const { servicesNode, mirrorNode, relay } = global;
   let mirrorPrimaryAccount: ethers.Wallet;
   let mirrorSecondaryAccount: ethers.Wallet;
 
@@ -99,6 +99,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
 
+    const initialBalance = '10000000000';
     const neededAccounts: number = 4;
     accounts.push(
       ...(await Utils.createMultipleAliasAccounts(
