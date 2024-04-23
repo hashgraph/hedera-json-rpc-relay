@@ -24,7 +24,7 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
-describe('@release @web-socket eth_getLogs', async function () {
+describe('@release @web-socket-batch-2 eth_getLogs', async function () {
   const EXPECTED_VALUE = 7;
   const METHOD_NAME = 'eth_getLogs';
   const INVALID_PARAMS = [

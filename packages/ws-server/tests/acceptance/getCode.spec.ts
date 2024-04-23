@@ -24,7 +24,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 
-describe('@release @web-socket eth_getCode', async function () {
+describe('@release @web-socket-batch-2 eth_getCode', async function () {
   const RELAY_URL = `${process.env.RELAY_ENDPOINT}`;
   const METHOD_NAME = 'eth_getCode';
 
