@@ -73,8 +73,6 @@ const mirrorNodeClient = relay.mirrorClient();
 const limiter = new ConnectionLimiter(logger, register);
 const wsMetricRegistry = new WsMetricRegistry(register);
 
-const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
-
 const app = websockify(new Koa());
 app.ws.use(async (ctx) => {
   // Increment the total opened connections
@@ -243,12 +241,6 @@ app.ws.use(async (ctx) => {
     // Update the connection duration histogram with the calculated duration
     wsMetricRegistry.getHistogram('messageDuration').labels(method).observe(msgDurationInMiliSeconds);
   });
-
-  if (pingInterval > 0) {
-    setInterval(async () => {
-      ctx.websocket.send(JSON.stringify(jsonResp(null, null, null)));
-    }, pingInterval);
-  }
 });
 
 const httpApp = new KoaJsonRpc(logger, register).getKoaApp();
