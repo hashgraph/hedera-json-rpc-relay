@@ -18,17 +18,24 @@
  *
  */
 
-import { encodeBytes32String, ethers, formatEther, parseEther } from 'ethers';
+// External resources
+import { ethers } from 'ethers';
 import { expect } from 'chai';
+
+// Local resources
 import { Utils } from '../helpers/utils';
-import { AliasAccount } from '../clients/servicesClient';
+import { AliasAccount } from '../types/AliasAccount';
 import EstimatePrecompileContractJson from '../contracts/EstimatePrecompileContract.json';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
-import Constants from '../../tests/helpers/constants';
-import RelayCalls from '../../../../packages/server/tests/helpers/constants';
 import ERC721MockJson from '../contracts/ERC721Mock.json';
 import ERCTestContractJson from '../contracts/ERCTestContract.json';
 import PrecompileTestContractJson from '../contracts/PrecompileTestContract.json';
+
+// Constants from local resources
+import Constants from '../../tests/helpers/constants';
+import RelayCalls from '../../../../packages/server/tests/helpers/constants';
+
+// Other imports
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
 
 describe('EstimatePrecompileContract tests', function () {

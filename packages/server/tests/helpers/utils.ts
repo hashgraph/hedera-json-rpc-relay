@@ -18,20 +18,33 @@
  *
  */
 
-import { ContractFactory, ethers } from 'ethers';
-import { AliasAccount } from '../clients/servicesClient';
+import { ethers } from 'ethers';
 import Assertions from './assertions';
 import crypto from 'crypto';
 import RelayClient from '../clients/relayClient';
-import RelayCall from '../../tests/helpers/constants';
-import Constants from './constants';
 import { numberTo0x } from '../../../relay/src/formatters';
+import RelayCall from '../../tests/helpers/constants';
+import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
+import { AliasAccount } from '../types/AliasAccount';
+import ServicesClient from '../clients/servicesClient';
 
 export class Utils {
+  /**
+   * Converts a number to its hexadecimal representation.
+   *
+   * @param {number} num The number to convert to hexadecimal.
+   * @returns {string} The hexadecimal representation of the number.
+   */
   static toHex = (num) => {
     return parseInt(num).toString(16);
   };
 
+  /**
+   * Converts a given Hedera account ID to an EVM compatible address.
+   *
+   * @param {string} id The Hedera account ID to convert.
+   * @returns {string} The EVM compatible address.
+   */
   static idToEvmAddress = (id): string => {
     Assertions.assertId(id);
     const [shard, realm, num] = id.split('.');
@@ -44,10 +57,22 @@ export class Utils {
     ].join('');
   };
 
+  /**
+   * Converts a value from tinybars to weibars.
+   *
+   * @param {number} value The value in tinybars to convert.
+   * @returns {ethers.BigNumber} The value converted to weibars.
+   */
   static tinyBarsToWeibars = (value) => {
     return ethers.parseUnits(Number(value).toString(), 10);
   };
 
+  /**
+   * Generates a random string of the specified length.
+   *
+   * @param {number} length The length of the random string to generate.
+   * @returns {string} The generated random string.
+   */
   static randomString(length) {
     let result = '';
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -58,9 +83,9 @@ export class Utils {
   }
 
   /**
-   * Generates random trace id for requests.
+   * Generates a random trace ID for requests.
    *
-   * returns: string
+   * @returns {string} The generated random trace ID.
    */
   static generateRequestId = (): string => {
     return crypto.randomUUID();
@@ -172,25 +197,24 @@ export class Utils {
     return res;
   };
 
-  // Handles the odd case where the contract is loading in the factory but for some reason
-  // ethers is not able to deploy it.  The ethers deploy returns a 4001 error.
-  static deployContract = async (contractFactory: ContractFactory): Promise<ethers.Contract> => {
-    let deployRan = false;
-    let numberOfAttempts = 0;
-    let contract;
-    while (!deployRan && numberOfAttempts < 3) {
-      try {
-        contract = await contractFactory.deploy(Constants.GAS.LIMIT_15_000_000);
-        await contract.waitForDeployment();
-      } catch (e) {
-        await new Promise((r) => setTimeout(r, 1000));
-        numberOfAttempts++;
-        continue;
-      }
-      deployRan = true;
-    }
+  /**
+   * Deploys a contract using the provided ABI and bytecode.
+   *
+   * @param {ethers.InterfaceAbi} abi The ABI of the contract.
+   * @param {string} bytecode The bytecode of the contract.
+   * @param {ethers.Wallet} signer The wallet used to sign the deployment transaction.
+   * @returns {Promise<ethers.Contract>} A promise resolving to the deployed contract.
+   */
+  static readonly deployContract = async (
+    abi: ethers.InterfaceAbi,
+    bytecode: string,
+    signer: ethers.Wallet,
+  ): Promise<ethers.Contract> => {
+    const factory = new ethers.ContractFactory(abi, bytecode, signer);
+    const contract = await factory.deploy();
+    await contract.waitForDeployment();
 
-    return contract;
+    return contract as ethers.Contract;
   };
 
   static sendTransaction = async (
@@ -217,4 +241,71 @@ export class Utils {
 
     return await rpcServer.call(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [transactionHash], requestId);
   };
+  /**
+   * Creates an alias account on the mirror node with the provided details.
+   *
+   * @param {MirrorClient} mirrorNode The mirror node client.
+   * @param {AliasAccount} creator The creator account for the alias.
+   * @param {string} requestId The unique identifier for the request.
+   * @param {string} balanceInWeiBars The initial balance for the alias account in wei bars. Defaults to 10 HBAR (10,000,000,000,000,000,000 wei).
+   * @returns {Promise<AliasAccount>} A promise resolving to the created alias account.
+   */
+  static readonly createAliasAccount = async (
+    mirrorNode,
+    creator: AliasAccount,
+    requestId: string,
+    balanceInTinyBar: string = '1000000000', //10 HBAR
+  ): Promise<AliasAccount> => {
+    const signer = creator.wallet;
+    const accountBalance = Utils.tinyBarsToWeibars(balanceInTinyBar);
+    const privateKey = PrivateKey.generateECDSA();
+    const wallet = new ethers.Wallet(privateKey.toStringRaw(), signer.provider);
+    const address = wallet.address;
+
+    // create hollow account
+    await signer.sendTransaction({
+      to: wallet.address,
+      value: accountBalance,
+    });
+
+    const mirrorNodeAccount = (await mirrorNode.get(`/accounts/${address}`, requestId)).account;
+    const accountId = AccountId.fromString(mirrorNodeAccount);
+    const client: ServicesClient = new ServicesClient(
+      process.env.HEDERA_NETWORK!,
+      accountId.toString(),
+      privateKey.toStringDer(),
+      creator.client.getLogger(),
+    );
+
+    const account: AliasAccount = {
+      alias: accountId,
+      accountId,
+      address: wallet.address,
+      client: client,
+      privateKey,
+      wallet,
+      keyList: KeyList.from([privateKey]),
+    };
+
+    return account;
+  };
+
+  static async createMultipleAliasAccounts(
+    mirrorNode,
+    initialAccount: AliasAccount,
+    neededAccounts: number,
+    initialAmountInTinyBar: string,
+    requestId: string,
+  ): Promise<AliasAccount[]> {
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+    const accounts: AliasAccount[] = [];
+    for (let i = 0; i < neededAccounts; i++) {
+      const account = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId, initialAmountInTinyBar);
+      global.logger.trace(
+        `${requestIdPrefix} Create new Eth compatible account w privateKey: ${account.privateKey}, alias: ${account.address} and balance ~${initialAmountInTinyBar} wei`,
+      );
+      accounts.push(account);
+    }
+    return accounts;
+  }
 }

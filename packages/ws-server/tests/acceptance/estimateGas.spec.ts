@@ -24,15 +24,18 @@ import { Contract, ethers, WebSocketProvider } from 'ethers';
 // import { TransactionReceipt } from '@hashgraph/sdk';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 
 describe('@release @web-socket eth_estimateGas', async function () {
   const METHOD_NAME = 'eth_estimateGas';
   const PING_CALL_ESTIMATED_GAS = '0x6122';
   const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
 
+  // @ts-ignore
+  const { mirrorNode } = global;
   let accounts: AliasAccount[] = [],
-    basicContract: Contract,
+    basicContract: ethers.Contract,
     currentPrice: number,
     expectedGas: number,
     gasPriceDeviation: number,
@@ -40,14 +43,21 @@ describe('@release @web-socket eth_estimateGas', async function () {
     requestId = 'eth_estimateGas';
 
   before(async () => {
-    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
-    let result;
-    let mirrorAccount = await global.mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`, requestId);
-    // Wait for the account to propagate the mirror node
-    while (mirrorAccount.accounts.length === 0) {
-      mirrorAccount = await global.mirrorNode.get(`accounts?account.id=${accounts[0].accountId}`, requestId);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '2500000000'; //25 Hbar
+
+    const neededAccounts: number = 1;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
 
     currentPrice = await global.relay.gasPrice();
     expectedGas = parseInt(PING_CALL_ESTIMATED_GAS, 16);
@@ -59,14 +69,7 @@ describe('@release @web-socket eth_estimateGas', async function () {
   beforeEach(async () => {
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
     const wallet = new ethers.Wallet(accounts[0].wallet.privateKey, ethersWsProvider);
-    const basicContractFactory = await new ethers.ContractFactory(
-      basicContractJson.abi,
-      basicContractJson.bytecode,
-      wallet,
-    );
-
-    basicContract = (await basicContractFactory.deploy()) as Contract;
-    await basicContract.waitForDeployment();
+    basicContract = await Utils.deployContract(basicContractJson.abi, basicContractJson.bytecode, wallet);
   });
 
   afterEach(async () => {

@@ -25,7 +25,6 @@ import Constants from '../../helpers/constants';
 
 chai.use(solidity);
 
-import { AliasAccount } from '../../clients/servicesClient';
 import { ethers } from 'ethers';
 import ERC20MockJson from '../../contracts/ERC20Mock.json';
 import ERC721MockJson from '../../contracts/ERC721Mock.json';
@@ -33,6 +32,7 @@ import TokenCreateJson from '../../contracts/TokenCreateContract.json';
 import { Utils } from '../../helpers/utils';
 import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import Assertions from '../../helpers/assertions';
+import { AliasAccount } from '../../types/AliasAccount';
 
 /**
  * Tests for:
@@ -67,24 +67,27 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   const TOKEN_DECIMALS = BigInt(8);
 
   const accounts: AliasAccount[] = [];
-  let mainContractAddress;
-  let HTSTokenContractAddress;
-  let NftHTSTokenContractAddress;
-  let NftSerialNumber;
-  let HTSTokenContract;
-  let NFTokenContract;
-  let mainContract;
-  let mainContractOwner;
-  let mainContractReceiverWalletFirst;
-  let mainContractReceiverWalletSecond;
-  let HTSTokenWithCustomFeesContractAddress;
-  let requestId;
+  let mainContractAddress: string;
+  let HTSTokenContractAddress: string;
+  let NftHTSTokenContractAddress: string;
+  let NftSerialNumber: number;
+  let HTSTokenContract: ethers.Contract;
+  let NFTokenContract: ethers.Contract;
+  let mainContract: ethers.Contract;
+  let mainContractOwner: ethers.Contract;
+  let mainContractReceiverWalletFirst: ethers.Contract;
+  let mainContractReceiverWalletSecond: ethers.Contract;
+  let HTSTokenWithCustomFeesContractAddress: string;
+  let requestId: string;
 
   before(async () => {
     requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '5000000000'; //50 Hbar
 
-    const contractDeployer = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    mainContractAddress = await deploymainContract(contractDeployer.wallet);
+    const contractDeployer = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId, initialAmount);
+    mainContract = await Utils.deployContract(TokenCreateJson.abi, TokenCreateJson.bytecode, contractDeployer.wallet);
+    mainContractAddress = mainContract.target as string;
     const mainContractMirror = await mirrorNode.get(`/contracts/${mainContractAddress}`, requestId);
 
     accounts[0] = await servicesNode.createAccountWithContractIdKey(
@@ -128,13 +131,6 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
   this.beforeEach(async () => {
     requestId = Utils.generateRequestId();
   });
-
-  async function deploymainContract(signer) {
-    const mainFactory = new ethers.ContractFactory(TokenCreateJson.abi, TokenCreateJson.bytecode, signer);
-    const mainContract = await Utils.deployContract(mainFactory);
-
-    return mainContract.target;
-  }
 
   async function createHTSToken() {
     const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);

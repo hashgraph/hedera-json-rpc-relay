@@ -21,13 +21,11 @@
 // external resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
-import { AccountId, Hbar, ContractId } from '@hashgraph/sdk';
+import { Hbar, ContractId } from '@hashgraph/sdk';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../helpers/constants';
 
-chai.use(solidity);
-
-import { AliasAccount } from '../../clients/servicesClient';
+import { AliasAccount } from '../../types/AliasAccount';
 import { ethers } from 'ethers';
 import IERC20MetadataJson from '../../contracts/openzeppelin/IERC20Metadata.json';
 import IERC20Json from '../../contracts/openzeppelin/IERC20.json';
@@ -43,6 +41,7 @@ import { Utils } from '../../helpers/utils';
 import RelayCall from '../../helpers/constants';
 import { numberTo0x } from '../../../../../packages/relay/src/formatters';
 
+chai.use(solidity);
 describe('@precompile-calls Tests for eth_call with HTS', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const { servicesNode, mirrorNode, relay }: any = global;
@@ -94,27 +93,23 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     requestId = Utils.generateRequestId();
 
     // create accounts
-    const contractDeployer = await servicesNode.createAliasAccount(100, relay.provider, requestId);
+    const initialAccount: AliasAccount = global.accounts[0];
+    const contractDeployer = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId);
 
     // Deploy a contract implementing HederaTokenService
-    const HederaTokenServiceImplFactory = new ethers.ContractFactory(
+    htsImpl = await Utils.deployContract(
       HederaTokenServiceImplJson.abi,
       HederaTokenServiceImplJson.bytecode,
       contractDeployer.wallet,
     );
-    htsImpl = await HederaTokenServiceImplFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
-
-    const rec0 = await htsImpl.waitForDeployment();
-    htsImplAddress = rec0.target;
+    htsImplAddress = htsImpl.target;
 
     // Deploy the Token Management contract
-    const TokenManagementContractFactory = new ethers.ContractFactory(
+    TokenManager = await Utils.deployContract(
       TokenManagementContractJson.abi,
       TokenManagementContractJson.bytecode,
       contractDeployer.wallet,
     );
-    TokenManager = await TokenManagementContractFactory.deploy(await Utils.gasOptions(requestId, 15_000_000));
-    await htsImpl.waitForDeployment();
 
     const tokenManagementMirror = await mirrorNode.get(`/contracts/${TokenManager.target}`, requestId);
 

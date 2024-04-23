@@ -17,23 +17,37 @@
  * limitations under the License.
  *
  */
+// External resources
 import chai from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';
 import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 
-chai.use(chaiAsPromised);
-
+// Other external resources
 import fs from 'fs';
+
+// Clients
 import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
+
+// Server related
 import app from '../../dist/server';
 import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
-import { Hbar } from '@hashgraph/sdk';
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
+// Hashgraph SDK
+import { AccountId, Hbar } from '@hashgraph/sdk';
+
+// Constants
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+
+// Utils and types
+import { Utils } from '../helpers/utils';
+import { AliasAccount } from '../types/AliasAccount';
+
+chai.use(chaiAsPromised);
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -54,6 +68,8 @@ const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
 const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
+const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
+const INITIAL_BALANCE = process.env.INITIAL_BALANCE || '5000000000';
 let startOperatorBalance: Hbar;
 global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 
@@ -73,6 +89,7 @@ describe('RPC Server Acceptance Tests', function () {
   global.relayServer = relayServer;
   global.socketServer = socketServer;
   global.logger = logger;
+  global.initialBalance = INITIAL_BALANCE;
 
   before(async () => {
     // configuration details
@@ -90,9 +107,46 @@ describe('RPC Server Acceptance Tests', function () {
 
     // cache start balance
     startOperatorBalance = await global.servicesNode.getOperatorBalance();
+    const initialAccount: AliasAccount = await global.servicesNode.createInitialAliasAccount(
+      RELAY_URL,
+      CHAIN_ID,
+      Utils.generateRequestId(),
+    );
+
+    global.accounts = new Array<AliasAccount>(initialAccount);
+    await global.mirrorNode.get(`/accounts/${initialAccount.address}`);
   });
 
   after(async function () {
+    const operatorAddress = `0x${AccountId.fromString(OPERATOR_ID).toSolidityAddress()}`;
+    const accounts: AliasAccount[] = global.accounts;
+    for (let i = 0; i < accounts.length; i++) {
+      const account = accounts[i];
+      try {
+        const balance = await account.wallet.provider?.getBalance(account.address);
+        const tx = {
+          to: operatorAddress,
+          value: balance,
+        };
+        const feeData = await account.wallet.provider?.getFeeData();
+        const gasEstimation = await account.wallet.provider?.estimateGas(tx);
+
+        // we multiply by 10 to add tolerance
+        // @ts-ignore
+        const cost = BigInt(gasEstimation * feeData?.gasPrice) * BigInt(10);
+
+        await account.wallet.sendTransaction({
+          to: operatorAddress,
+          gasLimit: gasEstimation,
+          // @ts-ignore
+          value: balance - cost,
+        });
+        logger.info(`Account ${account.address} refunded back to operator ${balance} th.`);
+      } catch (error) {
+        logger.error(`Account ${account.address} couldn't send the hbars back to the operator: ${error}`);
+      }
+    }
+
     const endOperatorBalance = await global.servicesNode.getOperatorBalance();
     const cost = startOperatorBalance.toTinybars().subtract(endOperatorBalance.toTinybars());
     logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
