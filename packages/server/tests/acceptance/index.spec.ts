@@ -102,7 +102,7 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
     if (global.relayIsLocal) {
-      // runLocalRelay();
+      runLocalRelay();
     }
 
     // cache start balance
@@ -154,11 +154,11 @@ describe('RPC Server Acceptance Tests', function () {
     //stop relay
     logger.info('Stop relay');
     if (relayServer !== undefined) {
-      // relayServer.close();
+      relayServer.close();
     }
 
     if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
-      // socketServer.close();
+      socketServer.close();
     }
   });
 
