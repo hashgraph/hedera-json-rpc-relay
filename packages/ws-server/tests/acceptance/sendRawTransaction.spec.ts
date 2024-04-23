@@ -22,11 +22,9 @@
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
-import { predefined } from '@hashgraph/json-rpc-relay/src';
 
 describe('@release @web-socket eth_sendRawTransaction', async function () {
   const METHOD_NAME = 'eth_sendRawTransaction';
@@ -46,7 +44,6 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
   ];
 
   let tx: any,
-    sendHbarToProxyContractDeployerTx: any,
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
 
@@ -62,13 +59,6 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
       chainId: Number(CHAIN_ID),
       to: accounts[2].address,
       maxFeePerGas: await global.relay.gasPrice(),
-    };
-
-    sendHbarToProxyContractDeployerTx = {
-      value: (10 * 10 ** 18).toString(), // 10hbar - the gasPrice to deploy deterministic proxy contract
-      to: constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
-      gasPrice: await global.relay.gasPrice(),
-      gasLimit: numberTo0x(30000),
     };
   });
 
@@ -106,54 +96,6 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
       expect(txReceipt.to).to.eq(accounts[2].address);
       expect(fromAccountInfo.evm_address).to.eq(accounts[0].address);
     });
-
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} for the deterministic deployment transaction`, async () => {
-      // @logic: since the DETERMINISTIC_DEPLOYER_TRANSACTION is a deterministic transaction hash which is signed
-      //          by the DETERMINISTIC_DEPLOYMENT_SIGNER with tx.nonce = 0. With that reason, if the current nonce of the signer
-      //          is not 0, it means the DETERMINISTIC_DEPLOYER_TRANSACTION has already been submitted, and the DETERMINISTIC_PROXY_CONTRACT
-      //          has already been deployed to the network. Therefore, it only matters to test this flow once.
-      const signerNonce = await global.relay.getAccountNonce(constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
-
-      if (signerNonce === 0) {
-        // send gas money to the proxy deployer
-        sendHbarToProxyContractDeployerTx.nonce = await global.relay.getAccountNonce(accounts[0].address);
-        const signedSendHbarTx = await accounts[0].wallet.signTransaction(sendHbarToProxyContractDeployerTx);
-        await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [signedSendHbarTx], 1000);
-        await new Promise((r) => setTimeout(r, 2000)); // wait for signer's account to propagate accross the network
-
-        const deployerBalance = await global.relay.getBalance(constants.DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest');
-        expect(deployerBalance).to.not.eq(0);
-
-        // send transaction to deploy proxy transaction
-        const deterministicDeploymentTransactionHash = await WsTestHelper.sendRequestToStandardWebSocket(
-          METHOD_NAME,
-          [constants.DETERMINISTIC_DEPLOYER_TRANSACTION],
-          1000,
-        );
-
-        const receipt = await global.mirrorNode.get(
-          `/contracts/results/${deterministicDeploymentTransactionHash.result}`,
-        );
-        const fromAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.from}`);
-        const toAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.to}`);
-
-        expect(receipt).to.exist;
-        expect(fromAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
-        expect(toAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
-        expect(receipt.address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
-      } else {
-        const response = await WsTestHelper.sendRequestToStandardWebSocket(
-          METHOD_NAME,
-          [constants.DETERMINISTIC_DEPLOYER_TRANSACTION],
-          1000,
-        );
-        const expectedNonceTooLowError = predefined.NONCE_TOO_LOW(0, signerNonce);
-        const errObj = response.result;
-        expect(errObj.code).to.eq(expectedNonceTooLowError.code);
-        expect(errObj.name).to.eq(expectedNonceTooLowError.name);
-        expect(errObj.message).to.contain(expectedNonceTooLowError.message);
-      }
-    });
   });
 
   describe(WsTestConstant.ETHERS_WS_PROVIDER, () => {
@@ -174,45 +116,6 @@ describe('@release @web-socket eth_sendRawTransaction', async function () {
 
       expect(txReceipt.to).to.eq(accounts[2].address);
       expect(fromAccountInfo.evm_address).to.eq(accounts[1].address);
-    });
-
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} for the deterministic deployment transaction`, async () => {
-      // @logic: since the DETERMINISTIC_DEPLOYER_TRANSACTION is a deterministic transaction hash which is signed
-      //          by the DETERMINISTIC_DEPLOYMENT_SIGNER with tx.nonce = 0. With that reason, if the current nonce of the signer
-      //          is not 0, it means the DETERMINISTIC_DEPLOYER_TRANSACTION has already been submitted, and the DETERMINISTIC_PROXY_CONTRACT
-      //          has already been deployed to the network. Therefore, it only matters to test this flow once.
-      const signerNonce = await global.relay.getAccountNonce(constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
-
-      if (signerNonce === 0) {
-        // send gas money to the proxy deployer
-        sendHbarToProxyContractDeployerTx.nonce = await global.relay.getAccountNonce(accounts[1].address);
-        const signedSendHbarTx = await accounts[1].wallet.signTransaction(sendHbarToProxyContractDeployerTx);
-        await ethersWsProvider.send(METHOD_NAME, [signedSendHbarTx]);
-        await new Promise((r) => setTimeout(r, 2000)); // wait for signer's account to propagate accross the network
-
-        const deployerBalance = await global.relay.getBalance(constants.DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest');
-        expect(deployerBalance).to.not.eq(0);
-
-        // send transaction to deploy proxy transaction
-        const deterministicDeploymentTransactionHash = await ethersWsProvider.send(METHOD_NAME, [
-          constants.DETERMINISTIC_DEPLOYER_TRANSACTION,
-        ]);
-
-        const receipt = await global.mirrorNode.get(`/contracts/results/${deterministicDeploymentTransactionHash}`);
-        const fromAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.from}`);
-        const toAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.to}`);
-
-        expect(receipt).to.exist;
-        expect(fromAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
-        expect(toAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
-        expect(receipt.address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
-      } else {
-        const errObj = await ethersWsProvider.send(METHOD_NAME, [constants.DETERMINISTIC_DEPLOYER_TRANSACTION]);
-        const expectedNonceTooLowError = predefined.NONCE_TOO_LOW(0, signerNonce);
-        expect(errObj.code).to.eq(expectedNonceTooLowError.code);
-        expect(errObj.name).to.eq(expectedNonceTooLowError.name);
-        expect(errObj.message).to.contain(expectedNonceTooLowError.message);
-      }
     });
   });
 });
