@@ -27,7 +27,7 @@ import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 
-describe('@release @web-socket eth_getTransactionCount', async function () {
+describe('@release @web-socket-batch-2 eth_getTransactionCount', async function () {
   const METHOD_NAME = 'eth_getTransactionCount';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
