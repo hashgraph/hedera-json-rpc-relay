@@ -443,7 +443,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       });
     });
 
-    it.only('@release should execute "eth_getBalance" for newly created account with 1 HBAR', async function () {
+    it('@release should execute "eth_getBalance" for newly created account with 1 HBAR', async function () {
       let balance = Hbar.from(1, HbarUnit.Hbar).toTinybars().toString();
       const newAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId, balance);
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, [newAccount.address, 'latest'], requestId);
