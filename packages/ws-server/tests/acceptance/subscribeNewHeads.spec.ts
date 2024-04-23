@@ -90,7 +90,7 @@ function verifyResponse(response: any, done: Mocha.Done, webSocket: any, include
   }
 }
 
-describe('@release @web-socket eth_subscribe newHeads', async function () {
+describe('@release @web-socket-batch-3 eth_subscribe newHeads', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const accounts: AliasAccount[] = [];
   const CHAIN_ID = process.env.CHAIN_ID || 0;

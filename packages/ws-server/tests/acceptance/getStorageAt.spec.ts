@@ -25,7 +25,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 
-describe('@release @web-socket eth_getStorageAt', async function () {
+describe('@release @web-socket-batch-2 eth_getStorageAt', async function () {
   const METHOD_NAME = 'eth_getStorageAt';
   const EXPECTED_VALUE = 7;
   const INVALID_PARAMS = [

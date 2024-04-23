@@ -26,7 +26,7 @@ import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 
-describe('@release @web-socket eth_getCode', async function () {
+describe('@release @web-socket-batch-2 eth_getCode', async function () {
   const RELAY_URL = `${process.env.RELAY_ENDPOINT}`;
   const METHOD_NAME = 'eth_getCode';
 
