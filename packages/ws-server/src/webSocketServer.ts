@@ -28,12 +28,12 @@ import { Registry } from 'prom-client';
 import { WS_CONSTANTS } from './utils/constants';
 import { formatIdMessage } from './utils/formatters';
 import { handleConnectionClose } from './utils/utils';
-import ConnectionLimiter from './utils/connectionLimiter';
+import WsMetricRegistry from './metrics/wsMetricRegistry';
+import ConnectionLimiter from './metrics/connectionLimiter';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
-import { generateMethodsCounter, generateMethodsCounterById } from './utils/counters';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import {
   handleEthCall,
@@ -54,9 +54,6 @@ import {
   handleEthGetTransactionReceipt,
 } from './controllers';
 
-const register = new Registry();
-const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
-
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
   level: process.env.LOG_LEVEL || 'trace',
@@ -68,41 +65,39 @@ const mainLogger = pino({
     },
   },
 });
+const register = new Registry();
 const logger = mainLogger.child({ name: 'rpc-ws-server' });
-
-const limiter = new ConnectionLimiter(logger, register);
 const relay: Relay = new RelayImpl(logger, register);
-const mirrorNodeClient = relay.mirrorClient();
 
-const CHAIN_ID = relay.eth().chainId();
-const DEFAULT_ERROR = predefined.INTERNAL_ERROR();
-const methodsCounter = generateMethodsCounter(register, {
-  name: WS_CONSTANTS.methodsCounter.name,
-  help: WS_CONSTANTS.methodsCounter.help,
-  labelNames: WS_CONSTANTS.methodsCounter.labelNames,
-});
-const methodsCounterByIp = generateMethodsCounterById(register, {
-  name: WS_CONSTANTS.methodsCounterByIp.name,
-  help: WS_CONSTANTS.methodsCounterByIp.help,
-  labelNames: WS_CONSTANTS.methodsCounterByIp.labelNames,
-});
+const mirrorNodeClient = relay.mirrorClient();
+const limiter = new ConnectionLimiter(logger, register);
+const wsMetricRegistry = new WsMetricRegistry(register);
+
+const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx) => {
+  // Increment the total opened connections
+  wsMetricRegistry.getCounter('totalOpenedConnections').inc();
+
+  // Record the start time when the connection is established
+  const startTime = process.hrtime();
+
   ctx.websocket.id = relay.subs()?.generateId();
   ctx.websocket.limiter = limiter;
+  ctx.websocket.wsMetricRegistry = wsMetricRegistry;
   const connectionIdPrefix = formatIdMessage('Connection ID', ctx.websocket.id);
-  const connectionRequestIdPrefix = formatIdMessage('Request ID', uuid());
+  const requestIdPrefix = formatIdMessage('Request ID', uuid());
   logger.info(
-    `${connectionIdPrefix} ${connectionRequestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
+    `${connectionIdPrefix} ${requestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
   );
 
   // Close event handle
   ctx.websocket.on('close', async (code, message) => {
     logger.info(
-      `${connectionIdPrefix} ${connectionRequestIdPrefix} Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`,
+      `${connectionIdPrefix} ${requestIdPrefix} Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`,
     );
-    await handleConnectionClose(ctx, relay, limiter);
+    await handleConnectionClose(ctx, relay, limiter, wsMetricRegistry, startTime);
   });
 
   // Increment limit counters
@@ -113,11 +108,14 @@ app.ws.use(async (ctx) => {
 
   // listen on message event
   ctx.websocket.on('message', async (msg) => {
+    // Increment the total messages counter for each message received
+    wsMetricRegistry.getCounter('totalMessageCounter').inc();
+
+    // Record the start time when a new message is received
+    const msgStartTime = process.hrtime();
+
     // Reset the TTL timer for inactivity upon receiving a message from the client
     limiter.resetInactivityTTLTimer(ctx.websocket);
-
-    // Format ID prefixes for logging purposes
-    const requestIdPrefix = formatIdMessage('Request ID', uuid());
 
     // parse the received message from the client into a JSON object
     let request;
@@ -136,6 +134,10 @@ app.ws.use(async (ctx) => {
     const { method, params } = request;
     logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Method: ${method}. Params: ${JSON.stringify(params)}`);
 
+    // Increment metrics for the received method
+    wsMetricRegistry.getCounter('methodsCounter').labels(method).inc();
+    wsMetricRegistry.getCounter('methodsCounterByIp').labels(ctx.request.ip, method).inc();
+
     // Validate request's params
     try {
       const methodValidations = Validator.METHODS[method];
@@ -152,10 +154,6 @@ app.ws.use(async (ctx) => {
       ctx.websocket.send(JSON.stringify(jsonResp(request.id, error, undefined)));
       return;
     }
-
-    // Increment metrics for the received method
-    methodsCounter.labels(method).inc();
-    methodsCounterByIp.labels(ctx.request.ip, method).inc();
 
     // Check if the subscription limit is exceeded for ETH_SUBSCRIBE method
     let response;
@@ -177,7 +175,7 @@ app.ws.use(async (ctx) => {
           response = handleEthUnsubscribe(ctx, params, request, relay, limiter);
           break;
         case WS_CONSTANTS.METHODS.ETH_CHAIN_ID:
-          response = jsonResp(request.id, null, CHAIN_ID);
+          response = jsonResp(request.id, null, relay.eth().chainId());
           break;
         case WS_CONSTANTS.METHODS.ETH_SEND_RAW_TRANSACTION:
           await handleEthSendRawTransaction(sharedParams);
@@ -222,7 +220,7 @@ app.ws.use(async (ctx) => {
           await handleEthCall(sharedParams);
           break;
         default:
-          response = jsonResp(request.id, DEFAULT_ERROR, null);
+          response = jsonResp(request.id, predefined.INTERNAL_ERROR(), null);
       }
     } catch (error) {
       logger.error(
@@ -237,6 +235,13 @@ app.ws.use(async (ctx) => {
     if (response) {
       ctx.websocket.send(JSON.stringify(response));
     }
+
+    // Calculate the duration of the connection
+    const msgEndTime = process.hrtime(msgStartTime);
+    const msgDurationInMiliSeconds = (msgEndTime[0] + msgEndTime[1] / 1e9) * 1000; // Convert duration to miliseconds
+
+    // Update the connection duration histogram with the calculated duration
+    wsMetricRegistry.getHistogram('messageDuration').labels(method).observe(msgDurationInMiliSeconds);
   });
 
   if (pingInterval > 0) {

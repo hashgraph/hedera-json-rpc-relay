@@ -19,7 +19,7 @@
  */
 
 import { Relay } from '@hashgraph/json-rpc-relay';
-import ConnectionLimiter from '../utils/connectionLimiter';
+import ConnectionLimiter from '../metrics/connectionLimiter';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 
 /**

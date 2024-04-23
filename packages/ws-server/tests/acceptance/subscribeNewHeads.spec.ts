@@ -189,7 +189,6 @@ describe('@release @web-socket eth_subscribe newHeads', async function () {
 
   describe('Subscriptions for newHeads', async function () {
     it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
-      process.env.WS_NEW_HEADS_ENABLED = 'true';
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;
       webSocket.on('open', function open() {
@@ -219,7 +218,6 @@ describe('@release @web-socket eth_subscribe newHeads', async function () {
     });
 
     it('should subscribe to newHeads, without the "include transactions", and receive a valid JSON RPC response', (done) => {
-      process.env.WS_NEW_HEADS_ENABLED = 'true';
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;
       webSocket.on('open', function open() {
@@ -249,7 +247,6 @@ describe('@release @web-socket eth_subscribe newHeads', async function () {
     });
 
     it('should subscribe to newHeads, with "include transactions false", and receive a valid JSON RPC response', (done) => {
-      process.env.WS_NEW_HEADS_ENABLED = 'true';
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;
       webSocket.on('open', function open() {
