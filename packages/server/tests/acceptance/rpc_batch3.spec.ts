@@ -335,7 +335,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     it('should fail to execute "eth_call" with both data and input fields', async function () {
       const callData = {
         from: accounts[0].address,
-        to: evmAddress,
+        to: basicContractAddress,
         data: BASIC_CONTRACT_PING_CALL_DATA,
       };
 
