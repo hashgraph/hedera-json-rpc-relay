@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,8 +167,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(parseInt(estimatedGas)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
     });
 
-    // Skip this test for now because of bug in mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/6612 in Additional bug fixes
-    xit('@release should execute "eth_estimateGas" for existing account', async function () {
+    it('@release should execute "eth_estimateGas" for existing account', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
         [
@@ -179,12 +178,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         ],
         requestId,
       );
+      const gasPriceDeviation = parseFloat((EthImpl.gasTxBaseCost * 0.2).toString());
       expect(res).to.contain('0x');
-      expect(res).to.equal(EthImpl.gasTxBaseCost);
+      expect(parseInt(res)).to.be.lessThan(Number(EthImpl.gasTxBaseCost) * (1 + gasPriceDeviation));
+      expect(parseInt(res)).to.be.greaterThan(Number(EthImpl.gasTxBaseCost) * (1 - gasPriceDeviation));
     });
 
-    // Skip this test for now because of bug in mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/6612 in Additional bug fixes
-    xit('@release should execute "eth_estimateGas" hollow account creation', async function () {
+    it('@release should execute "eth_estimateGas" hollow account creation', async function () {
       const hollowAccount = ethers.Wallet.createRandom();
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,

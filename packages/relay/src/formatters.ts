@@ -126,7 +126,14 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
  */
 const weibarHexToTinyBarInt = (value: string): number | null => {
   if (value && value !== '0x') {
-    const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+    const weiBigInt = BigInt(value);
+    const coefBigInt = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+    // Calculate the tinybar value
+    const tinybarValue = weiBigInt / coefBigInt;
+    // Check if there was a fractional part that got discarded
+    if (tinybarValue === BigInt(0) && weiBigInt > BigInt(0)) {
+      return 1; // Round up to the smallest unit of tinybar
+    }
     return Number(tinybarValue);
   }
   return null;
