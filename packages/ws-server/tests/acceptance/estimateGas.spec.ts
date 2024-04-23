@@ -91,7 +91,7 @@ describe('@release @web-socket-batch-1 eth_estimateGas', async function () {
     expect(Number(estimatedGas)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
   });
 
-  it('should return the code through a websocket', async () => {
+  it('@release should execute "eth_estimateGas" for contract call, using a standard websocket', async () => {
     const tx = { to: basicContract.target, data: BASIC_CONTRACT_PING_CALL_DATA };
     const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [tx]);
     WsTestHelper.assertJsonRpcObject(response);

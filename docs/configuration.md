@@ -116,7 +116,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `WS_MULTIPLE_ADDRESSES_ENABLED` | "false"  | If enabled eth_subscribe will allow subscription to multiple contract address.                                                |
 | `WS_CACHE_TTL`                  | "20000"  | The time to live for cached entries.                                                                                          |
 | `WS_NEW_HEADS_ENABLED`.         | "true"   | Enables subscriptions for the latest blocks, `newHeads`.                                                                      |
-| `WS_PING_INTERVAL`              | "1000"   | Interval between ping messages. Set to `0` to disable pinger.                                                                 |
+| `WS_PING_INTERVAL`              | "100000" | Interval between ping messages. Set to `0` to disable pinger.                                                                 |
 
 ## Sample for connecting to Hedera Environments
 

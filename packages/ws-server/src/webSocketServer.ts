@@ -73,7 +73,7 @@ const mirrorNodeClient = relay.mirrorClient();
 const limiter = new ConnectionLimiter(logger, register);
 const wsMetricRegistry = new WsMetricRegistry(register);
 
-const pingInterval = Number(process.env.WS_PING_INTERVAL || 1000);
+const pingInterval = Number(process.env.WS_PING_INTERVAL || 100000);
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx) => {
