@@ -1288,6 +1288,53 @@
                 "type": "null",
                 "pattern": "null"
             },
+            "subcall": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": ["CALL", "CREATE"],
+                        "description": "The type of action (CALL for function calls or CREATE for contract creation)."
+                    },
+                    "from": {
+                        "$ref": "#/components/schemas/address",
+                        "description": "The address of the sender."
+                    },
+                    "to": {
+                        "$ref": "#/components/schemas/address",
+                        "description": "The address of the receiver. In the case of a contract creation, this might be null."
+                    },
+                    "value": {
+                        "$ref": "#/components/schemas/uint",
+                        "description": "The value transferred with the call, in hexadecimal."
+                    },
+                    "gas": {
+                        "$ref": "#/components/schemas/uint",
+                        "description": "The gas provided for the call, in hexadecimal."
+                    },
+                    "gasUsed": {
+                        "$ref": "#/components/schemas/uint",
+                        "description": "The gas used during the call, in hexadecimal."
+                    },
+                    "input": {
+                        "$ref": "#/components/schemas/bytes",
+                        "description": "The input data sent with the call."
+                    },
+                    "output": {
+                        "$ref": "#/components/schemas/bytes",
+                        "description": "The output data returned by the call."
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error encountered during the call, if any."
+                    },
+                    "revertReason": {
+                        "type": "string",
+                        "description": "Solidity revert reason, if applicable."
+                    }
+                },
+                "required": ["from", "gas", "input"]
+            },            
             "Block": {
                 "title": "Block object",
                 "type": "object",
@@ -2058,7 +2105,7 @@
                     "calls": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/callframe"
+                            "$ref": "#/components/schemas/subcall"
                         },
                         "description": "Sub-calls made during this call frame."
                     }

@@ -107,6 +107,8 @@ describe('subscriptionController', async function () {
 
     expect(spy.getCall(0).args[0]).to.be.eq(`{"event":"logs"}`);
     expect(subId).to.be.length(34);
+
+    subscriptionController.unsubscribe(wsConnection, subId);
   });
 
   it('notifySubscribers should notify subscribers with data', async function () {
@@ -119,8 +121,10 @@ describe('subscriptionController', async function () {
     subscriptionController.notifySubscribers(`{"event":"logs"}`, testData);
 
     expect(spy.getCall(0).args[0]).to.be.eq(
-      `{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId}"}}`,
+      `{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId}"}}`,
     );
+
+    subscriptionController.unsubscribe(wsConnection, subId);
   });
 
   it('notifySubscribers should notify multiple subscribers with data', async function () {
@@ -137,11 +141,13 @@ describe('subscriptionController', async function () {
     subscriptionController.notifySubscribers(`{"event":"logs"}`, testData);
 
     expect(spy1.getCall(0).args[0]).to.be.eq(
-      `{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId1}"}}`,
+      `{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId1}"}}`,
     );
     expect(spy2.getCall(0).args[0]).to.be.eq(
-      `{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId2}"}}`,
+      `{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId2}"}}`,
     );
+    subscriptionController.unsubscribe(wsConnection1, subId1);
+    subscriptionController.unsubscribe(wsConnection2, subId2);
   });
 
   it('notifySubscribers should use cache to not send the data again', async function () {
@@ -156,15 +162,16 @@ describe('subscriptionController', async function () {
     subscriptionController.notifySubscribers(`{"event":"logs"}`, testData); // should hit cache
 
     expect(spy.getCall(0).args[0]).to.be.eq(
-      `{"method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId}"}}`,
+      `{"jsonrpc":"2.0","method":"eth_subscription","params":{"result":"${testData}","subscription":"${subId}"}}`,
     );
     expect(spy.callCount).to.be.eq(1); // even after making 3 calls, only 1 time spy reports being called on send method
+    subscriptionController.unsubscribe(wsConnection, subId);
   });
 
   it('notifySubscribers using a Tag that has no subscribers should not send anything to connection', async function () {
     const connectionId = '5';
     const wsConnection = new MockWsConnection(connectionId);
-    subscriptionController.subscribe(wsConnection, 'logs');
+    const subId = subscriptionController.subscribe(wsConnection, 'logs');
     const spy = sandbox.spy(wsConnection, 'send');
     const testData = 'test example data cached';
 
@@ -174,6 +181,7 @@ describe('subscriptionController', async function () {
     );
 
     expect(spy.callCount).to.be.eq(0);
+    subscriptionController.unsubscribe(wsConnection, subId);
   });
 
   it('Unsubscribing all subscriptions from same connection', async function () {
@@ -252,5 +260,7 @@ describe('subscriptionController', async function () {
     const subId2 = subscriptionController.subscribe(wsConnection, tag1.event);
 
     expect(subId).to.be.eq(subId2);
+    subscriptionController.unsubscribe(wsConnection, subId);
+    subscriptionController.unsubscribe(wsConnection, subId2);
   });
 });

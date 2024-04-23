@@ -66,6 +66,7 @@ import {
   getRequestId,
   signedTransactionHash,
 } from '../helpers';
+import { NOT_FOUND_RES } from './eth/eth-config';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
@@ -200,6 +201,16 @@ describe('Open RPC Specification', function () {
     sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));
     sdkClientStub.getAccountInfo.returns({ ethereumNonce: '0x1' });
     sdkClientStub.submitEthereumTransaction.returns({});
+    mock.onGet(`accounts/${defaultContractResults.results[0].from}?transactions=false`).reply(200);
+    mock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
+    mock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
+    mock.onGet(`accounts/${defaultContractResults.results[1].to}?transactions=false`).reply(200);
+    mock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, NOT_FOUND_RES);
+    mock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, NOT_FOUND_RES);
+    mock.onGet(`contracts/${defaultContractResults.results[0].to}`).reply(200);
+    mock.onGet(`contracts/${defaultContractResults.results[1].to}`).reply(200);
+    mock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(200);
+    mock.onGet(`tokens/${defaultContractResults.results[1].contract_id}`).reply(200);
   });
 
   const validateResponseSchema = (schema: any, response: any) => {

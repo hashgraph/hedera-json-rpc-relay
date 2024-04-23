@@ -269,7 +269,6 @@ export class Precheck {
     }
 
     if (hex.startsWith('0x') && hex.length == 2) {
-      console.log('Faiiiling here');
       throw predefined.INTERNAL_ERROR('Hex cannot be 0x');
     } else if (hex.startsWith('0x') && hex.length != 2) {
       hex = hex.slice(2);

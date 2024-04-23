@@ -115,6 +115,10 @@ export class CacheService {
     });
   }
 
+  async disconnectRedisClient(): Promise<void> {
+    await this.sharedCache.disconnect();
+  }
+
   /**
    * Checks whether Redis caching is enabled based on environment variables.
    * @private
@@ -303,10 +307,10 @@ export class CacheService {
    * Else the internal cache clearing is attempted.
    * @param {boolean} shared - Whether to clear the shared cache (optional, default: false).
    */
-  public clear(requestIdPrefix?: string, shared: boolean = false): void {
+  public async clear(requestIdPrefix?: string, shared: boolean = false): Promise<void> {
     if (shared && this.isSharedCacheEnabled) {
       try {
-        return this.sharedCache.clear();
+        await this.sharedCache.clear();
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
