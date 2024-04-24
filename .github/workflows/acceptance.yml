@@ -86,6 +86,7 @@ jobs:
     with:
       testfilter: ws_batch2
       test_ws_server: true
+      networkTag: 0.49.1
 
   websocket-batch-3:
     name: Websocket Batch 3
@@ -93,7 +94,6 @@ jobs:
     with:
       testfilter: ws_batch3
       test_ws_server: true
-      networkTag: 0.49.1
 
   cacheservice:
     name: Cache Service
