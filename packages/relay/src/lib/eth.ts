@@ -50,6 +50,7 @@ import { CacheService } from './services/cacheService/cacheService';
 import { IDebugService } from './services/debugService/IDebugService';
 import { DebugService } from './services/debugService';
 import { isValidEthereumAddress } from '../formatters';
+import { IFeeHistory } from './types/IFeeHistory';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -87,8 +88,17 @@ export class EthImpl implements Eth {
   static ethTxType = 'EthereumTransaction';
   static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasUsedRatio = 0.5;
-  static feeHistoryZeroBlockCountResponse = { gasUsedRatio: null, oldestBlock: EthImpl.zeroHex };
-  static feeHistoryEmptyResponse = { baseFeePerGas: [], gasUsedRatio: [], reward: [], oldestBlock: EthImpl.zeroHex };
+  static feeHistoryZeroBlockCountResponse: IFeeHistory = {
+    gasUsedRatio: null,
+    oldestBlock: EthImpl.zeroHex,
+    baseFeePerGas: undefined,
+  };
+  static feeHistoryEmptyResponse: IFeeHistory = {
+    baseFeePerGas: [],
+    gasUsedRatio: [],
+    reward: [],
+    oldestBlock: EthImpl.zeroHex,
+  };
   static redirectBytecodePrefix = '6080604052348015600f57600080fd5b506000610167905077618dc65e';
   static redirectBytecodePostfix =
     '600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033';
@@ -316,12 +326,7 @@ export class EthImpl implements Eth {
     newestBlock: string,
     rewardPercentiles: Array<number> | null,
     requestIdPrefix?: string,
-  ): Promise<{
-    baseFeePerGas: string[];
-    gasUsedRatio: number[];
-    oldestBlock: string;
-    reward?: string[][];
-  }> {
+  ): Promise<IFeeHistory | JsonRpcError> {
     const maxResults =
       process.env.TEST === 'true'
         ? constants.DEFAULT_FEE_HISTORY_MAX_RESULTS
@@ -332,32 +337,21 @@ export class EthImpl implements Eth {
     );
 
     try {
-      let newestBlockNumber;
-      let latestBlockNumber;
-      if (this.getEthFeeHistoryFixedFee()) {
-        newestBlockNumber =
-          newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending
-            ? await this.translateBlockTag(EthImpl.blockLatest, requestIdPrefix)
-            : await this.translateBlockTag(newestBlock, requestIdPrefix);
-      } else {
-        // once we finish testing and refining Fixed Fee method, we can remove this else block to clean up code
-        latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestIdPrefix);
-        newestBlockNumber =
-          newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending
-            ? latestBlockNumber
-            : await this.translateBlockTag(newestBlock, requestIdPrefix);
+      const latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestIdPrefix);
+      const newestBlockNumber =
+        newestBlock == EthImpl.blockLatest || newestBlock == EthImpl.blockPending
+          ? latestBlockNumber
+          : await this.translateBlockTag(newestBlock, requestIdPrefix);
 
-        if (newestBlockNumber > latestBlockNumber) {
-          return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
-        }
+      if (newestBlockNumber > latestBlockNumber) {
+        return predefined.REQUEST_BEYOND_HEAD_BLOCK(newestBlockNumber, latestBlockNumber);
       }
-
       blockCount = blockCount > maxResults ? maxResults : blockCount;
 
       if (blockCount <= 0) {
         return EthImpl.feeHistoryZeroBlockCountResponse;
       }
-      let feeHistory: object | undefined;
+      let feeHistory: IFeeHistory;
 
       if (this.getEthFeeHistoryFixedFee()) {
         let oldestBlock = newestBlockNumber - blockCount + 1;
@@ -369,12 +363,13 @@ export class EthImpl implements Eth {
         feeHistory = this.getRepeatedFeeHistory(blockCount, oldestBlock, rewardPercentiles, gasPriceFee);
       } else {
         // once we finish testing and refining Fixed Fee method, we can remove this else block to clean up code
-
         const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join(
           '',
         )}`;
-        feeHistory = this.cacheService.get(cacheKey, EthImpl.ethFeeHistory, requestIdPrefix);
-        if (!feeHistory) {
+        const cachedFeeHistory = this.cacheService.get(cacheKey, EthImpl.ethFeeHistory, requestIdPrefix);
+        if (cachedFeeHistory) {
+          feeHistory = cachedFeeHistory;
+        } else {
           feeHistory = await this.getFeeHistory(
             blockCount,
             newestBlockNumber,
@@ -382,9 +377,9 @@ export class EthImpl implements Eth {
             rewardPercentiles,
             requestIdPrefix,
           );
-          if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
-            this.cacheService.set(cacheKey, feeHistory, EthImpl.ethFeeHistory, undefined, requestIdPrefix);
-          }
+        }
+        if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
+          this.cacheService.set(cacheKey, feeHistory, EthImpl.ethFeeHistory, undefined, requestIdPrefix);
         }
       }
 
@@ -415,15 +410,10 @@ export class EthImpl implements Eth {
     oldestBlockNumber: number,
     rewardPercentiles: Array<number> | null,
     fee: string,
-  ): Promise<{
-    baseFeePerGas: string[];
-    gasUsedRatio: number[];
-    oldestBlock: string;
-    reward?: string[][];
-  }> {
+  ): IFeeHistory {
     const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;
 
-    const feeHistory = {
+    const feeHistory: IFeeHistory = {
       baseFeePerGas: Array(blockCount).fill(fee),
       gasUsedRatio: Array(blockCount).fill(EthImpl.defaultGasUsedRatio),
       oldestBlock: numberTo0x(oldestBlockNumber),
@@ -431,7 +421,7 @@ export class EthImpl implements Eth {
 
     // next fee. Due to high block production rate and low fee change rate we add the next fee
     // since by the time a user utilizes the response there will be a next block likely with the same fee
-    feeHistory.baseFeePerGas.push(fee);
+    feeHistory.baseFeePerGas?.push(fee);
 
     if (shouldIncludeRewards) {
       feeHistory['reward'] = Array(blockCount).fill(Array(rewardPercentiles.length).fill(EthImpl.zeroHex));
@@ -446,16 +436,11 @@ export class EthImpl implements Eth {
     latestBlockNumber: number,
     rewardPercentiles: Array<number> | null,
     requestIdPrefix?: string,
-  ): Promise<{
-    baseFeePerGas: string[];
-    gasUsedRatio: number[];
-    oldestBlock: string;
-    reward?: string[][];
-  }> {
+  ): Promise<IFeeHistory> {
     // include newest block number in the total block count
     const oldestBlockNumber = Math.max(0, newestBlockNumber - blockCount + 1);
     const shouldIncludeRewards = Array.isArray(rewardPercentiles) && rewardPercentiles.length > 0;
-    const feeHistory = {
+    const feeHistory: IFeeHistory = {
       baseFeePerGas: [] as string[],
       gasUsedRatio: [] as number[],
       oldestBlock: numberTo0x(oldestBlockNumber),
@@ -465,8 +450,8 @@ export class EthImpl implements Eth {
     for (let blockNumber = oldestBlockNumber; blockNumber <= newestBlockNumber; blockNumber++) {
       const fee = await this.getFeeByBlockNumber(blockNumber, requestIdPrefix);
 
-      feeHistory.baseFeePerGas.push(fee);
-      feeHistory.gasUsedRatio.push(EthImpl.defaultGasUsedRatio);
+      feeHistory.baseFeePerGas?.push(fee);
+      feeHistory.gasUsedRatio?.push(EthImpl.defaultGasUsedRatio);
     }
 
     // get latest block fee
@@ -478,7 +463,7 @@ export class EthImpl implements Eth {
     }
 
     if (nextBaseFeePerGas) {
-      feeHistory.baseFeePerGas.push(nextBaseFeePerGas);
+      feeHistory.baseFeePerGas?.push(nextBaseFeePerGas);
     }
 
     if (shouldIncludeRewards) {
@@ -528,7 +513,7 @@ export class EthImpl implements Eth {
    */
   async blockNumber(requestIdPrefix?: string): Promise<string> {
     this.logger.trace(`${requestIdPrefix} blockNumber()`);
-    return this.common.getLatestBlockNumber(requestIdPrefix);
+    return await this.common.getLatestBlockNumber(requestIdPrefix);
   }
 
   /**
@@ -2058,11 +2043,11 @@ export class EthImpl implements Eth {
     return input.startsWith(EthImpl.emptyHex) ? input.substring(2) : input;
   }
 
-  private static blockTagIsEarliest = (tag: string): boolean => {
+  private static isBlockTagEarliest = (tag: string): boolean => {
     return tag === EthImpl.blockEarliest;
   };
 
-  private static blockTagIsFinalized = (tag: string): boolean => {
+  private static isBlockTagFinalized = (tag: string): boolean => {
     return (
       tag === EthImpl.blockFinalized ||
       tag === EthImpl.blockLatest ||
