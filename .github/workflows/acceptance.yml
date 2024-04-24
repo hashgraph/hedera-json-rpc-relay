@@ -17,6 +17,7 @@ jobs:
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api_batch1
+      networkTag: 0.49.1
 
   api_batch_2:
     name: API Batch 2
@@ -92,6 +93,7 @@ jobs:
     with:
       testfilter: ws_batch3
       test_ws_server: true
+      networkTag: 0.49.1
 
   cacheservice:
     name: Cache Service
