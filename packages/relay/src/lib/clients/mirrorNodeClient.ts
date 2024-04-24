@@ -87,7 +87,7 @@ export class MirrorNodeClient {
   private static ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
   private static ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
   private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
-  private readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '250');
+  private readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '1800');
 
   static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
     [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [404]],
