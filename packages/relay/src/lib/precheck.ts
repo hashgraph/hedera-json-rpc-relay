@@ -75,11 +75,11 @@ export class Precheck {
     this.transactionType(parsedTx, requestId);
     this.gasLimit(parsedTx, requestId);
     const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
-    await this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
+    this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
     this.chainId(parsedTx, requestId);
     this.value(parsedTx);
     this.gasPrice(parsedTx, gasPrice, requestId);
-    await this.balance(parsedTx, mirrorAccountInfo, requestId);
+    this.balance(parsedTx, mirrorAccountInfo, requestId);
   }
 
   /**
@@ -111,9 +111,8 @@ export class Precheck {
    * @param {Transaction} tx - The transaction.
    * @param {number} accountInfoNonce - The nonce of the account.
    * @param {string} [requestId] - The request ID.
-   * @returns {Promise<void>} A Promise.
    */
-  async nonce(tx: Transaction, accountInfoNonce: number, requestId?: string): Promise<void> {
+  nonce(tx: Transaction, accountInfoNonce: number, requestId?: string): void {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(
       `${requestIdPrefix} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`,
@@ -207,9 +206,8 @@ export class Precheck {
    * @param {Transaction} tx - The transaction.
    * @param {any} account - The account information.
    * @param {string} [requestId] - The request ID.
-   * @returns {Promise<void>} A Promise.
    */
-  async balance(tx: Transaction, account: any, requestId?: string): Promise<void> {
+  balance(tx: Transaction, account: any, requestId?: string): void {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const result = {
       passes: false,

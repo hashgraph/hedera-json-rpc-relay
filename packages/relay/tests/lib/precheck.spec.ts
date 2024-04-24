@@ -29,7 +29,7 @@ import { blobVersionedHash, contractAddress1, expectedError, mockData, signTrans
 import { MirrorNodeClient } from '../../src/lib/clients';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { ethers } from 'ethers';
+import { Transaction, ethers } from 'ethers';
 import constants from '../../src/lib/constants';
 import { JsonRpcError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
@@ -447,11 +447,11 @@ describe('Precheck', async function () {
   });
 
   describe('account', async function () {
-    let defaultNonce, defaultTx, signed, parsedTx, mirrorAccount, wallet;
+    let parsedTx: Transaction, mirrorAccount: any, defaultNonce: number;
     before(async () => {
       defaultNonce = 3;
-      wallet = ethers.Wallet.createRandom();
-      signed = await wallet.signTransaction({ ...defaultTx, from: wallet.address, nonce: defaultNonce });
+      const wallet = ethers.Wallet.createRandom();
+      const signed = await wallet.signTransaction({ ...defaultTx, from: wallet.address, nonce: defaultNonce });
       parsedTx = ethers.Transaction.from(signed);
       mirrorAccount = {
         evm_address: parsedTx.from,
