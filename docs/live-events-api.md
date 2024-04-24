@@ -10,7 +10,7 @@ const provider = await new ethers.providers.WebSocketProvider(WEBSOCKET_ENDPOINT
 ```
 
 Where
-- WEBSOCKET_ENDPOINT_URL - The websocket endpoint, default is `http://localhost:8546`
+- WEBSOCKET_ENDPOINT_URL - The websocket endpoint, default is `ws://localhost:8546`
 
 
 ## API
@@ -68,9 +68,9 @@ The `eth_subscribe` method is used to establish a subscription, which listens fo
 When calling the `eth_subscribe` method 2 parameters should be specified:
 1. `params[0]` is used to specify the type of event. Possible values are:
 - `logs` - subscribes to newly created Logs from specified Contracts. The result data is in the [Log](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#log-object) format.
-- `newHeads` - not supported at this time.
+- `newHeads` - subscribes to newly created blocks. The result data is a [Block](https://besu.hyperledger.org/23.4.0/public-networks/how-to/use-besu-api/rpc-pubsub#new-headers).
 
-2. `params[1]` is used to specify filters. Logs can be filtered by `address` and/or `topics`:
+2.  `params[1]` is used to specify filters. Logs can be filtered by `address` and/or `topics`:
 
 ```typescript
 {
@@ -113,6 +113,16 @@ Returns the chain id:
     "id": 1,
     "jsonrpc": "2.0",
     "result": CHAIN_ID
+  }
+```
+
+### newHeads
+```js
+  {
+    "id":1,
+    "jsonrpc":"2.0",
+    "method":"eth_subscribe",
+    "params":["newHeads"]
   }
 ```
 
