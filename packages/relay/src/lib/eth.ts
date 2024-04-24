@@ -51,6 +51,7 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { DebugService } from './services/debugService';
 import { isValidEthereumAddress } from '../formatters';
 import { IFeeHistory } from './types/IFeeHistory';
+import { ITransactionReceipt } from './types/ITransactionReceipt';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -93,7 +94,7 @@ export class EthImpl implements Eth {
     oldestBlock: EthImpl.zeroHex,
     baseFeePerGas: undefined,
   };
-  static feeHistoryEmptyResponse: IFeeHistory = {
+  static readonly feeHistoryEmptyResponse: IFeeHistory = {
     baseFeePerGas: [],
     gasUsedRatio: [],
     reward: [],
@@ -1910,7 +1911,7 @@ export class EthImpl implements Eth {
    *
    * @param hash
    */
-  async getTransactionReceipt(hash: string, requestIdPrefix?: string): Promise<Log | any | null> {
+  async getTransactionReceipt(hash: string, requestIdPrefix?: string): Promise<any> {
     this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_RECEIPT}_${hash}`;
@@ -1931,7 +1932,7 @@ export class EthImpl implements Eth {
 
     if (cachedLog) {
       const gasPriceForTimestamp = await this.getCurrentGasPriceForBlock(cachedLog.blockHash);
-      const receipt: any = {
+      const receipt: ITransactionReceipt = {
         blockHash: cachedLog.blockHash,
         blockNumber: cachedLog.blockNumber,
         contractAddress: cachedLog.address,
@@ -1987,7 +1988,7 @@ export class EthImpl implements Eth {
         });
       });
 
-      const receipt: any = {
+      const receipt: ITransactionReceipt = {
         blockHash: toHash32(receiptResponse.block_hash),
         blockNumber: numberTo0x(receiptResponse.block_number),
         from: await this.resolveEvmAddress(receiptResponse.from, requestIdPrefix),
