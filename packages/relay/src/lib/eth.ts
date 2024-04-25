@@ -21,7 +21,7 @@
 import { Eth } from '../index';
 import { Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Block, Transaction, Log } from './model';
+import { Block, Transaction, Log, Transaction1559 } from './model';
 import { MirrorNodeClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
@@ -2164,7 +2164,7 @@ export class EthImpl implements Eth {
    * @returns Transaction Object
    */
   private createTransactionFromLog(log: Log) {
-    return new Transaction({
+    return new Transaction1559({
       accessList: undefined, // we don't support access lists for now
       blockHash: log.blockHash,
       blockNumber: log.blockNumber,
