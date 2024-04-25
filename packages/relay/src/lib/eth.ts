@@ -367,7 +367,12 @@ export class EthImpl implements Eth {
         const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join(
           '',
         )}`;
-        const cachedFeeHistory = this.cacheService.getSharedWithFallback(cacheKey, EthImpl.ethFeeHistory, requestIdPrefix);
+        const cachedFeeHistory = await this.cacheService.getSharedWithFallback(
+          cacheKey,
+          EthImpl.ethFeeHistory,
+          requestIdPrefix,
+        );
+
         if (cachedFeeHistory) {
           feeHistory = cachedFeeHistory;
         } else {
@@ -675,7 +680,7 @@ export class EthImpl implements Eth {
    */
   private async getAccount(address: string, requestIdPrefix?: string) {
     const key = `${constants.CACHE_KEY.ACCOUNT}_${address}`;
-    let account = this.cacheService.get(key, EthImpl.ethEstimateGas, requestIdPrefix);
+    let account = this.cacheService.getSharedWithFallback(key, EthImpl.ethEstimateGas, requestIdPrefix);
     if (!account) {
       account = await this.mirrorNodeClient.getAccount(address, requestIdPrefix);
       this.cacheService.set(key, account, EthImpl.ethEstimateGas, undefined, requestIdPrefix);

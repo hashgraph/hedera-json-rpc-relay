@@ -216,8 +216,4 @@ export class LocalLRUCache implements ICacheClient {
   public async clear(): Promise<void> {
     this.cache.clear();
   }
-
-  public disconnect(): void {
-    return;
-  }
 }

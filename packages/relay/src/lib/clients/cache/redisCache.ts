@@ -22,14 +22,14 @@
 import { createClient, RedisClientType } from 'redis';
 import { Logger } from 'pino';
 import { Registry } from 'prom-client';
-import { ICacheClient } from './ICacheClient';
 import { RedisCacheError } from '../../errors/RedisCacheError';
 import constants from '../../constants';
+import { IRedisCacheClient } from './IRedisCacheClient';
 
 /**
  * A class that provides caching functionality using Redis.
  */
-export class RedisCache implements ICacheClient {
+export class RedisCache implements IRedisCacheClient {
   /**
    * Configurable options used when initializing the cache.
    *
