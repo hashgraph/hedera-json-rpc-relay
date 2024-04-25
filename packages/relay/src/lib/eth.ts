@@ -369,7 +369,7 @@ export class EthImpl implements Eth {
         const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join(
           '',
         )}`;
-        feeHistory = this.cacheService.getSharedWithFallback(cacheKey, EthImpl.ethFeeHistory, requestIdPrefix);
+        feeHistory = await this.cacheService.getSharedWithFallback(cacheKey, EthImpl.ethFeeHistory, requestIdPrefix);
         if (!feeHistory) {
           feeHistory = await this.getFeeHistory(
             blockCount,
@@ -589,7 +589,7 @@ export class EthImpl implements Eth {
         const value = Number(transaction.value);
         if (value > 0) {
           const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${transaction.to}`;
-          let toAccount: object | null = this.cacheService.getSharedWithFallback(
+          let toAccount: object | null = await this.cacheService.getSharedWithFallback(
             accountCacheKey,
             EthImpl.ethEstimateGas,
             requestIdPrefix,

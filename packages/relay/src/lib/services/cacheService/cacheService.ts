@@ -23,6 +23,7 @@ import { Counter, Registry } from 'prom-client';
 import { ICacheClient } from '../../clients/cache/ICacheClient';
 import { LocalLRUCache, RedisCache } from '../../clients';
 import { RedisCacheError } from '../../errors/RedisCacheError';
+import { IRedisCacheClient } from '../../clients/cache/IRedisCacheClient';
 
 /**
  * A service that manages caching using different cache implementations based on configuration.
@@ -116,7 +117,9 @@ export class CacheService {
   }
 
   async disconnectRedisClient(): Promise<void> {
-    await this.sharedCache.disconnect();
+    if (this.sharedCache instanceof RedisCache) {
+      await this.sharedCache.disconnect();
+    }
   }
 
   /**
