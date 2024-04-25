@@ -553,7 +553,11 @@ export class EthImpl implements Eth {
    * Estimates the amount of gas to execute a call.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async estimateGas(transaction: any, _blockParam: string | null, requestIdPrefix?: string) {
+  async estimateGas(
+    transaction: any,
+    _blockParam: string | null,
+    requestIdPrefix?: string,
+  ): Promise<string | JsonRpcError> {
     this.logger.trace(
       `${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`,
     );
@@ -563,71 +567,71 @@ export class EthImpl implements Eth {
         .labels(EthImpl.ethEstimateGas, transaction.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
         .inc();
 
-    this.contractCallFormat(transaction);
-    let gas = EthImpl.gasTxBaseCost;
     try {
-      const contractCallResponse = await this.mirrorNodeClient.postContractCall(
-        {
-          ...transaction,
-          estimate: true,
-        },
-        requestIdPrefix,
-      );
-
-      if (contractCallResponse?.result) {
-        gas = prepend0x(trimPrecedingZeros(contractCallResponse.result));
-        this.logger.info(`${requestIdPrefix} Returning gas: ${gas}`);
-      }
+      const estimatedGas = await this.estimateGasFromMirrorNode(transaction, requestIdPrefix);
+      this.logger.info(`${requestIdPrefix} Returning gas: ${estimatedGas}`);
+      return estimatedGas;
     } catch (e: any) {
       this.logger.error(
         `${requestIdPrefix} Error raised while fetching estimateGas from mirror-node: ${JSON.stringify(e)}`,
       );
-
-      // Handle Simple Transaction and Hollow account creation
-      if (transaction && transaction.to && (!transaction.data || transaction.data === '0x')) {
-        const value = Number(transaction.value);
-        if (value > 0) {
-          const accountCacheKey = `${constants.CACHE_KEY.ACCOUNT}_${transaction.to}`;
-          let toAccount: object | null = this.cacheService.get(
-            accountCacheKey,
-            EthImpl.ethEstimateGas,
-            requestIdPrefix,
-          );
-          if (!toAccount) {
-            toAccount = await this.mirrorNodeClient.getAccount(transaction.to, requestIdPrefix);
-          }
-
-          // when account exists return default base gas, otherwise return the minimum amount of gas to create an account entity
-          if (toAccount) {
-            this.cacheService.set(accountCacheKey, toAccount, EthImpl.ethEstimateGas, undefined, requestIdPrefix);
-
-            gas = EthImpl.gasTxBaseCost;
-          } else {
-            gas = EthImpl.gasTxHollowAccountCreation;
-          }
-        } else {
-          return predefined.INVALID_PARAMETER(
-            0,
-            `Invalid 'value' field in transaction param. Value must be greater than 0`,
-          );
-        }
-      } else {
-        // The size limit of the encoded contract posted to the mirror node can cause contract deployment transactions to fail with a 400 response code.
-        // The contract is actually deployed on the consensus node, so the contract will work.  In these cases, we don't want to return a
-        // CONTRTACT_REVERT error.
-        if (
-          this.estimateGasThrows &&
-          e.isContractReverted() &&
-          e.message !== MirrorNodeClientError.messages.INVALID_HEX
-        ) {
-          return predefined.CONTRACT_REVERT(e.detail, e.data);
-        }
-        // Handle Contract Call or Contract Create
-        gas = this.defaultGas;
-      }
-      this.logger.error(`${requestIdPrefix} Returning predefined gas: ${gas}`);
+      const predefinedGas = await this.predefinedGasForTransaction(transaction, requestIdPrefix);
+      this.logger.error(`${requestIdPrefix} Returning predefined gas: ${JSON.stringify(predefinedGas)}`);
+      return predefinedGas;
     }
-    return gas;
+  }
+
+  private async estimateGasFromMirrorNode(transaction: any, requestIdPrefix?: string): Promise<string> {
+    this.contractCallFormat(transaction);
+    const callData = { ...transaction, estimate: true };
+    const response = await this.mirrorNodeClient.postContractCall(callData, requestIdPrefix);
+    if (response?.result) {
+      return prepend0x(trimPrecedingZeros(response.result));
+    } else {
+      return EthImpl.gasTxBaseCost;
+    }
+  }
+
+  private async predefinedGasForTransaction(
+    transaction: any,
+    requestIdPrefix?: string,
+  ): Promise<string | JsonRpcError> {
+    const isSimpleTransfer = transaction?.to && (!transaction.data || transaction.data === '0x');
+    const isContractCall = transaction?.to && transaction?.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH;
+    const isContractCreate = !transaction?.to && transaction?.data;
+
+    if (isSimpleTransfer) {
+      // Handle Simple Transaction and Hollow Account creation
+      if (Number(transaction.value) <= 0) {
+        return predefined.INVALID_PARAMETER(
+          0,
+          `Invalid 'value' field in transaction param. Value must be greater than 0`,
+        );
+      }
+      // when account exists return default base gas
+      if (await this.getAccount(transaction.to, requestIdPrefix)) {
+        return EthImpl.gasTxBaseCost;
+      }
+      // otherwise, return the minimum amount of gas for hollow account creation
+      return EthImpl.gasTxHollowAccountCreation;
+    } else if (isContractCreate) {
+      return numberTo0x(Precheck.transactionIntrinsicGasCost(transaction.data));
+    } else if (isContractCall) {
+      // TODO: For contract call return some hardcoded value (TBD)
+      return numberTo0x(this.contractCallGasLimit);
+    } else {
+      return this.defaultGas;
+    }
+  }
+
+  private async getAccount(address: string, requestIdPrefix?: string) {
+    const key = `${constants.CACHE_KEY.ACCOUNT}_${address}`;
+    let account = this.cacheService.get(key, EthImpl.ethEstimateGas, requestIdPrefix);
+    if (!account) {
+      account = await this.mirrorNodeClient.getAccount(address, requestIdPrefix);
+      this.cacheService.set(key, account, EthImpl.ethEstimateGas, undefined, requestIdPrefix);
+    }
+    return account;
   }
 
   /**

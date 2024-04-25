@@ -179,7 +179,6 @@ export class Precheck {
     };
     const txGas = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
     const txTotalValue = tx.value + txGas * tx.gasLimit;
-    let tinybars: BigInt;
 
     if (account == null) {
       this.logger.trace(
@@ -190,6 +189,7 @@ export class Precheck {
       throw predefined.RESOURCE_NOT_FOUND(`tx.from '${tx.from}'.`);
     }
 
+    let tinybars: bigint;
     try {
       tinybars = BigInt(account.balance.balance.toString()) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
       result.passes = tinybars >= txTotalValue;
@@ -255,7 +255,7 @@ export class Precheck {
    * @param data
    * @private
    */
-  private static transactionIntrinsicGasCost(data: string) {
+  public static transactionIntrinsicGasCost(data: string): number {
     let trimmedData = data.replace('0x', '');
 
     let zeros = 0;
