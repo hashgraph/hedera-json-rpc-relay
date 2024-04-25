@@ -204,7 +204,11 @@ export class CommonService implements ICommonService {
   public async getLatestBlockNumber(requestIdPrefix?: string): Promise<string> {
     // check for cached value
     const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
-    const blockNumberCached = this.cacheService.get(cacheKey, CommonService.latestBlockNumber, requestIdPrefix);
+    const blockNumberCached = await this.cacheService.getSharedWithFallback(
+      cacheKey,
+      CommonService.latestBlockNumber,
+      requestIdPrefix,
+    );
 
     if (blockNumberCached) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
@@ -216,7 +220,7 @@ export class CommonService implements ICommonService {
     if (Array.isArray(blocks) && blocks.length > 0) {
       const currentBlock = numberTo0x(blocks[0].number);
       // save the latest block number in cache
-      this.cacheService.set(
+      await this.cacheService.set(
         cacheKey,
         currentBlock,
         CommonService.latestBlockNumber,

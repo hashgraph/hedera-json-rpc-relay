@@ -77,7 +77,7 @@ export class LocalLRUCache implements ICacheClient {
     this.logger = logger;
     this.register = register;
 
-    const cacheSizeCollect = () => {
+    const cacheSizeCollect = (): void => {
       this.purgeStale();
       this.cacheKeyGauge.set(this.cache.size);
     };
@@ -88,7 +88,7 @@ export class LocalLRUCache implements ICacheClient {
       name: metricCounterName,
       help: 'Relay LRU cache gauge',
       registers: [register],
-      async collect() {
+      async collect(): Promise<void> {
         cacheSizeCollect();
       },
     });
@@ -102,16 +102,18 @@ export class LocalLRUCache implements ICacheClient {
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    * @returns {*} The cached value if found, otherwise null.
    */
-  public get(key: string, callingMethod: string, requestIdPrefix?: string): any {
-    const value = this.cache.get(key);
-    if (value !== undefined) {
-      this.logger.trace(
-        `${requestIdPrefix} returning cached value ${key}:${JSON.stringify(value)} on ${callingMethod} call`,
-      );
-      return value;
-    }
+  public async get(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
+    return new Promise((resolve) => {
+      const value = this.cache.get(key);
+      if (value !== undefined) {
+        this.logger.trace(
+          `${requestIdPrefix} returning cached value ${key}:${JSON.stringify(value)} on ${callingMethod} call`,
+        );
+        resolve(value);
+      }
 
-    return null;
+      resolve(null);
+    });
   }
 
   /**
@@ -123,10 +125,19 @@ export class LocalLRUCache implements ICacheClient {
    * @param {number} ttl - Time to live for the cached value in milliseconds (optional).
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    */
-  public set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string): void {
-    const resolvedTtl = ttl ?? this.options.ttl;
-    this.logger.trace(`${requestIdPrefix} caching ${key}:${JSON.stringify(value)} for ${resolvedTtl} ms`);
-    this.cache.set(key, value, { ttl: resolvedTtl });
+  public async set(
+    key: string,
+    value: any,
+    callingMethod: string,
+    ttl?: number,
+    requestIdPrefix?: string,
+  ): Promise<void> {
+    return new Promise((resolve) => {
+      const resolvedTtl = ttl ?? this.options.ttl;
+      this.logger.trace(`${requestIdPrefix} caching ${key}:${JSON.stringify(value)} for ${resolvedTtl} ms`);
+      this.cache.set(key, value, { ttl: resolvedTtl });
+      resolve();
+    });
   }
 
   /**
@@ -137,11 +148,18 @@ export class LocalLRUCache implements ICacheClient {
    * @param requestIdPrefix - Optional request ID prefix for logging.
    * @returns {Promise<void>} A Promise that resolves when the values are cached.
    */
-  public multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): void {
+  public async multiSet(
+    keyValuePairs: Record<string, any>,
+    callingMethod: string,
+    requestIdPrefix?: string,
+  ): Promise<void> {
     // Iterate over each entry in the keyValuePairs object
-    for (const [key, value] of Object.entries(keyValuePairs)) {
-      this.set(key, value, callingMethod, undefined, requestIdPrefix);
-    }
+    return new Promise((resolve) => {
+      for (const [key, value] of Object.entries(keyValuePairs)) {
+        this.set(key, value, callingMethod, undefined, requestIdPrefix);
+      }
+      resolve();
+    });
   }
 
   /**
@@ -153,16 +171,19 @@ export class LocalLRUCache implements ICacheClient {
    * @param requestIdPrefix - Optional request ID prefix for logging.
    * @returns {void} A Promise that resolves when the values are cached.
    */
-  public pipelineSet(
+  public async pipelineSet(
     keyValuePairs: Record<string, any>,
     callingMethod: string,
     ttl?: number,
     requestIdPrefix?: string,
-  ): void {
+  ): Promise<void> {
     // Iterate over each entry in the keyValuePairs object
-    for (const [key, value] of Object.entries(keyValuePairs)) {
-      this.set(key, value, callingMethod, ttl, requestIdPrefix);
-    }
+    return new Promise((resolve) => {
+      for (const [key, value] of Object.entries(keyValuePairs)) {
+        this.set(key, value, callingMethod, ttl, requestIdPrefix);
+      }
+      resolve();
+    });
   }
 
   /**
@@ -172,9 +193,12 @@ export class LocalLRUCache implements ICacheClient {
    * @param {string} callingMethod - The name of the method calling the cache.
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    */
-  public delete(key: string, callingMethod: string, requestIdPrefix?: string): void {
-    this.logger.trace(`${requestIdPrefix} delete cache for ${key}`);
-    this.cache.delete(key);
+  public async delete(key: string, callingMethod: string, requestIdPrefix?: string): Promise<void> {
+    return new Promise((resolve) => {
+      this.logger.trace(`${requestIdPrefix} delete cache for ${key}`);
+      this.cache.delete(key);
+      resolve();
+    });
   }
 
   /**
@@ -189,7 +213,7 @@ export class LocalLRUCache implements ICacheClient {
    * Clears the entire cache, removing all entries.
    * Use this method with caution, as it wipes all cached data.
    */
-  public clear(): void {
+  public async clear(): Promise<void> {
     this.cache.clear();
   }
 

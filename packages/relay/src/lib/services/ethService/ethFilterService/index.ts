@@ -78,10 +78,10 @@ export class FilterService implements IFilterService {
    * @param params
    * @param requestIdPrefix
    */
-  createFilter(type: string, params: any, requestIdPrefix?: string): string {
+  async createFilter(type: string, params: any, requestIdPrefix?: string): Promise<string> {
     const filterId = generateRandomHex();
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    this.cacheService.set(
+    await this.cacheService.set(
       cacheKey,
       {
         type,
@@ -100,7 +100,7 @@ export class FilterService implements IFilterService {
   /**
    * Checks if the Filter API is enabled
    */
-  static requireFiltersEnabled() {
+  static requireFiltersEnabled(): void {
     if (!process.env.FILTER_API_ENABLED || process.env.FILTER_API_ENABLED !== 'true') {
       throw predefined.UNSUPPORTED_METHOD;
     }
@@ -133,7 +133,7 @@ export class FilterService implements IFilterService {
         throw predefined.INVALID_BLOCK_RANGE;
       }
 
-      return this.createFilter(
+      return await this.createFilter(
         constants.FILTER.TYPE.LOG,
         {
           fromBlock: fromBlock === 'latest' ? await this.common.getLatestBlockNumber(requestIdPrefix) : fromBlock,
@@ -152,7 +152,7 @@ export class FilterService implements IFilterService {
     this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
     try {
       FilterService.requireFiltersEnabled();
-      return this.createFilter(
+      return await this.createFilter(
         constants.FILTER.TYPE.NEW_BLOCK,
         {
           blockAtCreation: await this.common.getLatestBlockNumber(requestIdPrefix),
@@ -169,10 +169,10 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.getAsync(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+    const filter = await this.cacheService.getSharedWithFallback(cacheKey, this.ethUninstallFilter, requestIdPrefix);
 
     if (filter) {
-      this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix, true);
+      await this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix, true);
       return true;
     }
 
@@ -189,12 +189,12 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
+    const filter = await this.cacheService.getSharedWithFallback(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
     if (filter?.type != constants.FILTER.TYPE.LOG) {
       throw predefined.FILTER_NOT_FOUND;
     }
 
-    return this.common.getLogs(
+    return await this.common.getLogs(
       null,
       filter?.params.fromBlock,
       filter?.params.toBlock,
@@ -210,7 +210,7 @@ export class FilterService implements IFilterService {
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
     const filter = this.cacheService.isRedisEnabled()
-      ? await this.cacheService.getAsync(cacheKey, this.ethGetFilterChanges, requestIdPrefix)
+      ? await this.cacheService.getSharedWithFallback(cacheKey, this.ethGetFilterChanges, requestIdPrefix)
       : await this.cacheService.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
 
     if (!filter) {
@@ -257,7 +257,7 @@ export class FilterService implements IFilterService {
     }
 
     // update filter to refresh TTL and set lastQueried block number
-    this.cacheService.set(
+    await this.cacheService.set(
       cacheKey,
       {
         type: filter.type,
