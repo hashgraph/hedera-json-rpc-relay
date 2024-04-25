@@ -568,33 +568,35 @@ export class EthImpl implements Eth {
         .inc();
 
     try {
-      const estimatedGas = await this.estimateGasFromMirrorNode(transaction, requestIdPrefix);
-      this.logger.info(`${requestIdPrefix} Returning gas: ${estimatedGas}`);
-      return estimatedGas;
+      const response = await this.estimateGasFromMirrorNode(transaction, requestIdPrefix);
+      if (response?.result) {
+        this.logger.info(`${requestIdPrefix} Returning gas: ${response.result}`);
+        return prepend0x(trimPrecedingZeros(response.result));
+      } else {
+        const predefinedGas = await this.predefinedGasForTransaction(transaction, requestIdPrefix);
+        this.logger.warn(`${requestIdPrefix} Returning predefined gas: ${JSON.stringify(predefinedGas)}`);
+        return predefinedGas;
+      }
     } catch (e: any) {
       this.logger.error(
         `${requestIdPrefix} Error raised while fetching estimateGas from mirror-node: ${JSON.stringify(e)}`,
       );
-      const predefinedGas = await this.predefinedGasForTransaction(transaction, requestIdPrefix);
-      this.logger.error(`${requestIdPrefix} Returning predefined gas: ${JSON.stringify(predefinedGas)}`);
+      const predefinedGas = await this.predefinedGasForTransaction(transaction, requestIdPrefix, e);
+      this.logger.warn(`${requestIdPrefix} Returning predefined gas: ${JSON.stringify(predefinedGas)}`);
       return predefinedGas;
     }
   }
 
-  private async estimateGasFromMirrorNode(transaction: any, requestIdPrefix?: string): Promise<string> {
+  private async estimateGasFromMirrorNode(transaction: any, requestIdPrefix?: string): Promise<any> {
     this.contractCallFormat(transaction);
     const callData = { ...transaction, estimate: true };
-    const response = await this.mirrorNodeClient.postContractCall(callData, requestIdPrefix);
-    if (response?.result) {
-      return prepend0x(trimPrecedingZeros(response.result));
-    } else {
-      return EthImpl.gasTxBaseCost;
-    }
+    return this.mirrorNodeClient.postContractCall(callData, requestIdPrefix);
   }
 
   private async predefinedGasForTransaction(
     transaction: any,
     requestIdPrefix?: string,
+    error?: any,
   ): Promise<string | JsonRpcError> {
     const isSimpleTransfer = transaction?.to && (!transaction.data || transaction.data === '0x');
     const isContractCall = transaction?.to && transaction?.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH;
@@ -615,10 +617,21 @@ export class EthImpl implements Eth {
       // otherwise, return the minimum amount of gas for hollow account creation
       return EthImpl.gasTxHollowAccountCreation;
     } else if (isContractCreate) {
+      // The size limit of the encoded contract posted to the mirror node can
+      // cause contract deployment transactions to fail with a 400 response code.
+      // The contract is actually deployed on the consensus node, so the contract will work.
+      // In these cases, we don't want to return a CONTRACT_REVERT error.
+      if (
+        this.estimateGasThrows &&
+        error?.isContractReverted() &&
+        error?.message !== MirrorNodeClientError.messages.INVALID_HEX
+      ) {
+        return predefined.CONTRACT_REVERT(error.detail, error.data);
+      }
       return numberTo0x(Precheck.transactionIntrinsicGasCost(transaction.data));
     } else if (isContractCall) {
       // TODO: For contract call return some hardcoded value (TBD)
-      return numberTo0x(this.contractCallGasLimit);
+      return this.defaultGas + 100_000;
     } else {
       return this.defaultGas;
     }
