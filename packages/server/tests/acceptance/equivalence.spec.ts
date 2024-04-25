@@ -32,9 +32,12 @@ import pino from 'pino';
 import { MirrorNodeClient } from '../../../relay/src/lib/clients';
 import { CacheService } from '../../../relay/src/lib/services/cacheService/cacheService';
 import EquivalenceDestructContractJson from '../contracts/EquivalenceDestruct.json';
+import ERC20MockJson from '../contracts/ERC20Mock.json';
+import { AccountId, Hbar, ContractId } from '@hashgraph/sdk';
+import TokenManagementContractJson from '../contracts/TokenManagementContract.json';
 const logger = pino();
 
-describe.only('Equivalence tests', function () {
+describe.only('Equivalence tests', async function () {
   const signers: AliasAccount[] = [];
   const { servicesNode, mirrorNode, relay }: any = global;
 
@@ -65,8 +68,13 @@ describe.only('Equivalence tests', function () {
   const MAKE_CALL_WITH_AMOUNT = 'makeCallWithAmount';
   const MAKE_CALL_WITHOUT_AMOUNT_TO_IDENTITY_PRECOMPILE = 'makeCallWithoutAmountToIdentityPrecompile';
   const MAKE_CALL_WITH_AMOUNT_TO_IDENTITY_PRECOMPILE = 'makeCallWithAmountToIdentityPrecompile';
+  const MAKE_HTS_CALL_WITHOUT_AMOUNT = 'htsCallWithoutAmount';
+  const MAKE_HTS_CALL_WITH_AMOUNT = 'htsCallWithAmount';
+  const accounts: AliasAccount[] = [];
+  let tokenAddress;
   let estimatePrecompileContractReceipt;
   let estimatePrecompileContractAddress;
+  let estimatePrecompileSolidityAddress;
   let HederaAddress;
   let equivalenceContractReceipt;
   let equivalenceContractId;
@@ -74,6 +82,9 @@ describe.only('Equivalence tests', function () {
   let equivalenceContractSolidityAddress;
   let equivalenceDestructContractId;
   let equivalenceDestructContractReceipt;
+  let estimateContract;
+  let TokenManager;
+  let requestId;
 
   before(async function () {
     signers[0] = await servicesNode.createAliasAccount(150, relay.provider, Utils.generateRequestId());
@@ -84,6 +95,7 @@ describe.only('Equivalence tests', function () {
       Constants.GAS_AS_NUMBER.LIMIT_5_000_000,
     );
     estimatePrecompileContractAddress = estimatePrecompileContractReceipt.contractId.toString();
+    estimatePrecompileSolidityAddress = estimatePrecompileContractReceipt.contractId.toSolidityAddress();
     console.log(estimatePrecompileContractAddress);
 
     //Deploying Equivalence Destrcut contract
@@ -109,10 +121,40 @@ describe.only('Equivalence tests', function () {
       signers[0].wallet,
     );
     console.log(equivalenceContract);
+
+    requestId = Utils.generateRequestId();
+    const contractMirror = await mirrorNode.get(`/contracts/${estimatePrecompileSolidityAddress}`, requestId);
+
+    accounts[0] = await servicesNode.createAccountWithContractIdKey(
+      contractMirror.contract_id,
+      200,
+      relay.provider,
+      requestId,
+    );
+
+    tokenAddress = await createFungibleToken();
+    console.log(tokenAddress);
   });
 
   async function getResultByEntityIdAndTxTimestamp(entityId, txTimestamp) {
     return await mirrorNode.get(`/contracts/${entityId}/results/${txTimestamp}`);
+  }
+
+  async function createFungibleToken() {
+    estimateContract = new ethers.Contract(
+      prefix + estimatePrecompileSolidityAddress,
+      EstimatePrecompileContractJson.abi,
+      accounts[0].wallet,
+    );
+    const tx = await estimateContract.createFungibleTokenPublic(accounts[0].wallet.address, {
+      value: BigInt('10000000000000000000'),
+      gasLimit: 10_000_000,
+    });
+
+    const tokenAddress = (await tx.wait()).logs.filter(
+      (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.CreatedToken,
+    )[0].args[0];
+    return tokenAddress;
   }
 
   it('should execute direct call to ethereum precompile 0x1', async function () {
@@ -481,7 +523,6 @@ describe.only('Equivalence tests', function () {
       equivalenceContractId,
       MAKE_CALL_WITHOUT_AMOUNT,
       params,
-      500_000,
     );
 
     const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
@@ -492,7 +533,7 @@ describe.only('Equivalence tests', function () {
   });
 
   //EQUIVALENCE-024 - PRECOMPILE ERROR
-  it.only('internal CALL to 0.0.358 without amount', async function () {
+  it('internal CALL to 0.0.358 without amount', async function () {
     const emptyByteArray = new Uint8Array(0);
     const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_358);
     const params = new ContractFunctionParameters().addAddress(evmAddress);
@@ -504,6 +545,86 @@ describe.only('Equivalence tests', function () {
       params,
       1_000_000,
       100, //add the amount
+    );
+
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+
+    expect(record.contract_id).to.equal(equivalenceContractId);
+    expect(record.result).to.equal(SUCCESS);
+    expect(record.status).to.equal(STATUS_SUCCESS);
+  });
+
+  //EQUIVALENCE-025 - PRECOMPILE ERROR
+  it('internal CALL to 0.0.359 without amount', async function () {
+    const emptyByteArray = new Uint8Array(0);
+    const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_359);
+    const params = new ContractFunctionParameters().addAddress(tokenAddress);
+
+    const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
+      equivalenceContractId,
+      MAKE_HTS_CALL_WITHOUT_AMOUNT,
+      params,
+    );
+
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+
+    expect(record.contract_id).to.equal(equivalenceContractId);
+    expect(record.result).to.equal(SUCCESS);
+    expect(record.status).to.equal(STATUS_SUCCESS);
+  });
+
+  //EQUIVALENCE-027
+  it('internal CALL to 0.0.359 with amount', async function () {
+    const emptyByteArray = new Uint8Array(0);
+    const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_359);
+    const params = new ContractFunctionParameters().addAddress(tokenAddress);
+
+    const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
+      equivalenceContractId,
+      MAKE_HTS_CALL_WITH_AMOUNT,
+      params,
+      1_000_000,
+      100,
+    );
+
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+
+    expect(record.contract_id).to.equal(equivalenceContractId);
+    expect(record.result).to.equal(SUCCESS);
+    expect(record.status).to.equal(STATUS_SUCCESS);
+  });
+
+  //EQUIVALENCE-027
+  it('internal CALL to PRNG precompile (0.0.360) withоут amount', async function () {
+    // const emptyByteArray = new Uint8Array(0);
+    // const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_359);
+    // const params = new ContractFunctionParameters().addAddress(tokenAddress);
+
+    const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
+      equivalenceContractId,
+      'getPseudorandomSeed',
+      EMPTY_FUNCTION_PARAMS,
+    );
+
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+
+    expect(record.contract_id).to.equal(equivalenceContractId);
+    expect(record.result).to.equal(SUCCESS);
+    expect(record.status).to.equal(STATUS_SUCCESS);
+  });
+
+  //EQUIVALENCE-028
+  it.only('internal CALL to PRNG precompile (0.0.360) with amount', async function () {
+    // const emptyByteArray = new Uint8Array(0);
+    // const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_359);
+    // const params = new ContractFunctionParameters().addAddress(tokenAddress);
+
+    const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
+      equivalenceContractId,
+      'getPseudorandomSeedWithAmount',
+      EMPTY_FUNCTION_PARAMS,
+      1_000_000,
+      100,
     );
 
     const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
