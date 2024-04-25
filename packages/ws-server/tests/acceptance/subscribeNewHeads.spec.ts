@@ -201,6 +201,10 @@ describe('@release @web-socket-batch-3 eth_subscribe newHeads', async function (
   });
 
   describe('Subscriptions for newHeads', async function () {
+    this.beforeEach(() => {
+      process.env.WS_NEW_HEADS_ENABLED = 'true';
+    });
+
     it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;
