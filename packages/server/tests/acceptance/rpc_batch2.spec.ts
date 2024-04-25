@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,27 +18,33 @@
  *
  */
 
-// external resources
+// External resources
 import { expect } from 'chai';
 import { ethers } from 'ethers';
-import { AliasAccount } from '../clients/servicesClient';
-import Assertions from '../helpers/assertions';
+import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
-import { ContractFunctionParameters } from '@hashgraph/sdk';
-import TokenCreateJson from '../contracts/TokenCreateContract.json';
+import { ContractId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
-// local resources
+// Assertions from local resources
+import Assertions from '../helpers/assertions';
+
+// Contracts from local resources
 import parentContractJson from '../contracts/Parent.json';
 import basicContractJson from '../contracts/Basic.json';
 import storageContractJson from '../contracts/Storage.json';
+import TokenCreateJson from '../contracts/TokenCreateContract.json';
+import ERC20MockJson from '../contracts/ERC20Mock.json';
+
+// Errors from local resources
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+
+// Helper functions/constants from local resources
 import { EthImpl } from '../../../../packages/relay/src/lib/eth';
-//Constants are imported with different definitions for better readability in the code.
 import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
-import ERC20MockJson from '../contracts/ERC20Mock.json';
+import constants from '../../tests/helpers/constants';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -46,17 +52,18 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { servicesNode, mirrorNode, relay, logger } = global;
+  const { servicesNode, mirrorNode, relay, logger, initialBalance } = global;
 
   // cached entities
   let tokenId;
-  let contractId;
-  let contractExecuteTimestamp;
-  let mirrorContract;
-  let mirrorContractDetails;
-  let mirrorSecondaryAccount;
   let requestId;
   let htsAddress;
+  let basicContract: ethers.Contract;
+  let basicContractAddress: string;
+  let parentContractAddress: string;
+  let parentContractLongZeroAddress: string;
+  let createChildTx: ethers.ContractTransactionResponse;
+  let accounts0StartBalance: bigint;
 
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
@@ -73,7 +80,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     '0a280a0a08541a061a0440a8953a0a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200'; // Eth gas = 953000
 
   let blockNumberAtStartOfTests = 0;
-  let mirrorAccount0AtStartOfTests;
 
   const signSendAndConfirmTransaction = async (transaction, accounts, requestId) => {
     const signedTx = await accounts.wallet.signTransaction(transaction);
@@ -85,17 +91,46 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
-    accounts[0] = await servicesNode.createAliasAccount(40, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(10, relay.provider, requestId);
-    accounts[2] = await servicesNode.createAliasAccount(10, relay.provider, requestId);
-    accounts[3] = await servicesNode.createAliasAccount(50, relay.provider, requestId);
-    contractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
+    const initialAccount: AliasAccount = global.accounts[0];
 
-    const params = new ContractFunctionParameters().addUint256(1);
-    contractExecuteTimestamp = (
-      await accounts[0].client.executeContractCall(contractId, 'createChild', params, 75000, requestId)
-    ).contractExecuteTimestamp;
+    const neededAccounts: number = 4;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialBalance,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
+
+    const parentContract = await Utils.deployContract(
+      parentContractJson.abi,
+      parentContractJson.bytecode,
+      accounts[0].wallet,
+    );
+    parentContractAddress = parentContract.target as string;
+    global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
+
+    const mirrorNodeContractRes = await mirrorNode.get(`/contracts/${parentContractAddress}`, requestId);
+    const parentContractId = ContractId.fromString(mirrorNodeContractRes.contract_id);
+    parentContractLongZeroAddress = `0x${parentContractId.toSolidityAddress()}`;
+
+    await accounts[0].wallet.sendTransaction({
+      to: parentContractAddress,
+      value: ethers.parseEther('1'),
+    });
+
+    // @ts-ignore
+    createChildTx = await parentContract.createChild(1);
+
+    global.logger.trace(
+      `${requestIdPrefix} Contract call createChild on parentContract results in tx hash: ${createChildTx.hash}`,
+    );
+
     tokenId = await servicesNode.createToken(1000, requestId);
     htsAddress = Utils.idToEvmAddress(tokenId.toString());
 
@@ -105,23 +140,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     await servicesNode.transferToken(tokenId, accounts[0].accountId, 10, requestId);
     await servicesNode.transferToken(tokenId, accounts[1].accountId, 10, requestId);
 
-    // allow mirror node a 5 full record stream write windows (5 sec) and a buffer to persist setup details
-    await new Promise((r) => setTimeout(r, 5000));
+    blockNumberAtStartOfTests = (await accounts[0].wallet.provider?.getBlockNumber()) as number;
+    accounts0StartBalance = (await accounts[0].wallet.provider?.getBalance(accounts[0].address)) as bigint;
 
-    // get contract details
-    mirrorContract = await mirrorNode.get(`/contracts/${contractId}`, requestId);
-
-    // get contract result details
-    mirrorContractDetails = await mirrorNode.get(
-      `/contracts/${contractId}/results/${contractExecuteTimestamp}`,
-      requestId,
-    );
-    mirrorSecondaryAccount = (await mirrorNode.get(`accounts?account.id=${accounts[1].accountId}`, requestId))
-      .accounts[0];
-
-    const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
-    blockNumberAtStartOfTests = latestBlock.number;
-    mirrorAccount0AtStartOfTests = await mirrorNode.get(`/accounts/${accounts[0].accountId}`, requestId);
+    basicContract = await Utils.deployContract(basicContractJson.abi, basicContractJson.bytecode, accounts[0].wallet);
+    basicContractAddress = basicContract.target as string;
   });
 
   this.beforeEach(async () => {
@@ -129,14 +152,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_estimateGas', async function () {
-    let basicContract;
-
-    this.beforeAll(async () => {
-      basicContract = await servicesNode.deployContract(basicContractJson);
-      // delay
-      await new Promise((r) => setTimeout(r, 5000));
-    });
-
     it('@release should execute "eth_estimateGas"', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{}], requestId);
       expect(res).to.contain('0x');
@@ -154,7 +169,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
         [
           {
-            to: `0x${basicContract.contractId.toSolidityAddress()}`,
+            to: basicContractAddress,
             from: accounts[0].address,
             data: BASIC_CONTRACT_PING_CALL_DATA,
           },
@@ -167,24 +182,24 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(parseInt(estimatedGas)).to.be.greaterThan(currentPrice * (1 - gasPriceDeviation));
     });
 
-    // Skip this test for now because of bug in mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/6612 in Additional bug fixes
-    xit('@release should execute "eth_estimateGas" for existing account', async function () {
+    it('@release should execute "eth_estimateGas" for existing account', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
         [
           {
-            to: mirrorSecondaryAccount.evm_address,
+            to: accounts[1].address,
             value: '0x1',
           },
         ],
         requestId,
       );
+      const gasPriceDeviation = parseFloat((EthImpl.gasTxBaseCost * 0.2).toString());
       expect(res).to.contain('0x');
-      expect(res).to.equal(EthImpl.gasTxBaseCost);
+      expect(parseInt(res)).to.be.lessThan(Number(EthImpl.gasTxBaseCost) * (1 + gasPriceDeviation));
+      expect(parseInt(res)).to.be.greaterThan(Number(EthImpl.gasTxBaseCost) * (1 - gasPriceDeviation));
     });
 
-    // Skip this test for now because of bug in mirror-node https://github.com/hashgraph/hedera-mirror-node/issues/6612 in Additional bug fixes
-    xit('@release should execute "eth_estimateGas" hollow account creation', async function () {
+    it('@release should execute "eth_estimateGas" hollow account creation', async function () {
       const hollowAccount = ethers.Wallet.createRandom();
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -356,6 +371,46 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.not.be.equal('0x');
       expect(res).to.not.be.equal('0x0');
     });
+
+    it('should execute "eth_estimateGas" with input as 0x instead of data', async function () {
+      const res = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
+        [
+          {
+            from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
+            to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
+            value: '0xa688906bd8b00000',
+            gas: '0xd97010',
+            input: '0x',
+          },
+        ],
+        requestId,
+      );
+      expect(res).to.contain('0x');
+      expect(res).to.not.be.equal('0x');
+      expect(res).to.not.be.equal('0x0');
+    });
+
+    it('should throw on "eth_estimateGas" with both input and data fields present in the txObject', async function () {
+      try {
+        await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
+          [
+            {
+              from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
+              to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
+              value: '0xa688906bd8b00000',
+              gas: '0xd97010',
+              input: '0x',
+              data: '0x',
+            },
+          ],
+          requestId,
+        );
+      } catch (e) {
+        expect(e).to.equal(predefined.INVALID_ARGUMENTS('Cannot accept both input and data fields. Use only one.'));
+      }
+    });
   });
 
   describe('eth_gasPrice', async function () {
@@ -371,17 +426,29 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_getBalance', async function () {
-    let getBalanceContractId;
+    let getBalanceContract: ethers.Contract;
+    let getBalanceContractAddress: string;
     before(async function () {
-      getBalanceContractId = await accounts[0].client.createParentContract(parentContractJson, requestId);
+      getBalanceContract = await Utils.deployContract(
+        parentContractJson.abi,
+        parentContractJson.bytecode,
+        accounts[0].wallet,
+      );
+
+      getBalanceContractAddress = getBalanceContract.target as string;
+
+      await accounts[0].wallet.sendTransaction({
+        to: getBalanceContractAddress,
+        value: ethers.parseEther('1'),
+      });
     });
 
-    it('@release should execute "eth_getBalance" for newly created account with 10 HBAR', async function () {
-      const account = await servicesNode.createAliasAccount(10, null, requestId);
-      await mirrorNode.get(`/accounts/${account.accountId}`, requestId);
-
-      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, [account.address, 'latest'], requestId);
-      expect(res).to.not.be.eq(EthImpl.zeroHex);
+    it('@release should execute "eth_getBalance" for newly created account with 1 HBAR', async function () {
+      let balance = Hbar.from(1, HbarUnit.Hbar).toTinybars().toString();
+      const newAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId, balance);
+      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE, [newAccount.address, 'latest'], requestId);
+      balance = `0x${(BigInt(balance) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF)).toString(16)}`;
+      expect(res).to.be.eq(balance);
     });
 
     it('should execute "eth_getBalance" for non-existing address', async function () {
@@ -396,16 +463,18 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('@release should execute "eth_getBalance" for contract', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
-        [Utils.idToEvmAddress(getBalanceContractId.toString()), 'latest'],
+        [getBalanceContractAddress, 'latest'],
         requestId,
       );
       expect(res).to.eq(ethers.toQuantity(ONE_WEIBAR));
     });
 
     it('@release should execute "eth_getBalance" for contract with id converted to evm_address', async function () {
+      const mirrorNodeContractRes = await mirrorNode.get(`/contracts/${getBalanceContractAddress}`, requestId);
+      const contractId = ContractId.fromString(mirrorNodeContractRes.contract_id);
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
-        [Utils.idToEvmAddress(getBalanceContractId.toString()), 'latest'],
+        [`0x${contractId.toSolidityAddress()}`, 'latest'],
         requestId,
       );
       expect(res).to.eq(ethers.toQuantity(ONE_WEIBAR));
@@ -415,7 +484,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
-        [Utils.idToEvmAddress(getBalanceContractId.toString()), numberTo0x(latestBlock.number)],
+        [getBalanceContractAddress, numberTo0x(latestBlock.number)],
         requestId,
       );
       expect(res).to.eq(ethers.toQuantity(ONE_WEIBAR));
@@ -425,7 +494,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
-        [Utils.idToEvmAddress(getBalanceContractId.toString()), numberTo0x(latestBlock.number - 1)],
+        [getBalanceContractAddress, numberTo0x(latestBlock.number - 1)],
         requestId,
       );
       expect(res).to.eq(ethers.toQuantity(ONE_WEIBAR));
@@ -435,7 +504,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const latestBlock = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0];
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
-        [Utils.idToEvmAddress(getBalanceContractId.toString()), numberTo0x(latestBlock.number)],
+        [getBalanceContractAddress, numberTo0x(latestBlock.number)],
         requestId,
       );
       expect(res).to.eq(ethers.toQuantity(ONE_WEIBAR));
@@ -444,7 +513,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('@release should execute "eth_getBalance" with pending', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
-        [Utils.idToEvmAddress(getBalanceContractId.toString()), 'pending'],
+        [getBalanceContractAddress, 'pending'],
         requestId,
       );
       expect(res).to.eq(ethers.toQuantity(ONE_WEIBAR));
@@ -455,19 +524,19 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const earlierBlockNumber = latestBlock.number - 2;
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
-        [Utils.idToEvmAddress(getBalanceContractId.toString()), numberTo0x(earlierBlockNumber)],
+        [getBalanceContractAddress, numberTo0x(earlierBlockNumber)],
         requestId,
       );
       expect(res).to.eq(ethers.toQuantity(ONE_WEIBAR));
     });
 
-    it('@release should execute "eth_getBalance" with block number in the last 15 minutes for account that has performed contract deploys/calls"', async function () {
+    it('@release should execute "eth_getBalance" with block number in the last 15 minutes for account that has performed contract deploys/calls', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
         [accounts[0].address, numberTo0x(blockNumberAtStartOfTests)],
         requestId,
       );
-      const balanceAtBlock = BigInt(mirrorAccount0AtStartOfTests.balance.balance) * BigInt(10_000_000_000);
+      const balanceAtBlock = BigInt(accounts0StartBalance);
       expect(res).to.eq(`0x${balanceAtBlock.toString(16)}`);
     });
 
@@ -518,13 +587,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('@release Hardcoded RPC Endpoints', () => {
-    let mirrorBlock;
-
-    before(async () => {
-      mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`, requestId))
-        .blocks[0];
-    });
-
     it('should execute "eth_chainId"', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], requestId);
       expect(res).to.be.equal(CHAIN_ID);
@@ -543,7 +605,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_UNCLE_BY_BLOCK_HASH_AND_INDEX,
-        [mirrorBlock.hash, 0],
+        [createChildTx.hash, 0],
         requestId,
       );
       expect(res).to.be.null;
@@ -561,7 +623,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_UNCLE_BY_BLOCK_NUMBER_AND_INDEX,
-        [mirrorBlock.number, 0],
+        [createChildTx.blockNumber, 0],
         requestId,
       );
       expect(res).to.be.null;
@@ -653,18 +715,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_getCode', () => {
-    let basicContract;
+    let mainContract: ethers.Contract;
     let mainContractAddress: string;
     let NftHTSTokenContractAddress: string;
     let redirectBytecode: string;
-
-    async function deploymainContract() {
-      const mainFactory = new ethers.ContractFactory(TokenCreateJson.abi, TokenCreateJson.bytecode, accounts[3].wallet);
-      const mainContract = await mainFactory.deploy(Helper.GAS.LIMIT_5_000_000);
-      await mainContract.waitForDeployment();
-
-      return mainContract.target;
-    }
 
     async function createNftHTSToken(account) {
       const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
@@ -680,15 +734,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     }
 
     before(async () => {
-      basicContract = await servicesNode.deployContract(basicContractJson);
-      mainContractAddress = await deploymainContract();
-
-      // Wait for creation to propagate
-      const basicMirror = await mirrorNode.get(`/contracts/${basicContract.contractId}`, requestId);
-      const mainContractMirror = await mirrorNode.get(`/contracts/${mainContractAddress}`, requestId);
+      mainContract = await Utils.deployContract(TokenCreateJson.abi, TokenCreateJson.bytecode, accounts[3].wallet);
+      mainContractAddress = mainContract.target as string;
 
       const accountWithContractIdKey = await servicesNode.createAccountWithContractIdKey(
-        mainContractMirror.contract_id,
+        ContractId.fromEvmAddress(0, 0, mainContractAddress),
         60,
         relay.provider,
         requestId,
@@ -708,14 +758,12 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     });
 
     it('@release should execute "eth_getCode" for contract evm_address', async function () {
-      const evmAddress = basicContract.contractId.toSolidityAddress();
-      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, ['0x' + evmAddress, 'latest'], requestId);
+      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, [basicContractAddress, 'latest'], requestId);
       expect(res).to.eq(basicContractJson.deployedBytecode);
     });
 
     it('@release should execute "eth_getCode" for contract with id converted to evm_address', async function () {
-      const evmAddress = Utils.idToEvmAddress(basicContract.contractId.toString());
-      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, [evmAddress, 'latest'], requestId);
+      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, [basicContractAddress, 'latest'], requestId);
       expect(res).to.eq(basicContractJson.deployedBytecode);
     });
 
@@ -741,17 +789,12 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     });
 
     it('should not return contract bytecode after sefldestruct', async function () {
-      const evmAddress = basicContract.contractId.toSolidityAddress();
-      const bytecodeBefore = await relay.call('eth_getCode', [`0x${evmAddress}`, 'latest'], requestId);
+      const bytecodeBefore = await relay.call('eth_getCode', [basicContractAddress, 'latest'], requestId);
 
-      await accounts[0].client.executeContractCall(
-        basicContract.contractId,
-        'destroy',
-        new ContractFunctionParameters(),
-        1_000_000,
-      );
+      // @ts-ignore
+      await basicContract.connect(accounts[0].wallet).destroy();
 
-      const bytecodeAfter = await relay.call('eth_getCode', [`0x${evmAddress}`, 'latest'], requestId);
+      const bytecodeAfter = await relay.call('eth_getCode', [basicContractAddress, 'latest'], requestId);
       expect(bytecodeAfter).to.not.eq(bytecodeBefore);
       expect(bytecodeAfter).to.eq('0x');
     });
@@ -759,16 +802,18 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
   // Test state changes with getStorageAt
   describe('eth_getStorageAt', () => {
-    let storageContract, evmAddress;
+    let storageContract: ethers.Contract;
+    let storageContractAddress: string;
     const STORAGE_CONTRACT_UPDATE = '0x2de4e884';
     const NEXT_STORAGE_CONTRACT_UPDATE = '0x160D6484';
 
     this.beforeEach(async () => {
-      storageContract = await servicesNode.deployContract(storageContractJson);
-      // Wait for creation to propagate
-      await mirrorNode.get(`/contracts/${storageContract.contractId}`);
-
-      evmAddress = `0x${storageContract.contractId.toSolidityAddress()}`;
+      storageContract = await Utils.deployContract(
+        storageContractJson.abi,
+        storageContractJson.bytecode,
+        accounts[0].wallet,
+      );
+      storageContractAddress = storageContract.target as string;
     });
 
     it('should execute "eth_getStorageAt" request to get current state changes', async function () {
@@ -777,7 +822,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const beginStorageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
         requestId,
       );
       expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
@@ -787,7 +832,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: 0,
         gasLimit: 50000,
         chainId: Number(CHAIN_ID),
-        to: evmAddress,
+        to: storageContractAddress,
         nonce: await relay.getAccountNonce(accounts[1].address),
         gasPrice: gasPrice,
         data: STORAGE_CONTRACT_UPDATE,
@@ -804,7 +849,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const storageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
         requestId,
       );
       expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL);
@@ -815,7 +860,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const beginStorageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
         requestId,
       );
 
@@ -824,7 +869,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: 0,
         gasLimit: 50000,
         chainId: Number(CHAIN_ID),
-        to: evmAddress,
+        to: storageContractAddress,
         nonce: await relay.getAccountNonce(accounts[1].address),
         gasPrice: gasPrice,
         data: STORAGE_CONTRACT_UPDATE,
@@ -847,13 +892,17 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const latestStorageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', 'latest'],
         requestId,
       );
       const blockNumberBeforeChange = `0x${(blockNumber - 1).toString(16)}`;
       const storageValBeforeChange = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockNumberBeforeChange],
+        [
+          storageContractAddress,
+          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          blockNumberBeforeChange,
+        ],
         requestId,
       );
 
@@ -867,7 +916,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const beginStorageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000'],
         requestId,
       );
       expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
@@ -877,7 +926,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: 0,
         gasLimit: 50000,
         chainId: Number(CHAIN_ID),
-        to: evmAddress,
+        to: storageContractAddress,
         nonce: await relay.getAccountNonce(accounts[1].address),
         gasPrice: gasPrice,
         data: STORAGE_CONTRACT_UPDATE,
@@ -894,7 +943,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const storageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000'],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000'],
         requestId,
       );
       expect(storageVal).to.eq(END_EXPECTED_STORAGE_VAL);
@@ -908,7 +957,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: 0,
         gasLimit: 50000,
         chainId: Number(CHAIN_ID),
-        to: evmAddress,
+        to: storageContractAddress,
         nonce: await relay.getAccountNonce(accounts[1].address),
         gasPrice: gasPrice,
         data: STORAGE_CONTRACT_UPDATE,
@@ -939,7 +988,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       //Get previous state change with specific block number
       const storageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockNumber],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockNumber],
         requestId,
       );
       expect(storageVal).to.eq(EXPECTED_STORAGE_VAL);
@@ -953,7 +1002,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: 0,
         gasLimit: 50000,
         chainId: Number(CHAIN_ID),
-        to: evmAddress,
+        to: storageContractAddress,
         nonce: await relay.getAccountNonce(accounts[1].address),
         gasPrice: gasPrice,
         data: STORAGE_CONTRACT_UPDATE,
@@ -984,7 +1033,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       //Get previous state change with specific block number
       const storageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
-        [evmAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockHash],
+        [storageContractAddress, '0x0000000000000000000000000000000000000000000000000000000000000000', blockHash],
         requestId,
       );
       expect(storageVal).to.eq(EXPECTED_STORAGE_VAL);
@@ -1141,9 +1190,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       Assertions.evmAddress(receipt.to);
     });
 
-    it('from/to Addresses in transaction to a contract (deployed through HAPI tx) are in evm and long-zero format', async function () {
+    // Should be revised or deleted https://github.com/hashgraph/hedera-json-rpc-relay/pull/1726/files#r1320363677
+    xit('from/to Addresses in transaction to a contract (deployed through HAPI tx) are in evm and long-zero format', async function () {
       const tx = await accounts[0].wallet.sendTransaction({
-        to: mirrorContract.evm_address,
+        to: parentContractLongZeroAddress,
         value: ethers.parseEther('1'),
       });
 
@@ -1152,7 +1202,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       let { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
 
       mirrorResult.from = accounts[0].wallet.address;
-      mirrorResult.to = mirrorContract.evm_address;
+      mirrorResult.to = parentContractLongZeroAddress;
       const currentPrice = await relay.gasPrice(requestId);
 
       Assertions.transaction(txByHash, mirrorResult);

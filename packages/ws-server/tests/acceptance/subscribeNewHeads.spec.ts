@@ -26,7 +26,7 @@ import { solidity } from 'ethereum-waffle';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 chai.use(solidity);
 
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
@@ -90,7 +90,7 @@ function verifyResponse(response: any, done: Mocha.Done, webSocket: any, include
   }
 }
 
-describe('@release @web-socket eth_subscribe newHeads', async function () {
+describe('@release @web-socket-batch-3 eth_subscribe newHeads', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const accounts: AliasAccount[] = [];
   const CHAIN_ID = process.env.CHAIN_ID || 0;
@@ -103,13 +103,26 @@ describe('@release @web-socket eth_subscribe newHeads', async function () {
 
   before(async () => {
     // @ts-ignore
-    const { servicesNode, socketServer, mirrorNode, relay, logger } = global;
+    const { socketServer, mirrorNode, relay } = global;
     mirrorNodeServer = mirrorNode;
     rpcServer = relay;
     wsServer = socketServer;
 
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '5000000000'; //50 Hbar
+
+    const neededAccounts: number = 2;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
 
     // cache original ENV values
     originalWsNewHeadsEnabledValue = process.env.WS_NEW_HEADS_ENABLED;
@@ -188,6 +201,10 @@ describe('@release @web-socket eth_subscribe newHeads', async function () {
   });
 
   describe('Subscriptions for newHeads', async function () {
+    this.beforeEach(() => {
+      process.env.WS_NEW_HEADS_ENABLED = 'true';
+    });
+
     it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;

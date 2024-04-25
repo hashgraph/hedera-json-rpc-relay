@@ -39,6 +39,9 @@
     "acceptancetest:htsprecompilev1": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompilev1' --exit",
     "acceptancetest:release": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit",
     "acceptancetest:ws": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket' --exit",
+    "acceptancetest:ws_batch1": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket-batch-1' --exit",
+    "acceptancetest:ws_batch2": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket-batch-2' --exit",
+    "acceptancetest:ws_batch3": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket-batch-3' --exit",
     "acceptancetest:ws_newheads": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@web-socket-newheads' --exit",
     "acceptancetest:precompile-calls": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@precompile-calls' --exit",
     "acceptancetest:cache-service": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@cache-service' --exit",
@@ -63,7 +66,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@hashgraph/hedera-local": "^2.20.0",
+    "@hashgraph/hedera-local": "^2.22.0",
     "@open-rpc/schema-utils-js": "^1.16.1",
     "@types/find-config": "^1.0.4",
     "@types/sinon": "^10.0.20",
@@ -83,8 +86,7 @@
   },
   "overrides": {
     "protobufjs": "^7.2.4",
-    "semver": "^7.5.3",
-    "nx": "16.5.5"
+    "semver": "^7.5.3"
   },
   "lint-staged": {
     "packages/**/src/**/*.ts": [

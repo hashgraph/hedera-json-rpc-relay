@@ -17,12 +17,16 @@
  * limitations under the License.
  *
  */
-
+// External resources
 import { ethers } from 'ethers';
 import { expect } from 'chai';
+
+// Local resources
 import { Utils } from '../helpers/utils';
+import { AliasAccount } from '../types/AliasAccount';
 import EstimateGasContractJson from '../contracts/EstimateGasContract.json';
-import { AliasAccount } from '../clients/servicesClient';
+
+// Constants from local resources
 import constants from '../../../../packages/relay/src/lib/constants';
 import RelayCalls from '../../../../packages/server/tests/helpers/constants';
 

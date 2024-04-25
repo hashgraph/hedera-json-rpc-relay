@@ -23,17 +23,24 @@ import { expect } from 'chai';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 
-describe('@release @web-socket eth_getCode', async function () {
+describe('@release @web-socket-batch-2 eth_getCode', async function () {
   const RELAY_URL = `${process.env.RELAY_ENDPOINT}`;
   const METHOD_NAME = 'eth_getCode';
 
-  let basicContract: any, codeFromRPC: string, provider: JsonRpcProvider, ethersWsProvider: WebSocketProvider;
+  let basicContract: ethers.Contract,
+    basicContractAddress: string,
+    codeFromRPC: string,
+    provider: JsonRpcProvider,
+    ethersWsProvider: WebSocketProvider;
 
   before(async () => {
-    basicContract = await global.servicesNode.deployContract(basicContractJson);
-    provider = new ethers.JsonRpcProvider(RELAY_URL);
-    codeFromRPC = await provider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);
+    const account: AliasAccount = global.accounts[0];
+    basicContract = await Utils.deployContract(basicContractJson.abi, basicContractJson.bytecode, account.wallet);
+    basicContractAddress = basicContract.target as string;
+    codeFromRPC = (await account.wallet.provider?.getCode(basicContractAddress)) as string;
   });
 
   beforeEach(async () => {
@@ -50,13 +57,13 @@ describe('@release @web-socket eth_getCode', async function () {
   });
 
   it('should return the code ethers WebSocketProvider', async function () {
-    const codeFromWs = await ethersWsProvider.getCode(`0x${basicContract.contractId.toSolidityAddress()}`);
+    const codeFromWs = await ethersWsProvider.getCode(basicContractAddress);
     expect(codeFromWs).to.be.a('string');
     expect(codeFromRPC).to.equal(codeFromWs);
   });
 
   it('should return the code through a websocket', async () => {
-    const param = [`0x${basicContract.contractId.toSolidityAddress()}`, 'latest'];
+    const param = [basicContractAddress, 'latest'];
     const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, param);
     WsTestHelper.assertJsonRpcObject(response);
     expect(response.result).to.equal(codeFromRPC);

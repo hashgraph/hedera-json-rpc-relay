@@ -52,10 +52,12 @@ import {
   CustomFixedFee,
   CustomFractionalFee,
   CustomRoyaltyFee,
+  EvmAddress,
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { ethers } from 'ethers';
 import { Utils } from '../helpers/utils';
+import { AliasAccount } from '../types/AliasAccount';
 
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
@@ -80,6 +82,48 @@ export default class ServicesClient {
       this.client = Client.forNetwork(JSON.parse(network));
     }
     this.client.setOperator(AccountId.fromString(accountId), opPrivateKey);
+  }
+
+  getLogger(): Logger {
+    return this.logger;
+  }
+
+  async createInitialAliasAccount(providerUrl, chainId, requestId, initialBalance = 2000): Promise<AliasAccount> {
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+    const privateKey = PrivateKey.generateECDSA();
+    const wallet = new ethers.Wallet(
+      privateKey.toStringRaw(),
+      new ethers.JsonRpcProvider(providerUrl, new ethers.Network('Hedera', chainId), { batchMaxCount: 1 }),
+    );
+    const address = wallet.address;
+
+    this.logger.trace(
+      `${requestIdPrefix} Create new Eth compatible account w privateKey: ${privateKey}, alias: ${address} and balance ~${initialBalance} HBar`,
+    );
+
+    const aliasCreationResponse = await this.executeTransaction(
+      new TransferTransaction()
+        .addHbarTransfer(this._thisAccountId(), new Hbar(initialBalance).negated())
+        .addHbarTransfer(AccountId.fromEvmAddress(0, 0, address), new Hbar(initialBalance))
+        .setTransactionMemo('Relay test crypto transfer'),
+      requestId,
+    );
+
+    const receipt = await aliasCreationResponse?.getRecord(this.client);
+    const accountId = receipt?.transfers[1].accountId!;
+    accountId.evmAddress = EvmAddress.fromString(address);
+
+    const aliasAccount: AliasAccount = {
+      alias: accountId,
+      accountId,
+      address,
+      client: this,
+      privateKey,
+      wallet,
+      keyList: KeyList.from([privateKey]),
+    };
+
+    return aliasAccount;
   }
 
   async executeQuery(query: Query<any>, requestId?: string) {
@@ -285,15 +329,17 @@ export default class ServicesClient {
       wallet = new ethers.Wallet(privateKey.toStringRaw());
     }
 
-    return new AliasAccount(
-      accountId,
-      accountInfo.accountId,
-      Utils.add0xPrefix(accountInfo.contractAccountId),
-      servicesClient,
+    const account: AliasAccount = {
+      alias: accountId,
+      accountId: accountInfo.accountId,
+      address: Utils.add0xPrefix(accountInfo.contractAccountId),
+      client: servicesClient,
       privateKey,
       wallet,
       keyList,
-    );
+    };
+
+    return account;
   }
 
   // Creates an account that has 2 keys - ECDSA and a contractId. This is required for calling contract methods that create HTS tokens.
@@ -648,25 +694,5 @@ export default class ServicesClient {
     const query = new AccountInfoQuery().setAccountId(accountId);
     const accountInfo = await query.execute(this.client);
     return accountInfo.ethereumNonce;
-  }
-}
-
-export class AliasAccount {
-  public readonly alias: AccountId;
-  public readonly accountId: AccountId;
-  public readonly address: string;
-  public readonly client: ServicesClient;
-  public readonly privateKey: PrivateKey;
-  public readonly wallet: ethers.Wallet;
-  public readonly keyList: KeyList | null;
-
-  constructor(_alias, _accountId, _address, _client, _privateKey, _wallet, keyList) {
-    this.alias = _alias;
-    this.accountId = _accountId;
-    this.address = _address;
-    this.client = _client;
-    this.privateKey = _privateKey;
-    this.wallet = _wallet;
-    this.keyList = keyList;
   }
 }

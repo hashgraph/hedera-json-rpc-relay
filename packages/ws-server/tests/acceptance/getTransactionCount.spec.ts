@@ -25,22 +25,37 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 
-describe('@release @web-socket eth_getTransactionCount', async function () {
+describe('@release @web-socket-batch-2 eth_getTransactionCount', async function () {
   const METHOD_NAME = 'eth_getTransactionCount';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
   const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
 
+  // @ts-ignore
+  const { mirrorNode, relay } = global;
+
   let requestId: string,
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
 
-  beforeEach(async () => {
-    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
-    accounts[1] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
-    await new Promise((r) => setTimeout(r, 1000)); // wait for accounts to propagate
+  before(async () => {
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '100000000'; //1 Hbar
+
+    const neededAccounts: number = 2;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
 
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
@@ -56,7 +71,7 @@ describe('@release @web-socket eth_getTransactionCount', async function () {
 
   it('should return the transaction count through an ethers WebSocketProvider', async () => {
     const beforeTransactionCountFromWs = await ethersWsProvider.getTransactionCount(accounts[0].address);
-    await Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, global.relay, requestId, global.mirrorNode);
+    await Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, relay, requestId, mirrorNode);
     const afterTransactionCountFromWs = await ethersWsProvider.getTransactionCount(accounts[0].address);
     expect(afterTransactionCountFromWs).to.equal(beforeTransactionCountFromWs + 1);
   });
@@ -67,7 +82,7 @@ describe('@release @web-socket eth_getTransactionCount', async function () {
       'latest',
     ]);
     WsTestHelper.assertJsonRpcObject(beforeSendRawTransactionCountResponse);
-    const transactionCountBefore = await global.relay.getAccountNonce(accounts[0].address);
+    const transactionCountBefore = await relay.getAccountNonce(accounts[0].address);
     expect(Number(beforeSendRawTransactionCountResponse.result)).to.eq(transactionCountBefore);
 
     const transaction = {
@@ -76,17 +91,18 @@ describe('@release @web-socket eth_getTransactionCount', async function () {
       chainId: Number(CHAIN_ID),
       to: accounts[1].address,
       maxFeePerGas: defaultGasPrice,
+      nonce: await relay.getAccountNonce(accounts[0].address),
     };
     const signedTx = await accounts[0].wallet.signTransaction(transaction);
     // @notice submit a transaction to increase transaction count
-    await global.relay.sendRawTransaction(signedTx, requestId);
+    await relay.sendRawTransaction(signedTx, requestId);
 
     const afterSendRawTransactionCountResponse = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [
       accounts[0].address,
       'latest',
     ]);
     WsTestHelper.assertJsonRpcObject(afterSendRawTransactionCountResponse);
-    const transactionCountAfter = await global.relay.getAccountNonce(accounts[0].address);
+    const transactionCountAfter = await relay.getAccountNonce(accounts[0].address);
     expect(Number(afterSendRawTransactionCountResponse.result)).to.eq(transactionCountAfter);
   });
 });

@@ -23,10 +23,11 @@ import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 
-describe('@release @web-socket eth_getTransactionReceipt', async function () {
+describe('@release @web-socket-batch-2 eth_getTransactionReceipt', async function () {
   const METHOD_NAME = 'eth_getTransactionReceipt';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const INVALID_PARAMS = [
@@ -43,28 +44,43 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
     [WsTestConstant.FAKE_TX_HASH, 'rpc', 'invalid'],
   ];
 
+  // @ts-ignore
+  const { mirrorNode, relay, initialBalance } = global;
+
   let txHash: string,
     expectedTxReceipt: any,
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
+  let requestId: string;
 
   before(async () => {
-    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
-    accounts[1] = await global.servicesNode.createAliasAccount(5, global.relay.provider);
-    await new Promise((r) => setTimeout(r, 1000)); // wait for accounts to propagate
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.accounts[0];
+
+    const neededAccounts: number = 3;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialBalance,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
 
     const tx = {
       value: ONE_TINYBAR_IN_WEI_HEX,
       gasLimit: numberTo0x(30000),
       chainId: Number(CHAIN_ID),
       to: accounts[1].address,
-      nonce: await global.relay.getAccountNonce(accounts[0].address),
-      maxFeePerGas: await global.relay.gasPrice(),
+      nonce: await relay.getAccountNonce(accounts[0].address),
+      maxFeePerGas: await relay.gasPrice(),
     };
 
     const signedTx = await accounts[0].wallet.signTransaction(tx);
-    txHash = await global.relay.sendRawTransaction(signedTx);
-    expectedTxReceipt = await global.mirrorNode.get(`/contracts/results/${txHash}`);
+    txHash = await relay.sendRawTransaction(signedTx);
+    expectedTxReceipt = await mirrorNode.get(`/contracts/results/${txHash}`);
   });
 
   beforeEach(async () => {
@@ -92,8 +108,8 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
       WsTestHelper.assertJsonRpcObject(response);
 
       const txReceipt = response.result;
-      expect(txReceipt.to).to.be.eq(accounts[1].address);
-      expect(txReceipt.from).to.be.eq(accounts[0].address);
+      expect(txReceipt.to).to.be.eq(accounts[1].address.toLowerCase());
+      expect(txReceipt.from).to.be.eq(accounts[0].address.toLowerCase());
       expect(txReceipt.transactionHash).to.be.eq(expectedTxReceipt.hash);
       expect(txReceipt.contractAddress).to.be.eq(expectedTxReceipt.address);
       expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));
@@ -111,8 +127,8 @@ describe('@release @web-socket eth_getTransactionReceipt', async function () {
     it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
       const txReceipt = await ethersWsProvider.send(METHOD_NAME, [txHash]);
 
-      expect(txReceipt.to).to.be.eq(accounts[1].address);
-      expect(txReceipt.from).to.be.eq(accounts[0].address);
+      expect(txReceipt.to).to.be.eq(accounts[1].address.toLowerCase());
+      expect(txReceipt.from).to.be.eq(accounts[0].address.toLowerCase());
       expect(txReceipt.transactionHash).to.be.eq(expectedTxReceipt.hash);
       expect(txReceipt.contractAddress).to.be.eq(expectedTxReceipt.address);
       expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));

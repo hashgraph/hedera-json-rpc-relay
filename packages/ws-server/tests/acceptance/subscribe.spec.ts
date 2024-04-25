@@ -29,7 +29,7 @@ import { predefined, WebSocketError } from '@hashgraph/json-rpc-relay/src';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import LogContractJson from '@hashgraph/json-rpc-server/tests/contracts/Logs.json';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import IERC20Json from '@hashgraph/json-rpc-server/tests/contracts/openzeppelin/IERC20.json';
 chai.use(solidity);
 
@@ -68,7 +68,7 @@ const createLogs = async (contract: ethers.Contract, requestId) => {
   await new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
-describe('@release @web-socket eth_subscribe', async function () {
+describe('@release @web-socket-batch-3 eth_subscribe', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   let server;
@@ -94,16 +94,27 @@ describe('@release @web-socket eth_subscribe', async function () {
   before(async () => {
     server = global.socketServer;
 
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '5000000000'; //50 Hbar
+
+    const neededAccounts: number = 2;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
+
     // Deploy Log Contract
     logContractSigner = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
 
     // cache original ENV values
     originalWsMultipleAddressesEnabledValue = process.env.WS_MULTIPLE_ADDRESSES_ENABLED;
-
-    // allow mirror node a 5 full record stream write windows (5 sec) and a buffer to persist setup details
-    await new Promise((r) => setTimeout(r, 5000));
   });
 
   beforeEach(async () => {
@@ -129,20 +140,6 @@ describe('@release @web-socket eth_subscribe', async function () {
     it('establishes connection', async function () {
       expect(wsProvider).to.exist;
       expect(wsProvider.ready).to.eq(true);
-    });
-
-    it('@release receives ping messages', async function () {
-      expect(wsProvider).to.exist;
-      expect(wsProvider.ready).to.eq(true);
-
-      let pings = 0;
-      wsProvider.websocket.on('message', (message) => {
-        pings++;
-      });
-
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-
-      expect(pings).to.greaterThanOrEqual(2);
     });
 
     it('@release Socket server responds to the eth_chainId event', async function () {

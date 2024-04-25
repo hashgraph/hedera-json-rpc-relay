@@ -151,7 +151,6 @@ export default class KoaJsonRpc {
         ctx.body = errBody;
         return;
       }
-
       //check if body is array or object
       if (Array.isArray(body)) {
         await this.handleMultipleRequest(ctx, body);

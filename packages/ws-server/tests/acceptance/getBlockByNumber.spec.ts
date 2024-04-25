@@ -23,7 +23,7 @@ import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 
-describe('@release @web-socket eth_getBlockByNumber', async function () {
+describe('@release @web-socket-batch-1 eth_getBlockByNumber', async function () {
   const METHOD_NAME = 'eth_getBlockByNumber';
   const INVALID_PARAMS = [
     [],

@@ -22,9 +22,10 @@
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 
-describe('@release @web-socket eth_getLogs', async function () {
+describe('@release @web-socket-batch-2 eth_getLogs', async function () {
   const EXPECTED_VALUE = 7;
   const METHOD_NAME = 'eth_getLogs';
   const INVALID_PARAMS = [
@@ -77,22 +78,31 @@ describe('@release @web-socket eth_getLogs', async function () {
   ];
   const SIMPLE_CONTRACT_BYTECODE =
     '0x6080604052348015600f57600080fd5b507f4e7df42af9a017b7c655a28ef10cbc8f05b2b088f087ee02416cfa1a96ac3be26007604051603e91906091565b60405180910390a160aa565b6000819050919050565b6000819050919050565b6000819050919050565b6000607d6079607584604a565b605e565b6054565b9050919050565b608b816068565b82525050565b600060208201905060a460008301846084565b92915050565b603f8060b76000396000f3fe6080604052600080fdfea264697066735822122084db7fe76bde5c9c041d61bb40294c56dc6d339bdbc8e0cd285fc4008ccefc2c64736f6c63430008180033';
-
+  // @ts-ignore
+  const { mirrorNode } = global;
   let wsFilterObj: any,
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
-
+  let requestId: string;
   before(async () => {
-    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
-    await new Promise((r) => setTimeout(r, 1000)); // wait for accounts[0] to propagate
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '2500000000'; //25 Hbar
+
+    const neededAccounts: number = 1;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
 
     // deploy contract
-    const contractFactory = new ethers.ContractFactory(
-      SIMPLE_CONTRACT_ABI,
-      SIMPLE_CONTRACT_BYTECODE,
-      accounts[0].wallet,
-    );
-    const contract = await contractFactory.deploy();
+    const contract = await Utils.deployContract(SIMPLE_CONTRACT_ABI, SIMPLE_CONTRACT_BYTECODE, accounts[0].wallet);
 
     // prepare filter object
     wsFilterObj = {

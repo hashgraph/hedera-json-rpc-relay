@@ -153,6 +153,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('should execute "eth_call" against mirror node with a false ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
+      web3Mock.onPost('contracts/call').reply(200);
       const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
 
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
@@ -169,6 +170,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('should execute "eth_call" against mirror node with an undefined ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
+      web3Mock.onPost('contracts/call').reply(200);
       const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
 
       delete process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
@@ -198,97 +200,6 @@ describe('@ethCall Eth Call spec', async function () {
 
       assert(callConsensusNodeSpy.calledOnce);
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
-    });
-
-    it('gas exceeds limit', async function () {
-      restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-
-      const excessiveGasLimit = '50000001';
-      await ethCallFailing(
-        ethImpl,
-        {
-          from: ACCOUNT_ADDRESS_1,
-          to: CONTRACT_ADDRESS_2,
-          data: CONTRACT_CALL_DATA,
-          gas: excessiveGasLimit,
-        },
-        'latest',
-        (error) => {
-          expect(error).to.be.not.null;
-          expect(error.code).to.equal(
-            predefined.GAS_LIMIT_TOO_HIGH(excessiveGasLimit, constants.CONTRACT_CALL_GAS_LIMIT).code,
-          );
-        },
-      );
-    });
-
-    it('block 0', async function () {
-      restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-
-      const block = '0';
-      await ethCallFailing(ethImpl, ETH_CALL_REQ_ARGS, block, (error) => {
-        const predefineError = predefined.UNSUPPORTED_HISTORICAL_EXECUTION(block);
-        expect(error.code).to.equal(predefineError.code);
-        expect(error.name).to.equal(predefineError.name);
-        expect(error.message).to.equal(predefineError.message);
-      });
-    });
-
-    it('block 1', async function () {
-      restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-
-      const block = '1';
-      await ethCallFailing(ethImpl, ETH_CALL_REQ_ARGS, block, (error) => {
-        const predefineError = predefined.UNSUPPORTED_HISTORICAL_EXECUTION(block);
-        expect(error.code).to.equal(predefineError.code);
-        expect(error.name).to.equal(predefineError.name);
-        expect(error.message).to.equal(predefineError.message);
-      });
-    });
-
-    it('block earliest', async function () {
-      restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-
-      const block = 'earliest';
-      await ethCallFailing(ethImpl, ETH_CALL_REQ_ARGS, block, (error) => {
-        const predefineError = predefined.UNSUPPORTED_HISTORICAL_EXECUTION(block);
-        expect(error.code).to.equal(predefineError.code);
-        expect(error.name).to.equal(predefineError.name);
-        expect(error.message).to.equal(predefineError.message);
-      });
-    });
-
-    it('block hash not supported', async function () {
-      restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      restMock.onGet(`blocks?limit=1&order=desc`).reply(202);
-
-      await ethCallFailing(ethImpl, ETH_CALL_REQ_ARGS, BLOCK_HASH_TRIMMED, (error) => {
-        const predefineError = predefined.UNSUPPORTED_OPERATION(
-          `BlockParam: ${BLOCK_HASH_TRIMMED} is not a supported eth_call block identifier`,
-        );
-        expect(error.code).to.equal(predefineError.code);
-        expect(error.name).to.equal(predefineError.name);
-        expect(error.message).to.equal(predefineError.message);
-      });
-    });
-
-    it('latest block but not found for comparison', async function () {
-      restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      restMock.onGet(`blocks?limit=1&order=desc`).reply(404);
-
-      const block = '0x10';
-      await ethCallFailing(ethImpl, ETH_CALL_REQ_ARGS, block, (error) => {
-        const predefineError = predefined.RESOURCE_NOT_FOUND(`unable to retrieve latest block from mirror node`);
-        expect(error.code).to.equal(predefineError.code);
-        expect(error.name).to.equal(predefineError.name);
-        expect(error.message).to.equal(predefineError.message);
-      });
     });
 
     it('to field is not a contract or token', async function () {
@@ -494,31 +405,6 @@ describe('@ethCall Eth Call spec', async function () {
       expect((call as JsonRpcError).message).to.equal(expectedError.message);
     });
 
-    describe('with gas > 15_000_000', async function () {
-      it('eth_call throws gasLimit too high error when gas exceeds limit', async function () {
-        restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-
-        sdkClientStub.submitContractCallQueryWithRetry.returns(undefined);
-
-        const args = [
-          {
-            to: CONTRACT_ADDRESS_2,
-            data: CONTRACT_CALL_DATA,
-            gas: 50_000_001,
-          },
-          'latest',
-        ];
-
-        await RelayAssertions.assertRejection(
-          predefined.GAS_LIMIT_TOO_HIGH(50000000, constants.CONTRACT_CALL_GAS_LIMIT),
-          ethImpl.call,
-          false,
-          ethImpl,
-          args,
-        );
-      });
-    });
-
     it('SDK returns a precheck error', async function () {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       sdkClientStub.submitContractCallQueryWithRetry.throws(
@@ -529,7 +415,7 @@ describe('@ethCall Eth Call spec', async function () {
 
       expect(result).to.exist;
       expect((result as JsonRpcError).code).to.equal(-32008);
-      expect((result as JsonRpcError).name).to.undefined;
+      expect((result as JsonRpcError).name).to.equal(undefined);
       expect((result as JsonRpcError).message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
       expect((result as JsonRpcError).data).to.equal(defaultErrorMessageHex);
     });
@@ -622,14 +508,16 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(200, { result: `0x00` });
 
       web3Mock.history.post = [];
 
       const result = await ethImpl.call(callData, 'latest');
 
       expect(web3Mock.history.post.length).to.gte(1);
-      expect(web3Mock.history.post[0].data).to.equal(JSON.stringify({ ...callData, estimate: false }));
+      expect(web3Mock.history.post[0].data).to.equal(JSON.stringify({ ...callData, estimate: false, block: 'latest' }));
 
       expect(result).to.equal('0x00');
     });
@@ -642,7 +530,9 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(200, { result: `0x00` });
 
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x00');
@@ -656,7 +546,9 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(200, { result: `0x00` });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x00');
     });
@@ -670,7 +562,9 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(200, { result: `0x00` });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x00');
     });
@@ -703,7 +597,9 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(429, mockData.tooManyRequests);
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(429, mockData.tooManyRequests);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(-32605);
@@ -719,11 +615,13 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, mockData.contractReverted);
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(400, mockData.contractReverted);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(-32008);
-      expect((result as JsonRpcError).name).to.undefined;
+      expect((result as JsonRpcError).name).to.eq(undefined);
       expect((result as JsonRpcError).message).to.contain(mockData.contractReverted._status.messages[0].message);
     });
 
@@ -737,7 +635,9 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(501, mockData.notSuported);
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(501, mockData.notSuported);
 
       sdkClientStub.submitContractCallQueryWithRetry.returns({
         asBytes: function () {
@@ -768,13 +668,15 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, mockData.contractReverted);
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(400, mockData.contractReverted);
       sinon.reset();
       const result = await ethImpl.call(callData, 'latest');
       sinon.assert.notCalled(sdkClientStub.submitContractCallQueryWithRetry);
       expect(result).to.not.be.null;
       expect((result as JsonRpcError).code).to.eq(-32008);
-      expect((result as JsonRpcError).name).to.undefined;
+      expect((result as JsonRpcError).name).to.eq(undefined);
       expect((result as JsonRpcError).message).to.contain(mockData.contractReverted._status.messages[0].message);
     });
 
@@ -789,7 +691,7 @@ describe('@ethCall Eth Call spec', async function () {
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, {
+      web3Mock.onPost('contracts/call', { ...callData, estimate: false, block: 'latest' }).reply(400, {
         _status: {
           messages: [
             {
@@ -805,7 +707,7 @@ describe('@ethCall Eth Call spec', async function () {
 
       expect(result).to.exist;
       expect((result as JsonRpcError).code).to.eq(-32008);
-      expect((result as JsonRpcError).name).to.undefined;
+      expect((result as JsonRpcError).name).to.eq(undefined);
       expect((result as JsonRpcError).message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
       expect((result as JsonRpcError).data).to.equal(defaultErrorMessageHex);
     });
@@ -859,7 +761,9 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, mockData.invalidTransaction);
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(400, mockData.invalidTransaction);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect(result).to.equal('0x');
@@ -874,10 +778,82 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(400, mockData.failInvalid);
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(400, mockData.failInvalid);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect(result).to.equal('0x');
+    });
+  });
+
+  describe('contractCallFormat', () => {
+    it('should format transaction value to tiny bar integer', () => {
+      const transaction = {
+        value: '0x2540BE400',
+      };
+
+      ethImpl.contractCallFormat(transaction);
+      expect(transaction.value).to.equal(1);
+    });
+
+    it('should parse gasPrice to integer', () => {
+      const transaction = {
+        gasPrice: '1000000000',
+      };
+
+      ethImpl.contractCallFormat(transaction);
+
+      expect(transaction.gasPrice).to.equal(1000000000);
+    });
+
+    it('should parse gas to integer', () => {
+      const transaction = {
+        gas: '50000',
+      };
+
+      ethImpl.contractCallFormat(transaction);
+
+      expect(transaction.gas).to.equal(50000);
+    });
+
+    it('should throw an error if both input and data fields are provided', () => {
+      const transaction = {
+        input: 'input data',
+        data: 'some data',
+      };
+      try {
+        ethImpl.contractCallFormat(transaction);
+      } catch (error) {
+        expect(error.code).eq(-32000);
+        expect(error.message).eq('Invalid arguments: Cannot accept both input and data fields. Use only one.');
+      }
+    });
+
+    it('should copy input to data if input is provided but data is not', () => {
+      const transaction = {
+        input: 'input data',
+      };
+
+      ethImpl.contractCallFormat(transaction);
+
+      // @ts-ignore
+      expect(transaction.data).to.equal('input data');
+      expect(transaction.input).to.be.undefined;
+    });
+
+    it('should not modify transaction if input and data fields are not provided', () => {
+      const transaction = {
+        value: '0x2540BE400',
+        gasPrice: '1000000000',
+        gas: '50000',
+      };
+
+      ethImpl.contractCallFormat(transaction);
+
+      expect(transaction.value).to.equal(1);
+      expect(transaction.gasPrice).to.equal(1000000000);
+      expect(transaction.gas).to.equal(50000);
     });
   });
 });

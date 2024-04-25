@@ -14,6 +14,7 @@
     "@types/mocha": "^9.1.0",
     "@types/node": "^17.0.14",
     "chai": "^4.3.6",
+    "redis-memory-server": "^0.10.0",
     "sinon": "^14.0.0",
     "ts-mocha": "^9.0.2",
     "typescript": "^4.6.4"
@@ -48,7 +49,7 @@
   },
   "dependencies": {
     "@ethersproject/asm": "^5.7.0",
-    "@hashgraph/sdk": "2.43.0",
+    "@hashgraph/sdk": "2.44.0",
     "@keyvhq/core": "^1.6.9",
     "axios": "^1.4.0",
     "axios-retry": "^3.5.1",

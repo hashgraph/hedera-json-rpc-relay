@@ -24,9 +24,9 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import ERC20MockJson from '@hashgraph/json-rpc-server/tests/contracts/ERC20Mock.json';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 
-describe('@release @web-socket eth_call', async function () {
+describe('@release @web-socket-batch-1 eth_call', async function () {
   const METHOD_NAME = 'eth_call';
   const INVALID_PARAMS = [
     ['{}', false, '0x0'],
@@ -57,6 +57,8 @@ describe('@release @web-socket eth_call', async function () {
       output: TOKEN_INIT_SUPPLY,
     },
   ];
+  // @ts-ignore
+  const { mirrorNode } = global;
 
   let requestId: string,
     erc20TokenAddr: string,
@@ -65,8 +67,21 @@ describe('@release @web-socket eth_call', async function () {
     erc20EtherInterface: ethers.Interface;
 
   before(async () => {
-    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider, requestId);
-    await new Promise((r) => setTimeout(r, 1000)); // wait for accounts[0] to propagate
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '2500000000'; //25 Hbar
+
+    const neededAccounts: number = 1;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
 
     const erc20Contract = await Utils.deployContractWithEthers(
       [TOKEN_NAME, TOKEN_SYMBOL, accounts[0].address, TOKEN_INIT_SUPPLY],

@@ -21,7 +21,7 @@
 import { Eth } from '../index';
 import { Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Block, Transaction, Log } from './model';
+import { Block, Transaction, Log, Transaction1559 } from './model';
 import { MirrorNodeClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
@@ -576,6 +576,7 @@ export class EthImpl implements Eth {
 
       if (contractCallResponse?.result) {
         gas = prepend0x(trimPrecedingZeros(contractCallResponse.result));
+        this.logger.info(`${requestIdPrefix} Returning gas: ${gas}`);
       }
     } catch (e: any) {
       this.logger.error(
@@ -624,9 +625,8 @@ export class EthImpl implements Eth {
         // Handle Contract Call or Contract Create
         gas = this.defaultGas;
       }
+      this.logger.error(`${requestIdPrefix} Returning predefined gas: ${gas}`);
     }
-    this.logger.error(`${requestIdPrefix} Returning predefined gas: ${gas}`);
-
     return gas;
   }
 
@@ -644,9 +644,19 @@ export class EthImpl implements Eth {
     if (transaction.gas) {
       transaction.gas = parseInt(transaction.gas);
     }
+
+    if (transaction.data && transaction.input) {
+      throw predefined.INVALID_ARGUMENTS('Cannot accept both input and data fields. Use only one.');
+    }
+
     // Support either data or input. https://ethereum.github.io/execution-apis/api-documentation/ lists input but many EVM tools still use data.
+    // We chose in the mirror node to use data field as the correct one, however for us to be able to support all tools,
+    // we have to modify transaction object, so that it complies with the mirror node.
+    // That means that, if input field is passed, but data is not, we have to copy one value to the other.
+    // For optimization purposes, we can rid of the input property or replace it with empty string.
     if (transaction.input && transaction.data === undefined) {
       transaction.data = transaction.input;
+      delete transaction.input;
     }
   }
 
@@ -1404,12 +1414,27 @@ export class EthImpl implements Eth {
 
     let txSubmitted = false;
     try {
-      const contractExecuteResponse = await this.hapiService
-        .getSDKClient()
-        .submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix);
+      const contractExecuteResponse = await this.sendRawTransactionWithRetry(
+        async () =>
+          await this.hapiService
+            .getSDKClient()
+            .submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix),
+        {
+          canRetry: (e: unknown) => {
+            return e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded());
+          },
+          onError: (e: SDKClientError) => {
+            this.logger.warn(
+              `${requestIdPrefix} SDK Client has probably timed out, trying again with a new instance...`,
+            );
+            this.hapiService.decrementErrorCounter(e.statusCode);
+          },
+        },
+      );
       txSubmitted = true;
+
       // Wait for the record from the execution.
-      const txId = contractExecuteResponse.transactionId.toString();
+      const txId = contractExecuteResponse!.transactionId.toString();
       const formattedId = formatTransactionIdWithoutQueryParams(txId);
 
       // handle formattedId being null
@@ -1452,6 +1477,47 @@ export class EthImpl implements Eth {
       return record.hash;
     } catch (e: any) {
       return this.sendRawTransactionErrorHandler(e, transaction, transactionBuffer, txSubmitted, requestIdPrefix);
+    }
+  }
+
+  /**
+   * Sends a raw transaction with retry logic.
+   *
+   * @template T The type of the result returned by the sendRawTransaction function.
+   * @param {Function} sendRawTransaction The function responsible for sending the raw transaction.
+   * @param {object} options The options for retrying the transaction.
+   * @param {number} [options.maxAttempts=2] The maximum number of attempts to send the transaction.
+   * @param {number} [options.backOff=500] The backoff period in milliseconds between retry attempts.
+   * @param {(error: unknown) => boolean} [options.canRetry=(error) => true] A function that determines whether a retry attempt can be made based on the error received.
+   * @param {(error: SDKClientError) => void} [options.onError=(error) => {}] A function to handle errors that occur during retry attempts.
+   * @returns {Promise<T | undefined>} A promise resolving to the result of the transaction, or undefined if all retry attempts fail.
+   */
+  private async sendRawTransactionWithRetry<T>(
+    sendRawTransaction: () => T,
+    {
+      maxAttempts = 2,
+      backOff = 500,
+      canRetry = (e: unknown) => true,
+      onError = (e: SDKClientError) => {},
+    }: {
+      maxAttempts?: number;
+      backOff?: number;
+      canRetry?: (error: unknown) => boolean;
+      onError?: (error: SDKClientError) => void;
+    },
+  ): Promise<T | undefined> {
+    const delay = (backOff) => new Promise((resolve) => setTimeout(resolve, backOff));
+    for (let count = 0; count < maxAttempts; count++) {
+      try {
+        return await sendRawTransaction();
+      } catch (e: unknown) {
+        if (!canRetry(e) || count === maxAttempts - 1) {
+          throw e;
+        }
+        onError(e as SDKClientError);
+        // eslint-disable-next-line no-await-in-loop
+        await delay(backOff);
+      }
     }
   }
 
@@ -2154,7 +2220,7 @@ export class EthImpl implements Eth {
    * @returns Transaction Object
    */
   private createTransactionFromLog(log: Log) {
-    return new Transaction({
+    return new Transaction1559({
       accessList: undefined, // we don't support access lists for now
       blockHash: log.blockHash,
       blockNumber: log.blockNumber,
@@ -2279,7 +2345,7 @@ export class EthImpl implements Eth {
     let getBlock;
     const isParamBlockNum = typeof blockNumOrHash === 'number' ? true : false;
 
-    if (isParamBlockNum && blockNumOrHash < 0) {
+    if (isParamBlockNum && (blockNumOrHash as number) < 0) {
       throw predefined.UNKNOWN_BLOCK();
     }
 

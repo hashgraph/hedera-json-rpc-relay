@@ -22,9 +22,10 @@
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 
-describe('@release @web-socket eth_getBalance', async function () {
+describe('@release @web-socket-batch-1 eth_getBalance', async function () {
   const METHOD_NAME = 'eth_getBalance';
   const INVALID_PARAMS = [
     [],
@@ -36,13 +37,28 @@ describe('@release @web-socket eth_getBalance', async function () {
     [WsTestConstant.FAKE_TX_HASH, '0xhedera'],
     [WsTestConstant.FAKE_TX_HASH, '0xhbar', 36],
   ];
-
+  // @ts-ignore
+  const { mirrorNode } = global;
   let accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
+  let requestId: string;
 
   before(async () => {
-    accounts[0] = await global.servicesNode.createAliasAccount(100, global.relay.provider);
-    await new Promise((r) => setTimeout(r, 1000)); // wait for accounts[0] to propagate
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '2500000000'; //25 Hbar
+
+    const neededAccounts: number = 1;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
   });
 
   beforeEach(async () => {

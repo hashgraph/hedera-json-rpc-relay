@@ -21,7 +21,8 @@
 import path from 'path';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { expect } from 'chai';
+import { expect, use } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { EthImpl } from '../../src/lib/eth';
@@ -35,8 +36,10 @@ import { Log, Transaction } from '../../src/lib/model';
 import { nullableNumberTo0x, numberTo0x, nanOrNumberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import * as sinon from 'sinon';
+import { RedisInMemoryServer } from '../redisInMemoryServer';
+import { SinonSpy } from 'sinon';
 
-const LRU = require('lru-cache');
+use(chaiAsPromised);
 
 const logger = pino();
 const registry = new Registry();
@@ -45,6 +48,7 @@ let restMock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
 let cacheService: CacheService;
+let redisInMemoryServer: RedisInMemoryServer;
 let mirrorNodeCache;
 
 const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
@@ -262,8 +266,19 @@ describe('eth_getBlockBy', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
   const sandbox = sinon.createSandbox();
+  let multiSetSpy: SinonSpy<
+    [keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string],
+    Promise<void> | void
+  >;
 
-  this.beforeAll(() => {
+  this.beforeAll(async () => {
+    //done in order to be able to use cache
+    process.env.TEST = 'false';
+    process.env.REDIS_ENABLED = 'true';
+    process.env.MULTI_SET = 'true';
+    redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 5031);
+    await redisInMemoryServer.start();
+    process.env.REDIS_URL = 'redis://127.0.0.1:5031';
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
 
     // @ts-ignore
@@ -297,10 +312,18 @@ describe('eth_getBlockBy', async function () {
     cacheService.clear();
     restMock.reset();
     sandbox.spy(cacheService, 'set');
+    multiSetSpy = sandbox.spy(cacheService, 'multiSet');
   });
 
   afterEach(function () {
     sandbox.restore();
+  });
+
+  this.afterAll(async () => {
+    process.env.REDIS_ENABLED = 'false';
+    process.env.MULTI_SET = 'false';
+    await cacheService.disconnectRedisClient();
+    await redisInMemoryServer.stop();
   });
 
   const mirrorLogToModelLog = (mirrorLog) => {
@@ -451,30 +474,74 @@ describe('eth_getBlockBy', async function () {
       }
     }
 
+    async function checkForSyntheticLogsInSharedCache() {
+      const syntheticLog1 = await cacheService.getAsync(cacheKeySyntheticLog1, '', '');
+      const syntheticLog2 = await cacheService.getAsync(cacheKeySyntheticLog2, '', '');
+      const syntheticLog3 = await cacheService.getAsync(cacheKeySyntheticLog3, '', '');
+
+      expect(syntheticLog1).to.be.null;
+      expect(syntheticLog2).to.be.null;
+      expect(syntheticLog3).to.be.null;
+    }
+
     it('filterAndPopulateSyntheticContractResults showDetails=false sets cache', async function () {
-      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.null;
-      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.null;
-      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.null;
+      checkForSyntheticLogsInSharedCache();
+
+      const expectedKeyValuePairs = {
+        [`${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${modelLog1.transactionHash}`]: modelLog1,
+        [`${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${modelLog2.transactionHash}`]: modelLog2,
+        [`${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${modelLog3.transactionHash}`]: modelLog3,
+      };
 
       ethImpl.filterAndPopulateSyntheticContractResults(false, referenceLogs, [], '1');
 
-      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
-      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
-      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
-      verifySharedCacheWasUsed();
+      await expect(cacheService.getAsync(cacheKeySyntheticLog1, '', '')).to.eventually.be.fulfilled.and.satisfy(
+        (object) => {
+          return JSON.stringify(object) === JSON.stringify(modelLog1);
+        },
+      );
+      await expect(cacheService.getAsync(cacheKeySyntheticLog2, '', '')).to.eventually.be.fulfilled.and.satisfy(
+        (object) => {
+          return JSON.stringify(object) === JSON.stringify(modelLog2);
+        },
+      );
+      await expect(cacheService.getAsync(cacheKeySyntheticLog3, '', '')).to.eventually.be.fulfilled.and.satisfy(
+        (object) => {
+          return JSON.stringify(object) === JSON.stringify(modelLog3);
+        },
+      );
+      expect(multiSetSpy.callCount).to.equal(1);
+      expect(JSON.stringify(multiSetSpy.getCall(0).args[0])).to.equal(JSON.stringify(expectedKeyValuePairs));
     });
 
     it('filterAndPopulateSyntheticContractResults showDetails=true sets cache', async function () {
-      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.null;
-      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.null;
-      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.null;
+      checkForSyntheticLogsInSharedCache();
+
+      const expectedKeyValuePairs = {
+        [`${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${modelLog1.transactionHash}`]: modelLog1,
+        [`${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${modelLog2.transactionHash}`]: modelLog2,
+        [`${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${modelLog3.transactionHash}`]: modelLog3,
+      };
 
       ethImpl.filterAndPopulateSyntheticContractResults(true, referenceLogs, [], '1');
 
-      expect(cacheService.get(cacheKeySyntheticLog1, '', '')).to.be.equal(modelLog1);
-      expect(cacheService.get(cacheKeySyntheticLog2, '', '')).to.be.equal(modelLog2);
-      expect(cacheService.get(cacheKeySyntheticLog3, '', '')).to.be.equal(modelLog3);
-      verifySharedCacheWasUsed();
+      await expect(cacheService.getAsync(cacheKeySyntheticLog1, '', '')).to.eventually.be.fulfilled.and.satisfy(
+        (object) => {
+          return JSON.stringify(object) === JSON.stringify(modelLog1);
+        },
+      );
+      await expect(cacheService.getAsync(cacheKeySyntheticLog2, '', '')).to.eventually.be.fulfilled.and.satisfy(
+        (object) => {
+          return JSON.stringify(object) === JSON.stringify(modelLog2);
+        },
+      );
+      await expect(cacheService.getAsync(cacheKeySyntheticLog3, '', '')).to.eventually.be.fulfilled.and.satisfy(
+        (object) => {
+          return JSON.stringify(object) === JSON.stringify(modelLog3);
+        },
+      );
+      expect(multiSetSpy.callCount).to.equal(1);
+      expect(JSON.stringify(multiSetSpy.getCall(0).args[0])).to.equal(JSON.stringify(expectedKeyValuePairs));
     });
   });
 });
