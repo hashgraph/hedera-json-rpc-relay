@@ -26,7 +26,7 @@ import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 
-describe('@release @web-socket eth_getTransactionReceipt', async function () {
+describe('@release @web-socket-batch-2 eth_getTransactionReceipt', async function () {
   const METHOD_NAME = 'eth_getTransactionReceipt';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const INVALID_PARAMS = [

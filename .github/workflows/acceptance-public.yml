@@ -110,11 +110,31 @@ jobs:
       operator_id: ${{ inputs.operator_id }}
       operator_key: ${{ inputs.operator_key }}
 
-  websocket:
-    name: Websocket
+  websocket-batch-1:
+    name: Websocket Batch 1
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: ws
+      testfilter: ws_batch1
+      test_ws_server: true
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
+
+  websocket-batch-2:
+    name: Websocket Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch2
+      test_ws_server: true
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
+
+  websocket-batch-3:
+    name: Websocket Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch3
       test_ws_server: true
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
@@ -134,7 +154,9 @@ jobs:
       - tokenmanagement
       - htsprecompilev1
       - precompilecalls
-      - websocket
+      - websocket-batch-1
+      - websocket-batch-2
+      - websocket-batch-3
 
     runs-on: ubuntu-latest
     steps:
