@@ -129,7 +129,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     });
 
     describe('eth_getLogs', () => {
-      let log0Block, log4Block, contractAddress: string, contractAddress2: string, latestBlock, tenBlocksBehindLatest;
+      let log0Block, log4Block, contractAddress: string, contractAddress2: string, latestBlock, previousTwelveBlocks;
 
       before(async () => {
         const logsContract = await Utils.deployContract(
@@ -159,16 +159,16 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         await logsContract2.connect(accounts[1].wallet).log4(1, 1, 1, 1);
 
         latestBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
-        tenBlocksBehindLatest = latestBlock - 10;
+        previousTwelveBlocks = latestBlock - 12;
       });
 
       it('@release should deploy a contract', async () => {
-        //empty params for get logs defaults to latest block, which doesn't have required logs, that's why we fetch the last 10
+        //empty params for get logs defaults to latest block, which doesn't have required logs, that's why we fetch the last 12
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
             {
-              fromBlock: numberTo0x(tenBlocksBehindLatest),
+              fromBlock: numberTo0x(previousTwelveBlocks),
               address: [contractAddress, contractAddress2],
             },
           ],
@@ -270,7 +270,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
             {
-              fromBlock: numberTo0x(tenBlocksBehindLatest),
+              fromBlock: numberTo0x(previousTwelveBlocks),
               address: contractAddress,
             },
           ],
@@ -313,7 +313,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
             {
-              fromBlock: numberTo0x(tenBlocksBehindLatest),
+              fromBlock: numberTo0x(previousTwelveBlocks),
               address: [contractAddress, contractAddress2, Address.NON_EXISTING_ADDRESS],
             },
           ],

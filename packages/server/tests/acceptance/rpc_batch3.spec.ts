@@ -795,9 +795,11 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       const deployerContractTxHash = deployerContract.deploymentTransaction()?.hash;
       expect(deployerContractTxHash).to.not.be.null;
 
-      deployerContractTx = (await accounts[0].wallet.provider?.getTransactionReceipt(
-        deployerContractTxHash!,
-      )) as ethers.TransactionReceipt;
+      deployerContractTx = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
+        [deployerContractTxHash],
+        requestId,
+      );
 
       // get contract details
       const mirrorContract = await mirrorNode.get(`/contracts/${deployerContractAddress}`, requestId);
@@ -810,7 +812,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     it('@release should execute "eth_getTransactionCount" primary', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
-        [mirrorPrimaryAccount.address, numberTo0x(deployerContractTx.blockNumber)],
+        [mirrorPrimaryAccount.address, deployerContractTx.blockNumber],
         requestId,
       );
       expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(primaryAccountNonce.toInt())));
@@ -819,7 +821,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     it('should execute "eth_getTransactionCount" secondary', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
-        [mirrorSecondaryAccount.address, numberTo0x(deployerContractTx.blockNumber)],
+        [mirrorSecondaryAccount.address, deployerContractTx.blockNumber],
         requestId,
       );
       expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(secondaryAccountNonce.toInt())));
@@ -828,7 +830,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     it('@release should execute "eth_getTransactionCount" historic', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
-        [deployerContractAddress, numberTo0x(deployerContractTx.blockNumber)],
+        [deployerContractAddress, deployerContractTx.blockNumber],
         requestId,
       );
       expect(res).to.be.equal('0x2');
@@ -855,7 +857,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     it('@release should execute "eth_getTransactionCount" for account with id converted to evm_address', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
-        [mirrorPrimaryAccount.address, numberTo0x(deployerContractTx.blockNumber)],
+        [mirrorPrimaryAccount.address, deployerContractTx.blockNumber],
         requestId,
       );
       expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(primaryAccountNonce.toInt())));
@@ -864,7 +866,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address historic', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
-        [Utils.idToEvmAddress(contractId.toString()), numberTo0x(deployerContractTx.blockNumber)],
+        [Utils.idToEvmAddress(contractId.toString()), deployerContractTx.blockNumber],
         requestId,
       );
       expect(res).to.be.equal('0x2');
@@ -882,7 +884,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     it('should execute "eth_getTransactionCount" for non-existing address', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
-        [Address.NON_EXISTING_ADDRESS, numberTo0x(deployerContractTx.blockNumber)],
+        [Address.NON_EXISTING_ADDRESS, deployerContractTx.blockNumber],
         requestId,
       );
       expect(res).to.be.equal('0x0');
