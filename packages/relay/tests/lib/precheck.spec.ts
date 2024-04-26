@@ -64,7 +64,6 @@ describe('Precheck', async function () {
   const defaultGasPrice = 720_000_000_000;
   const defaultGasLimit = 1_000_000;
   const defaultChainId = Number('0x12a');
-  const defaultGasLimit = 3_000_000;
   const defaultTx = {
     gasLimit: defaultGasLimit,
     gasPrice: defaultGasPrice,
@@ -447,9 +446,11 @@ describe('Precheck', async function () {
   });
 
   describe('account', async function () {
-    let parsedTx: Transaction, mirrorAccount: any, defaultNonce: number;
+    let parsedTx: Transaction;
+    let mirrorAccount: any;
+    const defaultNonce: number = 3;
+
     before(async () => {
-      defaultNonce = 3;
       const wallet = ethers.Wallet.createRandom();
       const signed = await wallet.signTransaction({ ...defaultTx, from: wallet.address, nonce: defaultNonce });
       parsedTx = ethers.Transaction.from(signed);
