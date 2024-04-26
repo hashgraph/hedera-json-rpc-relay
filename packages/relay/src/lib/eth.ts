@@ -19,7 +19,7 @@
  */
 
 import { Eth } from '../index';
-import { Hbar, PrecheckStatusError } from '@hashgraph/sdk';
+import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Block, Transaction, Log, Transaction1559 } from './model';
 import { MirrorNodeClient } from './clients';
@@ -1411,10 +1411,10 @@ export class EthImpl implements Eth {
 
     const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestIdPrefix);
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
-
+    let fileId: FileId | null = null;
     let txSubmitted = false;
     try {
-      const contractExecuteResponse = await this.sendRawTransactionWithRetry(
+      const sendRawTransactionResult = await this.sendRawTransactionWithRetry(
         async () =>
           await this.hapiService
             .getSDKClient()
@@ -1431,10 +1431,12 @@ export class EthImpl implements Eth {
           },
         },
       );
+
       txSubmitted = true;
+      fileId = sendRawTransactionResult!.fileId;
 
       // Wait for the record from the execution.
-      const txId = contractExecuteResponse!.transactionId.toString();
+      const txId = sendRawTransactionResult!.txResponse.transactionId.toString();
       const formattedId = formatTransactionIdWithoutQueryParams(txId);
 
       // handle formattedId being null
@@ -1442,13 +1444,14 @@ export class EthImpl implements Eth {
         throw predefined.INTERNAL_ERROR(`Invalid transactionID: ${txId}`);
       }
 
-      const record = await this.mirrorNodeClient.repeatedRequest(
+      const contractResult = await this.mirrorNodeClient.repeatedRequest(
         this.mirrorNodeClient.getContractResult.name,
         [formattedId],
         this.MirrorNodeGetContractResultRetries,
         requestIdPrefix,
       );
-      if (!record) {
+
+      if (!contractResult) {
         this.logger.warn(`${requestIdPrefix} No record retrieved`);
         const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestIdPrefix);
 
@@ -1467,16 +1470,26 @@ export class EthImpl implements Eth {
         throw predefined.INTERNAL_ERROR(`No matching record found for transaction id ${txId}`);
       }
 
-      if (record.hash == null) {
+      if (contractResult.hash == null) {
         this.logger.error(
           `${requestIdPrefix} The ethereumHash can never be null for an ethereum transaction, and yet it was!!`,
         );
         throw predefined.INTERNAL_ERROR();
       }
 
-      return record.hash;
+      return contractResult.hash;
     } catch (e: any) {
       return this.sendRawTransactionErrorHandler(e, transaction, transactionBuffer, txSubmitted, requestIdPrefix);
+    } finally {
+      /**
+       *  For transactions of type CONTRACT_CREATE, if the contract's bytecode (calldata) exceeds 5120 bytes, HFS is employed to temporarily store the bytecode on the network.
+       *  After transaction execution, whether successful or not, any entity associated with the 'fileId' should be removed from the Hedera network.
+       */
+      if (fileId) {
+        this.hapiService
+          .getSDKClient()
+          .deleteFile(fileId, requestIdPrefix, EthImpl.ethSendRawTransaction, fileId.toString());
+      }
     }
   }
 
