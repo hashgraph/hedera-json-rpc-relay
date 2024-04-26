@@ -244,7 +244,7 @@ export class SDKClient {
     transactionBuffer: Uint8Array,
     callerName: string,
     requestId?: string,
-  ): Promise<TransactionResponse> {
+  ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
     const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
@@ -271,7 +271,10 @@ export class SDKClient {
     const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction');
     ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.BLOCK_GAS_LIMIT)));
 
-    return this.executeTransaction(ethereumTransaction, fileId, callerName, interactingEntity, requestId);
+    return {
+      fileId,
+      txResponse: await this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId),
+    };
   }
 
   async submitContractCallQuery(
@@ -457,7 +460,6 @@ export class SDKClient {
 
   private executeTransaction = async (
     transaction: Transaction,
-    fileId,
     callerName: string,
     interactingEntity: string,
     requestId?: string,
@@ -518,14 +520,6 @@ export class SDKClient {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
       throw sdkClientError;
-    } finally {
-      /**
-       *  For transactions of type CONTRACT_CREATE, if the contract's bytecode (calldata) exceeds 5120 bytes, HFS is employed to temporarily store the bytecode on the network.
-       *  After transaction execution, whether successful or not, any entity associated with the 'fileId' should be removed from the Hedera network.
-       */
-      if (fileId) {
-        await this.deleteFile(this.clientMain, fileId, requestId, callerName, interactingEntity);
-      }
     }
   };
 
@@ -706,31 +700,24 @@ export class SDKClient {
 
   /**
    * @dev Deletes `fileId` file from the Hedera Network utilizing Hashgraph SDK client
-   * @param client
    * @param fileId
    * @param requestId
    * @param callerName
    * @param interactingEntity
    */
-  private deleteFile = async (
-    client: Client,
-    fileId: FileId,
-    requestId?: string,
-    callerName?: string,
-    interactingEntity?: string,
-  ) => {
+  public deleteFile = async (fileId: FileId, requestId?: string, callerName?: string, interactingEntity?: string) => {
     // format request ID msg
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
     try {
       // Create fileDeleteTx
-      const fileDeleteTx = await new FileDeleteTransaction()
+      const fileDeleteTx = new FileDeleteTransaction()
         .setFileId(fileId)
         .setMaxTransactionFee(new Hbar(2))
-        .freezeWith(client);
+        .freezeWith(this.clientMain);
 
       // execute fileDeleteTx
-      const fileDeleteTxResponse = await fileDeleteTx.execute(client);
+      const fileDeleteTxResponse = await fileDeleteTx.execute(this.clientMain);
 
       // get fileDeleteTx's record
       const deleteFileRecord = await fileDeleteTxResponse.getRecord(this.clientMain);
@@ -748,7 +735,7 @@ export class SDKClient {
 
       // ensure the file is deleted
       const receipt = deleteFileRecord.receipt;
-      const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(client);
+      const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
 
       if (receipt.status === Status.Success && fileInfo.isDeleted) {
         this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);
