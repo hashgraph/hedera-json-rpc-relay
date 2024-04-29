@@ -1,4 +1,4 @@
-/*-
+/* -
  *
  * Hedera JSON RPC Relay
  *
@@ -19,7 +19,7 @@
  */
 
 import Axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { MirrorNodeClientError } from './../errors/MirrorNodeClientError';
+import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import { Logger } from 'pino';
 import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
@@ -30,8 +30,8 @@ import { SDKClientError } from '../errors/SDKClientError';
 import { install as betterLookupInstall } from 'better-lookup';
 import { CacheService } from '../services/cacheService/cacheService';
 
-const http = require('http');
-const https = require('https');
+import http from 'http';
+import https from 'https';
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
@@ -56,6 +56,27 @@ export interface IContractLogsResultsParams {
   topic1?: string | string[];
   topic2?: string | string[];
   topic3?: string | string[];
+}
+
+export interface IContractCallRequest {
+  block?: string | null;
+  estimate?: boolean;
+  from?: string | null;
+  to?: string | null;
+  gas?: string | number | null;
+  gasPrice?: string | number | null;
+  value?: string | number | null;
+  data?: string | null;
+  input?: string | null;
+}
+
+export interface IContractCallResponse {
+  result?: string;
+  errorMessage?: string;
+  statusCode?: number;
+  _status?: {
+    messages: Array<{ message: string; detail: string; data: string }>;
+  };
 }
 
 export class MirrorNodeClient {
@@ -148,9 +169,18 @@ export class MirrorNodeClient {
    */
   private readonly register: Registry;
 
-  private mirrorResponseHistogram;
+  /**
+   * The histogram used for tracking the response time of the mirror node.
+   * @private
+   */
+  private readonly mirrorResponseHistogram: Histogram;
 
+  /**
+   * The cache service used for caching responses.
+   * @private
+   */
   private readonly cacheService: CacheService;
+
   static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;
 
   static mirrorNodeContractResultsPageMax = parseInt(process.env.MIRROR_NODE_CONTRACT_RESULTS_PG_MAX!) || 25;
@@ -698,7 +728,7 @@ export class MirrorNodeClient {
    * the mirror node DB and `transaction_index` or `block_number` is returned as `undefined`. A single re-fetch is sufficient to
    * resolve this problem.
    * @param transactionIdOrHash
-   * @param requestId
+   * @param requestIdPrefix
    */
   public async getContractResultWithRetry(transactionIdOrHash: string, requestIdPrefix?: string) {
     const contractResult = await this.getContractResult(transactionIdOrHash, requestIdPrefix);
@@ -973,7 +1003,15 @@ export class MirrorNodeClient {
     return this.get(`${apiEndpoint}${queryParams}`, MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT, requestIdPrefix);
   }
 
-  public async postContractCall(callData: string, requestIdPrefix?: string) {
+  /**
+   * Send a contract call request to mirror node
+   * @param callData {IContractCallRequest} contract call request data
+   * @param requestIdPrefix {string} optional request id prefix
+   */
+  public async postContractCall(
+    callData: IContractCallRequest,
+    requestIdPrefix?: string,
+  ): Promise<IContractCallResponse> {
     return this.post(
       MirrorNodeClient.CONTRACT_CALL_ENDPOINT,
       callData,
@@ -1006,7 +1044,6 @@ export class MirrorNodeClient {
    * Check if transaction fail is because of contract revert and try to fetch and log the reason.
    *
    * @param e
-   * @param requestId
    * @param requestIdPrefix
    */
   public async getContractRevertReasonFromTransaction(e: any, requestIdPrefix: string): Promise<any | undefined> {
@@ -1084,6 +1121,7 @@ export class MirrorNodeClient {
    * @param searchableTypes the types to search for
    * @param callerName calling method name
    * @param requestIdPrefix the request id prefix message
+   * @param retries the number of retries
    * @returns entity object or null if not found
    */
   public async resolveEntityType(
