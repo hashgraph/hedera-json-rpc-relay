@@ -1,0 +1,1 @@
+/usr/local/bin/manticore examples/evm/umd_example.sol

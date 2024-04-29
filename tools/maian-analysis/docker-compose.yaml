@@ -1,0 +1,6 @@
+services:
+  maian:
+    image: cryptomental/maian-augur-ci
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: ["sleep", "infinity"]

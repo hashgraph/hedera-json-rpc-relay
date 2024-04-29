@@ -1,0 +1,8 @@
+services:
+  slither:
+    build: . # WITH ecrecover DETECTOR preinstalled!
+    volumes:
+      - ./test_contracts:/examples
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: ["sleep", "infinity"]

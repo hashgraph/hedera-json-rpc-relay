@@ -1,0 +1,154 @@
+    0: PUSH1 0x80
+    2: PUSH1 0x40
+    4: MSTORE
+    5: PUSH1 0x4
+    7: CALLDATASIZE
+    8: LT
+    9: PUSH1 0x3f
+    b: JUMPI
+    c: PUSH1 0x0
+    e: CALLDATALOAD
+    f: PUSH29 0x100000000000000000000000000000000000000000000000000000000
+   2d: SWAP1
+   2e: DIV
+   2f: PUSH4 0xffffffff
+   34: AND
+   35: DUP1
+   36: PUSH4 0x7eda09e8
+   3b: EQ
+   3c: PUSH1 0x44
+   3e: JUMPI
+   3f: JUMPDEST
+   40: PUSH1 0x0
+   42: DUP1
+   43: REVERT
+   44: JUMPDEST
+   45: CALLVALUE
+   46: DUP1
+   47: ISZERO
+   48: PUSH1 0x4f
+   4a: JUMPI
+   4b: PUSH1 0x0
+   4d: DUP1
+   4e: REVERT
+   4f: JUMPDEST
+   50: POP
+   51: PUSH1 0x80
+   53: PUSH1 0x4
+   55: DUP1
+   56: CALLDATASIZE
+   57: SUB
+   58: DUP2
+   59: ADD
+   5a: SWAP1
+   5b: DUP1
+   5c: DUP1
+   5d: CALLDATALOAD
+   5e: SWAP1
+   5f: PUSH1 0x20
+   61: ADD
+   62: SWAP1
+   63: SWAP3
+   64: SWAP2
+   65: SWAP1
+   66: DUP1
+   67: CALLDATALOAD
+   68: SWAP1
+   69: PUSH1 0x20
+   6b: ADD
+   6c: SWAP1
+   6d: SWAP3
+   6e: SWAP2
+   6f: SWAP1
+   70: DUP1
+   71: CALLDATALOAD
+   72: SWAP1
+   73: PUSH1 0x20
+   75: ADD
+   76: SWAP1
+   77: SWAP3
+   78: SWAP2
+   79: SWAP1
+   7a: POP
+   7b: POP
+   7c: POP
+   7d: PUSH1 0x82
+   7f: JUMP
+   80: JUMPDEST
+   81: STOP
+   82: JUMPDEST
+   83: PUSH1 0x0
+   85: DUP1
+   86: PUSH1 0x0
+   88: DUP1
+   89: SWAP3
+   8a: POP
+   8b: PUSH1 0x0
+   8d: SWAP2
+   8e: POP
+   8f: PUSH1 0x0
+   91: SWAP1
+   92: POP
+   93: PUSH1 0x0
+   95: DUP7
+   96: EQ
+   97: ISZERO
+   98: ISZERO
+   99: PUSH1 0xbf
+   9b: JUMPI
+   9c: PUSH32 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe
+   bd: SWAP3
+   be: POP
+   bf: JUMPDEST
+   c0: PUSH1 0x5
+   c2: DUP6
+   c3: SLT
+   c4: ISZERO
+   c5: PUSH1 0xe5
+   c7: JUMPI
+   c8: PUSH1 0x0
+   ca: DUP7
+   cb: EQ
+   cc: DUP1
+   cd: ISZERO
+   ce: PUSH1 0xd7
+   d0: JUMPI
+   d1: POP
+   d2: PUSH1 0x0
+   d4: DUP5
+   d5: EQ
+   d6: ISZERO
+   d7: JUMPDEST
+   d8: ISZERO
+   d9: PUSH1 0xe0
+   db: JUMPI
+   dc: PUSH1 0x1
+   de: SWAP2
+   df: POP
+   e0: JUMPDEST
+   e1: PUSH1 0x2
+   e3: SWAP1
+   e4: POP
+   e5: JUMPDEST
+   e6: PUSH1 0x3
+   e8: DUP2
+   e9: DUP4
+   ea: DUP6
+   eb: ADD
+   ec: ADD
+   ed: EQ
+   ee: ISZERO
+   ef: ISZERO
+   f0: ISZERO
+   f1: PUSH1 0xf5
+   f3: JUMPI
+   f4: INVALID
+   f5: JUMPDEST
+   f6: POP
+   f7: POP
+   f8: POP
+   f9: POP
+   fa: POP
+   fb: POP
+   fc: JUMP
+   fd: STOP

@@ -36,3 +36,18 @@ Development tools are usually making a lot of requests to certain endpoints, esp
 
 Note:
 Enable [`development mode`](../docs/dev-mode.md) to correctly assert revert messages of contract calls with `hardhat-chai-matchers`.
+
+# EVM Analysis tools study General Information: 
+This report aims to analyze potential tools that will aid in the development, porting, and security assessment
+of Smart Contracts deployed on the Hedera network. Key aspects evaluated during this research include:
+- Ease of use and compatibility with Hedera.
+- Ability to identify optimizations and potential errors or bugs specific to Smart Contracts on the Hedera.
+- Issues with compatibility for contracts ported from Ethereum or other networks to the Hedera.
+### Prerequisites
+Tools were tested in the MacOS and Kubuntu Linux environments as well as on Docker containers. Test setup involves:
+- Installing the Solidity compiler package.
+- Cloning the Hedera JSON RPC repository: `git clone -b main --single-branch  https://github.com/hashgraph/hedera-json-rpc-relay.git`.
+- Installing dependencies, and building the project: `npm install`, `npm run setup`, from the project directory.
+- Starting the project: `npm start`.
+- Launching the analytical tools discussed in this report: `docker-compose up -d`, using
+  [docker-compose](slither-analysis/docker-compose.yaml) file placed in the tool analysis directory ([Dockerfile](slither-analysis/Dockerfile) for the Slither will be required).
