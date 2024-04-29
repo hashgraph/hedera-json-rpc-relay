@@ -608,10 +608,7 @@ export class EthImpl implements Eth {
 
     if (isSimpleTransfer) {
       // Handle Simple Transaction and Hollow Account creation
-      const isNonZeroValue =
-        transaction.value &&
-        ((typeof transaction.value === 'string' && parseInt(transaction.value) > 0) ||
-          (typeof transaction.value === 'number' && transaction.value > 0));
+      const isNonZeroValue = Number(transaction.value) > 0;
       if (!isNonZeroValue) {
         return predefined.INVALID_PARAMETER(
           0,
