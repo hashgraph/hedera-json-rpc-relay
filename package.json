@@ -29,6 +29,7 @@
   },
   "scripts": {
     "acceptancetest": "ts-mocha packages/server/tests/acceptance/index.spec.ts --exit",
+    "transferTokenTest": "ts-mocha packages/server/tests/acceptance/htsTransferToken.spec.ts --exit",
     "acceptancetest:api_batch1": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-batch-1' --exit",
     "acceptancetest:api_batch2": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-batch-2' --exit",
     "acceptancetest:api_batch3": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-batch-3' --exit",
