@@ -166,7 +166,7 @@ But there is no way to integrate in any way with e.g. [hashscan](https://hashsca
 * Slither's Detectors provide API that may be used to provide custom internal Hedera checks such as:
     * ecrecover is not supported for ED25519 accounts
     * precompiles that are missing in the Hedera EVM
-      example of detector implementation POC may be found [here](slither_reports/slither_ecrecover_detector_poc.py)
+      example of detector implementation POC may be found [here](detectors/hedera/ecrecover_usage_local.py)
 * It might be beneficial to introduce eth tools -> Hashscan compatibility layer proxy API that would enable
   transparent communication between Hashscan and Slither.
 * Tests didn't generate any kind of high-impact vulnerability. The Table below depicts a detailed histogram
