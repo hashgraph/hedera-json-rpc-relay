@@ -39,12 +39,16 @@ import {
   BLOCK_NOT_FOUND_RES,
   BLOCK_NUMBER,
   BLOCK_NUMBER_HEX,
+  BLOCK_NUMBER_WITH_SYN_TXN,
   BLOCK_TIMESTAMP_HEX,
+  BLOCK_WITH_SYN_TXN,
   CONTRACTS_RESULTS_NEXT_URL,
   CONTRACT_ADDRESS_1,
   CONTRACT_ADDRESS_2,
   CONTRACT_HASH_1,
   CONTRACT_HASH_2,
+  CONTRACT_QUERY,
+  CONTRACT_RESPONSE_MOCK,
   CONTRACT_RESULTS_LOGS_WITH_FILTER_URL,
   CONTRACT_RESULTS_WITH_FILTER_URL,
   CONTRACT_TIMESTAMP_1,
@@ -56,12 +60,17 @@ import {
   DEFAULT_NETWORK_FEES,
   GAS_USED_1,
   GAS_USED_2,
+  LATEST_BLOCK_QUERY,
+  LATEST_BLOCK_RESPONSE,
   LINKS_NEXT_RES,
+  LOGS_RESPONSE_MOCK,
+  LOG_QUERY,
   MOST_RECENT_BLOCK,
   NOT_FOUND_RES,
   NO_SUCH_BLOCK_EXISTS_RES,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
+import { fail } from 'assert';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -306,6 +315,25 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
+    }
+  });
+
+  it('eth_getBlockByNumber with match and details and sythetic transactions', async function () {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${BLOCK_NUMBER_WITH_SYN_TXN}`).reply(200, BLOCK_WITH_SYN_TXN);
+
+    restMock.onGet(LATEST_BLOCK_QUERY).reply(200, LATEST_BLOCK_RESPONSE);
+    restMock.onGet(CONTRACT_QUERY).reply(200, CONTRACT_RESPONSE_MOCK);
+    restMock.onGet(LOG_QUERY).reply(200, LOGS_RESPONSE_MOCK);
+
+    const result = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER_WITH_SYN_TXN), true);
+    if (result) {
+      result.transactions.forEach((txn) => {
+        expect(txn.maxFeePerGas).to.exist;
+        expect(txn.maxPriorityFeePerGas).to.exist;
+      });
+    } else {
+      fail('Result is null');
     }
   });
 

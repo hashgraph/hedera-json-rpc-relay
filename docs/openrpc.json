@@ -3,7 +3,7 @@
     "info": {
         "title": "Hedera JSON-RPC Specification",
         "description": "A specification of the implemented Ethereum JSON RPC APIs interface for Hedera clients and adheres to the Ethereum execution APIs schema.",
-        "version": "0.47.0-SNAPSHOT"
+        "version": "0.48.0-SNAPSHOT"
     },
     "servers": [
         {
@@ -402,7 +402,7 @@
         {
             "name": "eth_getLogs",
             "summary": "Returns an array of all logs matching a given filter object.",
-            "description": "The block range filter, _i.e._, `fromBlock` and `toBlock` arguments, cannot be larger than `ETH_GET_LOGS_BLOCK_RANGE_LIMIT` (defaults to `1000`). However, when `address` represents a single address, either a `string` or an array with a single element, this restriction is lifted.\n\nWhen the logs for an individual address exceeds `MIRROR_NODE_CONTRACT_RESULTS_LOGS_PG_MAX * MIRROR_NODE_LIMIT_PARAM` (defaults to `20k`) an error `-32011` _Mirror Node pagination count range too large_ is returned. These settings are the Mirror Node page limit (defaults to `200`) and Mirror Node entries per page (defaults to `100`) respectively.",
+            "description": "The block range filter, _i.e._, `fromBlock` and `toBlock` arguments, cannot be larger than `ETH_GET_LOGS_BLOCK_RANGE_LIMIT` (defaults to `1000`). However, when `address` represents a single address, either a `string` or an array with a single element, this restriction is lifted. In any case, if the `topics` param is present the block range must be within ~`302,400` blocks, the equivalent to 7 days.\n\nWhen the logs for an individual address exceeds `MIRROR_NODE_CONTRACT_RESULTS_LOGS_PG_MAX * MIRROR_NODE_LIMIT_PARAM` (defaults to `20k`) an error `-32011` _Mirror Node pagination count range too large_ is returned. These settings are the Mirror Node page limit (defaults to `200`) and Mirror Node entries per page (defaults to `100`) respectively.",
             "params": [
                 {
                     "name": "Filter",

@@ -125,7 +125,10 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       restMock.onGet(`transactions/${transactionId}?nonce=0`).reply(200, null);
 
       sdkClientStub.submitEthereumTransaction.returns({
-        transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        txResponse: {
+          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        },
+        fileId: null,
       });
 
       const response = (await ethImpl.sendRawTransaction(signed, getRequestId())) as JsonRpcError;
@@ -140,7 +143,10 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
       sdkClientStub.submitEthereumTransaction.returns({
-        transactionId: '',
+        txResponse: {
+          transactionId: '',
+        },
+        fileId: null,
       });
 
       const response = (await ethImpl.sendRawTransaction(signed, getRequestId())) as JsonRpcError;
@@ -153,7 +159,10 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
       sdkClientStub.submitEthereumTransaction.returns({
-        transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        txResponse: {
+          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        },
+        fileId: null,
       });
       const signed = await signTransaction(transaction);
 
@@ -165,7 +174,10 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
       sdkClientStub.submitEthereumTransaction.returns({
-        transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        txResponse: {
+          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        },
+        fileId: null,
       });
 
       const signed = await signTransaction(transaction);
@@ -181,7 +193,10 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sdkClientStub.submitEthereumTransaction.onCall(0).throws(new SDKClientError({ status: 21 }, 'timeout exceeded'));
 
       sdkClientStub.submitEthereumTransaction.onCall(1).returns({
-        transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        txResponse: {
+          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        },
+        fileId: null,
       });
 
       const signed = await signTransaction(transaction);
