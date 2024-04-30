@@ -70,6 +70,7 @@ export class WsTestHelper {
     expect(obj).to.exist;
     expect(obj.id).to.eq(1);
     expect(obj.jsonrpc).to.eq('2.0');
+    expect(obj.method).to.not.exist;
   }
 
   static prepareJsonRpcObject(method: string, params: any[]) {
