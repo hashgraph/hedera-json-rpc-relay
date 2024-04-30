@@ -173,3 +173,33 @@ But there is no way to integrate in any way with e.g. [hashscan](https://hashsca
   of the reported issues by the Slither (for hts-precompile contracts):
 
   ![slither_report_histogram.png](static/slither_report_histogram.png)\
+
+### Overview of Slither Detectors and Their Blockchain Specificity
+
+| Name                           | Description                                                             | Chain-Specific |
+|--------------------------------|-------------------------------------------------------------------------|----------------|
+| Reentrancy vulnerabilities     | Identifies potential reentrancy issues in Smart Contracts               | ❌️             |
+| Arithmetic issues              | Detects overflows, underflows, and other arithmetic operations          | ❌️             |
+| Unexpected ether flows         | Checks for unexpected behavior in ether transfer                        | ❌️             |
+| Unchecked low-level calls      | Identifies low-level calls that are not checked                         | ❌️             |
+| Exception handling             | Checks for incorrect handling of exceptions                             | ❌️             |
+| Suicidal patterns              | Vulnerabilities that can lead to self-destruction of contracts          | ❌️             |
+| Unprotected selfdestruct       | `selfdestruct` function callable by anyone                              | ❌️             |
+| ERC standards compliance       | Ensures compliance with ERC standards                                   | ❌️             |
+| Naming conventions             | Ensures that naming follows best practices                              | ❌              |
+| Function order                 | Verifies that functions are ordered properly                            | ❌              |
+| Variable ordering              | Focuses on gas-efficient storage of state variables                     | ❌              |
+| State variable packing         | Checks for optimal packing of state variables to reduce gas costs       | ❌              |
+| Unused state variables         | Detects state variables that are declared but not used                  | ❌              |
+| Redundant expressions          | Points out unnecessary code segments that can be removed                | ❌              |
+| Code complexity                | Identifies overly complex code that could be simplified                 | ❌              |
+| Redundant code                 | Highlights unnecessary code segments                                    | ❌              |
+| Shadowing state variables      | Warns about local variables shadowing state variables                   | ❌              |
+| Shadowing built-in             | Alerts on local variables shadowing Solidity's built-in globals         | ❌              |
+| Visibility specifiers          | Ensures that visibility is explicitly stated and follows best practices | ❌              |
+| External calls best practices  | Checks for issues with how external calls are made                      | ❌              |
+| Assembly usage                 | Cautions against the use of inline assembly                             | ❌              |
+| Solc select pragma             | Suggests specific Solidity compiler versions                            | ❌              |
+| License identification         | Checks for the presence of licensing information in code                | ❌              |
+
+Solidity code is not associated to any specific blockchain. It is designed for systems that support the Ethereum Virtual Machine (EVM) so Slither do not require adjustments or enhancements for specific chains. It has not incorporated any rules or additional information that are chain-specific.

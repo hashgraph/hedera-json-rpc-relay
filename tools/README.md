@@ -51,3 +51,14 @@ Tools were tested in the MacOS and Kubuntu Linux environments as well as on Dock
 - Starting the project: `npm start`.
 - Launching the analytical tools discussed in this report: `docker-compose up -d`, using
   [docker-compose](slither-analysis/docker-compose.yaml) file placed in the tool analysis directory ([Dockerfile](slither-analysis/Dockerfile) for the Slither will be required).
+
+## Impact of This Document's Analysis Tools Research on Potential Guides for EVM Developers
+
+### Relevance of Slither Analysis to Hedera JSON RPC
+
+While [Slither](slither-analysis/analysis.md) is a powerful static analysis tool, it is important to note its lack of network-specific features such as the Hedera JSON RPC.
+
+### Relevance of MAIAN and Manticore Analysis to Hedera JSON RPC
+
+Both [MAIAN](maian-analysis/analysis.md) and [Manticore](manticore-analysis/analysis.md) tools require updates to use the latest versions of Python and their respective libraries (as well as additional fixes)
+to function correctly before we can assess their compatibility with the Hedera JSON RPC.
