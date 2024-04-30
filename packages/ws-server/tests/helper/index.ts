@@ -70,7 +70,7 @@ export class WsTestHelper {
     expect(obj).to.exist;
     expect(obj.id).to.eq(1);
     expect(obj.jsonrpc).to.eq('2.0');
-    expect(obj.method).to.not.exist;
+    expect(obj.method).to.not.exist; // Should not have method field in response for standard non-subscription methods
   }
 
   static prepareJsonRpcObject(method: string, params: any[]) {
