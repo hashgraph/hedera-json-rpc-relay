@@ -57,6 +57,7 @@ describe('@release @web-socket-batch-1 eth_blockNumber', async function () {
       WsTestHelper.assertJsonRpcObject(response);
       expect(Number(response.result)).to.gte(0);
       expect(response.result.startsWith('0x')).to.be.true;
+      expect(response.method).to.not.exist;
     });
   });
 
@@ -71,6 +72,7 @@ describe('@release @web-socket-batch-1 eth_blockNumber', async function () {
       const response = await ethersWsProvider.send(METHOD_NAME, []);
       expect(Number(response)).to.gte(0);
       expect(response.startsWith('0x')).to.be.true;
+      expect(response.method).to.not.exist;
     });
   });
 });

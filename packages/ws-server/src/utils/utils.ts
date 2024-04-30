@@ -96,7 +96,6 @@ export const sendToClient = (
   connection.send(
     JSON.stringify({
       jsonrpc: '2.0',
-      method,
       result: data,
       id: request.id,
     }),
