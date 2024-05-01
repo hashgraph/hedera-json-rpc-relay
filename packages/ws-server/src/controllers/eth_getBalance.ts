@@ -62,7 +62,6 @@ export const handleEthGetBalance = async ({
     relay,
     logger,
     request,
-    method,
     'getBalance',
     requestIdPrefix,
     connectionIdPrefix,

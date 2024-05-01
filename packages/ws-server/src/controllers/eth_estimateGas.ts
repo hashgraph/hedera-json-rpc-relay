@@ -62,7 +62,6 @@ export const handleEthEstimateGas = async ({
     relay,
     logger,
     request,
-    method,
     'estimateGas',
     requestIdPrefix,
     connectionIdPrefix,

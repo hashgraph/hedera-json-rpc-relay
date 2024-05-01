@@ -70,7 +70,6 @@ export const getMultipleAddressesEnabled = (): boolean => {
  * Resets the TTL timer for inactivity on the client connection.
  * @param {any} connection - The WebSocket connection object.
  * @param {any} request - The request object received from the client.
- * @param {string} method - The JSON-RPC method associated with the response.
  * @param {any} data - The data to be included in the response.
  * @param {string} tag - A tag used for logging and identifying the message.
  * @param {any} logger - The logger object for logging messages and events.
@@ -80,7 +79,6 @@ export const getMultipleAddressesEnabled = (): boolean => {
 export const sendToClient = (
   connection: any,
   request: any,
-  method: string,
   data: any,
   tag: string,
   logger: any,
@@ -96,7 +94,6 @@ export const sendToClient = (
   connection.send(
     JSON.stringify({
       jsonrpc: '2.0',
-      method,
       result: data,
       id: request.id,
     }),

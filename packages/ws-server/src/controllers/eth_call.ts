@@ -62,7 +62,6 @@ export const handleEthCall = async ({
     relay,
     logger,
     request,
-    method,
     'call',
     requestIdPrefix,
     connectionIdPrefix,

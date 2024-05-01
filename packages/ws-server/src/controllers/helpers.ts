@@ -30,7 +30,6 @@ import { predefined } from '@hashgraph/json-rpc-relay';
  * @param {Relay} relay - The relay object for interacting with the Hedera network.
  * @param {any} logger - The logger object for logging messages and events.
  * @param {any} request - The request object received from the client.
- * @param {string} method - The JSON-RPC method associated with the request.
  * @param {string} rpcCallEndpoint - The Hedera RPC call endpoint to execute.
  * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {string} connectionIdPrefix - The prefix for the connection ID.
@@ -43,7 +42,6 @@ export const handleSendingRequestsToRelay = async (
   relay: Relay,
   logger: any,
   request: any,
-  method: string,
   rpcCallEndpoint: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
@@ -54,7 +52,7 @@ export const handleSendingRequestsToRelay = async (
       logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for tag=${tag}. Data=${txRes}`);
     }
 
-    sendToClient(ctx.websocket, request, method, txRes, tag, logger, requestIdPrefix, connectionIdPrefix);
+    sendToClient(ctx.websocket, request, txRes, tag, logger, requestIdPrefix, connectionIdPrefix);
   } catch (error: any) {
     throw predefined.INTERNAL_ERROR(JSON.stringify(error.message || error));
   }
