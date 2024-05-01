@@ -71,7 +71,6 @@ export const handleEthGetLogs = async ({
     relay,
     logger,
     request,
-    method,
     'getLogs',
     requestIdPrefix,
     connectionIdPrefix,
