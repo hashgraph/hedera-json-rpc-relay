@@ -63,7 +63,6 @@ export const handleEthSendRawTransaction = async ({
     relay,
     logger,
     request,
-    method,
     'sendRawTransaction',
     requestIdPrefix,
     connectionIdPrefix,

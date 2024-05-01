@@ -63,7 +63,6 @@ export const handleEthGetTransactionByHash = async ({
     relay,
     logger,
     request,
-    method,
     'getTransactionByHash',
     requestIdPrefix,
     connectionIdPrefix,

@@ -62,7 +62,6 @@ export const handleEthGetBlockByNumber = async ({
     relay,
     logger,
     request,
-    method,
     'getBlockByNumber',
     requestIdPrefix,
     connectionIdPrefix,

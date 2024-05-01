@@ -62,7 +62,6 @@ export const handleEthGetCode = async ({
     relay,
     logger,
     request,
-    method,
     'getCode',
     requestIdPrefix,
     connectionIdPrefix,
