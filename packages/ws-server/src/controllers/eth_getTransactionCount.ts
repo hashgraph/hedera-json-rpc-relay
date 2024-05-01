@@ -56,7 +56,6 @@ export const handleEthGetTransactionCount = async ({
     relay,
     logger,
     request,
-    method,
     'getTransactionCount',
     requestIdPrefix,
     connectionIdPrefix,

@@ -63,7 +63,6 @@ export const handleEthGetStorageAt = async ({
     relay,
     logger,
     request,
-    method,
     'getStorageAt',
     requestIdPrefix,
     connectionIdPrefix,

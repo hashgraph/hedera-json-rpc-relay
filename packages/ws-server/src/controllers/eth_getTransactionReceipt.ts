@@ -63,7 +63,6 @@ export const handleEthGetTransactionReceipt = async ({
     relay,
     logger,
     request,
-    method,
     'getTransactionReceipt',
     requestIdPrefix,
     connectionIdPrefix,

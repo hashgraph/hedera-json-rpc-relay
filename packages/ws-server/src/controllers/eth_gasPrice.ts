@@ -59,7 +59,6 @@ export const handleEthGasPrice = async ({
     relay,
     logger,
     request,
-    method,
     'gasPrice',
     requestIdPrefix,
     connectionIdPrefix,
