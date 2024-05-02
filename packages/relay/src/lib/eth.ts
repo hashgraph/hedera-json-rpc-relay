@@ -1564,6 +1564,7 @@ export class EthImpl implements Eth {
 
     this.contractCallFormat(call);
 
+    let result: string | JsonRpcError = '';
     try {
       // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
       if (
@@ -1572,10 +1573,14 @@ export class EthImpl implements Eth {
       ) {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
-        return await this.callMirrorNode(call, gas, call.value, blockNumberOrTag, requestIdPrefix);
+        result = await this.callMirrorNode(call, gas, call.value, blockNumberOrTag, requestIdPrefix);
+      } else {
+        result = await this.callConsensusNode(call, gas, requestIdPrefix);
       }
 
-      return await this.callConsensusNode(call, gas, requestIdPrefix);
+      this.logger.debug(`${requestIdPrefix} eth_call response: ${JSON.stringify(result)}`);
+
+      return result;
     } catch (e: any) {
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
       if (e instanceof JsonRpcError) {
@@ -1675,7 +1680,7 @@ export class EthImpl implements Eth {
     let callData: any = {};
     try {
       this.logger.debug(
-        `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using mirror-node. for blockBlockNumberOrTag: "${block}"`,
+        `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" at blockBlockNumberOrTag: "${block}" using mirror-node.`,
         call.to,
         gas,
         call.data,
