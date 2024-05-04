@@ -131,7 +131,6 @@ describe('@release @web-socket-batch-3 eth_subscribe newHeads', async function (
 
   beforeEach(async () => {
     process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
-
     process.env.WS_SUBSCRIPTION_LIMIT = '10';
 
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -197,10 +196,12 @@ describe('@release @web-socket-batch-3 eth_subscribe newHeads', async function (
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
+      process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
     });
 
     it('should subscribe to newHeads even when WS_NEW_HEADS_ENABLED=undefined, and receive a valid JSON RPC response', async (done) => {
-      expect(process.env.WS_NEW_HEADS_ENABLED).to.eq('undefined');
+      delete process.env.WS_NEW_HEADS_ENABLED;
+      expect(process.env.WS_NEW_HEADS_ENABLED).to.be.undefined;
 
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;
