@@ -131,7 +131,6 @@ describe('@release @web-socket-batch-3 eth_subscribe newHeads', async function (
 
   beforeEach(async () => {
     process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
-
     process.env.WS_SUBSCRIPTION_LIMIT = '10';
 
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -197,6 +196,38 @@ describe('@release @web-socket-batch-3 eth_subscribe newHeads', async function (
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
+      process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
+    });
+
+    it('should subscribe to newHeads even when WS_NEW_HEADS_ENABLED=undefined, and receive a valid JSON RPC response', async (done) => {
+      delete process.env.WS_NEW_HEADS_ENABLED;
+      expect(process.env.WS_NEW_HEADS_ENABLED).to.be.undefined;
+
+      const webSocket = new WebSocket(WS_RELAY_URL);
+      const subscriptionId = 1;
+      webSocket.on('open', function open() {
+        webSocket.send(
+          JSON.stringify({
+            id: subscriptionId,
+            jsonrpc: '2.0',
+            method: 'eth_subscribe',
+            params: ['newHeads', { includeTransactions: true }],
+          }),
+        );
+      });
+
+      let responseCounter = 0;
+
+      Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      webSocket.on('message', function incoming(data) {
+        const response = JSON.parse(data);
+        responseCounter++;
+        verifyResponse(response, done, webSocket, true);
+        if (responseCounter > 1) {
+          webSocket.close();
+        }
+      });
+      done();
     });
   });
 
