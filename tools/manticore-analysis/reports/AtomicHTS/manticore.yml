@@ -1,0 +1,3 @@
+cli:
+  argv:
+  - /examples/hts-precompile/AtomicHTS.sol
