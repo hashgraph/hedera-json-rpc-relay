@@ -30,3 +30,27 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64, linux/arm64
           push: false
+          load: true
+          tags: relay:latest
+
+      - name: Start server
+        run: |
+          docker run -d -p 7546:7546 --name relay relay:latest
+
+      - name: Test server
+        run: |
+          sleep 15  # Wait for the server to start
+          response=$(curl -s http://localhost:7546/health/liveness)
+          if [ "$response" = "OK" ]; then
+            echo "Server responded with 'OK'. Test passed!"
+            exit 0
+          else
+            echo "Server responded with '$response'. Test failed!"
+            exit 1
+          fi
+
+      - name: Stop server
+        if: always()
+        run: |
+          docker stop relay
+          docker rm relay
