@@ -1,0 +1,6 @@
+services:
+  manticore:
+    image: trailofbits/manticore:0.3.5
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: ["sleep", "infinity"]
