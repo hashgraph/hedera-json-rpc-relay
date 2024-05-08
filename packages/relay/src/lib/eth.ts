@@ -39,6 +39,7 @@ import {
   toHash32,
   weibarHexToTinyBarInt,
   trimPrecedingZeros,
+  convertToHex,
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -1888,6 +1889,8 @@ export class EthImpl implements Eth {
     const fromAddress = await this.resolveEvmAddress(contractResult.from, requestIdPrefix, [constants.TYPE_ACCOUNT]);
     const toAddress = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
 
+    contractResult.chain_id = contractResult.chain_id == null ? this.chain : contractResult.chain_id;
+
     return formatContractResult({
       ...contractResult,
       from: fromAddress,
@@ -1973,7 +1976,7 @@ export class EthImpl implements Eth {
           removed: false,
           topics: log.topics,
           transactionHash: toHash32(receiptResponse.hash),
-          transactionIndex: nullableNumberTo0x(receiptResponse.transaction_index),
+          transactionIndex: convertToHex(receiptResponse.transaction_index),
         });
       });
 
@@ -1988,7 +1991,7 @@ export class EthImpl implements Eth {
         logs: logs,
         logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
         transactionHash: toHash32(receiptResponse.hash),
-        transactionIndex: nullableNumberTo0x(receiptResponse.transaction_index),
+        transactionIndex: convertToHex(receiptResponse.transaction_index),
         effectiveGasPrice: effectiveGas,
         root: receiptResponse.root,
         status: receiptResponse.status,
@@ -2143,6 +2146,7 @@ export class EthImpl implements Eth {
         constants.TYPE_ACCOUNT,
       ]);
       contractResult.to = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
+      contractResult.chain_id = contractResult.chain_id == null ? this.chain : contractResult.chain_id;
 
       transactionArray.push(showDetails ? formatContractResult(contractResult) : contractResult.hash);
     }

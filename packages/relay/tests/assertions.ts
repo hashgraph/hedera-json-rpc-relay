@@ -74,16 +74,16 @@ export default class RelayAssertions {
     expect(tx.input).to.eq(expectedTx.input);
     expect(tx.maxFeePerGas).to.eq(expectedTx.maxFeePerGas);
     expect(tx.maxPriorityFeePerGas).to.eq(expectedTx.maxPriorityFeePerGas);
-    expect(tx.nonce).to.eq(numberTo0x(expectedTx.nonce));
+    expect(tx.nonce).to.eq(expectedTx.nonce);
     expect(tx.r).to.eq(expectedTx.r);
     expect(tx.s).to.eq(expectedTx.s);
     expect(tx.to).to.eq(expectedTx.to);
     expect(tx.transactionIndex).to.eq(expectedTx.transactionIndex);
-    expect(tx.type).to.eq(numberTo0x(expectedTx.type));
+    expect(tx.type).to.eq(expectedTx.type);
     if (tx.type === '0x1' || tx.type === '0x2') {
-      expect(tx.yParity).to.eq(numberTo0x(expectedTx.v));
+      expect(tx.yParity).to.eq(expectedTx.v);
     } else {
-      expect(tx.v).to.eq(numberTo0x(expectedTx.v));
+      expect(tx.v).to.eq(expectedTx.v);
     }
     expect(tx.value).to.eq(expectedTx.value);
   };

@@ -36,6 +36,7 @@ import {
   weibarHexToTinyBarInt,
   isValidEthereumAddress,
   trimPrecedingZeros,
+  formatHex,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -190,8 +191,57 @@ describe('Formatters', () => {
       nonce: 2,
     };
 
+    const contractResultWithNulls = {
+      address: '0xa83d5287dd3a092e8dbd379c552e94a269abf798',
+      amount: 0,
+      bloom:
+        '0x000000000000000000000000000000010080800000000400000000000000000000020000000000000000000000000000000000000000004000000000000800010000000000000000a0000108000000000802000000000000000000080000000000000000021000000000000000000800000000000000020000000410000000000000000000000000000000000000000400000000088000000000080000000000000000000080000000000000000000000000000000000000000000400000010000000002400000000080002000000000000000000000000000000000000020002000000000020000000080000080000000000000000000000000000000020000',
+      call_result: '0x000000000000000000000000000000000000000000000000000000000000000a',
+      contract_id: '0.0.4284980',
+      created_contract_ids: [],
+      error_message: null,
+      from: '0x000000000000000000000000000000000041f2eb',
+      function_parameters:
+        '0x69328dec0000000000000000000000000000000000000000000000000000000000120f46000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000ef80dda2e3cafa24d776facfbd888f777a345348',
+      gas_consumed: 912489,
+      gas_limit: 1000000,
+      gas_used: 902889,
+      timestamp: '1714996141.581965003',
+      to: '0xa83d5287dd3a092e8dbd379c552e94a269abf798',
+      hash: '0x6ac3de7b815c6085f1ded9b8dff540f8d6b0cb7b593fc50ce2b76f3b4a1bd598',
+      block_hash: '0x98308140c9cb5f1da788770353083333ede7ea51e5b87c0d028d11877d9e2bb348fcae69163c62907a13ae085a59dbaa',
+      block_number: 3744665,
+      result: 'SUCCESS',
+      transaction_index: 7,
+      status: '0x1',
+      failed_initcode: null,
+      access_list: null,
+      block_gas_used: 902889,
+      chain_id: '0x128',
+      gas_price: null,
+      max_fee_per_gas: null,
+      max_priority_fee_per_gas: null,
+      r: null,
+      s: null,
+      type: null,
+      v: null,
+      nonce: null,
+    };
+
     it('should return null if null is passed', () => {
       expect(formatContractResult(null)).to.equal(null);
+    });
+
+    it('should return transactions with no null values', () => {
+      const formattedResult: any = formatContractResult(contractResultWithNulls);
+      expect(formattedResult.chainId).to.equal('0x128');
+      expect(formattedResult.gasPrice).to.equal('0x0');
+      expect(formattedResult.nonce).to.equal('0x0');
+      expect(formattedResult.r).to.equal('0x0');
+      expect(formattedResult.s).to.equal('0x0');
+      expect(formattedResult.type).to.equal('0x0');
+      expect(formattedResult.v).to.equal('0x0');
+      expect(formattedResult.value).to.equal('0x0');
     });
 
     it('should return a valid match', () => {
@@ -202,10 +252,10 @@ describe('Formatters', () => {
       expect(formattedResult.chainId).to.equal('0x12a');
       expect(formattedResult.from).to.equal('0x05fba803be258049a27b820088bab1cad2058871');
       expect(formattedResult.gas).to.equal('0x61a80');
-      expect(formattedResult.gasPrice).to.equal(null);
+      expect(formattedResult.gasPrice).to.equal('0x0');
       expect(formattedResult.hash).to.equal('0xfc4ab7133197016293d2e14e8cf9c5227b07357e6385184f1cd1cb40d783cfbd');
       expect(formattedResult.input).to.equal('0x08090033');
-      expect(formattedResult.maxPriorityFeePerGas).to.equal(null);
+      expect(formattedResult.maxPriorityFeePerGas).to.equal('0x0');
       expect(formattedResult.maxFeePerGas).to.equal('0x59');
       expect(formattedResult.nonce).to.equal('0x2');
       expect(formattedResult.r).to.equal('0x2af9d41244c702764ed86c5b9f1a734b075b91c4d9c65e78bc584b0e35181e42');
@@ -218,7 +268,7 @@ describe('Formatters', () => {
       expect(formattedResult.value).to.equal('0x0');
     });
 
-    it('should return nullable fields', () => {
+    it('should return 0x0 hex values for nullable fields', () => {
       const formattedResult: any = formatContractResult({
         ...contractResult,
         block_number: null,
@@ -238,16 +288,16 @@ describe('Formatters', () => {
       expect(formattedResult.chainId).to.equal('0x12a');
       expect(formattedResult.from).to.equal('0x05fba803be258049a27b820088bab1cad2058871');
       expect(formattedResult.gas).to.equal('0x0');
-      expect(formattedResult.gasPrice).to.equal(null);
+      expect(formattedResult.gasPrice).to.equal('0x0');
       expect(formattedResult.hash).to.equal('0xfc4ab7133197016293d2e14e8cf9c5227b07357e6385184f1cd1cb40d783cfbd');
       expect(formattedResult.input).to.equal('0x08090033');
-      expect(formattedResult.maxPriorityFeePerGas).to.equal(null);
-      expect(formattedResult.maxFeePerGas).to.equal(null);
+      expect(formattedResult.maxPriorityFeePerGas).to.equal('0x0');
+      expect(formattedResult.maxFeePerGas).to.equal('0x0');
       expect(formattedResult.nonce).to.equal('0x0');
-      expect(formattedResult.r).to.equal(null);
-      expect(formattedResult.s).to.equal(null);
+      expect(formattedResult.r).to.equal('0x0');
+      expect(formattedResult.s).to.equal('0x0');
       expect(formattedResult.to).to.equal('0x0000000000000000000000000000000000000409');
-      expect(formattedResult.transactionIndex).to.equal(null);
+      expect(formattedResult.transactionIndex).to.equal('0x0');
       expect(formattedResult.v).to.equal(`0x0`);
       expect(formattedResult.yParity).to.equal('0x0');
       expect(formattedResult.value).to.equal('0x0');
@@ -373,6 +423,11 @@ describe('Formatters', () => {
     it('should 0x0', () => {
       const value = '0x0';
       expect(weibarHexToTinyBarInt(value)).to.eq(0);
+    });
+
+    it('properly format a hex value when empty hex is passed', () => {
+      const value = '0x';
+      expect(formatHex(value)).to.eq('0x0');
     });
 
     it('should convert max int64 value in hex to tinybar number', () => {

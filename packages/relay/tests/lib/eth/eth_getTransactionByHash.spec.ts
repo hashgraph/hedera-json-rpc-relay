@@ -154,8 +154,8 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   it('returns correct transaction for existing hash w no sigs', async function () {
     const detailedResultsWithNullNullableValues = {
       ...defaultDetailedContractResultByHash,
-      r: null,
-      s: null,
+      r: '0x0',
+      s: '0x0',
     };
 
     const uniqueTxHash = '0x97cad7b827375d12d73af57b6a3f84353645fd31305ea58ff52dda53ec640533';
@@ -166,8 +166,8 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
       ...DEFAULT_TRANSACTION,
       maxFeePerGas: '0x55',
       maxPriorityFeePerGas: '0x43',
-      r: null,
-      s: null,
+      r: '0x0',
+      s: '0x0',
     });
   });
 
@@ -229,7 +229,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     expect(result).to.not.be.null;
 
     expect(result).to.exist;
-    if (result) expect(result.transactionIndex).to.be.null;
+    if (result) expect(result.transactionIndex).to.eq('0x0');
   });
 
   it('handles transactions with undefined block_number', async function () {
@@ -263,7 +263,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     expect(result).to.exist;
     if (result) {
       expect(result.blockNumber).to.be.null;
-      expect(result.transactionIndex).to.be.null;
+      expect(result.transactionIndex).to.eq('0x0');
     }
   });
 

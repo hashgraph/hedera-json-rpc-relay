@@ -23,6 +23,7 @@ import crypto from 'crypto';
 import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { BigNumber as BN } from 'bignumber.js';
+import { addHexPrefix, intToHex } from 'ethereumjs-util';
 
 const EMPTY_HEX = '0x';
 
@@ -150,16 +151,16 @@ const formatContractResult = (cr: any) => {
     chainId: cr.chain_id,
     from: cr.from.substring(0, 42),
     gas: nanOrNumberTo0x(cr.gas_used),
-    gasPrice: toNullIfEmptyHex(cr.gas_price),
+    gasPrice: cr.gas_price === null ? '0x0' : toZeroIfEmptyHex(cr.gas_price),
     hash: cr.hash.substring(0, 66),
     input: cr.function_parameters,
     nonce: nanOrNumberTo0x(cr.nonce),
-    r: cr.r === null ? null : cr.r.substring(0, 66),
-    s: cr.s === null ? null : cr.s.substring(0, 66),
+    r: cr.r === null ? '0x0' : rpcQuantityHexString(cr.r.substring(0, 66)),
+    s: cr.s === null ? '0x0' : rpcQuantityHexString(cr.s.substring(0, 66)),
     to: cr.to?.substring(0, 42),
-    transactionIndex: nullableNumberTo0x(cr.transaction_index),
-    type: nullableNumberTo0x(cr.type),
-    v: cr.type === null ? null : nanOrNumberTo0x(cr.v),
+    transactionIndex: convertToHex(cr.transaction_index),
+    type: cr.type === null ? '0x0' : nanOrNumberTo0x(cr.type),
+    v: cr.type === null ? '0x0' : nanOrNumberTo0x(cr.v),
     value: nanOrNumberTo0x(cr.amount),
   };
 
@@ -175,8 +176,8 @@ const formatContractResult = (cr: any) => {
       return new Transaction1559({
         ...commonFields,
         accessList: [],
-        maxPriorityFeePerGas: toNullIfEmptyHex(cr.max_priority_fee_per_gas),
-        maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas),
+        maxPriorityFeePerGas: rpcQuantityHexString(formatHex(cr.max_priority_fee_per_gas)),
+        maxFeePerGas: rpcQuantityHexString(formatHex(cr.max_fee_per_gas)),
       }); // eip 1559 fields
     case null:
       return new Transaction(commonFields); //hapi
@@ -220,6 +221,10 @@ const toNullIfEmptyHex = (value: string): string | null => {
   return value === EMPTY_HEX ? null : value;
 };
 
+const toZeroIfEmptyHex = (value: string): string | null => {
+  return value === EMPTY_HEX ? '0x0' : value;
+};
+
 const stringToHex = (str) => {
   let hex = '';
   for (let i = 0; i < str.length; i++) {
@@ -230,6 +235,36 @@ const stringToHex = (str) => {
     hex += hexValue.padStart(2, '0');
   }
   return hex;
+};
+
+const formatHex = (hexValue: string): string => (hexValue === '0x' ? '0x0' : hexValue);
+
+const convertToHex = (value: number | string | null): string => {
+  // Check for null value
+  if (value === null || value === undefined) {
+    return '0x0';
+  }
+
+  // Check and convert decimal number to hex
+  if (typeof value === 'number') {
+    return '0x' + value.toString(16);
+  }
+
+  // Check if the value is a hex string
+  if (typeof value === 'string') {
+    // Validate hex string
+    if (/^0x[0-9a-fA-F]+$/.test(value)) {
+      return value;
+    }
+    // If it's a string of a decimal number, convert it
+    if (/^\d+$/.test(value)) {
+      return '0x' + parseInt(value, 10).toString(16);
+    }
+    throw new Error("Invalid input string format. Must be a decimal string or hex string with '0x' prefix.");
+  }
+
+  // Throw error if input type is unexpected
+  throw new Error('Invalid input type. Expected number, string, or null.');
 };
 
 const toHexString = (byteArray) => {
@@ -245,26 +280,73 @@ const isValidEthereumAddress = (address: string): boolean => {
   return new RegExp(constants.BASE_HEX_REGEX + '{40}$').test(address);
 };
 
+// ganache solution
+const hex = (val): string => {
+  if (typeof val === 'string') {
+    if (val === '0x') {
+      return '0x0';
+    } else if (val.indexOf('0x') === 0) {
+      return val;
+    } else {
+      val = new BN(val);
+    }
+  }
+
+  if (typeof val === 'boolean') {
+    val = val ? 1 : 0;
+  }
+
+  if (typeof val === 'number') {
+    val = intToHex(val);
+  }
+
+  if (typeof val === 'object') {
+    val = val.toString('hex');
+
+    if (val === '') {
+      val = '0';
+    }
+  }
+
+  return addHexPrefix(val);
+};
+
+// ganache solution
+const rpcQuantityHexString = (val: any): any => {
+  val = hex(val);
+  val = '0x' + val.replace('0x', '').replace(/^0+/, '');
+
+  if (val === '0x') {
+    val = '0x0';
+  }
+
+  return val;
+};
+
 export {
-  hashNumber,
-  formatRequestIdMessage,
-  hexToASCII,
+  convertToHex,
   decodeErrorMessage,
+  formatContractResult,
+  formatHex,
+  formatRequestIdMessage,
   formatTransactionId,
   formatTransactionIdWithoutQueryParams,
-  parseNumericEnvVar,
-  formatContractResult,
-  prepend0x,
-  numberTo0x,
-  nullableNumberTo0x,
-  nanOrNumberTo0x,
-  toHash32,
-  toNullableBigNumber,
-  toNullIfEmptyHex,
   generateRandomHex,
+  hashNumber,
+  hex,
+  hexToASCII,
+  isValidEthereumAddress,
+  nanOrNumberTo0x,
+  nullableNumberTo0x,
+  numberTo0x,
+  parseNumericEnvVar,
+  prepend0x,
+  rpcQuantityHexString,
+  stringToHex,
+  toHash32,
+  toHexString,
+  toNullIfEmptyHex,
+  toNullableBigNumber,
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
-  stringToHex,
-  toHexString,
-  isValidEthereumAddress,
 };

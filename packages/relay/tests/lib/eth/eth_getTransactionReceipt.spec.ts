@@ -309,8 +309,8 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
 
     expect(receipt).to.exist;
 
-    expect(receipt.logs[0].transactionIndex).to.eq(null);
-    expect(receipt.transactionIndex).to.eq(null);
+    expect(receipt.logs[0].transactionIndex).to.eq('0x0');
+    expect(receipt.transactionIndex).to.eq('0x0');
   });
 
   it('valid receipt on cache match', async function () {

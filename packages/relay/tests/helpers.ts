@@ -695,7 +695,7 @@ export const defaultDetailedContractResultByHash = {
     },
   ],
   result: 'SUCCESS',
-  transaction_index: 1,
+  transaction_index: '0x1',
   hash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
   state_changes: [
     {
