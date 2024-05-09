@@ -20,7 +20,6 @@
 import path from 'path';
 import dotenv from 'dotenv';
 import { expect, use } from 'chai';
-import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 import { v4 as uuid } from 'uuid';
 
@@ -31,7 +30,7 @@ import { numberTo0x } from '../../../dist/formatters';
 import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS, ONE_TINYBAR_IN_WEI_HEX, RECEIVER_ADDRESS } from './eth-config';
 import { Eth, JsonRpcError } from '../../../src';
 import { generateEthTestEnv } from './eth-helpers';
-import { SinonStub, SinonStubbedInstance } from 'sinon';
+import { createStubInstance, stub, SinonStub, SinonStubbedInstance } from 'sinon';
 import { Precheck } from '../../../src/lib/precheck';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -49,14 +48,14 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
 
   function mockContractCall(
     callData: IContractCallRequest,
-    estimate: boolean = true,
-    statusCode: number = 501,
+    estimate: boolean,
+    statusCode: number,
     result: IContractCallResponse,
   ) {
     return web3Mock.onPost('contracts/call', { ...callData, estimate }).reply(statusCode, result);
   }
 
-  function mockGetAccount(idOrAliasOrEvmAddress: string, statusCode: number = 501, result: any) {
+  function mockGetAccount(idOrAliasOrEvmAddress: string, statusCode: number, result: any) {
     return restMock.onGet(`accounts/${idOrAliasOrEvmAddress}?transactions=false`).reply(statusCode, result);
   }
 
@@ -73,8 +72,8 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     cacheService.clear();
     restMock.reset();
 
-    sdkClientStub = sinon.createStubInstance(SDKClient);
-    getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
+    sdkClientStub = createStubInstance(SDKClient);
+    getSdkClientStub = stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     ethImplOverridden = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
@@ -155,7 +154,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       to: RECEIVER_ADDRESS,
       value: '0x2540BE400',
     };
-    mockContractCall({ ...callData, value: 1 }, true, 501, { errorMessage: '', statusCode: 501 });
+    mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 });
     restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, { address: RECEIVER_ADDRESS });
 
     const gas = await ethImpl.estimateGas(callData, null);
@@ -276,11 +275,11 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     };
 
     const callData: IContractCallRequest = {
-      input:
-        '0x81cb089c285e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af',
       from: '0x81cb089c285e5ee3a7353704fb114955037443af',
       to: null,
       value: '0x0',
+      input:
+        '0x81cb089c285e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af85e5ee3a7353704fb114955037443af',
     };
 
     mockContractCall(mockedCallData, true, 200, { result: `0x14b662` });
