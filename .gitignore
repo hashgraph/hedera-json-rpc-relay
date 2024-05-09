@@ -9,4 +9,4 @@ tsconfig.tsbuildinfo
 **/**/coverage/
 **/**/.nyc_output/
 .DS_Store
-*.xml
+test-results.*.xml
