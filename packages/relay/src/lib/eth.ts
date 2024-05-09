@@ -587,6 +587,13 @@ export class EthImpl implements Eth {
     }
   }
 
+  /**
+   * Executes an estimate contract call gas request in the mirror node.
+   *
+   * @param {IContractCallRequest} transaction The transaction data for the contract call.
+   * @param requestIdPrefix The prefix for the request ID.
+   * @returns {Promise<IContractCallResponse>} the response from the mirror node
+   */
   private async estimateGasFromMirrorNode(
     transaction: IContractCallRequest,
     requestIdPrefix?: string,
@@ -596,6 +603,15 @@ export class EthImpl implements Eth {
     return this.mirrorNodeClient.postContractCall(callData, requestIdPrefix);
   }
 
+  /**
+   * Fallback calculations for the amount of gas to be used for a transaction.
+   * This method is used when the mirror node fails to return a gas estimate.
+   *
+   * @param {IContractCallRequest} transaction The transaction data for the contract call.
+   * @param {string} requestIdPrefix The prefix for the request ID.
+   * @param error (Optional) received error from the mirror-node contract call request.
+   * @returns {Promise<string | JsonRpcError>} the calculated gas cost for the transaction
+   */
   private async predefinedGasForTransaction(
     transaction: IContractCallRequest,
     requestIdPrefix?: string,
@@ -648,6 +664,14 @@ export class EthImpl implements Eth {
     }
   }
 
+  /**
+   * Tries to get the account with the given address from the cache,
+   * if not found, it fetches it from the mirror node.
+   *
+   * @param {string} address the address of the account
+   * @param {string} requestIdPrefix the prefix for the request ID
+   * @returns the account (if such exists for the given address)
+   */
   private async getAccount(address: string, requestIdPrefix?: string) {
     const key = `${constants.CACHE_KEY.ACCOUNT}_${address}`;
     let account = this.cacheService.get(key, EthImpl.ethEstimateGas, requestIdPrefix);
@@ -662,15 +686,15 @@ export class EthImpl implements Eth {
    * Perform value format precheck before making contract call towards the mirror node
    * @param transaction
    */
-  contractCallFormat(transaction: any) {
+  contractCallFormat(transaction: IContractCallRequest) {
     if (transaction.value) {
       transaction.value = weibarHexToTinyBarInt(transaction.value);
     }
     if (transaction.gasPrice) {
-      transaction.gasPrice = parseInt(transaction.gasPrice);
+      transaction.gasPrice = parseInt(transaction.gasPrice.toString());
     }
     if (transaction.gas) {
-      transaction.gas = parseInt(transaction.gas);
+      transaction.gas = parseInt(transaction.gas.toString());
     }
 
     if (transaction.data && transaction.input) {
@@ -1580,27 +1604,30 @@ export class EthImpl implements Eth {
    * @param blockParam either a string (blockNumber or blockTag) or an object (blockHash or blockNumber)
    * @param requestIdPrefix optional request ID prefix for logging.
    */
-  async call(call: any, blockParam: string | object | null, requestIdPrefix?: string): Promise<string | JsonRpcError> {
-    const callData = call.data ? call.data : call.value;
+  async call(
+    call: IContractCallRequest,
+    blockParam: string | object | null,
+    requestIdPrefix?: string,
+  ): Promise<string | JsonRpcError> {
     // log request
     this.logger.trace(
-      `${requestIdPrefix} call({to=${call.to}, from=${call.from}, data=${callData}, gas=${call.gas}, ...}, blockParam=${blockParam})`,
+      `${requestIdPrefix} call({to=${call.to}, from=${call.from}, data=${call.data}, gas=${call.gas}, ...}, blockParam=${blockParam})`,
     );
     // log call data size and gas
-    const callDataSize = callData ? callData.length : 0;
-    this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}, gas: ${call.gas}`);
+    this.logger.trace(`${requestIdPrefix} call data size: ${call.data?.length ?? 0}, gas: ${call.gas}`);
     // metrics for selector
-    if (call.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+    if (call.data && call.data.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH) {
       this.ethExecutionsCounter
         .labels(EthImpl.ethCall, call.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
         .inc();
+    }
 
     const blockNumberOrTag = await this.extractBlockNumberOrTag(blockParam, requestIdPrefix);
 
     await this.performCallChecks(call);
 
     // Get a reasonable value for "gas" if it is not specified.
-    const gas = this.getCappedBlockGasLimit(call.gas, requestIdPrefix);
+    const gas = this.getCappedBlockGasLimit(call.gas?.toString(), requestIdPrefix);
 
     this.contractCallFormat(call);
 
@@ -1708,7 +1735,7 @@ export class EthImpl implements Eth {
   async callMirrorNode(
     call: IContractCallRequest,
     gas: number | null,
-    value: string | null,
+    value: number | string | null | undefined,
     block: string | null,
     requestIdPrefix?: string,
   ): Promise<string | JsonRpcError> {

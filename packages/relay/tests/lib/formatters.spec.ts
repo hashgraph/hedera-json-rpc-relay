@@ -421,5 +421,10 @@ describe('Formatters', () => {
       const address = undefined;
       expect(isValidEthereumAddress(address)).to.equal(false);
     });
+
+    it('should return false for an address with a null value', () => {
+      const address = null;
+      expect(isValidEthereumAddress(address)).to.equal(false);
+    });
   });
 });

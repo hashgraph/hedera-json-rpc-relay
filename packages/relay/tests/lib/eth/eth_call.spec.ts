@@ -24,11 +24,9 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
 import { EthImpl } from '../../../src/lib/eth';
-import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import {
   ACCOUNT_ADDRESS_1,
-  BLOCK_HASH_TRIMMED,
   CONTRACT_ADDRESS_1,
   CONTRACT_ADDRESS_2,
   CONTRACT_CALL_DATA,
@@ -824,7 +822,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
       try {
         ethImpl.contractCallFormat(transaction);
-      } catch (error) {
+      } catch (error: any) {
         expect(error.code).eq(-32000);
         expect(error.message).eq('Invalid arguments: Cannot accept both input and data fields. Use only one.');
       }

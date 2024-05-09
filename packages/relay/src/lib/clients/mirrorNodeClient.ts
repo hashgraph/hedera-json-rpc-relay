@@ -59,15 +59,15 @@ export interface IContractLogsResultsParams {
 }
 
 export interface IContractCallRequest {
-  block?: string | null;
+  block?: string;
   estimate?: boolean;
-  from?: string | null;
+  from?: string;
   to?: string | null;
-  gas?: string | number | null;
-  gasPrice?: string | number | null;
-  value?: string | number | null;
+  gas?: number | string;
+  gasPrice?: number | string;
+  value?: number | string | null;
   data?: string | null;
-  input?: string | null;
+  input?: string;
 }
 
 export interface IContractCallResponse {

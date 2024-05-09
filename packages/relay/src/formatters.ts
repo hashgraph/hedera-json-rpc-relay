@@ -124,7 +124,7 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
  * @param value
  * @returns tinybarValue
  */
-const weibarHexToTinyBarInt = (value: string): number | null => {
+const weibarHexToTinyBarInt = (value: bigint | boolean | number | string | null | undefined): number | null => {
   if (value && value !== '0x') {
     const weiBigInt = BigInt(value);
     const coefBigInt = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
@@ -196,11 +196,11 @@ const numberTo0x = (input: number | BigNumber | bigint): string => {
   return EMPTY_HEX + input.toString(16);
 };
 
-const nullableNumberTo0x = (input: number | BigNumber): string | null => {
+const nullableNumberTo0x = (input: number | BigNumber | bigint | null): string | null => {
   return input == null ? null : numberTo0x(input);
 };
 
-const nanOrNumberTo0x = (input: number | BigNumber): string => {
+const nanOrNumberTo0x = (input: number | BigNumber | bigint | null): string => {
   return input == null || Number.isNaN(input) ? numberTo0x(0) : numberTo0x(input);
 };
 
@@ -208,7 +208,7 @@ const toHash32 = (value: string): string => {
   return value.substring(0, 66);
 };
 
-const toNullableBigNumber = (value: string): string | null => {
+const toNullableBigNumber = (value: string | null): string | null => {
   if (typeof value === 'string') {
     return new BN(value).toString();
   }
@@ -241,7 +241,10 @@ const toHexString = (byteArray) => {
   return encoded;
 };
 
-const isValidEthereumAddress = (address: string): boolean => {
+const isValidEthereumAddress = (address: string | null | undefined): boolean => {
+  if (!address) {
+    return false;
+  }
   return new RegExp(constants.BASE_HEX_REGEX + '{40}$').test(address);
 };
 
