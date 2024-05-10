@@ -20,20 +20,18 @@
 
 // external resources
 import { expect } from 'chai';
+import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
-import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 
 describe('@release @web-socket-batch-2 eth_getCode', async function () {
-  const RELAY_URL = `${process.env.RELAY_ENDPOINT}`;
   const METHOD_NAME = 'eth_getCode';
 
   let basicContract: ethers.Contract,
     basicContractAddress: string,
     codeFromRPC: string,
-    provider: JsonRpcProvider,
     ethersWsProvider: WebSocketProvider;
 
   before(async () => {

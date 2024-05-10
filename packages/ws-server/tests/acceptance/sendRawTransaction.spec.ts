@@ -102,12 +102,12 @@ describe('@release @web-socket-batch-2 eth_sendRawTransaction', async function (
 
   describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
     for (const params of INVALID_PARAMS) {
-      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+      it(`Should fail eth_sendRawTransaction on Standard Web Socket and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
         await WsTestHelper.assertFailInvalidParamsStandardWebSocket(METHOD_NAME, params);
       });
     }
 
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and handle valid requests correctly`, async () => {
+    it(`Should execute eth_sendRawTransaction on Standard Web Socket and handle valid requests correctly`, async () => {
       tx.nonce = await relay.getAccountNonce(accounts[0].address);
       const signedTx = await accounts[0].wallet.signTransaction(tx);
 
@@ -122,7 +122,7 @@ describe('@release @web-socket-batch-2 eth_sendRawTransaction', async function (
       expect(fromAccountInfo.evm_address).to.eq(accounts[0].address.toLowerCase());
     });
 
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} for the deterministic deployment transaction`, async () => {
+    it(`Should execute eth_sendRawTransaction on Standard Web Socket for the deterministic deployment transaction`, async () => {
       // send gas money to the proxy deployer
       sendHbarToProxyContractDeployerTx.nonce = await global.relay.getAccountNonce(accounts[0].address);
       const signedSendHbarTx = await accounts[0].wallet.signTransaction(sendHbarToProxyContractDeployerTx);
@@ -172,12 +172,12 @@ describe('@release @web-socket-batch-2 eth_sendRawTransaction', async function (
 
   describe(WsTestConstant.ETHERS_WS_PROVIDER, () => {
     for (const params of INVALID_PARAMS) {
-      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+      it(`Should fail eth_sendRawTransaction on Ethers Web Socket Provider and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
         await WsTestHelper.assertFailInvalidParamsEthersWsProvider(ethersWsProvider, METHOD_NAME, params);
       });
     }
 
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
+    it(`Should execute eth_sendRawTransaction on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
       tx.nonce = await relay.getAccountNonce(accounts[1].address);
       const signedTx = await accounts[1].wallet.signTransaction(tx); // const signedTx = await accounts[0].wallet.signTransaction(tx);
 
@@ -190,7 +190,7 @@ describe('@release @web-socket-batch-2 eth_sendRawTransaction', async function (
       expect(fromAccountInfo.evm_address).to.eq(accounts[1].address.toLowerCase());
     });
 
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} for the deterministic deployment transaction`, async () => {
+    it(`Should execute eth_sendRawTransaction on Ethers Web Socket Provider for the deterministic deployment transaction`, async () => {
       // send gas money to the proxy deployer
       sendHbarToProxyContractDeployerTx.nonce = await global.relay.getAccountNonce(accounts[1].address);
       const signedSendHbarTx = await accounts[1].wallet.signTransaction(sendHbarToProxyContractDeployerTx);

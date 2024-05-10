@@ -96,12 +96,12 @@ describe('@release @web-socket-batch-2 eth_getTransactionByHash', async function
 
   describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
     for (const params of INVALID_PARAMS) {
-      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+      it(`Should fail eth_getTransactionByHash on Standard Web Socket and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
         await WsTestHelper.assertFailInvalidParamsStandardWebSocket(METHOD_NAME, params);
       });
     }
 
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and handle valid requests correctly`, async () => {
+    it(`Should execute eth_getTransactionByHash on Standard Web Socket and handle valid requests correctly`, async () => {
       const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [txHash]);
       WsTestHelper.assertJsonRpcObject(response);
 
@@ -118,12 +118,12 @@ describe('@release @web-socket-batch-2 eth_getTransactionByHash', async function
 
   describe(WsTestConstant.ETHERS_WS_PROVIDER, () => {
     for (const params of INVALID_PARAMS) {
-      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+      it(`Should fail eth_getTransactionByHash on Ethers Web Socket Provider and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
         await WsTestHelper.assertFailInvalidParamsEthersWsProvider(ethersWsProvider, METHOD_NAME, params);
       });
     }
 
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
+    it(`Should execute eth_getTransactionByHash on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
       const txReceipt = await ethersWsProvider.send(METHOD_NAME, [txHash]);
       expect(txReceipt.from).to.be.eq(accounts[0].address.toLowerCase());
       expect(txReceipt.to).to.be.eq(accounts[1].address.toLowerCase());
