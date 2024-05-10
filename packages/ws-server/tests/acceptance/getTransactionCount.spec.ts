@@ -30,8 +30,8 @@ import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccoun
 describe('@release @web-socket-batch-2 eth_getTransactionCount', async function () {
   const METHOD_NAME = 'eth_getTransactionCount';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
-  const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
   const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
+  const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   // @ts-ignore
   const { mirrorNode, relay } = global;

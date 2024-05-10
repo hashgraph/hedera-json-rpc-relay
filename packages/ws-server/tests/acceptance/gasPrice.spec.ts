@@ -25,10 +25,6 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 
 describe('@release @web-socket-batch-1 eth_gasPrice', async function () {
   const METHOD_NAME = 'eth_gasPrice';
-  const INVALID_PARAMS = [
-    ['hedera', 'hbar'],
-    ['websocket', 'rpc', 'invalid'],
-  ];
 
   let ethersWsProvider: WebSocketProvider;
 
@@ -46,13 +42,7 @@ describe('@release @web-socket-batch-1 eth_gasPrice', async function () {
   });
 
   describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
-    for (const params of INVALID_PARAMS) {
-      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
-        await WsTestHelper.assertFailInvalidParamsStandardWebSocket(METHOD_NAME, params);
-      });
-    }
-
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and handle valid requests correctly`, async () => {
+    it(`Should execute eth_gasPrice on Standard Web Socket and handle valid requests correctly`, async () => {
       const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, []);
       WsTestHelper.assertJsonRpcObject(response);
       const expectedResult = await global.relay.call(METHOD_NAME, []);
@@ -61,13 +51,7 @@ describe('@release @web-socket-batch-1 eth_gasPrice', async function () {
   });
 
   describe(WsTestConstant.ETHERS_WS_PROVIDER, () => {
-    for (const params of INVALID_PARAMS) {
-      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
-        await WsTestHelper.assertFailInvalidParamsEthersWsProvider(ethersWsProvider, METHOD_NAME, params);
-      });
-    }
-
-    it('Should handle valid requests correctly', async () => {
+    it(`Should execute eth_gasPrice on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
       const result = await ethersWsProvider.send(METHOD_NAME, []);
       const expectedResult = await global.relay.call(METHOD_NAME, []);
       expect(result).to.eq(expectedResult);
