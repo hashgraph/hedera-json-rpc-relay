@@ -86,14 +86,10 @@ export const sendToClient = (
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ) => {
-  const TX_INFO = params[0];
-  const BLOCK_PARAM = params[1];
-  const TAG = JSON.stringify({ method, txInfo: TX_INFO, block: BLOCK_PARAM });
-
   logger.trace(
     `${connectionIdPrefix} ${requestIdPrefix}: Sending data=${JSON.stringify(
       response.result,
-    )} to client from tag=${TAG}`,
+    )} to client from tag=${JSON.stringify({ method, params })}`,
   );
 
   connection.send(JSON.stringify(response));
@@ -102,7 +98,7 @@ export const sendToClient = (
 
 /**
  * Handles sending requests to the relay for processing.
- * @param {string} tag - The tag associated with the request.
+ * @param {string} tag - The tag associated with the request, primarily utilized for logging purposes to aid in the debugging process
  * @param {any} args - The arguments to be passed to the relay.
  * @param {Relay} relay - The relay instance used to process the request.
  * @param {any} logger - The logger instance used for logging.
