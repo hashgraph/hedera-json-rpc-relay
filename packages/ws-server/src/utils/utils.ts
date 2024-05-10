@@ -90,7 +90,7 @@ export const sendToClient = (
   const BLOCK_PARAM = params[1];
   const TAG = JSON.stringify({ method, txInfo: TX_INFO, block: BLOCK_PARAM });
 
-  logger.info(
+  logger.trace(
     `${connectionIdPrefix} ${requestIdPrefix}: Sending data=${JSON.stringify(
       response.result,
     )} to client from tag=${TAG}`,
@@ -120,12 +120,12 @@ export const handleSendingRequestsToRelay = async (
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ): Promise<any> => {
-  logger.info(`${connectionIdPrefix} ${requestIdPrefix}: Submitting request to relay for tag=${tag}.`);
+  logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Submitting request to relay for tag=${tag}.`);
 
   try {
     const txRes = await relay.eth()[rpcCallEndpoint](...args);
     if (!txRes) {
-      logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for tag=${tag}. Data=${txRes}`);
+      logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for tag=${tag}. Data=${txRes}`);
     }
 
     return txRes;
