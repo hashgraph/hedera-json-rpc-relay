@@ -35,7 +35,7 @@ import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import { handleEthSubsribe, handleEthUnsubscribe } from './controllers';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
-import { sendToClient, handleConnectionClose, handleSendingRequestsToRelay, resolveParams } from './utils/utils';
+import { sendToClient, handleConnectionClose, handleSendingRequestsToRelay } from './utils/utils';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -160,14 +160,12 @@ app.ws.use(async (ctx) => {
           response = handleEthUnsubscribe(ctx, params, request, relay, limiter);
           break;
         default:
-          // since unsupported method error has already been captured, the methods fall into this default block will always be valid and supported methods.
-          const resolvedParams = resolveParams(method, params);
+          // since unsupported methods have already been captured, the methods fall into this default block will always be valid and supported methods.
           const relayResult = await handleSendingRequestsToRelay(
-            JSON.stringify({ method, params }),
-            [...resolvedParams, requestIdPrefix],
+            method,
+            params,
             relay,
             logger,
-            method.split('_')[1],
             requestIdPrefix,
             connectionIdPrefix,
           );

@@ -69,13 +69,13 @@ export const getMultipleAddressesEnabled = (): boolean => {
 /**
  * Sends a JSON-RPC response message to the client WebSocket connection.
  * Resets the TTL timer for inactivity on the client connection.
- * @param {any} connection - The connection object.
- * @param {any[]} params - The parameters associated with the request.
- * @param {any} method - The method associated with the request.
- * @param {any} response - The response to send to the client.
- * @param {any} logger - The logger object.
- * @param {string} requestIdPrefix - The prefix for the request ID.
- * @param {string} connectionIdPrefix - The prefix for the connection ID.
+ * @param {any} connection - The WebSocket connection object to the client.
+ * @param {any} params - The parameters associated with the original request.
+ * @param {any} method - The method associated with the original request.
+ * @param {any} response - The response data to be sent back to the client.
+ * @param {any} logger - The logger object used for logging messages.
+ * @param {string} requestIdPrefix - The prefix added to the request ID for logging purposes.
+ * @param {string} connectionIdPrefix - The prefix added to the connection ID for logging purposes.
  */
 export const sendToClient = (
   connection: any,
@@ -89,7 +89,7 @@ export const sendToClient = (
   logger.trace(
     `${connectionIdPrefix} ${requestIdPrefix}: Sending data=${JSON.stringify(
       response.result,
-    )} to client from tag=${JSON.stringify({ method, params })}`,
+    )} to client from tag=${constructRequestTag(method, params)}`,
   );
 
   connection.send(JSON.stringify(response));
@@ -97,29 +97,30 @@ export const sendToClient = (
 };
 
 /**
- * Handles sending requests to the relay for processing.
- * @param {string} tag - The tag associated with the request, primarily utilized for logging purposes to aid in the debugging process
- * @param {any} args - The arguments to be passed to the relay.
- * @param {Relay} relay - The relay instance used to process the request.
- * @param {any} logger - The logger instance used for logging.
- * @param {string} rpcCallEndpoint - The endpoint on the relay to call.
- * @param {string} requestIdPrefix - The prefix to use for the request ID.
- * @param {string} connectionIdPrefix - The prefix to use for the connection ID.
+ * Handles sending requests to a Relay by calling a specified method with given parameters.
+ * This function constructs a request tag, submits the request to the relay, and logs the process.
+ * @param {string} method - The method to call on the relay.
+ * @param {any} params - The parameters for the method call.
+ * @param {Relay} relay - The relay object.
+ * @param {any} logger - The logger object used for tracing.
+ * @param {string} requestIdPrefix - Prefix for request ID used for logging.
+ * @param {string} connectionIdPrefix - Prefix for connection ID used for logging.
  * @returns {Promise<any>} A promise that resolves to the result of the request.
  */
 export const handleSendingRequestsToRelay = async (
-  tag: string,
-  args: any[],
+  method: string,
+  params: any,
   relay: Relay,
   logger: any,
-  rpcCallEndpoint: string,
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ): Promise<any> => {
+  const tag = constructRequestTag(method, params);
   logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Submitting request to relay for tag=${tag}.`);
 
   try {
-    const txRes = await relay.eth()[rpcCallEndpoint](...args);
+    const resolvedParams = resolveParams(method, params);
+    const txRes = await relay.eth()[method.split('_')[1]](...resolvedParams, requestIdPrefix);
     if (!txRes) {
       logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for tag=${tag}. Data=${txRes}`);
     }
@@ -143,4 +144,14 @@ export const resolveParams = (method: string, params: any): any[] => {
     default:
       return params;
   }
+};
+
+/**
+ * Constructs a tag for the request. Tag is primarily utilized for logging purposes to aid in the debugging process
+ * @param {string} method - The method associated with the request.
+ * @param {any} params - The parameters associated with the request.
+ * @returns {string} - The constructed request tag.
+ */
+export const constructRequestTag = (method: string, params: any): string => {
+  return JSON.stringify({ method, params });
 };
