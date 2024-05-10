@@ -27,32 +27,23 @@ import websockify from 'koa-websocket';
 import { Registry } from 'prom-client';
 import { WS_CONSTANTS } from './utils/constants';
 import { formatIdMessage } from './utils/formatters';
-import { handleConnectionClose } from './utils/utils';
 import WsMetricRegistry from './metrics/wsMetricRegistry';
 import ConnectionLimiter from './metrics/connectionLimiter';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
+import { handleEthSubsribe, handleEthUnsubscribe } from './controllers';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
+import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 import {
-  handleEthCall,
-  handleEthGetLogs,
-  handleEthGetCode,
-  handleEthSubsribe,
-  handleEthGasPrice,
-  handleEthGetBalance,
-  handleEthEstimateGas,
-  handleEthBlockNumber,
-  handleEthUnsubscribe,
-  handleEthGetStorageAt,
-  handleEthGetBlockByHash,
-  handleEthGetBlockByNumber,
-  handleEthSendRawTransaction,
-  handleEthGetTransactionCount,
-  handleEthGetTransactionByHash,
-  handleEthGetTransactionReceipt,
-} from './controllers';
+  resolveParams,
+  sendToClient,
+  verifySupportedMethod,
+  handleConnectionClose,
+  validateJsonRpcRequest,
+  handleSendingRequestsToRelay,
+} from './utils/utils';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -130,8 +121,22 @@ app.ws.use(async (ctx) => {
       return;
     }
 
+    // validate request's jsonrpc object
+    if (!validateJsonRpcRequest(request, logger, requestIdPrefix, connectionIdPrefix)) {
+      ctx.websocket.send(JSON.stringify(jsonResp(request.id || null, new InvalidRequest(), undefined)));
+      return;
+    }
+
     // Extract the method and parameters from the received request
     const { method, params } = request;
+
+    // verify supported method
+    if (!verifySupportedMethod(method)) {
+      ctx.websocket.send(JSON.stringify(jsonResp(request.id || null, new MethodNotFound(method), undefined)));
+      logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: Method not found: ${method}`);
+      return;
+    }
+
     logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Method: ${method}. Params: ${JSON.stringify(params)}`);
 
     // Increment metrics for the received method
@@ -141,6 +146,7 @@ app.ws.use(async (ctx) => {
     // Validate request's params
     try {
       const methodValidations = Validator.METHODS[method];
+
       if (methodValidations) {
         Validator.validateParams(params, methodValidations);
       }
@@ -174,53 +180,19 @@ app.ws.use(async (ctx) => {
         case WS_CONSTANTS.METHODS.ETH_UNSUBSCRIBE:
           response = handleEthUnsubscribe(ctx, params, request, relay, limiter);
           break;
-        case WS_CONSTANTS.METHODS.ETH_CHAIN_ID:
-          response = jsonResp(request.id, null, relay.eth().chainId());
-          break;
-        case WS_CONSTANTS.METHODS.ETH_SEND_RAW_TRANSACTION:
-          await handleEthSendRawTransaction(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_CODE:
-          await handleEthGetCode(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_ESTIMATE_GAS:
-          await handleEthEstimateGas(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
-          await handleEthGetTransactionByHash(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_RECEIPT:
-          await handleEthGetTransactionReceipt(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_COUNT:
-          await handleEthGetTransactionCount(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_BLOCK_BY_HASH:
-          await handleEthGetBlockByHash(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_BLOCK_BY_NUMBER:
-          await handleEthGetBlockByNumber(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_BLOCK_NUMBER:
-          await handleEthBlockNumber(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GAS_PRICE:
-          await handleEthGasPrice(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_BALANCE:
-          await handleEthGetBalance(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_STORAGE_AT:
-          await handleEthGetStorageAt(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_LOGS:
-          await handleEthGetLogs(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_CALL:
-          await handleEthCall(sharedParams);
-          break;
         default:
-          response = jsonResp(request.id, predefined.INTERNAL_ERROR(), null);
+          // since unsupported method error has already been captured, the methods fall into this default block will always be valid and supported methods.
+          const resolvedParams = resolveParams(method, params);
+          const relayResult = await handleSendingRequestsToRelay(
+            JSON.stringify({ method, params }),
+            [...resolvedParams, requestIdPrefix],
+            relay,
+            logger,
+            method.split('_')[1],
+            requestIdPrefix,
+            connectionIdPrefix,
+          );
+          response = jsonResp(request.id, null, relayResult);
       }
     } catch (error) {
       logger.error(
@@ -233,7 +205,7 @@ app.ws.use(async (ctx) => {
     }
 
     if (response) {
-      ctx.websocket.send(JSON.stringify(response));
+      sendToClient(ctx.websocket, params, method, response, logger, requestIdPrefix, connectionIdPrefix);
     }
 
     // Calculate the duration of the connection
