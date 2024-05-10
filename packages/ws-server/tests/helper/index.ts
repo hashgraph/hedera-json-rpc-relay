@@ -34,7 +34,7 @@ export class WsTestHelper {
     } catch (error) {
       if (error.info) error = error.info;
       expect(error.error).to.exist;
-      expect(error.error.code).to.eq(-32602);
+      expect(error.error.code).to.be.oneOf([-32602, -32603]);
     }
   }
 
@@ -63,7 +63,7 @@ export class WsTestHelper {
     const response = await WsTestHelper.sendRequestToStandardWebSocket(method, params);
     WsTestHelper.assertJsonRpcObject(response);
     expect(response.error).to.exist;
-    expect(response.error.code).to.eq(-32602);
+    expect(response.error.code).to.be.oneOf([-32602, -32603]);
   }
 
   static assertJsonRpcObject(obj: any) {

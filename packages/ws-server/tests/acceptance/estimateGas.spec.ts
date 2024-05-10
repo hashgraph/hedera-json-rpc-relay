@@ -20,11 +20,11 @@
 
 // external resources
 import { expect } from 'chai';
-import { Contract, ethers, WebSocketProvider } from 'ethers';
+import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 
 describe('@release @web-socket-batch-1 eth_estimateGas', async function () {
   const METHOD_NAME = 'eth_estimateGas';

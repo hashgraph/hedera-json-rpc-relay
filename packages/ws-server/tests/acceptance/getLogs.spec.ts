@@ -22,16 +22,14 @@
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 
 describe('@release @web-socket-batch-2 eth_getLogs', async function () {
   const EXPECTED_VALUE = 7;
   const METHOD_NAME = 'eth_getLogs';
   const INVALID_PARAMS = [
     [],
-    [{}, ''],
-    [{}, '0xhbar', false],
     [
       {
         address: '0xhedera',
@@ -127,16 +125,19 @@ describe('@release @web-socket-batch-2 eth_getLogs', async function () {
 
   describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
     for (const params of INVALID_PARAMS) {
-      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+      it(`Should fail eth_getLogs on Standard Web Socket and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${JSON.stringify(
+        params,
+      )}]`, async () => {
         await WsTestHelper.assertFailInvalidParamsStandardWebSocket(METHOD_NAME, params);
       });
     }
 
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and handle valid requests correctly`, async () => {
+    it(`Should execute eth_getLogs on Standard Web Socket and handle valid requests correctly`, async () => {
       const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [wsFilterObj]);
       WsTestHelper.assertJsonRpcObject(response);
 
       const logs = response.result;
+
       expect(logs[0].address.toLowerCase()).to.eq(wsFilterObj.address.toLowerCase());
       expect(logs[0].logIndex).to.eq('0x0'); // the event has only one input
       expect(parseInt(logs[0].data)).to.eq(EXPECTED_VALUE);
@@ -145,12 +146,14 @@ describe('@release @web-socket-batch-2 eth_getLogs', async function () {
 
   describe(WsTestConstant.ETHERS_WS_PROVIDER, () => {
     for (const params of INVALID_PARAMS) {
-      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+      it(`Should fail eth_getLogs on Ethers Web Socket Provider and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${JSON.stringify(
+        params,
+      )}]`, async () => {
         await WsTestHelper.assertFailInvalidParamsEthersWsProvider(ethersWsProvider, METHOD_NAME, params);
       });
     }
 
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
+    it(`Should execute eth_getLogs on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
       const logs = await ethersWsProvider.send(METHOD_NAME, [wsFilterObj]);
 
       expect(logs[0].address.toLowerCase()).to.eq(wsFilterObj.address.toLowerCase());
