@@ -96,6 +96,16 @@ export const OBJECTS_VALIDATIONS = {
       nullable: false,
       required: false,
     },
+    fromBlock: {
+      type: 'blockHash',
+      nullable: false,
+      required: false,
+    },
+    toBlock: {
+      type: 'blockHash',
+      nullable: false,
+      required: false,
+    },
     topics: {
       type: 'topics',
       nullable: false,
@@ -199,6 +209,8 @@ export class BlockNumberObject {
 
 export class EthSubscribeLogsParamsObject {
   address?: string | string[];
+  fromBlock?: string;
+  toBlock?: string;
   topics?: string[] | string[][];
 
   constructor(param: any) {
