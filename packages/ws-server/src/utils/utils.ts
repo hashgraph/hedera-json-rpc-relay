@@ -148,7 +148,7 @@ export const getMultipleAddressesEnabled = (): boolean => {
  * @returns {boolean} A boolean indicating whether WebSocket batch requests are enabled.
  */
 export const getWsBatchRequestsEnabled = (): boolean => {
-  return process.env.WS_BATCH_REQUESTS_ENABLED === 'true';
+  return process.env.WS_BATCH_REQUESTS_ENABLED === 'true' || true;
 };
 
 /**
