@@ -18,10 +18,15 @@
  *
  */
 
-import { predefined, Relay } from '@hashgraph/json-rpc-relay';
+import { WS_CONSTANTS } from './constants';
 import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
-import { WS_CONSTANTS } from './constants';
+import { predefined, Relay } from '@hashgraph/json-rpc-relay';
+
+const hasOwnProperty = (obj: any, prop: any) => Object.prototype.hasOwnProperty.call(obj, prop);
+const getRequestIdIsOptional = () => {
+  return process.env.REQUEST_ID_IS_OPTIONAL === 'true';
+};
 
 /**
  * Handles the closure of a WebSocket connection.
@@ -130,6 +135,34 @@ export const handleSendingRequestsToRelay = async (
     throw predefined.INTERNAL_ERROR(JSON.stringify(error.message || error));
   }
 };
+/**
+ * Validates a JSON-RPC request to ensure it has the correct JSON-RPC version, method, and id.
+ * @param {any} request - The JSON-RPC request object.
+ * @param {any} logger - The logger instance used for logging.
+ * @param {string} requestIdPrefix - The prefix to use for the request ID.
+ * @param {string} connectionIdPrefix - The prefix to use for the connection ID.
+ * @returns {boolean} A boolean indicating whether the request is valid.
+ */
+export const validateJsonRpcRequest = (
+  request: any,
+  logger: any,
+  requestIdPrefix: string,
+  connectionIdPrefix: string,
+): boolean => {
+  if (
+    request.jsonrpc !== '2.0' ||
+    !hasOwnProperty(request, 'method') ||
+    hasInvalidReqestId(request, logger, requestIdPrefix, connectionIdPrefix) ||
+    !hasOwnProperty(request, 'id')
+  ) {
+    logger.warn(
+      `${connectionIdPrefix} ${requestIdPrefix} Invalid request, body.jsonrpc: ${request.jsonrpc}, body[method]: ${request.method}, body[id]: ${request.id}, ctx.request.method: ${request.method}`,
+    );
+    return false;
+  } else {
+    return true;
+  }
+};
 
 /**
  * Resolves parameters based on the provided method.
@@ -139,7 +172,7 @@ export const handleSendingRequestsToRelay = async (
  */
 export const resolveParams = (method: string, params: any): any[] => {
   switch (method) {
-    case WS_CONSTANTS.METHODS.ETH_GET_LOGS:
+    case WS_CONSTANTS.METHODS.ETH_GETLOGS:
       return [params[0].blockHash, params[0].fromBlock, params[0].toBlock, params[0].address, params[0].topics];
     default:
       return params;
@@ -154,4 +187,41 @@ export const resolveParams = (method: string, params: any): any[] => {
  */
 export const constructRequestTag = (method: string, params: any): string => {
   return JSON.stringify({ method, params });
+};
+
+/**
+ * Verifies if the provided method is supported.
+ * @param {string} method - The method to verify.
+ * @returns {boolean} A boolean indicating whether the method is supported.
+ */
+export const verifySupportedMethod = (method: string): boolean => {
+  return hasOwnProperty(WS_CONSTANTS.METHODS, method.toUpperCase());
+};
+
+/**
+ * Checks if the JSON-RPC request has an invalid ID.
+ * @param {any} request - The JSON-RPC request object.
+ * @param {any} logger - The logger instance used for logging.
+ * @param {string} requestIdPrefix - The prefix to use for the request ID.
+ * @param {string} connectionIdPrefix - The prefix to use for the connection ID.
+ * @returns {boolean} A boolean indicating whether the request ID is invalid.
+ */
+const hasInvalidReqestId = (
+  request: any,
+  logger: any,
+  requestIdPrefix: string,
+  connectionIdPrefix: string,
+): boolean => {
+  const hasId = hasOwnProperty(request, 'id');
+
+  if (getRequestIdIsOptional() && !hasId) {
+    // If the request is invalid, we still want to return a valid JSON-RPC response, default id to 0
+    request.id = '0';
+    logger.warn(
+      `${connectionIdPrefix} ${requestIdPrefix} Optional JSON-RPC 2.0 request id encountered. Will continue and default id to 0 in response`,
+    );
+    return false;
+  }
+
+  return !hasId;
 };

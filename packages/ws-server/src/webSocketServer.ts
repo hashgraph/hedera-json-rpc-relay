@@ -35,7 +35,14 @@ import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import { handleEthSubsribe, handleEthUnsubscribe } from './controllers';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
-import { sendToClient, handleConnectionClose, handleSendingRequestsToRelay } from './utils/utils';
+import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
+import {
+  sendToClient,
+  validateJsonRpcRequest,
+  handleConnectionClose,
+  verifySupportedMethod,
+  handleSendingRequestsToRelay,
+} from './utils/utils';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -113,8 +120,21 @@ app.ws.use(async (ctx) => {
       return;
     }
 
+    // validate request's jsonrpc object
+    if (!validateJsonRpcRequest(request, logger, requestIdPrefix, connectionIdPrefix)) {
+      ctx.websocket.send(JSON.stringify(jsonResp(request.id || null, new InvalidRequest(), undefined)));
+      return;
+    }
+
     // Extract the method and parameters from the received request
     const { method, params } = request;
+
+    // verify supported method
+    if (!verifySupportedMethod(method)) {
+      ctx.websocket.send(JSON.stringify(jsonResp(request.id || null, new MethodNotFound(method), undefined)));
+      logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: Method not found: ${method}`);
+      return;
+    }
 
     logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Method: ${method}. Params: ${JSON.stringify(params)}`);
 
