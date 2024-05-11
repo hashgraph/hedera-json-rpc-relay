@@ -113,7 +113,7 @@ app.ws.use(async (ctx) => {
       request = JSON.parse(msg.toString('ascii'));
     } catch (e) {
       // Log an error if the message cannot be decoded and send an invalid request error to the client
-      logger.error(
+      logger.warn(
         `${connectionIdPrefix} ${requestIdPrefix}: Could not decode message from connection, message: ${msg}, error: ${e}`,
       );
       ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
@@ -139,7 +139,7 @@ app.ws.use(async (ctx) => {
       // send error if batch request feature is not enabled
       if (!getWsBatchRequestsEnabled()) {
         const batchRequestDisabledError = predefined.WS_BATCH_REQUESTS_DISABLED;
-        logger.error(`${connectionIdPrefix} ${requestIdPrefix}: ${JSON.stringify(batchRequestDisabledError)}`);
+        logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: ${JSON.stringify(batchRequestDisabledError)}`);
         ctx.websocket.send(JSON.stringify([jsonResp(null, batchRequestDisabledError, undefined)]));
         return;
       }
@@ -150,7 +150,7 @@ app.ws.use(async (ctx) => {
           request.length,
           getBatchRequestsMaxSize(),
         );
-        logger.error(`${connectionIdPrefix} ${requestIdPrefix}: ${JSON.stringify(batchRequestAmountMaxExceed)}`);
+        logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: ${JSON.stringify(batchRequestAmountMaxExceed)}`);
         ctx.websocket.send(JSON.stringify([jsonResp(null, batchRequestAmountMaxExceed, undefined)]));
         return;
       }
@@ -202,8 +202,8 @@ app.ws.use(async (ctx) => {
     const msgDurationInMiliSeconds = (msgEndTime[0] + msgEndTime[1] / 1e9) * 1000; // Convert duration to miliseconds
 
     // Update the connection duration histogram with the calculated duration
-    const methodLable = Array.isArray(request) ? WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME : request.method;
-    wsMetricRegistry.getHistogram('messageDuration').labels(methodLable).observe(msgDurationInMiliSeconds);
+    const methodLabel = Array.isArray(request) ? WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME : request.method;
+    wsMetricRegistry.getHistogram('messageDuration').labels(methodLabel).observe(msgDurationInMiliSeconds);
   });
 
   if (pingInterval > 0) {
