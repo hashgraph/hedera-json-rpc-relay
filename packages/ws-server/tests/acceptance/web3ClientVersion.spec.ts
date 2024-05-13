@@ -32,9 +32,10 @@ describe('@web-socket-batch-2 web3_clientVersion', async function () {
     requestId = Utils.generateRequestId();
   });
 
-  it(`Should execute web3_clientVersion on Standard Web Socket and handle valid requests correctly`, async () => {
+  it.only(`Should execute web3_clientVersion on Standard Web Socket and handle valid requests correctly`, async () => {
     const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, []);
     expect(response.result).to.exist;
     expect(response.result).to.be.a('string');
+    expect(response.message).to.not.equal('Method web3_clientVersion not found');
   });
 });
