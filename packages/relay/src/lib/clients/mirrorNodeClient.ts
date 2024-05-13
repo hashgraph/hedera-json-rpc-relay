@@ -382,7 +382,7 @@ export class MirrorNodeClient {
     pathLabel: string,
     requestIdPrefix?: string,
     retries?: number,
-  ): Promise<any> {
+  ): Promise<T | null> {
     if (!data) data = {};
     return this.request<T>(path, pathLabel, 'POST', data, requestIdPrefix, retries);
   }
