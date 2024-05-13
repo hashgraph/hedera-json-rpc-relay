@@ -147,7 +147,7 @@ const formatContractResult = (cr: any) => {
   const commonFields = {
     blockHash: toHash32(cr.block_hash),
     blockNumber: nullableNumberTo0x(cr.block_number),
-    chainId: cr.chain_id,
+    chainId: cr.chain_id === '0x' ? undefined : cr.chain_id,
     from: cr.from.substring(0, 42),
     gas: nanOrNumberTo0x(cr.gas_used),
     gasPrice: toNullIfEmptyHex(cr.gas_price),
