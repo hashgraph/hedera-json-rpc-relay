@@ -119,6 +119,13 @@ app.ws.use(async (ctx) => {
     if (Array.isArray(request)) {
       logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Receive batch request=${JSON.stringify(request)}`);
 
+      // Increment metrics for batch_requests
+      wsMetricRegistry.getCounter('methodsCounter').labels(WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME).inc();
+      wsMetricRegistry
+        .getCounter('methodsCounterByIp')
+        .labels(ctx.request.ip, WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME)
+        .inc();
+
       // send error if batch request feature is not enabled
       if (!getWsBatchRequestsEnabled()) {
         const batchRequestDisabledError = predefined.WS_BATCH_REQUESTS_DISABLED;
