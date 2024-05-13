@@ -184,6 +184,10 @@ const formatContractResult = (cr: any) => {
   return null;
 };
 
+const strip0x = (input: string): string => {
+  return input.startsWith(EMPTY_HEX) ? input.substring(2) : input;
+};
+
 const prepend0x = (input: string): string => {
   return input.startsWith(EMPTY_HEX) ? input : EMPTY_HEX + input;
 };
@@ -265,6 +269,7 @@ export {
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
   stringToHex,
+  strip0x,
   toHexString,
   isValidEthereumAddress,
 };

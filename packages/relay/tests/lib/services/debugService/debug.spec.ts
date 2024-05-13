@@ -18,13 +18,12 @@
  *
  */
 
-import chai from 'chai';
+import chai, { expect } from 'chai';
 import path from 'path';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import { MirrorNodeClient } from '../../../../src/lib/clients/mirrorNodeClient';
+import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
 import { TracerType } from '../../../../src/lib/constants';
 import { DebugService } from '../../../../src/lib/services/debugService';
@@ -34,6 +33,9 @@ import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { CommonService } from '../../../../src/lib/services/ethService';
 import chaiAsPromised from 'chai-as-promised';
+import { IOpcodesResponse } from '../../../../src/lib/clients/models/IOpcodesResponse';
+import { strip0x } from '../../../../src/formatters';
+
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 chai.use(chaiAsPromised);
 
@@ -55,8 +57,10 @@ describe('Debug API Test Suite', async function () {
   const contractAddress2 = '0x000000000000000000000000000000000000040a';
   const tracerConfigTrue = { onlyTopCall: true };
   const tracerConfigFalse = { onlyTopCall: false };
+  const opcodeConfigFalse = { disableStack: false, disableMemory: false, disableStorage: false };
   const callTracer: TracerType = TracerType.CallTracer;
   const opcodeLogger: TracerType = TracerType.OpcodeLogger;
+  const CONTRACTS_RESULTS_OPCODES = `contracts/results/${transactionHash}/opcodes`;
   const CONTARCTS_RESULTS_ACTIONS = `contracts/results/${transactionHash}/actions`;
   const CONTRACTS_RESULTS_BY_HASH = `contracts/results/${transactionHash}`;
   const CONTRACT_BY_ADDRESS = `contracts/${contractAddress}`;
@@ -64,6 +68,91 @@ describe('Debug API Test Suite', async function () {
   const CONTRACT_BY_ADDRESS2 = `contracts/${contractAddress2}`;
   const CONTRACTS_RESULTS_BY_NON_EXISTENT_HASH = `contracts/results/${nonExistentTransactionHash}`;
   const CONTRACT_RESULTS_BY_ACTIONS_NON_EXISTENT_HASH = `contracts/results/${nonExistentTransactionHash}/actions`;
+
+  const opcodesResponse: IOpcodesResponse = {
+    gas: 52139,
+    failed: false,
+    return_value: '0x0000000000000000000000000000000000000000000000000000000000000001',
+    opcodes: [
+      {
+        pc: 1273,
+        op: 'PUSH1',
+        gas: 2731,
+        gas_cost: 3,
+        depth: 2,
+        stack: [
+          '000000000000000000000000000000000000000000000000000000004700d305',
+          '00000000000000000000000000000000000000000000000000000000000000a7',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '000000000000000000000000000000000000000000000000000000000000016c',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '0000000000000000000000000000000000000000000000000000000000000004',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '0000000000000000000000000000000000000000000000000000000000000521',
+          '0000000000000000000000000000000000000000000000000000000000000024',
+        ],
+        memory: [
+          '4e487b7100000000000000000000000000000000000000000000000000000000',
+          '0000001200000000000000000000000000000000000000000000000000000000',
+          '0000000000000000000000000000000000000000000000000000000000000080',
+        ],
+        storage: {},
+        reason: null,
+      },
+      {
+        pc: 1275,
+        op: 'REVERT',
+        gas: 2728,
+        gas_cost: 0,
+        depth: 2,
+        stack: [
+          '000000000000000000000000000000000000000000000000000000004700d305',
+          '00000000000000000000000000000000000000000000000000000000000000a7',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '000000000000000000000000000000000000000000000000000000000000016c',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '0000000000000000000000000000000000000000000000000000000000000004',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '0000000000000000000000000000000000000000000000000000000000000521',
+          '0000000000000000000000000000000000000000000000000000000000000024',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+        ],
+        memory: [
+          '4e487b7100000000000000000000000000000000000000000000000000000000',
+          '0000001200000000000000000000000000000000000000000000000000000000',
+          '0000000000000000000000000000000000000000000000000000000000000080',
+        ],
+        storage: {},
+        reason: '0x4e487b710000000000000000000000000000000000000000000000000000000000000012',
+      },
+      {
+        pc: 682,
+        op: 'SWAP3',
+        gas: 2776,
+        gas_cost: 3,
+        depth: 1,
+        stack: [
+          '000000000000000000000000000000000000000000000000000000000135b7d0',
+          '00000000000000000000000000000000000000000000000000000000000000a0',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '00000000000000000000000096769c2405eab9fdc59b25b178041e517ddc0f32',
+          '000000000000000000000000000000000000000000000000000000004700d305',
+          '0000000000000000000000000000000000000000000000000000000000000084',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+        ],
+        memory: [
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '0000000000000000000000000000000000000000000000000000000000000080',
+          '0000000000000000000000000000000000000000000000000000000000000000',
+          '4e487b7100000000000000000000000000000000000000000000000000000000',
+        ],
+        storage: {},
+        reason: null,
+      },
+    ],
+  };
 
   const contractsResultsByHashResult = {
     address: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
@@ -93,6 +182,7 @@ describe('Debug API Test Suite', async function () {
     type: 2,
     nonce: 0,
   };
+
   const contractsResultsActionsResult = {
     actions: [
       {
@@ -152,16 +242,14 @@ describe('Debug API Test Suite', async function () {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL,
+      process.env.MIRROR_NODE_URL!,
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
     );
 
-    // @ts-ignore
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
 
-    // @ts-ignore
     const common = new CommonService(mirrorNodeInstance, logger, cacheService);
     debugService = new DebugService(mirrorNodeInstance, logger, common);
   });
@@ -293,24 +381,90 @@ describe('Debug API Test Suite', async function () {
     });
 
     describe('opcodeLogger', async function () {
-      beforeEach(() => {
-        restMock.onGet(CONTARCTS_RESULTS_ACTIONS).reply(200, contractsResultsActionsResult);
-        restMock.onGet(CONTRACTS_RESULTS_BY_HASH).reply(200, contractsResultsByHashResult);
-      });
+      const opcodeConfigs = [
+        {
+          disableStack: true,
+        },
+        {
+          disableMemory: true,
+        },
+        {
+          disableStorage: true,
+        },
+        {
+          disableStack: true,
+          disableMemory: true,
+          disableStorage: true,
+        },
+        {
+          disableStack: false,
+          disableMemory: false,
+          disableStorage: false,
+        },
+      ];
 
-      afterEach(() => {
-        restMock.reset();
-      });
+      const getQueryParams = (config: any) => {
+        return `?stack=${!config.disableStack}&memory=${!config.disableMemory}&storage=${!config.disableStorage}`;
+      };
 
-      it('Test opcodeLogger', async function () {
-        await RelayAssertions.assertRejection(
-          predefined.UNSUPPORTED_OPERATION(`${TracerType.OpcodeLogger} is not supported on eth_debugTransaction`),
-          debugService.debug_traceTransaction,
-          true,
-          debugService,
-          [transactionHash, opcodeLogger, tracerConfigTrue, getRequestId()],
-        );
-      });
+      for (const config of opcodeConfigs) {
+        const configString = Object.keys(config)
+          .map((key) => `${key}=${config[key]}`)
+          .join(', ');
+
+        describe(`When opcode logger is called with ${configString}`, async function () {
+          beforeEach(() => {
+            restMock.onGet(CONTRACTS_RESULTS_OPCODES.concat(getQueryParams(config))).reply(200, {
+              ...opcodesResponse,
+              opcodes: opcodesResponse.opcodes?.map((opcode) => ({
+                ...opcode,
+                stack: config.disableStack ? [] : opcode.stack,
+                memory: config.disableMemory ? [] : opcode.memory,
+                storage: config.disableStorage ? {} : opcode.storage,
+              })),
+            });
+          });
+
+          afterEach(() => {
+            restMock.reset();
+          });
+
+          const emptyFields = Object.keys(config)
+            .filter((key) => config[key])
+            .map((key) => key.replace('disable', ''))
+            .map((key) => key.toLowerCase());
+
+          it(`Then '${
+            emptyFields.length ? `${emptyFields} should be empty` : 'all should be returned'
+          }`, async function () {
+            const expectedResult = {
+              gas: opcodesResponse.gas,
+              failed: opcodesResponse.failed,
+              returnValue: strip0x(opcodesResponse.return_value!),
+              structLogs: opcodesResponse.opcodes?.map((opcode) => ({
+                pc: opcode.pc,
+                op: opcode.op,
+                gas: opcode.gas,
+                gasCost: opcode.gas_cost,
+                depth: opcode.depth,
+                stack: config.disableStack ? [] : opcode.stack,
+                memory: config.disableMemory ? [] : opcode.memory,
+                storage: config.disableStorage ? {} : opcode.storage,
+                reason: opcode.reason ? strip0x(opcode.reason) : null,
+              })),
+            };
+
+            const result = await debugService.debug_traceTransaction(
+              transactionHash,
+              opcodeLogger,
+              config,
+              getRequestId(),
+            );
+
+            expect(result).to.deep.equal(expectedResult);
+          });
+        });
+      }
     });
 
     describe('Invalid scenarios', async function () {

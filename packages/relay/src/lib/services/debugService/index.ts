@@ -21,12 +21,14 @@
 import type { Logger } from 'pino';
 import type { MirrorNodeClient } from '../../clients';
 import type { IDebugService } from './IDebugService';
-import type { CommonService } from '../ethService/ethCommonService';
-import { decodeErrorMessage, numberTo0x } from '../../../formatters';
+import type { CommonService } from '../ethService';
+import { decodeErrorMessage, numberTo0x, prepend0x, strip0x, toHexString } from '../../../formatters';
 import constants from '../../constants';
 import { TracerType, CallType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
 import { EthImpl } from '../../eth';
+import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
+import { IOpcode } from '../../clients/models/IOpcode';
 const SUCCESS = 'SUCCESS';
 
 /**
@@ -106,7 +108,7 @@ export class DebugService implements IDebugService {
       if (tracer === TracerType.CallTracer) {
         return await this.callTracer(transactionHash, tracerConfig, requestIdPrefix);
       } else if (tracer === TracerType.OpcodeLogger) {
-        throw predefined.UNSUPPORTED_OPERATION(`${TracerType.OpcodeLogger} is not supported on eth_debugTransaction`);
+        return await this.callOpcodeLogger(transactionHash, tracerConfig, requestIdPrefix);
       }
     } catch (e) {
       throw this.common.genericErrorHandler(e);
@@ -149,6 +151,45 @@ export class DebugService implements IDebugService {
         };
       }),
     );
+  }
+
+  /**
+   * Formats the result from the opcodes endpoint to the expected
+   * response for the debug_traceTransaction method.
+   *
+   * @async
+   * @param {IOpcodesResponse | null} result - The response from mirror node.
+   * @returns {Promise<object>} The formatted opcode response.
+   */
+  async formatOpcodesResult(result: IOpcodesResponse | null): Promise<object> {
+    if (!result) {
+      return {
+        gas: 0,
+        failed: true,
+        returnValue: '',
+        structLogs: [],
+      };
+    }
+    const { gas, failed, return_value, opcodes } = result;
+
+    return {
+      gas,
+      failed,
+      returnValue: return_value ? strip0x(return_value) : '',
+      structLogs: opcodes?.map((opcode: IOpcode) => {
+        return {
+          pc: opcode.pc,
+          op: opcode.op,
+          gas: opcode.gas,
+          gasCost: opcode.gas_cost,
+          depth: opcode.depth,
+          stack: opcode.stack,
+          memory: opcode.memory,
+          storage: opcode.storage,
+          reason: opcode.reason ? strip0x(opcode.reason) : null,
+        };
+      }),
+    };
   }
 
   /**
@@ -201,6 +242,34 @@ export class DebugService implements IDebugService {
     ]);
 
     return { resolvedFrom, resolvedTo };
+  }
+
+  /**
+   * Returns the final formatted response for opcodeLogger config.
+   * @async
+   * @param {string} transactionHash - The hash of the transaction to be debugged.
+   * @param {object} tracerConfig - The tracer config to be used.
+   * @param {boolean} tracerConfig.disableMemory - Whether to disable memory.
+   * @param {boolean} tracerConfig.disableStack - Whether to disable stack.
+   * @param {boolean} tracerConfig.disableStorage - Whether to disable storage.
+   * @param {string} requestIdPrefix - The request prefix id.
+   * @returns {Promise<object>} The formatted response.
+   */
+  async callOpcodeLogger(
+    transactionHash: string,
+    tracerConfig: { disableMemory?: boolean; disableStack?: boolean; disableStorage?: boolean },
+    requestIdPrefix?: string,
+  ): Promise<object> {
+    try {
+      const response = await this.mirrorNodeClient.getContractsResultsOpcodes(transactionHash, requestIdPrefix, {
+        memory: !tracerConfig.disableMemory,
+        stack: !tracerConfig.disableStack,
+        storage: !tracerConfig.disableStorage,
+      });
+      return await this.formatOpcodesResult(response);
+    } catch (e) {
+      throw this.common.genericErrorHandler(e);
+    }
   }
 
   /**
