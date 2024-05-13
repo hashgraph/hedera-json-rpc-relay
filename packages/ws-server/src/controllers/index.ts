@@ -18,7 +18,7 @@
  *
  */
 
-import { handleEthSubsribe } from './eth_subscribe';
+import { handleEthSubscribe } from './eth_subscribe';
 import { handleEthUnsubscribe } from './eth_unscribe';
 
-export { handleEthSubsribe, handleEthUnsubscribe };
+export { handleEthSubscribe as handleEthSubscribe, handleEthUnsubscribe };

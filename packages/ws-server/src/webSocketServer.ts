@@ -32,7 +32,7 @@ import ConnectionLimiter from './metrics/connectionLimiter';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
-import { handleEthSubsribe, handleEthUnsubscribe } from './controllers';
+import { handleEthSubscribe as handleEthSubscribe, handleEthUnsubscribe } from './controllers';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
 import { sendToClient, handleConnectionClose, handleSendingRequestsToRelay } from './utils/utils';
@@ -154,7 +154,7 @@ app.ws.use(async (ctx) => {
 
       switch (method) {
         case WS_CONSTANTS.METHODS.ETH_SUBSCRIBE:
-          response = await handleEthSubsribe({ ...sharedParams, limiter, mirrorNodeClient });
+          response = await handleEthSubscribe({ ...sharedParams, limiter, mirrorNodeClient });
           break;
         case WS_CONSTANTS.METHODS.ETH_UNSUBSCRIBE:
           response = handleEthUnsubscribe(ctx, params, request, relay, limiter);
