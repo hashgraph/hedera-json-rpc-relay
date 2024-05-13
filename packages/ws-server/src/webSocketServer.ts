@@ -34,15 +34,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
-import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
-import {
-  sendToClient,
-  handleConnectionClose,
-  verifySupportedMethod,
-  validateJsonRpcRequest,
-  getBatchRequestsMaxSize,
-  getWsBatchRequestsEnabled,
-} from './utils/utils';
+import { sendToClient, handleConnectionClose, getBatchRequestsMaxSize, getWsBatchRequestsEnabled } from './utils/utils';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -120,18 +112,6 @@ app.ws.use(async (ctx) => {
       return;
     }
 
-    // validate request's jsonrpc object
-    if (!validateJsonRpcRequest(request, logger, requestIdPrefix, connectionIdPrefix)) {
-      ctx.websocket.send(JSON.stringify(jsonResp(request.id || null, new InvalidRequest(), undefined)));
-      return;
-    }
-
-    // verify supported method
-    if (!verifySupportedMethod(request.method)) {
-      ctx.websocket.send(JSON.stringify(jsonResp(request.id || null, new MethodNotFound(request.method), undefined)));
-      logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: Method not found: ${request.method}`);
-      return;
-    }
     // check if request is a batch request (array) or a signle request (JSON)
     if (Array.isArray(request)) {
       logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Receive batch request=${JSON.stringify(request)}`);

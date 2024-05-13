@@ -18,7 +18,6 @@
  *
  */
 
-import { resolveParams } from '../utils/utils';
 import { WS_CONSTANTS } from '../utils/constants';
 import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
@@ -27,6 +26,8 @@ import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import { handleEthSubsribe, handleEthUnsubscribe } from './eth_subscribe';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
+import { resolveParams, validateJsonRpcRequest, verifySupportedMethod } from '../utils/utils';
+import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 
 /**
  * Handles sending requests to a Relay by calling a specified method with given parameters.
@@ -102,6 +103,17 @@ export const getRequestResult = async (
   wsMetricRegistry.getCounter('methodsCounter').labels(method).inc();
   wsMetricRegistry.getCounter('methodsCounterByIp').labels(ctx.request.ip, method).inc();
 
+  // validate request's jsonrpc object
+  if (!validateJsonRpcRequest(request, logger, requestIdPrefix, connectionIdPrefix)) {
+    return jsonResp(request.id || null, new InvalidRequest(), undefined);
+  }
+
+  // verify supported method
+  if (!verifySupportedMethod(request.method)) {
+    logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: Method not supported: ${request.method}`);
+    return jsonResp(request.id || null, new MethodNotFound(request.method), undefined);
+  }
+
   // Validate request's params
   try {
     const methodValidations = Validator.METHODS[method];
@@ -110,7 +122,7 @@ export const getRequestResult = async (
       Validator.validateParams(params, methodValidations);
     }
   } catch (error) {
-    logger.error(
+    logger.warn(
       error,
       `${connectionIdPrefix} ${requestIdPrefix} Error in parameter validation. Method: ${method}, params: ${JSON.stringify(
         params,
@@ -152,7 +164,7 @@ export const getRequestResult = async (
         response = await handleSendingRequestsToRelay({ ...sharedParams });
     }
   } catch (error) {
-    logger.error(
+    logger.warn(
       error,
       `${connectionIdPrefix} ${requestIdPrefix} Encountered error on connectionID: ${
         ctx.websocket.id

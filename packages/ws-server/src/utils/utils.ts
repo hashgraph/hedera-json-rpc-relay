@@ -112,7 +112,7 @@ export const validateJsonRpcRequest = (
     !hasOwnProperty(request, 'id')
   ) {
     logger.warn(
-      `${connectionIdPrefix} ${requestIdPrefix} Invalid request, body.jsonrpc: ${request.jsonrpc}, body[method]: ${request.method}, body[id]: ${request.id}, ctx.request.method: ${request.method}`,
+      `${connectionIdPrefix} ${requestIdPrefix} Invalid request, request.jsonrpc: ${request.jsonrpc}, request.method: ${request.method}, request.id: ${request.id}, request.method: ${request.method}`,
     );
     return false;
   } else {
@@ -148,7 +148,7 @@ export const getMultipleAddressesEnabled = (): boolean => {
  * @returns {boolean} A boolean indicating whether WebSocket batch requests are enabled.
  */
 export const getWsBatchRequestsEnabled = (): boolean => {
-  return process.env.WS_BATCH_REQUESTS_ENABLED === 'true' || true;
+  return process.env.WS_BATCH_REQUESTS_ENABLED ? process.env.WS_BATCH_REQUESTS_ENABLED === 'true' : true;
 };
 
 /**
