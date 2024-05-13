@@ -57,7 +57,6 @@ describe('Debug API Test Suite', async function () {
   const contractAddress2 = '0x000000000000000000000000000000000000040a';
   const tracerConfigTrue = { onlyTopCall: true };
   const tracerConfigFalse = { onlyTopCall: false };
-  const opcodeConfigFalse = { disableStack: false, disableMemory: false, disableStorage: false };
   const callTracer: TracerType = TracerType.CallTracer;
   const opcodeLogger: TracerType = TracerType.OpcodeLogger;
   const CONTRACTS_RESULTS_OPCODES = `contracts/results/${transactionHash}/opcodes`;

@@ -22,7 +22,7 @@ import type { Logger } from 'pino';
 import type { MirrorNodeClient } from '../../clients';
 import type { IDebugService } from './IDebugService';
 import type { CommonService } from '../ethService';
-import { decodeErrorMessage, numberTo0x, prepend0x, strip0x, toHexString } from '../../../formatters';
+import { decodeErrorMessage, numberTo0x, strip0x } from '../../../formatters';
 import constants from '../../constants';
 import { TracerType, CallType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
