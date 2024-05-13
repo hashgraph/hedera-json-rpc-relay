@@ -142,7 +142,7 @@ const handleEthSubscribeLogs = async (
  * @param {any} args.logger - The logger object for logging messages and events.
  * @returns {Promise<any>} Returns a promise that resolves with the subscription response.
  */
-export const handleEthSubsribe = async ({
+export const handleEthSubscribe = async ({
   ctx,
   params,
   requestIdPrefix,
