@@ -27,6 +27,18 @@ import { v4 as uuid } from 'uuid';
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
 
+const getQueryParams = (params: object) => {
+  if (!Object.keys(params).length) {
+    return '';
+  }
+
+  return '?'.concat(
+    Object.entries(params)
+      .map(([key, value]) => `${key}=${value}`)
+      .join('&'),
+  );
+};
+
 const expectUnsupportedMethod = (result) => {
   expect(result).to.have.property('code');
   expect(result.code).to.be.equal(-32601);
@@ -336,7 +348,15 @@ const mockData = {
   },
 };
 
-export { expectUnsupportedMethod, expectedError, signTransaction, mockData, random20BytesAddress, getRequestId };
+export {
+  expectUnsupportedMethod,
+  expectedError,
+  signTransaction,
+  mockData,
+  random20BytesAddress,
+  getRequestId,
+  getQueryParams,
+};
 
 export const bytecode =
   '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';

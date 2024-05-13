@@ -27,7 +27,7 @@ import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
 import { TracerType } from '../../../../src/lib/constants';
 import { DebugService } from '../../../../src/lib/services/debugService';
-import { getRequestId } from '../../../helpers';
+import { getQueryParams, getRequestId } from '../../../helpers';
 import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
@@ -67,6 +67,28 @@ describe('Debug API Test Suite', async function () {
   const CONTRACT_BY_ADDRESS2 = `contracts/${contractAddress2}`;
   const CONTRACTS_RESULTS_BY_NON_EXISTENT_HASH = `contracts/results/${nonExistentTransactionHash}`;
   const CONTRACT_RESULTS_BY_ACTIONS_NON_EXISTENT_HASH = `contracts/results/${nonExistentTransactionHash}/actions`;
+
+  const opcodeLoggerConfigs = [
+    {
+      disableStack: true,
+    },
+    {
+      disableMemory: true,
+    },
+    {
+      disableStorage: true,
+    },
+    {
+      disableStack: true,
+      disableMemory: true,
+      disableStorage: true,
+    },
+    {
+      disableStack: false,
+      disableMemory: false,
+      disableStorage: false,
+    },
+  ];
 
   const opcodesResponse: IOpcodesResponse = {
     gas: 52139,
@@ -269,6 +291,23 @@ describe('Debug API Test Suite', async function () {
           ],
         },
       });
+      for (const config of opcodeLoggerConfigs) {
+        const opcodeLoggerParams = getQueryParams({
+          memory: !config.disableMemory,
+          stack: !config.disableStack,
+          storage: !config.disableStorage,
+        });
+
+        restMock.onGet(`${CONTRACTS_RESULTS_OPCODES}${opcodeLoggerParams}`).reply(200, {
+          ...opcodesResponse,
+          opcodes: opcodesResponse.opcodes?.map((opcode) => ({
+            ...opcode,
+            stack: config.disableStack ? [] : opcode.stack,
+            memory: config.disableMemory ? [] : opcode.memory,
+            storage: config.disableStorage ? {} : opcode.storage,
+          })),
+        });
+      }
     });
 
     afterEach(() => {
@@ -380,54 +419,12 @@ describe('Debug API Test Suite', async function () {
     });
 
     describe('opcodeLogger', async function () {
-      const opcodeConfigs = [
-        {
-          disableStack: true,
-        },
-        {
-          disableMemory: true,
-        },
-        {
-          disableStorage: true,
-        },
-        {
-          disableStack: true,
-          disableMemory: true,
-          disableStorage: true,
-        },
-        {
-          disableStack: false,
-          disableMemory: false,
-          disableStorage: false,
-        },
-      ];
-
-      const getQueryParams = (config: any) => {
-        return `?stack=${!config.disableStack}&memory=${!config.disableMemory}&storage=${!config.disableStorage}`;
-      };
-
-      for (const config of opcodeConfigs) {
-        const configString = Object.keys(config)
+      for (const config of opcodeLoggerConfigs) {
+        const opcodeLoggerParams = Object.keys(config)
           .map((key) => `${key}=${config[key]}`)
           .join(', ');
 
-        describe(`When opcode logger is called with ${configString}`, async function () {
-          beforeEach(() => {
-            restMock.onGet(CONTRACTS_RESULTS_OPCODES.concat(getQueryParams(config))).reply(200, {
-              ...opcodesResponse,
-              opcodes: opcodesResponse.opcodes?.map((opcode) => ({
-                ...opcode,
-                stack: config.disableStack ? [] : opcode.stack,
-                memory: config.disableMemory ? [] : opcode.memory,
-                storage: config.disableStorage ? {} : opcode.storage,
-              })),
-            });
-          });
-
-          afterEach(() => {
-            restMock.reset();
-          });
-
+        describe(`When opcode logger is called with ${opcodeLoggerParams}`, async function () {
           const emptyFields = Object.keys(config)
             .filter((key) => config[key])
             .map((key) => key.replace('disable', ''))
