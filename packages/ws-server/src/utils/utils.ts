@@ -22,6 +22,7 @@ import { predefined, Relay } from '@hashgraph/json-rpc-relay';
 import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
 import { WS_CONSTANTS } from './constants';
+import e from 'express';
 
 /**
  * Handles the closure of a WebSocket connection.
@@ -120,8 +121,13 @@ export const handleSendingRequestsToRelay = async (
 
   try {
     const resolvedParams = resolveParams(method, params);
-    const txRes = await relay.eth()[method.split('_')[1]](...resolvedParams, requestIdPrefix);
-    if (!txRes) {
+    let txRes;
+    if (method.split('_')[0] === 'eth') {
+      txRes = await relay.eth()[method.split('_')[1]](...resolvedParams, requestIdPrefix);
+    } else {
+      txRes = await relay.web3()[method.split('_')[1]](...resolvedParams, requestIdPrefix);
+    }
+    if (txRes === null || txRes === undefined) {
       logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for tag=${tag}. Data=${txRes}`);
     }
 
