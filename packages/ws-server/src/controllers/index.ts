@@ -56,7 +56,12 @@ const handleSendingRequestsToRelay = async ({
 
   try {
     const resolvedParams = resolveParams(method, params);
-    const txRes = await relay.eth()[method.split('_')[1]](...resolvedParams, requestIdPrefix);
+    let txRes;
+    if (method.split('_')[0] === 'eth') {
+      txRes = await relay.eth()[method.split('_')[1]](...resolvedParams, requestIdPrefix);
+    } else {
+      txRes = await relay.web3()[method.split('_')[1]](...resolvedParams, requestIdPrefix);
+    }
     if (!txRes) {
       logger.trace(
         `${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for request=${JSON.stringify(
