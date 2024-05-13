@@ -87,6 +87,7 @@ export const WS_CONSTANTS = {
       help: 'Relay websocket total connection ttl limits enforced',
     },
   },
+  BATCH_REQUEST_METHOD_NAME: 'batch_request',
   METHODS: {
     ETH_CALL: 'eth_call',
     ETH_CHAINID: 'eth_chainId',

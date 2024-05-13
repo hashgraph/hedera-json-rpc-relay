@@ -64,19 +64,10 @@ export const handleConnectionClose = async (
 };
 
 /**
- * Determines whether multiple addresses are enabled for WebSocket connections.
- * @returns {boolean} Returns true if multiple addresses are enabled, otherwise returns false.
- */
-export const getMultipleAddressesEnabled = (): boolean => {
-  return process.env.WS_MULTIPLE_ADDRESSES_ENABLED === 'true';
-};
-
-/**
  * Sends a JSON-RPC response message to the client WebSocket connection.
  * Resets the TTL timer for inactivity on the client connection.
  * @param {any} connection - The WebSocket connection object to the client.
- * @param {any} params - The parameters associated with the original request.
- * @param {any} method - The method associated with the original request.
+ * @param {any} request - The request object received from the client.
  * @param {any} response - The response data to be sent back to the client.
  * @param {any} logger - The logger object used for logging messages.
  * @param {string} requestIdPrefix - The prefix added to the request ID for logging purposes.
@@ -84,57 +75,22 @@ export const getMultipleAddressesEnabled = (): boolean => {
  */
 export const sendToClient = (
   connection: any,
-  params: any,
-  method: any,
+  request: any,
   response: any,
   logger: any,
   requestIdPrefix: string,
   connectionIdPrefix: string,
 ) => {
   logger.trace(
-    `${connectionIdPrefix} ${requestIdPrefix}: Sending data=${JSON.stringify(
-      response.result,
-    )} to client from tag=${constructRequestTag(method, params)}`,
+    `${connectionIdPrefix} ${requestIdPrefix}: Sending result=${JSON.stringify(
+      response,
+    )} to client for request=${JSON.stringify(request)}`,
   );
 
   connection.send(JSON.stringify(response));
   connection.limiter.resetInactivityTTLTimer(connection);
 };
 
-/**
- * Handles sending requests to a Relay by calling a specified method with given parameters.
- * This function constructs a request tag, submits the request to the relay, and logs the process.
- * @param {string} method - The method to call on the relay.
- * @param {any} params - The parameters for the method call.
- * @param {Relay} relay - The relay object.
- * @param {any} logger - The logger object used for tracing.
- * @param {string} requestIdPrefix - Prefix for request ID used for logging.
- * @param {string} connectionIdPrefix - Prefix for connection ID used for logging.
- * @returns {Promise<any>} A promise that resolves to the result of the request.
- */
-export const handleSendingRequestsToRelay = async (
-  method: string,
-  params: any,
-  relay: Relay,
-  logger: any,
-  requestIdPrefix: string,
-  connectionIdPrefix: string,
-): Promise<any> => {
-  const tag = constructRequestTag(method, params);
-  logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Submitting request to relay for tag=${tag}.`);
-
-  try {
-    const resolvedParams = resolveParams(method, params);
-    const txRes = await relay.eth()[method.split('_')[1]](...resolvedParams, requestIdPrefix);
-    if (!txRes) {
-      logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for tag=${tag}. Data=${txRes}`);
-    }
-
-    return txRes;
-  } catch (error: any) {
-    throw predefined.INTERNAL_ERROR(JSON.stringify(error.message || error));
-  }
-};
 /**
  * Validates a JSON-RPC request to ensure it has the correct JSON-RPC version, method, and id.
  * @param {any} request - The JSON-RPC request object.
@@ -156,7 +112,7 @@ export const validateJsonRpcRequest = (
     !hasOwnProperty(request, 'id')
   ) {
     logger.warn(
-      `${connectionIdPrefix} ${requestIdPrefix} Invalid request, body.jsonrpc: ${request.jsonrpc}, body[method]: ${request.method}, body[id]: ${request.id}, ctx.request.method: ${request.method}`,
+      `${connectionIdPrefix} ${requestIdPrefix} Invalid request, request.jsonrpc: ${request.jsonrpc}, request.method: ${request.method}, request.id: ${request.id}, request.method: ${request.method}`,
     );
     return false;
   } else {
@@ -180,13 +136,27 @@ export const resolveParams = (method: string, params: any): any[] => {
 };
 
 /**
- * Constructs a tag for the request. Tag is primarily utilized for logging purposes to aid in the debugging process
- * @param {string} method - The method associated with the request.
- * @param {any} params - The parameters associated with the request.
- * @returns {string} - The constructed request tag.
+ * Determines whether multiple addresses are enabled for WebSocket connections.
+ * @returns {boolean} Returns true if multiple addresses are enabled, otherwise returns false.
  */
-export const constructRequestTag = (method: string, params: any): string => {
-  return JSON.stringify({ method, params });
+export const getMultipleAddressesEnabled = (): boolean => {
+  return process.env.WS_MULTIPLE_ADDRESSES_ENABLED === 'true';
+};
+
+/**
+ * Retrieves whether WebSocket batch requests are enabled.
+ * @returns {boolean} A boolean indicating whether WebSocket batch requests are enabled.
+ */
+export const getWsBatchRequestsEnabled = (): boolean => {
+  return process.env.WS_BATCH_REQUESTS_ENABLED ? process.env.WS_BATCH_REQUESTS_ENABLED === 'true' : true;
+};
+
+/**
+ * Retrieves the maximum size of batch requests for WebSocket.
+ * @returns {number} The maximum size of batch requests for WebSocket.
+ */
+export const getBatchRequestsMaxSize = (): number => {
+  return Number(process.env.WS_BATCH_REQUESTS_MAX_SIZE || 20);
 };
 
 /**

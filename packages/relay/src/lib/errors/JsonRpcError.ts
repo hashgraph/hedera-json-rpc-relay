@@ -282,6 +282,17 @@ export const predefined = {
       code: -32203,
       message: `Batch request amount ${amount} exceeds max ${max}`,
     }),
+  WS_BATCH_REQUESTS_DISABLED: new JsonRpcError({
+    name: 'WS batch requests disabled',
+    code: -32205,
+    message: 'WS batch requests are disabled',
+  }),
+  WS_BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED: (amount: number, max: number) =>
+    new JsonRpcError({
+      name: 'WS batch requests amount max exceeded',
+      code: -32206,
+      message: `Batch request amount ${amount} exceeds max ${max}`,
+    }),
   INVALID_ARGUMENTS: (message: string) =>
     new JsonRpcError({
       name: 'Invalid argument',

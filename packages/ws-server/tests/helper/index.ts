@@ -43,9 +43,15 @@ export class WsTestHelper {
 
     let response: any;
 
-    webSocket.on('open', () => {
-      webSocket.send(JSON.stringify(WsTestHelper.prepareJsonRpcObject(method, params)));
-    });
+    if (method === WsTestConstant.BATCH_REQUEST_METHOD_NAME) {
+      webSocket.on('open', () => {
+        webSocket.send(JSON.stringify(params));
+      });
+    } else {
+      webSocket.on('open', () => {
+        webSocket.send(JSON.stringify(WsTestHelper.prepareJsonRpcObject(method, params)));
+      });
+    }
 
     webSocket.on('message', (data: string) => {
       response = JSON.parse(data);
@@ -88,4 +94,5 @@ export class WsTestConstant {
   static STANDARD_WEB_SOCKET = 'Standard Web Socket';
   static ETHERS_WS_PROVIDER = 'Ethers Web Socket Provider';
   static WS_RELAY_URL = process.env.WS_RELAY_URL || `ws://127.0.0.1:8546`;
+  static BATCH_REQUEST_METHOD_NAME: 'batch_request';
 }
