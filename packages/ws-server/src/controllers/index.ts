@@ -97,7 +97,10 @@ export const getRequestResult = async (
   wsMetricRegistry: WsMetricRegistry,
 ): Promise<any> => {
   // Extract the method and parameters from the received request
-  const { method, params } = request;
+  let { method, params } = request;
+
+  // support go-ethereum client by turning undefined into empty array
+  if (!params) params = [];
 
   // Increment metrics for the received method
   wsMetricRegistry.getCounter('methodsCounter').labels(method).inc();
