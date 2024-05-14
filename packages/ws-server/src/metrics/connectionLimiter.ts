@@ -210,6 +210,10 @@ export default class ConnectionLimiter {
   }
 
   public shouldRateLimitOnMethod(ip, methodName, requestId) {
+    // subcription limits are already covered in this.validateSubscriptionLimit()
+    if (methodName === WS_CONSTANTS.METHODS.ETH_SUBSCRIBE || methodName === WS_CONSTANTS.METHODS.ETH_UNSUBSCRIBE)
+      return false;
+
     const methodTotalLimit = methodConfiguration[methodName].total;
     return this.rateLimit.shouldRateLimit(ip, methodName, methodTotalLimit, requestId);
   }
