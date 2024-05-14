@@ -25,6 +25,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { predefined } from '@hashgraph/json-rpc-relay/src';
 
 describe('@web-socket-batch-1 Batch Requests', async function () {
+  const METHOD_NAME = 'batch_request';
   let ethersWsProvider: WebSocketProvider;
   let batchRequests: any = [];
 
@@ -80,10 +81,7 @@ describe('@web-socket-batch-1 Batch Requests', async function () {
 
   it(`Should submit batch requests to WS server using Standard Web Socket and retrieve batch responses`, async () => {
     // call batch request
-    const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(
-      WsTestConstant.BATCH_REQUEST_METHOD_NAME,
-      batchRequests,
-    );
+    const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 
     // individually process each request
     let promises: any = [];
@@ -97,10 +95,7 @@ describe('@web-socket-batch-1 Batch Requests', async function () {
 
   it('Should submit batch requests to WS server and get batchRequestDisabledError if WS_BATCH_REQUESTS_DISABLED=false ', async () => {
     process.env.WS_BATCH_REQUESTS_ENABLED = 'false';
-    const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(
-      WsTestConstant.BATCH_REQUEST_METHOD_NAME,
-      batchRequests,
-    );
+    const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 
     const expectedError = predefined.WS_BATCH_REQUESTS_DISABLED;
     delete expectedError.data;
@@ -111,10 +106,7 @@ describe('@web-socket-batch-1 Batch Requests', async function () {
   it('Should submit batch requests to WS server and get batchRequestAmountMaxExceed if requests size exceeds WS_BATCH_REQUESTS_MAX_SIZE', async () => {
     process.env.WS_BATCH_REQUESTS_MAX_SIZE = '1';
 
-    const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(
-      WsTestConstant.BATCH_REQUEST_METHOD_NAME,
-      batchRequests,
-    );
+    const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 
     const expectedError = predefined.BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED(
       batchRequests.length,

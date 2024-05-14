@@ -38,12 +38,13 @@ export class WsTestHelper {
     }
   }
 
-  static async sendRequestToStandardWebSocket(method: string, params: any, ms?: number | undefined) {
+  static async sendRequestToStandardWebSocket(method: string, params: any[], ms?: number | undefined) {
+    const BATCH_REQUEST_METHOD_NAME = 'batch_request';
     const webSocket = new WebSocket(WsTestConstant.WS_RELAY_URL);
 
     let response: any;
 
-    if (method === WsTestConstant.BATCH_REQUEST_METHOD_NAME) {
+    if (method === BATCH_REQUEST_METHOD_NAME) {
       webSocket.on('open', () => {
         webSocket.send(JSON.stringify(params));
       });
@@ -94,5 +95,4 @@ export class WsTestConstant {
   static STANDARD_WEB_SOCKET = 'Standard Web Socket';
   static ETHERS_WS_PROVIDER = 'Ethers Web Socket Provider';
   static WS_RELAY_URL = process.env.WS_RELAY_URL || `ws://127.0.0.1:8546`;
-  static BATCH_REQUEST_METHOD_NAME: 'batch_request';
 }
