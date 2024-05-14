@@ -56,11 +56,23 @@ const handleSendingRequestsToRelay = async ({
 
   try {
     const resolvedParams = resolveParams(method, params);
+    const [service, methodName] = method.split('_');
     let txRes;
-    if (method.split('_')[0] === 'eth') {
-      txRes = await relay.eth()[method.split('_')[1]](...resolvedParams, requestIdPrefix);
-    } else {
-      txRes = await relay.web3()[method.split('_')[1]](...resolvedParams, requestIdPrefix);
+    switch (service) {
+      case 'debug':
+        txRes = await relay.debug()[methodName](...resolvedParams, requestIdPrefix);
+        break;
+      case 'eth':
+        txRes = await relay.eth()[methodName](...resolvedParams, requestIdPrefix);
+        break;
+      case 'get':
+        txRes = await relay.get()[methodName](...resolvedParams, requestIdPrefix);
+        break;
+      case 'web3':
+        txRes = await relay.web3()[methodName](...resolvedParams, requestIdPrefix);
+        break;
+      default:
+        throw new Error(`Unsupported JSON RPC service type: ${service}`);
     }
     if (!txRes) {
       logger.trace(
