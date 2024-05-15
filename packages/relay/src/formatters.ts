@@ -147,7 +147,6 @@ const formatContractResult = (cr: any) => {
   const commonFields = {
     blockHash: toHash32(cr.block_hash),
     blockNumber: nullableNumberTo0x(cr.block_number),
-    chainId: cr.chain_id === EMPTY_HEX ? undefined : cr.chain_id,
     from: cr.from.substring(0, 42),
     gas: nanOrNumberTo0x(cr.gas_used),
     gasPrice: toNullIfEmptyHex(cr.gas_price),
@@ -161,6 +160,10 @@ const formatContractResult = (cr: any) => {
     type: nullableNumberTo0x(cr.type),
     v: cr.type === null ? null : nanOrNumberTo0x(cr.v),
     value: nanOrNumberTo0x(cr.amount),
+    // for legacy EIP155 with tx.chainId=0x0, mirror-node will return a '0x' (EMPTY_HEX) value for contract result's chain_id
+    //   which is incompatibile with certain tools (i.e. foundry). By setting this field, chainId, to undefined, the end jsonrpc
+    //   object will leave out this field, which is the proper behavior for other tools to be compatible with.
+    chainId: cr.chain_id === EMPTY_HEX ? undefined : cr.chain_id,
   };
 
   switch (cr.type) {
