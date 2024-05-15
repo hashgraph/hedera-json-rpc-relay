@@ -825,12 +825,7 @@ export class EthImpl implements Eth {
     await this.mirrorNodeClient
       .getContractStateByAddressAndSlot(address, slot, blockEndTimestamp, requestIdPrefix)
       .then((response) => {
-        if (response === null) {
-          throw predefined.RESOURCE_NOT_FOUND(
-            `Cannot find current state for contract address ${address} at slot=${slot}`,
-          );
-        }
-        if (response.state.length > 0) {
+        if (response !== null && response.state.length > 0) {
           result = response.state[0].value;
         }
       })
