@@ -285,7 +285,6 @@ const hex = (val): string => {
 // https://github.com/trufflesuite/ganache/commit/cd5b6ca4bf79da769002c44bbb95a77c44501cd8
 const rpcQuantityHexString = (val: any): any => {
   val = hex(val);
-  // val = '0x' + val.replace('0x', '').replace(/^0+/, '');
   val = val.replace(/^(?:0x)(?:0+(.+?))?$/, '0x$1');
 
   if (val === '0x') {
