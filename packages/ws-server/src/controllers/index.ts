@@ -58,6 +58,8 @@ const handleSendingRequestsToRelay = async ({
     const resolvedParams = resolveParams(method, params);
     const [service, methodName] = method.split('_');
 
+    // Call the relay method with the resolved parameters.
+    // Method will be validated by "verifySupportedMethod" before reaching this point.
     const txRes = await relay[service]()[methodName](...resolvedParams, requestIdPrefix);
 
     if (!txRes) {
