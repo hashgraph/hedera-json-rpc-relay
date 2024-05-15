@@ -23,6 +23,7 @@ import crypto from 'crypto';
 import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { BigNumber as BN } from 'bignumber.js';
+import { addHexPrefix, BN as BigNum, intToHex } from 'ethereumjs-util';
 
 const EMPTY_HEX = '0x';
 
@@ -154,12 +155,12 @@ const formatContractResult = (cr: any) => {
     hash: cr.hash.substring(0, 66),
     input: cr.function_parameters,
     nonce: nanOrNumberTo0x(cr.nonce),
-    r: cr.r === null ? null : cr.r.substring(0, 66),
-    s: cr.s === null ? null : cr.s.substring(0, 66),
+    r: cr.r === null ? '0x0' : nullableRpcQuantityHexString(cr.r.substring(0, 66)),
+    s: cr.s === null ? '0x0' : nullableRpcQuantityHexString(cr.s.substring(0, 66)),
     to: cr.to?.substring(0, 42),
     transactionIndex: nullableNumberTo0x(cr.transaction_index),
-    type: nullableNumberTo0x(cr.type),
-    v: cr.type === null ? null : nanOrNumberTo0x(cr.v),
+    type: cr.type === null ? '0x0' : nanOrNumberTo0x(cr.type),
+    v: cr.v === null ? '0x0' : nullableRpcQuantityHexString(cr.v),
     value: nanOrNumberTo0x(cr.amount),
   };
 
@@ -175,8 +176,8 @@ const formatContractResult = (cr: any) => {
       return new Transaction1559({
         ...commonFields,
         accessList: [],
-        maxPriorityFeePerGas: toNullIfEmptyHex(cr.max_priority_fee_per_gas),
-        maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas),
+        maxPriorityFeePerGas: rpcQuantityHexString(formatHex(cr.max_priority_fee_per_gas)),
+        maxFeePerGas: rpcQuantityHexString(formatHex(cr.max_fee_per_gas)),
       }); // eip 1559 fields
     case null:
       return new Transaction(commonFields); //hapi
@@ -232,6 +233,8 @@ const stringToHex = (str) => {
   return hex;
 };
 
+const formatHex = (hexValue: string): string => (hexValue === '0x' ? '0x0' : hexValue);
+
 const toHexString = (byteArray) => {
   if (typeof byteArray !== 'object') {
     byteArray = Buffer.from(byteArray?.toString() ?? '', 'hex');
@@ -245,26 +248,86 @@ const isValidEthereumAddress = (address: string): boolean => {
   return new RegExp(constants.BASE_HEX_REGEX + '{40}$').test(address);
 };
 
+// ganache solution
+// https://github.com/trufflesuite/ganache/issues/166
+// https://github.com/trufflesuite/ganache/commit/cd5b6ca4bf79da769002c44bbb95a77c44501cd8
+const hex = (val): string => {
+  if (typeof val === 'string') {
+    if (val === '0x') {
+      return '0x0';
+    } else if (val.indexOf('0x') === 0) {
+      return val;
+    } else {
+      val = new BigNum(val);
+    }
+  }
+
+  if (typeof val === 'boolean') {
+    val = val ? 1 : 0;
+  }
+
+  if (typeof val === 'number') {
+    val = intToHex(val);
+  }
+
+  if (typeof val === 'object') {
+    val = val.toString('hex');
+
+    if (val === '') {
+      val = '0';
+    }
+  }
+
+  return addHexPrefix(val);
+};
+
+// ganache solution
+// https://github.com/trufflesuite/ganache/commit/cd5b6ca4bf79da769002c44bbb95a77c44501cd8
+const rpcQuantityHexString = (val: any): any => {
+  val = hex(val);
+  // val = '0x' + val.replace('0x', '').replace(/^0+/, '');
+  val = val.replace(/^(?:0x)(?:0+(.+?))?$/, '0x$1');
+
+  if (val === '0x') {
+    val = '0x0';
+  }
+
+  return val;
+};
+
+const nullableRpcQuantityHexString = (val): string | null => {
+  if (val === null) {
+    return null;
+  } else {
+    const rpcQuantityHex = rpcQuantityHexString(val);
+    return rpcQuantityHex === '0x' ? null : rpcQuantityHex;
+  }
+};
+
 export {
-  hashNumber,
-  formatRequestIdMessage,
-  hexToASCII,
   decodeErrorMessage,
+  formatContractResult,
+  formatHex,
+  formatRequestIdMessage,
   formatTransactionId,
   formatTransactionIdWithoutQueryParams,
-  parseNumericEnvVar,
-  formatContractResult,
-  prepend0x,
-  numberTo0x,
-  nullableNumberTo0x,
-  nanOrNumberTo0x,
-  toHash32,
-  toNullableBigNumber,
-  toNullIfEmptyHex,
   generateRandomHex,
+  hashNumber,
+  hex,
+  hexToASCII,
+  isValidEthereumAddress,
+  nanOrNumberTo0x,
+  nullableNumberTo0x,
+  nullableRpcQuantityHexString,
+  numberTo0x,
+  parseNumericEnvVar,
+  prepend0x,
+  rpcQuantityHexString,
+  stringToHex,
+  toHash32,
+  toHexString,
+  toNullIfEmptyHex,
+  toNullableBigNumber,
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
-  stringToHex,
-  toHexString,
-  isValidEthereumAddress,
 };

@@ -1888,6 +1888,8 @@ export class EthImpl implements Eth {
     const fromAddress = await this.resolveEvmAddress(contractResult.from, requestIdPrefix, [constants.TYPE_ACCOUNT]);
     const toAddress = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
 
+    contractResult.chain_id = contractResult.chain_id || this.chain;
+
     return formatContractResult({
       ...contractResult,
       from: fromAddress,
@@ -2143,6 +2145,7 @@ export class EthImpl implements Eth {
         constants.TYPE_ACCOUNT,
       ]);
       contractResult.to = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
+      contractResult.chain_id = contractResult.chain_id || this.chain;
 
       transactionArray.push(showDetails ? formatContractResult(contractResult) : contractResult.hash);
     }

@@ -166,8 +166,8 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
       ...DEFAULT_TRANSACTION,
       maxFeePerGas: '0x55',
       maxPriorityFeePerGas: '0x43',
-      r: null,
-      s: null,
+      r: '0x0',
+      s: '0x0',
     });
   });
 

@@ -29,6 +29,7 @@ import {
   formatContractResult,
   prepend0x,
   nullableNumberTo0x,
+  nullableRpcQuantityHexString,
   nanOrNumberTo0x,
   toHash32,
   toNullableBigNumber,
@@ -205,7 +206,7 @@ describe('Formatters', () => {
       expect(formattedResult.gasPrice).to.equal(null);
       expect(formattedResult.hash).to.equal('0xfc4ab7133197016293d2e14e8cf9c5227b07357e6385184f1cd1cb40d783cfbd');
       expect(formattedResult.input).to.equal('0x08090033');
-      expect(formattedResult.maxPriorityFeePerGas).to.equal(null);
+      expect(formattedResult.maxPriorityFeePerGas).to.equal('0x0');
       expect(formattedResult.maxFeePerGas).to.equal('0x59');
       expect(formattedResult.nonce).to.equal('0x2');
       expect(formattedResult.r).to.equal('0x2af9d41244c702764ed86c5b9f1a734b075b91c4d9c65e78bc584b0e35181e42');
@@ -241,11 +242,11 @@ describe('Formatters', () => {
       expect(formattedResult.gasPrice).to.equal(null);
       expect(formattedResult.hash).to.equal('0xfc4ab7133197016293d2e14e8cf9c5227b07357e6385184f1cd1cb40d783cfbd');
       expect(formattedResult.input).to.equal('0x08090033');
-      expect(formattedResult.maxPriorityFeePerGas).to.equal(null);
-      expect(formattedResult.maxFeePerGas).to.equal(null);
+      expect(formattedResult.maxPriorityFeePerGas).to.equal('0x0');
+      expect(formattedResult.maxFeePerGas).to.equal('0x0');
       expect(formattedResult.nonce).to.equal('0x0');
-      expect(formattedResult.r).to.equal(null);
-      expect(formattedResult.s).to.equal(null);
+      expect(formattedResult.r).to.equal('0x0');
+      expect(formattedResult.s).to.equal('0x0');
       expect(formattedResult.to).to.equal('0x0000000000000000000000000000000000000409');
       expect(formattedResult.transactionIndex).to.equal(null);
       expect(formattedResult.v).to.equal(`0x0`);
@@ -420,6 +421,27 @@ describe('Formatters', () => {
     it('should return false for an address with an undefined value', () => {
       const address = undefined;
       expect(isValidEthereumAddress(address)).to.equal(false);
+    });
+  });
+  describe('nullableRpcQuantityHexString', () => {
+    it("should print '0x0' for input 0", () => {
+      expect(nullableRpcQuantityHexString(0)).to.equal('0x0');
+    });
+
+    it("should print '0x0' for input '0'", () => {
+      expect(nullableRpcQuantityHexString('0')).to.equal('0x0');
+    });
+
+    it("should print '0x0' for input '000'", () => {
+      expect(nullableRpcQuantityHexString('000'), '0x0');
+    });
+
+    it("should print '0x0' for input '0x000'", () => {
+      expect(nullableRpcQuantityHexString('0x000'), '0x0');
+    });
+
+    it("should print '0x20' for input '0x0020'", () => {
+      expect(nullableRpcQuantityHexString('0x0020'), '0x20');
     });
   });
 });
