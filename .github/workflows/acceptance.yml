@@ -47,6 +47,7 @@ jobs:
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: ratelimiter
+      test_ws_server: true
 
   tokencreate:
     name: Token Create

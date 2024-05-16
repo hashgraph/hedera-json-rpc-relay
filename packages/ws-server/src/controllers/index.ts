@@ -27,7 +27,11 @@ import { handleEthSubsribe, handleEthUnsubscribe } from './eth_subscribe';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { resolveParams, validateJsonRpcRequest, verifySupportedMethod } from '../utils/utils';
-import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
+import {
+  InvalidRequest,
+  MethodNotFound,
+  IPRateLimitExceeded,
+} from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 
 /**
  * Handles sending requests to a Relay by calling a specified method with given parameters.
@@ -120,6 +124,11 @@ export const getRequestResult = async (
   if (!verifySupportedMethod(request.method)) {
     logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: Method not supported: ${request.method}`);
     return jsonResp(request.id || null, new MethodNotFound(request.method), undefined);
+  }
+
+  // verify rate limit for method method based on IP
+  if (limiter.shouldRateLimitOnMethod(ctx.ip, request.method, ctx.websocket.requestId)) {
+    return jsonResp(null, new IPRateLimitExceeded(request.method), undefined);
   }
 
   // Validate request's params
