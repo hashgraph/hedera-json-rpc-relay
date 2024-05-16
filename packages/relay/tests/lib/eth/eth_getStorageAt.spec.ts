@@ -20,6 +20,7 @@
 import path from 'path';
 import dotenv from 'dotenv';
 import { expect, use } from 'chai';
+import { ethers } from 'ethers';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 
@@ -267,7 +268,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       expect(result).to.equal(DEFAULT_OLDER_CONTRACT_STATE.state[0].value);
     });
 
-    it('eth_getStorageAt should throw error when contract not found', async function () {
+    it('eth_getStorageAt should return Zero Hash when address is not found', async function () {
       // mirror node request mocks
       restMock
         .onGet(
@@ -275,15 +276,12 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         )
         .reply(404, DETAILD_CONTRACT_RESULT_NOT_FOUND);
 
-      const args = [CONTRACT_ADDRESS_1, defaultDetailedContractResults.state_changes[0].slot, numberTo0x(BLOCK_NUMBER)];
-
-      await RelayAssertions.assertRejection(
-        predefined.RESOURCE_NOT_FOUND(),
-        ethImpl.getStorageAt,
-        false,
-        ethImpl,
-        args,
+      const result = await ethImpl.getStorageAt(
+        CONTRACT_ADDRESS_1,
+        DEFAULT_OLDER_CONTRACT_STATE.state[0].slot,
+        numberTo0x(OLDER_BLOCK.number),
       );
+      expect(result).to.equal(ethers.ZeroHash);
     });
   });
 });

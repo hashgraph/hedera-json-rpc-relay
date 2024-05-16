@@ -1038,6 +1038,19 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       );
       expect(storageVal).to.eq(EXPECTED_STORAGE_VAL);
     });
+
+    it('should execute "eth_getStorageAt" request against an inactive address (contains no data) and receive a 32-byte-zero-hex string ', async function () {
+      const hexString = ethers.ZeroHash;
+      const inactiveAddress = ethers.Wallet.createRandom();
+
+      const storageVal = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
+        [inactiveAddress.address, '0x0', 'latest'],
+        requestId,
+      );
+
+      expect(storageVal).to.eq(hexString);
+    });
   });
 
   // Only run the following tests against a local node since they only work with the genesis account
