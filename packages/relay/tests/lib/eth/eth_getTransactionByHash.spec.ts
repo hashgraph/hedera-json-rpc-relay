@@ -152,7 +152,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   });
 
   it('returns correct transaction for existing hash w no sigs', async function () {
-    const detailedResultsWithNullNullableValues = {
+    const detailedResultsWithZeroXZeroValues = {
       ...defaultDetailedContractResultByHash,
       r: null,
       s: null,
@@ -160,14 +160,14 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
     const uniqueTxHash = '0x97cad7b827375d12d73af57b6a3f84353645fd31305ea58ff52dda53ec640533';
 
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithZeroXZeroValues);
     const result = await ethImpl.getTransactionByHash(uniqueTxHash);
     RelayAssertions.assertTransaction(result, {
       ...DEFAULT_TRANSACTION,
       maxFeePerGas: '0x55',
       maxPriorityFeePerGas: '0x43',
-      r: null,
-      s: null,
+      r: '0x0',
+      s: '0x0',
     });
   });
 
