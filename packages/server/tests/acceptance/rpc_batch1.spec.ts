@@ -957,6 +957,26 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(balanceChange.toString()).to.eq(Number(ONE_TINYBAR).toString());
       });
 
+      it('should return transaction result with no chainId field for legacy EIP155 transactions  (with no chainId i.e. chainId=0x0)', async function () {
+        const transaction = {
+          ...defaultLegacyTransactionData,
+          to: parentContractAddress,
+          nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+          gasPrice: await relay.gasPrice(requestId),
+        };
+        const signedTx = await accounts[1].wallet.signTransaction(transaction);
+        const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+
+        const transactionResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
+          [transactionHash],
+          requestId,
+        );
+
+        const result = Object.prototype.hasOwnProperty.call(transactionResult, 'chainId');
+        expect(result).to.be.false;
+      });
+
       it('should fail "eth_sendRawTransaction" for Legacy transactions (with gas price too low)', async function () {
         const transaction = {
           ...defaultLegacyTransactionData,
