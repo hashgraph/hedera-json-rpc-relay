@@ -133,7 +133,10 @@ export default class ConnectionLimiter {
       ctx.websocket.send(
         JSON.stringify({
           jsonrpc: '2.0',
-          error: `Closing current connection due to exceeded maximum connections (max_con=${MAX_CONNECTION_LIMIT})`,
+          error: {
+            code: -32603,
+            message: `Closing current connection due to exceeded maximum connections (max_con=${MAX_CONNECTION_LIMIT})`,
+          },
           id: '1',
         }),
       );
@@ -152,7 +155,10 @@ export default class ConnectionLimiter {
       ctx.websocket.send(
         JSON.stringify({
           jsonrpc: '2.0',
-          error: `Closing current connection due to exceeded maximum connections from a single IP: address ${ip} - ${this.clientIps[ip]} connections. (max_con=${MAX_CONNECTION_LIMIT_PER_IP})`,
+          error: {
+            code: -32603,
+            message: `Closing current connection due to exceeded maximum connections from a single IP: address ${ip} - ${this.clientIps[ip]} connections. (max_con=${MAX_CONNECTION_LIMIT_PER_IP})`,
+          },
           id: '1',
         }),
       );
@@ -188,7 +194,10 @@ export default class ConnectionLimiter {
           websocket.send(
             JSON.stringify({
               jsonrpc: '2.0',
-              error: `Closing current connection due to reaching TTL (${maxInactivityTTL}ms)`,
+              error: {
+                code: -32603,
+                message: `Closing current connection due to reaching TTL (${maxInactivityTTL}ms)`,
+              },
               id: '1',
             }),
           );
