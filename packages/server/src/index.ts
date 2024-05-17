@@ -21,7 +21,11 @@
 import app from './server';
 
 async function main() {
-  await app.listen({ port: process.env.SERVER_PORT || 7546 });
+  const server = await app.listen({ port: process.env.SERVER_PORT || 7546 });
+
+  // set request timeout to ensure sockets are closed after specified time
+  const requestTimeoutMs = parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS!) || 30000;
+  server.setTimeout(requestTimeoutMs);
 }
 
 main();
