@@ -23,14 +23,15 @@ import WebSocket from 'ws';
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
+import { predefined } from '@hashgraph/json-rpc-relay/src';
 import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 
 describe('@web-socket-batch-1 JSON-RPC requests validation', async function () {
-  const METHOD_NAME = 'eth_blockNumber';
+  const BLOCK_NUMBER_METHOD_NAME = 'eth_blockNumber';
   const INVALID_REQUESTS = [
     {
       id: '1',
-      method: METHOD_NAME,
+      method: BLOCK_NUMBER_METHOD_NAME,
       params: [],
     },
     {
@@ -41,7 +42,7 @@ describe('@web-socket-batch-1 JSON-RPC requests validation', async function () {
     {
       id: '1',
       jsonrpc: 'hedera',
-      method: METHOD_NAME,
+      method: BLOCK_NUMBER_METHOD_NAME,
       params: [],
     },
   ];
@@ -51,11 +52,13 @@ describe('@web-socket-batch-1 JSON-RPC requests validation', async function () {
   let ethersWsProvider: WebSocketProvider;
 
   beforeEach(async () => {
+    process.env.REQUEST_ID_IS_OPTIONAL = 'true';
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
   afterEach(async () => {
     if (ethersWsProvider) await ethersWsProvider.destroy();
+    delete process.env.REQUEST_ID_IS_OPTIONAL;
   });
 
   after(async () => {
@@ -63,14 +66,7 @@ describe('@web-socket-batch-1 JSON-RPC requests validation', async function () {
     expect(global.socketServer._connections).to.eq(0);
   });
 
-  describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
-    beforeEach(() => {
-      process.env.REQUEST_ID_IS_OPTIONAL = 'true';
-    });
-    afterEach(() => {
-      delete process.env.REQUEST_ID_IS_OPTIONAL;
-    });
-
+  describe('Request  & Method Validations', () => {
     for (const request of INVALID_REQUESTS) {
       it('Should reject the requests because of the invalid JSON-RPC requests', async () => {
         const webSocket = new WebSocket(WsTestConstant.WS_RELAY_URL);
@@ -109,5 +105,25 @@ describe('@web-socket-batch-1 JSON-RPC requests validation', async function () {
         expect(response.error.code).to.eq(methodNotFound.code);
       });
     }
+  });
+
+  describe('Request with undefined params', () => {
+    it('Should execute eth_chainId requests with undefined params and receive expected result', async () => {
+      const response = await WsTestHelper.sendRequestToStandardWebSocket('eth_chainId', undefined);
+      const expectedResult = await global.relay.call('eth_chainId', []);
+      expect(response.result).to.eq(expectedResult);
+    });
+
+    it('Should execute eth_blockNumber requests with undefined params and receive expected result', async () => {
+      const response = await WsTestHelper.sendRequestToStandardWebSocket('eth_blockNumber', undefined);
+      const expectedResult = await global.relay.call('eth_blockNumber', []);
+      expect(response.result).to.eq(expectedResult);
+    });
+    it('Should execute eth_sendRawTransaction requests with undefined params and receive MISSING_REQUIRED_PARAMETER error', async () => {
+      const response = await WsTestHelper.sendRequestToStandardWebSocket('eth_sendRawTransaction', undefined);
+      const expectedResult = predefined.MISSING_REQUIRED_PARAMETER(0);
+      delete expectedResult.data;
+      expect(response.error).to.deep.eq(expectedResult);
+    });
   });
 });

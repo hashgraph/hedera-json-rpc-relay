@@ -38,7 +38,7 @@ export class WsTestHelper {
     }
   }
 
-  static async sendRequestToStandardWebSocket(method: string, params: any[], ms?: number | undefined) {
+  static async sendRequestToStandardWebSocket(method: string, params: any, ms?: number | undefined) {
     const webSocket = new WebSocket(WsTestConstant.WS_RELAY_URL);
 
     let response: any;
