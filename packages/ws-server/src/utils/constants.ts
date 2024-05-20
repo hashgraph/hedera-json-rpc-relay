@@ -107,5 +107,6 @@ export const WS_CONSTANTS = {
     ETH_GETTRANSACTIONBYHASH: 'eth_getTransactionByHash',
     ETH_GETTRANSACTIONRECEIPT: 'eth_getTransactionReceipt',
     ETH_MAXPRIORITYFEEPERGAS: 'eth_maxPriorityFeePerGas',
+    WEB3_CLIENTVERSION: 'web3_clientVersion',
   },
 };
