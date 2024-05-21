@@ -37,7 +37,7 @@ export class JsonRpcError {
 export const predefined = {
   CONTRACT_REVERT: (errorMessage?: string, data: string = '') =>
     new JsonRpcError({
-      code: -32008,
+      code: 3,
       message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
       data: data,
     }),
