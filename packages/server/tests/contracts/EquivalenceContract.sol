@@ -115,6 +115,20 @@ contract EquivalenceContract {
         randomBytes = abi.decode(result, (bytes32));
     }
 
+    function getPseudorandomSeedStaticCall() external returns (bytes32 randomBytes) {
+        (bool success, bytes memory result) = PRNG_PRECOMPILE_ADDRESS.staticcall(
+            abi.encodeWithSignature("getPseudorandomSeed()"));
+        require(success);
+        randomBytes = abi.decode(result, (bytes32));
+    }
+
+    function getPseudorandomSeedDelegateCall() external returns (bytes32 randomBytes) {
+        (bool success, bytes memory result) = PRNG_PRECOMPILE_ADDRESS.delegatecall(
+            abi.encodeWithSignature("getPseudorandomSeed()"));
+        require(success);
+        randomBytes = abi.decode(result, (bytes32));
+    }
+
     function exchangeRateWithoutAmount(uint256 tinycents) external returns (uint256 tinybars) {
         (bool success, bytes memory result) = EXCHANGE_RATE_PRECOMPILE_ADDRESS.call(
             abi.encodeWithSignature("tinycentsToTinybars(uint256)", tinycents));
