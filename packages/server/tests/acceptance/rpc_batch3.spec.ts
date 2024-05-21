@@ -608,7 +608,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(response.status).to.be.equal(200);
       expect(response.data).to.exist;
       expect(response.data.error).to.exist;
-      expect(response.data.error.code).to.be.equal(-32008);
+      expect(response.data.error.code).to.be.equal(3);
       expect(response.data.error.message).to.contain('execution reverted: CONTRACT_REVERT_EXECUTED');
       expect(response.data.error.name).to.undefined;
     });
