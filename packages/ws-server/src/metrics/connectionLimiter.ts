@@ -134,8 +134,12 @@ export default class ConnectionLimiter {
         JSON.stringify({
           jsonrpc: '2.0',
           error: {
-            code: -32603,
-            message: `Closing current connection due to exceeded maximum connections (max_con=${MAX_CONNECTION_LIMIT})`,
+            code: CONNECTION_LIMIT_EXCEEDED.code,
+            message: CONNECTION_LIMIT_EXCEEDED.message,
+            data: {
+              message: CONNECTION_LIMIT_EXCEEDED.message,
+              max_connection: MAX_CONNECTION_LIMIT,
+            },
           },
           id: '1',
         }),
