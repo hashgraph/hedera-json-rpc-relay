@@ -195,8 +195,12 @@ export default class ConnectionLimiter {
             JSON.stringify({
               jsonrpc: '2.0',
               error: {
-                code: -32603,
-                message: `Closing current connection due to reaching TTL (${maxInactivityTTL}ms)`,
+                code: TTL_EXPIRED.code,
+                message: TTL_EXPIRED.message,
+                data: {
+                  message: TTL_EXPIRED.message,
+                  max_inactivity_TTL: maxInactivityTTL,
+                },
               },
               id: '1',
             }),
