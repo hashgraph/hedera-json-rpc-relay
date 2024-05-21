@@ -18,12 +18,12 @@
  *
  */
 
-import { getMultipleAddressesEnabled } from '../utils/utils';
 import { predefined, Relay } from '@hashgraph/json-rpc-relay';
 import { validateSubscribeEthLogsParams } from '../utils/validators';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
+import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
+import { constructValidLogSubscriptionFilter, getMultipleAddressesEnabled } from '../utils/utils';
 
 /**
  * Subscribes to new block headers (newHeads) events and returns the response and subscription ID.
@@ -115,15 +115,17 @@ const handleEthSubscribeLogs = async (
   relay: Relay,
   mirrorNodeClient: MirrorNodeClient,
 ): Promise<{ response: any; subscriptionId: any }> => {
-  await validateSubscribeEthLogsParams(filters, requestIdPrefix, mirrorNodeClient);
-  if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
+  const validFiltersObject = constructValidLogSubscriptionFilter(filters);
+
+  await validateSubscribeEthLogsParams(validFiltersObject, requestIdPrefix, mirrorNodeClient);
+  if (!getMultipleAddressesEnabled() && Array.isArray(validFiltersObject) && validFiltersObject.length > 1) {
     response = jsonResp(
       request.id,
       predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
       undefined,
     );
   } else {
-    subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+    subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, validFiltersObject);
   }
   return { response, subscriptionId };
 };
