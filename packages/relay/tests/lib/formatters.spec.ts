@@ -466,7 +466,7 @@ describe('Formatters', () => {
       expect(isHex('0x58')).to.be.true;
     });
   });
-  describe.only('ASCIIToHex Function', () => {
+  describe('ASCIIToHex Function', () => {
     const inputs = ['Lorem Ipsum', 'Foo', 'Bar'];
     const outputs = ['4c6f72656d20497073756d', '466f6f', '426172'];
 
