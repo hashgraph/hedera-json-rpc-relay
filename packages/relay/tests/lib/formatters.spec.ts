@@ -37,6 +37,7 @@ import {
   isValidEthereumAddress,
   trimPrecedingZeros,
   isHex,
+  ASCIIToHex,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -463,6 +464,28 @@ describe('Formatters', () => {
 
     it('should return true for a known gasPrice', () => {
       expect(isHex('0x58')).to.be.true;
+    });
+  });
+  describe('ASCIIToHex Function', () => {
+    const inputs = ['Lorem Ipsum', 'Foo', 'Bar'];
+    const outputs = ['4c6f72656d20497073756d', '466f6f', '426172'];
+
+    it('should return "" for empty string', () => {
+      expect(ASCIIToHex('')).to.equal('');
+    });
+
+    it('should return valid hex', () => {
+      expect(isHex(prepend0x(ASCIIToHex(inputs[0])))).to.be.true;
+    });
+
+    it('should return expected hex formatted value', () => {
+      expect(inputs[0]).to.equal(hexToASCII(ASCIIToHex(inputs[0])));
+    });
+
+    it('should decode correctly regarding hardcoded mapping', () => {
+      for (let i = 0; i < inputs.length; i++) {
+        expect(ASCIIToHex(inputs[i])).to.eq(outputs[i]);
+      }
     });
   });
 });
