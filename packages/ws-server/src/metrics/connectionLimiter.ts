@@ -156,8 +156,12 @@ export default class ConnectionLimiter {
         JSON.stringify({
           jsonrpc: '2.0',
           error: {
-            code: -32603,
-            message: `Closing current connection due to exceeded maximum connections from a single IP: address ${ip} - ${this.clientIps[ip]} connections. (max_con=${MAX_CONNECTION_LIMIT_PER_IP})`,
+            code: CONNECTION_IP_LIMIT_EXCEEDED.code,
+            message: CONNECTION_IP_LIMIT_EXCEEDED.message,
+            data: {
+              message: CONNECTION_IP_LIMIT_EXCEEDED.message,
+              max_connection: MAX_CONNECTION_LIMIT_PER_IP,
+            },
           },
           id: '1',
         }),
