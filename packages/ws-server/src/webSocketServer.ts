@@ -34,6 +34,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
+import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 import { sendToClient, handleConnectionClose, getBatchRequestsMaxSize, getWsBatchRequestsEnabled } from './utils/utils';
 
 const mainLogger = pino({
@@ -66,10 +67,12 @@ app.ws.use(async (ctx) => {
   const startTime = process.hrtime();
 
   ctx.websocket.id = relay.subs()?.generateId();
+  ctx.websocket.requestId = uuid();
+
   ctx.websocket.limiter = limiter;
   ctx.websocket.wsMetricRegistry = wsMetricRegistry;
   const connectionIdPrefix = formatIdMessage('Connection ID', ctx.websocket.id);
-  const requestIdPrefix = formatIdMessage('Request ID', uuid());
+  const requestIdPrefix = formatIdMessage('Request ID', ctx.websocket.requestId);
   logger.info(
     `${connectionIdPrefix} ${requestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
   );
@@ -116,6 +119,13 @@ app.ws.use(async (ctx) => {
     if (Array.isArray(request)) {
       logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Receive batch request=${JSON.stringify(request)}`);
 
+      // Increment metrics for batch_requests
+      wsMetricRegistry.getCounter('methodsCounter').labels(WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME).inc();
+      wsMetricRegistry
+        .getCounter('methodsCounterByIp')
+        .labels(ctx.request.ip, WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME)
+        .inc();
+
       // send error if batch request feature is not enabled
       if (!getWsBatchRequestsEnabled()) {
         const batchRequestDisabledError = predefined.WS_BATCH_REQUESTS_DISABLED;
@@ -135,7 +145,13 @@ app.ws.use(async (ctx) => {
         return;
       }
 
-      // TODO: verify rate limit
+      // verify rate limit for batch_request method based on IP
+      if (limiter.shouldRateLimitOnMethod(ctx.ip, WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME, ctx.websocket.requestId)) {
+        ctx.websocket.send(
+          JSON.stringify([jsonResp(null, new IPRateLimitExceeded(WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME), undefined)]),
+        );
+        return;
+      }
 
       // process requests
       const requestPromises = request.map((item: any) => {
