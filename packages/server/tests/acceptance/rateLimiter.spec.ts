@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,63 @@ import relayConstants from '../../../../packages/relay/src/lib/constants';
 // Local resources
 import parentContractJson from '../contracts/Parent.json';
 import { Utils } from '../helpers/utils';
+import http from 'http';
+
+const sendJsonRpcRequestWithDelay = (
+  host: string,
+  port: number,
+  method: string,
+  params: any[],
+  delayMs: number,
+): Promise<any> => {
+  const requestData = JSON.stringify({
+    jsonrpc: '2.0',
+    method: method,
+    params: params,
+    id: 1,
+  });
+
+  const options = {
+    hostname: host,
+    port: port,
+    path: '/',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(requestData),
+    },
+    timeout: delayMs,
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = http.request(options, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        resolve(JSON.parse(data));
+      });
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error(`Request timed out after ${delayMs}ms`));
+    });
+
+    req.on('error', (err) => {
+      reject(err);
+    });
+
+    // Introduce a delay with inactivity, before sending the request
+    setTimeout(async () => {
+      req.write(requestData);
+      req.end();
+    }, delayMs);
+  });
+};
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds
@@ -156,6 +213,31 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
         await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
           .fulfilled;
       });
+    });
+  });
+
+  describe('Koa Server Timeout', () => {
+    before(async () => {
+      process.env.SERVER_REQUEST_TIMEOUT_MS = '3000';
+    });
+
+    it('should timeout a request after the specified time', async () => {
+      this.timeout(5000);
+      const requestTimeoutMs: number = parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS || '3000');
+
+      const host = 'localhost';
+      const port = parseInt(process.env.SERVER_PORT || '7546');
+      const method = 'eth_blockNumber';
+      const params: any[] = [];
+
+      try {
+        await sendJsonRpcRequestWithDelay(host, port, method, params, requestTimeoutMs + 5000);
+        throw new Error('Request did not timeout as expected'); // Force the test to fail if the request does not time out
+      } catch (err) {
+        console.log(`Error details: ${err}`);
+        expect(err.code).to.equal('ECONNRESET');
+        expect(err.message).to.equal('socket hang up');
+      }
     });
   });
 });

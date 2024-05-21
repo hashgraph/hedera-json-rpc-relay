@@ -185,6 +185,9 @@ describe('RPC Server Acceptance Tests', function () {
 
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
     relayServer = app.listen({ port: constants.RELAY_PORT });
+    // set request timeout to ensure sockets are closed after specified time of inactivity
+    const requestTimeoutMs = parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS || '60000'); // eslint-disable-line no-console
+    relayServer.setTimeout(requestTimeoutMs);
 
     if (process.env.TEST_WS_SERVER === 'true') {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
