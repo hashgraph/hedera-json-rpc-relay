@@ -252,6 +252,11 @@ describe('Formatters', () => {
       expect(formattedResult.yParity).to.equal('0x0');
       expect(formattedResult.value).to.equal('0x0');
     });
+
+    it('Should not include chainId field for legacy EIP155 transaction (tx.chainId=0x0)', () => {
+      const formattedResult: any = formatContractResult({ ...contractResult, chain_id: '0x' });
+      expect(formattedResult.chainId).to.be.undefined;
+    });
   });
 
   describe('prepend0x', () => {
