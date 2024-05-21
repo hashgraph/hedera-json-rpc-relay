@@ -202,7 +202,6 @@ export class EthSubscribeLogsParamsObject {
   topics?: string[] | string[][];
 
   constructor(param: any) {
-    Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.ethSubscribeLogsParams, this.name());
     this.address = param.address;
     this.topics = param.topics;
   }
