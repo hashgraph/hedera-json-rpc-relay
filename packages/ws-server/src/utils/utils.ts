@@ -195,3 +195,14 @@ const hasInvalidReqestId = (
 
   return !hasId;
 };
+
+/**
+ * Constructs a valid log subscription filter from the provided filters, retaining only the 'address' and 'topics' fields while discarding any unexpected parameters.
+ * @param {any} filters - The filters to construct the subscription filter from.
+ * @returns {Object} A valid log subscription filter object.
+ */
+export const constructValidLogSubscriptionFilter = (filters: any): object => {
+  return Object.fromEntries(
+    Object.entries(filters).filter(([key, value]) => value !== undefined && ['address', 'topics'].includes(key)),
+  );
+};
