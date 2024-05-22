@@ -118,7 +118,11 @@ const handleEthSubscribeLogs = async (
   const validFiltersObject = constructValidLogSubscriptionFilter(filters);
 
   await validateSubscribeEthLogsParams(validFiltersObject, requestIdPrefix, mirrorNodeClient);
-  if (!getMultipleAddressesEnabled() && Array.isArray(validFiltersObject) && validFiltersObject.length > 1) {
+  if (
+    !getMultipleAddressesEnabled() &&
+    Array.isArray(validFiltersObject['address']) &&
+    validFiltersObject['address'].length > 1
+  ) {
     response = jsonResp(
       request.id,
       predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
