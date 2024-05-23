@@ -11,7 +11,7 @@ env:
 
 jobs:
   docker-image-publish:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
 
     steps:
       - name: Checkout repository
@@ -45,7 +45,7 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{env.TAG}}
 
   npm-package-artifact:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
 
     steps:
       - name: Checkout repository
@@ -68,7 +68,7 @@ jobs:
           if-no-files-found: error
 
   helm-chart-release:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     permissions:
       contents: write
     steps:

@@ -119,7 +119,7 @@ jobs:
       - websocket-batch-3
       - cacheservice
 
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Download Test Reports
         uses: actions/download-artifact@v3

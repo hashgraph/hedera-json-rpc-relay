@@ -14,7 +14,7 @@ concurrency:
 jobs:
   setup-local-hedera:
     name: Postman Endpoint Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     permissions:
       contents: write
     steps:

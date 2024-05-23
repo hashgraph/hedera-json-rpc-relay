@@ -14,7 +14,7 @@ concurrency:
 jobs:
   test-node:
     name: Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Use Node.js TLS 18
         uses: actions/setup-node@v3

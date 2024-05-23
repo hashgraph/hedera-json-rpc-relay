@@ -35,7 +35,7 @@ concurrency:
 jobs:
   title-check:
     name: Title Check
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     permissions:
       statuses: write
     steps:

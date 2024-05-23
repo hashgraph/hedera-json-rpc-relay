@@ -15,7 +15,7 @@ on:
 
 jobs:
   release-acceptance-test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Authenticate
         run: |

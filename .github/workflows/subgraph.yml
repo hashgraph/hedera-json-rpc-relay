@@ -13,7 +13,7 @@ concurrency:
     
 jobs:
   subgraph-workflow:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     permissions:
       contents: write
     defaults:
