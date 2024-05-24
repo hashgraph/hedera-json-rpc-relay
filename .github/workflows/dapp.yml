@@ -33,6 +33,10 @@ jobs:
           node-version: 18.13.0
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y make gcc g++
+
       - name: Install packages
         run: npm ci
 
