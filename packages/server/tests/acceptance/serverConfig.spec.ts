@@ -22,10 +22,6 @@ import { Utils } from '../helpers/utils';
 
 describe('@server-config Rate Limiters Acceptance Tests', function () {
   describe('Koa Server Timeout', () => {
-    before(async () => {
-      process.env.SERVER_REQUEST_TIMEOUT_MS = '3000';
-    });
-
     it('should timeout a request after the specified time', async () => {
       const requestTimeoutMs: number = parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS || '3000');
       const host = 'localhost';
@@ -34,7 +30,7 @@ describe('@server-config Rate Limiters Acceptance Tests', function () {
       const params: any[] = [];
 
       try {
-        await Utils.sendJsonRpcRequestWithDelay(host, port, method, params, requestTimeoutMs + 5000);
+        await Utils.sendJsonRpcRequestWithDelay(host, port, method, params, requestTimeoutMs + 1000);
         throw new Error('Request did not timeout as expected'); // Force the test to fail if the request does not time out
       } catch (err) {
         expect(err.code).to.equal('ECONNRESET');
