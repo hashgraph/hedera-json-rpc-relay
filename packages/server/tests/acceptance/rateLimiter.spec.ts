@@ -31,63 +31,6 @@ import relayConstants from '../../../../packages/relay/src/lib/constants';
 // Local resources
 import parentContractJson from '../contracts/Parent.json';
 import { Utils } from '../helpers/utils';
-import http from 'http';
-
-const sendJsonRpcRequestWithDelay = (
-  host: string,
-  port: number,
-  method: string,
-  params: any[],
-  delayMs: number,
-): Promise<any> => {
-  const requestData = JSON.stringify({
-    jsonrpc: '2.0',
-    method: method,
-    params: params,
-    id: 1,
-  });
-
-  const options = {
-    hostname: host,
-    port: port,
-    path: '/',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(requestData),
-    },
-    timeout: delayMs,
-  };
-
-  return new Promise((resolve, reject) => {
-    const req = http.request(options, (res) => {
-      let data = '';
-
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-
-      res.on('end', () => {
-        resolve(JSON.parse(data));
-      });
-    });
-
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error(`Request timed out after ${delayMs}ms`));
-    });
-
-    req.on('error', (err) => {
-      reject(err);
-    });
-
-    // Introduce a delay with inactivity, before sending the request
-    setTimeout(async () => {
-      req.write(requestData);
-      req.end();
-    }, delayMs);
-  });
-};
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds
