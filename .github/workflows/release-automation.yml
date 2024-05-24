@@ -20,6 +20,11 @@ jobs:
       release_branch: ${{ env.RELEASE_BRANCH }}
 
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Parse Version
         id: version_parser
         uses: step-security/semver-utils@f437161847710e2a9e7b99f75442cbad9aa9ec14 # v1.0.0
@@ -125,6 +130,11 @@ jobs:
       RELEASE_BRANCH: ${{ needs.branch_bump_tag.outputs.release_branch }}
 
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Checkout Repository
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:

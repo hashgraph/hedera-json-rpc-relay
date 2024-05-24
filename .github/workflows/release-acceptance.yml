@@ -17,6 +17,11 @@ jobs:
   release-acceptance-test:
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Authenticate
         run: |
             RESPONSE=$(jq --null-input -r --arg USER "${{ secrets.HEDERA_PORTAL_USER }}" --arg PASS "${{ secrets.HEDERA_PORTAL_PASSWORD }}" '{"email": $USER, "password": $PASS}' | curl -sSL -c /tmp/cookiejar.bin --data @- -X POST -H "Accept: application/json" -H "Content-Type: application/json" https://portal.hedera.com/api/session)
