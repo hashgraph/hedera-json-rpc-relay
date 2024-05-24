@@ -136,12 +136,12 @@ jobs:
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Download Test Reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
         with:
           name: Test Results
 
       - name: Publish Test Report
-        uses: actionite/publish-unit-test-result-action@v2
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         with:
           check_name: Acceptance Tests
           check_run_disabled: true

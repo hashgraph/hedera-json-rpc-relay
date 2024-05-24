@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: Install ct
-        uses: helm/chart-testing-action@v2.6.1
+        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
 
       - name: Run lint
         run: ct lint --config .github/ct.yaml --all
@@ -59,7 +59,7 @@ jobs:
           tags: localhost:5001/${{ github.repository }}:test
 
       - name: Install ct
-        uses: helm/chart-testing-action@v2.6.1
+        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
 
       - name: Install chart
         run: ct install --helm-extra-args="--timeout 10m" --all
