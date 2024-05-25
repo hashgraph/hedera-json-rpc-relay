@@ -50,6 +50,14 @@ function hexToASCII(str: string): string {
   return ascii;
 }
 
+function ASCIIToHex(ascii: string): string {
+  const hex: string[] = [];
+  for (let n = 0; n < ascii.length; n++) {
+    hex.push(Number(ascii.charCodeAt(n)).toString(16));
+  }
+  return hex.join('');
+}
+
 /**
  * Converts an EVM ErrorMessage to a readable form. For example this :
  * 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000
@@ -289,4 +297,5 @@ export {
   toHexString,
   isValidEthereumAddress,
   isHex,
+  ASCIIToHex,
 };

@@ -39,6 +39,8 @@ import {
   toHash32,
   weibarHexToTinyBarInt,
   trimPrecedingZeros,
+  ASCIIToHex,
+  isHex,
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -2003,7 +2005,9 @@ export class EthImpl implements Eth {
       };
 
       if (receiptResponse.error_message) {
-        receipt.revertReason = receiptResponse.error_message;
+        receipt.revertReason = isHex(prepend0x(receiptResponse.error_message))
+          ? receiptResponse.error_message
+          : prepend0x(ASCIIToHex(receiptResponse.error_message));
       }
 
       this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);

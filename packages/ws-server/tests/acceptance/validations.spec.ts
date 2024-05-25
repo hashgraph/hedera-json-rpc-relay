@@ -26,7 +26,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { predefined } from '@hashgraph/json-rpc-relay/src';
 import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 
-describe('@web-socket-batch-1 JSON-RPC requests validation', async function () {
+describe('@release @web-socket-batch-1 JSON-RPC requests validation', async function () {
   const BLOCK_NUMBER_METHOD_NAME = 'eth_blockNumber';
   const INVALID_REQUESTS = [
     {

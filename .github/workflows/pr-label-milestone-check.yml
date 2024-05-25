@@ -1,0 +1,27 @@
+name: PR Label and Milestone Check
+
+on:
+  pull_request:
+    types: [opened, edited, labeled, unlabeled, synchronize]
+
+jobs:
+  check_pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install axios
+
+      - name: Check PR labels and milestones
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PR_NUMBER: ${{ github.event.number }}
+        run: node .github/scripts/check-pr.js
