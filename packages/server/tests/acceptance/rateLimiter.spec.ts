@@ -158,29 +158,4 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
       });
     });
   });
-
-  describe('Koa Server Timeout', () => {
-    before(async () => {
-      process.env.SERVER_REQUEST_TIMEOUT_MS = '3000';
-    });
-
-    it('should timeout a request after the specified time', async () => {
-      this.timeout(5000);
-      const requestTimeoutMs: number = parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS || '3000');
-
-      const host = 'localhost';
-      const port = parseInt(process.env.SERVER_PORT || '7546');
-      const method = 'eth_blockNumber';
-      const params: any[] = [];
-
-      try {
-        await sendJsonRpcRequestWithDelay(host, port, method, params, requestTimeoutMs + 5000);
-        throw new Error('Request did not timeout as expected'); // Force the test to fail if the request does not time out
-      } catch (err) {
-        console.log(`Error details: ${err}`);
-        expect(err.code).to.equal('ECONNRESET');
-        expect(err.message).to.equal('socket hang up');
-      }
-    });
-  });
 });

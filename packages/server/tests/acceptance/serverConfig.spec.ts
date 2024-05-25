@@ -20,7 +20,7 @@
 import { expect } from 'chai';
 import { Utils } from '../helpers/utils';
 
-describe('@server-config Rate Limiters Acceptance Tests', function () {
+describe('@server-config Server Configuration Options Coverage', function () {
   describe('Koa Server Timeout', () => {
     it('should timeout a request after the specified time', async () => {
       const requestTimeoutMs: number = parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS || '3000');

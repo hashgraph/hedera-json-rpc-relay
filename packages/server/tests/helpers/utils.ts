@@ -337,6 +337,7 @@ export class Utils {
     };
 
     return new Promise((resolve, reject) => {
+      // setup the request
       const req = http.request(options, (res) => {
         let data = '';
 
@@ -349,6 +350,7 @@ export class Utils {
         });
       });
 
+      // handle request errors for testing purposes
       req.on('timeout', () => {
         req.destroy();
         reject(new Error(`Request timed out after ${delayMs}ms`));
