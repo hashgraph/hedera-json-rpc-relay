@@ -16,13 +16,22 @@ async function getPRDetails() {
 }
 
 async function getIssueDetails(issueNumber) {
-    const url = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`;
-    const response = await axios.get(url, {
-        headers: {
-            Authorization: `token ${githubToken}`
+    try {
+        const url = `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`;
+        const response = await axios.get(url, {
+            headers: {
+                Authorization: `token ${githubToken}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        if (error.response && error.response.status === 404) {
+            console.log(`Issue #${issueNumber} not found, skipping...`);
+            return null;
+        } else {
+            throw error;
         }
-    });
-    return response.data;
+    }
 }
 
 async function run() {
@@ -45,13 +54,15 @@ async function run() {
             for (const match of issueNumberMatches) {
                 const issueNumber = match.replace('#', '');
                 const issue = await getIssueDetails(issueNumber);
-                const { labels: issueLabels, milestone: issueMilestone } = issue;
+                if(issue) {
+                    const {labels: issueLabels, milestone: issueMilestone} = issue;
 
-                if (issueLabels.length === 0) {
-                    throw new Error(`Associated issue #${issueNumber} has no labels.`);
-                }
-                if (!issueMilestone) {
-                    throw new Error(`Associated issue #${issueNumber} has no milestone.`);
+                    if (issueLabels.length === 0) {
+                        throw new Error(`Associated issue #${issueNumber} has no labels.`);
+                    }
+                    if (!issueMilestone) {
+                        throw new Error(`Associated issue #${issueNumber} has no milestone.`);
+                    }
                 }
             }
         }
