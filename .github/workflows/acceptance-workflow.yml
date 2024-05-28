@@ -82,7 +82,6 @@ jobs:
           max_attempts: 3
           timeout_minutes: 20
           command: npm run acceptancetest:${{ inputs.testfilter }}
-          on_retry_command: scripts/retry_script.sh
         env:
           TEST_WS_SERVER: ${{ inputs.test_ws_server }}
           SUBSCRIPTIONS_ENABLED: ${{ inputs.test_ws_server }}
