@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main, release/**]
   push:
-    branches: [main, release/**]
+    branches: [main, release/**, snyk-upgrade-lerna-from-8.1.1-to-8.1.2]
     tags: [v*]
 
 concurrency:
@@ -26,8 +26,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18.13.0
-          cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
       - name: Install packages
         run: npm ci
 
@@ -61,7 +61,7 @@ jobs:
       - name: Tar logs
         if: ${{ always() && !cancelled() }}
         run: tar cvzf ./logs.tgz ./logs
-      
+
       - name: Upload logs to GitHub
         if: ${{ always() && !cancelled() }}
         uses: actions/upload-artifact@v3
@@ -74,5 +74,5 @@ jobs:
         if: ${{ always() && !cancelled() }}
         with:
           check_name: Dapp Test Report
-          report_paths: "**/*.xml"
+          report_paths: '**/*.xml'
           detailed_summary: true
