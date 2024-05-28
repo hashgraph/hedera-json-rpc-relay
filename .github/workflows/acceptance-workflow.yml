@@ -85,7 +85,7 @@ jobs:
         uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
         with:
           max_attempts: 3
-          timeout_minutes: 20
+          timeout_minutes: 30
           command: npm run acceptancetest:${{ inputs.testfilter }}
         env:
           TEST_WS_SERVER: ${{ inputs.test_ws_server }}
