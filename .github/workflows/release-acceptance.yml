@@ -68,7 +68,6 @@ jobs:
           max_attempts: 3
           timeout_minutes: 20
           command: npm run acceptancetest:release
-          on_retry_command: scripts/retry_script.sh
 
       - name: Run hedera local
         run: hedera restart -d
