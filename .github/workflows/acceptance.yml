@@ -100,6 +100,12 @@ jobs:
     with:
       testfilter: cache-service
 
+  server-config:
+    name: Server Config
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: serverconfig
+
   publish_results:
     name: Publish Results
     if: ${{ !cancelled() }}

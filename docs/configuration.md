@@ -39,6 +39,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `RATE_LIMIT_DISABLED`      | "false"          | Flag to disable IP based rate limiting.                                                                                                                                                                                 |
 | `REQUEST_ID_IS_OPTIONAL`   | ""               | Flag to set it the JSON RPC request id field in the body should be optional. Note, this breaks the API spec and is not advised and is provided for test purposes only where some wallets may be non compliant           |
 | `SERVER_PORT`              | "7546"           | The RPC server port number to listen for requests on. Currently a static value defaulting to 7546. See [#955](https://github.com/hashgraph/hedera-json-rpc-relay/issues/955)                                            |
+| `SERVER_REQUEST_TIMEOUT_MS`| "60000"           | The time of inactivity allowed before a timeout is triggered and the socket is closed. See [NodeJs Server Timeout](https://nodejs.org/api/http.html#serversettimeoutmsecs-callback)                                         |
 
 ## Relay
 
