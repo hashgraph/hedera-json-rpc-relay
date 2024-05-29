@@ -1124,6 +1124,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+
+        await new Promise((r) => setTimeout(r, 1000));
         const txInfo = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const contractResult = await mirrorNode.get(`/contracts/${txInfo.contract_id}`);
