@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,9 @@
  *
  */
 
-import app from './server';
-import { setServerTimeout } from './koaJsonRpc/lib/utils'; // Import the 'setServerTimeout' function from the correct location
+import type { Server } from 'http';
 
-async function main() {
-  const server = await app.listen({ port: process.env.SERVER_PORT || 7546 });
-
-  // set request timeout to ensure sockets are closed after specified time of inactivity
-  setServerTimeout(server);
+export function setServerTimeout(server: Server): void {
+  const requestTimeoutMs = parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS ?? '60000');
+  server.setTimeout(requestTimeoutMs);
 }
-
-main();

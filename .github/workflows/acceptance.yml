@@ -100,6 +100,12 @@ jobs:
     with:
       testfilter: cache-service
 
+  server-config:
+    name: Server Config
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: serverconfig
+
   publish_results:
     name: Publish Results
     if: ${{ !cancelled() }}
@@ -119,15 +125,20 @@ jobs:
       - websocket-batch-3
       - cacheservice
 
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Download Test Reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: Test Results
 
       - name: Publish Test Report
-        uses: actionite/publish-unit-test-result-action@v2
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         with:
           check_name: Acceptance Tests
           check_run_disabled: true

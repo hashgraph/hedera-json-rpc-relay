@@ -45,6 +45,7 @@ import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 // Utils and types
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
+import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
 
 chai.use(chaiAsPromised);
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -185,6 +186,7 @@ describe('RPC Server Acceptance Tests', function () {
 
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
     relayServer = app.listen({ port: constants.RELAY_PORT });
+    setServerTimeout(relayServer);
 
     if (process.env.TEST_WS_SERVER === 'true') {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
