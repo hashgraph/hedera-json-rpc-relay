@@ -308,4 +308,8 @@ export class Utils {
     }
     return accounts;
   }
+
+  static async wait(time: number): Promise<void> {
+    await new Promise((r) => setTimeout(r, time));
+  }
 }

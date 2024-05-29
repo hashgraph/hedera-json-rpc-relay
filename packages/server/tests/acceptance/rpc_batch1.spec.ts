@@ -782,7 +782,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           .setTransactionMemo('Relay test token transfer');
         const resp = await transaction.execute(servicesNode.client);
         await resp.getRecord(servicesNode.client);
-        await new Promise((r) => setTimeout(r, 1000));
+        await Utils.wait(1000);
         const logsRes = await mirrorNode.get(`/contracts/results/logs?limit=1`, requestId);
         const blockNumber = logsRes.logs[0].block_number;
         const formattedBlockNumber = prepend0x(blockNumber.toString(16));
@@ -856,7 +856,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         };
         const signedSendHbarTx = await accounts[0].wallet.signTransaction(sendHbarTx);
         await relay.sendRawTransaction(signedSendHbarTx, requestId);
-        await new Promise((r) => setTimeout(r, 5000)); // wait for signer's account to propagate accross the network
+        await Utils.wait(5000); // wait for signer's account to propagate accross the network
         const deployerBalance = await global.relay.getBalance(constants.DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest');
         expect(deployerBalance).to.not.eq(0);
 
@@ -914,7 +914,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-        await new Promise((r) => setTimeout(r, 5000));
+        await Utils.wait(5000);
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const receiverEndBalance = await relay.getBalance(parentContractAddress, 'latest', requestId);
@@ -949,7 +949,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-        await new Promise((r) => setTimeout(r, 5000));
+        await Utils.wait(5000);
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const receiverEndBalance = await relay.getBalance(parentContractAddress, 'latest', requestId);
@@ -1081,7 +1081,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-        await new Promise((r) => setTimeout(r, 5000));
+        await Utils.wait(5000);
 
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         const receiverEndBalance = await relay.getBalance(parentContractAddress, 'latest', requestId);
@@ -1125,7 +1125,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
-        await new Promise((r) => setTimeout(r, 1000));
+        await Utils.wait(1000);
         const txInfo = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const contractResult = await mirrorNode.get(`/contracts/${txInfo.contract_id}`);
