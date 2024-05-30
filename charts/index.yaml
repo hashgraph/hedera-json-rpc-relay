@@ -2,8 +2,46 @@ apiVersion: v1
 entries:
   hedera-json-rpc:
   - apiVersion: v2
+    appVersion: v0.38.0
+    created: "2024-05-30T15:27:10.265741+03:00"
+    dependencies:
+    - alias: relay
+      condition: relay.enabled
+      name: hedera-json-rpc-relay
+      repository: file://../hedera-json-rpc-relay
+      version: '>=0.24.0-0'
+    - alias: ws
+      condition: ws.enabled
+      name: hedera-json-rpc-relay-websocket
+      repository: file://../hedera-json-rpc-relay-websocket
+      version: '>=0.24.0-0'
+    description: Umbrella Helm chart deployment of the hashgraph/hedera-json-rpc products
+    digest: c758e5d5bf8107f6a578fb9a01b616c70f723116fc2c6988d6024da1f73b4e0d
+    home: https://github.com/hashgraph/hedera-json-rpc-relay
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    keywords:
+    - blockchain
+    - dlt
+    - hedera
+    - hashgraph
+    - smart
+    - contracts
+    - evm
+    - json
+    - rpc
+    maintainers:
+    - email: engsmartcontracts@hedera.com
+      name: Hedera Smart Contracts Team
+    name: hedera-json-rpc
+    sources:
+    - https://github.com/hashgraph/hedera-json-rpc-relay
+    type: application
+    urls:
+    - hedera-json-rpc-v0.38.0.tgz
+    version: v0.38.0
+  - apiVersion: v2
     appVersion: v0.37.0
-    created: "2024-05-30T15:27:03.315453+03:00"
+    created: "2024-05-30T15:27:10.263977+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -41,7 +79,7 @@ entries:
     version: v0.37.0
   - apiVersion: v2
     appVersion: v0.36.2
-    created: "2024-05-30T15:27:03.314219+03:00"
+    created: "2024-05-30T15:27:10.262567+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -79,7 +117,7 @@ entries:
     version: v0.36.2
   - apiVersion: v2
     appVersion: v0.36.1
-    created: "2024-05-30T15:27:03.312985+03:00"
+    created: "2024-05-30T15:27:10.261372+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -117,7 +155,7 @@ entries:
     version: v0.36.1
   - apiVersion: v2
     appVersion: v0.36.0
-    created: "2024-05-30T15:27:03.31134+03:00"
+    created: "2024-05-30T15:27:10.260153+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -155,7 +193,7 @@ entries:
     version: v0.36.0
   - apiVersion: v2
     appVersion: v0.35.2
-    created: "2024-05-30T15:27:03.31011+03:00"
+    created: "2024-05-30T15:27:10.258565+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -193,7 +231,7 @@ entries:
     version: v0.35.2
   - apiVersion: v2
     appVersion: v0.35.1
-    created: "2024-05-30T15:27:03.308872+03:00"
+    created: "2024-05-30T15:27:10.257358+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -231,7 +269,7 @@ entries:
     version: v0.35.1
   - apiVersion: v2
     appVersion: v0.34.0
-    created: "2024-05-30T15:27:03.307096+03:00"
+    created: "2024-05-30T15:27:10.256053+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -269,7 +307,7 @@ entries:
     version: v0.34.0
   - apiVersion: v2
     appVersion: v0.33.1
-    created: "2024-05-30T15:27:03.305901+03:00"
+    created: "2024-05-30T15:27:10.254358+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -307,7 +345,7 @@ entries:
     version: v0.33.1
   - apiVersion: v2
     appVersion: v0.33.0
-    created: "2024-05-30T15:27:03.304643+03:00"
+    created: "2024-05-30T15:27:10.253145+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -345,7 +383,7 @@ entries:
     version: v0.33.0
   - apiVersion: v2
     appVersion: v0.32.0
-    created: "2024-05-30T15:27:03.302936+03:00"
+    created: "2024-05-30T15:27:10.251897+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -383,7 +421,7 @@ entries:
     version: v0.32.0
   - apiVersion: v2
     appVersion: v0.31.3
-    created: "2024-05-30T15:27:03.301718+03:00"
+    created: "2024-05-30T15:27:10.250155+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -421,7 +459,7 @@ entries:
     version: v0.31.3
   - apiVersion: v2
     appVersion: v0.31.2
-    created: "2024-05-30T15:27:03.300501+03:00"
+    created: "2024-05-30T15:27:10.248973+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -459,7 +497,7 @@ entries:
     version: v0.31.2
   - apiVersion: v2
     appVersion: v0.31.1
-    created: "2024-05-30T15:27:03.298856+03:00"
+    created: "2024-05-30T15:27:10.247782+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -497,7 +535,7 @@ entries:
     version: v0.31.1
   - apiVersion: v2
     appVersion: v0.31.0
-    created: "2024-05-30T15:27:03.297628+03:00"
+    created: "2024-05-30T15:27:10.246535+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -535,7 +573,7 @@ entries:
     version: v0.31.0
   - apiVersion: v2
     appVersion: v0.30.0
-    created: "2024-05-30T15:27:03.296378+03:00"
+    created: "2024-05-30T15:27:10.244844+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -573,7 +611,7 @@ entries:
     version: v0.30.0
   - apiVersion: v2
     appVersion: v0.29.1
-    created: "2024-05-30T15:27:03.295205+03:00"
+    created: "2024-05-30T15:27:10.243669+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -611,7 +649,7 @@ entries:
     version: v0.29.1
   - apiVersion: v2
     appVersion: v0.29.0
-    created: "2024-05-30T15:27:03.293561+03:00"
+    created: "2024-05-30T15:27:10.242456+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -649,7 +687,7 @@ entries:
     version: v0.29.0
   - apiVersion: v2
     appVersion: v0.28.1
-    created: "2024-05-30T15:27:03.292345+03:00"
+    created: "2024-05-30T15:27:10.240694+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -687,7 +725,7 @@ entries:
     version: v0.28.1
   - apiVersion: v2
     appVersion: v0.28.0
-    created: "2024-05-30T15:27:03.291408+03:00"
+    created: "2024-05-30T15:27:10.239741+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -725,7 +763,7 @@ entries:
     version: v0.28.0
   - apiVersion: v2
     appVersion: v0.27.1
-    created: "2024-05-30T15:27:03.290418+03:00"
+    created: "2024-05-30T15:27:10.238783+03:00"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -763,8 +801,36 @@ entries:
     version: v0.27.1
   hedera-json-rpc-relay:
   - apiVersion: v2
+    appVersion: v0.38.0
+    created: "2024-05-30T15:27:10.229242+03:00"
+    description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
+    digest: 05f1a59a855fe3e85a94c90bd4c5067b215fe61b73aca9a34909b095d7e39a89
+    home: https://github.com/hashgraph/hedera-json-rpc-relay
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    keywords:
+    - blockchain
+    - dlt
+    - hedera
+    - hashgraph
+    - smart
+    - contracts
+    - evm
+    - relay
+    - json
+    - rpc
+    maintainers:
+    - email: engsmartcontracts@hedera.com
+      name: Hedera Smart Contracts Team
+    name: hedera-json-rpc-relay
+    sources:
+    - https://github.com/hashgraph/hedera-json-rpc-relay
+    type: application
+    urls:
+    - hedera-json-rpc-relay-v0.38.0.tgz
+    version: v0.38.0
+  - apiVersion: v2
     appVersion: v0.37.0
-    created: "2024-05-30T15:27:03.281473+03:00"
+    created: "2024-05-30T15:27:10.228661+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: ae120e3f0a2b83e775107f2dbfe51e2e863574b2d625471497153c1bbf1c28b6
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -792,7 +858,7 @@ entries:
     version: v0.37.0
   - apiVersion: v2
     appVersion: v0.36.2
-    created: "2024-05-30T15:27:03.28099+03:00"
+    created: "2024-05-30T15:27:10.228135+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 634d3becdde4d155e1d609f4c9edf32d0a09c4284932cae0a803332ff6cbd7e9
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -820,7 +886,7 @@ entries:
     version: v0.36.2
   - apiVersion: v2
     appVersion: v0.36.1
-    created: "2024-05-30T15:27:03.280455+03:00"
+    created: "2024-05-30T15:27:10.227575+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: bc3aa2edec8628db253ec7e357c9ab84655cb9e270e660846b2d0be3e68bf4b3
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -848,7 +914,7 @@ entries:
     version: v0.36.1
   - apiVersion: v2
     appVersion: v0.36.0
-    created: "2024-05-30T15:27:03.279836+03:00"
+    created: "2024-05-30T15:27:10.226622+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: eb4c23416a8afb26ed543f8a7ca752846b06bfe82ea379dfad4a526bf06b2a14
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -876,7 +942,7 @@ entries:
     version: v0.36.0
   - apiVersion: v2
     appVersion: v0.35.2
-    created: "2024-05-30T15:27:03.278842+03:00"
+    created: "2024-05-30T15:27:10.226112+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: b647ef9940e176f5533529368d761a2633fece90cca4ea4f140621b85e511b0c
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -904,7 +970,7 @@ entries:
     version: v0.35.2
   - apiVersion: v2
     appVersion: v0.35.1
-    created: "2024-05-30T15:27:03.278342+03:00"
+    created: "2024-05-30T15:27:10.225594+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: ad3eac13cf09aea6701930350f0c0063880a0887d6aabfde4ebbd27db15819d7
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -932,7 +998,7 @@ entries:
     version: v0.35.1
   - apiVersion: v2
     appVersion: v0.34.0
-    created: "2024-05-30T15:27:03.277838+03:00"
+    created: "2024-05-30T15:27:10.225092+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 53673d039603aecb08c8d84ee5560b93c6e7c272a94c6cb009ec6b1bdfbbcfae
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -960,7 +1026,7 @@ entries:
     version: v0.34.0
   - apiVersion: v2
     appVersion: v0.33.1
-    created: "2024-05-30T15:27:03.277338+03:00"
+    created: "2024-05-30T15:27:10.224592+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: d97279f203393a28437538824fae54d934e8b06f47903126b43bd4012d1e80ec
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -988,7 +1054,7 @@ entries:
     version: v0.33.1
   - apiVersion: v2
     appVersion: v0.33.0
-    created: "2024-05-30T15:27:03.276827+03:00"
+    created: "2024-05-30T15:27:10.224068+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 7b9842a39df8fc17fa83a251af5a5a86aa41d0056207823002503d0cbe0bb4d0
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1016,7 +1082,7 @@ entries:
     version: v0.33.0
   - apiVersion: v2
     appVersion: v0.32.0
-    created: "2024-05-30T15:27:03.276282+03:00"
+    created: "2024-05-30T15:27:10.223551+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: b73d1e0281dcfc1e376d8dae2715244a8ea7f9c3661ece0ec70c1bc65b572694
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1044,7 +1110,7 @@ entries:
     version: v0.32.0
   - apiVersion: v2
     appVersion: v0.31.3
-    created: "2024-05-30T15:27:03.275718+03:00"
+    created: "2024-05-30T15:27:10.223004+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: f63b69e7fd698619ceae2dde151d636c852023d0289b80ce15eace737b9c8fe7
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1072,7 +1138,7 @@ entries:
     version: v0.31.3
   - apiVersion: v2
     appVersion: v0.31.2
-    created: "2024-05-30T15:27:03.275198+03:00"
+    created: "2024-05-30T15:27:10.2222+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: b885c99cc4b4b86e653329b89b44d75deabe483def29bd69283e2e2e601657f0
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1100,7 +1166,7 @@ entries:
     version: v0.31.2
   - apiVersion: v2
     appVersion: v0.31.1
-    created: "2024-05-30T15:27:03.274682+03:00"
+    created: "2024-05-30T15:27:10.221533+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: e4fbdf5eb5e7adda6bda1750751a10c1955e3694cec6413c45a556c902ddb091
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1128,7 +1194,7 @@ entries:
     version: v0.31.1
   - apiVersion: v2
     appVersion: v0.31.0
-    created: "2024-05-30T15:27:03.273733+03:00"
+    created: "2024-05-30T15:27:10.22105+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: d6f80214a34d687eb4ec4740996faf9e5f892ad21647f3b2fee544b44b791578
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1156,7 +1222,7 @@ entries:
     version: v0.31.0
   - apiVersion: v2
     appVersion: v0.30.0
-    created: "2024-05-30T15:27:03.273207+03:00"
+    created: "2024-05-30T15:27:10.220556+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 27c41599636d1d6d2a1ce8cb3233c6a5ae7f8fb2a7dd97a34baedce2cd714462
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1184,7 +1250,7 @@ entries:
     version: v0.30.0
   - apiVersion: v2
     appVersion: v0.29.1
-    created: "2024-05-30T15:27:03.272712+03:00"
+    created: "2024-05-30T15:27:10.220057+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 5057ae5b74d8dfa9e741bf07d07a5a74ed334aadb7cf827968b00381bdcf2b87
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1212,7 +1278,7 @@ entries:
     version: v0.29.1
   - apiVersion: v2
     appVersion: v0.29.0
-    created: "2024-05-30T15:27:03.272208+03:00"
+    created: "2024-05-30T15:27:10.219565+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: d5d0fd0b6c58639bb9948798fda4b1c1ae01edc66b2377fcee2f1cf709080c90
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1240,7 +1306,7 @@ entries:
     version: v0.29.0
   - apiVersion: v2
     appVersion: v0.28.1
-    created: "2024-05-30T15:27:03.271674+03:00"
+    created: "2024-05-30T15:27:10.219028+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 1d41b6c033b583e3aa7fbc3ac91d6996b4ce68b9a13698c4804f1008ca521d67
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1268,7 +1334,7 @@ entries:
     version: v0.28.1
   - apiVersion: v2
     appVersion: v0.28.0
-    created: "2024-05-30T15:27:03.271128+03:00"
+    created: "2024-05-30T15:27:10.218476+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 51d1628598a9304f1d8ee61f53477d243933f52e6e33acf1fb84a45eaf1ab56c
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1296,7 +1362,7 @@ entries:
     version: v0.28.0
   - apiVersion: v2
     appVersion: v0.27.1
-    created: "2024-05-30T15:27:03.270523+03:00"
+    created: "2024-05-30T15:27:10.217484+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 08bd0acc74daf79092ea4583acad6f6317193092f3056525ecff60488d2c64af
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1352,7 +1418,7 @@ entries:
     version: 0.26.0
   - apiVersion: v2
     appVersion: 0.26.0-SNAPSHOT
-    created: "2024-05-30T15:27:03.269744+03:00"
+    created: "2024-05-30T15:27:10.216809+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 3b7528eedab11bc7aa295f934f2b52f6170a433a5ab66930037d77b0df71f813
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1408,7 +1474,7 @@ entries:
     version: 0.24.0
   - apiVersion: v2
     appVersion: 0.24.0-SNAPSHOT
-    created: "2024-05-30T15:27:03.269072+03:00"
+    created: "2024-05-30T15:27:10.216305+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 3f9f8195101ceb2d9513f5d3736f434a4c5f29d8118d84d4c50011abc91722a3
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1436,7 +1502,7 @@ entries:
     version: 0.24.0-SNAPSHOT
   - apiVersion: v2
     appVersion: 0.23.5
-    created: "2024-05-30T15:27:03.268545+03:00"
+    created: "2024-05-30T15:27:10.215807+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 1a6ba4de16c0ad84ec5a1dd0fd614a442d477eaad8ba5311e7f28f842985a02c
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1464,7 +1530,7 @@ entries:
     version: 0.23.5
   - apiVersion: v2
     appVersion: 0.17.1
-    created: "2024-05-30T15:27:03.267966+03:00"
+    created: "2024-05-30T15:27:10.215225+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
     digest: 3acfa6d9455e2dfd068bfd26d5e95235644a1b89c3107b11683a858058da1e3d
     home: https://github.com/hashgraph/hedera-json-rpc-relay
@@ -1475,8 +1541,38 @@ entries:
     version: 0.17.1
   hedera-json-rpc-relay-websocket:
   - apiVersion: v2
+    appVersion: v0.38.0
+    created: "2024-05-30T15:27:10.237779+03:00"
+    description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
+      socket server
+    digest: e963506c3d363af584362b3c6b6a10e7fe89ac60012a0eb92a1289d2f7187b10
+    home: https://github.com/hashgraph/hedera-json-rpc-relay
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    keywords:
+    - blockchain
+    - dlt
+    - hedera
+    - hashgraph
+    - smart
+    - contracts
+    - evm
+    - relay
+    - json
+    - rpc
+    - websocket
+    maintainers:
+    - email: engsmartcontracts@hedera.com
+      name: Hedera Smart Contracts Team
+    name: hedera-json-rpc-relay-websocket
+    sources:
+    - https://github.com/hashgraph/hedera-json-rpc-relay
+    type: application
+    urls:
+    - hedera-json-rpc-relay-websocket-v0.38.0.tgz
+    version: v0.38.0
+  - apiVersion: v2
     appVersion: v0.37.0
-    created: "2024-05-30T15:27:03.288963+03:00"
+    created: "2024-05-30T15:27:10.237416+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 3a502c89a16db8d2643d92009e4d8d4180ef78f363c2a62ef7ed21bc660e0032
@@ -1506,7 +1602,7 @@ entries:
     version: v0.37.0
   - apiVersion: v2
     appVersion: v0.36.2
-    created: "2024-05-30T15:27:03.288623+03:00"
+    created: "2024-05-30T15:27:10.237027+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 6028e8b2e7d7853c8519aebb0556588b704c059e3fa2166d89e79eefe897b56f
@@ -1536,7 +1632,7 @@ entries:
     version: v0.36.2
   - apiVersion: v2
     appVersion: v0.36.1
-    created: "2024-05-30T15:27:03.288253+03:00"
+    created: "2024-05-30T15:27:10.236481+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 05a7847b18cfa9e0d5ac100e8199b67e67ee6ee81dc1cce7d2f38639fe3d04f6
@@ -1566,7 +1662,7 @@ entries:
     version: v0.36.1
   - apiVersion: v2
     appVersion: v0.36.0
-    created: "2024-05-30T15:27:03.287901+03:00"
+    created: "2024-05-30T15:27:10.235949+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: b4f07f19344bdd8b88776987bcbd94e26393fdee6249642388755864331d7dac
@@ -1596,7 +1692,7 @@ entries:
     version: v0.36.0
   - apiVersion: v2
     appVersion: v0.35.2
-    created: "2024-05-30T15:27:03.287545+03:00"
+    created: "2024-05-30T15:27:10.235606+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: a45a0a1a5a5e2bf239785c30c1fd81430657b701e0b6126592176795a8f19344
@@ -1626,7 +1722,7 @@ entries:
     version: v0.35.2
   - apiVersion: v2
     appVersion: v0.35.1
-    created: "2024-05-30T15:27:03.287195+03:00"
+    created: "2024-05-30T15:27:10.235259+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: b22bec67f0b973f5fcf9087019431e058e644fe2542d2fcad634f9882e04a63c
@@ -1656,7 +1752,7 @@ entries:
     version: v0.35.1
   - apiVersion: v2
     appVersion: v0.34.0
-    created: "2024-05-30T15:27:03.286835+03:00"
+    created: "2024-05-30T15:27:10.234905+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 11500974cfdb9adc27d3cced32a9a540bf72945410e05a576bbb1e3630c4ea79
@@ -1686,7 +1782,7 @@ entries:
     version: v0.34.0
   - apiVersion: v2
     appVersion: v0.33.1
-    created: "2024-05-30T15:27:03.286484+03:00"
+    created: "2024-05-30T15:27:10.234567+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 6d27d344965af1570b5237997e5d2e89d051239fb5c014b9244b4518e48c7eb4
@@ -1716,7 +1812,7 @@ entries:
     version: v0.33.1
   - apiVersion: v2
     appVersion: v0.33.0
-    created: "2024-05-30T15:27:03.286118+03:00"
+    created: "2024-05-30T15:27:10.234231+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 2e4ba1a5d2d8d9a3251bf458acae4a885287de02568e41c0bde3e602bc970a0a
@@ -1746,7 +1842,7 @@ entries:
     version: v0.33.0
   - apiVersion: v2
     appVersion: v0.32.0
-    created: "2024-05-30T15:27:03.285745+03:00"
+    created: "2024-05-30T15:27:10.233878+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: a8c54efa3ebdb347c5fd4b55dbcb57edff250ad43cbfead0145981be51b23f4f
@@ -1776,7 +1872,7 @@ entries:
     version: v0.32.0
   - apiVersion: v2
     appVersion: v0.31.3
-    created: "2024-05-30T15:27:03.285383+03:00"
+    created: "2024-05-30T15:27:10.233518+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 0d01abf45afbba12df5821e4533f5d9ae982d6f740f40921b60405f1e23cbe8e
@@ -1806,7 +1902,7 @@ entries:
     version: v0.31.3
   - apiVersion: v2
     appVersion: v0.31.2
-    created: "2024-05-30T15:27:03.285009+03:00"
+    created: "2024-05-30T15:27:10.23314+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: fe1768ddfafbf98d19dbaa355e35517b6608813bc0eb79aeeca387b102ae454c
@@ -1836,7 +1932,7 @@ entries:
     version: v0.31.2
   - apiVersion: v2
     appVersion: v0.31.1
-    created: "2024-05-30T15:27:03.284467+03:00"
+    created: "2024-05-30T15:27:10.232745+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: e4dc68e4a3a9897f790b0161efb2fb717ab5d3698e8d98f776d08257dfda9f30
@@ -1866,7 +1962,7 @@ entries:
     version: v0.31.1
   - apiVersion: v2
     appVersion: v0.31.0
-    created: "2024-05-30T15:27:03.283852+03:00"
+    created: "2024-05-30T15:27:10.232323+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 9de5c368694c96eded4eef4cb762a7225851c4c8fb8963020e84af58eacdc9eb
@@ -1896,7 +1992,7 @@ entries:
     version: v0.31.0
   - apiVersion: v2
     appVersion: v0.30.0
-    created: "2024-05-30T15:27:03.283511+03:00"
+    created: "2024-05-30T15:27:10.231473+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: a36cc0e70fe36e5829edb1b7f75719601a5139f0589b5ffb3c8b65e80e1bffd8
@@ -1926,7 +2022,7 @@ entries:
     version: v0.30.0
   - apiVersion: v2
     appVersion: v0.29.1
-    created: "2024-05-30T15:27:03.283169+03:00"
+    created: "2024-05-30T15:27:10.231138+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 505b6190adbb5f55ddec772204d697b2fc4f4df34671be76e82bae38e6e802aa
@@ -1956,7 +2052,7 @@ entries:
     version: v0.29.1
   - apiVersion: v2
     appVersion: v0.29.0
-    created: "2024-05-30T15:27:03.282824+03:00"
+    created: "2024-05-30T15:27:10.230813+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 34ced666a8c0e7ef3f9ae6aff378efd5ffc90e8714e2a37f2ca13496a17aac54
@@ -1986,7 +2082,7 @@ entries:
     version: v0.29.0
   - apiVersion: v2
     appVersion: v0.28.1
-    created: "2024-05-30T15:27:03.282495+03:00"
+    created: "2024-05-30T15:27:10.230475+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: cc31d93fd8c00fbee08bcd914140cc7bbb2858059197722d978e817cfc2ea118
@@ -2016,7 +2112,7 @@ entries:
     version: v0.28.1
   - apiVersion: v2
     appVersion: v0.28.0
-    created: "2024-05-30T15:27:03.282165+03:00"
+    created: "2024-05-30T15:27:10.230131+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 325efa3f491f46503c08e000c1d3385e4bd40480e360e6d79580a0280e7eb7d5
@@ -2046,7 +2142,7 @@ entries:
     version: v0.28.0
   - apiVersion: v2
     appVersion: v0.27.1
-    created: "2024-05-30T15:27:03.281808+03:00"
+    created: "2024-05-30T15:27:10.229662+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 716f382c7d18d7ec9a73b170ed6dad3f036ae84a3ddc1f94bd8fdc5a3a6b7ca3
@@ -2107,7 +2203,7 @@ entries:
     version: 0.26.0
   - apiVersion: v2
     appVersion: 0.26.0-SNAPSHOT
-    created: "2024-05-30T15:27:03.31583+03:00"
+    created: "2024-05-30T15:27:10.266129+03:00"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
     digest: 1f7df75f40302d41ae2b22911a6a6f5c68bb4b076e68e63cf0918d0ad272a261
@@ -2135,4 +2231,4 @@ entries:
     urls:
     - json-rpc-relay-websocket-0.26.0-SNAPSHOT.tgz
     version: 0.26.0-SNAPSHOT
-generated: "2024-05-30T15:27:03.26755+03:00"
+generated: "2024-05-30T15:27:10.214763+03:00"
