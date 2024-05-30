@@ -817,17 +817,26 @@ describe('@ethCall Eth Call spec', async function () {
       expect(transaction.gas).to.equal(50000);
     });
 
-    it('should throw an error if both input and data fields are provided', () => {
+    it('should accepts both input and data fields but copy value of input field to data field', () => {
+      const inputValue = 'input value';
+      const dataValue = 'data value';
       const transaction = {
-        input: 'input data',
-        data: 'some data',
+        input: inputValue,
+        data: dataValue,
       };
-      try {
-        ethImpl.contractCallFormat(transaction);
-      } catch (error) {
-        expect(error.code).eq(-32000);
-        expect(error.message).eq('Invalid arguments: Cannot accept both input and data fields. Use only one.');
-      }
+      ethImpl.contractCallFormat(transaction);
+      expect(transaction.data).to.eq(inputValue);
+      expect(transaction.data).to.not.eq(dataValue);
+      expect(transaction.input).to.be.undefined;
+    });
+
+    it('should not modify transaction if only data field is present', () => {
+      const dataValue = 'data value';
+      const transaction = {
+        data: dataValue,
+      };
+      ethImpl.contractCallFormat(transaction);
+      expect(transaction.data).to.eq(dataValue);
     });
 
     it('should copy input to data if input is provided but data is not', () => {

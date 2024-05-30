@@ -561,15 +561,18 @@ export class EthImpl implements Eth {
     _blockParam: string | null,
     requestIdPrefix?: string,
   ): Promise<string | JsonRpcError> {
+    const callData = transaction.data ? transaction.data : transaction.input;
+    const callDataSize = callData ? callData.length : 0;
+
+    if (callDataSize >= constants.FUNCTION_SELECTOR_CHAR_LENGTH) {
+      this.ethExecutionsCounter
+        .labels(EthImpl.ethEstimateGas, callData.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
+        .inc();
+    }
+
     this.logger.trace(
       `${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`,
     );
-
-    if (transaction?.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH) {
-      this.ethExecutionsCounter
-        .labels(EthImpl.ethEstimateGas, transaction.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
-        .inc();
-    }
 
     this.contractCallFormat(transaction);
     let gas = EthImpl.gasTxBaseCost;
@@ -653,16 +656,14 @@ export class EthImpl implements Eth {
       transaction.gas = parseInt(transaction.gas);
     }
 
-    if (transaction.data && transaction.input) {
-      throw predefined.INVALID_ARGUMENTS('Cannot accept both input and data fields. Use only one.');
-    }
-
     // Support either data or input. https://ethereum.github.io/execution-apis/api-documentation/ lists input but many EVM tools still use data.
     // We chose in the mirror node to use data field as the correct one, however for us to be able to support all tools,
     // we have to modify transaction object, so that it complies with the mirror node.
-    // That means that, if input field is passed, but data is not, we have to copy one value to the other.
-    // For optimization purposes, we can rid of the input property or replace it with empty string.
-    if (transaction.input && transaction.data === undefined) {
+    // That means that, if input field is passed, but data is not, we have to copy value of input to the data to comply with mirror node.
+    // The second scenario occurs when both the data and input fields are present but hold different values.
+    // In this case, the value in the input field should be the one used for consensus based on this resource https://github.com/ethereum/execution-apis/blob/main/tests/eth_call/call-contract.io
+    // Eventually, for optimization purposes, we can rid of the input property or replace it with empty string.
+    if ((transaction.input && transaction.data === undefined) || (transaction.input && transaction.data)) {
       transaction.data = transaction.input;
       delete transaction.input;
     }
@@ -1560,7 +1561,7 @@ export class EthImpl implements Eth {
     // metrics for selector
     if (callDataSize >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter
-        .labels(EthImpl.ethCall, call.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
+        .labels(EthImpl.ethCall, callData.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
         .inc();
 
     const blockNumberOrTag = await this.extractBlockNumberOrTag(blockParam, requestIdPrefix);
