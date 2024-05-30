@@ -51,13 +51,10 @@ describe('@release @web-socket-batch-2 eth_newFilter', async function () {
     // deploy contract
     const contract = await Utils.deployContract([], SIMPLE_CONTRACT_BYTECODE, global.accounts[0].wallet);
 
-    // prepare filter object
-    const toBlock = await global.relay.call('eth_blockNumber', []);
-    const fromBlock = Number(toBlock) - 1000;
     wsFilterObj = {
       address: [contract.target],
-      fromBlock,
-      toBlock,
+      fromBlock: '0x0',
+      toBlock: 'latest',
     };
   });
 
@@ -84,9 +81,11 @@ describe('@release @web-socket-batch-2 eth_newFilter', async function () {
     }
 
     it(`Should execute eth_newFilter on Standard Web Socket and handle valid requests correctly`, async () => {
-      const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [wsFilterObj], 2000);
+      const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [wsFilterObj]);
       WsTestHelper.assertJsonRpcObject(response);
       const filterId = response.result;
+
+      await new Promise((r) => setTimeout(r, 90000));
 
       expect(filterId).to.exist;
       expect(filterId.startsWith('0x')).to.be.true;
