@@ -1549,7 +1549,7 @@ export class EthImpl implements Eth {
    * @param blockParam
    */
   async call(call: any, blockParam: string | object | null, requestIdPrefix?: string): Promise<string | JsonRpcError> {
-    const callData = call.data ? call.data : call.value;
+    const callData = call.data ? call.data : call.input;
     // log request
     this.logger.trace(
       `${requestIdPrefix} call({to=${call.to}, from=${call.from}, data=${callData}, gas=${call.gas}, ...}, blockParam=${blockParam})`,
@@ -1558,7 +1558,7 @@ export class EthImpl implements Eth {
     const callDataSize = callData ? callData.length : 0;
     this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}, gas: ${call.gas}`);
     // metrics for selector
-    if (call.data?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+    if (callDataSize >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter
         .labels(EthImpl.ethCall, call.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
         .inc();
