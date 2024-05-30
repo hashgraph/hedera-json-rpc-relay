@@ -64,7 +64,15 @@ const handleSendingRequestsToRelay = async ({
 
     // Call the relay method with the resolved parameters.
     // Method will be validated by "verifySupportedMethod" before reaching this point.
-    const txRes = await relay[service]()[methodName](...resolvedParams, requestIdPrefix);
+    let txRes: any;
+    if (method === WS_CONSTANTS.METHODS.ETH_NEWFILTER) {
+      txRes = await relay
+        .eth()
+        .filterService()
+        [methodName](...resolvedParams, requestIdPrefix);
+    } else {
+      txRes = await relay[service]()[methodName](...resolvedParams, requestIdPrefix);
+    }
 
     if (!txRes) {
       logger.trace(

@@ -130,6 +130,8 @@ export const resolveParams = (method: string, params: any): any[] => {
   switch (method) {
     case WS_CONSTANTS.METHODS.ETH_GETLOGS:
       return [params[0].blockHash, params[0].fromBlock, params[0].toBlock, params[0].address, params[0].topics];
+    case WS_CONSTANTS.METHODS.ETH_NEWFILTER:
+      return [params[0].fromBlock, params[0].toBlock, params[0].address, params[0].topics];
     default:
       return params;
   }
