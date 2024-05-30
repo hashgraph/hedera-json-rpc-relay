@@ -143,6 +143,20 @@ contract EquivalenceContract {
         tinybars = abi.decode(result, (uint256));
     }
 
+    function exchangeRateStaticCall(uint256 tinycents) external view returns (uint256 tinybars) {
+        (bool success, bytes memory result) = EXCHANGE_RATE_PRECOMPILE_ADDRESS.staticcall(
+            abi.encodeWithSignature("tinycentsToTinybars(uint256)", tinycents));
+        require(success);
+        tinybars = abi.decode(result, (uint256));
+    }
+
+    function exchangeRateDelegateCall(uint256 tinycents) external returns (uint256 tinybars) {
+        (bool success, bytes memory result) = EXCHANGE_RATE_PRECOMPILE_ADDRESS.delegatecall(
+            abi.encodeWithSignature("tinycentsToTinybars(uint256)", tinycents));
+        require(success);
+        tinybars = abi.decode(result, (uint256));
+    }
+
     function htsCallWithoutAmount(address token) external returns (bool success, bool isToken) {
         (bool callSuccess, bytes memory result) = HTS_PRECOMPILE_ADDRESS.call(
             abi.encodeWithSignature("isToken(address)", token));
