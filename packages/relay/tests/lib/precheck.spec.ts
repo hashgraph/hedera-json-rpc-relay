@@ -25,7 +25,7 @@ const registry = new Registry();
 
 import pino from 'pino';
 import { Precheck } from '../../src/lib/precheck';
-import { expectedError, mockData, signTransaction } from '../helpers';
+import { blobVersionedHash, contractAddress1, expectedError, mockData, signTransaction } from '../helpers';
 import { MirrorNodeClient } from '../../src/lib/clients';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
@@ -61,6 +61,7 @@ describe('Precheck', async function () {
   );
   const oneTinyBar = ethers.parseUnits('1', 10);
   const defaultGasPrice = 720_000_000_000;
+  const defaultGasLimit = 1_000_000;
   const defaultChainId = Number('0x12a');
   let precheck: Precheck;
   let mock: MockAdapter;
@@ -577,6 +578,50 @@ describe('Precheck', async function () {
       expect(error).to.be.an.instanceOf(JsonRpcError);
       expect(error.message).to.equal('Error invoking RPC: Passed hex an empty string');
       expect(error.code).to.equal(-32603);
+    });
+  });
+
+  describe('transactionType', async function () {
+    const defaultTx = {
+      value: oneTinyBar,
+      gasPrice: defaultGasPrice,
+      gasLimit: defaultGasLimit,
+      chainId: defaultChainId,
+      nonce: 5,
+      to: contractAddress1,
+    };
+
+    it('should accept legacy transactions', async () => {
+      const signedLegacy = await signTransaction(defaultTx);
+      expect(precheck.transactionType(ethers.Transaction.from(signedLegacy))).not.to.throw;
+    });
+
+    it('should accept London transactions', async () => {
+      const signedLondon = await signTransaction({
+        ...defaultTx,
+        type: 2,
+        maxPriorityFeePerGas: defaultGasPrice,
+        maxFeePerGas: defaultGasPrice,
+      });
+      expect(precheck.transactionType(ethers.Transaction.from(signedLondon))).not.to.throw;
+    });
+
+    it('should reject Cancun transactions', async () => {
+      let error;
+      try {
+        const signedCancun = await signTransaction({
+          ...defaultTx,
+          type: 3,
+          maxFeePerBlobGas: defaultGasPrice,
+          blobVersionedHashes: [blobVersionedHash],
+        });
+        precheck.transactionType(ethers.Transaction.from(signedCancun));
+      } catch (e) {
+        error = e;
+      }
+      expect(error).to.be.an.instanceOf(JsonRpcError);
+      expect(error.message).to.equal(predefined.UNSUPPORTED_TRANSACTION_TYPE.message);
+      expect(error.code).to.equal(predefined.UNSUPPORTED_TRANSACTION_TYPE.code);
     });
   });
 });

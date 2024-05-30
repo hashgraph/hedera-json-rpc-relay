@@ -303,7 +303,7 @@ export class Precheck {
     }
   }
 
-  private transactionType(tx: Transaction, requestId?: string) {
+  transactionType(tx: Transaction, requestId?: string) {
     // Blob transactions are not supported as per HIP 866
     if (tx.type === 3) {
       const requestIdPrefix = formatRequestIdMessage(requestId);
