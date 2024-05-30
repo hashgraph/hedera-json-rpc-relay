@@ -220,7 +220,7 @@ describe.only('Equivalence tests', async function () {
     switch (outcome) {
       case Outcomes.Error: {
         return `should fail ${addressName ? `executing ${addressName}` : ''}${
-          errorMessage ? ` with ${errorMessage}` : ''
+          errorMessage ? `with ${errorMessage}` : ''
         }`;
       }
       case Outcomes.Output: {
@@ -302,15 +302,15 @@ describe.only('Equivalence tests', async function () {
   const getContractFunctionParams = (hederaAddress: string): ContractFunctionParameters => {
     let params: ContractFunctionParameters;
     switch (hederaAddress) {
-      case '0.0.359': {
+      case ADDRESS_0_0_359: {
         params = new ContractFunctionParameters().addAddress(tokenAddress);
         break;
       }
-      case '0.0.360': {
+      case ADDRESS_0_0_360: {
         params = new ContractFunctionParameters().addUint256(100);
         break;
       }
-      case '0.0.361': {
+      case ADDRESS_0_0_361: {
         params = EMPTY_FUNCTION_PARAMS;
         break;
       }
