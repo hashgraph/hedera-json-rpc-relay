@@ -2021,4 +2021,40 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       }
     });
   });
+
+  describe('Shard Blob Transactions', async function () {
+    let defaultLondonTransactionData, defaultGasPrice, defaultGasLimit;
+    let defaultBlobVersionedHashes = ['0x6265617665726275696c642e6f7267476265617665726275696c642e6f726747'];
+
+    before(() => {
+      defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
+      defaultGasLimit = numberTo0x(3_000_000);
+
+      defaultLondonTransactionData = {
+        value: ONE_TINYBAR,
+        chainId: Number(CHAIN_ID),
+        maxPriorityFeePerGas: defaultGasPrice,
+        maxFeePerGas: defaultGasPrice,
+        gasLimit: defaultGasLimit,
+      };
+    });
+
+    it('Type 3 transactions are not supported for eth_sendRawTransaction', async () => {
+      const transaction = {
+        ...defaultLondonTransactionData,
+        type: 3,
+        maxFeePerBlobGas: defaultGasPrice,
+        blobVersionedHashes: defaultBlobVersionedHashes,
+      };
+
+      const signedTx = await accounts[0].wallet.signTransaction(transaction);
+      await Assertions.assertPredefinedRpcError(
+        predefined.UNSUPPORTED_TRANSACTION_TYPE,
+        relay.sendRawTransaction,
+        false,
+        relay,
+        [signedTx, requestId],
+      );
+    });
+  });
 });

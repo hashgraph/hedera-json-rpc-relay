@@ -169,6 +169,11 @@ export const predefined = {
     code: -32601,
     message: 'Unsupported JSON-RPC method',
   }),
+  UNSUPPORTED_TRANSACTION_TYPE: new JsonRpcError({
+    name: 'Unsupported transaction type',
+    code: -32611,
+    message: 'Unsupported transaction type',
+  }),
   VALUE_TOO_LOW: new JsonRpcError({
     name: 'Value too low',
     code: -32602,

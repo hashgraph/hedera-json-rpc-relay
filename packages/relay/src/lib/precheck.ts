@@ -52,6 +52,7 @@ export class Precheck {
    * @param gasPrice
    */
   async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId?: string) {
+    this.transactionType(parsedTx, requestId);
     this.gasLimit(parsedTx, requestId);
     const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
     await this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
@@ -299,6 +300,19 @@ export class Precheck {
 
     if (transactionSize > transactionSizeLimit) {
       throw predefined.TRANSACTION_SIZE_TOO_BIG(String(transactionSize), String(transactionSizeLimit));
+    }
+  }
+
+  transactionType(tx: Transaction, requestId?: string) {
+    // Blob transactions are not supported as per HIP 866
+    if (tx.type === 3) {
+      const requestIdPrefix = formatRequestIdMessage(requestId);
+      this.logger.trace(
+        `${requestIdPrefix} Transaction with type=${
+          tx.type
+        } is unsupported for sendRawTransaction(transaction=${JSON.stringify(tx)})`,
+      );
+      throw predefined.UNSUPPORTED_TRANSACTION_TYPE;
     }
   }
 }
