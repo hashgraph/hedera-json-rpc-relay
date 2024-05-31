@@ -50,8 +50,8 @@ module.exports = {
       accounts: process.env.LOCAL_NODE_OPERATOR_PRIVATE_KEY ? [process.env.LOCAL_NODE_OPERATOR_PRIVATE_KEY] : []
     },
     testnet: {
-      // HashIO testnet endpoint from the TESTNET_ENDPOINT variable in the .env file
-      url: process.env.TESTNET_ENDPOINT,
+      // HashIO testnet endpoint
+      url: 'https://testnet.hashio.io/api',
       // Conditionally assign accounts when private key value is present
       accounts: process.env.TESTNET_OPERATOR_PRIVATE_KEY ? [process.env.TESTNET_OPERATOR_PRIVATE_KEY] : []
     },
@@ -60,8 +60,8 @@ module.exports = {
      * Uncomment the following to add a mainnet network configuration
      */
     mainnet: {
-      // HashIO mainnet endpoint from the MAINNET_ENDPOINT variable in the .env file
-      url: process.env.MAINNET_ENDPOINT,
+      // HashIO mainnet endpoint
+      url: 'https://mainnet.hashio.io/api',
       // Conditionally assign accounts when private key value is present
       accounts: process.env.MAINNET_OPERATOR_PRIVATE_KEY ? [process.env.MAINNET_OPERATOR_PRIVATE_KEY] : []
     },
@@ -70,8 +70,8 @@ module.exports = {
      * Uncomment the following to add a previewnet network configuration
      */
     previewnet: {
-      // HashIO previewnet endpoint from the PREVIEWNET_ENDPOINT variable in the .env file
-      url: process.env.PREVIEWNET_ENDPOINT,
+      // HashIO previewnet endpoint
+      url:'https://previewnet.hashio.io/api',
       // Conditionally assign accounts when private key value is present
       accounts: process.env.PREVIEWNET_OPERATOR_PRIVATE_KEY ? [process.env.PREVIEWNET_OPERATOR_PRIVATE_KEY] : []
     }
