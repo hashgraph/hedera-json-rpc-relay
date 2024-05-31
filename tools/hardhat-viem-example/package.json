@@ -1,0 +1,33 @@
+{
+  "name": "hedera-example-hardhat-project",
+  "version": "1.0.0",
+  "description": "This is a example hardhat project",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx hardhat test",
+    "local-node": "npx @hashgraph/hedera-local restart -d"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@hashgraph/hedera-local": "^2.25.2",
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.6",
+    "hardhat": "^2.22.4"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hashgraph/hedera-hardhat-example-project.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/hashgraph/hedera-hardhat-example-project/issues"
+  },
+  "homepage": "https://github.com/hashgraph/hedera-hardhat-example-project"
+}
