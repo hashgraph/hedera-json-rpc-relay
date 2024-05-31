@@ -16,6 +16,8 @@ This comparison aims to assist developers in selecting the most suitable library
 | Debugging             | Advanced debugging tools                                             | Standard debugging capabilities         |
 | Ecosystem Integration | Seamless integration with certain tools                              | Broad integration with many tools       |
 
+Viem already supports Hedera networks: [testnet, mainnet, and previewnet](https://github.com/wevm/viem/blob/cc105f801ec69640d3d806d86b35e36002d8c912/src/chains/index.ts#L113-L115).
+
 ## Project Files and Folders
 
 - `hardhat.config.js` - This is the configuration file for your Hardhat project development environment. It centralizes and defines various settings like Hedera networks, Solidity compiler versions, plugins, and tasks.
@@ -50,7 +52,7 @@ npm install
 
 4. Get your Hedera testnet account hex encoded private key from the [Hedera Developer Portal](https://portal.hedera.com/register) and update the `.env.example` `TESTNET_OPERATOR_PRIVATE_KEY`
 
-5. Rename `.env.example` to `.env`
+5. Copy `.env.example` to `.env`
 
 6. Run the test script from the root directory of the project. The default network is set to "local."
 
