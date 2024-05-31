@@ -16,7 +16,7 @@ This comparison aims to assist developers in selecting the most suitable library
 | Debugging             | Advanced debugging tools                                             | Standard debugging capabilities         |
 | Ecosystem Integration | Seamless integration with certain tools                              | Broad integration with many tools       |
 
-Viem already supports Hedera networks: [testnet, mainnet, and previewnet](https://github.com/wevm/viem/blob/cc105f801ec69640d3d806d86b35e36002d8c912/src/chains/index.ts#L113-L115).
+Viem already includes out-of-the-box configuration for Hedera public networks: [testnet, mainnet, and previewnet](https://github.com/wevm/viem/blob/cc105f801ec69640d3d806d86b35e36002d8c912/src/chains/index.ts#L113-L115).
 
 ## Project Files and Folders
 
