@@ -95,6 +95,7 @@ export const WS_CONSTANTS = {
     ETH_GETCODE: 'eth_getCode',
     ETH_GASPRICE: 'eth_gasPrice',
     ETH_SUBSCRIBE: 'eth_subscribe',
+    ETH_NEWFILTER: 'eth_newFilter',
     ETH_GETBALANCE: 'eth_getBalance',
     ETH_UNSUBSCRIBE: 'eth_unsubscribe',
     ETH_BLOCKNUMBER: 'eth_blockNumber',

@@ -27,6 +27,7 @@ export interface ICommonService {
     fromBlock: string,
     toBlock: string,
     requestIdPrefix?: string,
+    address?: string | string[] | null,
   ): Promise<boolean>;
 
   getHistoricalBlockResponse(
