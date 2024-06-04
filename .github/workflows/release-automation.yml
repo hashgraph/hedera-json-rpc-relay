@@ -78,6 +78,14 @@ jobs:
             git checkout ${RELEASE_BRANCH}
           fi
 
+      - name: Set up Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '18'
+
+      - name: Install make
+        run: sudo apt-get update; sudo apt-get install build-essential -y
+
       - name: Install dependencies
         run: npm ci
 
@@ -151,6 +159,14 @@ jobs:
           git_user_signingkey: true
           gpg_private_key: ${{ secrets.GPG_KEY_CONTENTS }}
           passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '18'
+
+      - name: Install make
+        run: sudo apt-get update; sudo apt-get install build-essential -y
 
       - name: Install dependencies
         run: npm ci
