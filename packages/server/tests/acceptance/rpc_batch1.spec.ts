@@ -1110,6 +1110,35 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(info.created_contract_ids.length).to.be.equal(1);
       });
 
+      // note: according to this ticket https://github.com/hashgraph/hedera-json-rpc-relay/issues/2563,
+      //      if calldata's size fails into the range of [2568 bytes, 5217 bytes], the request fails and throw
+      //      `Null Entity ID` error. This unit test makes sure that with the new fix, requests should work with all case scenarios.
+      it('should execute "eth_sendRawTransaction" and deploy a contract with any arbitrary calldata size', async () => {
+        const gasPrice = await relay.gasPrice(requestId);
+
+        const randomBytes = [2566, 2568, 3600, 5217, 7200];
+
+        for (const bytes of randomBytes) {
+          const transaction = {
+            type: 2,
+            chainId: Number(CHAIN_ID),
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            maxPriorityFeePerGas: gasPrice,
+            maxFeePerGas: gasPrice,
+            gasLimit: defaultGasLimit,
+            data: '0x' + '00'.repeat(bytes),
+          };
+          const signedTx = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+          const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+          expect(info).to.have.property('contract_id');
+          expect(info.contract_id).to.not.be.null;
+          expect(info).to.have.property('created_contract_ids');
+          expect(info.created_contract_ids.length).to.be.equal(1);
+          await new Promise((r) => setTimeout(r, 3000));
+        }
+      });
+
       it('should delete the file created while execute "eth_sendRawTransaction" to deploy a large contract', async function () {
         const gasPrice = await relay.gasPrice(requestId);
         const transaction = {
