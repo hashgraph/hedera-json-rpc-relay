@@ -250,7 +250,8 @@ export class SDKClient {
     const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
     let fileId: FileId | null = null;
 
-    if (ethereumTransactionData.toBytes().length <= 5120) {
+    // if callData's size is greater than `fileAppendChunkSize` => employ HFS to create new file to carry the rest of the contents of callData
+    if (ethereumTransactionData.callData.length <= this.fileAppendChunkSize) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
       fileId = await this.createFile(
