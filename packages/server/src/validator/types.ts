@@ -94,7 +94,20 @@ export const TYPES = {
   tracerConfig: {
     test: (param: Record<string, any>) => {
       return (
-        typeof param === 'object' && param !== null && 'onlyTopCall' in param && typeof param.onlyTopCall === 'boolean'
+        // validate callTracer type
+        // { tracer: "callTracer", tracerConfig: { onlyTopCall: true } }
+        (typeof param === 'object' &&
+          param !== null &&
+          'onlyTopCall' in param &&
+          typeof param.onlyTopCall === 'boolean') ||
+        // validate opcodeLogger type
+        //  { tracer: "opcodeLogger", disableMemory: true, disableStack: true, disableStorage: true }
+        (typeof param === 'object' &&
+          (('disableMemory' in param && typeof param.disableMemory === 'boolean') ||
+            param?.disableMemory === undefined) &&
+          (('disableStack' in param && typeof param.disableStack === 'boolean') || param?.disableStack === undefined) &&
+          (('disableStorage' in param && typeof param.disableStorage === 'boolean') ||
+            param?.disableStorage === undefined))
       );
     },
     error: 'Invalid tracerConfig',

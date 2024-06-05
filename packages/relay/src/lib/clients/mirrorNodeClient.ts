@@ -346,7 +346,11 @@ export class MirrorNodeClient {
 
       let response: AxiosResponse<T, any>;
       if (method === MirrorNodeClient.HTTP_GET) {
-        response = await this.restClient.get<T>(path, axiosRequestConfig);
+        if (pathLabel == MirrorNodeClient.GET_CONTRACTS_RESULTS_OPCODES) {
+          response = await this.web3Client.get<T>(path, axiosRequestConfig);
+        } else {
+          response = await this.restClient.get<T>(path, axiosRequestConfig);
+        }
       } else {
         response = await this.web3Client.post<T>(path, data, axiosRequestConfig);
       }

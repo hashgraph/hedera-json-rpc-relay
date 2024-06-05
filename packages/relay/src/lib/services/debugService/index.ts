@@ -322,7 +322,8 @@ export class DebugService implements IDebugService {
         // if we have more than one call executed during the transactions we would return all calls
         // except the first one in the sub-calls array,
         // therefore we need to exclude the first one from the actions response
-        calls: tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.slice(1),
+        calls:
+          tracerConfig?.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.slice(1),
       };
     } catch (e) {
       throw this.common.genericErrorHandler(e);

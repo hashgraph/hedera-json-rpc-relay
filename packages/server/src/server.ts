@@ -21,12 +21,13 @@
 import { Relay, RelayImpl, JsonRpcError, predefined, MirrorNodeClientError } from '@hashgraph/json-rpc-relay';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
-import { Validator } from './validator';
+import { TracerType, Validator } from './validator';
 import pino from 'pino';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { formatRequestIdMessage } from './formatters';
+import _ from 'lodash';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -665,7 +666,8 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
 app.useRpc('debug_traceTransaction', async (params: any) => {
   const transactionHash = params[0];
   const tracer = params[1].tracer;
-  const tracerConfig = params[1].tracerConfig;
+  const tracerConfig =
+    tracer && tracer === TracerType.CallTracer ? params[1].tracerConfig : _.omit(params[1], ['tracer', 'tracerConfig']);
   return logAndHandleResponse('debug_traceTransaction', [transactionHash, tracer, tracerConfig], (requestId) =>
     relay.eth().debugService().debug_traceTransaction(transactionHash, tracer, tracerConfig, requestId),
   );
