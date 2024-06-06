@@ -87,28 +87,26 @@ export const TYPES = {
     test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '{64}$').test(param),
     error: Constants.TRANSACTION_HASH_ERROR,
   },
+  transactionId: {
+    test: (param: string) => new RegExp(Constants.TRANSACTION_ID_REGEX).test(param),
+    error: Constants.TRANSACTION_ID_ERROR,
+  },
   tracerType: {
     test: (param: Constants.TracerType) => Object.values(Constants.TracerType).includes(param),
     error: 'Invalid tracer type',
   },
   tracerConfig: {
     test: (param: Record<string, any>) => {
-      return (
-        // validate callTracer type
-        // { tracer: "callTracer", tracerConfig: { onlyTopCall: true } }
-        (typeof param === 'object' &&
-          param !== null &&
-          'onlyTopCall' in param &&
-          typeof param.onlyTopCall === 'boolean') ||
-        // validate opcodeLogger type
-        //  { tracer: "opcodeLogger", disableMemory: true, disableStack: true, disableStorage: true }
-        (typeof param === 'object' &&
-          (('disableMemory' in param && typeof param.disableMemory === 'boolean') ||
-            param?.disableMemory === undefined) &&
-          (('disableStack' in param && typeof param.disableStack === 'boolean') || param?.disableStack === undefined) &&
-          (('disableStorage' in param && typeof param.disableStorage === 'boolean') ||
-            param?.disableStorage === undefined))
-      );
+      const isValidCallTracerConfig: boolean =
+        typeof param === 'object' && 'onlyTopCall' in param && typeof param.onlyTopCall === 'boolean';
+
+      const isValidOpcodeLoggerConfig: boolean =
+        typeof param === 'object' &&
+        (!('disableMemory' in param) || typeof param.disableMemory === 'boolean') &&
+        (!('disableStack' in param) || typeof param.disableStack === 'boolean') &&
+        (!('disableStorage' in param) || typeof param.disableStorage === 'boolean');
+
+      return isValidCallTracerConfig || isValidOpcodeLoggerConfig;
     },
     error: 'Invalid tracerConfig',
   },

@@ -86,7 +86,7 @@ export class DebugService implements IDebugService {
    * Trace a transaction for debugging purposes.
    *
    * @async
-   * @param {string} transactionHash - The hash of the transaction to be traced.
+   * @param {string} transactionIdOrHash - The ID or hash of the transaction to be traced.
    * @param {TracerType} tracer - The type of tracer to use (either 'CallTracer' or 'OpcodeLogger').
    * @param {object} tracerConfig - The configuration object for the tracer.
    * @param {string} [requestIdPrefix] - An optional request id.
@@ -97,18 +97,18 @@ export class DebugService implements IDebugService {
    * const result = await debug_traceTransaction('0x123abc', TracerType.CallTracer, {"tracerConfig": {"onlyTopCall": false}}, some request id);
    */
   async debug_traceTransaction(
-    transactionHash: string,
+    transactionIdOrHash: string,
     tracer: TracerType,
     tracerConfig: object,
     requestIdPrefix?: string,
   ): Promise<any> {
-    this.logger.trace(`${requestIdPrefix} debug_traceTransaction(${transactionHash})`);
+    this.logger.trace(`${requestIdPrefix} debug_traceTransaction(${transactionIdOrHash})`);
     try {
       DebugService.requireDebugAPIEnabled();
       if (tracer === TracerType.CallTracer) {
-        return await this.callTracer(transactionHash, tracerConfig, requestIdPrefix);
+        return await this.callTracer(transactionIdOrHash, tracerConfig, requestIdPrefix);
       } else if (tracer === TracerType.OpcodeLogger) {
-        return await this.callOpcodeLogger(transactionHash, tracerConfig, requestIdPrefix);
+        return await this.callOpcodeLogger(transactionIdOrHash, tracerConfig, requestIdPrefix);
       }
     } catch (e) {
       throw this.common.genericErrorHandler(e);
@@ -247,7 +247,7 @@ export class DebugService implements IDebugService {
   /**
    * Returns the final formatted response for opcodeLogger config.
    * @async
-   * @param {string} transactionHash - The hash of the transaction to be debugged.
+   * @param {string} transactionIdOrHash - The ID or hash of the transaction to be debugged.
    * @param {object} tracerConfig - The tracer config to be used.
    * @param {boolean} tracerConfig.disableMemory - Whether to disable memory.
    * @param {boolean} tracerConfig.disableStack - Whether to disable stack.
@@ -256,12 +256,12 @@ export class DebugService implements IDebugService {
    * @returns {Promise<object>} The formatted response.
    */
   async callOpcodeLogger(
-    transactionHash: string,
+    transactionIdOrHash: string,
     tracerConfig: { disableMemory?: boolean; disableStack?: boolean; disableStorage?: boolean },
     requestIdPrefix?: string,
   ): Promise<object> {
     try {
-      const response = await this.mirrorNodeClient.getContractsResultsOpcodes(transactionHash, requestIdPrefix, {
+      const response = await this.mirrorNodeClient.getContractsResultsOpcodes(transactionIdOrHash, requestIdPrefix, {
         memory: !tracerConfig.disableMemory,
         stack: !tracerConfig.disableStack,
         storage: !tracerConfig.disableStorage,

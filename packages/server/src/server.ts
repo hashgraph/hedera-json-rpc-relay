@@ -664,12 +664,11 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
  */
 
 app.useRpc('debug_traceTransaction', async (params: any) => {
-  const transactionHash = params[0];
-  const tracer = params[1].tracer;
-  const tracerConfig =
-    tracer && tracer === TracerType.CallTracer ? params[1].tracerConfig : _.omit(params[1], ['tracer', 'tracerConfig']);
-  return logAndHandleResponse('debug_traceTransaction', [transactionHash, tracer, tracerConfig], (requestId) =>
-    relay.eth().debugService().debug_traceTransaction(transactionHash, tracer, tracerConfig, requestId),
+  const transactionIdOrHash = params[0];
+  const { tracer, ...otherParams } = params[1];
+  const tracerConfig = tracer === TracerType.CallTracer ? otherParams.tracerConfig : otherParams;
+  return logAndHandleResponse('debug_traceTransaction', [transactionIdOrHash, tracer, tracerConfig], (requestId) =>
+    relay.eth().debugService().debug_traceTransaction(transactionIdOrHash, tracer, tracerConfig, requestId),
   );
 });
 
