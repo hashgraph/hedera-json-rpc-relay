@@ -74,7 +74,7 @@ describe('EstimatePrecompileContract tests', function () {
       accounts[0].wallet,
     );
     const tx = await estimateContract.createFungibleTokenPublic(accounts[0].wallet.address, {
-      value: BigInt('10000000000000000000'),
+      value: BigInt('50000000000000000000'),
       gasLimit: 10_000_000,
     });
 
