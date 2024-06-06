@@ -35,13 +35,13 @@ Viem already includes out-of-the-box configuration for Hedera public networks: [
 1. Clone this repo to your local machine:
 
 ```shell
-git clone https://github.com/hashgraph/hedera-hardhat-viem-example-project.git
+git clone https://github.com/hashgraph/hedera-json-rpc-relay.git
 ```
 
 2. Once you've cloned the repository, open your IDE terminal and navigate to the root directory of the project:
 
 ```shell
-cd hedera-hardhat-viem-example-project
+cd hedera-json-rpc-relay/tools/hardhat-viem-example
 ```
 
 3. Run the following command to install all the necessary dependencies:
