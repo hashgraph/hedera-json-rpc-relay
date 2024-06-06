@@ -24,13 +24,11 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
-import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 
 describe('@release @web-socket-batch-2 eth_getTransactionCount', async function () {
   const METHOD_NAME = 'eth_getTransactionCount';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
-  const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   // @ts-ignore
@@ -79,6 +77,9 @@ describe('@release @web-socket-batch-2 eth_getTransactionCount', async function 
   });
 
   it('should return the transaction count through a websocket', async () => {
+    // get correct gas price for different network environments
+    const defaultGasPrice = await relay.gasPrice(requestId);
+
     const beforeSendRawTransactionCountResponse = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [
       accounts[0].address,
       'latest',
