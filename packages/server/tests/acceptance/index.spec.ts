@@ -85,7 +85,7 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
     if (global.relayIsLocal) {
-      // runLocalRelay();
+      runLocalRelay();
     }
 
     // cache start balance

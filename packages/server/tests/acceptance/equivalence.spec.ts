@@ -60,7 +60,7 @@ async function testRejection(errorMessage, method, checkMessage, thisObj, args?)
   });
 }
 
-describe.only('Equivalence tests', async function () {
+describe('Equivalence tests', async function () {
   const signers: AliasAccount[] = [];
   const { servicesNode, mirrorNode, relay }: any = global;
   const servicesClient = servicesNode as ServicesClient;
