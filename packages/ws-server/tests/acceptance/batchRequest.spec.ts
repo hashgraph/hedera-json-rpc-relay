@@ -24,7 +24,7 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { predefined } from '@hashgraph/json-rpc-relay/src';
 
-describe('@release @web-socket-batch-1 Batch Requests', async function () {
+describe('@web-socket-batch-1 Batch Requests', async function () {
   const METHOD_NAME = 'batch_request';
   let ethersWsProvider: WebSocketProvider;
   let batchRequests: any = [];
@@ -76,10 +76,14 @@ describe('@release @web-socket-batch-1 Batch Requests', async function () {
 
   after(async () => {
     // expect all the connections to the WS server to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      if (global && global.socketServer) {
+        expect(global.socketServer._connections).to.eq(0);
+      }
+    }
   });
 
-  it(`Should submit batch requests to WS server using Standard Web Socket and retrieve batch responses`, async () => {
+  it(`@release Should submit batch requests to WS server using Standard Web Socket and retrieve batch responses`, async () => {
     // call batch request
     const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 

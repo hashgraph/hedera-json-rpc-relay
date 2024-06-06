@@ -69,7 +69,7 @@ const createLogs = async (contract: ethers.Contract, requestId) => {
   await new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
-describe('@release @web-socket-batch-3 eth_subscribe', async function () {
+describe('@web-socket-batch-3 eth_subscribe', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   let server;

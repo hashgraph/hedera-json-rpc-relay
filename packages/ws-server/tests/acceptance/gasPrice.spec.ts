@@ -38,7 +38,9 @@ describe('@release @web-socket-batch-1 eth_gasPrice', async function () {
 
   after(async () => {
     // expect all the connections to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      expect(global.socketServer._connections).to.eq(0);
+    }
   });
 
   describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {

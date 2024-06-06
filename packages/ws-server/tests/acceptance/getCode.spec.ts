@@ -26,7 +26,7 @@ import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 
-describe('@release @web-socket-batch-2 eth_getCode', async function () {
+describe('@web-socket-batch-2 eth_getCode', async function () {
   const METHOD_NAME = 'eth_getCode';
 
   let basicContract: ethers.Contract,
@@ -51,7 +51,9 @@ describe('@release @web-socket-batch-2 eth_getCode', async function () {
 
   after(async () => {
     // expect all the connections to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      expect(global.socketServer._connections).to.eq(0);
+    }
   });
 
   it('should return the code ethers WebSocketProvider', async function () {

@@ -23,7 +23,7 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 
-describe('@release @web-socket-batch-2 eth_newFilter', async function () {
+describe('@web-socket-batch-2 eth_newFilter', async function () {
   let wsFilterObj: any, ethersWsProvider: WebSocketProvider;
   const METHOD_NAME = 'eth_newFilter';
   const INVALID_PARAMS = [
@@ -68,7 +68,9 @@ describe('@release @web-socket-batch-2 eth_newFilter', async function () {
 
   after(async () => {
     // expect all the connections to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      expect(global.socketServer._connections).to.eq(0);
+    }
   });
 
   describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
@@ -80,12 +82,10 @@ describe('@release @web-socket-batch-2 eth_newFilter', async function () {
       });
     }
 
-    it(`Should execute eth_newFilter on Standard Web Socket and handle valid requests correctly`, async () => {
+    it(`@release Should execute eth_newFilter on Standard Web Socket and handle valid requests correctly`, async () => {
       const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [wsFilterObj]);
       WsTestHelper.assertJsonRpcObject(response);
       const filterId = response.result;
-
-      await new Promise((r) => setTimeout(r, 90000));
 
       expect(filterId).to.exist;
       expect(filterId.startsWith('0x')).to.be.true;
@@ -102,7 +102,7 @@ describe('@release @web-socket-batch-2 eth_newFilter', async function () {
       });
     }
 
-    it(`Should execute eth_newFilter on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
+    it(`@release Should execute eth_newFilter on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
       const filterId = await ethersWsProvider.send(METHOD_NAME, [wsFilterObj]);
 
       expect(filterId).to.exist;

@@ -47,7 +47,9 @@ describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
 
   after(async () => {
     // expect all the connections to the WS server to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      expect(global.socketServer._connections).to.eq(0);
+    }
   });
 
   it(`Should submit single requests to WS server and receive IPRateLimitExceeded error until rate limit is reached`, async () => {

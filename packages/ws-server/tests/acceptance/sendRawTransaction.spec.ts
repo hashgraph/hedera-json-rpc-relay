@@ -29,7 +29,7 @@ import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 
-describe('@release @web-socket-batch-2 eth_sendRawTransaction', async function () {
+describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
   const METHOD_NAME = 'eth_sendRawTransaction';
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const INVALID_PARAMS = [
@@ -97,7 +97,9 @@ describe('@release @web-socket-batch-2 eth_sendRawTransaction', async function (
 
   after(async () => {
     // expect all the connections to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      expect(global.socketServer._connections).to.eq(0);
+    }
   });
 
   describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {

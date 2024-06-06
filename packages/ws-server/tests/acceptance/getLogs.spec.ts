@@ -25,7 +25,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 
-describe('@release @web-socket-batch-2 eth_getLogs', async function () {
+describe('@web-socket-batch-2 eth_getLogs', async function () {
   const EXPECTED_VALUE = 7;
   const METHOD_NAME = 'eth_getLogs';
   const INVALID_PARAMS = [
@@ -120,7 +120,9 @@ describe('@release @web-socket-batch-2 eth_getLogs', async function () {
 
   after(async () => {
     // expect all the connections to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      expect(global.socketServer._connections).to.eq(0);
+    }
   });
 
   describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
@@ -132,7 +134,7 @@ describe('@release @web-socket-batch-2 eth_getLogs', async function () {
       });
     }
 
-    it(`Should execute eth_getLogs on Standard Web Socket and handle valid requests correctly`, async () => {
+    it(`@release Should execute eth_getLogs on Standard Web Socket and handle valid requests correctly`, async () => {
       const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [wsFilterObj]);
       WsTestHelper.assertJsonRpcObject(response);
 
@@ -153,7 +155,7 @@ describe('@release @web-socket-batch-2 eth_getLogs', async function () {
       });
     }
 
-    it(`Should execute eth_getLogs on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
+    it(`@release Should execute eth_getLogs on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
       const logs = await ethersWsProvider.send(METHOD_NAME, [wsFilterObj]);
 
       expect(logs[0].address.toLowerCase()).to.eq(wsFilterObj.address.toLowerCase());

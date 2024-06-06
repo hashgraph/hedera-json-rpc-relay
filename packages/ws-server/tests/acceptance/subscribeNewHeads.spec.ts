@@ -90,7 +90,7 @@ function verifyResponse(response: any, done: Mocha.Done, webSocket: any, include
   }
 }
 
-describe('@release @web-socket-batch-3 eth_subscribe newHeads', async function () {
+describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const accounts: AliasAccount[] = [];
   const CHAIN_ID = process.env.CHAIN_ID || 0;
@@ -199,7 +199,7 @@ describe('@release @web-socket-batch-3 eth_subscribe newHeads', async function (
       process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
     });
 
-    it('should subscribe to newHeads even when WS_NEW_HEADS_ENABLED=undefined, and receive a valid JSON RPC response', async (done) => {
+    it('@release should subscribe to newHeads even when WS_NEW_HEADS_ENABLED=undefined, and receive a valid JSON RPC response', async (done) => {
       delete process.env.WS_NEW_HEADS_ENABLED;
       expect(process.env.WS_NEW_HEADS_ENABLED).to.be.undefined;
 

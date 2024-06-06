@@ -26,7 +26,7 @@ import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import ERC20MockJson from '@hashgraph/json-rpc-server/tests/contracts/ERC20Mock.json';
 
-describe('@release @web-socket-batch-1 eth_call', async function () {
+describe('@web-socket-batch-1 eth_call', async function () {
   const METHOD_NAME = 'eth_call';
   const INVALID_PARAMS = [
     ['{}', false, '0x0'],
@@ -104,7 +104,9 @@ describe('@release @web-socket-batch-1 eth_call', async function () {
 
   after(async () => {
     // expect all the connections to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      expect(global.socketServer._connections).to.eq(0);
+    }
   });
 
   describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
@@ -123,7 +125,7 @@ describe('@release @web-socket-batch-1 eth_call', async function () {
     }
 
     for (const data of VALID_DATA) {
-      it(`Should execute eth_call on Standard Web Socket and handle valid requests correctly`, async () => {
+      it(`@release Should execute eth_call on Standard Web Socket and handle valid requests correctly`, async () => {
         const tx = {
           to: erc20TokenAddr,
           data: data.sighash,
@@ -165,7 +167,7 @@ describe('@release @web-socket-batch-1 eth_call', async function () {
     }
 
     for (const data of VALID_DATA) {
-      it(`Should execute eth_call on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
+      it(`@release Should execute eth_call on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
         const tx = {
           to: erc20TokenAddr,
           data: data.sighash,
