@@ -67,8 +67,7 @@ describe('@web-socket-batch-1 eth_estimateGas', async function () {
 
   beforeEach(async () => {
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
-    const wallet = new ethers.Wallet(accounts[0].wallet.privateKey, ethersWsProvider);
-    basicContract = await Utils.deployContract(basicContractJson.abi, basicContractJson.bytecode, wallet);
+    basicContract = await Utils.deployContract(basicContractJson.abi, basicContractJson.bytecode, accounts[0].wallet);
   });
 
   afterEach(async () => {
