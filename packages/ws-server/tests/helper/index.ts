@@ -38,7 +38,7 @@ export class WsTestHelper {
     }
   }
 
-  static async sendRequestToStandardWebSocket(method: string, params: any[], ms?: number | undefined) {
+  static async sendRequestToStandardWebSocket(method: string, params: any, ms?: number | undefined) {
     const BATCH_REQUEST_METHOD_NAME = 'batch_request';
     const webSocket = new WebSocket(WsTestConstant.WS_RELAY_URL);
 

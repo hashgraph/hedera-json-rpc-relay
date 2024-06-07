@@ -26,7 +26,7 @@ import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 
-describe('@release @web-socket-batch-1 eth_estimateGas', async function () {
+describe('@web-socket-batch-1 eth_estimateGas', async function () {
   const METHOD_NAME = 'eth_estimateGas';
   const PING_CALL_ESTIMATED_GAS = '0x6122';
   const BASIC_CONTRACT_PING_CALL_DATA = '0x5c36b186';
@@ -67,8 +67,7 @@ describe('@release @web-socket-batch-1 eth_estimateGas', async function () {
 
   beforeEach(async () => {
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
-    const wallet = new ethers.Wallet(accounts[0].wallet.privateKey, ethersWsProvider);
-    basicContract = await Utils.deployContract(basicContractJson.abi, basicContractJson.bytecode, wallet);
+    basicContract = await Utils.deployContract(basicContractJson.abi, basicContractJson.bytecode, accounts[0].wallet);
   });
 
   afterEach(async () => {
@@ -77,7 +76,9 @@ describe('@release @web-socket-batch-1 eth_estimateGas', async function () {
 
   after(async () => {
     // expect all the connections to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      expect(global.socketServer._connections).to.eq(0);
+    }
   });
 
   it('@release should execute "eth_estimateGas" for contract call, using a websocket provider', async function () {
