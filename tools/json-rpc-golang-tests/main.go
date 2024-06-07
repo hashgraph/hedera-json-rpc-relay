@@ -12,7 +12,6 @@ import (
     "strings"
 
     "github.com/ethereum/go-ethereum"
-    "github.com/ethereum/go-ethereum/accounts/abi/bind"
     "github.com/ethereum/go-ethereum/common"
     "github.com/ethereum/go-ethereum/core/types"
     "github.com/ethereum/go-ethereum/crypto"
@@ -71,80 +70,101 @@ func main() {
     publicKey := privateKey.Public().(*ecdsa.PublicKey)
     fromAddress := crypto.PubkeyToAddress(*publicKey)
 
-    // eth_blockNumber
-    blockNumber, err := client.BlockNumber(context.Background())
-    if err != nil {
-        log.Fatalf("Failed to get block number: %v", err)
-    }
-    fmt.Printf("Current block number: %d\n", blockNumber)
+    testBlockByNumber(client, big.NewInt(5086904))
+    testTransactionByHash(client, "4b970a3c02af09d646d2bc099b94d95cd2c9b7c92d1bf42e65eee0258016a234")
+    testTransactionReceipt(client, "4b970a3c02af09d646d2bc099b94d95cd2c9b7c92d1bf42e65eee0258016a234")
+    testGetBalance(client, fromAddress)
+    testEthCall(client, fromAddress)
+    testEstimateGas(client, fromAddress)
+    testGetGasPrice(client)
+    testSendDummyTransaction(client, fromAddress, privateKey, chainId)
+}
 
-    // eth_getBlockByNumber
-    block, err := client.BlockByNumber(context.Background(), big.NewInt(int64(blockNumber)))
+func testBlockByNumber(client *ethclient.Client, blockNumber *big.Int) {
+    block, err := client.BlockByNumber(context.Background(), blockNumber)
     if err != nil {
         log.Fatalf("Failed to get block by number: %v", err)
     }
     fmt.Printf("Block by number: %s\n", block.Hash().Hex())
+}
 
-    // eth_getTransactionByHash
-    if len(block.Transactions()) > 0 {
-        txHash := block.Transactions()[0].Hash()
-        tx, isPending, err := client.TransactionByHash(context.Background(), txHash)
-        if err != nil {
-            log.Fatalf("Failed to get transaction by hash: %v", err)
-        }
-        fmt.Printf("Transaction by hash: %s (Pending: %t)\n", tx.Hash().Hex(), isPending)
-
-        // eth_getTransactionReceipt
-        receipt, err := client.TransactionReceipt(context.Background(), txHash)
-        if err != nil {
-            log.Fatalf("Failed to get transaction receipt: %v", err)
-        }
-        fmt.Printf("Transaction receipt: %s\n", receipt.Status)
-    } else {
-        fmt.Println("No transactions found in the latest block to test eth_getTransactionByHash and eth_getTransactionReceipt")
+func testTransactionByHash(client *ethclient.Client, txHash string) {
+    tx, isPending, err := client.TransactionByHash(context.Background(), common.HexToHash(txHash))
+    if err != nil {
+        log.Fatalf("Failed to get transaction by hash: %v", err)
     }
+    fmt.Printf("Transaction by hash: %s (Pending: %t)\n", tx.Hash().Hex(), isPending)
+}
 
-    // eth_getBalance
+func testTransactionReceipt(client *ethclient.Client, txHash string) {
+    receipt, err := client.TransactionReceipt(context.Background(), common.HexToHash(txHash))
+    if err != nil {
+        log.Fatalf("Failed to get transaction receipt: %v", err)
+    }
+    if receipt == nil {
+        fmt.Printf("Transaction receipt: null\n")
+    } else {
+        fmt.Printf("Transaction receipt: %d\n", receipt.Status)
+    }
+}
+
+func testGetBalance(client *ethclient.Client, fromAddress common.Address) {
     balance, err := client.BalanceAt(context.Background(), fromAddress, nil)
     if err != nil {
         log.Fatalf("Failed to get balance: %v", err)
     }
     fmt.Printf("Account balance: %s\n", balance.String())
+}
 
-    // eth_call (dummy call to self)
+func testEthCall(client *ethclient.Client, fromAddress common.Address) {
     msg := ethereum.CallMsg{
         From: fromAddress,
         To:   &fromAddress,
-        Gas:  21000,
-        Data: nil,
+        Data: []byte("0x"),
     }
     result, err := client.CallContract(context.Background(), msg, nil)
     if err != nil {
         log.Fatalf("Failed to call contract: %v", err)
     }
     fmt.Printf("eth_call result: %s\n", hex.EncodeToString(result))
+}
 
-    // eth_estimateGas
+func testEstimateGas(client *ethclient.Client, fromAddress common.Address) {
+    msg := ethereum.CallMsg{
+        From:  fromAddress,
+        To:    &fromAddress,
+        Value: big.NewInt(10000000000),
+        Gas:   21000,
+        Data:  nil,
+    }
     gasEstimate, err := client.EstimateGas(context.Background(), msg)
     if err != nil {
         log.Fatalf("Failed to estimate gas: %v", err)
     }
     fmt.Printf("Gas estimate: %d\n", gasEstimate)
+}
 
-    // eth_gasPrice
+func testGetGasPrice(client *ethclient.Client) {
     gasPrice, err := client.SuggestGasPrice(context.Background())
     if err != nil {
         log.Fatalf("Failed to get gas price: %v", err)
     }
     fmt.Printf("Gas price: %s\n", gasPrice.String())
+}
 
-    // eth_getTransactionCount
+func testSendDummyTransaction(client *ethclient.Client, fromAddress common.Address, privateKey *ecdsa.PrivateKey, chainId int) {
     nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
     if err != nil {
         log.Fatalf("Failed to get transaction count: %v", err)
     }
     fmt.Printf("Transaction count (nonce): %d\n", nonce)
-    tx := types.NewTransaction(nonce, fromAddress, big.NewInt(0), 21000, gasPrice, nil)
+
+    gasPrice, err := client.SuggestGasPrice(context.Background())
+    if err != nil {
+        log.Fatalf("Failed to get gas price: %v", err)
+    }
+
+    tx := types.NewTransaction(nonce, fromAddress, big.NewInt(10000000000), 21000, gasPrice, nil)
     signedTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(int64(chainId))), privateKey)
     if err != nil {
         log.Fatalf("Failed to sign transaction: %v", err)
