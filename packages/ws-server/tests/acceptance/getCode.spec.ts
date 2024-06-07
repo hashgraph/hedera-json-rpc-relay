@@ -56,13 +56,13 @@ describe('@web-socket-batch-2 eth_getCode', async function () {
     }
   });
 
-  it('should return the code ethers WebSocketProvider', async function () {
+  it('@release should return the code ethers WebSocketProvider', async function () {
     const codeFromWs = await ethersWsProvider.getCode(basicContractAddress);
     expect(codeFromWs).to.be.a('string');
     expect(codeFromRPC).to.equal(codeFromWs);
   });
 
-  it('should return the code through a websocket', async () => {
+  it('@release should return the code through a websocket', async () => {
     const param = [basicContractAddress, 'latest'];
     const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, param);
     WsTestHelper.assertJsonRpcObject(response);
