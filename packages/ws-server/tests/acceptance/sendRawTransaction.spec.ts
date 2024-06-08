@@ -109,7 +109,7 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
       });
     }
 
-    it(`Should execute eth_sendRawTransaction on Standard Web Socket and handle valid requests correctly`, async () => {
+    it(`@release Should execute eth_sendRawTransaction on Standard Web Socket and handle valid requests correctly`, async () => {
       tx.nonce = await relay.getAccountNonce(accounts[0].address);
       const signedTx = await accounts[0].wallet.signTransaction(tx);
 
@@ -179,7 +179,7 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
       });
     }
 
-    it(`Should execute eth_sendRawTransaction on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
+    it(`@release Should execute eth_sendRawTransaction on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
       tx.nonce = await relay.getAccountNonce(accounts[1].address);
       const signedTx = await accounts[1].wallet.signTransaction(tx); // const signedTx = await accounts[0].wallet.signTransaction(tx);
 
