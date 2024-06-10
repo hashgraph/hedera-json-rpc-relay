@@ -159,9 +159,13 @@ export class DebugService implements IDebugService {
    *
    * @async
    * @param {IOpcodesResponse | null} result - The response from mirror node.
+   * @param {object} options - The options used for the opcode tracer.
    * @returns {Promise<object>} The formatted opcode response.
    */
-  async formatOpcodesResult(result: IOpcodesResponse | null): Promise<object> {
+  async formatOpcodesResult(
+    result: IOpcodesResponse | null,
+    options: { memory?: boolean; stack?: boolean; storage?: boolean },
+  ): Promise<object> {
     if (!result) {
       return {
         gas: 0,
@@ -183,9 +187,9 @@ export class DebugService implements IDebugService {
           gas: opcode.gas,
           gasCost: opcode.gas_cost,
           depth: opcode.depth,
-          stack: opcode.stack,
-          memory: opcode.memory,
-          storage: opcode.storage,
+          stack: options.stack ? opcode.stack : null,
+          memory: options.memory ? opcode.memory : null,
+          storage: options.storage ? opcode.storage : null,
           reason: opcode.reason ? strip0x(opcode.reason) : null,
         };
       }),
@@ -261,12 +265,17 @@ export class DebugService implements IDebugService {
     requestIdPrefix?: string,
   ): Promise<object> {
     try {
-      const response = await this.mirrorNodeClient.getContractsResultsOpcodes(transactionIdOrHash, requestIdPrefix, {
+      const options = {
         memory: !tracerConfig.disableMemory,
         stack: !tracerConfig.disableStack,
         storage: !tracerConfig.disableStorage,
-      });
-      return await this.formatOpcodesResult(response);
+      };
+      const response = await this.mirrorNodeClient.getContractsResultsOpcodes(
+        transactionIdOrHash,
+        requestIdPrefix,
+        options,
+      );
+      return await this.formatOpcodesResult(response, options);
     } catch (e) {
       throw this.common.genericErrorHandler(e);
     }

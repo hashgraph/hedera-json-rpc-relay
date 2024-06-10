@@ -43,6 +43,7 @@ const logger = pino();
 const registry = new Registry();
 
 let restMock: MockAdapter;
+let web3Mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let debugService: DebugService;
 let cacheService: CacheService;
@@ -270,6 +271,7 @@ describe('Debug API Test Suite', async function () {
     );
 
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
+    web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
 
     const common = new CommonService(mirrorNodeInstance, logger, cacheService);
     debugService = new DebugService(mirrorNodeInstance, logger, common);
@@ -298,7 +300,7 @@ describe('Debug API Test Suite', async function () {
           storage: !config.disableStorage,
         });
 
-        restMock.onGet(`${CONTRACTS_RESULTS_OPCODES}${opcodeLoggerParams}`).reply(200, {
+        web3Mock.onGet(`${CONTRACTS_RESULTS_OPCODES}${opcodeLoggerParams}`).reply(200, {
           ...opcodesResponse,
           opcodes: opcodesResponse.opcodes?.map((opcode) => ({
             ...opcode,
@@ -312,6 +314,7 @@ describe('Debug API Test Suite', async function () {
 
     afterEach(() => {
       restMock.reset();
+      web3Mock.reset();
     });
 
     describe('all methods require a debug flag', async function () {
@@ -361,6 +364,10 @@ describe('Debug API Test Suite', async function () {
     });
 
     describe('callTracer', async function () {
+      before(() => {
+        process.env.DEBUG_API_ENABLED = 'true';
+      });
+
       it('Test call tracer with onlyTopCall false', async function () {
         const expectedResult = {
           type: 'CREATE',
@@ -419,6 +426,10 @@ describe('Debug API Test Suite', async function () {
     });
 
     describe('opcodeLogger', async function () {
+      before(() => {
+        process.env.DEBUG_API_ENABLED = 'true';
+      });
+
       for (const config of opcodeLoggerConfigs) {
         const opcodeLoggerParams = Object.keys(config)
           .map((key) => `${key}=${config[key]}`)
@@ -443,9 +454,9 @@ describe('Debug API Test Suite', async function () {
                 gas: opcode.gas,
                 gasCost: opcode.gas_cost,
                 depth: opcode.depth,
-                stack: config.disableStack ? [] : opcode.stack,
-                memory: config.disableMemory ? [] : opcode.memory,
-                storage: config.disableStorage ? {} : opcode.storage,
+                stack: config.disableStack ? null : opcode.stack,
+                memory: config.disableMemory ? null : opcode.memory,
+                storage: config.disableStorage ? null : opcode.storage,
                 reason: opcode.reason ? strip0x(opcode.reason) : null,
               })),
             };
@@ -464,6 +475,10 @@ describe('Debug API Test Suite', async function () {
     });
 
     describe('Invalid scenarios', async function () {
+      before(() => {
+        process.env.DEBUG_API_ENABLED = 'true';
+      });
+
       beforeEach(() => {
         const notFound = {
           _status: {
