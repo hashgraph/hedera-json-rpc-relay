@@ -294,6 +294,20 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
     });
 
+    it('should execute "eth_call" with both data and input fields', async function () {
+      const callData = {
+        from: accounts[0].address,
+        to: basicContractAddress,
+        data: BASIC_CONTRACT_PING_CALL_DATA,
+        input: BASIC_CONTRACT_PING_CALL_DATA,
+      };
+
+      // deploymentBlockNumber to HEX
+      const block = numberTo0x(deploymentBlockNumber);
+      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { blockNumber: block }], requestId);
+      expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
+    });
+
     it('should fail to execute "eth_call" with wrong block tag', async function () {
       const callData = {
         from: accounts[0].address,
@@ -331,23 +345,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       const args = [RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { blockHash: '0x123' }], requestId];
 
       await Assertions.assertPredefinedRpcError(errorType, relay.call, false, relay, args);
-    });
-
-    it('should fail to execute "eth_call" with both data and input fields', async function () {
-      const callData = {
-        from: accounts[0].address,
-        to: basicContractAddress,
-        data: BASIC_CONTRACT_PING_CALL_DATA,
-      };
-
-      // deploymentBlockNumber to HEX
-      const block = numberTo0x(deploymentBlockNumber);
-      try {
-        await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, { blockNumber: block }], requestId);
-      } catch (error) {
-        expect(error.code).eq(-32000);
-        expect(error.message).eq('Invalid arguments: Cannot accept both input and data fields. Use only one.');
-      }
     });
 
     it('should fail to execute "eth_call" with wrong block number object', async function () {
@@ -608,7 +605,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(response.status).to.be.equal(200);
       expect(response.data).to.exist;
       expect(response.data.error).to.exist;
-      expect(response.data.error.code).to.be.equal(-32008);
+      expect(response.data.error.code).to.be.equal(3);
       expect(response.data.error.message).to.contain('execution reverted: CONTRACT_REVERT_EXECUTED');
       expect(response.data.error.name).to.undefined;
     });
@@ -2019,6 +2016,42 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         expect(res.filter((r) => r.id === 2)[0].result).to.be.equal('0x1');
         expect(res.filter((r) => r.id === 3)[0].result.transactionHash).to.be.equal(transactionHash);
       }
+    });
+  });
+
+  describe('Shard Blob Transactions', async function () {
+    let defaultLondonTransactionData, defaultGasPrice, defaultGasLimit;
+    let defaultBlobVersionedHashes = ['0x6265617665726275696c642e6f7267476265617665726275696c642e6f726747'];
+
+    before(() => {
+      defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
+      defaultGasLimit = numberTo0x(3_000_000);
+
+      defaultLondonTransactionData = {
+        value: ONE_TINYBAR,
+        chainId: Number(CHAIN_ID),
+        maxPriorityFeePerGas: defaultGasPrice,
+        maxFeePerGas: defaultGasPrice,
+        gasLimit: defaultGasLimit,
+      };
+    });
+
+    it('Type 3 transactions are not supported for eth_sendRawTransaction', async () => {
+      const transaction = {
+        ...defaultLondonTransactionData,
+        type: 3,
+        maxFeePerBlobGas: defaultGasPrice,
+        blobVersionedHashes: defaultBlobVersionedHashes,
+      };
+
+      const signedTx = await accounts[0].wallet.signTransaction(transaction);
+      await Assertions.assertPredefinedRpcError(
+        predefined.UNSUPPORTED_TRANSACTION_TYPE,
+        relay.sendRawTransaction,
+        false,
+        relay,
+        [signedTx, requestId],
+      );
     });
   });
 });

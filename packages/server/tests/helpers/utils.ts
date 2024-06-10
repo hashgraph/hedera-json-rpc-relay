@@ -27,6 +27,7 @@ import RelayCall from '../../tests/helpers/constants';
 import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
 import { AliasAccount } from '../types/AliasAccount';
 import ServicesClient from '../clients/servicesClient';
+import http from 'http';
 
 export class Utils {
   /**
@@ -307,5 +308,68 @@ export class Utils {
       accounts.push(account);
     }
     return accounts;
+  }
+
+  static sendJsonRpcRequestWithDelay(
+    host: string,
+    port: number,
+    method: string,
+    params: any[],
+    delayMs: number,
+  ): Promise<any> {
+    const requestData = JSON.stringify({
+      jsonrpc: '2.0',
+      method: method,
+      params: params,
+      id: 1,
+    });
+
+    const options = {
+      hostname: host,
+      port: port,
+      path: '/',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(requestData),
+      },
+      timeout: delayMs,
+    };
+
+    return new Promise((resolve, reject) => {
+      // setup the request
+      const req = http.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          resolve(JSON.parse(data));
+        });
+      });
+
+      // handle request errors for testing purposes
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error(`Request timed out after ${delayMs}ms`));
+      });
+
+      req.on('error', (err) => {
+        reject(err);
+      });
+
+      // Introduce a delay with inactivity, before sending the request
+      setTimeout(async () => {
+        req.write(requestData);
+        req.end();
+        await new Promise((r) => setTimeout(r, delayMs + 1000));
+      }, delayMs);
+    });
+  }
+
+  static async wait(time: number): Promise<void> {
+    await new Promise((r) => setTimeout(r, time));
   }
 }

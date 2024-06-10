@@ -18,3 +18,23 @@
 /k6/                                            @AlfredoG87 @hashgraph/hedera-smart-contracts
 /tools/                                         @georgi-l95 @Ivo-Yankov @hashgraph/hedera-smart-contracts
 
+########################
+#####  Core Files  ######
+#########################
+
+# NOTE: Must be placed last to ensure enforcement over all other rules
+
+# Protection Rules for Github Configuration Files and Actions Workflows
+/.github/                                       @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/.github/workflows/                             @hashgraph/release-engineering @hashgraph/release-engineering-managers @AlfredoG87 @ebadiere @Nana-EC @hashgraph/hedera-smart-contracts
+
+# Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
+/CODEOWNERS                                     @hashgraph/release-engineering @hashgraph/release-engineering-managers
+
+# Protect the repository root files
+/README.md                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers @AlfredoG87 @ebadiere @Nana-EC @hashgraph/hedera-smart-contracts
+**/LICENSE                                      @hashgraph/release-engineering @hashgraph/release-engineering-managers
+
+# Git Ignore definitions
+**/.gitignore                                   @hashgraph/release-engineering @hashgraph/release-engineering-managers @AlfredoG87 @ebadiere @Nana-EC @hashgraph/hedera-smart-contracts
+**/.gitignore.*                                 @hashgraph/release-engineering @hashgraph/release-engineering-managers @AlfredoG87 @ebadiere @Nana-EC @hashgraph/hedera-smart-contracts

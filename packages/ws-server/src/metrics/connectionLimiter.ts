@@ -22,6 +22,9 @@ import { Logger } from 'pino';
 import { WS_CONSTANTS } from '../utils/constants';
 import { Gauge, Registry, Counter } from 'prom-client';
 import { WebSocketError } from '@hashgraph/json-rpc-relay';
+import RateLimit from '@hashgraph/json-rpc-server/dist/rateLimit';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { methodConfiguration } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/methodConfiguration';
 
 type IpCounter = {
   [key: string]: number;
@@ -39,6 +42,7 @@ export default class ConnectionLimiter {
   private connectionLimitCounter: Counter;
   private inactivityTTLCounter: Counter;
   private register: Registry;
+  private rateLimit: RateLimit;
 
   constructor(logger: Logger, register: Registry) {
     this.logger = logger;
@@ -82,6 +86,11 @@ export default class ConnectionLimiter {
       help: WS_CONSTANTS.connLimiter.inactivityTTLLimitMetric.help,
       registers: [register],
     });
+
+    const rateLimitDuration = process.env.LIMIT_DURATION
+      ? parseInt(process.env.LIMIT_DURATION)
+      : constants.DEFAULT_RATE_LIMIT.DURATION;
+    this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, rateLimitDuration);
   }
 
   public incrementCounters(ctx) {
@@ -124,7 +133,14 @@ export default class ConnectionLimiter {
       ctx.websocket.send(
         JSON.stringify({
           jsonrpc: '2.0',
-          error: `Closing current connection due to exceeded maximum connections (max_con=${MAX_CONNECTION_LIMIT})`,
+          error: {
+            code: CONNECTION_LIMIT_EXCEEDED.code,
+            message: CONNECTION_LIMIT_EXCEEDED.message,
+            data: {
+              message: CONNECTION_LIMIT_EXCEEDED.message,
+              max_connection: MAX_CONNECTION_LIMIT,
+            },
+          },
           id: '1',
         }),
       );
@@ -143,7 +159,14 @@ export default class ConnectionLimiter {
       ctx.websocket.send(
         JSON.stringify({
           jsonrpc: '2.0',
-          error: `Closing current connection due to exceeded maximum connections from a single IP: address ${ip} - ${this.clientIps[ip]} connections. (max_con=${MAX_CONNECTION_LIMIT_PER_IP})`,
+          error: {
+            code: CONNECTION_IP_LIMIT_EXCEEDED.code,
+            message: CONNECTION_IP_LIMIT_EXCEEDED.message,
+            data: {
+              message: CONNECTION_IP_LIMIT_EXCEEDED.message,
+              max_connection: MAX_CONNECTION_LIMIT_PER_IP,
+            },
+          },
           id: '1',
         }),
       );
@@ -179,7 +202,14 @@ export default class ConnectionLimiter {
           websocket.send(
             JSON.stringify({
               jsonrpc: '2.0',
-              error: `Closing current connection due to reaching TTL (${maxInactivityTTL}ms)`,
+              error: {
+                code: TTL_EXPIRED.code,
+                message: TTL_EXPIRED.message,
+                data: {
+                  message: TTL_EXPIRED.message,
+                  max_inactivity_TTL: maxInactivityTTL,
+                },
+              },
               id: '1',
             }),
           );
@@ -198,5 +228,14 @@ export default class ConnectionLimiter {
     }
 
     this.startInactivityTTLTimer(websocket);
+  }
+
+  public shouldRateLimitOnMethod(ip, methodName, requestId) {
+    // subcription limits are already covered in this.validateSubscriptionLimit()
+    if (methodName === WS_CONSTANTS.METHODS.ETH_SUBSCRIBE || methodName === WS_CONSTANTS.METHODS.ETH_UNSUBSCRIBE)
+      return false;
+
+    const methodTotalLimit = methodConfiguration[methodName].total;
+    return this.rateLimit.shouldRateLimit(ip, methodName, methodTotalLimit, requestId);
   }
 }

@@ -341,6 +341,7 @@ export { expectUnsupportedMethod, expectedError, signTransaction, mockData, rand
 export const bytecode =
   '0x608060405234801561001057600080fd5b5060405161078938038061078983398181016040528101906100329190';
 export const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
+export const blobVersionedHash = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
 export const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;
 export const blockHash2 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6c`;
 export const blockHash3 = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6d`;

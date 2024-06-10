@@ -25,34 +25,17 @@ import dotenv from 'dotenv';
 import { v4 as uuid } from 'uuid';
 import websockify from 'koa-websocket';
 import { Registry } from 'prom-client';
+import { getRequestResult } from './controllers';
 import { WS_CONSTANTS } from './utils/constants';
 import { formatIdMessage } from './utils/formatters';
-import { handleConnectionClose } from './utils/utils';
 import WsMetricRegistry from './metrics/wsMetricRegistry';
 import ConnectionLimiter from './metrics/connectionLimiter';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
-import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
-import {
-  handleEthCall,
-  handleEthGetLogs,
-  handleEthGetCode,
-  handleEthSubsribe,
-  handleEthGasPrice,
-  handleEthGetBalance,
-  handleEthEstimateGas,
-  handleEthBlockNumber,
-  handleEthUnsubscribe,
-  handleEthGetStorageAt,
-  handleEthGetBlockByHash,
-  handleEthGetBlockByNumber,
-  handleEthSendRawTransaction,
-  handleEthGetTransactionCount,
-  handleEthGetTransactionByHash,
-  handleEthGetTransactionReceipt,
-} from './controllers';
+import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
+import { sendToClient, handleConnectionClose, getBatchRequestsMaxSize, getWsBatchRequestsEnabled } from './utils/utils';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -84,10 +67,12 @@ app.ws.use(async (ctx) => {
   const startTime = process.hrtime();
 
   ctx.websocket.id = relay.subs()?.generateId();
+  ctx.websocket.requestId = uuid();
+
   ctx.websocket.limiter = limiter;
   ctx.websocket.wsMetricRegistry = wsMetricRegistry;
   const connectionIdPrefix = formatIdMessage('Connection ID', ctx.websocket.id);
-  const requestIdPrefix = formatIdMessage('Request ID', uuid());
+  const requestIdPrefix = formatIdMessage('Request ID', ctx.websocket.requestId);
   logger.info(
     `${connectionIdPrefix} ${requestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
   );
@@ -123,117 +108,89 @@ app.ws.use(async (ctx) => {
       request = JSON.parse(msg.toString('ascii'));
     } catch (e) {
       // Log an error if the message cannot be decoded and send an invalid request error to the client
-      logger.error(
+      logger.warn(
         `${connectionIdPrefix} ${requestIdPrefix}: Could not decode message from connection, message: ${msg}, error: ${e}`,
       );
       ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
       return;
     }
 
-    // Extract the method and parameters from the received request
-    const { method, params } = request;
-    logger.debug(`${connectionIdPrefix} ${requestIdPrefix}: Method: ${method}. Params: ${JSON.stringify(params)}`);
+    // check if request is a batch request (array) or a signle request (JSON)
+    if (Array.isArray(request)) {
+      logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Receive batch request=${JSON.stringify(request)}`);
 
-    // Increment metrics for the received method
-    wsMetricRegistry.getCounter('methodsCounter').labels(method).inc();
-    wsMetricRegistry.getCounter('methodsCounterByIp').labels(ctx.request.ip, method).inc();
+      // Increment metrics for batch_requests
+      wsMetricRegistry.getCounter('methodsCounter').labels(WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME).inc();
+      wsMetricRegistry
+        .getCounter('methodsCounterByIp')
+        .labels(ctx.request.ip, WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME)
+        .inc();
 
-    // Validate request's params
-    try {
-      const methodValidations = Validator.METHODS[method];
-      if (methodValidations) {
-        Validator.validateParams(params, methodValidations);
+      // send error if batch request feature is not enabled
+      if (!getWsBatchRequestsEnabled()) {
+        const batchRequestDisabledError = predefined.WS_BATCH_REQUESTS_DISABLED;
+        logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: ${JSON.stringify(batchRequestDisabledError)}`);
+        ctx.websocket.send(JSON.stringify([jsonResp(null, batchRequestDisabledError, undefined)]));
+        return;
       }
-    } catch (error) {
-      logger.error(
-        error,
-        `${connectionIdPrefix} ${requestIdPrefix} Error in parameter validation. Method: ${method}, params: ${JSON.stringify(
-          params,
-        )}.`,
-      );
-      ctx.websocket.send(JSON.stringify(jsonResp(request.id, error, undefined)));
-      return;
-    }
 
-    // Check if the subscription limit is exceeded for ETH_SUBSCRIBE method
-    let response;
-    if (method === WS_CONSTANTS.METHODS.ETH_SUBSCRIBE && !limiter.validateSubscriptionLimit(ctx)) {
-      response = jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
-      ctx.websocket.send(JSON.stringify(response));
-      return;
-    }
-
-    // method logics
-    try {
-      const sharedParams = { ctx, params, logger, relay, request, method, requestIdPrefix, connectionIdPrefix };
-
-      switch (method) {
-        case WS_CONSTANTS.METHODS.ETH_SUBSCRIBE:
-          response = await handleEthSubsribe({ ...sharedParams, limiter, mirrorNodeClient });
-          break;
-        case WS_CONSTANTS.METHODS.ETH_UNSUBSCRIBE:
-          response = handleEthUnsubscribe(ctx, params, request, relay, limiter);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_CHAIN_ID:
-          response = jsonResp(request.id, null, relay.eth().chainId());
-          break;
-        case WS_CONSTANTS.METHODS.ETH_SEND_RAW_TRANSACTION:
-          await handleEthSendRawTransaction(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_CODE:
-          await handleEthGetCode(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_ESTIMATE_GAS:
-          await handleEthEstimateGas(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_BY_HASH:
-          await handleEthGetTransactionByHash(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_RECEIPT:
-          await handleEthGetTransactionReceipt(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_TRANSACTION_COUNT:
-          await handleEthGetTransactionCount(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_BLOCK_BY_HASH:
-          await handleEthGetBlockByHash(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_BLOCK_BY_NUMBER:
-          await handleEthGetBlockByNumber(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_BLOCK_NUMBER:
-          await handleEthBlockNumber(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GAS_PRICE:
-          await handleEthGasPrice(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_BALANCE:
-          await handleEthGetBalance(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_STORAGE_AT:
-          await handleEthGetStorageAt(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_GET_LOGS:
-          await handleEthGetLogs(sharedParams);
-          break;
-        case WS_CONSTANTS.METHODS.ETH_CALL:
-          await handleEthCall(sharedParams);
-          break;
-        default:
-          response = jsonResp(request.id, predefined.INTERNAL_ERROR(), null);
+      // send error if batch request exceed max batch size
+      if (request.length > getBatchRequestsMaxSize()) {
+        const batchRequestAmountMaxExceed = predefined.BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED(
+          request.length,
+          getBatchRequestsMaxSize(),
+        );
+        logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: ${JSON.stringify(batchRequestAmountMaxExceed)}`);
+        ctx.websocket.send(JSON.stringify([jsonResp(null, batchRequestAmountMaxExceed, undefined)]));
+        return;
       }
-    } catch (error) {
-      logger.error(
-        error,
-        `${connectionIdPrefix} ${requestIdPrefix} Encountered error on connectionID: ${
-          ctx.websocket.id
-        }, method: ${method}, params: ${JSON.stringify(params)}`,
-      );
-      response = jsonResp(request.id, error, undefined);
-    }
 
-    if (response) {
-      ctx.websocket.send(JSON.stringify(response));
+      // verify rate limit for batch_request method based on IP
+      if (limiter.shouldRateLimitOnMethod(ctx.ip, WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME, ctx.websocket.requestId)) {
+        ctx.websocket.send(
+          JSON.stringify([jsonResp(null, new IPRateLimitExceeded(WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME), undefined)]),
+        );
+        return;
+      }
+
+      // process requests
+      const requestPromises = request.map((item: any) => {
+        return getRequestResult(
+          ctx,
+          relay,
+          logger,
+          item,
+          limiter,
+          requestIdPrefix,
+          connectionIdPrefix,
+          mirrorNodeClient,
+          wsMetricRegistry,
+        );
+      });
+
+      // resolve all promises
+      const responses = await Promise.all(requestPromises);
+
+      // send to client
+      sendToClient(ctx.websocket, request, responses, logger, requestIdPrefix, connectionIdPrefix);
+    } else {
+      logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Receive single request=${JSON.stringify(request)}`);
+
+      // process requests
+      const response = await getRequestResult(
+        ctx,
+        relay,
+        logger,
+        request,
+        limiter,
+        requestIdPrefix,
+        connectionIdPrefix,
+        mirrorNodeClient,
+        wsMetricRegistry,
+      );
+
+      // send to client
+      sendToClient(ctx.websocket, request, response, logger, requestIdPrefix, connectionIdPrefix);
     }
 
     // Calculate the duration of the connection
@@ -241,7 +198,8 @@ app.ws.use(async (ctx) => {
     const msgDurationInMiliSeconds = (msgEndTime[0] + msgEndTime[1] / 1e9) * 1000; // Convert duration to miliseconds
 
     // Update the connection duration histogram with the calculated duration
-    wsMetricRegistry.getHistogram('messageDuration').labels(method).observe(msgDurationInMiliSeconds);
+    const methodLabel = Array.isArray(request) ? WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME : request.method;
+    wsMetricRegistry.getHistogram('messageDuration').labels(methodLabel).observe(msgDurationInMiliSeconds);
   });
 
   if (pingInterval > 0) {

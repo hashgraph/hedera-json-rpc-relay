@@ -20,20 +20,18 @@
 
 // external resources
 import { expect } from 'chai';
+import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { ethers, JsonRpcProvider, WebSocketProvider } from 'ethers';
-import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 
-describe('@release @web-socket-batch-2 eth_getCode', async function () {
-  const RELAY_URL = `${process.env.RELAY_ENDPOINT}`;
+describe('@web-socket-batch-2 eth_getCode', async function () {
   const METHOD_NAME = 'eth_getCode';
 
   let basicContract: ethers.Contract,
     basicContractAddress: string,
     codeFromRPC: string,
-    provider: JsonRpcProvider,
     ethersWsProvider: WebSocketProvider;
 
   before(async () => {
@@ -53,16 +51,18 @@ describe('@release @web-socket-batch-2 eth_getCode', async function () {
 
   after(async () => {
     // expect all the connections to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      expect(global.socketServer._connections).to.eq(0);
+    }
   });
 
-  it('should return the code ethers WebSocketProvider', async function () {
+  it('@release should return the code ethers WebSocketProvider', async function () {
     const codeFromWs = await ethersWsProvider.getCode(basicContractAddress);
     expect(codeFromWs).to.be.a('string');
     expect(codeFromRPC).to.equal(codeFromWs);
   });
 
-  it('should return the code through a websocket', async () => {
+  it('@release should return the code through a websocket', async () => {
     const param = [basicContractAddress, 'latest'];
     const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, param);
     WsTestHelper.assertJsonRpcObject(response);

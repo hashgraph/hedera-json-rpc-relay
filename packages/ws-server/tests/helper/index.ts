@@ -34,18 +34,25 @@ export class WsTestHelper {
     } catch (error) {
       if (error.info) error = error.info;
       expect(error.error).to.exist;
-      expect(error.error.code).to.eq(-32602);
+      expect(error.error.code).to.be.oneOf([-32602, -32603]);
     }
   }
 
-  static async sendRequestToStandardWebSocket(method: string, params: any[], ms?: number | undefined) {
+  static async sendRequestToStandardWebSocket(method: string, params: any, ms?: number | undefined) {
+    const BATCH_REQUEST_METHOD_NAME = 'batch_request';
     const webSocket = new WebSocket(WsTestConstant.WS_RELAY_URL);
 
     let response: any;
 
-    webSocket.on('open', () => {
-      webSocket.send(JSON.stringify(WsTestHelper.prepareJsonRpcObject(method, params)));
-    });
+    if (method === BATCH_REQUEST_METHOD_NAME) {
+      webSocket.on('open', () => {
+        webSocket.send(JSON.stringify(params));
+      });
+    } else {
+      webSocket.on('open', () => {
+        webSocket.send(JSON.stringify(WsTestHelper.prepareJsonRpcObject(method, params)));
+      });
+    }
 
     webSocket.on('message', (data: string) => {
       response = JSON.parse(data);
@@ -63,13 +70,14 @@ export class WsTestHelper {
     const response = await WsTestHelper.sendRequestToStandardWebSocket(method, params);
     WsTestHelper.assertJsonRpcObject(response);
     expect(response.error).to.exist;
-    expect(response.error.code).to.eq(-32602);
+    expect(response.error.code).to.be.oneOf([-32602, -32603]);
   }
 
   static assertJsonRpcObject(obj: any) {
     expect(obj).to.exist;
     expect(obj.id).to.eq(1);
     expect(obj.jsonrpc).to.eq('2.0');
+    expect(obj.method).to.not.exist; // Should not have method field in response for standard non-subscription methods
   }
 
   static prepareJsonRpcObject(method: string, params: any[]) {

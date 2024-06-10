@@ -22,6 +22,7 @@
 import WebSocket from 'ws';
 import { ethers } from 'ethers';
 import chai, { expect } from 'chai';
+import { WsTestHelper } from '../helper';
 import { solidity } from 'ethereum-waffle';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import Constants from '@hashgraph/json-rpc-server/tests/helpers/constants';
@@ -68,7 +69,7 @@ const createLogs = async (contract: ethers.Contract, requestId) => {
   await new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
-describe('@release @web-socket-batch-3 eth_subscribe', async function () {
+describe('@web-socket-batch-3 eth_subscribe', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   let server;
@@ -888,6 +889,21 @@ describe('@release @web-socket-batch-3 eth_subscribe', async function () {
         'eth_subscribe',
         ['logs', { address: logContractSigner.target, topics: ['0x000'] }],
       ]);
+    });
+
+    it('Should ignore invalid params in filter object and still successfully call eth_subscribe Logs ', async function () {
+      const randomTopic = '0x1d29d0f04057864b829c60f025fdba344f1623eb30b90820f5a6c39ffbd1c512';
+
+      // @notice: the only two valid params a filter object can have is `address` and `topics`.
+      //          However, WS server should ignore any invalid params passed in the request.
+      const response = await WsTestHelper.sendRequestToStandardWebSocket(
+        'eth_subscribe',
+        ['logs', { address: logContractSigner.target, topics: [randomTopic], fromBlock: '0x0', toBlock: 'latest' }],
+        1000,
+      );
+      WsTestHelper.assertJsonRpcObject(response);
+      expect(response.result).to.exist;
+      expect(ethers.isHexString(response.result)).to.be.true;
     });
   });
 

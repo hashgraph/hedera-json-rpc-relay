@@ -25,7 +25,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 
-describe('@release @web-socket-batch-1 eth_getBalance', async function () {
+describe('@web-socket-batch-1 eth_getBalance', async function () {
   const METHOD_NAME = 'eth_getBalance';
   const INVALID_PARAMS = [
     [],
@@ -71,17 +71,19 @@ describe('@release @web-socket-batch-1 eth_getBalance', async function () {
 
   after(async () => {
     // expect all the connections to be closed after all
-    expect(global.socketServer._connections).to.eq(0);
+    if (global && global.socketServer) {
+      expect(global.socketServer._connections).to.eq(0);
+    }
   });
 
   describe(WsTestConstant.STANDARD_WEB_SOCKET, () => {
     for (const params of INVALID_PARAMS) {
-      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+      it(`Should fail eth_getBalance on Standard Web Socket and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
         await WsTestHelper.assertFailInvalidParamsStandardWebSocket(METHOD_NAME, params);
       });
     }
 
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.STANDARD_WEB_SOCKET} and handle valid requests correctly`, async () => {
+    it(`@release Should execute eth_getBalance on Standard Web Socket and handle valid requests correctly`, async () => {
       const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [accounts[0].address, 'latest']);
       WsTestHelper.assertJsonRpcObject(response);
 
@@ -92,12 +94,12 @@ describe('@release @web-socket-batch-1 eth_getBalance', async function () {
 
   describe(WsTestConstant.ETHERS_WS_PROVIDER, () => {
     for (const params of INVALID_PARAMS) {
-      it(`Should fail ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
+      it(`Should fail eth_getBalance on Ethers Web Socket Provider and throw predefined.INVALID_PARAMETERS if the request's params variable is invalid. params=[${params}]`, async () => {
         await WsTestHelper.assertFailInvalidParamsEthersWsProvider(ethersWsProvider, METHOD_NAME, params);
       });
     }
 
-    it(`Should execute ${METHOD_NAME} on ${WsTestConstant.ETHERS_WS_PROVIDER} and handle valid requests correctly`, async () => {
+    it(`@release Should execute eth_getBalance on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
       const expectedResult = await global.relay.call(METHOD_NAME, [accounts[0].address, 'latest']);
       const result = await ethersWsProvider.send(METHOD_NAME, [accounts[0].address, 'latest']);
       expect(result).to.eq(expectedResult);

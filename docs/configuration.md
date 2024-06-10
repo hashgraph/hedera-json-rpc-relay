@@ -26,7 +26,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 
 | Name                       | Default          | Description                                                                                                                                                                                                             |
 | -------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BATCH_REQUESTS_ENABLED`   | "false"          | Flag to disable or enable batch requests.                                                                                                                                                                               |
+| `BATCH_REQUESTS_ENABLED`   | "true"           | Flag to disable or enable batch requests.                                                                                                                                                                               |
 | `BATCH_REQUESTS_MAX_SIZE`  | "100"            | Maximum number of requests allowed in a batch.                                                                                                                                                                          |
 | `CHAIN_ID`                 | ""               | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively.                                       |
 | `HBAR_RATE_LIMIT_DURATION` | "80000"          | hbar budget limit duration. This creates a timestamp, which resets all limits, when it's reached. Default is to 80000 (80 seconds).                                                                                     |
@@ -39,6 +39,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `RATE_LIMIT_DISABLED`      | "false"          | Flag to disable IP based rate limiting.                                                                                                                                                                                 |
 | `REQUEST_ID_IS_OPTIONAL`   | ""               | Flag to set it the JSON RPC request id field in the body should be optional. Note, this breaks the API spec and is not advised and is provided for test purposes only where some wallets may be non compliant           |
 | `SERVER_PORT`              | "7546"           | The RPC server port number to listen for requests on. Currently a static value defaulting to 7546. See [#955](https://github.com/hashgraph/hedera-json-rpc-relay/issues/955)                                            |
+| `SERVER_REQUEST_TIMEOUT_MS`| "60000"           | The time of inactivity allowed before a timeout is triggered and the socket is closed. See [NodeJs Server Timeout](https://nodejs.org/api/http.html#serversettimeoutmsecs-callback)                                         |
 
 ## Relay
 
@@ -105,6 +106,8 @@ Unless you need to set a non-default value, it is recommended to only populate o
 
 | Name                            | Default  | Description                                                                                                                   |
 | ------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `WS_BATCH_REQUESTS_ENABLED`     | "true"   | Flag to disable or enable batch requests on the websocket server.                                                             |
+| `WS_BATCH_REQUESTS_MAX_SIZE`    | "20"     | Maximum number of requests allowed in a batch on websocket server.                                                            |
 | `SUBSCRIPTIONS_ENABLED`         | "false"  | If enabled eth_subscribe will be enabled using WebSockets.                                                                    |
 | `WS_MAX_INACTIVITY_TTL`         | "300000" | Time in ms that the web socket connection is allowed to stay open without any messages sent or received, currently 5 minutes. |
 | `WS_CONNECTION_LIMIT`           | "10"     | Maximum amount of concurrent web socket connections allowed.                                                                  |

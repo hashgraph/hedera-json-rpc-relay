@@ -37,7 +37,7 @@ export class JsonRpcError {
 export const predefined = {
   CONTRACT_REVERT: (errorMessage?: string, data: string = '') =>
     new JsonRpcError({
-      code: -32008,
+      code: 3,
       message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
       data: data,
     }),
@@ -169,6 +169,11 @@ export const predefined = {
     code: -32601,
     message: 'Unsupported JSON-RPC method',
   }),
+  UNSUPPORTED_TRANSACTION_TYPE: new JsonRpcError({
+    name: 'Unsupported transaction type',
+    code: -32611,
+    message: 'Unsupported transaction type',
+  }),
   VALUE_TOO_LOW: new JsonRpcError({
     name: 'Value too low',
     code: -32602,
@@ -280,6 +285,17 @@ export const predefined = {
     new JsonRpcError({
       name: 'Batch requests amount max exceeded',
       code: -32203,
+      message: `Batch request amount ${amount} exceeds max ${max}`,
+    }),
+  WS_BATCH_REQUESTS_DISABLED: new JsonRpcError({
+    name: 'WS batch requests disabled',
+    code: -32205,
+    message: 'WS batch requests are disabled',
+  }),
+  WS_BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED: (amount: number, max: number) =>
+    new JsonRpcError({
+      name: 'WS batch requests amount max exceeded',
+      code: -32206,
       message: `Batch request amount ${amount} exceeds max ${max}`,
     }),
   INVALID_ARGUMENTS: (message: string) =>

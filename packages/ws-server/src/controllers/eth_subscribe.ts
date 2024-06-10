@@ -18,13 +18,12 @@
  *
  */
 
-import ConnectionLimiter from '../metrics/connectionLimiter';
-import { getMultipleAddressesEnabled } from '../utils/utils';
 import { predefined, Relay } from '@hashgraph/json-rpc-relay';
 import { validateSubscribeEthLogsParams } from '../utils/validators';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
+import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
+import { constructValidLogSubscriptionFilter, getMultipleAddressesEnabled } from '../utils/utils';
 
 /**
  * Subscribes to new block headers (newHeads) events and returns the response and subscription ID.
@@ -77,9 +76,9 @@ const handleEthSubscribeNewHeads = (
   requestIdPrefix: string,
 ): { response: any; subscriptionId: any } => {
   const wsNewHeadsEnabled =
-    typeof process.env.WS_NEW_HEADS_ENABLED !== 'undefined' ? process.env.WS_NEW_HEADS_ENABLED : 'true';
+    typeof process.env.WS_NEW_HEADS_ENABLED !== 'undefined' ? process.env.WS_NEW_HEADS_ENABLED === 'true' : true;
 
-  if (wsNewHeadsEnabled === 'true') {
+  if (wsNewHeadsEnabled) {
     ({ response, subscriptionId } = subscribeToNewHeads(filters, response, subscriptionId, ctx, event, relay, logger));
   } else {
     logger.warn(
@@ -116,15 +115,21 @@ const handleEthSubscribeLogs = async (
   relay: Relay,
   mirrorNodeClient: MirrorNodeClient,
 ): Promise<{ response: any; subscriptionId: any }> => {
-  await validateSubscribeEthLogsParams(filters, requestIdPrefix, mirrorNodeClient);
-  if (!getMultipleAddressesEnabled() && Array.isArray(filters.address) && filters.address.length > 1) {
+  const validFiltersObject = constructValidLogSubscriptionFilter(filters);
+
+  await validateSubscribeEthLogsParams(validFiltersObject, requestIdPrefix, mirrorNodeClient);
+  if (
+    !getMultipleAddressesEnabled() &&
+    Array.isArray(validFiltersObject['address']) &&
+    validFiltersObject['address'].length > 1
+  ) {
     response = jsonResp(
       request.id,
       predefined.INVALID_PARAMETER('filters.address', 'Only one contract address is allowed'),
       undefined,
     );
   } else {
-    subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, filters);
+    subscriptionId = relay.subs()?.subscribe(ctx.websocket, event, validFiltersObject);
   }
   return { response, subscriptionId };
 };
@@ -200,4 +205,22 @@ export const handleEthSubsribe = async ({
   response = response ?? (subscriptionId ? jsonResp(request.id, null, subscriptionId) : undefined);
 
   return response;
+};
+
+/**
+ * Handles unsubscription requests for on-chain events.
+ * Unsubscribes the WebSocket from the specified subscription ID and returns the response.
+ * @param {object} args - An object containing the function parameters as properties.
+ * @param {any} args.ctx - The context object containing information about the WebSocket connection.
+ * @param {any} args.params - The parameters of the unsubscription request.
+ * @param {any} args.request - The request object received from the client.
+ * @param {Relay} args.relay - The relay object used for managing WebSocket subscriptions.
+ * @param {ConnectionLimiter} args.limiter - The limiter object used for rate limiting WebSocket connections.
+ * @returns {any} Returns the response to the unsubscription request.
+ */
+export const handleEthUnsubscribe = ({ ctx, params, request, relay, limiter }): any => {
+  const subId = params[0];
+  const unsubbedCount = relay.subs()?.unsubscribe(ctx.websocket, subId);
+  limiter.decrementSubs(ctx, unsubbedCount);
+  return jsonResp(request.id, null, unsubbedCount !== 0);
 };

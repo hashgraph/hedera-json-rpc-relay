@@ -218,5 +218,23 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
       sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
     });
+
+    it('should throw precheck error for type=3 transactions', async function () {
+      const type3tx = {
+        ...transaction,
+        type: 3,
+        maxFeePerBlobGas: transaction.gasPrice,
+        blobVersionedHashes: [ethereumHash],
+      };
+      const signed = await signTransaction(type3tx);
+
+      await RelayAssertions.assertRejection(
+        predefined.UNSUPPORTED_TRANSACTION_TYPE,
+        ethImpl.sendRawTransaction,
+        false,
+        ethImpl,
+        [signed, getRequestId()],
+      );
+    });
   });
 });

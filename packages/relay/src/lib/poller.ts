@@ -48,7 +48,8 @@ export class Poller {
     this.logger = logger;
     this.polls = [];
     this.pollingInterval = Number(process.env.WS_POLLING_INTERVAL) || 500;
-    this.newHeadsEnabled = process.env.WS_NEW_HEADS_ENABLED ? Boolean(Number(process.env.WS_NEW_HEADS_ENABLED)) : true;
+    this.newHeadsEnabled =
+      typeof process.env.WS_NEW_HEADS_ENABLED !== 'undefined' ? process.env.WS_NEW_HEADS_ENABLED === 'true' : true;
 
     const activePollsGaugeName = 'rpc_websocket_active_polls';
     register.removeSingleMetric(activePollsGaugeName);

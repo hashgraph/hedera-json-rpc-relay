@@ -127,7 +127,9 @@ export class FilterService implements IFilterService {
     try {
       FilterService.requireFiltersEnabled();
 
-      if (!(await this.common.validateBlockRangeAndAddTimestampToParams({}, fromBlock, toBlock, requestIdPrefix))) {
+      if (
+        !(await this.common.validateBlockRangeAndAddTimestampToParams({}, fromBlock, toBlock, requestIdPrefix, address))
+      ) {
         throw predefined.INVALID_BLOCK_RANGE;
       }
 

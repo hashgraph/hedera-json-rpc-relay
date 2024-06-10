@@ -194,20 +194,32 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           [logs[0].transactionHash],
           requestId,
         );
+        const transactionCountLog0Block = await relay.provider.getTransactionCount(
+          log0Block.from,
+          log0Block.blockNumber,
+        );
 
         log4Block = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
-          [logs[4].transactionHash],
+          [logs[logs.length - 1].transactionHash],
           requestId,
+        );
+        const transactionCountLog4Block = await relay.provider.getTransactionCount(
+          log4Block.from,
+          log4Block.blockNumber,
         );
 
         expect(log0Block).to.exist;
         expect(log0Block).to.have.property('blockNumber');
-        expect(log0Block.nonce).to.equal('0x0');
+
+        // nonce is zero based, so we need to subtract 1
+        expect(parseInt(log0Block.nonce, 16)).to.equal(transactionCountLog0Block - 1);
 
         expect(log4Block).to.exist;
         expect(log4Block).to.have.property('blockNumber');
-        expect(log4Block.nonce).to.equal('0x4');
+
+        // nonce is zero based, so we need to subtract 1
+        expect(parseInt(log4Block.nonce, 16)).to.equal(transactionCountLog4Block - 1);
       });
 
       it('should be able to use `fromBlock` param', async () => {
@@ -770,7 +782,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           .setTransactionMemo('Relay test token transfer');
         const resp = await transaction.execute(servicesNode.client);
         await resp.getRecord(servicesNode.client);
-        await new Promise((r) => setTimeout(r, 1000));
+        await Utils.wait(1000);
         const logsRes = await mirrorNode.get(`/contracts/results/logs?limit=1`, requestId);
         const blockNumber = logsRes.logs[0].block_number;
         const formattedBlockNumber = prepend0x(blockNumber.toString(16));
@@ -844,7 +856,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         };
         const signedSendHbarTx = await accounts[0].wallet.signTransaction(sendHbarTx);
         await relay.sendRawTransaction(signedSendHbarTx, requestId);
-        await new Promise((r) => setTimeout(r, 5000)); // wait for signer's account to propagate accross the network
+        await Utils.wait(5000); // wait for signer's account to propagate accross the network
         const deployerBalance = await global.relay.getBalance(constants.DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest');
         expect(deployerBalance).to.not.eq(0);
 
@@ -902,7 +914,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-        await new Promise((r) => setTimeout(r, 5000));
+        await Utils.wait(5000);
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const receiverEndBalance = await relay.getBalance(parentContractAddress, 'latest', requestId);
@@ -937,12 +949,32 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-        await new Promise((r) => setTimeout(r, 5000));
+        await Utils.wait(5000);
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const receiverEndBalance = await relay.getBalance(parentContractAddress, 'latest', requestId);
         const balanceChange = receiverEndBalance - receiverInitialBalance;
         expect(balanceChange.toString()).to.eq(Number(ONE_TINYBAR).toString());
+      });
+
+      it('should return transaction result with no chainId field for legacy EIP155 transactions  (with no chainId i.e. chainId=0x0)', async function () {
+        const transaction = {
+          ...defaultLegacyTransactionData,
+          to: parentContractAddress,
+          nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+          gasPrice: await relay.gasPrice(requestId),
+        };
+        const signedTx = await accounts[1].wallet.signTransaction(transaction);
+        const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+
+        const transactionResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
+          [transactionHash],
+          requestId,
+        );
+
+        const result = Object.prototype.hasOwnProperty.call(transactionResult, 'chainId');
+        expect(result).to.be.false;
       });
 
       it('should fail "eth_sendRawTransaction" for Legacy transactions (with gas price too low)', async function () {
@@ -1049,7 +1081,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-        await new Promise((r) => setTimeout(r, 5000));
+        await Utils.wait(5000);
 
         await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         const receiverEndBalance = await relay.getBalance(parentContractAddress, 'latest', requestId);
@@ -1078,6 +1110,35 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(info.created_contract_ids.length).to.be.equal(1);
       });
 
+      // note: according to this ticket https://github.com/hashgraph/hedera-json-rpc-relay/issues/2563,
+      //      if calldata's size fails into the range of [2568 bytes, 5217 bytes], the request fails and throw
+      //      `Null Entity ID` error. This unit test makes sure that with the new fix, requests should work with all case scenarios.
+      it('should execute "eth_sendRawTransaction" and deploy a contract with any arbitrary calldata size', async () => {
+        const gasPrice = await relay.gasPrice(requestId);
+
+        const randomBytes = [2566, 2568, 3600, 5217, 7200];
+
+        for (const bytes of randomBytes) {
+          const transaction = {
+            type: 2,
+            chainId: Number(CHAIN_ID),
+            nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+            maxPriorityFeePerGas: gasPrice,
+            maxFeePerGas: gasPrice,
+            gasLimit: defaultGasLimit,
+            data: '0x' + '00'.repeat(bytes),
+          };
+          const signedTx = await accounts[0].wallet.signTransaction(transaction);
+          const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+          const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+          expect(info).to.have.property('contract_id');
+          expect(info.contract_id).to.not.be.null;
+          expect(info).to.have.property('created_contract_ids');
+          expect(info.created_contract_ids.length).to.be.equal(1);
+          await new Promise((r) => setTimeout(r, 3000));
+        }
+      });
+
       it('should delete the file created while execute "eth_sendRawTransaction" to deploy a large contract', async function () {
         const gasPrice = await relay.gasPrice(requestId);
         const transaction = {
@@ -1092,6 +1153,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+
+        await Utils.wait(1000);
         const txInfo = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const contractResult = await mirrorNode.get(`/contracts/${txInfo.contract_id}`);

@@ -391,25 +391,24 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.not.be.equal('0x0');
     });
 
-    it('should throw on "eth_estimateGas" with both input and data fields present in the txObject', async function () {
-      try {
-        await relay.call(
-          RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
-          [
-            {
-              from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
-              to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
-              value: '0xa688906bd8b00000',
-              gas: '0xd97010',
-              input: '0x',
-              data: '0x',
-            },
-          ],
-          requestId,
-        );
-      } catch (e) {
-        expect(e).to.equal(predefined.INVALID_ARGUMENTS('Cannot accept both input and data fields. Use only one.'));
-      }
+    it('should execute "eth_estimateGas" with both input and data fields present in the txObject', async function () {
+      const res = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
+        [
+          {
+            from: '0x114f60009ee6b84861c0cdae8829751e517bc4d7',
+            to: '0xae410f34f7487e2cd03396499cebb09b79f45d6e',
+            value: '0xa688906bd8b00000',
+            gas: '0xd97010',
+            input: '0x',
+            data: '0x',
+          },
+        ],
+        requestId,
+      );
+      expect(res).to.contain('0x');
+      expect(res).to.not.be.equal('0x');
+      expect(res).to.not.be.equal('0x0');
     });
   });
 
@@ -1037,6 +1036,19 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         requestId,
       );
       expect(storageVal).to.eq(EXPECTED_STORAGE_VAL);
+    });
+
+    it('should execute "eth_getStorageAt" request against an inactive address (contains no data) and receive a 32-byte-zero-hex string ', async function () {
+      const hexString = ethers.ZeroHash;
+      const inactiveAddress = ethers.Wallet.createRandom();
+
+      const storageVal = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
+        [inactiveAddress.address, '0x0', 'latest'],
+        requestId,
+      );
+
+      expect(storageVal).to.eq(hexString);
     });
   });
 
