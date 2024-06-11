@@ -18,7 +18,7 @@
  *
  */
 
-import { Assertion, expect } from 'chai';
+import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 const registry = new Registry();
@@ -29,13 +29,14 @@ import { blobVersionedHash, contractAddress1, expectedError, mockData, signTrans
 import { MirrorNodeClient } from '../../src/lib/clients';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { ethers } from 'ethers';
+import { Transaction, ethers } from 'ethers';
 import constants from '../../src/lib/constants';
 import { JsonRpcError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 const logger = pino();
 
 const limitOrderPostFix = '?order=desc&limit=1';
+const transactionsPostFix = '?transactions=false';
 
 describe('Precheck', async function () {
   const txWithMatchingChainId =
@@ -59,10 +60,18 @@ describe('Precheck', async function () {
   const parsedTxWithValueLessThanOneTinybarAndNotEmptyData = ethers.Transaction.from(
     txWithValueLessThanOneTinybarAndNotEmptyData,
   );
-  const oneTinyBar = ethers.parseUnits('1', 10);
+
   const defaultGasPrice = 720_000_000_000;
   const defaultGasLimit = 1_000_000;
   const defaultChainId = Number('0x12a');
+  const defaultTx = {
+    gasLimit: defaultGasLimit,
+    gasPrice: defaultGasPrice,
+    chainId: defaultChainId,
+    maxFeePerGas: null,
+    maxPriorityFeePerGas: null,
+  };
+
   let precheck: Precheck;
   let mock: MockAdapter;
 
@@ -167,12 +176,6 @@ describe('Precheck', async function () {
   });
 
   describe('gasLimit', async function () {
-    const defaultTx = {
-      value: oneTinyBar,
-      gasPrice: defaultGasPrice,
-      chainId: defaultChainId,
-    };
-
     function testFailingGasLimitPrecheck(gasLimits, errorCode) {
       for (const gasLimit of gasLimits) {
         it(`should fail for gasLimit: ${gasLimit}`, async function () {
@@ -393,13 +396,6 @@ describe('Precheck', async function () {
 
   describe('nonce', async function () {
     const defaultNonce = 3;
-    const defaultTx = {
-      value: oneTinyBar,
-      gasPrice: defaultGasPrice,
-      chainId: defaultChainId,
-      nonce: defaultNonce,
-    };
-
     const mirrorAccount = {
       ethereum_nonce: defaultNonce,
     };
@@ -450,25 +446,22 @@ describe('Precheck', async function () {
   });
 
   describe('account', async function () {
-    const defaultNonce = 3;
-    const defaultTx = {
-      value: oneTinyBar,
-      gasPrice: defaultGasPrice,
-      chainId: defaultChainId,
-      nonce: defaultNonce,
-      from: mockData.accountEvmAddress,
-    };
+    let parsedTx: Transaction;
+    let mirrorAccount: any;
+    const defaultNonce: number = 3;
 
-    const signed = await signTransaction(defaultTx);
-    const parsedTx = ethers.Transaction.from(signed);
-
-    const mirrorAccount = {
-      evm_address: mockData.accountEvmAddress,
-      ethereum_nonce: defaultNonce,
-    };
+    before(async () => {
+      const wallet = ethers.Wallet.createRandom();
+      const signed = await wallet.signTransaction({ ...defaultTx, from: wallet.address, nonce: defaultNonce });
+      parsedTx = ethers.Transaction.from(signed);
+      mirrorAccount = {
+        evm_address: parsedTx.from,
+        ethereum_nonce: defaultNonce,
+      };
+    });
 
     it(`should fail for missing account`, async function () {
-      mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(404, mockData.notFound);
+      mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(404, mockData.notFound);
 
       try {
         await precheck.verifyAccount(parsedTx);
@@ -477,12 +470,12 @@ describe('Precheck', async function () {
         expect(e).to.exist;
         expect(e.code).to.eq(-32001);
         expect(e.name).to.eq('Resource not found');
-        expect(e.message).to.contain(mockData.accountEvmAddress);
+        expect(e.message).to.contain(parsedTx.from);
       }
     });
 
     it(`should not fail for matched account`, async function () {
-      mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(200, mirrorAccount);
+      mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(200, mirrorAccount);
       const account = await precheck.verifyAccount(parsedTx);
 
       expect(account.ethereum_nonce).to.eq(defaultNonce);

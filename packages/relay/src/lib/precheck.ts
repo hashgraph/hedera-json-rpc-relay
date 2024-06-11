@@ -26,43 +26,69 @@ import constants from './constants';
 import { ethers, Transaction } from 'ethers';
 import { formatRequestIdMessage, prepend0x } from '../formatters';
 
+/**
+ * Precheck class for handling various prechecks before sending a raw transaction.
+ */
 export class Precheck {
-  private mirrorNodeClient: MirrorNodeClient;
+  private readonly mirrorNodeClient: MirrorNodeClient;
   private readonly chain: string;
   private readonly logger: Logger;
 
+  /**
+   * Creates an instance of Precheck.
+   * @param {MirrorNodeClient} mirrorNodeClient - The MirrorNodeClient instance.
+   * @param {Logger} logger - The logger instance.
+   * @param {string} chainId - The chain ID.
+   */
   constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, chainId: string) {
     this.mirrorNodeClient = mirrorNodeClient;
     this.logger = logger;
     this.chain = chainId;
   }
 
+  /**
+   * Parses the transaction if needed.
+   * @param {string | Transaction} transaction - The transaction to parse.
+   * @returns {Transaction} The parsed transaction.
+   */
   public static parseTxIfNeeded(transaction: string | Transaction): Transaction {
     return typeof transaction === 'string' ? Transaction.from(transaction) : transaction;
   }
 
-  value(tx: Transaction) {
+  /**
+   * Checks if the value of the transaction is valid.
+   * @param {Transaction} tx - The transaction.
+   */
+  value(tx: Transaction): void {
     if (tx.data === EthImpl.emptyHex && tx.value < constants.TINYBAR_TO_WEIBAR_COEF) {
       throw predefined.VALUE_TOO_LOW;
     }
   }
 
   /**
-   * @param transaction
-   * @param gasPrice
+   * Sends a raw transaction after performing various prechecks.
+   * @param {ethers.Transaction} parsedTx - The parsed transaction.
+   * @param {number} gasPrice - The gas price.
+   * @param {string} [requestId] - The request ID.
    */
-  async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId?: string) {
+  async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId?: string): Promise<void> {
     this.transactionType(parsedTx, requestId);
     this.gasLimit(parsedTx, requestId);
     const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
-    await this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
+    this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
     this.chainId(parsedTx, requestId);
     this.value(parsedTx);
     this.gasPrice(parsedTx, gasPrice, requestId);
-    await this.balance(parsedTx, mirrorAccountInfo, requestId);
+    this.balance(parsedTx, mirrorAccountInfo, requestId);
   }
 
-  async verifyAccount(tx: Transaction, requestId?: string) {
+  /**
+   * Verifies the account.
+   * @param {Transaction} tx - The transaction.
+   * @param {string} [requestId] - The request ID.
+   * @returns {Promise<any>} A Promise.
+   */
+  async verifyAccount(tx: Transaction, requestId?: string): Promise<any> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     // verify account
     const accountInfo = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
@@ -81,9 +107,12 @@ export class Precheck {
   }
 
   /**
-   * @param tx
+   * Checks the nonce of the transaction.
+   * @param {Transaction} tx - The transaction.
+   * @param {number} accountInfoNonce - The nonce of the account.
+   * @param {string} [requestId] - The request ID.
    */
-  async nonce(tx: Transaction, accountInfoNonce: number, requestId?: string) {
+  nonce(tx: Transaction, accountInfoNonce: number, requestId?: string): void {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(
       `${requestIdPrefix} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`,
@@ -96,9 +125,11 @@ export class Precheck {
   }
 
   /**
-   * @param tx
+   * Checks the chain ID of the transaction.
+   * @param {Transaction} tx - The transaction.
+   * @param {string} [requestId] - The request ID.
    */
-  chainId(tx: Transaction, requestId?: string) {
+  chainId(tx: Transaction, requestId?: string): void {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const txChainId = prepend0x(Number(tx.chainId).toString(16));
     const passes = this.isLegacyUnprotectedEtx(tx) || txChainId === this.chain;
@@ -124,10 +155,12 @@ export class Precheck {
   }
 
   /**
-   * @param tx
-   * @param gasPrice
+   * Checks the gas price of the transaction.
+   * @param {Transaction} tx - The transaction.
+   * @param {number} gasPrice - The gas price.
+   * @param {string} [requestId] - The request ID.
    */
-  gasPrice(tx: Transaction, gasPrice: number, requestId?: string) {
+  gasPrice(tx: Transaction, gasPrice: number, requestId?: string): void {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const minGasPrice = BigInt(gasPrice);
     const txGasPrice = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
@@ -169,10 +202,12 @@ export class Precheck {
   }
 
   /**
-   * @param tx
-   * @param callerName
+   * Checks the balance of the sender account.
+   * @param {Transaction} tx - The transaction.
+   * @param {any} account - The account information.
+   * @param {string} [requestId] - The request ID.
    */
-  async balance(tx: Transaction, account: any, requestId?: string) {
+  balance(tx: Transaction, account: any, requestId?: string): void {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const result = {
       passes: false,
@@ -221,9 +256,11 @@ export class Precheck {
   }
 
   /**
-   * @param tx
+   * Checks the gas limit of the transaction.
+   * @param {Transaction} tx - The transaction.
+   * @param {string} [requestId] - The request ID.
    */
-  gasLimit(tx: Transaction, requestId?: string) {
+  gasLimit(tx: Transaction, requestId?: string): void {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const gasLimit = Number(tx.gasLimit);
     const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
@@ -253,11 +290,12 @@ export class Precheck {
    * Calculates the intrinsic gas cost based on the number of bytes in the data field.
    * Using a loop that goes through every two characters in the string it counts the zero and non-zero bytes.
    * Every two characters that are packed together and are both zero counts towards zero bytes.
-   * @param data
+   * @param {string} data - The data with the bytes to be calculated
+   * @returns {number} The intrinsic gas cost.
    * @private
    */
-  private static transactionIntrinsicGasCost(data: string) {
-    let trimmedData = data.replace('0x', '');
+  private static transactionIntrinsicGasCost(data: string): number {
+    const trimmedData = data.replace('0x', '');
 
     let zeros = 0;
     let nonZeros = 0;
@@ -277,7 +315,8 @@ export class Precheck {
 
   /**
    * Converts hex string to bytes array
-   * @param hex the hex string you want to convert
+   * @param {string} hex - The hex string you want to convert.
+   * @returns {Uint8Array} The bytes array.
    */
   hexToBytes(hex: string): Uint8Array {
     if (hex === '') {
@@ -293,6 +332,10 @@ export class Precheck {
     return Uint8Array.from(Buffer.from(hex, 'hex'));
   }
 
+  /**
+   * Checks the size of the transaction.
+   * @param {string} transaction - The transaction to check.
+   */
   checkSize(transaction: string): void {
     const transactionToBytes: Uint8Array = this.hexToBytes(transaction);
     const transactionSize: number = transactionToBytes.length;
