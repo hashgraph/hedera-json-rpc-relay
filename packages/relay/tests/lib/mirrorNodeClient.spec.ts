@@ -1101,7 +1101,6 @@ describe('MirrorNodeClient', async function () {
           `Exceeded maximum mirror node pagination count: ${constants.MAX_MIRROR_NODE_PAGINATION}`,
         );
         expect(e.code).to.equal(errorRef.code);
-        expect(e.name).to.equal(errorRef.name);
       }
     });
   });

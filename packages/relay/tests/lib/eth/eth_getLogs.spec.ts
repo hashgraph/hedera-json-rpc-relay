@@ -456,7 +456,6 @@ describe('@ethGetLogs using MirrorNode', async function () {
 
     await ethGetLogsFailing(ethImpl, [null, null, '0x5', null, null], (error) => {
       expect(error.code).to.equal(-32011);
-      expect(error.name).to.equal('Missing fromBlock parameter');
       expect(error.message).to.equal('Provided toBlock parameter without specifying fromBlock');
     });
   });

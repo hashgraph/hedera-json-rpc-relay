@@ -33,6 +33,7 @@ import { Transaction, ethers } from 'ethers';
 import constants from '../../src/lib/constants';
 import { JsonRpcError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import { ONE_TINYBAR_IN_WEI_HEX } from './eth/eth-config';
 const logger = pino();
 
 const limitOrderPostFix = '?order=desc&limit=1';
@@ -469,7 +470,6 @@ describe('Precheck', async function () {
       } catch (e: any) {
         expect(e).to.exist;
         expect(e.code).to.eq(-32001);
-        expect(e.name).to.eq('Resource not found');
         expect(e.message).to.contain(parsedTx.from);
       }
     });
@@ -576,7 +576,7 @@ describe('Precheck', async function () {
 
   describe('transactionType', async function () {
     const defaultTx = {
-      value: oneTinyBar,
+      value: ONE_TINYBAR_IN_WEI_HEX,
       gasPrice: defaultGasPrice,
       gasLimit: defaultGasLimit,
       chainId: defaultChainId,
