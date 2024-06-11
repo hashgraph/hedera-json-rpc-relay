@@ -29,12 +29,23 @@ import { ethers, toUtf8Bytes } from 'ethers';
 import { Precheck } from '../../../relay/src/lib/precheck';
 import pino from 'pino';
 import { MirrorNodeClient } from '../../../relay/src/lib/clients';
-import EquivalenceDestructContractJson from '../contracts/EquivalenceDestruct.json';
 import { hexToASCII } from '../../../relay/src/formatters';
 const logger = pino();
 
+enum CallTypes {
+  Call = 'Call',
+  StaticCall = 'StaticCall',
+  DelegateCall = 'DelegateCall',
+  CallCode = 'CallCode',
+}
+
+enum Outcomes {
+  Output = 'OUTPUT',
+  Error = 'ERROR',
+}
+
 const removeLeading0x = (input: string) => {
-  return input.startsWith('0x') ? input.replace('0x', '') : input;
+  return input.startsWith(Constants.EMPTY_HEX) ? input.replace(Constants.EMPTY_HEX, '') : input;
 };
 
 const removeLeadingZeros = (input) => {
@@ -60,8 +71,7 @@ async function testRejection(errorMessage, method, checkMessage, thisObj, args?)
   });
 }
 
-describe('Equivalence tests', async function () {
-  const signers: AliasAccount[] = [];
+describe.only('Equivalence tests', async function () {
   const { servicesNode, mirrorNode, relay }: any = global;
   const servicesClient = servicesNode as ServicesClient;
   const mirrorNodeClient = mirrorNode as MirrorNodeClient;
@@ -72,8 +82,6 @@ describe('Equivalence tests', async function () {
   const CONTRACT_EXECUTION_EXCEPTION = 'CONTRACT_EXECUTION_EXCEPTION';
   const INVALID_FEE_SUBMITTED = 'INVALID_FEE_SUBMITTED';
   const CONTRACT_REVERT_EXECUTED = 'CONTRACT_REVERT_EXECUTED';
-  const prefix = '0x';
-  const ETH_PRECOMPILE_0x1 = '0.0.1';
   const ETH_PRECOMPILE_0x1001 = '0.0.1001';
   const NON_EXISTING_CONTRACT_ID = '0.0.564400';
   const NON_EXISTING_FUNCTION = 'nxxixxkxxi';
@@ -84,9 +92,24 @@ describe('Equivalence tests', async function () {
   const ADDRESS_0_0_2 = '0.0.2';
   const ADDRESS_0_0_3 = '0.0.3';
   const ADDRESS_0_0_4 = '0.0.4';
+  const ADDRESS_0_0_5 = '0.0.5';
+  const ADDRESS_0_0_6 = '0.0.6';
+  const ADDRESS_0_0_7 = '0.0.7';
+  const ADDRESS_0_0_8 = '0.0.8';
+  const ADDRESS_0_0_9 = '0.0.9';
+  const ADDRESS_0_0_10 = '0.0.10';
+  const ADDRESS_0_0_100 = '0.0.100';
+  const ADDRESS_0_0_358 = '0.0.358';
   const ADDRESS_0_0_359 = '0.0.359';
   const ADDRESS_0_0_360 = '0.0.360';
   const ADDRESS_0_0_361 = '0.0.361';
+  const ADDRESS_0_0_362 = '0.0.362';
+  const ADDRESS_0_0_556 = '0.0.556';
+  const ADDRESS_0_0_750 = '0.0.750';
+  const ADDRESS_0_0_751 = '0.0.751';
+  const ADDRESS_0_0_799 = '0.0.799';
+  const ADDRESS_0_0_800 = '0.0.800';
+  const ADDRESS_0_0_1000 = '0.0.1000';
   const MAKE_CALL_WITHOUT_AMOUNT = 'makeCallWithoutAmount';
   const MAKE_CALL_WITH_AMOUNT = 'makeCallWithAmount';
   const MAKE_HTS_CALL_WITHOUT_AMOUNT = 'htsCallWithoutAmount';
@@ -98,10 +121,6 @@ describe('Equivalence tests', async function () {
   let estimatePrecompileSolidityAddress;
   let equivalenceContractReceipt;
   let equivalenceContractId;
-  let equivalenceContract;
-  let equivalenceContractSolidityAddress;
-  let equivalenceDestructContractId;
-  let equivalenceDestructContractReceipt;
   let estimateContract;
   let requestId;
 
@@ -136,7 +155,7 @@ describe('Equivalence tests', async function () {
     } else if (outcome === Outcomes.Output) {
       expect(contractAction.result_data_type).to.equal(
         Outcomes.Output,
-        `Expected "${message === '0x' ? 'noop' : 'Output'}" but received error: "${decodeResultData(
+        `Expected "${message === Constants.EMPTY_HEX ? 'noop' : 'Output'}" but received error: "${decodeResultData(
           contractAction.result_data,
         )}".${txLookup}`,
       );
@@ -149,8 +168,6 @@ describe('Equivalence tests', async function () {
   };
 
   before(async function () {
-    signers[0] = await servicesNode.createAliasAccount(150, relay.provider, Utils.generateRequestId());
-
     //Deploying Estimate Precompile contract
     estimatePrecompileContractReceipt = await servicesClient.deployContract(
       EstimatePrecompileContractJson,
@@ -158,15 +175,6 @@ describe('Equivalence tests', async function () {
     );
     estimatePrecompileContractAddress = estimatePrecompileContractReceipt.contractId.toString();
     estimatePrecompileSolidityAddress = estimatePrecompileContractReceipt.contractId.toSolidityAddress();
-    console.log(`estimatePrecompileContractAddress: ${estimatePrecompileContractAddress}`);
-
-    //Deploying Equivalence Destrcut contract
-    equivalenceDestructContractReceipt = await servicesClient.deployContract(
-      EquivalenceDestructContractJson,
-      Constants.GAS_AS_NUMBER.LIMIT_5_000_000,
-    );
-    equivalenceDestructContractId = equivalenceDestructContractReceipt.contractId.toString();
-    console.log(`equivalenceDestructContractId: ${equivalenceDestructContractId}`);
 
     //Deploying Equivalence contract
     equivalenceContractReceipt = await servicesClient.deployContract(
@@ -174,15 +182,6 @@ describe('Equivalence tests', async function () {
       Constants.GAS_AS_NUMBER.LIMIT_5_000_000,
     );
     equivalenceContractId = equivalenceContractReceipt.contractId.toString();
-    console.log(`equivalenceContractId: ${equivalenceContractId}`);
-    equivalenceContractSolidityAddress = equivalenceContractReceipt.contractId.toSolidityAddress();
-
-    equivalenceContract = new ethers.Contract(
-      prefix + equivalenceContractSolidityAddress,
-      EquivalenceContractJson.abi,
-      signers[0].wallet,
-    );
-    console.log(`equivalenceContract:\n${JSON.stringify(equivalenceContract, null, 2)}`);
 
     requestId = Utils.generateRequestId();
     const contractMirror = await mirrorNodeClient.get(`/contracts/${estimatePrecompileSolidityAddress}`, requestId);
@@ -195,21 +194,8 @@ describe('Equivalence tests', async function () {
     );
 
     tokenAddress = await createFungibleToken();
-    console.log(`tokenAddress: ${tokenAddress}`);
     precheck = new Precheck(mirrorNodeClient, logger, '0x12a');
   });
-
-  enum CallTypes {
-    Call = 'Call',
-    StaticCall = 'StaticCall',
-    DelegateCall = 'DelegateCall',
-    CallCode = 'CallCode',
-  }
-
-  enum Outcomes {
-    Output = 'OUTPUT',
-    Error = 'ERROR',
-  }
 
   const getTestSummaryAmount = (amount: number): string => {
     return amount === 0 ? 'without' : 'with';
@@ -266,7 +252,7 @@ describe('Equivalence tests', async function () {
       case Outcomes.Output: {
         let result = addressName ? `should execute the ${addressName}` : 'should succeed';
         if (message) {
-          result = result + (message === '0x' ? ' with noop' : `with output "${message}"`);
+          result = result + (message === Constants.EMPTY_HEX ? ' with noop' : `with output "${message}"`);
         }
         return result;
       }
@@ -382,13 +368,13 @@ describe('Equivalence tests', async function () {
 
   async function createFungibleToken() {
     estimateContract = new ethers.Contract(
-      prefix + estimatePrecompileSolidityAddress,
+      Constants.EMPTY_HEX + estimatePrecompileSolidityAddress,
       EstimatePrecompileContractJson.abi,
       accounts[0].wallet,
     );
     const tx = await estimateContract.createFungibleTokenPublic(accounts[0].wallet.address, {
       value: BigInt('50000000000000000000'),
-      gasLimit: 10_000_000,
+      gasLimit: Constants.GAS_AS_NUMBER.LIMIT_10_000_000,
     });
 
     const tokenAddress = (await tx.wait()).logs.filter(
@@ -399,21 +385,21 @@ describe('Equivalence tests', async function () {
 
   it('direct CALL to ethereum precompile 0x1 should succeed', async function () {
     const { contractExecuteTimestamp } = await servicesClient.executeContractCall(
-      ETH_PRECOMPILE_0x1,
+      ADDRESS_0_0_1,
       NON_EXISTING_FUNCTION,
       EMPTY_FUNCTION_PARAMS,
-      500_000,
+      Constants.GAS_AS_NUMBER.LIMIT_500_000,
     );
 
-    const record = await getResultByEntityIdAndTxTimestamp(ETH_PRECOMPILE_0x1, contractExecuteTimestamp);
-    validateContractCall(record, ETH_PRECOMPILE_0x1, SUCCESS, STATUS_SUCCESS);
+    const record = await getResultByEntityIdAndTxTimestamp(ADDRESS_0_0_1, contractExecuteTimestamp);
+    validateContractCall(record, ADDRESS_0_0_1, SUCCESS, STATUS_SUCCESS);
 
     const contractActions = await getContractActions(record.hash);
     validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output);
   });
 
-  // Equivalence-003; Address 0.0.362 currently skipped because of ongoing issue being investigated
-  [/*'0.0.362',*/ '0.0.556', '0.0.750'].forEach((address) => {
+  // Address 0.0.362 currently skipped because of ongoing issue being investigated
+  [/*ADDRESS_0_0_362,*/ ADDRESS_0_0_556, ADDRESS_0_0_750].forEach((address) => {
     it(`direct CALL to ethereum precompile ${address} without amount should succeed with noop`, async function () {
       let contractCallResult;
       try {
@@ -421,21 +407,21 @@ describe('Equivalence tests', async function () {
           address,
           NON_EXISTING_FUNCTION,
           EMPTY_FUNCTION_PARAMS,
-          500_000,
+          Constants.GAS_AS_NUMBER.LIMIT_500_000,
         );
       } catch (e) {
         const contractActions = await getContractActions(getTransactionIdFromException(e));
-        validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, '0x');
+        validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, Constants.EMPTY_HEX);
         return;
       }
       const record = await getResultByEntityIdAndTxTimestamp(address, contractCallResult.contractExecuteTimestamp);
       const contractActions = await getContractActions(record.hash);
-      validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, '0x');
+      validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, Constants.EMPTY_HEX);
     });
   });
 
-  // Equivalence-004; Address 0.0.362 currently skipped because of ongoing issue being investigated
-  [, /*'0.0.362'*/ '0.0.556', '0.0.750'].forEach((address) => {
+  // Address 0.0.362 currently skipped because of ongoing issue being investigated
+  [/*ADDRESS_0_0_362,*/ ADDRESS_0_0_556, ADDRESS_0_0_750].forEach((address) => {
     it(`direct CALL to ethereum precompile ${address} with amount should fail with INVALID_FEE_SUBMITTED`, async function () {
       let contractCallResult;
       try {
@@ -443,8 +429,8 @@ describe('Equivalence tests', async function () {
           address,
           NON_EXISTING_FUNCTION,
           EMPTY_FUNCTION_PARAMS,
-          500_000,
-          100,
+          Constants.GAS_AS_NUMBER.LIMIT_500_000,
+          Constants.AMOUNT.AMOUNT_100,
         );
       } catch (e) {
         const contractActions = await getContractActions(getTransactionIdFromException(e));
@@ -457,8 +443,7 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  // Equivalence-005
-  ['0.0.751', '0.0.799', '0.0.800', '0.0.1000'].forEach((address) => {
+  [ADDRESS_0_0_751, ADDRESS_0_0_799, ADDRESS_0_0_800, ADDRESS_0_0_1000].forEach((address) => {
     it(`direct CALL to address ${address} without amount should succeed with noop`, async function () {
       let contractCallResult;
       try {
@@ -466,21 +451,21 @@ describe('Equivalence tests', async function () {
           address,
           NON_EXISTING_FUNCTION,
           EMPTY_FUNCTION_PARAMS,
-          500_000,
+          Constants.GAS_AS_NUMBER.LIMIT_500_000,
         );
       } catch (e) {
         const contractActions = await getContractActions(getTransactionIdFromException(e));
-        validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, '0x');
+        validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, Constants.EMPTY_HEX);
         return;
       }
       const record = await getResultByEntityIdAndTxTimestamp(address, contractCallResult.contractExecuteTimestamp);
       const contractActions = await getContractActions(record.hash);
-      validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, '0x');
+      validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, Constants.EMPTY_HEX);
     });
   });
 
-  // Equivalence-005; Address range [0.0.751-0.0.799] currently skipped because of ongoing issue being investigated
-  [/*'0.0.751', '0.0.799',*/ '0.0.800', '0.0.1000'].forEach((address) => {
+  // Address range [0.0.751-0.0.799] currently skipped because of ongoing issue being investigated
+  [/*ADDRESS_0_0_751, ADDRESS_0_0_799,*/ ADDRESS_0_0_800, ADDRESS_0_0_1000].forEach((address) => {
     it(`direct CALL to address ${address} with amount should succeed`, async function () {
       let contractCallResult;
       try {
@@ -488,8 +473,8 @@ describe('Equivalence tests', async function () {
           address,
           NON_EXISTING_FUNCTION,
           EMPTY_FUNCTION_PARAMS,
-          500_000,
-          100,
+          Constants.GAS_AS_NUMBER.LIMIT_500_000,
+          Constants.AMOUNT.AMOUNT_100,
         );
       } catch (e) {
         const contractActions = await getContractActions(getTransactionIdFromException(e));
@@ -502,7 +487,6 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  // EQV-006 - should be successfull - OK
   it('direct CALL to address over 1000 without amount should succeed with noop', async function () {
     const { contractExecuteTimestamp } = await servicesClient.executeContractCall(
       ETH_PRECOMPILE_0x1001,
@@ -514,10 +498,9 @@ describe('Equivalence tests', async function () {
     validateContractCall(record, ETH_PRECOMPILE_0x1001, SUCCESS, STATUS_SUCCESS);
 
     const contractActions = await getContractActions(record.hash);
-    validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, '0x');
+    validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, Constants.EMPTY_HEX);
   });
 
-  // EQV-006 - should be successfull - OK
   // Skipped as test is not ready
   it.skip('should execute direct call to address over 1000 without amount - case contract', async function () {
     let contractCallResult;
@@ -526,7 +509,7 @@ describe('Equivalence tests', async function () {
         estimatePrecompileContractAddress,
         NON_EXISTING_FUNCTION,
         EMPTY_FUNCTION_PARAMS,
-        1_000_000,
+        Constants.GAS_AS_NUMBER.LIMIT_1_000_000,
       );
     } catch (e) {
       const contractActions = await getContractActions(getTransactionIdFromException(e));
@@ -534,42 +517,45 @@ describe('Equivalence tests', async function () {
     }
 
     const record = await getResultByEntityIdAndTxTimestamp(
-      equivalenceDestructContractId,
+      estimatePrecompileContractAddress,
       contractCallResult.contractExecuteTimestamp,
     );
-    validateContractCall(record, equivalenceDestructContractId, SUCCESS, STATUS_SUCCESS);
+    validateContractCall(record, estimatePrecompileContractAddress, SUCCESS, STATUS_SUCCESS);
   });
 
-  // EQV-007 - Should fail with INVALID_SOLIDIY_ADDRESS but it is SUCCESSFULL and creates Inactive EVM Address  - ????????
   // Skipped as test is not ready
   it.skip('should execute direct call to non-existing contract', async function () {
     const { contractExecuteTimestamp } = await servicesNode.executeContractCall(
       NON_EXISTING_CONTRACT_ID,
       NON_EXISTING_FUNCTION,
       EMPTY_FUNCTION_PARAMS,
-      500_000,
+      Constants.GAS_AS_NUMBER.LIMIT_500_000,
     );
 
     const record = await getResultByEntityIdAndTxTimestamp(NON_EXISTING_CONTRACT_ID, contractExecuteTimestamp);
     validateContractCall(record, NON_EXISTING_CONTRACT_ID, SUCCESS, STATUS_SUCCESS);
   });
 
-  // EQV-008 - should be successfull - OK
   // Skipped as test is not ready
   it.skip('direct CALL to address over 1000 without amount (payable contract)', async function () {
     const { contractExecuteTimestamp } = await servicesClient.executeContractCall(
-      equivalenceDestructContractId,
+      equivalenceContractId,
       NON_EXISTING_FUNCTION,
       EMPTY_FUNCTION_PARAMS,
     );
 
-    const record = await getResultByEntityIdAndTxTimestamp(equivalenceDestructContractId, contractExecuteTimestamp);
-    validateContractCall(record, equivalenceDestructContractId, SUCCESS, STATUS_SUCCESS);
+    const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
+    validateContractCall(record, equivalenceContractId, SUCCESS, STATUS_SUCCESS);
   });
 
-  // EQV-009 - OK -  should be unsuccessfull
   it('should execute direct call to address over 1000 with amount - case non-payable contract ', async function () {
-    const args = [estimatePrecompileContractAddress, NON_EXISTING_FUNCTION, EMPTY_FUNCTION_PARAMS, 500_000, 100];
+    const args = [
+      estimatePrecompileContractAddress,
+      NON_EXISTING_FUNCTION,
+      EMPTY_FUNCTION_PARAMS,
+      Constants.GAS_AS_NUMBER.LIMIT_500_000,
+      100,
+    ];
     await testRejection(CONTRACT_REVERT_EXECUTED, servicesNode.executeContractCallWithAmount, true, servicesNode, args);
   });
 
@@ -581,8 +567,8 @@ describe('Equivalence tests', async function () {
         ETH_PRECOMPILE_0x1001,
         NON_EXISTING_FUNCTION,
         EMPTY_FUNCTION_PARAMS,
-        1_000_000,
-        100,
+        Constants.GAS_AS_NUMBER.LIMIT_1_000_000,
+        Constants.AMOUNT.AMOUNT_100,
       );
     } catch (e) {
       const contractActions = await getContractActions(getTransactionIdFromException(e));
@@ -596,7 +582,6 @@ describe('Equivalence tests', async function () {
     validateContractCall(record, ETH_PRECOMPILE_0x1001, SUCCESS, CONTRACT_EXECUTION_EXCEPTION);
   });
 
-  // EQV-13 This should be successful due to hollow account creation
   // Skipped as test is not ready
   it.skip('should execute direct call to address over 1000 with amount - case hollow acconut', async function () {
     const hollowAccount = ethers.Wallet.createRandom();
@@ -609,8 +594,8 @@ describe('Equivalence tests', async function () {
         hollowAcAddress,
         NON_EXISTING_FUNCTION,
         EMPTY_FUNCTION_PARAMS,
-        1_000_000,
-        100,
+        Constants.GAS_AS_NUMBER.LIMIT_1_000_000,
+        Constants.AMOUNT.AMOUNT_100,
       );
     } catch (e) {
       const contractActions = await getContractActions(getTransactionIdFromException(e));
@@ -624,72 +609,81 @@ describe('Equivalence tests', async function () {
     validateContractCall(record, ETH_PRECOMPILE_0x1001, SUCCESS, CONTRACT_EXECUTION_EXCEPTION);
   });
 
-  [
+  const basicInternalCallTests = [
     {
       // Equivalence 014, 040, 052
       callTypes: [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall],
       addresses: [ADDRESS_0_0_0],
-      amount: 0,
+      amount: Constants.AMOUNT.AMOUNT_0,
       outcome: Outcomes.Output,
-      message: '0x',
+      message: Constants.EMPTY_HEX,
     },
     {
-      // Equivalence-015
       callTypes: [CallTypes.Call],
       addresses: [ADDRESS_0_0_0],
-      amount: 100,
+      amount: Constants.AMOUNT.AMOUNT_100,
       outcome: Outcomes.Error,
       message: INVALID_FEE_SUBMITTED,
     },
     {
-      // Equivalence-020
       callTypes: [CallTypes.Call],
-      addresses: ['0.0.1', '0.0.2', '0.0.3', '0.0.4', '0.0.5', '0.0.6', '0.0.7', '0.0.8', '0.0.9'],
-      amount: 100,
+      addresses: [
+        ADDRESS_0_0_1,
+        ADDRESS_0_0_2,
+        ADDRESS_0_0_3,
+        ADDRESS_0_0_4,
+        ADDRESS_0_0_5,
+        ADDRESS_0_0_6,
+        ADDRESS_0_0_7,
+        ADDRESS_0_0_8,
+        ADDRESS_0_0_9,
+      ],
+      amount: Constants.AMOUNT.AMOUNT_100,
       outcome: Outcomes.Error,
       message: INVALID_FEE_SUBMITTED,
     },
     {
-      // Equivalence-022
       callTypes: [CallTypes.Call],
-      addresses: ['0.0.10', '0.0.100', '0.0.358'],
-      amount: 100,
+      addresses: [ADDRESS_0_0_10, ADDRESS_0_0_100, ADDRESS_0_0_358],
+      amount: Constants.AMOUNT.AMOUNT_100,
       outcome: Outcomes.Error,
       message: INVALID_FEE_SUBMITTED,
     },
     {
-      // Equivalence-021, 045, 057; Address 0.0.10 currently skipped because of ongoing issue being investigated
+      // Address 0.0.10 currently skipped because of ongoing issue being investigated
       callTypes: [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall],
-      addresses: [/*'0.0.10',*/ '0.0.100', '0.0.358'],
-      amount: 0,
+      addresses: [/*ADDRESS_0_0_10,*/ ADDRESS_0_0_100, ADDRESS_0_0_358],
+      amount: Constants.AMOUNT.AMOUNT_0,
       outcome: Outcomes.Output,
-      message: '0x',
+      message: Constants.EMPTY_HEX,
     },
     {
-      // Equivalence-030; Address 0.0.362 currently skipped because of ongoing issue being investigated
+      // Address 0.0.362 currently skipped because of ongoing issue being investigated
       callTypes: [CallTypes.Call],
-      addresses: [/*'0.0.362',*/ '0.0.556', '0.0.750'],
-      amount: 100,
+      addresses: [/*ADDRESS_0_0_362,*/ ADDRESS_0_0_556, ADDRESS_0_0_750],
+      amount: Constants.AMOUNT.AMOUNT_100,
       outcome: Outcomes.Error,
       message: INVALID_FEE_SUBMITTED,
     },
     {
-      // Equivalence 031; Address range [0.0.751-0.0.799] currently skipped because of ongoing issue being investigated
+      // Address range [0.0.751-0.0.799] currently skipped because of ongoing issue being investigated
       callTypes: [CallTypes.Call],
-      addresses: [/*'0.0.751', '0.0.799',*/ '0.0.800', '0.0.1000'],
-      amount: 100,
+      addresses: [/*ADDRESS_0_0_751, ADDRESS_0_0_799,*/ ADDRESS_0_0_800, ADDRESS_0_0_1000],
+      amount: Constants.AMOUNT.AMOUNT_100,
       outcome: Outcomes.Output,
       message: '',
     },
     {
-      // Equivalence-029, 049, 061; Address 0.0.362 currently skipped because of ongoing issue being investigated
+      // Address 0.0.362 currently skipped because of ongoing issue being investigated
       callTypes: [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall],
-      addresses: [/*'0.0.362',*/ '0.0.750', '0.0.751', '0.0.1000'],
-      amount: 0,
+      addresses: [/*ADDRESS_0_0_362,*/ ADDRESS_0_0_750, ADDRESS_0_0_751, ADDRESS_0_0_1000],
+      amount: Constants.AMOUNT.AMOUNT_0,
       outcome: Outcomes.Output,
-      message: '0x',
+      message: Constants.EMPTY_HEX,
     },
-  ].forEach((test) => {
+  ];
+
+  basicInternalCallTests.forEach((test) => {
     test.callTypes.forEach((callType) => {
       test.addresses.forEach((address) => {
         it(`internal ${callType.toUpperCase()} to address ${address} ${getTestSummaryAmount(
@@ -705,7 +699,7 @@ describe('Equivalence tests', async function () {
               equivalenceContractId,
               getFunctionName(callType, test.amount, address),
               getContractFunctionParams(address),
-              500_000,
+              Constants.GAS_AS_NUMBER.LIMIT_500_000,
               test.amount,
             );
           } catch (e) {
@@ -727,7 +721,6 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  // Equivalence 016, 041, 053
   [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall].forEach((callType) => {
     it(`internal ${callType.toUpperCase()} to address 0.0.1 without amount with knowh hash and signature should execute the ecrecover precompile through the intermediary contract.`, async function () {
       const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_1);
@@ -736,9 +729,9 @@ describe('Equivalence tests', async function () {
         '0xf950ac8b7f08b2f5ffa0f893d0f85398135301759b768dc20c1e16d9cdba5b53000000000000000000000000000000000000000000000000000000000000001b45e5f9dc145b79479820a9dfa925bb698333e7f17b7d570391e8487c96a39e07675b682b2519f6232152a9f6f4f5923d171dfb7636daceee2c776edecc6c8b64';
       const { contractExecuteTimestamp } = await servicesClient.executeContractCall(
         equivalenceContractId,
-        getFunctionName(callType, 0, ADDRESS_0_0_1),
+        getFunctionName(callType, Constants.AMOUNT.AMOUNT_0, ADDRESS_0_0_1),
         new ContractFunctionParameters().addAddress(evmAddress).addBytes(precheck.hexToBytes(hashedMessage)),
-        500_000,
+        Constants.GAS_AS_NUMBER.LIMIT_500_000,
       );
 
       const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
@@ -752,7 +745,6 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  // Equivalence 017, 042, 054
   [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall].forEach((callType) => {
     it(`internal ${callType.toUpperCase()} to address 0.0.2 without amount with knowh hash and signature should execute the SHA-256 precompile through the intermediary contract.`, async function () {
       const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_2);
@@ -760,9 +752,9 @@ describe('Equivalence tests', async function () {
       const hashedMessage = '0x68907fbd785a694c3617d35a6ce49477ac5704d75f0e727e353da7bc664aacc2';
       const { contractExecuteTimestamp } = await servicesClient.executeContractCall(
         equivalenceContractId,
-        getFunctionName(callType, 0, ADDRESS_0_0_2),
+        getFunctionName(callType, Constants.AMOUNT.AMOUNT_0, ADDRESS_0_0_2),
         new ContractFunctionParameters().addAddress(evmAddress).addBytes(toUtf8Bytes(message)),
-        500_000,
+        Constants.GAS_AS_NUMBER.LIMIT_500_000,
       );
 
       const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
@@ -776,7 +768,6 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  // Equivalence 018, 043, 055
   [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall].forEach((callType) => {
     it(`internal ${callType.toUpperCase()} to address 0.0.3 without amount with knowh hash and signature should execute the RIPEMD-160 precompile through the intermediary contract.`, async function () {
       const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_3);
@@ -784,9 +775,9 @@ describe('Equivalence tests', async function () {
       const hashedMessage = '4f0c39893f4c1c805aea87a95b5d359a218920d6';
       const { contractExecuteTimestamp } = await servicesClient.executeContractCall(
         equivalenceContractId,
-        getFunctionName(callType, 0, ADDRESS_0_0_3),
+        getFunctionName(callType, Constants.AMOUNT.AMOUNT_0, ADDRESS_0_0_3),
         new ContractFunctionParameters().addAddress(evmAddress).addBytes(toUtf8Bytes(message)),
-        500_000,
+        Constants.GAS_AS_NUMBER.LIMIT_500_000,
       );
 
       const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
@@ -800,16 +791,15 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  // Equivalence 019, 044, 056
   [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall].forEach((callType) => {
     it(`internal ${callType.toUpperCase()} to address 0.0.4 without amount with knowh hash and signature should execute the identity precompile through the intermediary contract.`, async function () {
       const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_4);
       const message = 'Encode me!';
       const { contractExecuteTimestamp } = await servicesClient.executeContractCall(
         equivalenceContractId,
-        getFunctionName(callType, 0, ADDRESS_0_0_4),
+        getFunctionName(callType, Constants.AMOUNT.AMOUNT_0, ADDRESS_0_0_4),
         new ContractFunctionParameters().addAddress(evmAddress).addBytes(toUtf8Bytes(message)),
-        500_000,
+        Constants.GAS_AS_NUMBER.LIMIT_500_000,
       );
 
       const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
@@ -826,7 +816,7 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  // Equivalence-024, 027, 028; Addresses 0.0.359 and 0.0.361 currently skipped because of ongoing issue being investigated
+  // Addresses 0.0.359 and 0.0.361 currently skipped because of ongoing issue being investigated
   [/*ADDRESS_0_0_359,*/ ADDRESS_0_0_360 /*ADDRESS_0_0_361*/].forEach((address) => {
     it(`internal CALL to address ${address} with amount ${getTestSummaryOutcome(
       Outcomes.Error,
@@ -837,10 +827,10 @@ describe('Equivalence tests', async function () {
       try {
         contractCallResult = await servicesClient.executeContractCallWithAmount(
           equivalenceContractId,
-          getFunctionName(CallTypes.Call, 100, address),
+          getFunctionName(CallTypes.Call, Constants.AMOUNT.AMOUNT_100, address),
           getContractFunctionParams(address),
-          500_000,
-          100,
+          Constants.GAS_AS_NUMBER.LIMIT_500_000,
+          Constants.AMOUNT.AMOUNT_100,
         );
       } catch (e) {
         const contractActions = await getContractActions(getTransactionIdFromException(e));
@@ -853,12 +843,13 @@ describe('Equivalence tests', async function () {
         contractCallResult.contractExecuteTimestamp,
       );
       validateContractCall(record);
+
       const contractActions = await getContractActions(record.hash);
       validateContractActions(contractActions.actions[1], CallTypes.Call, Outcomes.Error, INVALID_FEE_SUBMITTED);
     });
   });
 
-  // Equivalence-023, 025, 026, 046, 047, 048, 058, 059, 060; Address 0.0.359 currently skipped because of ongoing issue being investigated
+  // Address 0.0.359 currently skipped because of ongoing issue being investigated
   [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall].forEach((callType) => {
     [/*ADDRESS_0_0_359,*/ ADDRESS_0_0_360, ADDRESS_0_0_361].forEach((address) => {
       it(`internal ${callType.toUpperCase()} to address ${address} without amount ${getTestSummaryOutcome(
@@ -867,10 +858,10 @@ describe('Equivalence tests', async function () {
       )} through the intermediary contract`, async function () {
         const { contractExecuteTimestamp } = await servicesClient.executeContractCallWithAmount(
           equivalenceContractId,
-          getFunctionName(callType, 0, address),
+          getFunctionName(callType, Constants.AMOUNT.AMOUNT_0, address),
           getContractFunctionParams(address),
-          500_000,
-          0,
+          Constants.GAS_AS_NUMBER.LIMIT_500_000,
+          Constants.AMOUNT.AMOUNT_0,
         );
 
         const record = await getResultByEntityIdAndTxTimestamp(equivalenceContractId, contractExecuteTimestamp);
