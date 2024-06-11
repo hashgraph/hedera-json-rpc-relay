@@ -18,18 +18,20 @@
  *
  */
 
-// external resources
+// External resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
-//Constants are imported with different definitions for better readability in the code.
+
+// Constants from local resources
 import Constants from '../../tests/helpers/constants';
 
-chai.use(solidity);
-
-import { AliasAccount } from '../clients/servicesClient';
+// Local resources
+import { AliasAccount } from '../types/AliasAccount';
 import { ethers } from 'ethers';
 import BaseHTSJson from '../contracts/contracts_v1/BaseHTS.json';
 import { Utils } from '../helpers/utils';
+
+chai.use(solidity);
 
 describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -51,8 +53,12 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
 
-    const contractDeployer = await servicesNode.createAliasAccount(50, relay.provider, requestId);
-    BaseHTSContractAddress = await deployBaseHTSContract(contractDeployer.wallet);
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '5000000000'; //50 Hbar
+
+    const contractDeployer = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId, initialAmount);
+    const BaseHTSContract = await Utils.deployContract(BaseHTSJson.abi, BaseHTSJson.bytecode, contractDeployer.wallet);
+    BaseHTSContractAddress = BaseHTSContract.target;
     const contractMirror = await mirrorNode.get(`/contracts/${BaseHTSContractAddress}`, requestId);
 
     accounts[0] = await servicesNode.createAccountWithContractIdKey(
@@ -87,13 +93,6 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
   this.beforeEach(async () => {
     requestId = Utils.generateRequestId();
   });
-
-  async function deployBaseHTSContract(signer) {
-    const baseHTSFactory = new ethers.ContractFactory(BaseHTSJson.abi, BaseHTSJson.bytecode, signer);
-    const baseHTS = await Utils.deployContract(baseHTSFactory);
-
-    return baseHTS.target;
-  }
 
   async function createHTSToken() {
     const baseHTSContract = new ethers.Contract(BaseHTSContractAddress, BaseHTSJson.abi, accounts[0].wallet);

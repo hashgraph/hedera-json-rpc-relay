@@ -167,6 +167,7 @@ export default {
     ETH_SUBSCRIBE: 'eth_subscribe',
     ETH_UNSUBSCRIBE: 'eth_unsubscribe',
     ETH_CHAIN_ID: 'eth_chainId',
+    ETH_SEND_RAW_TRANSACTION: 'eth_sendRawTransaction',
   },
 
   SUBSCRIBE_EVENTS: {
@@ -174,4 +175,10 @@ export default {
     NEW_HEADS: 'newHeads',
     NEW_PENDING_TRANSACTIONS: 'newPendingTransactions',
   },
+
+  // @source: Related constants below can be found at https://github.com/Arachnid/deterministic-deployment-proxy?tab=readme-ov-file#latest-outputs
+  DETERMINISTIC_DEPLOYER_TRANSACTION:
+    '0xf8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222',
+  DETERMINISTIC_DEPLOYMENT_SIGNER: '0x3fab184622dc19b6109349b94811493bf2a45362',
+  DETERMINISTIC_PROXY_CONTRACT: '0x4e59b44847b379578588920ca78fbf26c0b4956c',
 };

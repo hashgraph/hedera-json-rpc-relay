@@ -43,7 +43,7 @@ export const OBJECTS_VALIDATIONS = {
     },
     to: {
       type: 'address',
-      nullable: false,
+      nullable: true,
     },
     gas: {
       type: 'hex',

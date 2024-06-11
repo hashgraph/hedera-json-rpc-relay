@@ -39,12 +39,16 @@ import {
   BLOCK_NOT_FOUND_RES,
   BLOCK_NUMBER,
   BLOCK_NUMBER_HEX,
+  BLOCK_NUMBER_WITH_SYN_TXN,
   BLOCK_TIMESTAMP_HEX,
+  BLOCK_WITH_SYN_TXN,
   CONTRACTS_RESULTS_NEXT_URL,
   CONTRACT_ADDRESS_1,
   CONTRACT_ADDRESS_2,
   CONTRACT_HASH_1,
   CONTRACT_HASH_2,
+  CONTRACT_QUERY,
+  CONTRACT_RESPONSE_MOCK,
   CONTRACT_RESULTS_LOGS_WITH_FILTER_URL,
   CONTRACT_RESULTS_WITH_FILTER_URL,
   CONTRACT_TIMESTAMP_1,
@@ -56,12 +60,17 @@ import {
   DEFAULT_NETWORK_FEES,
   GAS_USED_1,
   GAS_USED_2,
+  LATEST_BLOCK_QUERY,
+  LATEST_BLOCK_RESPONSE,
   LINKS_NEXT_RES,
+  LOGS_RESPONSE_MOCK,
+  LOG_QUERY,
   MOST_RECENT_BLOCK,
   NOT_FOUND_RES,
   NO_SUCH_BLOCK_EXISTS_RES,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
+import { fail } from 'assert';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -114,6 +123,17 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       registry,
       cacheService,
     );
+    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(`accounts/${defaultContractResults.results[0].from}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultContractResults.results[1].to}?transactions=false`).reply(200);
+    restMock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, NOT_FOUND_RES);
+    restMock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, NOT_FOUND_RES);
+    restMock.onGet(`contracts/${defaultContractResults.results[0].to}`).reply(200);
+    restMock.onGet(`contracts/${defaultContractResults.results[1].to}`).reply(200);
+    restMock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(200);
+    restMock.onGet(`tokens/${defaultContractResults.results[1].contract_id}`).reply(200);
   });
 
   this.afterEach(() => {
@@ -298,6 +318,25 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     }
   });
 
+  it('eth_getBlockByNumber with match and details and sythetic transactions', async function () {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${BLOCK_NUMBER_WITH_SYN_TXN}`).reply(200, BLOCK_WITH_SYN_TXN);
+
+    restMock.onGet(LATEST_BLOCK_QUERY).reply(200, LATEST_BLOCK_RESPONSE);
+    restMock.onGet(CONTRACT_QUERY).reply(200, CONTRACT_RESPONSE_MOCK);
+    restMock.onGet(LOG_QUERY).reply(200, LOGS_RESPONSE_MOCK);
+
+    const result = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER_WITH_SYN_TXN), true);
+    if (result) {
+      result.transactions.forEach((txn) => {
+        expect(txn.maxFeePerGas).to.exist;
+        expect(txn.maxPriorityFeePerGas).to.exist;
+      });
+    } else {
+      fail('Result is null');
+    }
+  });
+
   it('eth_getBlockByNumber with match and details paginated', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
@@ -343,6 +382,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   });
 
   describe('eth_getBlockByNumber with tag', async function () {
+    const TOTAL_GET_CALLS_EXECUTED = 12;
     function confirmResult(result: Block | null) {
       expect(result).to.exist;
       expect(result).to.not.be.null;
@@ -353,6 +393,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     }
 
     this.beforeEach(() => {
+      restMock.resetHistory();
       restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
       for (const result of defaultContractResults.results) {
         restMock.onGet(`contracts/${result.to}/results/${result.timestamp}`).reply(404, NOT_FOUND_RES);
@@ -364,7 +405,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     it('eth_getBlockByNumber with latest tag', async function () {
       const result = await ethImpl.getBlockByNumber('latest', false);
       // check that we only made the expected number of requests with the expected urls
-      expect(restMock.history.get.length).equal(4);
+      expect(restMock.history.get.length).equal(TOTAL_GET_CALLS_EXECUTED);
       expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
       expect(restMock.history.get[1].url).equal(
         'contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
@@ -372,7 +413,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       expect(restMock.history.get[2].url).equal(
         'contracts/results/logs?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
       );
-      expect(restMock.history.get[3].url).equal('network/fees');
+      expect(restMock.history.get[TOTAL_GET_CALLS_EXECUTED - 1].url).equal('network/fees');
       confirmResult(result);
     });
 
@@ -399,7 +440,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     it('eth_getBlockByNumber with finalized tag', async function () {
       const result = await ethImpl.getBlockByNumber('finalized', false);
       // check that we only made the expected number of requests with the expected urls
-      expect(restMock.history.get.length).equal(4);
+      expect(restMock.history.get.length).equal(TOTAL_GET_CALLS_EXECUTED);
       expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
       expect(restMock.history.get[1].url).equal(
         'contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
@@ -407,14 +448,14 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       expect(restMock.history.get[2].url).equal(
         'contracts/results/logs?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
       );
-      expect(restMock.history.get[3].url).equal('network/fees');
+      expect(restMock.history.get[TOTAL_GET_CALLS_EXECUTED - 1].url).equal('network/fees');
       confirmResult(result);
     });
 
     it('eth_getBlockByNumber with safe tag', async function () {
-      const result = await ethImpl.getBlockByNumber('finalized', false);
+      const result = await ethImpl.getBlockByNumber('safe', false);
       // check that we only made the expected number of requests with the expected urls
-      expect(restMock.history.get.length).equal(4);
+      expect(restMock.history.get.length).equal(TOTAL_GET_CALLS_EXECUTED);
       expect(restMock.history.get[0].url).equal(BLOCKS_LIMIT_ORDER_URL);
       expect(restMock.history.get[1].url).equal(
         'contracts/results?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
@@ -422,7 +463,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       expect(restMock.history.get[2].url).equal(
         'contracts/results/logs?timestamp=gte:1651560386.060890949&timestamp=lte:1651560389.060890949&limit=100&order=asc',
       );
-      expect(restMock.history.get[3].url).equal('network/fees');
+      expect(restMock.history.get[TOTAL_GET_CALLS_EXECUTED - 1].url).equal('network/fees');
       confirmResult(result);
     });
 

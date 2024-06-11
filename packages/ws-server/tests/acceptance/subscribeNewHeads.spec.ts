@@ -19,47 +19,18 @@
  */
 
 // external resources
-import { solidity } from 'ethereum-waffle';
-import chai, { expect } from 'chai';
 import WebSocket from 'ws';
+import { ethers } from 'ethers';
+import chai, { expect } from 'chai';
+import { solidity } from 'ethereum-waffle';
+import { predefined } from '@hashgraph/json-rpc-relay';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 chai.use(solidity);
 
-import { ethers } from 'ethers';
-import Assertions from '../../helpers/assertions';
-import { predefined } from '@hashgraph/json-rpc-relay';
-import { AliasAccount } from '../../clients/servicesClient';
-import { numberTo0x } from '../../../../../packages/relay/src/formatters';
-import RelayCall from '../../../tests/helpers/constants';
-import { Utils } from '../../helpers/utils';
-import e from 'express';
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
-
 const ethAddressRegex = /^0x[a-fA-F0-9]*$/;
-
-async function sendTransaction(
-  ONE_TINYBAR: any,
-  CHAIN_ID: string | number,
-  accounts: AliasAccount[],
-  rpcServer: any,
-  requestId: any,
-  mirrorNodeServer: any,
-) {
-  const transaction = {
-    value: ONE_TINYBAR,
-    gasLimit: numberTo0x(30000),
-    chainId: Number(CHAIN_ID),
-    to: accounts[1].address,
-    nonce: await rpcServer.getAccountNonce(accounts[0].address, requestId),
-    maxFeePerGas: await rpcServer.gasPrice(requestId),
-  };
-
-  const signedTx = await accounts[0].wallet.signTransaction(transaction);
-  const transactionHash = await rpcServer.sendRawTransaction(signedTx, requestId);
-
-  await mirrorNodeServer.get(`/contracts/results/${transactionHash}`, requestId);
-
-  return await rpcServer.call(RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [transactionHash], requestId);
-}
 
 function verifyResponse(response: any, done: Mocha.Done, webSocket: any, includeTransactions: boolean) {
   if (response?.params?.result?.transactions?.length > 0) {
@@ -119,23 +90,11 @@ function verifyResponse(response: any, done: Mocha.Done, webSocket: any, include
   }
 }
 
-describe('@web-socket Acceptance Tests', async function () {
+describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const accounts: AliasAccount[] = [];
   const CHAIN_ID = process.env.CHAIN_ID || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
-
-  const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
-  const defaultGasLimit = numberTo0x(3_000_000);
-
-  const defaultTransaction = {
-    value: ONE_TINYBAR,
-    chainId: Number(CHAIN_ID),
-    maxPriorityFeePerGas: defaultGasPrice,
-    maxFeePerGas: defaultGasPrice,
-    gasLimit: defaultGasLimit,
-    type: 2,
-  };
 
   let mirrorNodeServer, requestId, rpcServer, wsServer;
 
@@ -144,13 +103,26 @@ describe('@web-socket Acceptance Tests', async function () {
 
   before(async () => {
     // @ts-ignore
-    const { servicesNode, socketServer, mirrorNode, relay, logger } = global;
+    const { socketServer, mirrorNode, relay } = global;
     mirrorNodeServer = mirrorNode;
     rpcServer = relay;
     wsServer = socketServer;
 
-    accounts[0] = await servicesNode.createAliasAccount(100, relay.provider, requestId);
-    accounts[1] = await servicesNode.createAliasAccount(5, relay.provider, requestId);
+    requestId = Utils.generateRequestId();
+    const initialAccount: AliasAccount = global.accounts[0];
+    const initialAmount: string = '5000000000'; //50 Hbar
+
+    const neededAccounts: number = 2;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialAmount,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
 
     // cache original ENV values
     originalWsNewHeadsEnabledValue = process.env.WS_NEW_HEADS_ENABLED;
@@ -159,7 +131,6 @@ describe('@web-socket Acceptance Tests', async function () {
 
   beforeEach(async () => {
     process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
-
     process.env.WS_SUBSCRIPTION_LIMIT = '10';
 
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -178,8 +149,7 @@ describe('@web-socket Acceptance Tests', async function () {
     it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
       const webSocket = new WebSocket(WS_RELAY_URL);
       process.env.WS_NEW_HEADS_ENABLED = 'false';
-      let response = '';
-      const messagePromise = new Promise((resolve, reject) => {
+      const messagePromise = new Promise<void>((resolve, reject) => {
         webSocket.on('message', function incoming(data) {
           try {
             const response = JSON.parse(data);
@@ -194,7 +164,6 @@ describe('@web-socket Acceptance Tests', async function () {
           } catch (error) {
             reject(error);
           }
-          response = data;
         });
         webSocket.on('open', function open() {
           // send the request for newHeads
@@ -227,12 +196,13 @@ describe('@web-socket Acceptance Tests', async function () {
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
+      process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
     });
-  });
 
-  describe('Subscriptions for newHeads', async function () {
-    it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
-      process.env.WS_NEW_HEADS_ENABLED = 'true';
+    it('@release should subscribe to newHeads even when WS_NEW_HEADS_ENABLED=undefined, and receive a valid JSON RPC response', async (done) => {
+      delete process.env.WS_NEW_HEADS_ENABLED;
+      expect(process.env.WS_NEW_HEADS_ENABLED).to.be.undefined;
+
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;
       webSocket.on('open', function open() {
@@ -248,7 +218,41 @@ describe('@web-socket Acceptance Tests', async function () {
 
       let responseCounter = 0;
 
-      sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      webSocket.on('message', function incoming(data) {
+        const response = JSON.parse(data);
+        responseCounter++;
+        verifyResponse(response, done, webSocket, true);
+        if (responseCounter > 1) {
+          webSocket.close();
+        }
+      });
+      done();
+    });
+  });
+
+  describe('Subscriptions for newHeads', async function () {
+    this.beforeEach(() => {
+      process.env.WS_NEW_HEADS_ENABLED = 'true';
+    });
+
+    it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
+      const webSocket = new WebSocket(WS_RELAY_URL);
+      const subscriptionId = 1;
+      webSocket.on('open', function open() {
+        webSocket.send(
+          JSON.stringify({
+            id: subscriptionId,
+            jsonrpc: '2.0',
+            method: 'eth_subscribe',
+            params: ['newHeads', { includeTransactions: true }],
+          }),
+        );
+      });
+
+      let responseCounter = 0;
+
+      Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
       webSocket.on('message', function incoming(data) {
         const response = JSON.parse(data);
 
@@ -262,7 +266,6 @@ describe('@web-socket Acceptance Tests', async function () {
     });
 
     it('should subscribe to newHeads, without the "include transactions", and receive a valid JSON RPC response', (done) => {
-      process.env.WS_NEW_HEADS_ENABLED = 'true';
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;
       webSocket.on('open', function open() {
@@ -278,7 +281,7 @@ describe('@web-socket Acceptance Tests', async function () {
 
       let responseCounter = 0;
 
-      sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
       webSocket.on('message', function incoming(data) {
         const response = JSON.parse(data);
 
@@ -292,7 +295,6 @@ describe('@web-socket Acceptance Tests', async function () {
     });
 
     it('should subscribe to newHeads, with "include transactions false", and receive a valid JSON RPC response', (done) => {
-      process.env.WS_NEW_HEADS_ENABLED = 'true';
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;
       webSocket.on('open', function open() {
@@ -308,7 +310,7 @@ describe('@web-socket Acceptance Tests', async function () {
 
       let responseCounter = 0;
 
-      sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
+      Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
       webSocket.on('message', function incoming(data) {
         const response = JSON.parse(data);
 

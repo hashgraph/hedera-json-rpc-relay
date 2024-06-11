@@ -18,18 +18,22 @@
  *
  */
 
-// external resources
+// External resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
-chai.use(solidity);
 
-import { AliasAccount } from '../clients/servicesClient';
+// Local resources
+import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
 import { ethers } from 'ethers';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 import Assertions from '../helpers/assertions';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
+
+// Constants from local resources
 import Constants from '../../../server/tests/helpers/constants';
+
+chai.use(solidity);
 
 const extractRevertReason = (errorReason: string) => {
   const pattern = /(?<=reverted: ).*/;

@@ -161,6 +161,14 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
   });
 
   it('valid receipt on match', async function () {
+    restMock.onGet(`accounts/${defaultDetailedContractResultByHash.from}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultDetailedContractResultByHash.from}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultDetailedContractResultByHash.to}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultDetailedContractResultByHash.to}?transactions=false`).reply(200);
+    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.to}`).reply(200);
+    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.to}`).reply(200);
+    restMock.onGet(`tokens/${defaultDetailedContractResultByHash.contract_id}`).reply(200);
+    restMock.onGet(`tokens/${defaultDetailedContractResultByHash.contract_id}`).reply(200);
     // mirror node request mocks
     restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);

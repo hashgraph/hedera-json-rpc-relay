@@ -41,6 +41,9 @@ import {
   DEFAULT_NETWORK_FEES,
   EMPTY_RES,
   NOT_FOUND_RES,
+  ACCOUNT_ADDRESS_1,
+  CONTRACT_ADDRESS_2,
+  CONTRACT_ID_2,
 } from './eth-config';
 import { contractResultsByHashByIndexURL, generateEthTestEnv } from './eth-helpers';
 
@@ -62,7 +65,7 @@ function verifyAggregatedInfo(result: Transaction | null) {
 
 describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  let { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -72,6 +75,16 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(`accounts/${defaultContractResults.results[0].from}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultContractResults.results[1].to}?transactions=false`).reply(200);
+    restMock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, NOT_FOUND_RES);
+    restMock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, NOT_FOUND_RES);
+    restMock.onGet(`contracts/${defaultContractResults.results[0].to}`).reply(200);
+    restMock.onGet(`contracts/${defaultContractResults.results[1].to}`).reply(200);
+    restMock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(200);
+    restMock.onGet(`tokens/${defaultContractResults.results[1].contract_id}`).reply(200);
   });
 
   this.afterEach(() => {

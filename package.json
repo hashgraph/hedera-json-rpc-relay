@@ -33,16 +33,22 @@
     "acceptancetest:api_batch2": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-batch-2' --exit",
     "acceptancetest:api_batch3": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-batch-3' --exit",
     "acceptancetest:erc20": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@erc20' --exit",
-    "acceptancetest:ratelimiter": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@ratelimiter' --exit",
+    "acceptancetest:ratelimiter": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket-ratelimiter' --exit && ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@ratelimiter' --exit",
     "acceptancetest:tokencreate": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokencreate' --exit",
     "acceptancetest:tokenmanagement": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokenmanagement' --exit",
     "acceptancetest:htsprecompilev1": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompilev1' --exit",
-    "acceptancetest:release": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit",
-    "acceptancetest:ws": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@web-socket' --exit",
+    "acceptancetest:release": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit && ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@release' --exit",
+    "acceptancetest:release_http": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit",
+    "acceptancetest:release_ws": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@release' --exit",
+    "acceptancetest:ws": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket' --exit",
+    "acceptancetest:ws_batch1": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket-batch-1' --exit",
+    "acceptancetest:ws_batch2": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket-batch-2' --exit",
+    "acceptancetest:ws_batch3": "ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket-batch-3' --exit",
     "acceptancetest:ws_newheads": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@web-socket-newheads' --exit",
     "acceptancetest:precompile-calls": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@precompile-calls' --exit",
     "acceptancetest:cache-service": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@cache-service' --exit",
     "acceptancetest:rpc_api_schema_conformity": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-conformity' --exit",
+    "acceptancetest:serverconfig": "ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@server-config' --exit",
     "build": "npx lerna run build",
     "build-and-test": "npx lerna run build && npx lerna run test",
     "build:docker": "docker build . -t ${npm_package_name}",
@@ -63,12 +69,12 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@hashgraph/hedera-local": "^2.19.1",
+    "@hashgraph/hedera-local": "^2.24.0",
     "@open-rpc/schema-utils-js": "^1.16.1",
     "@types/find-config": "^1.0.4",
     "@types/sinon": "^10.0.20",
     "chai-exclude": "^2.1.0",
-    "eslint-config-standard-with-typescript": "^39.1.1",
+    "eslint-config-standard-with-typescript": "^43.0.1",
     "eslint-plugin-n": "^15.7.0",
     "keyv-file": "^0.3.1",
     "koa-cors": "^0.0.16",
@@ -83,8 +89,7 @@
   },
   "overrides": {
     "protobufjs": "^7.2.4",
-    "semver": "^7.5.3",
-    "nx": "16.5.5"
+    "semver": "^7.5.3"
   },
   "lint-staged": {
     "packages/**/src/**/*.ts": [

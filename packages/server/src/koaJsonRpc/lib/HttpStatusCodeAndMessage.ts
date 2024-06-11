@@ -17,8 +17,8 @@ const CONTRACT_REVERT = 'CONTRACT REVERT';
 const METHOD_NOT_FOUND = 'METHOD NOT FOUND';
 
 export const RpcErrorCodeToStatusMap = {
+  '3': new HttpStatusCodeAndMessage(200, CONTRACT_REVERT),
   '-32603': new HttpStatusCodeAndMessage(500, INTERNAL_ERROR),
-  '-32008': new HttpStatusCodeAndMessage(200, CONTRACT_REVERT),
   '-32600': new HttpStatusCodeAndMessage(400, INVALID_REQUEST),
   '-32602': new HttpStatusCodeAndMessage(400, INVALID_PARAMS_ERROR),
   '-32601': new HttpStatusCodeAndMessage(400, METHOD_NOT_FOUND),

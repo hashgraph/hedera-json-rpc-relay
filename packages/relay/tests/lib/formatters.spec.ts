@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,8 @@ import {
   weibarHexToTinyBarInt,
   isValidEthereumAddress,
   trimPrecedingZeros,
+  isHex,
+  ASCIIToHex,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -202,10 +204,10 @@ describe('Formatters', () => {
       expect(formattedResult.chainId).to.equal('0x12a');
       expect(formattedResult.from).to.equal('0x05fba803be258049a27b820088bab1cad2058871');
       expect(formattedResult.gas).to.equal('0x61a80');
-      expect(formattedResult.gasPrice).to.equal(null);
+      expect(formattedResult.gasPrice).to.equal('0x0');
       expect(formattedResult.hash).to.equal('0xfc4ab7133197016293d2e14e8cf9c5227b07357e6385184f1cd1cb40d783cfbd');
       expect(formattedResult.input).to.equal('0x08090033');
-      expect(formattedResult.maxPriorityFeePerGas).to.equal(null);
+      expect(formattedResult.maxPriorityFeePerGas).to.equal('0x0');
       expect(formattedResult.maxFeePerGas).to.equal('0x59');
       expect(formattedResult.nonce).to.equal('0x2');
       expect(formattedResult.r).to.equal('0x2af9d41244c702764ed86c5b9f1a734b075b91c4d9c65e78bc584b0e35181e42');
@@ -238,19 +240,24 @@ describe('Formatters', () => {
       expect(formattedResult.chainId).to.equal('0x12a');
       expect(formattedResult.from).to.equal('0x05fba803be258049a27b820088bab1cad2058871');
       expect(formattedResult.gas).to.equal('0x0');
-      expect(formattedResult.gasPrice).to.equal(null);
+      expect(formattedResult.gasPrice).to.equal('0x0');
       expect(formattedResult.hash).to.equal('0xfc4ab7133197016293d2e14e8cf9c5227b07357e6385184f1cd1cb40d783cfbd');
       expect(formattedResult.input).to.equal('0x08090033');
-      expect(formattedResult.maxPriorityFeePerGas).to.equal(null);
-      expect(formattedResult.maxFeePerGas).to.equal(null);
+      expect(formattedResult.maxPriorityFeePerGas).to.equal('0x0');
+      expect(formattedResult.maxFeePerGas).to.equal('0x0');
       expect(formattedResult.nonce).to.equal('0x0');
-      expect(formattedResult.r).to.equal(null);
-      expect(formattedResult.s).to.equal(null);
+      expect(formattedResult.r).to.equal('0x0');
+      expect(formattedResult.s).to.equal('0x0');
       expect(formattedResult.to).to.equal('0x0000000000000000000000000000000000000409');
       expect(formattedResult.transactionIndex).to.equal(null);
       expect(formattedResult.v).to.equal(`0x0`);
       expect(formattedResult.yParity).to.equal('0x0');
       expect(formattedResult.value).to.equal('0x0');
+    });
+
+    it('Should not include chainId field for legacy EIP155 transaction (tx.chainId=0x0)', () => {
+      const formattedResult: any = formatContractResult({ ...contractResult, chain_id: '0x' });
+      expect(formattedResult.chainId).to.be.undefined;
     });
   });
 
@@ -420,6 +427,65 @@ describe('Formatters', () => {
     it('should return false for an address with an undefined value', () => {
       const address = undefined;
       expect(isValidEthereumAddress(address)).to.equal(false);
+    });
+  });
+  describe('isHex Function', () => {
+    it('should return true for valid lowercase hexadecimal string', () => {
+      expect(isHex('0x1a3f')).to.be.true;
+    });
+
+    it('should return true for valid uppercase hexadecimal string', () => {
+      expect(isHex('0xABC')).to.be.true;
+    });
+
+    it('should return true for mixed-case hexadecimal string', () => {
+      expect(isHex('0xAbC123')).to.be.true;
+    });
+
+    it('should return false for string without 0x prefix', () => {
+      expect(isHex('1a3f')).to.be.false;
+    });
+
+    it('should return false for string with invalid characters', () => {
+      expect(isHex('0x1g3f')).to.be.false;
+    });
+
+    it('should return false for string with only 0x prefix', () => {
+      expect(isHex('0x')).to.be.false;
+    });
+
+    it('should return false for empty string', () => {
+      expect(isHex('')).to.be.false;
+    });
+
+    it('should return false for string with spaces', () => {
+      expect(isHex('0x 1a3f')).to.be.false;
+    });
+
+    it('should return true for a known gasPrice', () => {
+      expect(isHex('0x58')).to.be.true;
+    });
+  });
+  describe('ASCIIToHex Function', () => {
+    const inputs = ['Lorem Ipsum', 'Foo', 'Bar'];
+    const outputs = ['4c6f72656d20497073756d', '466f6f', '426172'];
+
+    it('should return "" for empty string', () => {
+      expect(ASCIIToHex('')).to.equal('');
+    });
+
+    it('should return valid hex', () => {
+      expect(isHex(prepend0x(ASCIIToHex(inputs[0])))).to.be.true;
+    });
+
+    it('should return expected hex formatted value', () => {
+      expect(inputs[0]).to.equal(hexToASCII(ASCIIToHex(inputs[0])));
+    });
+
+    it('should decode correctly regarding hardcoded mapping', () => {
+      for (let i = 0; i < inputs.length; i++) {
+        expect(ASCIIToHex(inputs[i])).to.eq(outputs[i]);
+      }
     });
   });
 });

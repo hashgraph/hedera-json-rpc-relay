@@ -50,6 +50,14 @@ function hexToASCII(str: string): string {
   return ascii;
 }
 
+function ASCIIToHex(ascii: string): string {
+  const hex: string[] = [];
+  for (let n = 0; n < ascii.length; n++) {
+    hex.push(Number(ascii.charCodeAt(n)).toString(16));
+  }
+  return hex.join('');
+}
+
 /**
  * Converts an EVM ErrorMessage to a readable form. For example this :
  * 0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000
@@ -126,7 +134,14 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
  */
 const weibarHexToTinyBarInt = (value: string): number | null => {
   if (value && value !== '0x') {
-    const tinybarValue = BigInt(value) / BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+    const weiBigInt = BigInt(value);
+    const coefBigInt = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+    // Calculate the tinybar value
+    const tinybarValue = weiBigInt / coefBigInt;
+    // Check if there was a fractional part that got discarded
+    if (tinybarValue === BigInt(0) && weiBigInt > BigInt(0)) {
+      return 1; // Round up to the smallest unit of tinybar
+    }
     return Number(tinybarValue);
   }
   return null;
@@ -137,23 +152,33 @@ const formatContractResult = (cr: any) => {
     return null;
   }
 
+  const gasPrice =
+    cr.gas_price === null || cr.gas_price === '0x'
+      ? '0x0'
+      : isHex(cr.gas_price)
+      ? cr.gas_price
+      : nanOrNumberTo0x(cr.gas_price);
+
   const commonFields = {
     blockHash: toHash32(cr.block_hash),
     blockNumber: nullableNumberTo0x(cr.block_number),
-    chainId: cr.chain_id,
     from: cr.from.substring(0, 42),
     gas: nanOrNumberTo0x(cr.gas_used),
-    gasPrice: toNullIfEmptyHex(cr.gas_price),
+    gasPrice,
     hash: cr.hash.substring(0, 66),
     input: cr.function_parameters,
     nonce: nanOrNumberTo0x(cr.nonce),
-    r: cr.r === null ? null : cr.r.substring(0, 66),
-    s: cr.s === null ? null : cr.s.substring(0, 66),
+    r: cr.r === null ? '0x0' : cr.r.substring(0, 66),
+    s: cr.s === null ? '0x0' : cr.s.substring(0, 66),
     to: cr.to?.substring(0, 42),
     transactionIndex: nullableNumberTo0x(cr.transaction_index),
-    type: nullableNumberTo0x(cr.type),
-    v: cr.type === null ? null : nanOrNumberTo0x(cr.v),
+    type: cr.type === null ? '0x0' : nanOrNumberTo0x(cr.type),
+    v: cr.type === null ? '0x0' : nanOrNumberTo0x(cr.v),
     value: nanOrNumberTo0x(cr.amount),
+    // for legacy EIP155 with tx.chainId=0x0, mirror-node will return a '0x' (EMPTY_HEX) value for contract result's chain_id
+    //   which is incompatibile with certain tools (i.e. foundry). By setting this field, chainId, to undefined, the end jsonrpc
+    //   object will leave out this field, which is the proper behavior for other tools to be compatible with.
+    chainId: cr.chain_id === EMPTY_HEX ? undefined : cr.chain_id,
   };
 
   switch (cr.type) {
@@ -168,8 +193,14 @@ const formatContractResult = (cr: any) => {
       return new Transaction1559({
         ...commonFields,
         accessList: [],
-        maxPriorityFeePerGas: toNullIfEmptyHex(cr.max_priority_fee_per_gas),
-        maxFeePerGas: toNullIfEmptyHex(cr.max_fee_per_gas),
+        maxPriorityFeePerGas:
+          cr.max_priority_fee_per_gas === null || cr.max_priority_fee_per_gas === '0x'
+            ? '0x0'
+            : prepend0x(trimPrecedingZeros(cr.max_priority_fee_per_gas)),
+        maxFeePerGas:
+          cr.max_fee_per_gas === null || cr.max_fee_per_gas === '0x'
+            ? '0x0'
+            : prepend0x(trimPrecedingZeros(cr.max_fee_per_gas)),
       }); // eip 1559 fields
     case null:
       return new Transaction(commonFields); //hapi
@@ -238,6 +269,11 @@ const isValidEthereumAddress = (address: string): boolean => {
   return new RegExp(constants.BASE_HEX_REGEX + '{40}$').test(address);
 };
 
+const isHex = (value: string): boolean => {
+  const hexRegex = /^0x[0-9a-fA-F]+$/;
+  return hexRegex.test(value);
+};
+
 export {
   hashNumber,
   formatRequestIdMessage,
@@ -260,4 +296,6 @@ export {
   stringToHex,
   toHexString,
   isValidEthereumAddress,
+  isHex,
+  ASCIIToHex,
 };

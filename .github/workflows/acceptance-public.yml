@@ -110,11 +110,31 @@ jobs:
       operator_id: ${{ inputs.operator_id }}
       operator_key: ${{ inputs.operator_key }}
 
-  websocket:
-    name: Websocket
+  websocket-batch-1:
+    name: Websocket Batch 1
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: ws
+      testfilter: ws_batch1
+      test_ws_server: true
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
+
+  websocket-batch-2:
+    name: Websocket Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch2
+      test_ws_server: true
+      envfile: ${{ inputs.network }}Acceptance.env
+      operator_id: ${{ inputs.operator_id }}
+      operator_key: ${{ inputs.operator_key }}
+
+  websocket-batch-3:
+    name: Websocket Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch3
       test_ws_server: true
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
@@ -134,17 +154,24 @@ jobs:
       - tokenmanagement
       - htsprecompilev1
       - precompilecalls
-      - websocket
+      - websocket-batch-1
+      - websocket-batch-2
+      - websocket-batch-3
 
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Download Test Reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
           name: Test Results
 
       - name: Publish Test Report
-        uses: actionite/publish-unit-test-result-action@v2
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
         with:
           check_name: Test Results
           json_thousands_separator: ','

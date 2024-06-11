@@ -18,24 +18,25 @@
  *
  */
 
-import { Assertion, expect } from 'chai';
+import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 const registry = new Registry();
 
 import pino from 'pino';
 import { Precheck } from '../../src/lib/precheck';
-import { expectedError, mockData, signTransaction } from '../helpers';
+import { blobVersionedHash, contractAddress1, expectedError, mockData, signTransaction } from '../helpers';
 import { MirrorNodeClient } from '../../src/lib/clients';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { ethers } from 'ethers';
+import { Transaction, ethers } from 'ethers';
 import constants from '../../src/lib/constants';
 import { JsonRpcError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 const logger = pino();
 
 const limitOrderPostFix = '?order=desc&limit=1';
+const transactionsPostFix = '?transactions=false';
 
 describe('Precheck', async function () {
   const txWithMatchingChainId =
@@ -59,9 +60,18 @@ describe('Precheck', async function () {
   const parsedTxWithValueLessThanOneTinybarAndNotEmptyData = ethers.Transaction.from(
     txWithValueLessThanOneTinybarAndNotEmptyData,
   );
-  const oneTinyBar = ethers.parseUnits('1', 10);
+
   const defaultGasPrice = 720_000_000_000;
+  const defaultGasLimit = 1_000_000;
   const defaultChainId = Number('0x12a');
+  const defaultTx = {
+    gasLimit: defaultGasLimit,
+    gasPrice: defaultGasPrice,
+    chainId: defaultChainId,
+    maxFeePerGas: null,
+    maxPriorityFeePerGas: null,
+  };
+
   let precheck: Precheck;
   let mock: MockAdapter;
 
@@ -166,12 +176,6 @@ describe('Precheck', async function () {
   });
 
   describe('gasLimit', async function () {
-    const defaultTx = {
-      value: oneTinyBar,
-      gasPrice: defaultGasPrice,
-      chainId: defaultChainId,
-    };
-
     function testFailingGasLimitPrecheck(gasLimits, errorCode) {
       for (const gasLimit of gasLimits) {
         it(`should fail for gasLimit: ${gasLimit}`, async function () {
@@ -244,6 +248,31 @@ describe('Precheck', async function () {
 
     it('should pass for gas price equal to required gas price', async function () {
       const result = precheck.gasPrice(parsedTxWithMatchingChainId, defaultGasPrice);
+      expect(result).to.not.exist;
+    });
+
+    it('should recognize if a signed raw transaction is the deterministic deployment transaction', async () => {
+      const parsedDeterministicDeploymentTransaction = ethers.Transaction.from(
+        constants.DETERMINISTIC_DEPLOYER_TRANSACTION,
+      );
+
+      expect(Precheck.isDeterministicDeploymentTransaction(parsedDeterministicDeploymentTransaction)).to.be.true;
+    });
+
+    it('Should recognize if a signed raw transaction is NOT the deterministic deployment transaction', async () => {
+      expect(Precheck.isDeterministicDeploymentTransaction(parsedtxWithChainId0x0)).to.be.false;
+      expect(Precheck.isDeterministicDeploymentTransaction(parsedTxWithMatchingChainId)).to.be.false;
+      expect(Precheck.isDeterministicDeploymentTransaction(parsedTxWithNonMatchingChainId)).to.be.false;
+    });
+
+    it('should pass for gas price if the transaction is the deterministic deployment transaction', async function () {
+      const parsedDeterministicDeploymentTransaction = ethers.Transaction.from(
+        constants.DETERMINISTIC_DEPLOYER_TRANSACTION,
+      );
+      const result = precheck.gasPrice(
+        parsedDeterministicDeploymentTransaction,
+        100 * constants.TINYBAR_TO_WEIBAR_COEF,
+      );
       expect(result).to.not.exist;
     });
 
@@ -367,13 +396,6 @@ describe('Precheck', async function () {
 
   describe('nonce', async function () {
     const defaultNonce = 3;
-    const defaultTx = {
-      value: oneTinyBar,
-      gasPrice: defaultGasPrice,
-      chainId: defaultChainId,
-      nonce: defaultNonce,
-    };
-
     const mirrorAccount = {
       ethereum_nonce: defaultNonce,
     };
@@ -424,25 +446,22 @@ describe('Precheck', async function () {
   });
 
   describe('account', async function () {
-    const defaultNonce = 3;
-    const defaultTx = {
-      value: oneTinyBar,
-      gasPrice: defaultGasPrice,
-      chainId: defaultChainId,
-      nonce: defaultNonce,
-      from: mockData.accountEvmAddress,
-    };
+    let parsedTx: Transaction;
+    let mirrorAccount: any;
+    const defaultNonce: number = 3;
 
-    const signed = await signTransaction(defaultTx);
-    const parsedTx = ethers.Transaction.from(signed);
-
-    const mirrorAccount = {
-      evm_address: mockData.accountEvmAddress,
-      ethereum_nonce: defaultNonce,
-    };
+    before(async () => {
+      const wallet = ethers.Wallet.createRandom();
+      const signed = await wallet.signTransaction({ ...defaultTx, from: wallet.address, nonce: defaultNonce });
+      parsedTx = ethers.Transaction.from(signed);
+      mirrorAccount = {
+        evm_address: parsedTx.from,
+        ethereum_nonce: defaultNonce,
+      };
+    });
 
     it(`should fail for missing account`, async function () {
-      mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(404, mockData.notFound);
+      mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(404, mockData.notFound);
 
       try {
         await precheck.verifyAccount(parsedTx);
@@ -451,12 +470,12 @@ describe('Precheck', async function () {
         expect(e).to.exist;
         expect(e.code).to.eq(-32001);
         expect(e.name).to.eq('Resource not found');
-        expect(e.message).to.contain(mockData.accountEvmAddress);
+        expect(e.message).to.contain(parsedTx.from);
       }
     });
 
     it(`should not fail for matched account`, async function () {
-      mock.onGet(`accounts/${mockData.accountEvmAddress}${limitOrderPostFix}`).reply(200, mirrorAccount);
+      mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(200, mirrorAccount);
       const account = await precheck.verifyAccount(parsedTx);
 
       expect(account.ethereum_nonce).to.eq(defaultNonce);
@@ -552,6 +571,50 @@ describe('Precheck', async function () {
       expect(error).to.be.an.instanceOf(JsonRpcError);
       expect(error.message).to.equal('Error invoking RPC: Passed hex an empty string');
       expect(error.code).to.equal(-32603);
+    });
+  });
+
+  describe('transactionType', async function () {
+    const defaultTx = {
+      value: oneTinyBar,
+      gasPrice: defaultGasPrice,
+      gasLimit: defaultGasLimit,
+      chainId: defaultChainId,
+      nonce: 5,
+      to: contractAddress1,
+    };
+
+    it('should accept legacy transactions', async () => {
+      const signedLegacy = await signTransaction(defaultTx);
+      expect(precheck.transactionType(ethers.Transaction.from(signedLegacy))).not.to.throw;
+    });
+
+    it('should accept London transactions', async () => {
+      const signedLondon = await signTransaction({
+        ...defaultTx,
+        type: 2,
+        maxPriorityFeePerGas: defaultGasPrice,
+        maxFeePerGas: defaultGasPrice,
+      });
+      expect(precheck.transactionType(ethers.Transaction.from(signedLondon))).not.to.throw;
+    });
+
+    it('should reject Cancun transactions', async () => {
+      let error;
+      try {
+        const signedCancun = await signTransaction({
+          ...defaultTx,
+          type: 3,
+          maxFeePerBlobGas: defaultGasPrice,
+          blobVersionedHashes: [blobVersionedHash],
+        });
+        precheck.transactionType(ethers.Transaction.from(signedCancun));
+      } catch (e) {
+        error = e;
+      }
+      expect(error).to.be.an.instanceOf(JsonRpcError);
+      expect(error.message).to.equal(predefined.UNSUPPORTED_TRANSACTION_TYPE.message);
+      expect(error.code).to.equal(predefined.UNSUPPORTED_TRANSACTION_TYPE.code);
     });
   });
 });

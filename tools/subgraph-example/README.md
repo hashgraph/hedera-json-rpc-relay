@@ -130,6 +130,12 @@ _NOTE: At this time the whole test workflow can't be proficiently automated, so 
 4. Create and deploy the subgraph by executing `yarn/npm run create-local` and `yarn deploy-local --network local` or `npx run deploy-local -- --network local` and follow the instructions
 5. Execute `npx hardhat test`
 
+Alternatively, you can try to run the tests with the following commands:
+1. Run the following script `bash ./prepare-test.sh` (you will be prompted to enter a version label, please do so)
+   1. The script might fail at the `npm run create-local` step if it executes it before the graph-node is ready.
+   2. If it fails, you can try to run `npm run create-local && npm run deploy-local -- --network local` manually.
+2. Execute `npx hardhat test`
+
 ## HOW TOs:
 
 ### Run a private graph-node against testnet, previewnet and mainnet:
