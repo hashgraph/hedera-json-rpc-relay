@@ -23,6 +23,7 @@ import dotenv from 'dotenv';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import { Registry } from 'prom-client';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const registry = new Registry();
 import pino from 'pino';
@@ -172,6 +173,41 @@ describe('SdkClient', async function () {
       sinon.assert.calledOnce(getFeeScheduleStub);
       sinon.assert.calledOnce(getExchangeRateStub);
       sinon.assert.calledOnce(convertGasPriceToTinyBarsStub);
+    });
+  });
+
+  describe('HAPIService', async () => {
+    it('Initialize the privateKey for default which is DER', async () => {
+      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
+      const privateKey = (hapiService as any).initPrivateKey.call(hapiService, process.env.OPERATOR_KEY_MAIN!);
+      expect(privateKey.toString()).to.eq(process.env.OPERATOR_KEY_MAIN);
+    });
+
+    it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
+      process.env.OPERATOR_KEY_FORMAT = 'DER';
+      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
+      const privateKey = (hapiService as any).initPrivateKey.call(hapiService, process.env.OPERATOR_KEY_MAIN!);
+      expect(privateKey.toString()).to.eq(process.env.OPERATOR_KEY_MAIN);
+    });
+
+    it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
+      process.env.OPERATOR_KEY_FORMAT = 'HEX_ED25519';
+      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
+      const privateKey = (hapiService as any).initPrivateKey.call(hapiService, process.env.OPERATOR_KEY_MAIN!);
+      const hexEncoded = `0x${privateKey.toStringRaw()}`;
+      expect(hexEncoded).to.eq('0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137');
+    });
+
+    it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
+      process.env.OPERATOR_KEY_FORMAT = 'HEX_ECDSA';
+      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
+      const privateKey = (hapiService as any).initPrivateKey.call(
+        hapiService,
+        '0x08e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
+      );
+      expect(privateKey.toString()).to.eq(
+        '3030020100300706052b8104000a0422042008e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
+      );
     });
   });
 });
