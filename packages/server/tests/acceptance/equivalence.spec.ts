@@ -20,7 +20,7 @@
 
 import { assert, expect } from 'chai';
 import { Utils } from '../helpers/utils';
-import ServicesClient, { AliasAccount } from '../clients/servicesClient';
+import ServicesClient from '../clients/servicesClient';
 import { ContractFunctionParameters } from '@hashgraph/sdk';
 import EstimatePrecompileContractJson from '../contracts/EstimatePrecompileContract.json';
 import Constants from '../helpers/constants';
@@ -30,6 +30,7 @@ import { Precheck } from '../../../relay/src/lib/precheck';
 import pino from 'pino';
 import { MirrorNodeClient } from '../../../relay/src/lib/clients';
 import { hexToASCII } from '../../../relay/src/formatters';
+import { AliasAccount } from '../types/AliasAccount';
 const logger = pino();
 
 enum CallTypes {
@@ -71,7 +72,7 @@ async function testRejection(errorMessage, method, checkMessage, thisObj, args?)
   });
 }
 
-describe.only('Equivalence tests', async function () {
+describe('Equivalence tests', async function () {
   const { servicesNode, mirrorNode, relay }: any = global;
   const servicesClient = servicesNode as ServicesClient;
   const mirrorNodeClient = mirrorNode as MirrorNodeClient;
