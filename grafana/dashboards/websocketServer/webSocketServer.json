@@ -120,7 +120,7 @@
             "uid": "grafanacloud-prom"
           },
           "editorMode": "code",
-          "expr": "sum(rpc_websocket_active_connections{namespace=\"mainnet\"})",
+          "expr": "sum(rpc_websocket_active_connections{namespace=\"$namespace\"})",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
@@ -180,7 +180,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "11.1.0-71516",
+      "pluginVersion": "11.1.0-71799",
       "targets": [
         {
           "datasource": {
@@ -441,74 +441,6 @@
         "type": "prometheus",
         "uid": "grafanacloud-prom"
       },
-      "description": "Active Polls",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 17
-      },
-      "id": 7,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "11.1.0-71516",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "grafanacloud-prom"
-          },
-          "editorMode": "code",
-          "expr": "sum(rpc_websocket_active_polls{namespace=\"$namespace\"})",
-          "instant": false,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Active Polls",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "grafanacloud-prom"
-      },
       "description": "WebSocket Messages Received Total",
       "fieldConfig": {
         "defaults": {
@@ -532,7 +464,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 25
+        "y": 17
       },
       "id": 13,
       "options": {
@@ -552,7 +484,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.0-71516",
+      "pluginVersion": "11.1.0-71799",
       "targets": [
         {
           "datasource": {
@@ -569,19 +501,6 @@
       ],
       "title": "WebSocket Messages Received Total",
       "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 33
-      },
-      "id": 16,
-      "panels": [],
-      "title": "System",
-      "type": "row"
     },
     {
       "datasource": {
@@ -611,7 +530,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 34
+        "y": 25
       },
       "id": 14,
       "options": {
@@ -631,7 +550,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.0-71516",
+      "pluginVersion": "11.1.0-71799",
       "targets": [
         {
           "datasource": {
@@ -647,140 +566,6 @@
         }
       ],
       "title": "WebSocket Connections Established Total",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "grafanacloud-prom"
-      },
-      "description": "Active Connections per IP",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 34
-      },
-      "id": 5,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "11.1.0-71516",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "grafanacloud-prom"
-          },
-          "editorMode": "code",
-          "expr": "sum(rpc_websocket_active_connections_per_ip)",
-          "instant": false,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Active Connections per IP",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "grafanacloud-prom"
-      },
-      "description": "Websocket Connections Closed Total",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 42
-      },
-      "id": 15,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.1.0-71516",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "grafanacloud-prom"
-          },
-          "editorMode": "code",
-          "expr": "sum(rpc_websocket_connections_closed_total{namespace=\"$namespace\"})",
-          "instant": false,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Websocket Connections Closed Total",
       "type": "stat"
     },
     {
@@ -815,7 +600,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 42
+        "y": 25
       },
       "id": 9,
       "options": {
@@ -833,7 +618,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "11.1.0-71516",
+      "pluginVersion": "11.1.0-71799",
       "targets": [
         {
           "datasource": {
@@ -849,6 +634,140 @@
         }
       ],
       "title": "Active Websocket Connections",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "Websocket Connections Closed Total",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "id": 15,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0-71799",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "editorMode": "code",
+          "expr": "sum(rpc_websocket_connections_closed_total{namespace=\"$namespace\"})",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Websocket Connections Closed Total",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "Active Connections per IP",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "id": 5,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.1.0-71799",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "editorMode": "code",
+          "expr": "sum(rpc_websocket_active_connections_per_ip)",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Active Connections per IP",
       "type": "gauge"
     },
     {
@@ -915,7 +834,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 50
+        "y": 41
       },
       "id": 11,
       "options": {
@@ -946,6 +865,103 @@
       ],
       "title": "WebSocket Total Connection Limit Enforced",
       "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 49
+      },
+      "id": 16,
+      "panels": [],
+      "title": "System",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafanacloud-prom"
+      },
+      "description": "WebSocket Server CPU usage",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 20000
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "{__name__=\"rpc_websocket_cpu_usage_percentage\", cluster=\"hashio-mainnet\", container=\"json-rpc-relay-websocket\", cpu=\"CPU\", endpoint=\"metrics\", env=\"hashio-mainnet\", instance=\"192.168.0.10:8547\", job=\"mainnet-websocket\", namespace=\"mainnet\", pod=\"mainnet-websocket-59879548f4-7ztwf\", prometheus=\"default/prometheus-operator-kube-p-prometheus\", prometheus_replica=\"prometheus-prometheus-operator-kube-p-prometheus-0\", service=\"mainnet-websocket\"}"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 50
+      },
+      "id": 3,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.1.0-71799",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "grafanacloud-prom"
+          },
+          "editorMode": "code",
+          "expr": "sum(rpc_websocket_cpu_usage_percentage{namespace=\"$namespace\"}) by(pod)",
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "WebSocket CPU Usage",
+      "type": "gauge"
     },
     {
       "datasource": {
@@ -997,7 +1013,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "11.1.0-71516",
+      "pluginVersion": "11.1.0-71799",
       "targets": [
         {
           "datasource": {
@@ -1013,90 +1029,6 @@
         }
       ],
       "title": "WebSocket Active Connections Per IP",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "grafanacloud-prom"
-      },
-      "description": "WebSocket Server CPU usage",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "#EAB839",
-                "value": 8000
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "{__name__=\"rpc_websocket_cpu_usage_percentage\", cluster=\"hashio-mainnet\", container=\"json-rpc-relay-websocket\", cpu=\"CPU\", endpoint=\"metrics\", env=\"hashio-mainnet\", instance=\"192.168.0.10:8547\", job=\"mainnet-websocket\", namespace=\"mainnet\", pod=\"mainnet-websocket-59879548f4-7ztwf\", prometheus=\"default/prometheus-operator-kube-p-prometheus\", prometheus_replica=\"prometheus-prometheus-operator-kube-p-prometheus-0\", service=\"mainnet-websocket\"}"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": []
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 58
-      },
-      "id": 3,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "11.1.0-71516",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "grafanacloud-prom"
-          },
-          "editorMode": "code",
-          "expr": "sum(rpc_websocket_cpu_usage_percentage{namespace=\"mainnet\"}) by(pod)",
-          "instant": false,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "WebSocket CPU Usage",
       "type": "gauge"
     },
     {
@@ -1156,32 +1088,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "{__name__=\"rpc_websocket_memory_usage_bytes\", cluster=\"hashio-mainnet\", container=\"json-rpc-relay-websocket\", endpoint=\"metrics\", env=\"hashio-mainnet\", instance=\"192.168.1.19:8547\", job=\"mainnet-websocket\", memory=\"Memory Usage\", namespace=\"mainnet\", pod=\"mainnet-websocket-59879548f4-65ptw\", prometheus=\"default/prometheus-operator-kube-p-prometheus\", prometheus_replica=\"prometheus-prometheus-operator-kube-p-prometheus-0\", service=\"mainnet-websocket\"}"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
@@ -1209,7 +1116,7 @@
             "uid": "grafanacloud-prom"
           },
           "editorMode": "code",
-          "expr": "rpc_websocket_memory_usage_bytes{namespace=\"mainnet\"}",
+          "expr": "rpc_websocket_memory_usage_bytes{namespace=\"$namespace\"}",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
@@ -1262,6 +1169,6 @@
   "timezone": "browser",
   "title": "WebSocket HashIO",
   "uid": "cdiy2ivo7ygowc",
-  "version": 26,
+  "version": 32,
   "weekStart": ""
 }
