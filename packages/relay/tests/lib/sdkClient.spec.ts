@@ -50,6 +50,7 @@ import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { MAX_GAS_LIMIT_HEX } from './eth/eth-config';
 import { getRequestId, signTransaction } from '../helpers';
 import { TransactionReceipt } from 'ethers';
+import exp from 'constants';
 
 describe('SdkClient', async function () {
   this.timeout(20000);
@@ -212,6 +213,16 @@ describe('SdkClient', async function () {
       const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
       const privateKey = (hapiService as any).initPrivateKey.call(hapiService, OPERATOR_KEY_ECDSA.HEX_ECDSA);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
+    });
+
+    it('It should throw an Error when an unexpected string is set', async () => {
+      process.env.OPERATOR_KEY_FORMAT = 'BAD_FORMAT';
+      try {
+        const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
+        expect(true).to.be.false; // Should not make it here
+      } catch (e: any) {
+        expect(e.message).to.eq('Invalid OPERATOR_KEY_FORMAT provided: BAD_FORMAT');
+      }
     });
   });
 });
