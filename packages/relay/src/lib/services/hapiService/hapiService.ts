@@ -249,9 +249,7 @@ export default class HAPIService {
   private createPrivateKeyBasedOnFormat(operatorMainKey: string): PrivateKey {
     switch (process.env.OPERATOR_KEY_FORMAT) {
       case 'DER':
-        return PrivateKey.fromStringDer(operatorMainKey);
       case undefined:
-        return PrivateKey.fromStringDer(operatorMainKey);
       case null:
         return PrivateKey.fromStringDer(operatorMainKey);
       case 'HEX_ED25519':
