@@ -2,6 +2,8 @@
 
 This Hedera Golang Example Project offers boilerplate code for testing and deploying smart contracts via golang ethereum. It can be configured to communicate with both community-hosted and local ([Hedera Local Node](https://github.com/hashgraph/hedera-local-node)) instances of the [Hedera JSON RPC Relay](https://github.com/hashgraph/hedera-json-rpc-relay).
 
+This project utilizes the ethereum/go-ethereum library to prepare the connection client. Please note that there are alternative libraries available for the Go language, such as ethrpc.
+
 ## Project Files and Folders
 
 - `/contracts` - This folder holds:
