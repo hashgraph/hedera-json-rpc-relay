@@ -35,11 +35,13 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `INPUT_SIZE_LIMIT`         | "1mb"            | The [koa-jsonrpc](https://github.com/Bitclimb/koa-jsonrpc) maximum size allowed for requests                                                                                                                            |
 | `MAX_BLOCK_RANGE`          | "5"              | The maximum block number greater than the mirror node's latest block to query for                                                                                                                                       |
 | `OPERATOR_ID_MAIN`         | ""               | Operator account ID used to pay for transactions. In `S.R.N` format, e.g. `0.0.1001`.                                                                                                                                   |
+| `OPERATOR_KEY_FORMAT`        | "DER"               | Operator private key format. Valid types are `DER`, `HEX_ECDSA`, or `HEX_ED25519` |
 | `OPERATOR_KEY_MAIN`        | ""               | Operator private key used to sign transactions in hex encoded DER format. This may be either an ED22519 private key or an ECDSA private key. The private key must be associated with/used to derive `OPERATOR_ID_MAIN`. |
 | `RATE_LIMIT_DISABLED`      | "false"          | Flag to disable IP based rate limiting.                                                                                                                                                                                 |
 | `REQUEST_ID_IS_OPTIONAL`   | ""               | Flag to set it the JSON RPC request id field in the body should be optional. Note, this breaks the API spec and is not advised and is provided for test purposes only where some wallets may be non compliant           |
 | `SERVER_PORT`              | "7546"           | The RPC server port number to listen for requests on. Currently a static value defaulting to 7546. See [#955](https://github.com/hashgraph/hedera-json-rpc-relay/issues/955)                                            |
 | `SERVER_REQUEST_TIMEOUT_MS`| "60000"           | The time of inactivity allowed before a timeout is triggered and the socket is closed. See [NodeJs Server Timeout](https://nodejs.org/api/http.html#serversettimeoutmsecs-callback)                                         |
+
 
 ## Relay
 
