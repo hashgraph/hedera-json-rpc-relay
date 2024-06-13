@@ -356,7 +356,6 @@ export default class Assertions {
 
       const { error } = e?.response ? e.response.bodyJson : e;
       expect(error.code).to.equal(expectedError.code);
-      expect(error.name).to.equal(expectedError.name);
       if (checkMessage) {
         expect(error.message).to.include(expectedError.message);
       }

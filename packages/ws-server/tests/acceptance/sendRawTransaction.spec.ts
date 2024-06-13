@@ -166,7 +166,6 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
         const expectedNonceTooLowError = predefined.NONCE_TOO_LOW(0, signerNonce);
         const errObj = response.result;
         expect(errObj.code).to.eq(expectedNonceTooLowError.code);
-        expect(errObj.name).to.eq(expectedNonceTooLowError.name);
         expect(errObj.message).to.contain(expectedNonceTooLowError.message);
       }
     });
@@ -225,7 +224,6 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
         const errObj = await ethersWsProvider.send(METHOD_NAME, [constants.DETERMINISTIC_DEPLOYER_TRANSACTION]);
         const expectedNonceTooLowError = predefined.NONCE_TOO_LOW(0, signerNonce);
         expect(errObj.code).to.eq(expectedNonceTooLowError.code);
-        expect(errObj.name).to.eq(expectedNonceTooLowError.name);
         expect(errObj.message).to.contain(expectedNonceTooLowError.message);
       }
     });

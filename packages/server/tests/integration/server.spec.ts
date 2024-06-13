@@ -576,7 +576,6 @@ describe('RPC Server', async function () {
       expect(response.data[2].id).to.be.equal('4');
       expect(response.data[2].error).to.be.an('Object');
       expect(response.data[2].error.code).to.be.equal(-32602);
-      expect(response.data[2].error.name).to.be.equal('Missing required parameters');
       expect(
         response.data[2].error.message.endsWith('Missing value for required parameter 1'),
         'Missing value for required parameter 1',
@@ -2312,7 +2311,7 @@ class BaseTest {
     expect(response, "Default response: Should have 'data' property").to.have.property('data');
   }
 
-  static errorResponseChecks(response, code, message, name?) {
+  static errorResponseChecks(response, code, message) {
     BaseTest.validRequestIdCheck(response);
     expect(response, "Error response: should have 'data' property").to.have.property('data');
     expect(response.data, "Error response: 'data' should have 'id' property").to.have.property('id');
@@ -2329,13 +2328,6 @@ class BaseTest {
       response.data.error.message.endsWith(message),
       `Error response: 'data.error.message' should end with passed ${message} value, but came with ${response.data.error.message}`,
     ).to.be.true;
-    if (name) {
-      expect(response.data.error, "Error response: 'data.error' should have 'name' property").to.have.property('name');
-      expect(
-        response.data.error.name,
-        "Error response: 'data.error.name' should match passed 'name' value",
-      ).to.be.equal(name);
-    }
   }
 
   static unsupportedJsonRpcMethodChecks(response: any) {
@@ -2348,7 +2340,6 @@ class BaseTest {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
 
-    expect(response.data.error.name).to.eq('Batch requests disabled');
     expect(response.data.error.message).to.eq('Batch requests are disabled');
     expect(response.data.error.code).to.eq(-32202);
   }
@@ -2362,7 +2353,6 @@ class BaseTest {
   static batchRequestLimitError(response: any, amount: number, max: number) {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
-    expect(response.data.error.name).to.eq('Batch requests amount max exceeded');
     expect(response.data.error.message).to.eq(`Batch request amount ${amount} exceeds max ${max}`);
     expect(response.data.error.code).to.eq(-32203);
   }

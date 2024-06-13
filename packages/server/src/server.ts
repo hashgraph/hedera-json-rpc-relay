@@ -217,7 +217,6 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
 
       return new JsonRpcError(
         {
-          name: response.name,
           code: response.code,
           message: response.message,
           data: response.data,
@@ -239,7 +238,6 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
     logger.error(`${requestIdPrefix} ${error.message}`);
     return new JsonRpcError(
       {
-        name: error.name,
         code: error.code,
         message: error.message,
         data: error.data,
