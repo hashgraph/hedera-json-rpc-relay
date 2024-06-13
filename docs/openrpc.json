@@ -51,6 +51,7 @@
     {
       "name": "eth_accounts",
       "summary": "Returns a list of addresses owned by client. Supported: HTTP.",
+      "description": "Returns a list of addresses owned by client. ![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/2543-update-relay-specification-documentation/docs/images/http_label.png)",
       "params": [],
       "result": {
         "name": "Accounts",
