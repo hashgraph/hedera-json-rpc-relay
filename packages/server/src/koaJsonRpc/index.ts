@@ -27,23 +27,22 @@ import path from 'path';
 import { Logger } from 'pino';
 
 import {
-  ParseError,
-  InvalidRequest,
   InternalError,
+  InvalidRequest,
   IPRateLimitExceeded,
-  MethodNotFound,
-  Unauthorized,
   JsonRpcError as JsonRpcErrorServer,
+  MethodNotFound,
+  ParseError,
+  Unauthorized
 } from './lib/RpcError';
 import Koa from 'koa';
 import { Histogram, Registry } from 'prom-client';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
-import { RpcErrorCodeToStatusMap, HttpStatusCodeAndMessage } from './lib/HttpStatusCodeAndMessage';
+import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
-
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 const INTERNAL_ERROR = 'INTERNAL ERROR';
 const INVALID_PARAMS_ERROR = 'INVALID PARAMS ERROR';
@@ -196,26 +195,21 @@ export default class KoaJsonRpc {
       return;
     }
 
-    // verify rate limit for batch request
-    const batchRequestTotalLimit = this.methodConfig[BATCH_REQUEST_METHOD_NAME].total;
-    // check rate limit for method and ip
-    if (this.rateLimit.shouldRateLimit(ctx.ip, BATCH_REQUEST_METHOD_NAME, batchRequestTotalLimit, this.requestId)) {
-      return jsonResp(null, new IPRateLimitExceeded(BATCH_REQUEST_METHOD_NAME), undefined);
-    }
-
     const response: any[] = [];
-    ctx.state.methodName = BATCH_REQUEST_METHOD_NAME;
 
     // we do the requests in parallel to save time, but we need to keep track of the order of the responses (since the id might be optional)
     const promises = body.map((item: any) => {
+      const methodLimit = this.methodConfig[item.method].total;
+      if (this.rateLimit.shouldRateLimit(ctx.ip, item.method, methodLimit, this.requestId)) {
+        return jsonResp(this.requestId, new IPRateLimitExceeded(item.method), undefined);
+      }
+      ctx.state.methodName = item.method;
       const startTime = Date.now();
-      const result = this.getRequestResult(item, ctx.ip).then((res) => {
+      return this.getRequestResult(item, ctx.ip).then((res) => {
         const ms = Date.now() - startTime;
         this.methodResponseHistogram?.labels(item.method, `${res.error ? res.error.code : 200}`, 'true').observe(ms);
         return res;
       });
-
-      return result;
     });
     const results = await Promise.all(promises);
     response.push(...results);
