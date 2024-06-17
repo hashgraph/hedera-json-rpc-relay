@@ -7,6 +7,6 @@ changelog:
     - title: 'Bug Fixes'
       labels: ['bug']
     - title: 'Documentation'
-      labels: ['documentation', 'docs']
+      labels: ['documentation']
     - title: 'Dependency Upgrades'
-      labels: ['dependency-upgrade', 'dependencies']
+      labels: ['dependencies']
