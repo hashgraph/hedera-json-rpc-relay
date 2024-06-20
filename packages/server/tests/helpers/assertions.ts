@@ -65,12 +65,18 @@ export default class Assertions {
    * @param mirrorTransactions
    * @param hydratedTransactions - aka showDetails flag
    */
-  public static block(relayResponse, mirrorNodeResponse, mirrorTransactions, hydratedTransactions = false) {
+  public static block(
+    relayResponse,
+    mirrorNodeResponse,
+    mirrorTransactions,
+    expectedGasPrice,
+    hydratedTransactions = false,
+  ) {
     // Assert static values
     expect(relayResponse.baseFeePerGas).to.exist;
 
     if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
-      expect(relayResponse.baseFeePerGas).to.be.equal(ethers.toQuantity(this.defaultGasPrice));
+      expect(relayResponse.baseFeePerGas).to.be.equal(expectedGasPrice);
     } else {
       expect(Number(relayResponse.baseFeePerGas)).to.be.gt(0);
     }
