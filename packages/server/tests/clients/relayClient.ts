@@ -23,7 +23,6 @@ import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
-import { expectedError } from '../../../relay/tests/helpers';
 
 export default class RelayClient {
   private readonly provider: ethers.JsonRpcProvider;
