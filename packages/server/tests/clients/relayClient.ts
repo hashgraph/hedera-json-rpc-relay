@@ -32,9 +32,7 @@ export default class RelayClient {
   constructor(relayUrl: string, logger: Logger) {
     this.logger = logger;
     let fr: ethers.FetchRequest = new ethers.FetchRequest(relayUrl);
-    this.provider = new ethers.JsonRpcProvider(fr, undefined, {
-      batchMaxCount: 1,
-    });
+    this.provider = new ethers.JsonRpcProvider(fr);
   }
 
   /**
