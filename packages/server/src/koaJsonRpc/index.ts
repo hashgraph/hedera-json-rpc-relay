@@ -204,6 +204,10 @@ export default class KoaJsonRpc {
         return jsonResp(this.requestId, new IPRateLimitExceeded(item.method), undefined);
       }
       ctx.state.methodName = item.method;
+      const methodLimit = this.methodConfig[item.method]?.total;
+      if (methodLimit && this.rateLimit.shouldRateLimit(ctx.ip, item.method, methodLimit, this.requestId)) {
+        return jsonResp(this.requestId, new IPRateLimitExceeded(item.method), undefined);
+      }
       const startTime = Date.now();
       return this.getRequestResult(item, ctx.ip).then((res) => {
         const ms = Date.now() - startTime;
