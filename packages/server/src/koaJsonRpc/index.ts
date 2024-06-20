@@ -199,15 +199,11 @@ export default class KoaJsonRpc {
 
     // we do the requests in parallel to save time, but we need to keep track of the order of the responses (since the id might be optional)
     const promises = body.map((item: any) => {
-      const methodLimit = this.methodConfig[item.method].total;
-      if (this.rateLimit.shouldRateLimit(ctx.ip, item.method, methodLimit, this.requestId)) {
-        return jsonResp(this.requestId, new IPRateLimitExceeded(item.method), undefined);
-      }
-      ctx.state.methodName = item.method;
       const methodLimit = this.methodConfig[item.method]?.total;
       if (methodLimit && this.rateLimit.shouldRateLimit(ctx.ip, item.method, methodLimit, this.requestId)) {
         return jsonResp(this.requestId, new IPRateLimitExceeded(item.method), undefined);
       }
+      ctx.state.methodName = item.method;
       const startTime = Date.now();
       return this.getRequestResult(item, ctx.ip).then((res) => {
         const ms = Date.now() - startTime;
