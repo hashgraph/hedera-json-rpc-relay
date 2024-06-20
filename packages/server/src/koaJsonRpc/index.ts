@@ -18,7 +18,7 @@
  *
  */
 
-import { methodConfiguration } from './lib/methodConfiguration';
+import { IMethodRateLimitConfiguration, methodConfiguration } from './lib/methodConfiguration';
 import jsonResp from './lib/RpcResponse';
 import RateLimit from '../rateLimit';
 import parse from 'co-body';
@@ -33,7 +33,6 @@ import {
   JsonRpcError as JsonRpcErrorServer,
   MethodNotFound,
   ParseError,
-  Unauthorized
 } from './lib/RpcError';
 import Koa from 'koa';
 import { Histogram, Registry } from 'prom-client';
@@ -41,7 +40,7 @@ import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
-const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
+const hasOwnProperty = (obj: any, prop: PropertyKey) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
 const INTERNAL_ERROR = 'INTERNAL ERROR';
@@ -56,44 +55,36 @@ const responseSuccessStatusCode = '200';
 const BATCH_REQUEST_METHOD_NAME = 'batch_request';
 
 export default class KoaJsonRpc {
-  private registry: any;
-  private registryTotal: any;
-  private token: any;
-  private methodConfig: any;
-  private duration: number;
-  private limit: string;
-  private rateLimit: RateLimit;
-  private metricsRegistry: any;
-  private koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
-  private requestId: string;
-  private logger: Logger;
-  private startTimestamp!: number;
+  private readonly registry: { [key: string]: (params?: any) => Promise<any> };
+  private readonly registryTotal: { [key: string]: number };
+  private readonly methodConfig: IMethodRateLimitConfiguration;
+  private readonly duration: number;
+  private readonly limit: string;
+  private readonly rateLimit: RateLimit;
+  private readonly metricsRegistry: Registry;
+  private readonly koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
+  private readonly logger: Logger;
   private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == 'true'; // default to false
   private readonly batchRequestsMaxSize: number = process.env.BATCH_REQUESTS_MAX_SIZE
     ? parseInt(process.env.BATCH_REQUESTS_MAX_SIZE)
     : 100; // default to 100
-  private methodResponseHistogram: Histogram | undefined;
+  private readonly methodResponseHistogram: Histogram;
 
-  constructor(logger: Logger, register: Registry, opts?) {
+  private requestId: string;
+
+  constructor(logger: Logger, register: Registry, opts?: { limit: string | null }) {
     this.koaApp = new Koa();
     this.requestId = '';
-    this.limit = '1mb';
     this.duration = process.env.LIMIT_DURATION
       ? parseInt(process.env.LIMIT_DURATION)
       : constants.DEFAULT_RATE_LIMIT.DURATION;
     this.registry = Object.create(null);
     this.registryTotal = Object.create(null);
     this.methodConfig = methodConfiguration;
-    if (opts) {
-      this.limit = opts.limit || this.limit;
-    }
+    this.limit = opts?.limit ?? '1mb';
     this.logger = logger;
     this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
     this.metricsRegistry = register;
-    this.initMetrics();
-  }
-
-  private initMetrics() {
     // clear and create metric in registry
     const metricHistogramName = 'rpc_relay_method_result';
     this.metricsRegistry.removeSingleMetric(metricHistogramName);
@@ -111,19 +102,17 @@ export default class KoaJsonRpc {
     return process.env.BATCH_REQUESTS_ENABLED == 'true'; // default to false
   }
 
-  useRpc(name, func) {
+  useRpc(name: string, func: (params?: any) => Promise<any>) {
     this.registry[name] = func;
     this.registryTotal[name] = this.methodConfig[name].total;
 
     if (!this.registryTotal[name]) {
-      this.registryTotal[name] = process.env.DEFAULT_RATE_LIMIT || 200;
+      this.registryTotal[name] = process.env.DEFAULT_RATE_LIMIT ? parseInt(process.env.DEFAULT_RATE_LIMIT) : 200;
     }
   }
 
   rpcApp() {
-    return async (ctx, next) => {
-      this.startTimestamp = ctx.state.start;
-
+    return async (ctx: Koa.Context, next: Koa.Next) => {
       this.requestId = ctx.state.reqId;
       ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
 
@@ -132,14 +121,6 @@ export default class KoaJsonRpc {
         ctx.status = 400;
         ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
         return;
-      }
-
-      if (this.token) {
-        const headerToken = ctx.get('authorization').split(' ').pop();
-        if (headerToken !== this.token) {
-          ctx.body = jsonResp(null, new Unauthorized(), undefined);
-          return;
-        }
       }
 
       let body: any;
@@ -159,7 +140,7 @@ export default class KoaJsonRpc {
     };
   }
 
-  private async handleSingleRequest(ctx, body: any): Promise<void> {
+  private async handleSingleRequest(ctx: Koa.Context, body: any): Promise<void> {
     ctx.state.methodName = body.method;
     const response = await this.getRequestResult(body, ctx.ip);
     ctx.body = response;
@@ -174,7 +155,7 @@ export default class KoaJsonRpc {
     }
   }
 
-  private async handleMultipleRequest(ctx, body: any): Promise<void> {
+  private async handleMultipleRequest(ctx: Koa.Context, body: any[]): Promise<void> {
     // verify that batch requests are enabled
     if (!this.getBatchRequestsEnabled()) {
       ctx.body = jsonResp(null, predefined.BATCH_REQUESTS_DISABLED, undefined);
@@ -198,11 +179,7 @@ export default class KoaJsonRpc {
     const response: any[] = [];
 
     // we do the requests in parallel to save time, but we need to keep track of the order of the responses (since the id might be optional)
-    const promises = body.map((item: any) => {
-      const methodLimit = this.methodConfig[item.method]?.total;
-      if (methodLimit && this.rateLimit.shouldRateLimit(ctx.ip, item.method, methodLimit, this.requestId)) {
-        return jsonResp(this.requestId, new IPRateLimitExceeded(item.method), undefined);
-      }
+    const promises: Promise<any>[] = body.map(async (item: any) => {
       ctx.state.methodName = item.method;
       const startTime = Date.now();
       return this.getRequestResult(item, ctx.ip).then((res) => {
@@ -220,7 +197,7 @@ export default class KoaJsonRpc {
     ctx.state.status = responseSuccessStatusCode;
   }
 
-  async getRequestResult(request: any, ip: any): Promise<any> {
+  async getRequestResult(request: any, ip: string): Promise<any> {
     try {
       const methodName = request.method;
 

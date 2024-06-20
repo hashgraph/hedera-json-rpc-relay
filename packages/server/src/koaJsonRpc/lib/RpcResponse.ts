@@ -18,7 +18,9 @@
  *
  */
 
-export default function jsonResp(id, error, result) {
+import { JsonRpcError } from '@hashgraph/json-rpc-relay';
+
+export default function jsonResp(id: string | null, error: JsonRpcError | null, result?: any) {
   const response: any = {};
 
   if (error && result) {
