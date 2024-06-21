@@ -28,11 +28,11 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
 
       const contractFactory = new ethers.ContractFactory(Greeter.abi, Greeter.bytecode, signer);
       const contract = await contractFactory.deploy('initial_msg');
-      const receipt = await contract.deployTransaction.wait();
-      setContractAddress(receipt.contractAddress);
+      await contract.waitForDeployment();
+      setContractAddress(contract.target);
 
       setIsLoading(false);
-      setDeployContractMsg('Addr: ' + receipt.contractAddress);
+      setDeployContractMsg('Addr: ' + contract.target);
     } catch (error) {
       console.error(error.message);
       setDeployContractMsg(null);

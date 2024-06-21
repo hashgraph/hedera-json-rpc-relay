@@ -135,7 +135,8 @@ const deployHederaTokenService = async function (wallet) {
 
   const contractFactory = new ethers.ContractFactory(contractArtifact.abi, contractArtifact.bytecode, wallet);
   const contract = await contractFactory.deploy({ gasLimit: 1_000_000 });
-  const { contractAddress } = await contract.deployTransaction.wait();
+  await contract.waitForDeployment();
+  const contractAddress = contract.target;
 
   return contractAddress;
 };
@@ -145,7 +146,8 @@ const deployAndFundContractTransferTx = async function (wallet) {
 
   const contractFactory = new ethers.ContractFactory(contractArtifact.abi, contractArtifact.bytecode, wallet);
   const contract = await contractFactory.deploy({ gasLimit: 1_000_000 });
-  const { contractAddress } = await contract.deployTransaction.wait();
+  await contract.waitForDeployment();
+  const contractAddress = contract.target;
 
   await new HederaSDK.TransferTransaction()
     .addHbarTransfer(HederaSDK.AccountId.fromEvmAddress(0, 0, contractAddress), new HederaSDK.Hbar(100))
@@ -161,8 +163,8 @@ const deployAndFundContractTransferTx = async function (wallet) {
   if (mainPrivateKeyString === '') {
     mainPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw();
   }
-  const mainWallet = new ethers.Wallet(mainPrivateKeyString, new ethers.providers.JsonRpcProvider(process.env.RPC_URL));
-  const mainCompressedKey = mainWallet._signingKey().compressedPublicKey.replace('0x', '');
+  const mainWallet = new ethers.Wallet(mainPrivateKeyString, new ethers.JsonRpcProvider(process.env.RPC_URL));
+  const mainCompressedKey = mainWallet.signingKey.compressedPublicKey.replace('0x', '');
   const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
   console.log(
     `Primary wallet account private: ${mainPrivateKeyString}, public: ${mainCompressedKey}, id: ${mainAccountId}`,
@@ -173,7 +175,7 @@ const deployAndFundContractTransferTx = async function (wallet) {
     receiverPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw();
   }
   const receiverWallet = new ethers.Wallet(receiverPrivateKeyString);
-  const receiverCompressedKey = receiverWallet._signingKey().compressedPublicKey.replace('0x', '');
+  const receiverCompressedKey = receiverWallet.signingKey.compressedPublicKey.replace('0x', '');
   const receiverAccountId = (await createAccountFromCompressedPublicKey(receiverCompressedKey)).accountId;
   console.log(
     `Receiver wallet account private: ${receiverPrivateKeyString}, public: ${receiverCompressedKey}, id: ${receiverAccountId}`,
