@@ -17,11 +17,14 @@
  * limitations under the License.
  *
  */
-import { expect } from 'chai';
+import chai, { expect } from 'chai';
 import { ethers } from 'ethers';
-import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 import { numberTo0x } from '../../../relay/src/formatters';
 import RelayAssertions from '../../../relay/tests/assertions';
+import chaiExclude from 'chai-exclude';
+
+chai.use(chaiExclude);
 
 export default class Assertions {
   static emptyHex = '0x';
@@ -351,8 +354,8 @@ export default class Assertions {
     expectedError: JsonRpcError,
     method: () => Promise<any>,
     checkMessage: boolean,
-    thisObj,
-    args?: any[],
+    thisObj: any,
+    args?: any,
   ): Promise<any> => {
     try {
       await method.apply(thisObj, args);
@@ -396,10 +399,10 @@ export default class Assertions {
   static assertRejection = async (
     error: JsonRpcError,
     method: () => Promise<any>,
-    args: any[],
+    args: any,
     checkMessage: boolean,
   ): Promise<any> => {
-    return await expect(method.apply(global.relay, args)).to.eventually.be.rejected.and.satisfy((err) => {
+    return expect(method.apply(global.relay, args)).to.eventually.be.rejected.and.satisfy((err) => {
       if (!checkMessage) {
         return [error.code, error.name].every((substring) => err.body.includes(substring));
       }
@@ -418,12 +421,12 @@ export default class Assertions {
   };
 
   static validateResultDebugValues = (
-    result,
+    result: { from: string; calls: any[] },
     excludedValues: string[],
     nestedExcludedValues: string[],
-    expectedResult,
+    expectedResult: { from?: any; calls?: any[] },
   ) => {
-    const hasValidHash = (currentValue) => RelayAssertions.validateHash(currentValue);
+    const hasValidHash = (currentValue: string) => RelayAssertions.validateHash(currentValue);
 
     // Validate result schema
     expect(result).to.have.keys(Object.keys(expectedResult));
