@@ -16,9 +16,9 @@ export default class RelayAssertions {
     return await expect(method.apply(thisObj, args), `${error.message}`).to.eventually.be.rejected.and.satisfy(
       (err) => {
         if (!checkMessage) {
-          return err.code === error.code && err.name === error.name;
+          return err.code === error.code;
         }
-        return err.code === error.code && err.name === error.name && err.message === error.message;
+        return err.code === error.code && err.message === error.message;
       },
     );
   };

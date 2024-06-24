@@ -22,7 +22,7 @@ import type { TracerType } from '../../constants';
 
 export interface IDebugService {
   debug_traceTransaction: (
-    transactionHash: string,
+    transactionIdOrHash: string,
     tracer: TracerType,
     tracerConfig: object,
     requestIdPrefix?: string,

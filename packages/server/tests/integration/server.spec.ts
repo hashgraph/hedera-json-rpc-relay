@@ -26,6 +26,7 @@ import Assertions from '../helpers/assertions';
 import app from '../../src/server';
 import { Validator } from '../../src/validator';
 import RelayCalls from '../../tests/helpers/constants';
+import * as Constants from '../../src/validator/constants';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
@@ -64,7 +65,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.invalidRequestSpecError(error.response, -32600, `Invalid Request`);
     }
   });
@@ -92,7 +93,7 @@ describe('RPC Server', async function () {
       expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
       expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
       expect(response.data.result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
-    } catch (error) {
+    } catch (error: any) {
       expect(true, `Unexpected error: ${error.message}`).to.eq(false);
     }
 
@@ -133,7 +134,7 @@ describe('RPC Server', async function () {
         method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
         params: ['0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7237170ae5e5e7957eb6392'],
       });
-    } catch (error) {
+    } catch (error: any) {
       expect(error.message).to.equal('Request failed with status code 500');
     }
   });
@@ -256,7 +257,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.methodNotFoundCheck(error.response, RelayCalls.ETH_ENDPOINTS.WEB3_SHA);
     }
   });
@@ -271,7 +272,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.methodNotFoundCheck(error.response, RelayCalls.ETH_ENDPOINTS.NET_PEER_COUNT);
     }
   });
@@ -286,7 +287,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
   });
@@ -301,7 +302,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.methodNotFoundCheck(error.response, RelayCalls.ETH_ENDPOINTS.ETH_SIGN_TYPED_DATA);
     }
   });
@@ -316,7 +317,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
   });
@@ -331,7 +332,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
   });
@@ -346,7 +347,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
   });
@@ -361,7 +362,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
   });
@@ -376,7 +377,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.methodNotFoundCheck(error.response, RelayCalls.ETH_ENDPOINTS.ETH_GET_PROOF);
     }
   });
@@ -391,7 +392,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
   });
@@ -406,7 +407,7 @@ describe('RPC Server', async function () {
       });
 
       Assertions.expectedError();
-    } catch (error) {
+    } catch (error: any) {
       BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
   });
@@ -576,7 +577,6 @@ describe('RPC Server', async function () {
       expect(response.data[2].id).to.be.equal('4');
       expect(response.data[2].error).to.be.an('Object');
       expect(response.data[2].error.code).to.be.equal(-32602);
-      expect(response.data[2].error.name).to.be.equal('Missing required parameters');
       expect(
         response.data[2].error.message.endsWith('Missing value for required parameter 1'),
         'Missing value for required parameter 1',
@@ -644,7 +644,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -659,7 +659,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, 'Expected TransactionObject, value: 0x0');
         }
       });
@@ -674,7 +674,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -693,7 +693,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -712,7 +712,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -731,7 +731,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -750,7 +750,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -769,7 +769,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -788,7 +788,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -807,7 +807,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -826,7 +826,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -845,7 +845,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -866,7 +866,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -881,7 +881,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, Validator.ADDRESS_ERROR + ', value: 0x0');
         }
       });
@@ -896,7 +896,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
         }
       });
@@ -911,11 +911,11 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `The value passed is not a valid blockHash/blockNumber/blockTag value: 123`,
+            `The value passed is not valid: 123. ${Constants.BLOCK_NUMBER_ERROR} OR ${Constants.BLOCK_HASH_ERROR}`,
           );
         }
       });
@@ -930,11 +930,11 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            'The value passed is not a valid blockHash/blockNumber/blockTag value: newest',
+            `The value passed is not valid: newest. ${Constants.BLOCK_NUMBER_ERROR} OR ${Constants.BLOCK_HASH_ERROR}`,
           );
         }
       });
@@ -951,7 +951,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -966,7 +966,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -985,7 +985,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
         }
       });
@@ -1000,11 +1000,11 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 1: ${Validator.INVALID_BLOCK_HASH_TAG_NUMBER} 123`,
+            `Invalid parameter 1: The value passed is not valid: 123. ${Constants.BLOCK_NUMBER_ERROR} OR ${Constants.BLOCK_HASH_ERROR}`,
           );
         }
       });
@@ -1019,11 +1019,11 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 1: ${Validator.INVALID_BLOCK_HASH_TAG_NUMBER} newest`,
+            `Invalid parameter 1: The value passed is not valid: newest. ${Constants.BLOCK_NUMBER_ERROR} OR ${Constants.BLOCK_HASH_ERROR}`,
           );
         }
       });
@@ -1040,7 +1040,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1055,7 +1055,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1074,7 +1074,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1093,7 +1093,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
         }
       });
@@ -1108,7 +1108,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1129,7 +1129,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1144,7 +1144,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1163,7 +1163,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
         }
       });
@@ -1178,7 +1178,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1199,7 +1199,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1214,7 +1214,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1233,7 +1233,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
         }
       });
@@ -1248,11 +1248,11 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            'The value passed is not a valid blockHash/blockNumber/blockTag value: 123',
+            `Invalid parameter 1: The value passed is not valid: 123. ${Constants.BLOCK_NUMBER_ERROR} OR ${Constants.BLOCK_HASH_ERROR}`,
           );
         }
       });
@@ -1267,11 +1267,11 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            'Invalid parameter 1: The value passed is not a valid blockHash/blockNumber/blockTag value: newest',
+            `Invalid parameter 1: The value passed is not valid: newest. ${Constants.BLOCK_NUMBER_ERROR} OR ${Constants.BLOCK_HASH_ERROR}`,
           );
         }
       });
@@ -1288,7 +1288,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1303,7 +1303,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, 'Expected TransactionObject, value: 0x0');
         }
       });
@@ -1318,7 +1318,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1337,7 +1337,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1356,7 +1356,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1375,7 +1375,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1394,7 +1394,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1413,7 +1413,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1432,7 +1432,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1451,7 +1451,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1470,7 +1470,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1489,7 +1489,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1508,7 +1508,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1527,7 +1527,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1548,7 +1548,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1563,7 +1563,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1584,7 +1584,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1599,7 +1599,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1616,7 +1616,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1631,7 +1631,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
         }
       });
@@ -1646,7 +1646,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1667,7 +1667,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1682,7 +1682,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1703,7 +1703,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1718,7 +1718,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1737,7 +1737,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1758,7 +1758,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1773,7 +1773,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1792,7 +1792,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
         }
       });
@@ -1807,7 +1807,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1826,11 +1826,11 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 2: ${Validator.INVALID_BLOCK_HASH_TAG_NUMBER} 123`,
+            `Invalid parameter 2: The value passed is not valid: 123. ${Constants.BLOCK_NUMBER_ERROR} OR ${Constants.BLOCK_HASH_ERROR}`,
           );
         }
       });
@@ -1845,11 +1845,11 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 2: ${Validator.INVALID_BLOCK_HASH_TAG_NUMBER} newest`,
+            `Invalid parameter 2: The value passed is not valid: newest. ${Constants.BLOCK_NUMBER_ERROR} OR ${Constants.BLOCK_HASH_ERROR}`,
           );
         }
       });
@@ -1864,11 +1864,11 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 2: ${Validator.INVALID_BLOCK_HASH_TAG_NUMBER} newest`,
+            `Invalid parameter 2: The value passed is not valid: newest. ${Constants.BLOCK_NUMBER_ERROR} OR ${Constants.BLOCK_HASH_ERROR}`,
           );
         }
       });
@@ -1885,7 +1885,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1900,7 +1900,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1919,7 +1919,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
         }
       });
@@ -1934,7 +1934,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1955,7 +1955,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
         }
       });
@@ -1970,7 +1970,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -1989,7 +1989,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2008,7 +2008,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 1');
         }
       });
@@ -2023,7 +2023,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2044,7 +2044,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2063,7 +2063,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2082,7 +2082,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2101,7 +2101,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2120,7 +2120,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2139,7 +2139,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2158,7 +2158,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2177,7 +2177,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2196,7 +2196,7 @@ describe('RPC Server', async function () {
           });
 
           Assertions.expectedError();
-        } catch (error) {
+        } catch (error: any) {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
@@ -2312,7 +2312,7 @@ class BaseTest {
     expect(response, "Default response: Should have 'data' property").to.have.property('data');
   }
 
-  static errorResponseChecks(response, code, message, name?) {
+  static errorResponseChecks(response, code, message) {
     BaseTest.validRequestIdCheck(response);
     expect(response, "Error response: should have 'data' property").to.have.property('data');
     expect(response.data, "Error response: 'data' should have 'id' property").to.have.property('id');
@@ -2329,13 +2329,6 @@ class BaseTest {
       response.data.error.message.endsWith(message),
       `Error response: 'data.error.message' should end with passed ${message} value, but came with ${response.data.error.message}`,
     ).to.be.true;
-    if (name) {
-      expect(response.data.error, "Error response: 'data.error' should have 'name' property").to.have.property('name');
-      expect(
-        response.data.error.name,
-        "Error response: 'data.error.name' should match passed 'name' value",
-      ).to.be.equal(name);
-    }
   }
 
   static unsupportedJsonRpcMethodChecks(response: any) {
@@ -2348,7 +2341,6 @@ class BaseTest {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
 
-    expect(response.data.error.name).to.eq('Batch requests disabled');
     expect(response.data.error.message).to.eq('Batch requests are disabled');
     expect(response.data.error.code).to.eq(-32202);
   }
@@ -2362,7 +2354,6 @@ class BaseTest {
   static batchRequestLimitError(response: any, amount: number, max: number) {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
-    expect(response.data.error.name).to.eq('Batch requests amount max exceeded');
     expect(response.data.error.message).to.eq(`Batch request amount ${amount} exceeds max ${max}`);
     expect(response.data.error.code).to.eq(-32203);
   }

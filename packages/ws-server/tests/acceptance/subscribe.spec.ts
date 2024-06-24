@@ -242,7 +242,6 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       await new Promise((resolve) => setTimeout(resolve, 200));
 
       expect(JSON.parse(response).code).to.eq(predefined.INVALID_REQUEST.code);
-      expect(JSON.parse(response).name).to.eq(predefined.INVALID_REQUEST.name);
       expect(JSON.parse(response).message).to.eq(predefined.INVALID_REQUEST.message);
 
       webSocket.close();
@@ -339,7 +338,6 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
       expect(response.id).to.be.eq(requestId);
       expect(response.error.code).to.be.eq(-32602);
-      expect(response.error.name).to.be.eq('Invalid parameter');
       expect(response.error.message).to.be.eq(
         `Invalid parameter filters.address: Only one contract address is allowed`,
       );
@@ -365,7 +363,6 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
-      expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
       expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
 
       // close the connection
@@ -386,7 +383,6 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       expect(response.error.code).to.eq(predefined.UNSUPPORTED_METHOD.code);
-      expect(response.error.name).to.eq(predefined.UNSUPPORTED_METHOD.name);
       expect(response.error.message).to.eq(predefined.UNSUPPORTED_METHOD.message);
 
       // close the connection

@@ -173,7 +173,6 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     const result = await ethImpl.estimateGas(callData, null);
     expect(result).to.not.be.null;
     expect((result as JsonRpcError).code).to.eq(-32602);
-    expect((result as JsonRpcError).name).to.eq('Invalid parameter');
   });
 
   it('should eth_estimateGas transfer to existing account', async function () {
@@ -258,7 +257,6 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
 
     expect(result).to.exist;
     expect((result as JsonRpcError).code).to.equal(-32602);
-    expect((result as JsonRpcError).name).to.equal('Invalid parameter');
     expect((result as JsonRpcError).message).to.equal(
       `Invalid parameter 0: Invalid 'value' field in transaction param. Value must be greater than 0`,
     );
@@ -305,7 +303,6 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
 
     expect(result).to.exist;
     expect((result as JsonRpcError).code).to.equal(-32602);
-    expect((result as JsonRpcError).name).to.equal('Invalid parameter');
     expect((result as JsonRpcError).message).to.equal(
       `Invalid parameter 0: Invalid 'value' field in transaction param. Value must be greater than 0`,
     );

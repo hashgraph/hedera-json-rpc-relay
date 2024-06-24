@@ -158,8 +158,6 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
             expect(response.error.code).to.equal(-32601);
             expect(response.error).to.have.property('message');
             expect(response.error.message).to.equal('Unsupported JSON-RPC method');
-            expect(response.error).to.have.property('name');
-            expect(response.error.name).to.equal('Method not found');
             resolve();
           } catch (error) {
             reject(error);

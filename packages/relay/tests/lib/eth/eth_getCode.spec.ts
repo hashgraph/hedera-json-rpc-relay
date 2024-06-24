@@ -151,7 +151,6 @@ describe('@ethGetCode using MirrorNode', async function () {
           expect(error).to.exist;
           expect(error instanceof JsonRpcError);
           expect(error.code).to.eq(expectedError.code);
-          expect(error.name).to.eq(expectedError.name);
           expect(error.message).to.eq(expectedError.message);
         }
       });

@@ -8,6 +8,8 @@ export const BLOCK_NUMBER_ERROR =
 export const BLOCK_PARAMS_ERROR = `Expected ${HASH_ERROR} in object, 0x prefixed hexadecimal block number, or the string "latest", "earliest" or "pending"`;
 export const BLOCK_HASH_ERROR = `Expected ${HASH_ERROR} of a block`;
 export const TRANSACTION_HASH_ERROR = `Expected ${HASH_ERROR} of a transaction`;
+export const TRANSACTION_ID_ERROR = `Expected a transaction ID string in the format "shard.realm.num-sss-nnn" where sss are seconds and nnn are nanoseconds`;
+export const TRANSACTION_ID_REGEX = /^(\d)\.(\d)\.(\d{1,10})-(\d{1,19})-(\d{1,9})$/;
 export const TOPIC_HASH_ERROR = `Expected ${HASH_ERROR} of a topic`;
 export const INVALID_BLOCK_HASH_TAG_NUMBER = 'The value passed is not a valid blockHash/blockNumber/blockTag value:';
 export enum TracerType {

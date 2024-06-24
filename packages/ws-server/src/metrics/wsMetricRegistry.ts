@@ -41,6 +41,9 @@ export default class WsMetricRegistry {
   private connectionDuration: Histogram; // tracks the duration of websocket connections in seconds
   private messageDuration: Histogram; // tracks the duration of websocket connections in seconds
 
+  private lastCpuUsage = process.cpuUsage();
+  private lastTime = process.hrtime();
+
   /**
    * Creates an instance of WsMetricRegistry.
    * @param {Registry} register - The Prometheus registry to use.
@@ -112,16 +115,33 @@ export default class WsMetricRegistry {
       registers: [register],
       async collect() {
         switch (mode) {
-          case 'CPU':
-            const cpuUsage = process.cpuUsage();
+          case 'CPU': {
+            let lastCpuUsage = process.cpuUsage();
+            let lastTime = process.hrtime();
+            const currentCpuUsage = process.cpuUsage();
+            const currentTime = process.hrtime(lastTime);
+
+            const userTime = (currentCpuUsage.user - lastCpuUsage.user) / 1000; // Convert to milliseconds
+            const systemTime = (currentCpuUsage.system - lastCpuUsage.system) / 1000; // Convert to milliseconds
+
+            const elapsedTime = currentTime[0] * 1000 + currentTime[1] / 1e6; // Convert hrtime to milliseconds
+
+            const totalCpuTime = userTime + systemTime;
             const totalCpus = os.cpus().length;
-            const cpuUsagePercentage = ((cpuUsage.user + cpuUsage.system) / 1000000 / totalCpus) * 100;
+
+            const cpuUsagePercentage = (totalCpuTime / (elapsedTime * totalCpus)) * 100;
+
+            lastCpuUsage = currentCpuUsage;
+            lastTime = process.hrtime();
+
             this.set({ cpu: 'CPU' }, cpuUsagePercentage);
             break;
-          case 'Memory Usage':
+          }
+          case 'Memory Usage': {
             const memoryUsage = process.memoryUsage();
             this.set({ memory: 'Memory Usage' }, memoryUsage.heapUsed);
             break;
+          }
         }
       },
     });

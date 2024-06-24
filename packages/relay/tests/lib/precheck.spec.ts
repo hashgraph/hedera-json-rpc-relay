@@ -470,7 +470,6 @@ describe('Precheck', async function () {
       } catch (e: any) {
         expect(e).to.exist;
         expect(e.code).to.eq(-32001);
-        expect(e.name).to.eq('Resource not found');
         expect(e.message).to.contain(parsedTx.from);
       }
     });

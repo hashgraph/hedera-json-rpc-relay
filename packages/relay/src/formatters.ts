@@ -173,7 +173,7 @@ const formatContractResult = (cr: any) => {
     to: cr.to?.substring(0, 42),
     transactionIndex: nullableNumberTo0x(cr.transaction_index),
     type: cr.type === null ? '0x0' : nanOrNumberTo0x(cr.type),
-    v: cr.type === null ? '0x0' : nanOrNumberTo0x(cr.v),
+    v: cr.v === null ? '0x0' : nanOrNumberTo0x(cr.v),
     value: nanOrNumberTo0x(cr.amount),
     // for legacy EIP155 with tx.chainId=0x0, mirror-node will return a '0x' (EMPTY_HEX) value for contract result's chain_id
     //   which is incompatibile with certain tools (i.e. foundry). By setting this field, chainId, to undefined, the end jsonrpc
@@ -206,6 +206,10 @@ const formatContractResult = (cr: any) => {
       return new Transaction(commonFields); //hapi
   }
   return null;
+};
+
+const strip0x = (input: string): string => {
+  return input.startsWith(EMPTY_HEX) ? input.substring(2) : input;
 };
 
 const prepend0x = (input: string): string => {
@@ -297,6 +301,7 @@ export {
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
   stringToHex,
+  strip0x,
   toHexString,
   isValidEthereumAddress,
   isHex,
