@@ -29,6 +29,7 @@ import { predefined } from '../errors/JsonRpcError';
 import { SDKClientError } from '../errors/SDKClientError';
 import { install as betterLookupInstall } from 'better-lookup';
 import { CacheService } from '../services/cacheService/cacheService';
+import { ethers } from 'ethers';
 
 const http = require('http');
 const https = require('https');
@@ -816,6 +817,8 @@ export class MirrorNodeClient {
     limitOrderParams?: ILimitOrderParams,
     requestIdPrefix?: string,
   ) {
+    if (address === ethers.ZeroAddress) return [];
+
     const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
     const apiEndpoint = MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT.replace(
       MirrorNodeClient.ADDRESS_PLACEHOLDER,
