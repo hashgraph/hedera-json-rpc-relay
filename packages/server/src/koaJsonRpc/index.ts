@@ -100,7 +100,7 @@ export default class KoaJsonRpc {
   }
 
   rpcApp() {
-    return async (ctx: Koa.Context, next: Koa.Next) => {
+    return async (ctx: Koa.Context, _next: Koa.Next) => {
       this.requestId = ctx.state.reqId;
       ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
 
@@ -115,8 +115,7 @@ export default class KoaJsonRpc {
       try {
         body = await parse.json(ctx, { limit: this.limit });
       } catch (err) {
-        const errBody = jsonResp(null, new ParseError(), undefined);
-        ctx.body = errBody;
+        ctx.body = jsonResp(null, new ParseError(), undefined);
         return;
       }
       //check if body is array or object
@@ -218,12 +217,12 @@ export default class KoaJsonRpc {
     }
   }
 
-  validateJsonRpcRequest(body): boolean {
+  validateJsonRpcRequest(body: { jsonrpc?: string; method?: any; id?: any }): boolean {
     // validate it has the correct jsonrpc version, method, and id
     if (
       body.jsonrpc !== '2.0' ||
       !hasOwnProperty(body, 'method') ||
-      this.hasInvalidReqestId(body) ||
+      this.hasInvalidRequestId(body) ||
       !hasOwnProperty(body, 'id')
     ) {
       this.logger.warn(
@@ -254,7 +253,7 @@ export default class KoaJsonRpc {
     return this.requestId;
   }
 
-  hasInvalidReqestId(body): boolean {
+  hasInvalidRequestId(body: { jsonrpc?: string; method?: any; id?: any }): boolean {
     const hasId = hasOwnProperty(body, 'id');
     if (this.requestIdIsOptional && !hasId) {
       // If the request is invalid, we still want to return a valid JSON-RPC response, default id to 0
