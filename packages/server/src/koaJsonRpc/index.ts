@@ -41,11 +41,12 @@ import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
 import {
   getBatchRequestsEnabled,
   getBatchRequestsMaxSize,
-  getDefaultRateLimitDuration,
+  getDefaultRateLimit,
+  getLimitDuration,
   getRequestIdIsOptional,
+  hasOwnProperty,
 } from './lib/utils';
 
-const hasOwnProperty = (obj: any, prop: PropertyKey) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
 const INVALID_REQUEST = 'INVALID REQUEST';
@@ -57,7 +58,8 @@ export default class KoaJsonRpc {
   private readonly registry: { [key: string]: (params?: any) => Promise<any> };
   private readonly registryTotal: { [key: string]: number };
   private readonly methodConfig: IMethodRateLimitConfiguration;
-  private readonly duration: number = getDefaultRateLimitDuration();
+  private readonly duration: number = getLimitDuration();
+  private readonly defaultRateLimit: number = getDefaultRateLimit();
   private readonly limit: string;
   private readonly rateLimit: RateLimit;
   private readonly metricsRegistry: Registry;
@@ -92,10 +94,10 @@ export default class KoaJsonRpc {
 
   useRpc(name: string, func: (params?: any) => Promise<any>) {
     this.registry[name] = func;
-    this.registryTotal[name] = this.methodConfig[name].total;
+    this.registryTotal[name] = this.methodConfig[name]?.total;
 
     if (!this.registryTotal[name]) {
-      this.registryTotal[name] = process.env.DEFAULT_RATE_LIMIT ? parseInt(process.env.DEFAULT_RATE_LIMIT) : 200;
+      this.registryTotal[name] = this.defaultRateLimit;
     }
   }
 
