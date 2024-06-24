@@ -38,7 +38,12 @@ import Koa from 'koa';
 import { Histogram, Registry } from 'prom-client';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import {
+  getBatchRequestsEnabled,
+  getBatchRequestsMaxSize,
+  getDefaultRateLimitDuration,
+  getRequestIdIsOptional,
+} from './lib/utils';
 
 const hasOwnProperty = (obj: any, prop: PropertyKey) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
@@ -53,21 +58,20 @@ const METHOD_NOT_FOUND = 'METHOD NOT FOUND';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';
 const responseSuccessStatusCode = '200';
 const BATCH_REQUEST_METHOD_NAME = 'batch_request';
+const METRIC_HISTOGRAM_NAME = 'rpc_relay_method_result';
 
 export default class KoaJsonRpc {
   private readonly registry: { [key: string]: (params?: any) => Promise<any> };
   private readonly registryTotal: { [key: string]: number };
   private readonly methodConfig: IMethodRateLimitConfiguration;
-  private readonly duration: number;
+  private readonly duration: number = getDefaultRateLimitDuration();
   private readonly limit: string;
   private readonly rateLimit: RateLimit;
   private readonly metricsRegistry: Registry;
   private readonly koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
   private readonly logger: Logger;
-  private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == 'true'; // default to false
-  private readonly batchRequestsMaxSize: number = process.env.BATCH_REQUESTS_MAX_SIZE
-    ? parseInt(process.env.BATCH_REQUESTS_MAX_SIZE)
-    : 100; // default to 100
+  private readonly requestIdIsOptional: boolean = getRequestIdIsOptional(); // default to false
+  private readonly batchRequestsMaxSize: number = getBatchRequestsMaxSize(); // default to 100
   private readonly methodResponseHistogram: Histogram;
 
   private requestId: string;
@@ -75,9 +79,6 @@ export default class KoaJsonRpc {
   constructor(logger: Logger, register: Registry, opts?: { limit: string | null }) {
     this.koaApp = new Koa();
     this.requestId = '';
-    this.duration = process.env.LIMIT_DURATION
-      ? parseInt(process.env.LIMIT_DURATION)
-      : constants.DEFAULT_RATE_LIMIT.DURATION;
     this.registry = Object.create(null);
     this.registryTotal = Object.create(null);
     this.methodConfig = methodConfiguration;
@@ -86,20 +87,14 @@ export default class KoaJsonRpc {
     this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
     this.metricsRegistry = register;
     // clear and create metric in registry
-    const metricHistogramName = 'rpc_relay_method_result';
-    this.metricsRegistry.removeSingleMetric(metricHistogramName);
+    this.metricsRegistry.removeSingleMetric(METRIC_HISTOGRAM_NAME);
     this.methodResponseHistogram = new Histogram({
-      name: metricHistogramName,
+      name: METRIC_HISTOGRAM_NAME,
       help: 'JSON RPC method statusCode latency histogram',
       labelNames: ['method', 'statusCode', 'isPartOfBatch'],
       registers: [this.metricsRegistry],
       buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 40000, 50000, 60000], // ms (milliseconds)
     });
-  }
-
-  // we do it as a method so we can mock it in tests, since by default is false, but we need to test it as true
-  private getBatchRequestsEnabled(): boolean {
-    return process.env.BATCH_REQUESTS_ENABLED == 'true'; // default to false
   }
 
   useRpc(name: string, func: (params?: any) => Promise<any>) {
@@ -157,7 +152,7 @@ export default class KoaJsonRpc {
 
   private async handleMultipleRequest(ctx: Koa.Context, body: any[]): Promise<void> {
     // verify that batch requests are enabled
-    if (!this.getBatchRequestsEnabled()) {
+    if (!getBatchRequestsEnabled()) {
       ctx.body = jsonResp(null, predefined.BATCH_REQUESTS_DISABLED, undefined);
       ctx.status = 400;
       ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
