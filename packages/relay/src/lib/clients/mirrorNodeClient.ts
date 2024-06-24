@@ -18,7 +18,7 @@
  *
  */
 
-import Axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import { Logger } from 'pino';
 import constants from './../constants';
@@ -32,6 +32,7 @@ import { CacheService } from '../services/cacheService/cacheService';
 
 import http from 'http';
 import https from 'https';
+import { IOpcodesResponse } from './models/IOpcodesResponse';
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
@@ -93,6 +94,7 @@ export class MirrorNodeClient {
   private static GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
   private static GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT = `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
   private static GET_CONTRACTS_RESULTS_ACTIONS = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/actions`;
+  private static GET_CONTRACTS_RESULTS_OPCODES = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/opcodes`;
   private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
   private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
   private static GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
@@ -123,6 +125,7 @@ export class MirrorNodeClient {
     [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT, [404]],
     [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT, [404]],
     [MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT, [404]],
+    [MirrorNodeClient.GET_CONTRACTS_RESULTS_OPCODES, [404]],
     [MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT, [404]],
     [MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT, [404]],
     [MirrorNodeClient.GET_TOKENS_ENDPOINT, [404]],
@@ -333,14 +336,14 @@ export class MirrorNodeClient {
     return `${baseUrl}${MirrorNodeClient.API_V1_POST_FIX}`;
   }
 
-  private async request(
+  private async request<T>(
     path: string,
     pathLabel: string,
     method: REQUEST_METHODS,
     data?: any,
     requestIdPrefix?: string,
     retries?: number,
-  ): Promise<any> {
+  ): Promise<T | null> {
     const start = Date.now();
     // extract request id from prefix and remove trailing ']' character
     const requestId =
@@ -348,11 +351,8 @@ export class MirrorNodeClient {
         ?.split(MirrorNodeClient.REQUEST_PREFIX_SEPARATOR)[1]
         .replace(MirrorNodeClient.REQUEST_PREFIX_TRAILING_BRACKET, MirrorNodeClient.EMPTY_STRING) ||
       MirrorNodeClient.EMPTY_STRING;
-    let ms;
     const controller = new AbortController();
     try {
-      let response;
-
       const axiosRequestConfig: AxiosRequestConfig = {
         headers: {
           [MirrorNodeClient.REQUESTID_LABEL]: requestId,
@@ -365,18 +365,23 @@ export class MirrorNodeClient {
         axiosRequestConfig['axios-retry'] = { retries };
       }
 
+      let response: AxiosResponse<T, any>;
       if (method === MirrorNodeClient.HTTP_GET) {
-        response = await this.restClient.get(path, axiosRequestConfig);
+        if (pathLabel == MirrorNodeClient.GET_CONTRACTS_RESULTS_OPCODES) {
+          response = await this.web3Client.get<T>(path, axiosRequestConfig);
+        } else {
+          response = await this.restClient.get<T>(path, axiosRequestConfig);
+        }
       } else {
-        response = await this.web3Client.post(path, data, axiosRequestConfig);
+        response = await this.web3Client.post<T>(path, data, axiosRequestConfig);
       }
 
       const ms = Date.now() - start;
       this.logger.debug(`${requestId} [${method}] ${path} ${response.status} ${ms} ms`);
-      this.mirrorResponseHistogram.labels(pathLabel, response.status).observe(ms);
+      this.mirrorResponseHistogram.labels(pathLabel, response.status?.toString()).observe(ms);
       return response.data;
     } catch (error: any) {
-      ms = Date.now() - start;
+      const ms = Date.now() - start;
       const effectiveStatusCode =
         error.response?.status ||
         MirrorNodeClientError.ErrorCodes[error.code] ||
@@ -392,15 +397,25 @@ export class MirrorNodeClient {
     return null;
   }
 
-  async get(path: string, pathLabel: string, requestIdPrefix?: string, retries?: number): Promise<any> {
-    return this.request(path, pathLabel, 'GET', null, requestIdPrefix, retries);
+  async get<T = any>(path: string, pathLabel: string, requestIdPrefix?: string, retries?: number): Promise<T | null> {
+    return this.request<T>(path, pathLabel, 'GET', null, requestIdPrefix, retries);
   }
 
-  async post(path: string, data: any, pathLabel: string, requestIdPrefix?: string, retries?: number): Promise<any> {
+  async post<T = any>(
+    path: string,
+    data: any,
+    pathLabel: string,
+    requestIdPrefix?: string,
+    retries?: number,
+  ): Promise<T | null> {
     if (!data) data = {};
-    return this.request(path, pathLabel, 'POST', data, requestIdPrefix, retries);
+    return this.request<T>(path, pathLabel, 'POST', data, requestIdPrefix, retries);
   }
 
+  /**
+   * @returns null if the error code is in the accepted error responses,
+   * @throws MirrorNodeClientError if the error code is not in the accepted error responses.
+   */
   handleError(
     error: any,
     path: string,
@@ -412,7 +427,7 @@ export class MirrorNodeClient {
     const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
     const acceptedErrorResponses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
 
-    if (error.response && acceptedErrorResponses && acceptedErrorResponses.indexOf(effectiveStatusCode) !== -1) {
+    if (error.response && acceptedErrorResponses?.includes(effectiveStatusCode)) {
       this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
       return null;
     }
@@ -774,6 +789,19 @@ export class MirrorNodeClient {
     );
   }
 
+  public async getContractsResultsOpcodes(
+    transactionIdOrHash: string,
+    requestIdPrefix?: string,
+    params?: { memory?: boolean; stack?: boolean; storage?: boolean },
+  ): Promise<IOpcodesResponse | null> {
+    const queryParams = params ? this.getQueryParams(params) : '';
+    return this.get<IOpcodesResponse>(
+      `${this.getContractResultsOpcodesByTransactionIdPath(transactionIdOrHash)}${queryParams}`,
+      MirrorNodeClient.GET_CONTRACTS_RESULTS_OPCODES,
+      requestIdPrefix,
+    );
+  }
+
   public async getContractResultsByAddress(
     contractIdOrAddress: string,
     contractResultsParams?: IContractResultsParams,
@@ -955,6 +983,13 @@ export class MirrorNodeClient {
     );
   }
 
+  private getContractResultsOpcodesByTransactionIdPath(transactionIdOrHash: string) {
+    return MirrorNodeClient.GET_CONTRACTS_RESULTS_OPCODES.replace(
+      MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER,
+      transactionIdOrHash,
+    );
+  }
+
   public async getTokenById(tokenId: string, requestIdPrefix?: string, retries?: number) {
     return this.get(
       `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}`,
@@ -1011,7 +1046,7 @@ export class MirrorNodeClient {
   public async postContractCall(
     callData: IContractCallRequest,
     requestIdPrefix?: string,
-  ): Promise<IContractCallResponse> {
+  ): Promise<IContractCallResponse | null> {
     return this.post(
       MirrorNodeClient.CONTRACT_CALL_ENDPOINT,
       callData,

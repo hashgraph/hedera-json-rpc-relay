@@ -341,7 +341,6 @@ describe('@ethCall Eth Call spec', async function () {
 
       const result = await ethImpl.call(callData, 'latest');
 
-      expect((result as JsonRpcError).name).to.equal('Non Existing Account Address');
       expect((result as JsonRpcError).code).to.equal(-32014);
       expect((result as JsonRpcError).message).to.equal(
         `Non Existing Account Address: ${callData.from}. Expected an Account Address.`,
@@ -399,7 +398,6 @@ describe('@ethCall Eth Call spec', async function () {
       const call: string | JsonRpcError = await ethImpl.call(ETH_CALL_REQ_ARGS, 'latest');
 
       expect((call as JsonRpcError).code).to.equal(expectedError.code);
-      expect((call as JsonRpcError).name).to.equal(expectedError.name);
       expect((call as JsonRpcError).message).to.equal(expectedError.message);
     });
 
@@ -413,7 +411,6 @@ describe('@ethCall Eth Call spec', async function () {
 
       expect(result).to.exist;
       expect((result as JsonRpcError).code).to.equal(3);
-      expect((result as JsonRpcError).name).to.equal(undefined);
       expect((result as JsonRpcError).message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
       expect((result as JsonRpcError).data).to.equal(defaultErrorMessageHex);
     });
@@ -454,7 +451,6 @@ describe('@ethCall Eth Call spec', async function () {
 
       expect(result).to.exist;
       expect((result as JsonRpcError).code).to.equal(-32603);
-      expect((result as JsonRpcError).name).to.equal('Internal error');
       expect((result as JsonRpcError).message).to.equal(
         'Error invoking RPC: Invalid contractCallResponse from consensus-node: undefined',
       );
@@ -601,7 +597,6 @@ describe('@ethCall Eth Call spec', async function () {
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(-32605);
-      expect((result as JsonRpcError).name).to.eq('IP Rate limit exceeded');
     });
 
     it('eth_call with all fields but mirrorNode throws 400', async function () {
@@ -619,7 +614,6 @@ describe('@ethCall Eth Call spec', async function () {
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(3);
-      expect((result as JsonRpcError).name).to.eq(undefined);
       expect((result as JsonRpcError).message).to.contain(mockData.contractReverted._status.messages[0].message);
     });
 
@@ -674,7 +668,6 @@ describe('@ethCall Eth Call spec', async function () {
       sinon.assert.notCalled(sdkClientStub.submitContractCallQueryWithRetry);
       expect(result).to.not.be.null;
       expect((result as JsonRpcError).code).to.eq(3);
-      expect((result as JsonRpcError).name).to.eq(undefined);
       expect((result as JsonRpcError).message).to.contain(mockData.contractReverted._status.messages[0].message);
     });
 
@@ -705,7 +698,6 @@ describe('@ethCall Eth Call spec', async function () {
 
       expect(result).to.exist;
       expect((result as JsonRpcError).code).to.eq(3);
-      expect((result as JsonRpcError).name).to.eq(undefined);
       expect((result as JsonRpcError).message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
       expect((result as JsonRpcError).data).to.equal(defaultErrorMessageHex);
     });

@@ -22,7 +22,7 @@ import { Eth } from '../index';
 import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Block, Log, Transaction, Transaction1559 } from './model';
-import { IContractCallResponse, IContractCallRequest, MirrorNodeClient } from './clients';
+import { IContractCallRequest, IContractCallResponse, MirrorNodeClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
@@ -603,7 +603,7 @@ export class EthImpl implements Eth {
   private async estimateGasFromMirrorNode(
     transaction: IContractCallRequest,
     requestIdPrefix?: string,
-  ): Promise<IContractCallResponse> {
+  ): Promise<IContractCallResponse | null> {
     this.contractCallFormat(transaction);
     const callData = { ...transaction, estimate: true };
     return this.mirrorNodeClient.postContractCall(callData, requestIdPrefix);
