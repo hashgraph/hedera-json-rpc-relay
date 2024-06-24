@@ -48,16 +48,9 @@ import {
 const hasOwnProperty = (obj: any, prop: PropertyKey) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
-const INTERNAL_ERROR = 'INTERNAL ERROR';
-const INVALID_PARAMS_ERROR = 'INVALID PARAMS ERROR';
 const INVALID_REQUEST = 'INVALID REQUEST';
-const IP_RATE_LIMIT_EXCEEDED = 'IP RATE LIMIT EXCEEDED';
-const JSON_RPC_ERROR = 'JSON RPC ERROR';
-const CONTRACT_REVERT = 'CONTRACT REVERT';
-const METHOD_NOT_FOUND = 'METHOD NOT FOUND';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';
 const responseSuccessStatusCode = '200';
-const BATCH_REQUEST_METHOD_NAME = 'batch_request';
 const METRIC_HISTOGRAM_NAME = 'rpc_relay_method_result';
 
 export default class KoaJsonRpc {
