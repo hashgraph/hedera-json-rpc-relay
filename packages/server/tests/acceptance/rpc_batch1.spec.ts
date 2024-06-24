@@ -1427,7 +1427,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
               Assertions.jsonRpcError(
                 // @ts-ignore
-                rejected?.reason?.response?.bodyJson?.error,
+                rejected?.reason?.info?.error,
                 predefined.NONCE_TOO_LOW(nonce, nonce + 1),
               );
             }),
