@@ -87,6 +87,9 @@ func main() {
     txIndex := receipt.TransactionIndex
     blockHash := receipt.BlockHash
     newestBlock := big.NewInt(0)
+
+    signedContractTx, contractAddress := testSendContractCreationTransaction(client, fromAddress, privateKey, chainId)
+    waitForTransaction(client, signedContractTx)
     testFeeHistory(client, 5, newestBlock, []float64{10, 50, 90})
     testBlockByNumber(client, blockNumber)
     testTransactionByHash(client, signedTx.Hash().Hex())
@@ -100,9 +103,9 @@ func main() {
     testFeeHistory(client, 5, newestBlock, []float64{10, 50, 90})
     testGetBlockTransactionCountByHash(client, blockHash)
     testGetBlockTransactionCountByNumber(client)
-    testCodeAt(client, fromAddress)
-    testGetLogs(client, fromAddress, nil)
-    testStorageAt(client, fromAddress, "0x0")
+    testCodeAt(client, contractAddress)
+    testGetLogs(client, contractAddress, nil)
+    testStorageAt(client, contractAddress, "0x0")
     testGetTransactionByBlockHashAndIndex(client, blockHash, txIndex)
     testGetTransactionByBlockNumberAndIndex(client, blockHash, txIndex)
     testGetTransactionByHash(client, signedTx.Hash().Hex())
@@ -203,6 +206,57 @@ func testGetGasPrice(client *ethclient.Client) {
         log.Fatalf("Gas price is invalid: %s", gasPrice.String())
     }
     fmt.Printf("Gas price: %s\n", gasPrice.String())
+}
+
+func testSendContractCreationTransaction(client *ethclient.Client, fromAddress common.Address, privateKey *ecdsa.PrivateKey, chainId *big.Int) (*types.Transaction, common.Address) {
+    file, err := os.ReadFile("contracts/input.bin")
+    if err != nil {
+        log.Fatalf("Failed to read bytecode from file: %v", err)
+    }
+    bytecodeStr := string(file)
+    bytecode, err := hex.DecodeString(bytecodeStr)
+    if err != nil {
+        log.Fatalf("Failed to decode the bytecode string: %v", err)
+    }
+    nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+    if err != nil {
+        log.Fatalf("Failed to get transaction count: %v", err)
+    }
+    fmt.Printf("Transaction count (nonce): %d\n", nonce)
+    gasPrice, err := client.SuggestGasPrice(context.Background())
+    if err != nil {
+        log.Fatalf("Failed to get gas price: %v", err)
+    }
+    txData := &types.AccessListTx{
+        ChainID:    chainId,
+        Nonce:      nonce,
+        GasPrice:   gasPrice,
+        Gas:        15000000,
+        To:         nil,
+        Value:      big.NewInt(0),
+        Data:       bytecode,
+        AccessList: types.AccessList{},
+    }
+    tx := types.NewTx(txData)
+    signer := types.NewEIP2930Signer(chainId)
+    signedTx, err := types.SignTx(tx, signer, privateKey)
+    if err != nil {
+        log.Fatalf("Failed to sign transaction: %v", err)
+    }
+    v, r, s := signedTx.RawSignatureValues()
+    fmt.Printf("R: %s\n", r.String())
+    fmt.Printf("S: %s\n", s.String())
+    fmt.Printf("V: %s\n", v.String())
+    err = client.SendTransaction(context.Background(), signedTx)
+    if err != nil {
+        log.Fatalf("Failed to send transaction: %v", err)
+    }
+    fmt.Printf("Sent raw transaction: %s\n", signedTx.Hash().Hex())
+
+    contractAddress := crypto.CreateAddress(fromAddress, nonce)
+    fmt.Printf("New contract address: %s\n", contractAddress.Hex())
+
+    return signedTx, contractAddress
 }
 
 func testSendDummyTransaction(client *ethclient.Client, fromAddress common.Address, privateKey *ecdsa.PrivateKey, chainId *big.Int) *types.Transaction {
@@ -332,7 +386,7 @@ func testCodeAt(client *ethclient.Client, address common.Address) {
     if code == nil {
         log.Fatalf("Code is nil")
     }
-    fmt.Printf("Code at address %s: %s\n", address.Hex(), hex.EncodeToString(code)) // Not a SmartContract so empty string expected
+    fmt.Printf("Code at address %s: %s\n", address.Hex(), hex.EncodeToString(code))
 }
 
 func testGetLogs(client *ethclient.Client, address common.Address, topics []common.Hash) {
@@ -350,7 +404,7 @@ func testGetLogs(client *ethclient.Client, address common.Address, topics []comm
     if len(logs) == 0 {
         fmt.Printf("No logs found for address %s\n", address.Hex())
     } else {
-        for _, vLog := range logs { // Not a SmartContract so empty result expected
+        for _, vLog := range logs {
             fmt.Printf("Log Block Number: %d\n", vLog.BlockNumber)
             fmt.Printf("Log Index: %d\n", vLog.Index)
             fmt.Printf("Log Data: %s\n", hex.EncodeToString(vLog.Data))

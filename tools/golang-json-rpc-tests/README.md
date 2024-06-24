@@ -40,5 +40,22 @@ go get github.com/ethereum/go-ethereum/ethclient \
 go run .
 ```
 
+# Deployment of SampleContract During Tests
+
+A sample Smart Contract will be deployed during tests.  The source code for the contract is available in the `contracts/SampleContract.sol` file. This contract will be deployed using the bytecode located in the `contracts/input.bin` file.
+
+### Generating the Bytecode
+
+To generate the `input.bin` file, the following steps were performed:
+
+1. **Compile the Smart Contract**:
+   The smart contract was compiled using the Solidity compiler (`solc`). This process produces the raw bytecode of the contract.
+   ```shell
+   solc --bin SampleContract.sol
+   ```
+
+2. **Append Constructor Parameter**:
+   Since the constructor of `SampleContract` requires an `initialValue` parameter, this value needs to be appended to the compiled bytecode. The constructor parameter is encoded and added to the end of the bytecode.
+
 # Known Issues
  - Go Ethereum Client Incompatibility with Hedera JSON RPC Relay [#2500](https://github.com/hashgraph/hedera-json-rpc-relay/issues/2500), [#2600](https://github.com/hashgraph/hedera-json-rpc-relay/issues/2600)
