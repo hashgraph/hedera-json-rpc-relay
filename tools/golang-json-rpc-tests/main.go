@@ -176,7 +176,7 @@ func testEthCall(client *ethclient.Client, fromAddress common.Address) {
     if err != nil {
         log.Fatalf("Failed to call contract: %v", err)
     }
-    fmt.Printf("eth_call result", hex.EncodeToString(result))
+    fmt.Printf("eth_call result %s\n", hex.EncodeToString(result))
 }
 
 func testEstimateGas(client *ethclient.Client, fromAddress common.Address) {
