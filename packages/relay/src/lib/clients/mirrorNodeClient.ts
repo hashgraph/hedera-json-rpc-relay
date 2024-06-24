@@ -32,6 +32,7 @@ import { CacheService } from '../services/cacheService/cacheService';
 
 import http from 'http';
 import https from 'https';
+import { ethers } from 'ethers';
 import { IOpcodesResponse } from './models/IOpcodesResponse';
 
 type REQUEST_METHODS = 'GET' | 'POST';
@@ -853,6 +854,8 @@ export class MirrorNodeClient {
     limitOrderParams?: ILimitOrderParams,
     requestIdPrefix?: string,
   ) {
+    if (address === ethers.ZeroAddress) return [];
+
     const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
     const apiEndpoint = MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT.replace(
       MirrorNodeClient.ADDRESS_PLACEHOLDER,

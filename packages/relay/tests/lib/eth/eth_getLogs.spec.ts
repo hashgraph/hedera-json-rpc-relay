@@ -56,6 +56,7 @@ import {
   DEFAULT_NULL_LOG_TOPICS,
   NOT_FOUND_RES,
 } from './eth-config';
+import { ethers } from 'ethers';
 import { generateEthTestEnv } from './eth-helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
@@ -578,8 +579,16 @@ describe('@ethGetLogs using MirrorNode', async function () {
 
     const result = await ethImpl.getLogs(null, '0x5', '0x10', null, DEFAULT_LOG_TOPICS);
 
-    expect(result).to.exist;
     expectLogData1(result[0]);
     expectLogData2(result[1]);
+  });
+
+  it('Should return empty log if address = ZeroAddress', async () => {
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
+    restMock.onGet('blocks/0').reply(200, DEFAULT_BLOCK);
+    restMock.onGet('blocks/latest').reply(200, DEFAULT_BLOCK);
+    const result = await ethImpl.getLogs(null, '0x0', 'latest', ethers.ZeroAddress, DEFAULT_LOG_TOPICS);
+    expect(result.length).to.eq(0);
+    expect(result).to.deep.equal([]);
   });
 });
