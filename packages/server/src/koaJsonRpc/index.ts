@@ -92,7 +92,7 @@ export default class KoaJsonRpc {
     });
   }
 
-  useRpc(name: string, func: (params?: any) => Promise<any>) {
+  useRpc(name: string, func: (params?: any) => Promise<any>): void {
     this.registry[name] = func;
     this.registryTotal[name] = this.methodConfig[name]?.total;
 
@@ -101,7 +101,7 @@ export default class KoaJsonRpc {
     }
   }
 
-  rpcApp() {
+  rpcApp(): (ctx: Koa.Context, _next: Koa.Next) => Promise<void> {
     return async (ctx: Koa.Context, _next: Koa.Next) => {
       this.requestId = ctx.state.reqId;
       ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
