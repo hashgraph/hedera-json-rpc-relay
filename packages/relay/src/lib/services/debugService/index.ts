@@ -21,12 +21,14 @@
 import type { Logger } from 'pino';
 import type { MirrorNodeClient } from '../../clients';
 import type { IDebugService } from './IDebugService';
-import type { CommonService } from '../ethService/ethCommonService';
-import { decodeErrorMessage, numberTo0x } from '../../../formatters';
+import type { CommonService } from '../ethService';
+import { decodeErrorMessage, numberTo0x, strip0x } from '../../../formatters';
 import constants from '../../constants';
 import { TracerType, CallType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
 import { EthImpl } from '../../eth';
+import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
+import { IOpcode } from '../../clients/models/IOpcode';
 const SUCCESS = 'SUCCESS';
 
 /**
@@ -84,7 +86,7 @@ export class DebugService implements IDebugService {
    * Trace a transaction for debugging purposes.
    *
    * @async
-   * @param {string} transactionHash - The hash of the transaction to be traced.
+   * @param {string} transactionIdOrHash - The ID or hash of the transaction to be traced.
    * @param {TracerType} tracer - The type of tracer to use (either 'CallTracer' or 'OpcodeLogger').
    * @param {object} tracerConfig - The configuration object for the tracer.
    * @param {string} [requestIdPrefix] - An optional request id.
@@ -95,18 +97,18 @@ export class DebugService implements IDebugService {
    * const result = await debug_traceTransaction('0x123abc', TracerType.CallTracer, {"tracerConfig": {"onlyTopCall": false}}, some request id);
    */
   async debug_traceTransaction(
-    transactionHash: string,
+    transactionIdOrHash: string,
     tracer: TracerType,
     tracerConfig: object,
     requestIdPrefix?: string,
   ): Promise<any> {
-    this.logger.trace(`${requestIdPrefix} debug_traceTransaction(${transactionHash})`);
+    this.logger.trace(`${requestIdPrefix} debug_traceTransaction(${transactionIdOrHash})`);
     try {
       DebugService.requireDebugAPIEnabled();
       if (tracer === TracerType.CallTracer) {
-        return await this.callTracer(transactionHash, tracerConfig, requestIdPrefix);
+        return await this.callTracer(transactionIdOrHash, tracerConfig, requestIdPrefix);
       } else if (tracer === TracerType.OpcodeLogger) {
-        throw predefined.UNSUPPORTED_OPERATION(`${TracerType.OpcodeLogger} is not supported on eth_debugTransaction`);
+        return await this.callOpcodeLogger(transactionIdOrHash, tracerConfig, requestIdPrefix);
       }
     } catch (e) {
       throw this.common.genericErrorHandler(e);
@@ -149,6 +151,49 @@ export class DebugService implements IDebugService {
         };
       }),
     );
+  }
+
+  /**
+   * Formats the result from the opcodes endpoint to the expected
+   * response for the debug_traceTransaction method.
+   *
+   * @async
+   * @param {IOpcodesResponse | null} result - The response from mirror node.
+   * @param {object} options - The options used for the opcode tracer.
+   * @returns {Promise<object>} The formatted opcode response.
+   */
+  async formatOpcodesResult(
+    result: IOpcodesResponse | null,
+    options: { memory?: boolean; stack?: boolean; storage?: boolean },
+  ): Promise<object> {
+    if (!result) {
+      return {
+        gas: 0,
+        failed: true,
+        returnValue: '',
+        structLogs: [],
+      };
+    }
+    const { gas, failed, return_value, opcodes } = result;
+
+    return {
+      gas,
+      failed,
+      returnValue: return_value ? strip0x(return_value) : '',
+      structLogs: opcodes?.map((opcode: IOpcode) => {
+        return {
+          pc: opcode.pc,
+          op: opcode.op,
+          gas: opcode.gas,
+          gasCost: opcode.gas_cost,
+          depth: opcode.depth,
+          stack: options.stack ? opcode.stack : null,
+          memory: options.memory ? opcode.memory : null,
+          storage: options.storage ? opcode.storage : null,
+          reason: opcode.reason ? strip0x(opcode.reason) : null,
+        };
+      }),
+    };
   }
 
   /**
@@ -204,6 +249,39 @@ export class DebugService implements IDebugService {
   }
 
   /**
+   * Returns the final formatted response for opcodeLogger config.
+   * @async
+   * @param {string} transactionIdOrHash - The ID or hash of the transaction to be debugged.
+   * @param {object} tracerConfig - The tracer config to be used.
+   * @param {boolean} tracerConfig.disableMemory - Whether to disable memory.
+   * @param {boolean} tracerConfig.disableStack - Whether to disable stack.
+   * @param {boolean} tracerConfig.disableStorage - Whether to disable storage.
+   * @param {string} requestIdPrefix - The request prefix id.
+   * @returns {Promise<object>} The formatted response.
+   */
+  async callOpcodeLogger(
+    transactionIdOrHash: string,
+    tracerConfig: { disableMemory?: boolean; disableStack?: boolean; disableStorage?: boolean },
+    requestIdPrefix?: string,
+  ): Promise<object> {
+    try {
+      const options = {
+        memory: !tracerConfig.disableMemory,
+        stack: !tracerConfig.disableStack,
+        storage: !tracerConfig.disableStorage,
+      };
+      const response = await this.mirrorNodeClient.getContractsResultsOpcodes(
+        transactionIdOrHash,
+        requestIdPrefix,
+        options,
+      );
+      return await this.formatOpcodesResult(response, options);
+    } catch (e) {
+      throw this.common.genericErrorHandler(e);
+    }
+  }
+
+  /**
    * Returns the final formatted response for callTracer config.
    *
    * @async
@@ -253,7 +331,8 @@ export class DebugService implements IDebugService {
         // if we have more than one call executed during the transactions we would return all calls
         // except the first one in the sub-calls array,
         // therefore we need to exclude the first one from the actions response
-        calls: tracerConfig.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.slice(1),
+        calls:
+          tracerConfig?.onlyTopCall || actionsResponse.actions.length === 1 ? undefined : formattedActions.slice(1),
       };
     } catch (e) {
       throw this.common.genericErrorHandler(e);

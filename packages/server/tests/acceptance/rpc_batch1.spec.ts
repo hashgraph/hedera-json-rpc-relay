@@ -56,6 +56,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let mirrorContractDetails;
   let requestId: string;
   let account2Address: string;
+  let expectedGasPrice: string;
 
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const INCORRECT_CHAIN_ID = 999;
@@ -84,6 +85,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     this.beforeAll(async () => {
       requestId = Utils.generateRequestId();
       const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+      expectedGasPrice = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestId);
 
       const initialAccount: AliasAccount = global.accounts[0];
       const neededAccounts: number = 3;
@@ -429,6 +431,41 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
         expect(logs.length).to.be.greaterThan(2);
       });
+
+      it('should return empty logs if address = ZeroAddress', async () => {
+        const logs = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
+          [
+            {
+              fromBlock: '0x0',
+              toBlock: 'latest',
+              address: ethers.ZeroAddress,
+            },
+          ],
+          requestId,
+        );
+        expect(logs.length).to.eq(0);
+      });
+
+      it('should return only logs of non-zero addresses', async () => {
+        const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
+        let blocksBehindLatest = 0;
+        if (currentBlock > 10) {
+          blocksBehindLatest = currentBlock - 10;
+        }
+        const logs = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
+          [
+            {
+              fromBlock: numberTo0x(blocksBehindLatest),
+              toBlock: 'latest',
+              address: [ethers.ZeroAddress, contractAddress2],
+            },
+          ],
+          requestId,
+        );
+        expect(logs.length).to.eq(1);
+      });
     });
 
     describe('Block related RPC calls', () => {
@@ -463,7 +500,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           [mirrorBlock.hash.substring(0, 66), false],
           requestId,
         );
-        Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
+        Assertions.block(blockResult, mirrorBlock, mirrorTransactions, expectedGasPrice, false);
       });
 
       it('@release should execute "eth_getBlockByHash", hydrated transactions = true', async function () {
@@ -474,7 +511,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
         // Remove synthetic transactions
         blockResult.transactions = blockResult.transactions.filter((transaction) => transaction.value !== '0x1234');
-        Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
+        Assertions.block(blockResult, mirrorBlock, mirrorTransactions, expectedGasPrice, true);
       });
 
       it('should execute "eth_getBlockByHash" for non-existing block hash and hydrated transactions = false', async function () {
@@ -503,7 +540,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
         // Remove synthetic transactions
         blockResult.transactions = blockResult.transactions.filter((transaction) => transaction.value !== '0x1234');
-        Assertions.block(blockResult, mirrorBlock, mirrorTransactions, false);
+        Assertions.block(blockResult, mirrorBlock, mirrorTransactions, expectedGasPrice, false);
       });
 
       it('@release should execute "eth_getBlockByNumber", hydrated transactions = true', async function () {
@@ -514,7 +551,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
         // Remove synthetic transactions
         blockResult.transactions = blockResult.transactions.filter((transaction) => transaction.value !== '0x1234');
-        Assertions.block(blockResult, mirrorBlock, mirrorTransactions, true);
+        Assertions.block(blockResult, mirrorBlock, mirrorTransactions, expectedGasPrice, true);
       });
 
       it('should execute "eth_getBlockByNumber" for non existing block number and hydrated transactions = true', async function () {

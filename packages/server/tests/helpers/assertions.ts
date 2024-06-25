@@ -17,11 +17,14 @@
  * limitations under the License.
  *
  */
-import { expect } from 'chai';
+import chai, { expect } from 'chai';
+import chaiExclude from 'chai-exclude';
 import { ethers } from 'ethers';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import RelayAssertions from '@hashgraph/json-rpc-relay/tests/assertions';
+
+chai.use(chaiExclude);
 
 export default class Assertions {
   static emptyHex = '0x';
@@ -65,12 +68,18 @@ export default class Assertions {
    * @param mirrorTransactions
    * @param hydratedTransactions - aka showDetails flag
    */
-  public static block(relayResponse, mirrorNodeResponse, mirrorTransactions, hydratedTransactions = false) {
+  public static block(
+    relayResponse,
+    mirrorNodeResponse,
+    mirrorTransactions,
+    expectedGasPrice,
+    hydratedTransactions = false,
+  ) {
     // Assert static values
     expect(relayResponse.baseFeePerGas).to.exist;
 
     if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
-      expect(relayResponse.baseFeePerGas).to.be.equal(ethers.toQuantity(this.defaultGasPrice));
+      expect(relayResponse.baseFeePerGas).to.be.equal(expectedGasPrice);
     } else {
       expect(Number(relayResponse.baseFeePerGas)).to.be.gt(0);
     }
@@ -415,12 +424,12 @@ export default class Assertions {
   };
 
   static validateResultDebugValues = (
-    result,
+    result: { from: string; calls: any[] },
     excludedValues: string[],
     nestedExcludedValues: string[],
-    expectedResult,
+    expectedResult: { from?: any; calls?: any[] },
   ) => {
-    const hasValidHash = (currentValue) => RelayAssertions.validateHash(currentValue);
+    const hasValidHash = (currentValue: string) => RelayAssertions.validateHash(currentValue);
 
     // Validate result schema
     expect(result).to.have.keys(Object.keys(expectedResult));
