@@ -789,7 +789,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.eq(EthImpl.emptyHex);
     });
 
-    it('should not return contract bytecode after sefldestruct', async function () {
+    // Issue # 2619 https://github.com/hashgraph/hedera-json-rpc-relay/issues/2619
+    // Refactor to consider HIP-868
+    xit('should not return contract bytecode after sefldestruct', async function () {
       const bytecodeBefore = await relay.call('eth_getCode', [basicContractAddress, 'latest'], requestId);
 
       // @ts-ignore
