@@ -28,7 +28,7 @@ export default class RateLimit {
   private logger: Logger;
   private ipRateLimitCounter: Counter;
 
-  constructor(logger: Logger, register: Registry, duration) {
+  constructor(logger: Logger, register: Registry, duration: number) {
     this.logger = logger;
     this.duration = duration;
     this.database = Object.create(null);

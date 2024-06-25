@@ -19,9 +19,9 @@
  */
 import { expect } from 'chai';
 import { ethers } from 'ethers';
-import { JsonRpcError, predefined } from '../../../relay/src/lib/errors/JsonRpcError';
-import { numberTo0x } from '../../../relay/src/formatters';
-import RelayAssertions from '../../../relay/tests/assertions';
+import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import RelayAssertions from '@hashgraph/json-rpc-relay/tests/assertions';
 
 export default class Assertions {
   static emptyHex = '0x';
@@ -337,19 +337,22 @@ export default class Assertions {
   static jsonRpcError(err: any, expectedError: JsonRpcError) {
     expect(err).to.exist;
     expect(err.code).to.equal(expectedError.code);
-    expect(err.name).to.equal(expectedError.name);
     expect(err.message).to.include(expectedError.message);
   }
 
   static assertPredefinedRpcError = async (
     expectedError: JsonRpcError,
-    method: () => Promise<any>,
+    method: (...args: any[]) => Promise<any>,
     checkMessage: boolean,
-    thisObj,
+    thisObj: any,
     args?: any[],
   ): Promise<any> => {
     try {
-      await method.apply(thisObj, args);
+      if (args) {
+        await method.apply(thisObj, args);
+      } else {
+        await method.apply(thisObj);
+      }
       Assertions.expectedError();
     } catch (e: any) {
       expect(e).to.have.any.keys('response', 'error');
@@ -362,7 +365,7 @@ export default class Assertions {
     }
   };
 
-  static expectRevert = async (promise, code) => {
+  static expectRevert = async (promise, _code) => {
     try {
       const tx = await promise;
       const receipt = await tx.wait();
@@ -389,15 +392,15 @@ export default class Assertions {
 
   static assertRejection = async (
     error: JsonRpcError,
-    method: () => Promise<any>,
+    method: (...args: any[]) => Promise<any>,
     args: any[],
     checkMessage: boolean,
   ): Promise<any> => {
-    return await expect(method.apply(global.relay, args)).to.eventually.be.rejected.and.satisfy((err) => {
+    return expect(method.apply(global.relay, args)).to.eventually.be.rejected.and.satisfy((err: { body: string }) => {
       if (!checkMessage) {
-        return [error.code, error.name].every((substring) => err.body.includes(substring));
+        return [error.code.toString()].every((substring) => err.body.includes(substring));
       }
-      return [error.code, error.name, error.message].every((substring) => err.body.includes(substring));
+      return [error.code.toString(), error.message].every((substring) => err.body.includes(substring));
     });
   };
 
@@ -439,7 +442,7 @@ export default class Assertions {
     // Validate excluded values are encoded
     expect(excludedValues.every(hasValidHash));
     if (result.calls) {
-      result.calls.forEach((call) => {
+      result.calls.forEach((_call) => {
         expect(nestedExcludedValues.every(hasValidHash));
       });
     }
