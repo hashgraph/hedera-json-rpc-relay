@@ -46,6 +46,7 @@ import {
   getRequestIdIsOptional,
   hasOwnProperty,
 } from './lib/utils';
+import { IJsonRpcRequest } from './lib/IJsonRpcRequest';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
@@ -219,7 +220,7 @@ export default class KoaJsonRpc {
     }
   }
 
-  validateJsonRpcRequest(body: { jsonrpc?: string; method?: any; id?: any }): boolean {
+  validateJsonRpcRequest(body: IJsonRpcRequest): boolean {
     // validate it has the correct jsonrpc version, method, and id
     if (
       body.jsonrpc !== '2.0' ||
@@ -255,7 +256,7 @@ export default class KoaJsonRpc {
     return this.requestId;
   }
 
-  hasInvalidRequestId(body: { jsonrpc?: string; method?: any; id?: any }): boolean {
+  hasInvalidRequestId(body: IJsonRpcRequest): boolean {
     const hasId = hasOwnProperty(body, 'id');
     if (this.requestIdIsOptional && !hasId) {
       // If the request is invalid, we still want to return a valid JSON-RPC response, default id to 0
