@@ -86,13 +86,11 @@ func main() {
     blockNumber := receipt.BlockNumber
     txIndex := receipt.TransactionIndex
     blockHash := receipt.BlockHash
-    newestBlock := big.NewInt(0)
 
     signedContractTx, contractAddress := testSendContractCreationTransaction(client, fromAddress, privateKey, chainId)
     waitForTransaction(client, signedContractTx)
-    testFeeHistory(client, 5, newestBlock, []float64{10, 50, 90})
+    testFeeHistory(client, 5, blockNumber, []float64{10, 50, 90})
     testBlockByNumber(client, blockNumber)
-    testTransactionByHash(client, signedTx.Hash().Hex())
     testTransactionReceipt(client, signedTx.Hash().Hex())
     testGetBalance(client, fromAddress)
     testEthCall(client, fromAddress)
@@ -100,14 +98,12 @@ func main() {
     testGetGasPrice(client)
     testGetAccounts(client)
     testBlockByHash(client, blockHash)
-    testFeeHistory(client, 5, newestBlock, []float64{10, 50, 90})
     testGetBlockTransactionCountByHash(client, blockHash)
     testGetBlockTransactionCountByNumber(client)
     testCodeAt(client, contractAddress)
     testGetLogs(client, contractAddress, nil)
     testStorageAt(client, contractAddress, "0x0")
     testGetTransactionByBlockHashAndIndex(client, blockHash, txIndex)
-    testGetTransactionByBlockNumberAndIndex(client, blockHash, txIndex)
     testGetTransactionByHash(client, signedTx.Hash().Hex())
     testGetTransactionCount(client)
     testGetTransactionReceipt(client, signedTx.Hash().Hex())
@@ -131,14 +127,6 @@ func testBlockByNumber(client *ethclient.Client, blockNumber *big.Int) {
         log.Fatalf("Block number mismatch: expected %s, got %s", blockNumber.String(), block.Number().String())
     }
     fmt.Printf("Block by number\n")
-}
-
-func testTransactionByHash(client *ethclient.Client, txHash string) {
-    tx, isPending, err := client.TransactionByHash(context.Background(), common.HexToHash(txHash))
-    if err != nil {
-        log.Fatalf("Failed to get transaction by hash: %v", err)
-    }
-    fmt.Printf("Transaction by hash: %s (Pending: %t)\n", tx.Hash().Hex(), isPending)
 }
 
 func testTransactionReceipt(client *ethclient.Client, txHash string) {
@@ -430,14 +418,6 @@ func testGetTransactionByBlockHashAndIndex(client *ethclient.Client, blockHash c
         log.Fatalf("Failed to get transaction by block hash and index: %v", err)
     }
     fmt.Printf("Transaction in block hash %s at index %d: %s\n", blockHash.Hex(), index, tx.Hash().Hex())
-}
-
-func testGetTransactionByBlockNumberAndIndex(client *ethclient.Client, blockHash common.Hash, index uint) {
-    tx, err := client.TransactionInBlock(context.Background(), blockHash, index)
-    if err != nil {
-        log.Fatalf("Failed to get transaction by block number and index: %v", err)
-    }
-    fmt.Printf("Transaction in block number at index %d: %s\n", index, tx.Hash().Hex())
 }
 
 func testGetTransactionByHash(client *ethclient.Client, txHash string) {
