@@ -41,9 +41,9 @@ import (
 )
 
 const (
-    mainnetEndpoint     = "https://mainnet.hashio.io/api"
-    testnetEndpoint     = "https://testnet.hashio.io/api"
-    previewnetEndpoint  = "https://previewnet.hashio.io/api"
+    mainnetEndpoint    = "https://mainnet.hashio.io/api"
+    testnetEndpoint    = "https://testnet.hashio.io/api"
+    previewnetEndpoint = "https://previewnet.hashio.io/api"
 )
 
 func main() {
@@ -53,7 +53,9 @@ func main() {
     }
     mainnet := flag.Bool("mainnet", false, "Use mainnet network")
     previewnet := flag.Bool("previewnet", false, "Use previewnet network")
+    wss := flag.Bool("wss", false, "Enable WebSocket Secure protocol")
     privateKeyHex := os.Getenv("OPERATOR_PRIVATE_KEY")
+
     flag.Parse()
     var endpointUrl string
     switch {
@@ -64,11 +66,16 @@ func main() {
     default:
         endpointUrl = testnetEndpoint
     }
+    if *wss {
+        endpointUrl = strings.Replace(endpointUrl, "https://", "wss://", 1)
+        endpointUrl = strings.Replace(endpointUrl, "/api", "/ws", 1)
+    }
     client, err := ethclient.Dial(endpointUrl)
     if err != nil {
         log.Fatal(err)
     }
     fmt.Println("Connected to Ethereum client")
+
     chainId, err := client.ChainID(context.Background())
     if err != nil {
         log.Fatalf("Failed to get chain ID: %v", err)
@@ -89,24 +96,29 @@ func main() {
 
     signedContractTx, contractAddress := testSendContractCreationTransaction(client, fromAddress, privateKey, chainId)
     waitForTransaction(client, signedContractTx)
-    testFeeHistory(client, 5, blockNumber, []float64{10, 50, 90})
     testBlockByNumber(client, blockNumber)
     testTransactionReceipt(client, signedTx.Hash().Hex())
     testGetBalance(client, fromAddress)
     testEthCall(client, fromAddress)
     testEstimateGas(client, fromAddress)
     testGetGasPrice(client)
-    testGetAccounts(client)
     testBlockByHash(client, blockHash)
-    testGetBlockTransactionCountByHash(client, blockHash)
-    testGetBlockTransactionCountByNumber(client)
     testCodeAt(client, contractAddress)
     testGetLogs(client, contractAddress, nil)
     testStorageAt(client, contractAddress, "0x0")
-    testGetTransactionByBlockHashAndIndex(client, blockHash, txIndex)
     testGetTransactionByHash(client, signedTx.Hash().Hex())
     testGetTransactionCount(client)
     testGetTransactionReceipt(client, signedTx.Hash().Hex())
+    if *wss {
+        return;
+    }
+
+    // https only methods
+    testFeeHistory(client, 5, blockNumber, []float64{10, 50, 90})
+    testGetAccounts(client)
+    testGetBlockTransactionCountByHash(client, blockHash)
+    testGetBlockTransactionCountByNumber(client)
+    testGetTransactionByBlockHashAndIndex(client, blockHash, txIndex)
     testSyncing(client)
 }
 
@@ -464,3 +476,5 @@ func testSyncing(client *ethclient.Client) {
         fmt.Printf("Syncing: %+v\n", syncing)
     }
 }
+
+
