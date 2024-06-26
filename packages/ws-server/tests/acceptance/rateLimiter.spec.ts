@@ -26,7 +26,6 @@ import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccoun
 import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 
 describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
-  const rateLimitTier1 = Number(process.env.TIER_1_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_1);
   const rateLimitTier2 = Number(process.env.TIER_2_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_2);
   const limitDuration = Number(process.env.LIMIT_DURATION) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
