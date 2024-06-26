@@ -36,9 +36,23 @@ go get github.com/ethereum/go-ethereum/ethclient \
 
 6. Run the test script from the root directory of the project. The default network is set to "testnet".
 
-```shell
-go run .
-```
+   ```shell
+   go run .
+   ```
+   
+   This tests `https` methods by default. In order to run `wss` tests use the `wss` flag:
+   
+   ```shell
+   go run . --wss
+   ```
+
+   To run tests on mainnet or previewnet run one of the following commands:
+   ```shell
+   go run . --mainnet
+   go run . --previewnet
+   go run . --mainnet --wss
+   go run . --previewnet --wss
+   ```
 
 # Deployment of SampleContract During Tests
 
