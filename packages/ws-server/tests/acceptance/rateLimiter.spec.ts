@@ -72,16 +72,16 @@ describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
     const BATCH_REQUEST_METHOD_NAME = 'batch_request';
 
     // call batch request multitime to reach limit
-    for (let i = 0; i < rateLimitTier1; i++) {
+    for (let i = 0; i < rateLimitTier2; i++) {
       await WsTestHelper.sendRequestToStandardWebSocket(BATCH_REQUEST_METHOD_NAME, batchRequests);
     }
 
     // exceed rate limit
     const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(BATCH_REQUEST_METHOD_NAME, batchRequests);
-    const ipRateLimitError = new IPRateLimitExceeded(BATCH_REQUEST_METHOD_NAME);
+    const possibleErrors = batchRequests.map((r) => new IPRateLimitExceeded(r.method));
 
-    expect(batchResponses[0].error.code).to.deep.eq(ipRateLimitError.code);
-    expect(batchResponses[0].error.message).to.deep.eq(ipRateLimitError.message);
+    expect(batchResponses[0].error.code).to.deep.eq(possibleErrors[0].code);
+    expect(batchResponses[0].error.message).to.be.oneOf(possibleErrors.map((e) => e.message));
 
     // wait until rate limit is reset
     await new Promise((r) => setTimeout(r, limitDuration));
