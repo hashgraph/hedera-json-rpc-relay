@@ -18,7 +18,7 @@
  *
  */
 
-import { Relay, RelayImpl, JsonRpcError, predefined, MirrorNodeClientError } from '@hashgraph/json-rpc-relay';
+import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
 import { TracerType, Validator } from './validator';
@@ -663,7 +663,14 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
 app.useRpc('debug_traceTransaction', async (params: any) => {
   const transactionIdOrHash = params[0];
   const { tracer, ...otherParams } = params[1];
-  const tracerConfig = tracer === TracerType.CallTracer ? otherParams.tracerConfig : otherParams;
+
+  let tracerConfig: object;
+  if (tracer === TracerType.CallTracer) {
+    tracerConfig = otherParams?.tracerConfig ?? { onlyTopCall: false };
+  } else {
+    tracerConfig = otherParams ?? { disableMemory: false, disableStack: false, disableStorage: false };
+  }
+
   return logAndHandleResponse('debug_traceTransaction', [transactionIdOrHash, tracer, tracerConfig], (requestId) =>
     relay.eth().debugService().debug_traceTransaction(transactionIdOrHash, tracer, tracerConfig, requestId),
   );
