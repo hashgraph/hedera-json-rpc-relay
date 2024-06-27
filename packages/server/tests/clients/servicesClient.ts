@@ -93,7 +93,7 @@ export default class ServicesClient {
     const privateKey = PrivateKey.generateECDSA();
     const wallet = new ethers.Wallet(
       privateKey.toStringRaw(),
-      new ethers.JsonRpcProvider(providerUrl, new ethers.Network('Hedera', chainId), { batchMaxCount: 1 }),
+      new ethers.JsonRpcProvider(providerUrl, new ethers.Network('Hedera', chainId)),
     );
     const address = wallet.address;
 

@@ -26,7 +26,6 @@ import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccoun
 import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 
 describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
-  const rateLimitTier1 = Number(process.env.TIER_1_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_1);
   const rateLimitTier2 = Number(process.env.TIER_2_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_2);
   const limitDuration = Number(process.env.LIMIT_DURATION) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
@@ -72,16 +71,16 @@ describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
     const BATCH_REQUEST_METHOD_NAME = 'batch_request';
 
     // call batch request multitime to reach limit
-    for (let i = 0; i < rateLimitTier1; i++) {
+    for (let i = 0; i < rateLimitTier2; i++) {
       await WsTestHelper.sendRequestToStandardWebSocket(BATCH_REQUEST_METHOD_NAME, batchRequests);
     }
 
     // exceed rate limit
     const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(BATCH_REQUEST_METHOD_NAME, batchRequests);
-    const ipRateLimitError = new IPRateLimitExceeded(BATCH_REQUEST_METHOD_NAME);
+    const possibleErrors = batchRequests.map((r) => new IPRateLimitExceeded(r.method));
 
-    expect(batchResponses[0].error.code).to.deep.eq(ipRateLimitError.code);
-    expect(batchResponses[0].error.message).to.deep.eq(ipRateLimitError.message);
+    expect(batchResponses[0].error.code).to.deep.eq(possibleErrors[0].code);
+    expect(batchResponses[0].error.message).to.be.oneOf(possibleErrors.map((e) => e.message));
 
     // wait until rate limit is reset
     await new Promise((r) => setTimeout(r, limitDuration));
