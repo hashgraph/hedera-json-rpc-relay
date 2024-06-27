@@ -22,10 +22,8 @@ export function validateParam(index: number | string, param: any, validation: an
       results.push(result);
     }
     if (results.every((item) => item === false)) {
-      throw predefined.INVALID_PARAMETER(
-        index,
-        `The value passed is not a valid blockHash/blockNumber/blockTag value: ${param}`,
-      );
+      const errorMessages = paramType.map((t) => Validator.TYPES[t].error).join(' OR ');
+      throw predefined.INVALID_PARAMETER(index, `The value passed is not valid: ${param}. ${errorMessages}`);
     }
   }
 
