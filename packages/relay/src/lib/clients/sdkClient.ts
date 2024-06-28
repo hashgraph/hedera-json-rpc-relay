@@ -651,7 +651,7 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
     const currentDateNow = Date.now();
-    let createFileId, fileCreateTx, fileAppendTx;
+    let fileCreateTx, fileAppendTx;
 
     try {
       const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
@@ -741,11 +741,11 @@ export class SDKClient {
             interactingEntity,
           );
 
-          if (fileAppendTx === null || fileAppendTx === undefined) {
-            this.logger.info(
-              `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
-            );
-          } else {
+          this.logger.info(
+            `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+          );
+
+          if (fileAppendTx) {
             const transactionAppendRecord = await new TransactionRecordQuery()
               .setTransactionId(fileAppendTx.transactionId!)
               .setNodeAccountIds(fileAppendTx.nodeAccountIds!)
@@ -765,7 +765,7 @@ export class SDKClient {
             );
 
             this.logger.info(
-              `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+              `${requestIdPrefix} ${fileAppendTx.transactionId} ${callerName} ${fileAppendTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
             );
           }
         } catch (err: any) {
@@ -784,8 +784,6 @@ export class SDKClient {
       }
       throw sdkClientError;
     }
-
-    return createFileId;
   };
 
   /**
