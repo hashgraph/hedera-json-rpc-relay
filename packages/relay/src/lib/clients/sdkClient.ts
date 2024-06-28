@@ -659,7 +659,7 @@ export class SDKClient {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
 
-      const fileCreateTx = await new FileCreateTransaction()
+      fileCreateTx = await new FileCreateTransaction()
         .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
         .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
 
@@ -682,7 +682,7 @@ export class SDKClient {
       );
 
       if (fileId && callData.length > this.fileAppendChunkSize) {
-        const fileAppendTx = await new FileAppendTransaction()
+        fileAppendTx = await new FileAppendTransaction()
           .setFileId(fileId)
           .setContents(hexedCallData.substring(this.fileAppendChunkSize, hexedCallData.length))
           .setChunkSize(this.fileAppendChunkSize)
