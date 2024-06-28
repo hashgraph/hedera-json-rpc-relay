@@ -665,9 +665,12 @@ export class SDKClient {
 
       const fileCreateTxResponse = await fileCreateTx.execute(client);
       const { fileId } = await fileCreateTxResponse.getReceipt(client);
-      createFileId = fileId;
 
+      // get transaction fee and add expense to limiter
       const createFileRecord = await fileCreateTxResponse.getRecord(this.clientMain);
+      let transactionFee = createFileRecord.transactionFee;
+      this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+
       this.captureMetrics(
         SDKClient.transactionMode,
         fileCreateTx.constructor.name,
@@ -685,6 +688,13 @@ export class SDKClient {
           .setChunkSize(this.fileAppendChunkSize)
           .setMaxChunks(this.maxChunks);
         await fileAppendTx.execute(client);
+
+        const fileAppendTxResponse = await fileAppendTx.execute(client);
+
+        // get transaction fee and add expense to limiter
+        const appendFileRecord = await fileAppendTxResponse.getRecord(this.clientMain);
+        transactionFee = appendFileRecord.transactionFee;
+        this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
 
         this.captureMetrics(
           SDKClient.transactionMode,
@@ -748,6 +758,10 @@ export class SDKClient {
             callerName,
             interactingEntity,
           );
+
+          this.logger.info(
+            `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+          );
         } catch (err: any) {
           const recordQueryError = new SDKClientError(err, err.message);
           this.logger.error(
@@ -757,9 +771,8 @@ export class SDKClient {
         }
       }
 
-      this.logger.trace(
-        `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
-      );
+      this.logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_EXCEEDED cost: ${transactionFee}`);
+
       if (error instanceof JsonRpcError) {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
