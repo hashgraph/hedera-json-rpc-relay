@@ -687,8 +687,6 @@ export class SDKClient {
           .setContents(hexedCallData.substring(this.fileAppendChunkSize, hexedCallData.length))
           .setChunkSize(this.fileAppendChunkSize)
           .setMaxChunks(this.maxChunks);
-        await fileAppendTx.execute(client);
-
         const fileAppendTxResponse = await fileAppendTx.execute(client);
 
         // get transaction fee and add expense to limiter
@@ -716,6 +714,8 @@ export class SDKClient {
         }
         this.logger.trace(`${requestIdPrefix} Created file with fileId: ${fileId} and file size ${fileSize}`);
       }
+
+      return fileId;
     } catch (error: any) {
       const sdkClientError = new SDKClientError(error, error.message);
       let transactionFee: number | Hbar = 0;
