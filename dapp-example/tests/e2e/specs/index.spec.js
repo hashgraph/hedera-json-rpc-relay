@@ -3,7 +3,7 @@ import * as bootstrapInfo from '../../../src/contracts/.bootstrapInfo.json';
 import { ethers } from 'ethers';
 
 describe('Test Core Hedera User Scenarios', function () {
-  this.timeout(240000);
+  this.timeout(180000);
 
   const testTimeoutMs = 45000;
   const retries = 2;
@@ -12,9 +12,7 @@ describe('Test Core Hedera User Scenarios', function () {
 
   before(() => {
     cy.visit('http://localhost:3000');
-    cy.wait(5000);
     cy.contains('Connect Account').click();
-    cy.wait(5000);
     cy.acceptMetamaskAccess().should('be.true');
     cy.switchToCypressWindow();
 
@@ -103,11 +101,11 @@ describe('Test Core Hedera User Scenarios', function () {
   });
 
   describe('Tests with hollow account created via TX', function () {
-    mandatoryTests(hollowAccount1.signingKey.privateKey, 3, true);
+    mandatoryTests(hollowAccount1._signingKey().privateKey, 3, true);
   });
 
   describe('Tests with hollow account created via Contract', function () {
-    mandatoryTests(hollowAccount2.signingKey.privateKey, 4, true);
+    mandatoryTests(hollowAccount2._signingKey().privateKey, 4, true);
   });
 
   function mandatoryTests(pkToImport = null, accountNumber = 1, shouldAssociateWithHTS = false) {
