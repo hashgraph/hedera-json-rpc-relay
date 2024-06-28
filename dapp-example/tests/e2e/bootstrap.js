@@ -163,7 +163,11 @@ const deployAndFundContractTransferTx = async function (wallet) {
   if (mainPrivateKeyString === '') {
     mainPrivateKeyString = HederaSDK.PrivateKey.generateECDSA().toStringRaw();
   }
-  const mainWallet = new ethers.Wallet(mainPrivateKeyString, new ethers.JsonRpcProvider(process.env.RPC_URL));
+
+  const provider = new ethers.JsonRpcProvider(new ethers.FetchRequest(process.env.RPC_URL), undefined, {
+    batchMaxCount: 1
+  });
+  const mainWallet = new ethers.Wallet(mainPrivateKeyString, provider);
   const mainCompressedKey = mainWallet.signingKey.compressedPublicKey.replace('0x', '');
   const mainAccountId = (await createAccountFromCompressedPublicKey(mainCompressedKey)).accountId;
   console.log(
