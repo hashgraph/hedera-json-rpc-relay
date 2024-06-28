@@ -765,7 +765,7 @@ export class SDKClient {
             );
 
             this.logger.info(
-              `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+              `${requestIdPrefix} ${fileAppendTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
             );
           }
         } catch (err: any) {
