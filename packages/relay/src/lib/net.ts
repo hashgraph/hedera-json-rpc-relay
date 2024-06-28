@@ -19,15 +19,19 @@
  */
 
 import { Net } from '../index';
+import constants from './constants';
 import { Client } from '@hashgraph/sdk';
 
 export class NetImpl implements Net {
   private client: Client;
   private readonly chainId: string;
 
-  constructor(client: Client, chainId: string) {
+  constructor(client: Client) {
     this.client = client;
-    this.chainId = chainId;
+
+    const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
+    this.chainId = process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
+    if (this.chainId.startsWith('0x')) this.chainId = parseInt(this.chainId, 16).toString();
   }
 
   /**
@@ -39,7 +43,6 @@ export class NetImpl implements Net {
 
   /**
    * This is the chain id we registered.
-   * TODO Support some config when launching the server for this. dotenv support?
    */
   version(): string {
     return this.chainId;

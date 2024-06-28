@@ -63,7 +63,7 @@ export class RelayImpl implements Relay {
     this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
-    this.netImpl = new NetImpl(this.clientMain, chainId);
+    this.netImpl = new NetImpl(this.clientMain);
 
     this.mirrorNodeClient = new MirrorNodeClient(
       process.env.MIRROR_NODE_URL || '',
