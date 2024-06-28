@@ -741,27 +741,33 @@ export class SDKClient {
             interactingEntity,
           );
 
-          const transactionAppendRecord = await new TransactionRecordQuery()
-            .setTransactionId(fileAppendTx.transactionId!)
-            .setNodeAccountIds(fileAppendTx.nodeAccountIds!)
-            .setValidateReceiptStatus(false)
-            .execute(this.clientMain);
-          transactionFee = transactionAppendRecord.transactionFee;
-          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+          if (fileAppendTx === null || fileAppendTx === undefined) {
+            this.logger.info(
+              `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+            );
+          } else {
+            const transactionAppendRecord = await new TransactionRecordQuery()
+              .setTransactionId(fileAppendTx.transactionId!)
+              .setNodeAccountIds(fileAppendTx.nodeAccountIds!)
+              .setValidateReceiptStatus(false)
+              .execute(this.clientMain);
+            transactionFee = transactionAppendRecord.transactionFee;
+            this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
 
-          this.captureMetrics(
-            SDKClient.transactionMode,
-            fileCreateTx.constructor.name,
-            sdkClientError.status,
-            transactionFee.toTinybars().toNumber(),
-            transactionCreateRecord?.contractFunctionResult?.gasUsed,
-            callerName,
-            interactingEntity,
-          );
+            this.captureMetrics(
+              SDKClient.transactionMode,
+              fileCreateTx.constructor.name,
+              sdkClientError.status,
+              transactionFee.toTinybars().toNumber(),
+              transactionCreateRecord?.contractFunctionResult?.gasUsed,
+              callerName,
+              interactingEntity,
+            );
 
-          this.logger.info(
-            `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
-          );
+            this.logger.info(
+              `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+            );
+          }
         } catch (err: any) {
           const recordQueryError = new SDKClientError(err, err.message);
           this.logger.error(
