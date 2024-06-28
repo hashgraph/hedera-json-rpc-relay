@@ -101,11 +101,11 @@ describe('Test Core Hedera User Scenarios', function () {
   });
 
   describe('Tests with hollow account created via TX', function () {
-    mandatoryTests(hollowAccount1._signingKey().privateKey, 3, true);
+    mandatoryTests(hollowAccount1.signingKey.privateKey, 3, true);
   });
 
   describe('Tests with hollow account created via Contract', function () {
-    mandatoryTests(hollowAccount2._signingKey().privateKey, 4, true);
+    mandatoryTests(hollowAccount2.signingKey.privateKey, 4, true);
   });
 
   function mandatoryTests(pkToImport = null, accountNumber = 1, shouldAssociateWithHTS = false) {
