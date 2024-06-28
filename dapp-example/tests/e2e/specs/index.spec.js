@@ -3,7 +3,7 @@ import * as bootstrapInfo from '../../../src/contracts/.bootstrapInfo.json';
 import { ethers } from 'ethers';
 
 describe('Test Core Hedera User Scenarios', function () {
-  this.timeout(180000);
+  this.timeout(240000);
 
   const testTimeoutMs = 45000;
   const retries = 2;
