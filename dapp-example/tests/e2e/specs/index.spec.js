@@ -14,6 +14,7 @@ describe('Test Core Hedera User Scenarios', function () {
     cy.visit('http://localhost:3000');
     cy.wait(5000);
     cy.contains('Connect Account').click();
+    cy.wait(5000);
     cy.acceptMetamaskAccess().should('be.true');
     cy.switchToCypressWindow();
 
