@@ -243,7 +243,7 @@ export class SDKClient {
   async submitEthereumTransaction(
     transactionBuffer: Uint8Array,
     callerName: string,
-    requestId?: string,
+    requestId: string,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
@@ -257,7 +257,7 @@ export class SDKClient {
       fileId = await this.createFile(
         ethereumTransactionData.callData,
         this.clientMain,
-        requestId ?? 'create-file-from-submit-ethereum-transaction',
+        requestId,
         callerName,
         interactingEntity,
       );
@@ -476,6 +476,7 @@ export class SDKClient {
 
       this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
       const resp = await transaction.execute(this.clientMain);
+
       this.logger.info(
         `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
       );
@@ -650,17 +651,18 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
     const currentDateNow = Date.now();
-    let createFileId;
-
-    const fileCreateTx = await new FileCreateTransaction()
-      .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
-      .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
+    let createFileId, fileCreateTx, fileAppendTx;
 
     try {
       const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
       if (shouldLimit) {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
+
+      const fileCreateTx = await new FileCreateTransaction()
+        .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
+        .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
+
       const fileCreateTxResponse = await fileCreateTx.execute(client);
       const { fileId } = await fileCreateTxResponse.getReceipt(client);
       createFileId = fileId;
@@ -711,24 +713,41 @@ export class SDKClient {
       // if valid network error utilize transaction id
       if (sdkClientError.isValidNetworkError()) {
         try {
-          const transactionRecord = await new TransactionRecordQuery()
+          const transactionCreateRecord = await new TransactionRecordQuery()
             .setTransactionId(fileCreateTx.transactionId!)
             .setNodeAccountIds(fileCreateTx.nodeAccountIds!)
             .setValidateReceiptStatus(false)
             .execute(this.clientMain);
-          transactionFee = transactionRecord.transactionFee;
+          transactionFee = transactionCreateRecord.transactionFee;
+          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
 
           this.captureMetrics(
             SDKClient.transactionMode,
             fileCreateTx.constructor.name,
             sdkClientError.status,
             transactionFee.toTinybars().toNumber(),
-            transactionRecord?.contractFunctionResult?.gasUsed,
+            transactionCreateRecord?.contractFunctionResult?.gasUsed,
             callerName,
             interactingEntity,
           );
 
+          const transactionAppendRecord = await new TransactionRecordQuery()
+            .setTransactionId(fileAppendTx.transactionId!)
+            .setNodeAccountIds(fileAppendTx.nodeAccountIds!)
+            .setValidateReceiptStatus(false)
+            .execute(this.clientMain);
+          transactionFee = transactionAppendRecord.transactionFee;
           this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+
+          this.captureMetrics(
+            SDKClient.transactionMode,
+            fileCreateTx.constructor.name,
+            sdkClientError.status,
+            transactionFee.toTinybars().toNumber(),
+            transactionCreateRecord?.contractFunctionResult?.gasUsed,
+            callerName,
+            interactingEntity,
+          );
         } catch (err: any) {
           const recordQueryError = new SDKClientError(err, err.message);
           this.logger.error(
