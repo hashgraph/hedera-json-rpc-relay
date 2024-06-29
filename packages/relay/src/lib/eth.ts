@@ -1412,7 +1412,7 @@ export class EthImpl implements Eth {
    *
    * @param transaction
    */
-  async sendRawTransaction(transaction: string, requestIdPrefix?: string): Promise<string | JsonRpcError> {
+  async sendRawTransaction(transaction: string, requestIdPrefix: string): Promise<string | JsonRpcError> {
     if (transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter
         .labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
