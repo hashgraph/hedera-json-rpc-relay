@@ -243,7 +243,7 @@ export class SDKClient {
   async submitEthereumTransaction(
     transactionBuffer: Uint8Array,
     callerName: string,
-    requestId?: string,
+    requestId: string,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
@@ -476,6 +476,7 @@ export class SDKClient {
 
       this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
       const resp = await transaction.execute(this.clientMain);
+
       this.logger.info(
         `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
       );
@@ -643,60 +644,146 @@ export class SDKClient {
   private createFile = async (
     callData: Uint8Array,
     client: Client,
-    requestId?: string,
-    callerName?: string,
-    interactingEntity?: string,
+    requestId: string,
+    callerName: string,
+    interactingEntity: string,
   ) => {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
+    const currentDateNow = Date.now();
+    let fileCreateTx, fileAppendTx;
 
-    const fileCreateTx = await new FileCreateTransaction()
-      .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
-      .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
-    const fileCreateTxResponse = await fileCreateTx.execute(client);
-    const { fileId } = await fileCreateTxResponse.getReceipt(client);
+    try {
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+      if (shouldLimit) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
 
-    const createFileRecord = await fileCreateTxResponse.getRecord(this.clientMain);
-    this.captureMetrics(
-      SDKClient.transactionMode,
-      fileCreateTx.constructor.name,
-      Status.Success,
-      createFileRecord.transactionFee.toTinybars().toNumber(),
-      createFileRecord?.contractFunctionResult?.gasUsed,
-      callerName,
-      interactingEntity,
-    );
+      fileCreateTx = await new FileCreateTransaction()
+        .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
+        .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
 
-    if (fileId && callData.length > this.fileAppendChunkSize) {
-      const fileAppendTx = await new FileAppendTransaction()
-        .setFileId(fileId)
-        .setContents(hexedCallData.substring(this.fileAppendChunkSize, hexedCallData.length))
-        .setChunkSize(this.fileAppendChunkSize)
-        .setMaxChunks(this.maxChunks);
-      await fileAppendTx.execute(client);
+      const fileCreateTxResponse = await fileCreateTx.execute(client);
+      const { fileId } = await fileCreateTxResponse.getReceipt(client);
+
+      // get transaction fee and add expense to limiter
+      const createFileRecord = await fileCreateTxResponse.getRecord(this.clientMain);
+      let transactionFee = createFileRecord.transactionFee;
+      this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
 
       this.captureMetrics(
         SDKClient.transactionMode,
-        fileAppendTx.constructor.name,
+        fileCreateTx.constructor.name,
         Status.Success,
-        await this.calculateFileAppendTxTotalTinybarsCost(fileAppendTx),
-        0,
+        createFileRecord.transactionFee.toTinybars().toNumber(),
+        createFileRecord?.contractFunctionResult?.gasUsed,
         callerName,
         interactingEntity,
       );
-    }
 
-    // Ensure that the calldata file is not empty
-    if (fileId) {
-      const fileSize = await (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
+      if (fileId && callData.length > this.fileAppendChunkSize) {
+        fileAppendTx = await new FileAppendTransaction()
+          .setFileId(fileId)
+          .setContents(hexedCallData.substring(this.fileAppendChunkSize, hexedCallData.length))
+          .setChunkSize(this.fileAppendChunkSize)
+          .setMaxChunks(this.maxChunks);
+        const fileAppendTxResponse = await fileAppendTx.execute(client);
 
-      if (callData.length > 0 && fileSize.isZero()) {
-        throw new SDKClientError({}, `${requestIdPrefix} Created file is empty. `);
+        // get transaction fee and add expense to limiter
+        const appendFileRecord = await fileAppendTxResponse.getRecord(this.clientMain);
+        transactionFee = appendFileRecord.transactionFee;
+        this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+
+        this.captureMetrics(
+          SDKClient.transactionMode,
+          fileAppendTx.constructor.name,
+          Status.Success,
+          await this.calculateFileAppendTxTotalTinybarsCost(fileAppendTx),
+          0,
+          callerName,
+          interactingEntity,
+        );
       }
-      this.logger.trace(`${requestIdPrefix} Created file with fileId: ${fileId} and file size ${fileSize}`);
-    }
 
-    return fileId;
+      // Ensure that the calldata file is not empty
+      if (fileId) {
+        const fileSize = await (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
+
+        if (callData.length > 0 && fileSize.isZero()) {
+          throw new SDKClientError({}, `${requestIdPrefix} Created file is empty. `);
+        }
+        this.logger.trace(`${requestIdPrefix} Created file with fileId: ${fileId} and file size ${fileSize}`);
+      }
+
+      return fileId;
+    } catch (error: any) {
+      const sdkClientError = new SDKClientError(error, error.message);
+      let transactionFee: number | Hbar = 0;
+
+      // if valid network error utilize transaction id
+      if (sdkClientError.isValidNetworkError()) {
+        try {
+          const transactionCreateRecord = await new TransactionRecordQuery()
+            .setTransactionId(fileCreateTx.transactionId!)
+            .setNodeAccountIds(fileCreateTx.nodeAccountIds!)
+            .setValidateReceiptStatus(false)
+            .execute(this.clientMain);
+          transactionFee = transactionCreateRecord.transactionFee;
+          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+
+          this.captureMetrics(
+            SDKClient.transactionMode,
+            fileCreateTx.constructor.name,
+            sdkClientError.status,
+            transactionFee.toTinybars().toNumber(),
+            transactionCreateRecord?.contractFunctionResult?.gasUsed,
+            callerName,
+            interactingEntity,
+          );
+
+          this.logger.info(
+            `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+          );
+
+          if (fileAppendTx) {
+            const transactionAppendRecord = await new TransactionRecordQuery()
+              .setTransactionId(fileAppendTx.transactionId!)
+              .setNodeAccountIds(fileAppendTx.nodeAccountIds!)
+              .setValidateReceiptStatus(false)
+              .execute(this.clientMain);
+            transactionFee = transactionAppendRecord.transactionFee;
+            this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+
+            this.captureMetrics(
+              SDKClient.transactionMode,
+              fileCreateTx.constructor.name,
+              sdkClientError.status,
+              transactionFee.toTinybars().toNumber(),
+              transactionCreateRecord?.contractFunctionResult?.gasUsed,
+              callerName,
+              interactingEntity,
+            );
+
+            this.logger.info(
+              `${requestIdPrefix} ${fileAppendTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+            );
+          }
+        } catch (err: any) {
+          const recordQueryError = new SDKClientError(err, err.message);
+          this.logger.error(
+            recordQueryError,
+            `${requestIdPrefix} Error raised during TransactionRecordQuery for ${fileCreateTx.transactionId}`,
+          );
+        }
+      }
+
+      this.logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_EXCEEDED cost: ${transactionFee}`);
+
+      if (error instanceof JsonRpcError) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+      throw sdkClientError;
+    }
   };
 
   /**
