@@ -31,8 +31,9 @@ import { getRequestId, mockData, random20BytesAddress } from './../helpers';
 const registry = new Registry();
 
 import pino from 'pino';
-import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+import { ethers } from 'ethers';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
+import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 const logger = pino();
 const noTransactions = '?transactions=false';
@@ -731,6 +732,12 @@ describe('MirrorNodeClient', async function () {
     expect(firstResult.address).equal(log.address);
     expect(firstResult.contract_id).equal(log.contract_id);
     expect(firstResult.index).equal(log.index);
+  });
+  it('`getContractResultsLogsByAddress` with ZeroAddress ', async () => {
+    const results = await mirrorNodeInstance.getContractResultsLogsByAddress(ethers.ZeroAddress);
+    expect(results).to.exist;
+    expect(results.length).to.eq(0);
+    expect(results).to.deep.equal([]);
   });
 
   it('`getContractCurrentStateByAddressAndSlot`', async () => {

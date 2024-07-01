@@ -63,13 +63,11 @@
     "start:docker": "docker run --name hedera-relay -d -p 7546:7546 ${npm_package_name}:latest",
     "test": "npx lerna run test",
     "openrpctest": "ts-mocha packages/relay/tests/lib/openrpc.spec.ts --exit",
-    "integration:prerequisite": "ts-node packages/server/tests/helpers/prerequisite.ts",
-    "check:node": "ts-node packages/server/tests/helpers/nodeCheck.ts",
     "bump-version": "SEM_VER=${npm_config_semver} SNAPSHOT=${npm_config_snapshot} node scripts/.bump-version.js",
     "prepare": "husky install"
   },
   "dependencies": {
-    "@hashgraph/hedera-local": "^2.24.0",
+    "@hashgraph/hedera-local": "^2.26.2",
     "@open-rpc/schema-utils-js": "^1.16.1",
     "@types/find-config": "^1.0.4",
     "@types/sinon": "^10.0.20",

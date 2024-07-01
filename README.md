@@ -24,7 +24,7 @@ the [JSON RPC Specification](https://playground.open-rpc.org/?schemaUrl=https://
 
 You must have installed
 
-- [node (version 18)](https://nodejs.org/en/about/)
+- [node (version 20)](https://nodejs.org/en/about/)
 - [npm](https://www.npmjs.com/)
 - [pnpm](https://pnpm.io/)
 - [Docker](https://docs.docker.com/engine/reference/commandline/docker/)

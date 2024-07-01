@@ -1,8 +1,8 @@
-/*
+/* -
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,13 @@
  *
  */
 
-import type { TracerType } from '../../constants';
+import { IOpcode } from './IOpcode';
 
-export interface IDebugService {
-  debug_traceTransaction: (
-    transactionIdOrHash: string,
-    tracer: TracerType,
-    tracerConfig: object,
-    requestIdPrefix?: string,
-  ) => Promise<any>;
-  resolveAddress: (address: string, types?: string[], requestIdPrefix?: string) => Promise<string>;
+export interface IOpcodesResponse {
+  address?: string;
+  contract_id?: string;
+  gas?: number;
+  failed?: boolean;
+  return_value?: string;
+  opcodes?: IOpcode[];
 }

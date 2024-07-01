@@ -165,7 +165,7 @@ export const METHODS = {
   debug_traceTransaction: {
     0: {
       required: true,
-      type: 'hex',
+      type: 'hex|transactionId',
     },
     1: {
       required: true,
