@@ -924,7 +924,7 @@
       "result": {
         "name": "The current chain id.",
         "schema": {
-          "$ref": "#/components/schemas/uint"
+          "$ref": "#/components/schemas/int"
         }
       }
     },
@@ -1236,6 +1236,11 @@
         "title": "65 hex encoded bytes",
         "type": "string",
         "pattern": "^0x[0-9a-f]{512}$"
+      },
+      "int": {
+        "title": "decimal value integer",
+        "type": "string",
+        "pattern": "^\\d+$"
       },
       "uint": {
         "title": "hex encoded unsigned integer",
