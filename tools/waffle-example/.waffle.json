@@ -1,0 +1,6 @@
+{
+  "compilerType": "dockerized-solc",
+  "compilerVersion": "0.8.24",
+  "sourceDirectory": "./contracts",
+  "outputDirectory": "./contracts"
+}
