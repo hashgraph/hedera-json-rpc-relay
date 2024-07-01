@@ -41,6 +41,7 @@ import {
   NON_EXISTENT_CONTRACT_ADDRESS,
   WRONG_CONTRACT_ADDRESS,
   ONE_TINYBAR_IN_WEI_HEX,
+  EXAMPLE_CONTRACT_BYTECODE,
 } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
@@ -774,6 +775,20 @@ describe('@ethCall Eth Call spec', async function () {
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect(result).to.equal('0x');
+    });
+
+    it('eth_call to simulate deploying a smart contract (empty/null `to` field)', async function () {
+      const callData = {
+        data: EXAMPLE_CONTRACT_BYTECODE,
+        to: null,
+        from: ACCOUNT_ADDRESS_1,
+      };
+
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(200, { result: EXAMPLE_CONTRACT_BYTECODE });
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.eq(EXAMPLE_CONTRACT_BYTECODE);
     });
   });
 

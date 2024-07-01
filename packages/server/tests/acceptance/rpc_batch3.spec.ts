@@ -156,6 +156,18 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
     });
 
+    it('@release should execute "eth_call" request to simulate deploying a contract (empty/null `to` field)', async function () {
+      const callData = {
+        from: accounts[0].address,
+        to: null,
+        data: basicContractJson.bytecode,
+      };
+      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+      console.log(res);
+
+      expect(res).to.eq(basicContractJson.deployedBytecode);
+    });
+
     it('should fail "eth_call" request without data field', async function () {
       const callData = {
         from: accounts[0].address,
