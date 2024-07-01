@@ -600,7 +600,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
     it('should execute "net_version"', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.NET_VERSION, [], requestId);
-      expect(res).to.be.equal(CHAIN_ID);
+
+      let expectedVersion = CHAIN_ID as string;
+      if (expectedVersion.startsWith('0x')) expectedVersion = parseInt(expectedVersion, 16).toString();
+
+      expect(res).to.be.equal(expectedVersion);
     });
 
     it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
