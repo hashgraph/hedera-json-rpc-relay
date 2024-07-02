@@ -16,7 +16,7 @@ const AssociateHTSTokensForm = ({ signer, isConnected, chain, address }) => {
   }, [chain, address]);
 
   const htsTokenAssociate = useCallback(async () => {
-    const hrcToken = new ethers.Contract(htsTokenAddress, new ethers.utils.Interface(IHRC), signer);
+    const hrcToken = new ethers.Contract(htsTokenAddress, new ethers.Interface(IHRC), signer);
 
     try {
       setIsLoading(true);
