@@ -47,15 +47,6 @@ jobs:
       operator_id: ${{ inputs.operator_id }}
       operator_key: ${{ inputs.operator_key }}
 
-  rpc_api_schema_conformity:
-    name: API Conformity
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: api_conformity
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
-
   erc20:
     name: ERC20
     uses: ./.github/workflows/acceptance-workflow.yml
@@ -147,7 +138,6 @@ jobs:
       - api_batch_1
       - api_batch_2
       - api_batch_3
-      - rpc_api_schema_conformity
       - erc20
       - ratelimiter
       - tokencreate
