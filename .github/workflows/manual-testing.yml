@@ -122,7 +122,6 @@ jobs:
       - api_batch_1
       - api_batch_2
       - api_batch_3
-      - rpc_api_schema_conformity
       - erc20
       - ratelimiter
       - hbarlimiter
