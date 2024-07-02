@@ -26,9 +26,9 @@ function App() {
 
   useEffect(() => {
     if (window.ethereum) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+      const provider = new ethers.BrowserProvider(window.ethereum, 'any');
 
-      setSigner(provider.getSigner());
+      provider.getSigner().then((signer) => setSigner(signer));
 
       window.ethereum.on('accountsChanged', changeConnectedAccount);
       window.ethereum.on('chainChanged', (chainId) => {
@@ -68,7 +68,7 @@ function App() {
           method: 'eth_getBalance',
           params: [accountAddress.toString(), 'latest'],
         });
-        formattedBalance = ethers.utils.formatEther(accountBalance);
+        formattedBalance = ethers.formatEther(accountBalance);
       }
       setBalance(formattedBalance);
     } catch (error) {
@@ -111,12 +111,12 @@ function App() {
   const showAccountIdHandler = useCallback(async () => {
     try {
       const message = address + '_' + Date.now();
-      const msgHash = ethers.utils.hashMessage(message);
-      const msgHashBytes = ethers.utils.arrayify(msgHash);
+      const msgHash = ethers.hashMessage(message);
+      const msgHashBytes = ethers.getBytes(msgHash);
 
       const signature = await signer.signMessage(message);
 
-      const recoveredPubKey = ethers.utils.recoverPublicKey(msgHashBytes, signature);
+      const recoveredPubKey = ethers.SigningKey.recoverPublicKey(msgHashBytes, signature);
       const accountId = recoveredPublicKeyToAccountId(recoveredPubKey);
 
       setAlias(accountId.aliasKey.toStringRaw());
@@ -134,7 +134,7 @@ function App() {
     await tx.wait();
 
     setToBalanceAfterTransfer(
-      ethers.utils.formatEther(
+      ethers.formatEther(
         await window.ethereum.request({
           method: 'eth_getBalance',
           params: [hbarsToAddress, 'latest'],
