@@ -107,13 +107,13 @@ func main() {
     testGetLogs(client, contractAddress, nil)
     testStorageAt(client, contractAddress, "0x0")
     testGetTransactionByHash(client, signedTx.Hash().Hex())
-    testGetTransactionCount(client)
     testGetTransactionReceipt(client, signedTx.Hash().Hex())
     if *wss {
         return;
     }
 
     // https only methods
+    testGetTransactionCount(client)
     testFeeHistory(client, 5, blockNumber, []float64{10, 50, 90})
     testGetAccounts(client)
     testGetBlockTransactionCountByHash(client, blockHash)
