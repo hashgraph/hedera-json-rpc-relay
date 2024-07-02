@@ -4,7 +4,10 @@ const path = require('path');
 const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
 const axios = require('axios');
 const openRpcData = require('../../../../docs/openrpc.json');
+const execApisOpenRpcData = require('../../../../openrpc_exec_apis.json');
 require('dotenv').config();
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
 import { signTransaction } from '../../../relay/tests/helpers';
 import { expect } from 'chai';
 let currentBlockHash;
@@ -34,6 +37,8 @@ const ETHEREUM_NETWORK_SIGNED_TRANSACTION =
 const ETHEREUM_NETWORK_ACCOUNT_HASH = '0x5C41A21F14cFe9808cBEc1d91b55Ba75ed327Eb6';
 const EMPTY_TX_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const NONEXISTENT_TX_HASH = '0x00000000000000000000000000000000000000000000000000000000deadbeef';
+const ajv = new Ajv({ strict: false });
+addFormats(ajv);
 
 let legacyTransaction = {
   chainId: 0x12a,
@@ -204,6 +209,33 @@ function checkResponseFormat(fileName, actualReponse, expectedResponse) {
   return missingKeys;
 }
 
+function findSchema(file) {
+  const schema = execApisOpenRpcData.methods.find((method) => method.name === file)?.result?.schema;
+
+  return schema;
+}
+
+function isResponseValid(schema, response) {
+  const validate = ajv.compile(schema);
+
+  const valid = validate(response.result);
+  expect(validate.errors).to.be.null;
+
+  return valid;
+}
+
+function validateBlockNumber() {
+  const schema = {
+    title: 'hex encoded unsigned integer',
+    type: 'string',
+    pattern: '^0x([1-9a-f]+[0-9a-f]*|0)$',
+  };
+  const validate = ajv.compile(schema);
+  const valid = validate('d76');
+  console.log(valid);
+  console.log(validate.errors);
+}
+
 function extractKeys(obj, prefix = '') {
   let keys = [];
   for (const key in obj) {
@@ -260,7 +292,7 @@ function formatTransactionByHashAndReceiptRequests(fileName, request) {
   return request;
 }
 
-async function processFileContent(file, content) {
+async function processFileContent(directory, file, content) {
   /**
    * Processes a file from the execution apis repo
    * containing test request and response data.
@@ -273,6 +305,9 @@ async function processFileContent(file, content) {
   const modifiedRequest = await checkRequestBody(file, JSON.parse(content.request));
   const response = await sendRequestToRelay(modifiedRequest);
   const missingKeys = checkResponseFormat(file, response, JSON.parse(content.response));
+  const schema = findSchema(directory);
+  const valid = isResponseValid(schema, response);
+  expect(valid).to.be.true;
 
   return missingKeys;
 }
@@ -288,12 +323,11 @@ describe('@api-conformity Ethereum execution apis tests', function () {
   });
   //Reading the directories within the ethereum execution api repo
   let directories = fs.readdirSync(directoryPath);
-
   const relaySupportedMethodNames = openRpcData.methods.map((method) => method.name);
 
   //Filtering in order to use only the tests for methods we support in our relay
   directories = directories.filter((directory) => relaySupportedMethodNames.includes(directory));
-
+  validateBlockNumber();
   for (const directory of directories) {
     const filePath = path.join(directoryPath, directory);
 
@@ -303,7 +337,7 @@ describe('@api-conformity Ethereum execution apis tests', function () {
         it(`Executing for ${directory}`, async () => {
           const data = fs.readFileSync(path.resolve(directoryPath, directory, file));
           const content = splitReqAndRes(data.toString('utf-8'));
-          const missingKeys = await processFileContent(file, content);
+          const missingKeys = await processFileContent(directory, file, content);
           expect(missingKeys).to.be.empty;
         });
       }
