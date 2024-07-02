@@ -22,7 +22,7 @@ import { Block, Log, Receipt, Transaction } from './lib/model';
 import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
 import WebSocketError from './lib/errors/WebSocketError';
 import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
-import { MirrorNodeClient } from './lib/clients';
+import { IContractCallRequest, MirrorNodeClient } from './lib/clients';
 import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
 import { IDebugService } from './lib/services/debugService/IDebugService';
 
@@ -67,7 +67,11 @@ export interface Eth {
 
   coinbase(requestId?: string): JsonRpcError;
 
-  estimateGas(transaction: any, blockParam: string | null, requestId?: string): Promise<string | JsonRpcError>;
+  estimateGas(
+    transaction: IContractCallRequest,
+    blockParam: string | null,
+    requestId?: string,
+  ): Promise<string | JsonRpcError>;
 
   gasPrice(requestId?: string): Promise<string>;
 

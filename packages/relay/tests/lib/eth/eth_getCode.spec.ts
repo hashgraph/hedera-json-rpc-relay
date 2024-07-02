@@ -143,7 +143,7 @@ describe('@ethGetCode using MirrorNode', async function () {
         try {
           await ethImpl.getCode(EthImpl.iHTSAddress, blockParam);
           expect(true).to.eq(false);
-        } catch (error) {
+        } catch (error: any) {
           const expectedError = predefined.UNKNOWN_BLOCK(
             `The value passed is not a valid blockHash/blockNumber/blockTag value: ${blockParam}`,
           );
