@@ -19,7 +19,7 @@
  */
 
 import { Logger } from 'pino';
-import { Registry, Counter } from 'prom-client';
+import { Registry, Counter, Gauge } from 'prom-client';
 
 export default class HbarLimit {
   private enabled: boolean = false;
@@ -29,6 +29,8 @@ export default class HbarLimit {
   private reset: number;
   private logger: Logger;
   private hbarLimitCounter: Counter;
+  private hbarLimitRemainingGauge: Gauge;
+  private hbarShouldLimitCounter: Counter;
   private readonly register: Registry;
 
   constructor(logger: Logger, currentDateNow: number, total: number, duration: number, register: Registry) {
@@ -52,6 +54,26 @@ export default class HbarLimit {
       registers: [register],
       labelNames: ['mode', 'methodName'],
     });
+    this.hbarLimitCounter.inc(0);
+
+    const rateLimiterRemainingGaugeName = 'rpc_relay_hbar_rate_remaining';
+    register.removeSingleMetric(rateLimiterRemainingGaugeName);
+    this.hbarLimitRemainingGauge = new Gauge({
+      name: rateLimiterRemainingGaugeName,
+      help: 'Relay Hbar limit total',
+      registers: [register],
+    });
+    this.hbarLimitRemainingGauge.set(this.remainingBudget);
+
+    const shouldLimitCounterName = 'rpc_relay_hbar_should_limit';
+    register.removeSingleMetric(shouldLimitCounterName);
+    this.hbarShouldLimitCounter = new Counter({
+      name: shouldLimitCounterName,
+      help: 'Relay Hbar should limit counter',
+      registers: [register],
+      labelNames: ['mode', 'methodName'],
+    });
+    this.hbarShouldLimitCounter.inc(0);
   }
 
   /**
@@ -61,6 +83,8 @@ export default class HbarLimit {
     if (!this.enabled) {
       return false;
     }
+    // Track how many times we checked if we should limit
+    this.hbarShouldLimitCounter.inc(1);
 
     if (this.shouldResetLimiter(currentDateNow)) {
       this.resetLimiter(currentDateNow);
@@ -89,6 +113,7 @@ export default class HbarLimit {
       this.resetLimiter(currentDateNow);
     }
     this.remainingBudget -= cost;
+    this.hbarLimitRemainingGauge.set(this.remainingBudget);
   }
 
   /**
