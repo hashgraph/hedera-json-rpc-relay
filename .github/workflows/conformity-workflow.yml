@@ -1,0 +1,66 @@
+name: Conformity Test Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  clone-and-build-execution-apis:
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+
+    steps:
+      - name: Checkout execution-apis repo
+        uses: actions/checkout@v2
+        with:
+          repository: 'ethereum/execution-apis'
+          ref: 'main'
+          path: 'execution-apis'
+
+      - name: Use Node.js TLS 18
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./execution-apis
+
+      - name: Build project
+        run: npm run build
+        working-directory: ./execution-apis
+
+      - name: Copy openrpc.json to current repo
+        run: cp ./execution-apis/openrpc.json ${{ github.workspace }}
+
+      - name: Commit openrpc.json
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add openrpc.json
+          git commit -m "Update openrpc.json" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-test:
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    needs: clone-and-build-execution-apis
+  
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v2
+
+      - name: Use Node.js TLS 18
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run conformity tests
+        run: npm run acceptancetest:rpc_api_schema_conformity
