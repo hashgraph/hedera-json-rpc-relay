@@ -90,5 +90,8 @@ jobs:
           name: openrpc
           path: ./openrpc_exec_apis.json
 
+      - name: List files in dir
+        run: ls -al
+
       - name: Run conformity tests
         run: npm run acceptancetest:rpc_api_schema_conformity
