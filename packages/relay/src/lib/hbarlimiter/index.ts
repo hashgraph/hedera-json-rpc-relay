@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ export default class HbarLimit {
   private logger: Logger;
   private hbarLimitCounter: Counter;
   private hbarLimitRemainingGauge: Gauge;
-  private hbarShouldLimitCounter: Counter;
   private readonly register: Registry;
 
   constructor(logger: Logger, currentDateNow: number, total: number, duration: number, register: Registry) {
@@ -64,16 +63,6 @@ export default class HbarLimit {
       registers: [register],
     });
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
-
-    const shouldLimitCounterName = 'rpc_relay_hbar_should_limit';
-    register.removeSingleMetric(shouldLimitCounterName);
-    this.hbarShouldLimitCounter = new Counter({
-      name: shouldLimitCounterName,
-      help: 'Relay Hbar should limit counter',
-      registers: [register],
-      labelNames: ['mode', 'methodName'],
-    });
-    this.hbarShouldLimitCounter.inc(0);
   }
 
   /**
@@ -83,8 +72,6 @@ export default class HbarLimit {
     if (!this.enabled) {
       return false;
     }
-    // Track how many times we checked if we should limit
-    this.hbarShouldLimitCounter.inc(1);
 
     if (this.shouldResetLimiter(currentDateNow)) {
       this.resetLimiter(currentDateNow);
