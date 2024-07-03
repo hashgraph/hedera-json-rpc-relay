@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
  */
 
 import { Logger } from 'pino';
-import { Registry, Counter } from 'prom-client';
+import { Registry, Counter, Gauge } from 'prom-client';
 
 export default class HbarLimit {
   private enabled: boolean = false;
@@ -29,6 +29,7 @@ export default class HbarLimit {
   private reset: number;
   private logger: Logger;
   private hbarLimitCounter: Counter;
+  private hbarLimitRemainingGauge: Gauge;
   private readonly register: Registry;
 
   constructor(logger: Logger, currentDateNow: number, total: number, duration: number, register: Registry) {
@@ -52,6 +53,16 @@ export default class HbarLimit {
       registers: [register],
       labelNames: ['mode', 'methodName'],
     });
+    this.hbarLimitCounter.inc(0);
+
+    const rateLimiterRemainingGaugeName = 'rpc_relay_hbar_rate_remaining';
+    register.removeSingleMetric(rateLimiterRemainingGaugeName);
+    this.hbarLimitRemainingGauge = new Gauge({
+      name: rateLimiterRemainingGaugeName,
+      help: 'Relay Hbar rate limit remaining budget',
+      registers: [register],
+    });
+    this.hbarLimitRemainingGauge.set(this.remainingBudget);
   }
 
   /**
@@ -89,6 +100,7 @@ export default class HbarLimit {
       this.resetLimiter(currentDateNow);
     }
     this.remainingBudget -= cost;
+    this.hbarLimitRemainingGauge.set(this.remainingBudget);
   }
 
   /**
