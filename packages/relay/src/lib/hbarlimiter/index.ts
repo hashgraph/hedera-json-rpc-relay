@@ -60,7 +60,7 @@ export default class HbarLimit {
     register.removeSingleMetric(rateLimiterRemainingGaugeName);
     this.hbarLimitRemainingGauge = new Gauge({
       name: rateLimiterRemainingGaugeName,
-      help: 'Relay Hbar limit total',
+      help: 'Relay Hbar rate limit remaining budget',
       registers: [register],
     });
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
