@@ -88,7 +88,9 @@ jobs:
         uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
         with:
           name: openrpc
-          path: ./openrpc_exec_apis.json
+      
+      - name: Rename file
+        run: mv openrpc.json openrpc_exec_apis.json
 
       - name: List files in dir
         run: ls -al
