@@ -124,7 +124,7 @@ export class CacheService {
    * @private
    * @returns {boolean} Returns true if Redis caching is enabled, otherwise false.
    */
-  private isRedisEnabled(): boolean {
+  public isRedisEnabled(): boolean {
     const redisEnabled = process.env.REDIS_ENABLED && process.env.REDIS_ENABLED === 'true';
     const redisUrlValid = process.env.REDIS_URL && process.env.REDIS_URL !== '';
 
