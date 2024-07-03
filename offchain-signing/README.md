@@ -1,4 +1,4 @@
-# Off-chain and offline account delete transaction signing
+# Off-chain and offline account deletion transaction signing
 
 This project gives us an ability to sign an AccountDeleteTransaction completely off-chain and offline that will be executed afterwards by another executor. One of the main application of this might be the reseting of an accounts nonce to allow flows that require initial nonces such as deterministic contract address.
 
