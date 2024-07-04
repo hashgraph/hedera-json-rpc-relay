@@ -27,12 +27,12 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
       setDeployContractMsg('Loading...');
 
       const contractFactory = new ethers.ContractFactory(Greeter.abi, Greeter.bytecode, signer);
-      const contract = await contractFactory.deploy('initial_msg');
-      const receipt = await contract.deployTransaction.wait();
-      setContractAddress(receipt.contractAddress);
+      const contract = await contractFactory.deploy('initial_msg', { gasLimit: 1_000_000 });
+      await contract.waitForDeployment();
+      setContractAddress(contract.target);
 
       setIsLoading(false);
-      setDeployContractMsg('Addr: ' + receipt.contractAddress);
+      setDeployContractMsg('Addr: ' + contract.target);
     } catch (error) {
       console.error(error.message);
       setDeployContractMsg(null);
@@ -65,7 +65,7 @@ const ContractInteractions = ({ signer, isConnected, chain, address }) => {
       setContractCallUpdateMsg('Loading...');
 
       const contract = new ethers.Contract(contractAddress, Greeter.abi, signer);
-      const tx = await contract.setGreeting(contractCallUpdateMsgInput);
+      const tx = await contract.setGreeting(contractCallUpdateMsgInput, { gasLimit: 1_000_000 });
       await tx.wait();
 
       setContractCallUpdateMsg('Updated text: ' + contractCallUpdateMsgInput);

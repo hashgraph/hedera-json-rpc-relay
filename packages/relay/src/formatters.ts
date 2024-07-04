@@ -168,8 +168,8 @@ const formatContractResult = (cr: any) => {
     hash: cr.hash.substring(0, 66),
     input: cr.function_parameters,
     nonce: nanOrNumberTo0x(cr.nonce),
-    r: cr.r === null ? '0x0' : cr.r.substring(0, 66),
-    s: cr.s === null ? '0x0' : cr.s.substring(0, 66),
+    r: cr.r === null ? '0x0' : stripLeadingZeroForSignatures(cr.r.substring(0, 66)),
+    s: cr.s === null ? '0x0' : stripLeadingZeroForSignatures(cr.s.substring(0, 66)),
     to: cr.to?.substring(0, 42),
     transactionIndex: nullableNumberTo0x(cr.transaction_index),
     type: cr.type === null ? '0x0' : nanOrNumberTo0x(cr.type),
@@ -219,6 +219,13 @@ const prepend0x = (input: string): string => {
 const trimPrecedingZeros = (input: string) => {
   return parseInt(input, 16).toString(16);
 };
+
+function stripLeadingZeroForSignatures(signature: string) {
+  const remove0x = (signature) => (signature.startsWith('0x') ? signature.substring(2) : signature);
+  const remove0 = (signature) => (signature.startsWith('0') ? signature.substring(1) : signature);
+
+  return '0x' + [remove0x, remove0].reduce((acc, fn) => fn(acc), signature);
+}
 
 const numberTo0x = (input: number | BigNumber | bigint): string => {
   return EMPTY_HEX + input.toString(16);
@@ -296,6 +303,7 @@ export {
   toNullIfEmptyHex,
   generateRandomHex,
   trimPrecedingZeros,
+  stripLeadingZeroForSignatures,
   weibarHexToTinyBarInt,
   stringToHex,
   strip0x,

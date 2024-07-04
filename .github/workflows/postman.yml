@@ -10,7 +10,7 @@ on:
 concurrency:
   group: pr-checks-${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
-    
+
 jobs:
   setup-local-hedera:
     name: Postman Endpoint Tests
@@ -29,7 +29,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Checkout repo
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
@@ -46,13 +46,19 @@ jobs:
       - name: Build Typescript
         run: npx lerna run build
 
-      - name: Run RPC Server
-        run: npm run integration:prerequisite &
+      - name: Start the hedera local node
+        run: npx hedera start -d
+
+      - name: Stop the local node's relay
+        run: docker stop json-rpc-relay
+
+      - name: Start the local relay
+        run: npm run start &
 
       - name: Install newman
         run: npm install -g newman
 
-      - name: Run the newman script        
+      - name: Run the newman script
         uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
         with:
           max_attempts: 10

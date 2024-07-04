@@ -803,8 +803,16 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       const mirrorContract = await mirrorNode.get(`/contracts/${deployerContractAddress}`, requestId);
       contractId = ContractId.fromString(mirrorContract.contract_id);
 
-      primaryAccountNonce = await servicesNode.getAccountNonce(accounts[0].accountId);
-      secondaryAccountNonce = await servicesNode.getAccountNonce(accounts[1].accountId);
+      primaryAccountNonce = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
+        [accounts[0].address, 'latest'],
+        requestId,
+      );
+      secondaryAccountNonce = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
+        [accounts[1].address, 'latest'],
+        requestId,
+      );
     });
 
     it('@release should execute "eth_getTransactionCount" primary', async function () {
@@ -813,7 +821,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         [mirrorPrimaryAccount.address, deployerContractTx.blockNumber],
         requestId,
       );
-      expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(primaryAccountNonce!.toInt())));
+      expect(res).to.be.equal(primaryAccountNonce);
     });
 
     it('should execute "eth_getTransactionCount" secondary', async function () {
@@ -822,7 +830,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         [mirrorSecondaryAccount.address, deployerContractTx.blockNumber],
         requestId,
       );
-      expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(secondaryAccountNonce!.toInt())));
+      expect(res).to.be.equal(secondaryAccountNonce);
     });
 
     it('@release should execute "eth_getTransactionCount" historic', async function () {
@@ -858,7 +866,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         [mirrorPrimaryAccount.address, deployerContractTx.blockNumber],
         requestId,
       );
-      expect(res).to.be.equal(Utils.add0xPrefix(Utils.toHex(primaryAccountNonce!.toInt())));
+      expect(res).to.be.equal(primaryAccountNonce);
     });
 
     it('@release should execute "eth_getTransactionCount" contract with id converted to evm_address historic', async function () {

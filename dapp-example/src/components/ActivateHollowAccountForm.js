@@ -26,7 +26,7 @@ const ActivateHollowAccountForm = ({ signer, isConnected, chain, address }) => {
       const tx = await contract.transferTo(hollowAccountAddress, 3_000_000_000, { gasLimit: 1_000_000 });
       const receipt = await tx.wait();
 
-      setActivateHollowAccountMsg(receipt.events[0].event == 'Transferred' ? 'Done' : 'There was an error.');
+      setActivateHollowAccountMsg(receipt.logs[0].fragment.name == 'Transferred' ? 'Done' : 'There was an error.');
       setIsLoading(false);
     } catch (e) {
       console.error(e);

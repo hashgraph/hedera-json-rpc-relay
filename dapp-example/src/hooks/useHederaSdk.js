@@ -6,7 +6,7 @@ const client = Client.forTestnet();
 
 const useHederaSdk = () => {
   const recoveredPublicKeyToAccountId = (publicKey) => {
-    const compressed = ethers.utils.computePublicKey(ethers.utils.arrayify(publicKey), true);
+    const compressed = ethers.SigningKey.computePublicKey(ethers.getBytes(publicKey), true);
 
     return PublicKey.fromString(compressed).toAccountId(0, 0);
   };

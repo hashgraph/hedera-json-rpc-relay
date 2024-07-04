@@ -23,6 +23,9 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
+import { predefined } from '@hashgraph/json-rpc-relay';
+import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { ContractId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 // Assertions from local resources
@@ -35,15 +38,10 @@ import storageContractJson from '../contracts/Storage.json';
 import TokenCreateJson from '../contracts/TokenCreateContract.json';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 
-// Errors from local resources
-import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
-
 // Helper functions/constants from local resources
-import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
-import { numberTo0x } from '../../../../packages/relay/src/formatters';
 import constants from '../../tests/helpers/constants';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
@@ -195,7 +193,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         ],
         requestId,
       );
-      const gasPriceDeviation = parseFloat((EthImpl.gasTxBaseCost * 0.2).toString());
+      const gasPriceDeviation = parseFloat((Number(EthImpl.gasTxBaseCost) * 0.2).toString());
       expect(res).to.contain('0x');
       expect(parseInt(res)).to.be.lessThan(Number(EthImpl.gasTxBaseCost) * (1 + gasPriceDeviation));
       expect(parseInt(res)).to.be.greaterThan(Number(EthImpl.gasTxBaseCost) * (1 - gasPriceDeviation));
@@ -600,7 +598,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
     it('should execute "net_version"', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.NET_VERSION, [], requestId);
-      expect(res).to.be.equal(CHAIN_ID);
+
+      let expectedVersion = CHAIN_ID as string;
+      if (expectedVersion.startsWith('0x')) expectedVersion = parseInt(expectedVersion, 16).toString();
+
+      expect(res).to.be.equal(expectedVersion);
     });
 
     it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
@@ -789,7 +791,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.eq(EthImpl.emptyHex);
     });
 
-    it('should not return contract bytecode after sefldestruct', async function () {
+    // Issue # 2619 https://github.com/hashgraph/hedera-json-rpc-relay/issues/2619
+    // Refactor to consider HIP-868
+    xit('should not return contract bytecode after sefldestruct', async function () {
       const bytecodeBefore = await relay.call('eth_getCode', [basicContractAddress, 'latest'], requestId);
 
       // @ts-ignore

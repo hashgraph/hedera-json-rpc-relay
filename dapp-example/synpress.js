@@ -1,6 +1,7 @@
 const { defineConfig } = require('cypress');
 const path = require('path');
 const synpressPath = path.dirname(require.resolve('@synthetixio/synpress'));
+const preprocessor = require('@cypress/webpack-batteries-included-preprocessor');
 
 module.exports = defineConfig({
   userAgent: 'synpress',
@@ -25,7 +26,12 @@ module.exports = defineConfig({
     openMode: 0,
   },
   e2e: {
-    setupNodeEvents: require(`${synpressPath}/plugins/index`),
+    setupNodeEvents: (on, config) => {
+      const { defaultOptions } = preprocessor;
+      defaultOptions.webpackOptions.module.rules[1].exclude = [/browserslist/];
+      on('file:preprocessor', preprocessor(defaultOptions));
+      require(`${synpressPath}/plugins/index`)(on, config);
+    },
     baseUrl: 'http://localhost:3000',
     specPattern: 'tests/e2e/specs/**/*.{js,jsx,ts,tsx}',
     supportFile: 'tests/e2e/support.js',
