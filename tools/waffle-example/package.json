@@ -1,7 +1,7 @@
 {
   "name": "waffle-project",
   "scripts": {
-    "build": "waffle waffle.json",
+    "build": "waffle",
     "test": "NODE_ENV=test mocha --timeout 100000 --no-warnings"
   },
   "type": "commonjs",
