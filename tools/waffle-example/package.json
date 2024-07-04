@@ -1,19 +1,14 @@
 {
   "name": "waffle-project",
   "scripts": {
-    "build": "waffle .waffle.json",
-    "test": "NODE_ENV=test mocha --timeout 100000"
+    "build": "waffle waffle.json",
+    "test": "NODE_ENV=test mocha --timeout 100000 --no-warnings"
   },
-  "type": "module",
+  "type": "commonjs",
   "devDependencies": {
-    "@hashgraph/hedera-local": "^2.22.0",
     "chai": "^5.1.1",
     "dotenv": "^16.4.5",
     "ethereum-waffle": "^4.0.10",
     "mocha": "^10.5.2"
-  },
-  "dependencies": {
-    "@hashgraph/smart-contracts": "github:hashgraph/hedera-smart-contracts#11c5017c1867b3f31012163cdac0aafa4a30b60a",
-    "@openzeppelin/contracts": "^4.6.0"
   }
 }

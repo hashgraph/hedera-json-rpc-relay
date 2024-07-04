@@ -23,7 +23,7 @@ import dotenv from 'dotenv';
 import { providers, Wallet } from 'ethers';
 import { deployContract, solidity } from 'ethereum-waffle';
 
-import SampleContract from '../contracts/SampleContract.json' assert { type: "json" };
+import SampleContract from '../build/SampleContract.json' assert { type: "json" };
 
 dotenv.config();
 const { JsonRpcProvider } = providers;

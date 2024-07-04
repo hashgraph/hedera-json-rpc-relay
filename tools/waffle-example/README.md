@@ -12,21 +12,13 @@ RELAY_ENDPOINT=
 ```
 
  - `OPERATOR_PRIVATE_KEY` is your account ECDSA hex-encoded private key.
- - `RELAY_ENDPOINT` is a path to your JSON RPC Api. `https://testnet.hashio.io/api` for testnet.
-
-## Prerequisites
-
-This repository already contains the artifcats of the test Smart Contract.
-In order to recreate them on your own you can run script:
-```shell
-npm run build
-```
-It uses dockerized compiler so make sure to start the [Docker](https://www.google.com/search?client=safari&rls=en&q=Docker&ie=UTF-8&oe=UTF-8) first.
+ - `RELAY_ENDPOINT` is a path to your JSON RPC Api. `https://testnet.hashio.io/api` for testnet. Remember to start your Hedera local node if you want to use the http://localhost:7546 endpoint.
 
 ## Setup & Install
 
 In the project directory:
 1. Run `npm install`
+2. Run `npm run build`
 2. Run `npm run test`
 
 # Waffle
