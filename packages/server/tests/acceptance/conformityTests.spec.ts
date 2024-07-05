@@ -4,7 +4,6 @@ const path = require('path');
 const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
 const axios = require('axios');
 const openRpcData = require('../../../../docs/openrpc.json');
-const execApisOpenRpcData = require('../../../../openrpc_exec_apis.json');
 require('dotenv').config();
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
@@ -210,6 +209,7 @@ function checkResponseFormat(fileName, actualReponse, expectedResponse) {
 }
 
 function findSchema(file) {
+  const execApisOpenRpcData = require('../../../../openrpc_exec_apis.json');
   const schema = execApisOpenRpcData.methods.find((method) => method.name === file)?.result?.schema;
 
   return schema;
