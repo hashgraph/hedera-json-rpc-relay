@@ -24,7 +24,7 @@ import { hexToBytes, utf8ToBytes, bytesToHex } from '@ethereumjs/util';
 
 const byteSize = 256;
 
-describe.only('bloom', () => {
+describe('bloom', () => {
   it('should initialize without params', () => {
     const b = new Bloom();
     assert.deepEqual(b.bitvector, new Uint8Array(byteSize), 'should be empty');
