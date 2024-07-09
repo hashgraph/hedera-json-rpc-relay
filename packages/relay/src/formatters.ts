@@ -156,7 +156,7 @@ const formatContractResult = (cr: any) => {
     cr.gas_price === null || cr.gas_price === '0x'
       ? '0x0'
       : isHex(cr.gas_price)
-      ? cr.gas_price
+      ? numberTo0x(BigInt(cr.gas_price) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF))
       : nanOrNumberTo0x(cr.gas_price);
 
   const commonFields = {

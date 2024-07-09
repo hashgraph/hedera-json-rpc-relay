@@ -591,7 +591,7 @@ export const DEFAULT_TRANSACTION = {
   chainId: '0x12a',
   from: `${defaultEvmAddress}`,
   gas: '0x7b',
-  gasPrice: '0x4a817c80',
+  gasPrice: '0xad78ebc5ac620000',
   hash: DEFAULT_TX_HASH,
   input: '0x0707',
   maxFeePerGas: null,
