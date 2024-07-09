@@ -54,6 +54,7 @@ const INVALID_REQUEST = 'INVALID REQUEST';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';
 const responseSuccessStatusCode = '200';
 const METRIC_HISTOGRAM_NAME = 'rpc_relay_method_result';
+const BATCH_REQUEST_METHOD_NAME = 'batch_request';
 
 export default class KoaJsonRpc {
   private readonly registry: { [key: string]: (params?: any) => Promise<any> };
@@ -167,10 +168,10 @@ export default class KoaJsonRpc {
     }
 
     const response: any[] = [];
+    ctx.state.methodName = BATCH_REQUEST_METHOD_NAME;
 
     // we do the requests in parallel to save time, but we need to keep track of the order of the responses (since the id might be optional)
     const promises: Promise<any>[] = body.map(async (item: any) => {
-      ctx.state.methodName = item.method;
       const startTime = Date.now();
       return this.getRequestResult(item, ctx.ip).then((res) => {
         const ms = Date.now() - startTime;
