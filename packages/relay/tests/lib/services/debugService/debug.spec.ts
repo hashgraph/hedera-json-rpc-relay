@@ -19,6 +19,7 @@
  */
 
 import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import path from 'path';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
@@ -32,7 +33,6 @@ import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { CommonService } from '../../../../src/lib/services/ethService';
-import chaiAsPromised from 'chai-as-promised';
 import { IOpcodesResponse } from '../../../../src/lib/clients/models/IOpcodesResponse';
 import { strip0x } from '../../../../src/formatters';
 
