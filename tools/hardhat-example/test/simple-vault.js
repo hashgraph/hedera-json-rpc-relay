@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay - Hardhat Example
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,30 +35,37 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
   let htsTokenContract;
 
   const initialTotalSupply = 2 ** 50;
-  const htsSystemContractAddress = "0x0000000000000000000000000000000000000167";
-  const exchangeRateSystemContractAddress = "0x0000000000000000000000000000000000000168";
+  const htsSystemContractAddress = '0x0000000000000000000000000000000000000167';
+  const exchangeRateSystemContractAddress = '0x0000000000000000000000000000000000000168';
 
   let htsSystemContract;
   let exchangeRateSystemContract;
 
   before(async function () {
-
-    if (hre.network.name !== "hardhat") {
-      this.skip();  // Skip all tests in this script since only the hardhat local node supports the hardhat_setCode method
+    if (hre.network.name !== 'hardhat') {
+      this.skip(); // Skip all tests in this script since only the hardhat local node supports the hardhat_setCode method
     }
 
     // - - - - - DEPLOY REQUISITE SYSTEM CONTRACT MOCKS - - - - -
-    const HtsSystemContractMockFactory = await ethers.getContractFactory("HtsSystemContractMock");
+    const HtsSystemContractMockFactory = await ethers.getContractFactory('HtsSystemContractMock');
     const HtsSystemContractMock = await HtsSystemContractMockFactory.deploy();
-    const htsSystemContractBytecode = await hre.network.provider.send("eth_getCode", [HtsSystemContractMock.target,]);
-    await hre.network.provider.send("hardhat_setCode", [htsSystemContractAddress, htsSystemContractBytecode]);
-    htsSystemContract = await hre.ethers.getContractAt("HtsSystemContractMock", htsSystemContractAddress);
+    const htsSystemContractBytecode = await hre.network.provider.send('eth_getCode', [HtsSystemContractMock.target]);
+    await hre.network.provider.send('hardhat_setCode', [htsSystemContractAddress, htsSystemContractBytecode]);
+    htsSystemContract = await hre.ethers.getContractAt('HtsSystemContractMock', htsSystemContractAddress);
 
-    const ExchangeRatePrecompileMockFactory = await ethers.getContractFactory("ExchangeRatePrecompileMock");
+    const ExchangeRatePrecompileMockFactory = await ethers.getContractFactory('ExchangeRatePrecompileMock');
     const ExchangeRatePrecompileMock = await ExchangeRatePrecompileMockFactory.deploy();
-    const exchangeRatePrecompileMockBytecode = await hre.network.provider.send("eth_getCode", [ExchangeRatePrecompileMock.target,]);
-    await hre.network.provider.send("hardhat_setCode", [exchangeRateSystemContractAddress, exchangeRatePrecompileMockBytecode]);
-    exchangeRateSystemContract = await hre.ethers.getContractAt("ExchangeRatePrecompileMock", exchangeRateSystemContractAddress);
+    const exchangeRatePrecompileMockBytecode = await hre.network.provider.send('eth_getCode', [
+      ExchangeRatePrecompileMock.target,
+    ]);
+    await hre.network.provider.send('hardhat_setCode', [
+      exchangeRateSystemContractAddress,
+      exchangeRatePrecompileMockBytecode,
+    ]);
+    exchangeRateSystemContract = await hre.ethers.getContractAt(
+      'ExchangeRatePrecompileMock',
+      exchangeRateSystemContractAddress,
+    );
 
     await exchangeRateSystemContract.updateRate(1e7);
 
@@ -70,10 +77,10 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
     const decimals = 8;
 
     const token = {
-      name: "Token A",
-      symbol: "TKNA",
+      name: 'Token A',
+      symbol: 'TKNA',
       treasury: deployerAddress,
-      memo: "",
+      memo: '',
       tokenSupplyType: false,
       maxSupply: initialTotalSupply,
       freezeDefault: false,
@@ -81,13 +88,15 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
       expiry: {
         second: 0,
         autoRenewAccount: deployerAddress,
-        autoRenewPeriod: 0
-      }
+        autoRenewPeriod: 0,
+      },
     };
 
     // - - - - - DEPLOY HTS Token via direct EOA call to HTS System Contract Mock - - - - -
 
-    const createTokenExpectedResult = await htsSystemContract.connect(deployer).createFungibleToken.staticCall(token, initialTotalSupply, decimals);
+    const createTokenExpectedResult = await htsSystemContract
+      .connect(deployer)
+      .createFungibleToken.staticCall(token, initialTotalSupply, decimals);
     const factoryAddress = htsSystemContract.target;
     const factoryNonce = await ethers.provider.getTransactionCount(factoryAddress);
     const computedTokenAddress = ethers.getCreateAddress({ from: factoryAddress, nonce: factoryNonce });
@@ -95,25 +104,27 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
 
     expect(computedTokenAddress).to.be.eq(expectedTokenAddress);
 
-    const factoryNonceInitial = await ethers.provider.getTransactionCount(htsSystemContractAddress)
+    const factoryNonceInitial = await ethers.provider.getTransactionCount(htsSystemContractAddress);
 
-    const createTokenTx = await htsSystemContract.connect(deployer).createFungibleToken(token, initialTotalSupply, decimals);
+    const createTokenTx = await htsSystemContract
+      .connect(deployer)
+      .createFungibleToken(token, initialTotalSupply, decimals);
     const createTokenRc = await createTokenTx.wait();
-    htsAddress = createTokenRc.logs[1].args.token
+    htsAddress = createTokenRc.logs[1].args.token;
 
-    const factoryNonceFinal = await ethers.provider.getTransactionCount(htsSystemContractAddress)
+    const factoryNonceFinal = await ethers.provider.getTransactionCount(htsSystemContractAddress);
     expect(factoryNonceInitial).to.be.eq(factoryNonceFinal - 1);
-    expect(expectedTokenAddress).to.eq(htsAddress)
+    expect(expectedTokenAddress).to.eq(htsAddress);
 
-    htsTokenContract = await hre.ethers.getContractAt("HederaFungibleToken", htsAddress);
+    htsTokenContract = await hre.ethers.getContractAt('HederaFungibleToken', htsAddress);
 
-    const totalSupply = await htsTokenContract.totalSupply()
-    const deployerBalance = await htsTokenContract.balanceOf(deployerAddress)
+    const totalSupply = await htsTokenContract.totalSupply();
+    const deployerBalance = await htsTokenContract.balanceOf(deployerAddress);
 
     expect(totalSupply).to.be.eq(initialTotalSupply);
     expect(deployerBalance).to.be.eq(initialTotalSupply);
 
-    const SimpleVaultFactory = await ethers.getContractFactory("SimpleVault");
+    const SimpleVaultFactory = await ethers.getContractFactory('SimpleVault');
     simpleVault = await SimpleVaultFactory.deploy();
     await simpleVault.deploymentTransaction().wait();
 
@@ -125,7 +136,7 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
 
   it('should be able to deploy HTS token via proxy', async function () {
     // - - - - - DEPLOY HTS Token via Proxy - - - - -
-    const ProxyToHtsMock = await ethers.getContractFactory("ProxyToHtsMock");
+    const ProxyToHtsMock = await ethers.getContractFactory('ProxyToHtsMock');
     const proxyToHtsMock = await ProxyToHtsMock.deploy();
     await proxyToHtsMock.deploymentTransaction().wait();
 
@@ -133,7 +144,7 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
     const createTokenViaProxyRc = await createTokenViaProxyTx.wait();
 
     const htsTokenAddress = topicToAddress(createTokenViaProxyRc.logs[1].topics[1]);
-    const htsTokenByProxy = await hre.ethers.getContractAt("HederaFungibleToken", htsTokenAddress);
+    const htsTokenByProxy = await hre.ethers.getContractAt('HederaFungibleToken', htsTokenAddress);
 
     const balanceOfProxy = await htsTokenByProxy.balanceOf(proxyToHtsMock.target);
     const totalSupply = await htsTokenByProxy.totalSupply();
@@ -148,10 +159,9 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
 
     expect(0).to.be.eq(balanceOfProxyFinal);
     expect(totalSupply).to.be.eq(balanceOfDeployerFinal);
-  })
+  });
 
   it('should be able to deposit and withdraw to and from the vault', async function () {
-
     const depositAmount = 100n;
 
     const vaultInitialBalance = await htsTokenContract.balanceOf(simpleVault.target);
@@ -162,7 +172,7 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
     await htsTokenContract.connect(deployer).approve(simpleVault.target, depositAmount);
 
     await simpleVault.connect(deployer).deposit(htsAddress, depositAmount, {
-      value: valueForDeposit
+      value: valueForDeposit,
     });
 
     const vaultBalanceAfterDeposit = await htsTokenContract.balanceOf(simpleVault.target);
@@ -176,7 +186,7 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
     const valueForWithdraw = await simpleVault.getCentsInTinybar.staticCall(1);
 
     await simpleVault.connect(deployer).withdraw(htsAddress, withdrawAmount, {
-      value: valueForWithdraw
+      value: valueForWithdraw,
     });
 
     const vaultBalanceAfterWithdraw = await htsTokenContract.balanceOf(simpleVault.target);
@@ -184,7 +194,5 @@ describe('Test SimpleVault using the HTS System Contract Mock', function () {
 
     expect(vaultBalanceAfterWithdraw).to.be.eq(vaultBalanceAfterDeposit - withdrawAmount);
     expect(deployerBalanceAfterWithdraw).to.be.eq(deployerBalanceAfterDeposit + withdrawAmount);
-
   });
-
 });
