@@ -60,6 +60,27 @@ export interface IContractLogsResultsParams {
   topic3?: string | string[];
 }
 
+export interface IContractCallRequest {
+  block?: string;
+  estimate?: boolean;
+  from?: string;
+  to?: string | null;
+  gas?: number | string;
+  gasPrice?: number | string;
+  value?: number | string | null;
+  data?: string | null;
+  input?: string;
+}
+
+export interface IContractCallResponse {
+  result?: string;
+  errorMessage?: string;
+  statusCode?: number;
+  _status?: {
+    messages: Array<{ message: string; detail: string; data: string }>;
+  };
+}
+
 export class MirrorNodeClient {
   private static GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
   private static GET_BALANCE_ENDPOINT = 'balances';
@@ -1020,7 +1041,15 @@ export class MirrorNodeClient {
     return this.get(`${apiEndpoint}${queryParams}`, MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT, requestIdPrefix);
   }
 
-  public async postContractCall(callData: string, requestIdPrefix?: string) {
+  /**
+   * Send a contract call request to mirror node
+   * @param callData {IContractCallRequest} contract call request data
+   * @param requestIdPrefix {string} optional request id prefix
+   */
+  public async postContractCall(
+    callData: IContractCallRequest,
+    requestIdPrefix?: string,
+  ): Promise<IContractCallResponse | null> {
     return this.post(
       MirrorNodeClient.CONTRACT_CALL_ENDPOINT,
       callData,
