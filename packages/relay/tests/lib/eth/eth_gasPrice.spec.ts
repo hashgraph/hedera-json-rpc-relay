@@ -30,6 +30,7 @@ import { DEFAULT_NETWORK_FEES, NOT_FOUND_RES } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import { generateEthTestEnv } from './eth-helpers';
+import { toHex } from '../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -88,6 +89,60 @@ describe('@ethGasPrice Gas Price spec', async function () {
       restMock.onGet(`network/fees`).reply(200, partialNetworkFees);
 
       await RelayAssertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl);
+    });
+
+    it('eth_gasPrice with GAS_PRICE_PERCENTAGE_BUFFER set to 10%', async function () {
+      const GAS_PRICE_PERCENTAGE_BUFFER = '10';
+
+      const initialGasPrice = await ethImpl.gasPrice();
+      process.env.GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER;
+
+      await cacheService.clear();
+
+      const gasPriceWithBuffer = await ethImpl.gasPrice();
+      process.env.GAS_PRICE_PERCENTAGE_BUFFER = '0';
+
+      const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);
+      const expectedGasPriceWithBuffer = toHex(
+        Number(expectedInitialGasPrice) +
+          Math.round(
+            (Number(expectedInitialGasPrice) / constants.TINYBAR_TO_WEIBAR_COEF) *
+              (Number(GAS_PRICE_PERCENTAGE_BUFFER || 0) / 100),
+          ) *
+            constants.TINYBAR_TO_WEIBAR_COEF,
+      );
+
+      expect(expectedInitialGasPrice).to.not.equal(expectedGasPriceWithBuffer);
+      expect(initialGasPrice).to.not.equal(gasPriceWithBuffer);
+      expect(initialGasPrice).to.equal(expectedInitialGasPrice);
+      expect(gasPriceWithBuffer).to.equal(expectedGasPriceWithBuffer);
+    });
+
+    it('eth_gasPrice with GAS_PRICE_PERCENTAGE_BUFFER set to floating % that results in floating number for buffered gas price', async function () {
+      const GAS_PRICE_PERCENTAGE_BUFFER = '10.25';
+
+      const initialGasPrice = await ethImpl.gasPrice();
+      process.env.GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER;
+
+      await cacheService.clear();
+
+      const gasPriceWithBuffer = await ethImpl.gasPrice();
+      process.env.GAS_PRICE_PERCENTAGE_BUFFER = '0';
+
+      const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);
+      const expectedGasPriceWithBuffer = toHex(
+        Number(expectedInitialGasPrice) +
+          Math.round(
+            (Number(expectedInitialGasPrice) / constants.TINYBAR_TO_WEIBAR_COEF) *
+              (Number(GAS_PRICE_PERCENTAGE_BUFFER) / 100),
+          ) *
+            constants.TINYBAR_TO_WEIBAR_COEF,
+      );
+
+      expect(expectedInitialGasPrice).to.not.equal(expectedGasPriceWithBuffer);
+      expect(initialGasPrice).to.not.equal(gasPriceWithBuffer);
+      expect(initialGasPrice).to.equal(expectedInitialGasPrice);
+      expect(gasPriceWithBuffer).to.equal(expectedGasPriceWithBuffer);
     });
 
     describe('eth_gasPrice not found', async function () {

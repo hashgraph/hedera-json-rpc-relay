@@ -730,6 +730,19 @@ export class EthImpl implements Eth {
 
       if (!gasPrice) {
         gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix);
+
+        // converting to tinybar and afterward to weibar again is needed
+        // in order to handle the possibility of an invalid float number being calculated as a gas price
+        // e.g.
+        //   current gas price = 126
+        //   buffer = 10%
+        //   buffered gas price = 126 + 12.6 = 138.6 <--- invalid tinybars
+        gasPrice +=
+          Math.round(
+            (gasPrice / constants.TINYBAR_TO_WEIBAR_COEF) *
+              (Number(process.env.GAS_PRICE_PERCENTAGE_BUFFER || 0) / 100),
+          ) * constants.TINYBAR_TO_WEIBAR_COEF;
+
         this.cacheService.set(
           constants.CACHE_KEY.GAS_PRICE,
           gasPrice,
