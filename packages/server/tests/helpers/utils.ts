@@ -428,25 +428,42 @@ export class Utils {
    */
   static difference<T extends number | string | object | object[]>(after: T, before: T): T {
     if (Array.isArray(after) && Array.isArray(before)) {
-      return after.map((item: object, index: number) => this.difference(item, before[index])) as T;
+      return this.arrayDifference(after, before);
     } else if (typeof after === 'object' && typeof before === 'object') {
-      const diff = Object.assign({}, after);
-      for (const key of Object.keys(after)) {
-        if (!(key in before)) {
-          throw new Error(`Mismatched properties: ${key} is not present in both objects`);
-        }
-        diff[key] = this.difference(after[key], before[key]);
-      }
-      return diff as T;
+      return this.objectDifference(after, before);
     } else if (typeof after === 'number' && typeof before === 'number') {
       return (after - before) as T;
     } else if (typeof after === 'string' && typeof before === 'string') {
       if (after !== before) {
         throw new Error(`Mismatched values: ${after} is not equal to ${before}`);
       }
-      return after as T;
     } else {
       throw new Error('Invalid input: both parameters must be objects or arrays of objects');
     }
+  }
+
+  /**
+   * Calculates the difference between two objects
+   * @param after
+   * @param before
+   */
+  private static objectDifference<T extends object>(after: T, before: T): T {
+    const diff = { ...after };
+    for (const key of Object.keys(after)) {
+      if (!(key in before)) {
+        throw new Error(`Mismatched properties: ${key} is not present in both objects`);
+      }
+      diff[key] = this.difference(after[key], before[key]);
+    }
+    return diff as T;
+  }
+
+  /**
+   * Calculates the difference between two arrays of objects
+   * @param after
+   * @param before
+   */
+  private static arrayDifference<T extends object[]>(after: T, before: T): T {
+    return after.map((item: object, index: number) => this.difference(item, before[index])) as T;
   }
 }
