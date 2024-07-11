@@ -46,6 +46,7 @@ import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
 import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
+import { GCProfiler } from 'node:v8';
 
 chai.use(chaiAsPromised);
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -91,6 +92,11 @@ describe('RPC Server Acceptance Tests', function () {
   global.socketServer = socketServer;
   global.logger = logger;
   global.initialBalance = INITIAL_BALANCE;
+
+  // leak detection middleware
+  if (process.env.MEMWATCH_ENABLED) {
+    Utils.captureMemoryLeaks(new GCProfiler());
+  }
 
   before(async () => {
     // configuration details

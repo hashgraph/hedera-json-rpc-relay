@@ -18,34 +18,49 @@
  *
  */
 
-import Axios from 'axios';
+import Axios, { AxiosInstance } from 'axios';
 import { expect } from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';
+import { Server } from 'node:http';
+dotenv.config({ path: path.resolve(__dirname, './test.env') });
+
 import Assertions from '../helpers/assertions';
 import app from '../../src/server';
 import { Validator } from '../../src/validator';
 import RelayCalls from '../../tests/helpers/constants';
 import * as Constants from '../../src/validator/constants';
-dotenv.config({ path: path.resolve(__dirname, './test.env') });
+import { Utils } from '../helpers/utils';
+import { GCProfiler } from 'node:v8';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 
-before(function () {
-  this.timeout(60 * 1000);
-  this.testServer = app.listen(process.env.E2E_SERVER_PORT);
-  this.testClient = BaseTest.createTestClient();
-});
+// leak detection middleware
+if (process.env.MEMWATCH_ENABLED) {
+  Utils.captureMemoryLeaks(new GCProfiler());
+}
 
-after(function () {
-  this.testServer.close();
-});
+describe('RPC Server', function () {
+  let testServer: Server;
+  let testClient: AxiosInstance;
 
-describe('RPC Server', async function () {
+  before(function () {
+    testServer = app.listen(process.env.E2E_SERVER_PORT);
+    testClient = BaseTest.createTestClient();
+  });
+
+  after(function () {
+    testServer.close((err) => {
+      if (err) {
+        console.error(err);
+      }
+    });
+  });
+
   this.timeout(5000);
 
   it('should execute "eth_chainId"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
@@ -58,7 +73,7 @@ describe('RPC Server', async function () {
 
   it('validates enforcement of request id', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
         params: [null],
@@ -102,7 +117,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "eth_accounts"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_ACCOUNTS,
@@ -115,7 +130,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "web3_clientVersion"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.WEB3_CLIENTVERSION,
@@ -128,7 +143,7 @@ describe('RPC Server', async function () {
 
   it('should execute "eth_getTransactionByHash with missing transaction"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
@@ -140,7 +155,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_GET_UNCLE_BY_BLOCK_HASH_AND_INDEX,
@@ -152,7 +167,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_GET_UNCLE_BY_BLOCK_NUMBER_AND_INDEX,
@@ -164,7 +179,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "eth_getUncleCountByBlockHash"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_GET_UNCLE_COUNT_BY_BLOCK_HASH,
@@ -176,7 +191,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "eth_getUncleCountByBlockNumber"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_GET_UNCLE_COUNT_BY_BLOCK_NUMBER,
@@ -188,7 +203,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "eth_hashrate"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_HASH_RATE,
@@ -200,7 +215,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "eth_mining"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_MINING,
@@ -212,7 +227,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "eth_submitWork"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_SUBMIT_WORK,
@@ -224,7 +239,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "eth_syncing"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_SYNCING,
@@ -236,7 +251,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "net_listening"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.NET_LISTENING,
@@ -249,7 +264,7 @@ describe('RPC Server', async function () {
 
   it('should execute "web3_sha"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.WEB3_SHA,
@@ -264,7 +279,7 @@ describe('RPC Server', async function () {
 
   it('should execute "net_peerCount"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.NET_PEER_COUNT,
@@ -279,7 +294,7 @@ describe('RPC Server', async function () {
 
   it('should execute "eth_submitHashrate"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_SUBMIT_HASH_RATE,
@@ -294,7 +309,7 @@ describe('RPC Server', async function () {
 
   it('should execute "eth_signTypedData"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_SIGN_TYPED_DATA,
@@ -309,7 +324,7 @@ describe('RPC Server', async function () {
 
   it('should execute "eth_signTransaction"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_SIGN_TRANSACTION,
@@ -324,7 +339,7 @@ describe('RPC Server', async function () {
 
   it('should execute "eth_sign"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_SIGN,
@@ -339,7 +354,7 @@ describe('RPC Server', async function () {
 
   it('should execute "eth_sendTransaction"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_SEND_TRANSACTION,
@@ -354,7 +369,7 @@ describe('RPC Server', async function () {
 
   it('should execute "eth_protocolVersion"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_PROTOCOL_VERSION,
@@ -369,7 +384,7 @@ describe('RPC Server', async function () {
 
   it('should execute "eth_getProof"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_GET_PROOF,
@@ -384,7 +399,7 @@ describe('RPC Server', async function () {
 
   it('should execute "eth_coinbase"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_COINBASE,
@@ -399,7 +414,7 @@ describe('RPC Server', async function () {
 
   it('should execute "eth_getWork"', async function () {
     try {
-      await this.testClient.post('/', {
+      await testClient.post('/', {
         id: '2',
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_GET_WORK,
@@ -413,7 +428,7 @@ describe('RPC Server', async function () {
   });
 
   it('should execute "eth_maxPriorityFeePerGas"', async function () {
-    const res = await this.testClient.post('/', {
+    const res = await testClient.post('/', {
       id: '2',
       jsonrpc: '2.0',
       method: RelayCalls.ETH_ENDPOINTS.ETH_MAX_PRIORITY_FEE_PER_GAS,
@@ -472,7 +487,7 @@ describe('RPC Server', async function () {
 
     it('should execute "eth_chainId" in batch request', async function () {
       // 3 request of eth_chainId
-      const response = await this.testClient.post('/', [
+      const response = await testClient.post('/', [
         getEthChainIdRequest(2),
         getEthChainIdRequest(3),
         getEthChainIdRequest(4),
@@ -490,7 +505,7 @@ describe('RPC Server', async function () {
 
     it('should execute "eth_chainId" and "eth_accounts" in batch request', async function () {
       // 3 request of eth_chainId
-      const response = await this.testClient.post('/', [
+      const response = await testClient.post('/', [
         getEthChainIdRequest(2),
         getEthAccountsRequest(3),
         getEthChainIdRequest(4),
@@ -512,7 +527,7 @@ describe('RPC Server', async function () {
     });
 
     it('should execute "eth_chainId" and "eth_accounts" in batch request with invalid request id', async function () {
-      const response = await this.testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(null)]);
+      const response = await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(null)]);
 
       // verify response
       BaseTest.baseDefaultResponseChecks(response);
@@ -528,7 +543,7 @@ describe('RPC Server', async function () {
     });
 
     it('should execute "eth_chainId" and method not found in batch request', async function () {
-      const response = await this.testClient.post('/', [
+      const response = await testClient.post('/', [
         getEthChainIdRequest(2),
         getNonExistingMethodRequest(3),
         getEthChainIdRequest(4),
@@ -551,7 +566,7 @@ describe('RPC Server', async function () {
     });
 
     it('should execute "eth_chainId" and method not found and params error in batch request', async function () {
-      const response = await this.testClient.post('/', [
+      const response = await testClient.post('/', [
         getEthChainIdRequest(2),
         getNonExistingMethodRequest(3),
         {
@@ -592,7 +607,7 @@ describe('RPC Server', async function () {
 
       // execute batch request
       try {
-        await this.testClient.post('/', requests);
+        await testClient.post('/', requests);
         Assertions.expectedError();
       } catch (error: any) {
         BaseTest.batchRequestLimitError(error.response, requests.length, 100);
@@ -605,7 +620,7 @@ describe('RPC Server', async function () {
 
       // do batch request
       try {
-        await this.testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
+        await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
         Assertions.expectedError();
       } catch (error: any) {
         BaseTest.batchDisabledErrorCheck(error.response);
@@ -621,7 +636,7 @@ describe('RPC Server', async function () {
 
       // do batch request
       try {
-        await this.testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
+        await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
         Assertions.expectedError();
       } catch (error: any) {
         BaseTest.batchDisabledErrorCheck(error.response);
@@ -636,7 +651,7 @@ describe('RPC Server', async function () {
     describe('eth_estimateGas', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -651,7 +666,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is TransactionObject', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -666,7 +681,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `to` param is address', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -685,7 +700,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `from` param is address', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -704,7 +719,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `gas` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -723,7 +738,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `gasPrice` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -742,7 +757,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `maxPriorityFeePerGas` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -761,7 +776,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `maxFeePerGas` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -780,7 +795,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `value` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -799,7 +814,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `data` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -818,7 +833,7 @@ describe('RPC Server', async function () {
 
       it('validates Block param is valid block hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -837,7 +852,7 @@ describe('RPC Server', async function () {
 
       it('validates Block param is valid tag', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS,
@@ -858,7 +873,7 @@ describe('RPC Server', async function () {
     describe('eth_getBalance', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
@@ -873,7 +888,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is of type Address', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
@@ -888,7 +903,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
@@ -903,7 +918,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is valid block number', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
@@ -922,7 +937,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is valid block tag', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
@@ -943,7 +958,7 @@ describe('RPC Server', async function () {
     describe('eth_getCode', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
@@ -958,7 +973,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is address', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
@@ -977,7 +992,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
@@ -992,7 +1007,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is valid block number', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
@@ -1011,7 +1026,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is valid block tag', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: 'eth_getCode',
@@ -1032,7 +1047,7 @@ describe('RPC Server', async function () {
     describe('eth_getBlockByNumber', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
@@ -1047,7 +1062,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is valid block number', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
@@ -1066,7 +1081,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is valid block tag', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
@@ -1085,7 +1100,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
@@ -1100,7 +1115,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is boolean', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
@@ -1121,7 +1136,7 @@ describe('RPC Server', async function () {
     describe('eth_getBlockByHash', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_HASH,
@@ -1136,7 +1151,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is a block hash', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_HASH,
@@ -1155,7 +1170,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_HASH,
@@ -1170,7 +1185,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is boolean', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_HASH,
@@ -1191,7 +1206,7 @@ describe('RPC Server', async function () {
     describe('eth_getTransactionCount', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
@@ -1206,7 +1221,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is an address', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
@@ -1225,7 +1240,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
@@ -1240,7 +1255,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is a valid block number', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
@@ -1259,7 +1274,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is a valid block tag', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
@@ -1280,7 +1295,7 @@ describe('RPC Server', async function () {
     describe('eth_call', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1295,7 +1310,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is TransactionObject', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1310,7 +1325,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `to` param is address', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1329,7 +1344,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `from` param is address', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1348,7 +1363,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `gas` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1367,7 +1382,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `gasPrice` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1386,7 +1401,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `maxPriorityFeePerGas` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1405,7 +1420,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `maxFeePerGas` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1424,7 +1439,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `value` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1443,7 +1458,7 @@ describe('RPC Server', async function () {
 
       it('validates Transaction `data` param is hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1462,7 +1477,7 @@ describe('RPC Server', async function () {
 
       it('validates Block param is non valid block hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1481,7 +1496,7 @@ describe('RPC Server', async function () {
 
       it('validates Block param is non valid tag', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1500,7 +1515,7 @@ describe('RPC Server', async function () {
 
       it('validates Block param is non valid block hash', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1519,7 +1534,7 @@ describe('RPC Server', async function () {
 
       it('validates Block param is non valid block number', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_CALL,
@@ -1540,7 +1555,7 @@ describe('RPC Server', async function () {
     describe('eth_sendRawTransaction', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION,
@@ -1555,7 +1570,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is valid hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION,
@@ -1576,7 +1591,7 @@ describe('RPC Server', async function () {
     describe('eth_getTransactionByHash', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
@@ -1591,7 +1606,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is block hash', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
@@ -1608,7 +1623,7 @@ describe('RPC Server', async function () {
     describe('eth_feeHistory', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY,
@@ -1623,7 +1638,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY,
@@ -1638,7 +1653,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 2 is array', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY,
@@ -1659,7 +1674,7 @@ describe('RPC Server', async function () {
     describe('eth_getBlockTransactionCountByHash', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_HASH,
@@ -1674,7 +1689,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is block hash', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_HASH,
@@ -1695,7 +1710,7 @@ describe('RPC Server', async function () {
     describe('eth_getBlockTransactionCountByNumber', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER,
@@ -1710,7 +1725,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is block number', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER,
@@ -1729,7 +1744,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is valid block tag', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER,
@@ -1750,7 +1765,7 @@ describe('RPC Server', async function () {
     describe('eth_getStorageAt', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
@@ -1765,7 +1780,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is valid address', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
@@ -1784,7 +1799,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
@@ -1799,7 +1814,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is valid hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
@@ -1818,7 +1833,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 2 is valid block number', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
@@ -1837,7 +1852,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 2 is valid block tag', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
@@ -1856,7 +1871,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 2 is valid block tag', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
@@ -1877,7 +1892,7 @@ describe('RPC Server', async function () {
     describe('eth_getTransactionByBlockHashAndIndex', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
@@ -1892,7 +1907,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is valid block hash', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
@@ -1911,7 +1926,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
@@ -1926,7 +1941,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is valid hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: 'eth_getTransactionByBlockHashAndIndex',
@@ -1947,7 +1962,7 @@ describe('RPC Server', async function () {
     describe('eth_getTransactionByBlockNumberAndIndex', async function () {
       it('validates parameter 0 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
@@ -1962,7 +1977,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is valid block number', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
@@ -1981,7 +1996,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 0 is valid block tag', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
@@ -2000,7 +2015,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 exists', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
@@ -2015,7 +2030,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter 1 is valid hex', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX,
@@ -2036,7 +2051,7 @@ describe('RPC Server', async function () {
     describe('eth_getLogs', async () => {
       it('validates parameter 0 is Filter Object', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -2055,7 +2070,7 @@ describe('RPC Server', async function () {
 
       it('validates parameter Filter Object does not contain both block hash and fromBlock/toBlock', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -2074,7 +2089,7 @@ describe('RPC Server', async function () {
 
       it('validates blockHash filter', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -2093,7 +2108,7 @@ describe('RPC Server', async function () {
 
       it('validates toBlock filter', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -2112,7 +2127,7 @@ describe('RPC Server', async function () {
 
       it('validates toBlock filter', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -2131,7 +2146,7 @@ describe('RPC Server', async function () {
 
       it('validates address filter', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -2150,7 +2165,7 @@ describe('RPC Server', async function () {
 
       it('validates topics filter is array', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -2169,7 +2184,7 @@ describe('RPC Server', async function () {
 
       it('validates topics filter is array of topic hashes', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -2188,7 +2203,7 @@ describe('RPC Server', async function () {
 
       it('validates topics filter is array of array of topic hashes', async function () {
         try {
-          await this.testClient.post('/', {
+          await testClient.post('/', {
             id: '2',
             jsonrpc: '2.0',
             method: RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
@@ -2206,21 +2221,21 @@ describe('RPC Server', async function () {
       });
 
       it('should execute HTTP OPTIONS cors preflight check', async function () {
-        const response = await this.testClient.options('/');
+        const response = await testClient.options('/');
 
         BaseTest.validResponseCheck(response, { status: 204, statusText: 'No Content' });
         BaseTest.validCorsCheck(response);
       });
 
       it('should execute metrics collection', async function () {
-        const response = await this.testClient.get('/metrics');
+        const response = await testClient.get('/metrics');
 
         expect(response.status).to.eq(200);
         expect(response.statusText).to.eq('OK');
       });
 
       it('should execute successful health readiness check', async function () {
-        const response = await this.testClient.get('/health/readiness');
+        const response = await testClient.get('/health/readiness');
 
         expect(response.status).to.eq(200);
         expect(response.statusText).to.eq('OK');
@@ -2229,7 +2244,7 @@ describe('RPC Server', async function () {
       });
 
       it('should execute successful health liveness check', async function () {
-        const response = await this.testClient.get('/health/readiness');
+        const response = await testClient.get('/health/readiness');
 
         expect(response.status).to.eq(200);
         expect(response.statusText).to.eq('OK');

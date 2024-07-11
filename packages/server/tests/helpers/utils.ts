@@ -28,6 +28,7 @@ import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
 import { AliasAccount } from '../types/AliasAccount';
 import ServicesClient from '../clients/servicesClient';
 import http from 'http';
+import { GCProfiler } from 'node:v8';
 
 export class Utils {
   /**
@@ -371,5 +372,29 @@ export class Utils {
 
   static async wait(time: number): Promise<void> {
     await new Promise((r) => setTimeout(r, time));
+  }
+
+  static captureMemoryLeaks(profiler: GCProfiler): void {
+    beforeEach(function () {
+      this.timeout(10000);
+      profiler.start();
+    });
+
+    afterEach(function () {
+      this.timeout(10000);
+      const result = profiler.stop();
+      const memoryLeaks = result.statistics.filter(
+        (stats) => stats.beforeGC.heapStatistics.totalHeapSize > stats.afterGC.heapStatistics.totalHeapSize,
+      );
+      if (memoryLeaks.length > 0) {
+        const totalDiffBytes = memoryLeaks.reduce((acc, stats) => {
+          const diff = stats.beforeGC.heapStatistics.totalHeapSize - stats.afterGC.heapStatistics.totalHeapSize;
+          return acc + diff;
+        }, 0);
+        const totalDiff = `${(totalDiffBytes / 1024 / 1024).toFixed(2)} MB`;
+        console.trace(`Memory leak of ${totalDiff}: --> ` + JSON.stringify(memoryLeaks, null, 2));
+      }
+      profiler.start();
+    });
   }
 }

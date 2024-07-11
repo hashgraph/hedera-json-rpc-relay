@@ -118,7 +118,7 @@ export class RedisCache implements ICacheClient {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<any | null>} The cached value or null if not found.
    */
-  async get(key: string, callingMethod: string, requestIdPrefix?: string | undefined) {
+  async get(key: string, callingMethod: string, requestIdPrefix?: string | undefined): Promise<any | null> {
     const client = await this.getConnectedClient();
     const result = await client.get(key);
     if (result) {
@@ -244,6 +244,9 @@ export class RedisCache implements ICacheClient {
   }
 
   async disconnect(): Promise<void> {
-    await (await this.getConnectedClient()).disconnect();
+    await this.getConnectedClient().then((client) => {
+      client.disconnect();
+      client.unsubscribe();
+    });
   }
 }
