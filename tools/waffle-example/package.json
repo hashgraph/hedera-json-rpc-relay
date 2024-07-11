@@ -1,0 +1,14 @@
+{
+  "name": "waffle-project",
+  "scripts": {
+    "build": "waffle",
+    "test": "NODE_ENV=test mocha --timeout 100000 --no-warnings"
+  },
+  "type": "commonjs",
+  "devDependencies": {
+    "chai": "^5.1.1",
+    "dotenv": "^16.4.5",
+    "ethereum-waffle": "^4.0.10",
+    "mocha": "^10.5.2"
+  }
+}
