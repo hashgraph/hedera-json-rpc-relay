@@ -28,7 +28,8 @@ import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
 import { AliasAccount } from '../types/AliasAccount';
 import ServicesClient from '../clients/servicesClient';
 import http from 'http';
-import { GCProfiler } from 'node:v8';
+import { GCProfiler, setFlagsFromString } from 'node:v8';
+import { runInNewContext } from 'node:vm';
 
 export class Utils {
   /**
@@ -375,13 +376,16 @@ export class Utils {
   }
 
   static captureMemoryLeaks(profiler: GCProfiler): void {
+    setFlagsFromString('--expose_gc');
+    const gc = runInNewContext('gc');
+
     beforeEach(function () {
-      this.timeout(10000);
       profiler.start();
     });
 
     afterEach(function () {
       this.timeout(10000);
+      gc();
       const result = profiler.stop();
       const memoryLeaks = result.statistics.filter(
         (stats) => stats.beforeGC.heapStatistics.totalHeapSize < stats.afterGC.heapStatistics.totalHeapSize,
@@ -392,9 +396,51 @@ export class Utils {
           return acc + diff;
         }, 0);
         const totalDiff = `${(totalDiffBytes / 1024 / 1024).toFixed(2)} MB`;
-        console.trace(`Memory leak of ${totalDiff}: --> ` + JSON.stringify(memoryLeaks, null, 2));
+        const statsDiff = memoryLeaks.map((stats) => ({
+          gcType: stats.gcType,
+          cost: stats.cost,
+          diffGC: {
+            heapStatistics: {
+              totalHeapSize: stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize,
+              totalHeapSizeExecutable:
+                stats.afterGC.heapStatistics.totalHeapSizeExecutable -
+                stats.beforeGC.heapStatistics.totalHeapSizeExecutable,
+              totalPhysicalSize:
+                stats.afterGC.heapStatistics.totalPhysicalSize - stats.beforeGC.heapStatistics.totalPhysicalSize,
+              totalAvailableSize:
+                stats.afterGC.heapStatistics.totalAvailableSize - stats.beforeGC.heapStatistics.totalAvailableSize,
+              totalGlobalHandlesSize:
+                stats.afterGC.heapStatistics.totalGlobalHandlesSize -
+                stats.beforeGC.heapStatistics.totalGlobalHandlesSize,
+              usedGlobalHandlesSize:
+                stats.afterGC.heapStatistics.usedGlobalHandlesSize -
+                stats.beforeGC.heapStatistics.usedGlobalHandlesSize,
+              usedHeapSize: stats.afterGC.heapStatistics.usedHeapSize - stats.beforeGC.heapStatistics.usedHeapSize,
+              heapSizeLimit: stats.afterGC.heapStatistics.heapSizeLimit - stats.beforeGC.heapStatistics.heapSizeLimit,
+              mallocedMemory:
+                stats.afterGC.heapStatistics.mallocedMemory - stats.beforeGC.heapStatistics.mallocedMemory,
+              externalMemory:
+                stats.afterGC.heapStatistics.externalMemory - stats.beforeGC.heapStatistics.externalMemory,
+              peakMallocedMemory:
+                stats.afterGC.heapStatistics.peakMallocedMemory - stats.beforeGC.heapStatistics.peakMallocedMemory,
+            },
+            heapSpaceStatistics: Array(stats.afterGC.heapSpaceStatistics.length)
+              .fill(0)
+              .map((_, i) => {
+                const before = stats.beforeGC.heapSpaceStatistics[i];
+                const after = stats.afterGC.heapSpaceStatistics[i];
+                return {
+                  spaceName: before.spaceName,
+                  spaceSize: after.spaceSize - before.spaceSize,
+                  spaceUsedSize: after.spaceUsedSize - before.spaceUsedSize,
+                  physicalSpaceSize: after.physicalSpaceSize - before.physicalSpaceSize,
+                  spaceAvailableSize: after.spaceAvailableSize - before.spaceAvailableSize,
+                };
+              }),
+          },
+        }));
+        console.trace(`Memory leak of ${totalDiff}: --> ` + JSON.stringify(statsDiff, null, 2));
       }
-      profiler.start();
     });
   }
 }
