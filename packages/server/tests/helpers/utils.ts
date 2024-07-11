@@ -400,47 +400,38 @@ export class Utils {
           gcType: stats.gcType,
           cost: stats.cost,
           diffGC: {
-            heapStatistics: {
-              totalHeapSize: stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize,
-              totalHeapSizeExecutable:
-                stats.afterGC.heapStatistics.totalHeapSizeExecutable -
-                stats.beforeGC.heapStatistics.totalHeapSizeExecutable,
-              totalPhysicalSize:
-                stats.afterGC.heapStatistics.totalPhysicalSize - stats.beforeGC.heapStatistics.totalPhysicalSize,
-              totalAvailableSize:
-                stats.afterGC.heapStatistics.totalAvailableSize - stats.beforeGC.heapStatistics.totalAvailableSize,
-              totalGlobalHandlesSize:
-                stats.afterGC.heapStatistics.totalGlobalHandlesSize -
-                stats.beforeGC.heapStatistics.totalGlobalHandlesSize,
-              usedGlobalHandlesSize:
-                stats.afterGC.heapStatistics.usedGlobalHandlesSize -
-                stats.beforeGC.heapStatistics.usedGlobalHandlesSize,
-              usedHeapSize: stats.afterGC.heapStatistics.usedHeapSize - stats.beforeGC.heapStatistics.usedHeapSize,
-              heapSizeLimit: stats.afterGC.heapStatistics.heapSizeLimit - stats.beforeGC.heapStatistics.heapSizeLimit,
-              mallocedMemory:
-                stats.afterGC.heapStatistics.mallocedMemory - stats.beforeGC.heapStatistics.mallocedMemory,
-              externalMemory:
-                stats.afterGC.heapStatistics.externalMemory - stats.beforeGC.heapStatistics.externalMemory,
-              peakMallocedMemory:
-                stats.afterGC.heapStatistics.peakMallocedMemory - stats.beforeGC.heapStatistics.peakMallocedMemory,
-            },
-            heapSpaceStatistics: Array(stats.afterGC.heapSpaceStatistics.length)
-              .fill(0)
-              .map((_, i) => {
-                const before = stats.beforeGC.heapSpaceStatistics[i];
-                const after = stats.afterGC.heapSpaceStatistics[i];
-                return {
-                  spaceName: before.spaceName,
-                  spaceSize: after.spaceSize - before.spaceSize,
-                  spaceUsedSize: after.spaceUsedSize - before.spaceUsedSize,
-                  physicalSpaceSize: after.physicalSpaceSize - before.physicalSpaceSize,
-                  spaceAvailableSize: after.spaceAvailableSize - before.spaceAvailableSize,
-                };
-              }),
+            heapStatistics: Utils.difference(stats.afterGC.heapStatistics, stats.beforeGC.heapStatistics),
+            heapSpaceStatistics: Utils.difference(
+              stats.afterGC.heapSpaceStatistics,
+              stats.beforeGC.heapSpaceStatistics,
+            ),
           },
         }));
         console.trace(`Memory leak of ${totalDiff}: --> ` + JSON.stringify(statsDiff, null, 2));
       }
     });
+  }
+
+  static difference<T extends object | object[]>(after: T, before: T): T {
+    if (Array.isArray(after) && Array.isArray(before)) {
+      return after.map((item: object, index: number) => this.difference(item, before[index])) as T;
+    } else if (typeof after === 'object' && typeof before === 'object') {
+      const diff = Object.assign({}, after);
+      for (const key of Object.keys(after)) {
+        if (!(key in before)) {
+          throw new Error(`Mismatched properties: ${key} is not present in both objects`);
+        }
+        const afterValue = after[key];
+        const beforeValue = before[key];
+        if (typeof afterValue === 'number' && typeof beforeValue === 'number') {
+          diff[key] = afterValue - beforeValue;
+        } else if (afterValue !== beforeValue) {
+          throw new Error(`Mismatched values: ${key} is not a number or the values are different`);
+        }
+      }
+      return diff as T;
+    } else {
+      throw new Error('Invalid input: both parameters must be objects or arrays of objects');
+    }
   }
 }
