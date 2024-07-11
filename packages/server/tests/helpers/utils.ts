@@ -438,6 +438,7 @@ export class Utils {
       if (after !== before) {
         throw new Error(`Mismatched values: ${after} is not equal to ${before}`);
       }
+      return after as T;
     } else {
       throw new Error('Invalid input: both parameters must be objects or arrays of objects');
     }
