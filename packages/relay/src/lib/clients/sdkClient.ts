@@ -385,7 +385,7 @@ export class SDKClient {
     );
   };
 
-  private executeQuery = async (
+  public executeQuery = async (
     query: Query<any>,
     client: Client,
     callerName: string,
@@ -459,7 +459,7 @@ export class SDKClient {
     }
   };
 
-  private executeTransaction = async (
+  public executeTransaction = async (
     transaction: Transaction,
     callerName: string,
     interactingEntity: string,
@@ -480,6 +480,22 @@ export class SDKClient {
       this.logger.info(
         `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
       );
+
+      const record = await resp.getRecord(this.clientMain);
+      // TODO:
+      // file append transaction fee should be calculated
+      // based on N appends like it's done in this method calculateFileAppendTxTotalTinybarsCost()
+      this.captureMetrics(
+        SDKClient.transactionMode,
+        transaction.constructor.name,
+        Status.Success,
+        record.transactionFee.toTinybars().toNumber(),
+        record?.contractFunctionResult?.gasUsed,
+        callerName,
+        interactingEntity,
+      );
+      this.hbarLimiter.addExpense(record.transactionFee.toTinybars().toNumber(), currentDateNow);
+
       return resp;
     } catch (e: any) {
       const sdkClientError = new SDKClientError(e, e.message);
@@ -525,7 +541,7 @@ export class SDKClient {
     }
   };
 
-  async executeGetTransactionRecord(
+  public async executeGetTransactionRecord(
     resp: TransactionResponse,
     transactionName: string,
     callerName: string,
@@ -641,7 +657,7 @@ export class SDKClient {
     }, 0);
   }
 
-  private createFile = async (
+  public createFile = async (
     callData: Uint8Array,
     client: Client,
     requestId: string,
@@ -663,23 +679,13 @@ export class SDKClient {
         .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
         .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
 
-      const fileCreateTxResponse = await fileCreateTx.execute(client);
-      const { fileId } = await fileCreateTxResponse.getReceipt(client);
-
-      // get transaction fee and add expense to limiter
-      const createFileRecord = await fileCreateTxResponse.getRecord(this.clientMain);
-      let transactionFee = createFileRecord.transactionFee;
-      this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-
-      this.captureMetrics(
-        SDKClient.transactionMode,
-        fileCreateTx.constructor.name,
-        Status.Success,
-        createFileRecord.transactionFee.toTinybars().toNumber(),
-        createFileRecord?.contractFunctionResult?.gasUsed,
+      const fileCreateTxResponse = await this.executeTransaction(
+        fileCreateTx,
         callerName,
         interactingEntity,
+        requestIdPrefix,
       );
+      const { fileId } = await fileCreateTxResponse.getReceipt(client);
 
       if (fileId && callData.length > this.fileAppendChunkSize) {
         fileAppendTx = await new FileAppendTransaction()
@@ -687,27 +693,15 @@ export class SDKClient {
           .setContents(hexedCallData.substring(this.fileAppendChunkSize, hexedCallData.length))
           .setChunkSize(this.fileAppendChunkSize)
           .setMaxChunks(this.maxChunks);
-        const fileAppendTxResponse = await fileAppendTx.execute(client);
-
-        // get transaction fee and add expense to limiter
-        const appendFileRecord = await fileAppendTxResponse.getRecord(this.clientMain);
-        transactionFee = appendFileRecord.transactionFee;
-        this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-
-        this.captureMetrics(
-          SDKClient.transactionMode,
-          fileAppendTx.constructor.name,
-          Status.Success,
-          await this.calculateFileAppendTxTotalTinybarsCost(fileAppendTx),
-          0,
-          callerName,
-          interactingEntity,
-        );
+        await this.executeTransaction(fileAppendTx, callerName, interactingEntity, requestIdPrefix);
       }
 
       // Ensure that the calldata file is not empty
       if (fileId) {
-        const fileSize = await (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
+        const query = new FileInfoQuery().setFileId(fileId);
+        const fileSize = (
+          await this.executeQuery(query, this.clientMain, callerName, interactingEntity, requestIdPrefix)
+        ).size;
 
         if (callData.length > 0 && fileSize.isZero()) {
           throw new SDKClientError({}, `${requestIdPrefix} Created file is empty. `);
@@ -723,49 +717,31 @@ export class SDKClient {
       // if valid network error utilize transaction id
       if (sdkClientError.isValidNetworkError()) {
         try {
-          const transactionCreateRecord = await new TransactionRecordQuery()
-            .setTransactionId(fileCreateTx.transactionId!)
-            .setNodeAccountIds(fileCreateTx.nodeAccountIds!)
-            .setValidateReceiptStatus(false)
-            .execute(this.clientMain);
-          transactionFee = transactionCreateRecord.transactionFee;
-          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-
-          this.captureMetrics(
-            SDKClient.transactionMode,
+          const transactionCreateRecord = await this.executeGetTransactionRecord(
+            fileCreateTx,
             fileCreateTx.constructor.name,
-            sdkClientError.status,
-            transactionFee.toTinybars().toNumber(),
-            transactionCreateRecord?.contractFunctionResult?.gasUsed,
             callerName,
             interactingEntity,
+            requestIdPrefix,
           );
+          transactionFee = transactionCreateRecord.transactionFee;
 
           this.logger.info(
             `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
           );
 
           if (fileAppendTx) {
-            const transactionAppendRecord = await new TransactionRecordQuery()
-              .setTransactionId(fileAppendTx.transactionId!)
-              .setNodeAccountIds(fileAppendTx.nodeAccountIds!)
-              .setValidateReceiptStatus(false)
-              .execute(this.clientMain);
-            transactionFee = transactionAppendRecord.transactionFee;
-            this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-
-            this.captureMetrics(
-              SDKClient.transactionMode,
-              fileCreateTx.constructor.name,
-              sdkClientError.status,
-              transactionFee.toTinybars().toNumber(),
-              transactionCreateRecord?.contractFunctionResult?.gasUsed,
+            const transactionAppendRecord = await this.executeGetTransactionRecord(
+              fileAppendTx,
+              fileAppendTx.constructor.name,
               callerName,
               interactingEntity,
+              requestIdPrefix,
             );
+            transactionFee = transactionAppendRecord.transactionFee;
 
             this.logger.info(
-              `${requestIdPrefix} ${fileAppendTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+              `${requestIdPrefix} ${fileAppendTx.transactionId} ${callerName} ${fileAppendTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
             );
           }
         } catch (err: any) {
@@ -793,7 +769,7 @@ export class SDKClient {
    * @param callerName
    * @param interactingEntity
    */
-  public deleteFile = async (fileId: FileId, requestId?: string, callerName?: string, interactingEntity?: string) => {
+  public deleteFile = async (fileId: FileId, requestId: string, callerName: string, interactingEntity: string) => {
     // format request ID msg
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
@@ -805,25 +781,18 @@ export class SDKClient {
         .freezeWith(this.clientMain);
 
       // execute fileDeleteTx
-      const fileDeleteTxResponse = await fileDeleteTx.execute(this.clientMain);
-
-      // get fileDeleteTx's record
-      const deleteFileRecord = await fileDeleteTxResponse.getRecord(this.clientMain);
-
-      // capture metrics
-      this.captureMetrics(
-        SDKClient.transactionMode,
-        fileDeleteTx.constructor.name,
-        Status.Success,
-        deleteFileRecord.transactionFee.toTinybars().toNumber(),
-        deleteFileRecord?.contractFunctionResult?.gasUsed,
+      const fileDeleteTxResponse = await this.executeTransaction(
+        fileDeleteTx,
         callerName,
         interactingEntity,
+        requestIdPrefix,
       );
 
       // ensure the file is deleted
-      const receipt = deleteFileRecord.receipt;
-      const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
+      const receipt = await fileDeleteTxResponse.getReceipt(this.clientMain);
+
+      const query = new FileInfoQuery().setFileId(fileId);
+      const fileInfo = await this.executeQuery(query, this.clientMain, callerName, interactingEntity, requestIdPrefix);
 
       if (receipt.status === Status.Success && fileInfo.isDeleted) {
         this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);
