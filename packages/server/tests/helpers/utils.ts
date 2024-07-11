@@ -391,11 +391,12 @@ export class Utils {
 
     afterEach(function () {
       this.timeout(10000);
+      // force a garbage collection to get accurate memory usage
       gc();
       const result = profiler.stop();
-      const memoryLeaks = result.statistics.filter(
-        (stats) => stats.beforeGC.heapStatistics.totalHeapSize < stats.afterGC.heapStatistics.totalHeapSize,
-      );
+      const memoryLeaks = result.statistics.filter((stats) => {
+        return stats.afterGC.heapStatistics.totalHeapSize > stats.beforeGC.heapStatistics.totalHeapSize;
+      });
       if (memoryLeaks.length > 0) {
         const totalDiffBytes = memoryLeaks.reduce((acc, stats) => {
           const diff = stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize;
