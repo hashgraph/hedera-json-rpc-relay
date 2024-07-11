@@ -412,7 +412,15 @@ export class Utils {
     });
   }
 
-  static difference<T extends object | object[]>(after: T, before: T): T {
+  /**
+   * Calculates the difference between two objects or arrays of objects.
+   * The difference is calculated by subtracting the values of the properties in the second object from the first.
+   * If the objects are arrays, the function will return an array of the differences.
+   * @param after
+   * @param before
+   * @throws {Error} If the objects are not of the same type or if there are any mismatched properties or values.
+   */
+  static difference<T extends number | object | object[]>(after: T, before: T): T {
     if (Array.isArray(after) && Array.isArray(before)) {
       return after.map((item: object, index: number) => this.difference(item, before[index])) as T;
     } else if (typeof after === 'object' && typeof before === 'object') {
@@ -421,15 +429,16 @@ export class Utils {
         if (!(key in before)) {
           throw new Error(`Mismatched properties: ${key} is not present in both objects`);
         }
-        const afterValue = after[key];
-        const beforeValue = before[key];
-        if (typeof afterValue === 'number' && typeof beforeValue === 'number') {
-          diff[key] = afterValue - beforeValue;
-        } else if (afterValue !== beforeValue) {
-          throw new Error(`Mismatched values: ${key} is not a number or the values are different`);
-        }
+        diff[key] = this.difference(after[key], before[key]);
       }
       return diff as T;
+    } else if (typeof after === 'number' && typeof before === 'number') {
+      return (after - before) as T;
+    } else if (typeof after === 'string' && typeof before === 'string') {
+      if (after !== before) {
+        throw new Error(`Mismatched values: ${after} is not equal to ${before}`);
+      }
+      return after as T;
     } else {
       throw new Error('Invalid input: both parameters must be objects or arrays of objects');
     }
