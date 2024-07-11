@@ -375,6 +375,12 @@ export class Utils {
     await new Promise((r) => setTimeout(r, time));
   }
 
+  /**
+   * Captures memory leaks in the test suite.
+   * The function will start the profiler before each test and stop it after each test.
+   * If a memory leak is detected, the function will log the difference in memory usage.
+   * @param profiler The GC profiler to use for capturing memory leaks.
+   */
   static captureMemoryLeaks(profiler: GCProfiler): void {
     setFlagsFromString('--expose_gc');
     const gc = runInNewContext('gc');
@@ -420,7 +426,7 @@ export class Utils {
    * @param before
    * @throws {Error} If the objects are not of the same type or if there are any mismatched properties or values.
    */
-  static difference<T extends number | object | object[]>(after: T, before: T): T {
+  static difference<T extends number | string | object | object[]>(after: T, before: T): T {
     if (Array.isArray(after) && Array.isArray(before)) {
       return after.map((item: object, index: number) => this.difference(item, before[index])) as T;
     } else if (typeof after === 'object' && typeof before === 'object') {
