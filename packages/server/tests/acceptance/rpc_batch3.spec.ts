@@ -156,15 +156,22 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(res).to.eq(BASIC_CONTRACT_PING_RESULT);
     });
 
-    it('@release should execute "eth_call" request to simulate deploying a contract (empty/null `to` field)', async function () {
+    it('@release should execute "eth_call" request to simulate deploying a contract with `to` field being null', async function () {
       const callData = {
         from: accounts[0].address,
         to: null,
         data: basicContractJson.bytecode,
       };
       const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
-      console.log(res);
+      expect(res).to.eq(basicContractJson.deployedBytecode);
+    });
 
+    it('@release should execute "eth_call" request to simulate deploying a contract with `to` field being empty/undefined', async function () {
+      const callData = {
+        from: accounts[0].address,
+        data: basicContractJson.bytecode,
+      };
+      const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
       expect(res).to.eq(basicContractJson.deployedBytecode);
     });
 
@@ -515,18 +522,14 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
             expect(res).to.eq('0x0000000000000000000000000000000000000000000000000000000000000004');
           });
 
-          it("009 should fail for missing 'to' field", async function () {
+          it("009 should work for missing 'to' field", async function () {
             const callData = {
               from: accounts[0].address,
-              data: '0x0ec1551d',
+              data: basicContractJson.bytecode,
             };
 
-            await relay.callFailing(
-              RelayCall.ETH_ENDPOINTS.ETH_CALL,
-              [callData, 'latest'],
-              predefined.INVALID_CONTRACT_ADDRESS(undefined),
-              requestId,
-            );
+            const res = await relay.call(RelayCall.ETH_ENDPOINTS.ETH_CALL, [callData, 'latest'], requestId);
+            expect(res).to.eq(basicContractJson.deployedBytecode);
           });
 
           // value is processed only when eth_call goes through the mirror node

@@ -1890,8 +1890,8 @@ export class EthImpl implements Eth {
    * @param call
    */
   async performCallChecks(call: any): Promise<void> {
-    // after this mirror-node PR https://github.com/hashgraph/hedera-mirror-node/pull/8100, call.to is allowed to be empty or null
-    if (call.to !== null && !isValidEthereumAddress(call.to)) {
+    // after this PR https://github.com/hashgraph/hedera-mirror-node/pull/8100 in mirror-node, call.to is allowed to be empty or null
+    if (call.to && !isValidEthereumAddress(call.to)) {
       throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
   }
