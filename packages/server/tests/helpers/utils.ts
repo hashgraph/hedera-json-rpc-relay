@@ -384,11 +384,11 @@ export class Utils {
       this.timeout(10000);
       const result = profiler.stop();
       const memoryLeaks = result.statistics.filter(
-        (stats) => stats.beforeGC.heapStatistics.totalHeapSize > stats.afterGC.heapStatistics.totalHeapSize,
+        (stats) => stats.beforeGC.heapStatistics.totalHeapSize < stats.afterGC.heapStatistics.totalHeapSize,
       );
       if (memoryLeaks.length > 0) {
         const totalDiffBytes = memoryLeaks.reduce((acc, stats) => {
-          const diff = stats.beforeGC.heapStatistics.totalHeapSize - stats.afterGC.heapStatistics.totalHeapSize;
+          const diff = stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize;
           return acc + diff;
         }, 0);
         const totalDiff = `${(totalDiffBytes / 1024 / 1024).toFixed(2)} MB`;
