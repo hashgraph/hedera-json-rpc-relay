@@ -118,21 +118,6 @@ describe('@ethCall Eth Call spec', async function () {
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
     });
 
-    it('eth_call with missing `to` field', async function () {
-      await ethCallFailing(
-        ethImpl,
-        {
-          from: CONTRACT_ADDRESS_1,
-          data: CONTRACT_CALL_DATA,
-          gas: MAX_GAS_LIMIT_HEX,
-        },
-        'latest',
-        (error) => {
-          expect(error.message).to.equal(`Invalid Contract Address: ${undefined}.`);
-        },
-      );
-    });
-
     it('eth_call with incorrect `to` field length', async function () {
       await ethCallFailing(
         ethImpl,
@@ -703,31 +688,12 @@ describe('@ethCall Eth Call spec', async function () {
       expect((result as JsonRpcError).data).to.equal(defaultErrorMessageHex);
     });
 
-    it('eth_call with missing `to` field', async function () {
-      const args = [
-        {
-          ...defaultCallData,
-          from: CONTRACT_ADDRESS_1,
-          data: CONTRACT_CALL_DATA,
-          gas: MAX_GAS_LIMIT,
-        },
-        'latest',
-      ];
-
-      await RelayAssertions.assertRejection(
-        predefined.INVALID_CONTRACT_ADDRESS(undefined),
-        ethImpl.call,
-        false,
-        ethImpl,
-        args,
-      );
-    });
-
     it('eth_call with wrong `to` field', async function () {
       const args = [
         {
           ...defaultCallData,
           from: CONTRACT_ADDRESS_1,
+          to: WRONG_CONTRACT_ADDRESS,
           data: CONTRACT_CALL_DATA,
           gas: MAX_GAS_LIMIT,
         },

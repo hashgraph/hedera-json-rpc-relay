@@ -126,7 +126,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
       sdkClientStub.submitEthereumTransaction.returns({
         txResponse: {
-          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+          transactionId: '',
         },
         fileId: null,
       });
