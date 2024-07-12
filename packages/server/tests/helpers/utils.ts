@@ -28,8 +28,9 @@ import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
 import { AliasAccount } from '../types/AliasAccount';
 import ServicesClient from '../clients/servicesClient';
 import http from 'http';
-import { GCProfiler, setFlagsFromString } from 'node:v8';
+import { GCProfiler, setFlagsFromString, writeHeapSnapshot } from 'node:v8';
 import { runInNewContext } from 'node:vm';
+import { Context } from 'mocha';
 
 export class Utils {
   /**
@@ -375,21 +376,27 @@ export class Utils {
     await new Promise((r) => setTimeout(r, time));
   }
 
+  static async writeHeapSnapshotAsync(context: Context): Promise<void> {
+    context.timeout(60000);
+    const snapshotFile = writeHeapSnapshot();
+    console.error(`Heap snapshot written to ${snapshotFile}`);
+  }
+
   /**
    * Captures memory leaks in the test suite.
    * The function will start the profiler before each test and stop it after each test.
    * If a memory leak is detected, the function will log the difference in memory usage.
-   * @param profiler The GC profiler to use for capturing memory leaks.
    */
   static captureMemoryLeaks(profiler: GCProfiler): void {
     setFlagsFromString('--expose_gc');
+    setFlagsFromString('--trace_gc');
     const gc = runInNewContext('gc');
 
     beforeEach(function () {
       profiler.start();
     });
 
-    afterEach(function () {
+    afterEach(async function () {
       this.timeout(10000);
       // force a garbage collection to get accurate memory usage
       gc();
@@ -402,7 +409,6 @@ export class Utils {
           const diff = stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize;
           return acc + diff;
         }, 0);
-        const totalDiff = `${(totalDiffBytes / 1024 / 1024).toFixed(2)} MB`;
         const statsDiff = memoryLeaks.map((stats) => ({
           gcType: stats.gcType,
           cost: stats.cost,
@@ -414,7 +420,11 @@ export class Utils {
             ),
           },
         }));
-        console.trace(`Memory leak of ${totalDiff}: --> ` + JSON.stringify(statsDiff, null, 2));
+        console.error(`Memory leak of ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2));
+        // write a heap snapshot if the memory leak is more than 0.5 MB
+        if (totalDiffBytes > 5e6) {
+          await Utils.writeHeapSnapshotAsync(this);
+        }
       }
     });
   }
@@ -467,5 +477,16 @@ export class Utils {
    */
   private static arrayDifference<T extends object[]>(after: T, before: T): T {
     return after.map((item: object, index: number) => this.difference(item, before[index])) as T;
+  }
+
+  private static formatBytes(bytes: number) {
+    let unitIndex = 0;
+
+    while (bytes >= 1000) {
+      bytes /= 1000;
+      unitIndex++;
+    }
+
+    return `${bytes.toFixed(2)} ${['bytes', 'KB', 'MB', 'GB'][unitIndex]}`;
   }
 }
