@@ -35,9 +35,16 @@ jobs:
       command: cd ./tools/web3js-example/ && npm run test
       directory: ./tools/web3js-example
 
-  golang:
-    name: Golang
+  golang-http:
+    name: Golang HTTP
     uses: ./.github/workflows/dev-tool-workflow.yml
     with:
-      command: cd ./tools/golang-json-rpc-tests/ && go run . && go run . --wss
+      command: cd ./tools/golang-json-rpc-tests/ && go run .
+      directory: ./tools/golang-json-rpc-tests
+
+  golang-wss:
+    name: Golang WSS
+    uses: ./.github/workflows/dev-tool-workflow.yml
+    with:
+      command: cd ./tools/golang-json-rpc-tests/ && go run . --wss
       directory: ./tools/golang-json-rpc-tests
