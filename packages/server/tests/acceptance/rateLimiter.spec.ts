@@ -20,7 +20,7 @@
 
 // External resources
 import { expect } from 'chai';
-import { ethers } from 'ethers';
+import { BaseContract, ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 
 // Assertions and constants from local resources
@@ -30,7 +30,12 @@ import relayConstants from '../../../../packages/relay/src/lib/constants';
 
 // Local resources
 import parentContractJson from '../contracts/Parent.json';
+import EstimateGasContract from '../contracts/EstimateGasContract.json';
+import largeSizeContract from '../contracts/hbarLimiterContracts/largeSizeContract.json';
+import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
+
 import { Utils } from '../helpers/utils';
+import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds
@@ -155,6 +160,30 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
         await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
           .fulfilled;
+      });
+
+      it('should be able to deploy a contract without creating file', async function () {
+        // This flow should not spend any hbars from the operator, as it's fully paid by the signer
+        expect(
+          await Utils.deployContract(EstimateGasContract.abi, EstimateGasContract.bytecode, accounts[0].wallet),
+        ).to.be.instanceOf(BaseContract);
+      });
+
+      it('should be able to deploy a medium size contract with fileCreate', async function () {
+        // This flow should spend hbars from the operator, for fileCreate
+        expect(
+          await Utils.deployContract(mediumSizeContract.abi, mediumSizeContract.bytecode, accounts[0].wallet),
+        ).to.be.instanceOf(BaseContract);
+      });
+
+      it('should fail to deploy a larger size contract with fileCreate and fileAppend due to hbar limit exceeded', async function () {
+        // This flow should not allow spending hbars from the operator, for fileCreate operation and fileAppend operation
+        try {
+          await Utils.deployContract(largeSizeContract.abi, largeSizeContract.bytecode, accounts[0].wallet);
+          expect(true).to.be.false;
+        } catch (e) {
+          expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+        }
       });
     });
   });

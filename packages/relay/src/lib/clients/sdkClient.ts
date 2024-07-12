@@ -669,6 +669,7 @@ export class SDKClient {
       // get transaction fee and add expense to limiter
       const createFileRecord = await fileCreateTxResponse.getRecord(this.clientMain);
       let transactionFee = createFileRecord.transactionFee;
+      let transactionFee = createFileRecord.transactionFee as Hbar;
       this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
 
       this.captureMetrics(
@@ -692,6 +693,7 @@ export class SDKClient {
         // get transaction fee and add expense to limiter
         const appendFileRecord = await fileAppendTxResponse.getRecord(this.clientMain);
         transactionFee = appendFileRecord.transactionFee;
+        transactionFee = appendFileRecord.transactionFee as Hbar;
         this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
 
         this.captureMetrics(
