@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,9 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
 import { EthImpl } from '../../../src/lib/eth';
-import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import {
   ACCOUNT_ADDRESS_1,
-  BLOCK_HASH_TRIMMED,
   CONTRACT_ADDRESS_1,
   CONTRACT_ADDRESS_2,
   CONTRACT_CALL_DATA,

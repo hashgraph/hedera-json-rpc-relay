@@ -2,7 +2,7 @@
  *
  * Hedera Golang JSON RPC tests
  *
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,13 +107,13 @@ func main() {
     testGetLogs(client, contractAddress, nil)
     testStorageAt(client, contractAddress, "0x0")
     testGetTransactionByHash(client, signedTx.Hash().Hex())
-    testGetTransactionCount(client)
     testGetTransactionReceipt(client, signedTx.Hash().Hex())
     if *wss {
         return;
     }
 
     // https only methods
+    testGetTransactionCount(client)
     testFeeHistory(client, 5, blockNumber, []float64{10, 50, 90})
     testGetAccounts(client)
     testGetBlockTransactionCountByHash(client, blockHash)
