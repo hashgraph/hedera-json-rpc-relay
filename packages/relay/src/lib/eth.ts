@@ -41,9 +41,6 @@ import {
   prepend0x,
   toHash32,
   trimPrecedingZeros,
-  ASCIIToHex,
-  isHex,
-  isValidEthereumAddress,
   weibarHexToTinyBarInt,
 } from '../formatters';
 import crypto from 'crypto';
