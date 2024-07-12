@@ -26,21 +26,6 @@ import { BigNumber as BN } from 'bignumber.js';
 
 const EMPTY_HEX = '0x';
 
-const addPercentageBufferToGasPrice = (gasPrice: number): number => {
-  // converting to tinybar and afterward to weibar again is needed
-  // in order to handle the possibility of an invalid floating number being calculated as a gas price
-  // e.g.
-  //   current gas price = 126
-  //   buffer = 10%
-  //   buffered gas price = 126 + 12.6 = 138.6 <--- invalid tinybars
-  gasPrice +=
-    Math.round(
-      (gasPrice / constants.TINYBAR_TO_WEIBAR_COEF) * (Number(process.env.GAS_PRICE_PERCENTAGE_BUFFER || 0) / 100),
-    ) * constants.TINYBAR_TO_WEIBAR_COEF;
-
-  return gasPrice;
-};
-
 const hashNumber = (num) => {
   return EMPTY_HEX + num.toString(16);
 };
@@ -304,7 +289,6 @@ const isHex = (value: string): boolean => {
 };
 
 export {
-  addPercentageBufferToGasPrice,
   hashNumber,
   formatRequestIdMessage,
   hexToASCII,

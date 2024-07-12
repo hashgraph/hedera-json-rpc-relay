@@ -26,10 +26,10 @@ import { IContractCallRequest, IContractCallResponse, MirrorNodeClient } from '.
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
+import { Utils } from './../utils';
 import constants from './constants';
 import { Precheck } from './precheck';
 import {
-  addPercentageBufferToGasPrice,
   ASCIIToHex,
   formatContractResult,
   formatTransactionIdWithoutQueryParams,
@@ -730,7 +730,7 @@ export class EthImpl implements Eth {
       );
 
       if (!gasPrice) {
-        gasPrice = addPercentageBufferToGasPrice(await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix));
+        gasPrice = Utils.addPercentageBufferToGasPrice(await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix));
 
         this.cacheService.set(
           constants.CACHE_KEY.GAS_PRICE,
