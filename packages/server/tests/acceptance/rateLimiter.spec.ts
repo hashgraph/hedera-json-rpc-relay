@@ -30,7 +30,9 @@ import relayConstants from '../../../../packages/relay/src/lib/constants';
 
 // Local resources
 import parentContractJson from '../contracts/Parent.json';
+import largeContractJson from '../contracts/EstimatePrecompileContract.json';
 import { Utils } from '../helpers/utils';
+import { predefined } from '@hashgraph/json-rpc-relay';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds
@@ -38,7 +40,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { mirrorNode, relay, logger, initialBalance } = global;
+  const { mirrorNode, relay, logger, initialBalance, metrics } = global;
 
   // cached entities
   let parentContractAddress: string;
@@ -141,8 +143,9 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
         type: 2,
       };
 
-      it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded ', async function () {
+      it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
         const gasPrice = await relay.gasPrice(requestId);
+        const remainingHbarsBefore = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
 
         const transaction = {
           ...defaultLondonTransactionData,
@@ -155,6 +158,46 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
         await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
           .fulfilled;
+        const remainingHbarsAfter = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        expect(remainingHbarsAfter).to.be.eq(remainingHbarsBefore);
+      });
+
+      it('should deploy a large contract and decrease remaining HBAR in limiter when transaction data is large', async function () {
+        const remainingHbarsBefore = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        expect(remainingHbarsBefore).to.be.gt(0);
+
+        const largeContract = await Utils.deployContract(
+          largeContractJson.abi,
+          largeContractJson.bytecode,
+          accounts[0].wallet,
+        );
+        await largeContract.waitForDeployment();
+        const remainingHbarsAfter = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        expect(largeContract.target).to.not.be.null;
+        expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
+      });
+
+      it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
+        const remainingHbarsBefore = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        expect(remainingHbarsBefore).to.be.gt(0);
+        try {
+          for (let i = 0; i < 1000; i++) {
+            const largeContract = await Utils.deployContract(
+              largeContractJson.abi,
+              largeContractJson.bytecode,
+              accounts[0].wallet,
+            );
+            await largeContract.waitForDeployment();
+            expect(largeContract.target).to.not.be.null;
+          }
+
+          expect(true).to.be.false;
+        } catch (e: any) {
+          expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+        }
+
+        const remainingHbarsAfter = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        expect(remainingHbarsAfter).to.be.lte(0);
       });
     });
   });

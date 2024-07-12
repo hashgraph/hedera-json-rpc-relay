@@ -31,6 +31,7 @@ import fs from 'fs';
 import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
+import MetricsClient from '../clients/metricsClient';
 
 // Server related
 import app from '../../dist/server';
@@ -86,6 +87,7 @@ describe('RPC Server Acceptance Tests', function () {
     logger.child({ name: `services-test-client` }),
   );
   global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
+  global.metrics = new MetricsClient(RELAY_URL, logger.child({ name: `metrics-test-client` }));
   global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
   global.relayServer = relayServer;
   global.socketServer = socketServer;
