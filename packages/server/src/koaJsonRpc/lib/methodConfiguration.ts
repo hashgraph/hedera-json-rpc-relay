@@ -24,12 +24,20 @@ dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
 import CONSTANTS from '../../../../relay/dist/lib/constants';
 
-const tier1rateLimit = process.env.TIER_1_RATE_LIMIT || CONSTANTS.DEFAULT_RATE_LIMIT.TIER_1;
-const tier2rateLimit = process.env.TIER_2_RATE_LIMIT || CONSTANTS.DEFAULT_RATE_LIMIT.TIER_2;
-const tier3rateLimit = process.env.TIER_3_RATE_LIMIT || CONSTANTS.DEFAULT_RATE_LIMIT.TIER_3;
+const tier1rateLimit = parseInt(process.env.TIER_1_RATE_LIMIT ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_1.toString());
+const tier2rateLimit = parseInt(process.env.TIER_2_RATE_LIMIT ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_2.toString());
+const tier3rateLimit = parseInt(process.env.TIER_3_RATE_LIMIT ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_3.toString());
+
+export interface IMethodRateLimit {
+  total: number;
+}
+
+export interface IMethodRateLimitConfiguration {
+  [method: string]: IMethodRateLimit;
+}
 
 // total requests per rate limit duration (default ex. 200 request per 60000ms)
-export const methodConfiguration = {
+export const methodConfiguration: IMethodRateLimitConfiguration = {
   web3_clientVersion: {
     total: tier3rateLimit,
   },
