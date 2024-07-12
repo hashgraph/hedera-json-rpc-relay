@@ -19,7 +19,7 @@
  */
 
 // External resources
-import { ethers } from 'ethers';
+import { Contract, ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
 import Axios from 'axios';
@@ -30,13 +30,13 @@ import { ContractId } from '@hashgraph/sdk';
 
 // Assertions and constants from local resources
 import Assertions from '../helpers/assertions';
-import RelayAssertions from '../../../../packages/relay/tests/assertions';
+import RelayAssertions from '@hashgraph/json-rpc-relay/tests/assertions';
 import RelayCall from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import RelayCalls from '../helpers/constants';
-import { numberTo0x } from '../../../../packages/relay/src/formatters';
-import { TracerType } from '../../../relay/src/lib/constants';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import { TracerType } from '@hashgraph/json-rpc-relay/src/lib/constants';
 
 // Contracts and JSON files from local resources
 import reverterContractJson from '../contracts/Reverter.json';
@@ -47,8 +47,8 @@ import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 
 // Helper functions/constants from local resources
-import { EthImpl } from '../../../../packages/relay/src/lib/eth';
-import { predefined } from '../../../../packages/relay';
+import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
+import { predefined } from '@hashgraph/json-rpc-relay';
 
 chai.use(chaiExclude);
 
@@ -563,13 +563,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
     it('eth_call contract revert returns 200 http status', async function () {
       // preparing the contract data needed for a REVERT
-      let callerContract, callerAddress, defaultCallData, activeAccount;
-      activeAccount = accounts[1];
-      callerContract = await Utils.deployContractWithEthers([], callerContractJson, activeAccount.wallet, relay);
+      const activeAccount = accounts[1];
+      const callerContract = await Utils.deployContractWithEthers([], callerContractJson, activeAccount.wallet, relay);
       // Wait for creation to propagate
       const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestId);
-      callerAddress = callerMirror.evm_address;
-      defaultCallData = {
+      const callerAddress = callerMirror.evm_address;
+      const defaultCallData = {
         from: activeAccount.address,
         to: callerAddress,
         gas: `0x7530`,
@@ -728,7 +727,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const INITIAL_SUPPLY = 100000;
     const IS_TOKEN_ADDRESS_SIGNATURE = '0xbff9834f000000000000000000000000';
 
-    let htsImpl, tokenAddress;
+    let htsImpl: Contract;
+    let tokenAddress: string;
 
     before(async () => {
       const htsResult = await servicesNode.createHTS({
@@ -768,7 +768,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     let deployerContractTx: ethers.TransactionReceipt;
     let deployerContractAddress: string;
     let contractId: ContractId;
-    let primaryAccountNonce, secondaryAccountNonce;
+    let primaryAccountNonce: Long | null;
+    let secondaryAccountNonce: Long | null;
 
     const defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
     const defaultGasLimit = numberTo0x(3_000_000);
@@ -1078,7 +1079,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         expect(result).to.exist;
         expect(result.length).to.gt(0, 'returns the latest block hashes');
 
-        result.forEach((hash) => {
+        result.forEach((hash: string) => {
           expect(RelayAssertions.validateHash(hash, 96)).to.eq(true);
         });
 
@@ -1112,13 +1113,22 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   });
 
   describe('Debug API Test Suite', async function () {
-    let requestId;
-    let estimateGasContractAddress;
-    let transactionTypeLegacy;
-    let transactionType2930;
+    type ILegacyTransaction = {
+      to: null;
+      from: string;
+      gasPrice: number;
+      chainId: number;
+      gasLimit: string;
+      type: number;
+    };
+
+    let requestId: string;
+    let estimateGasContractAddress: { address: string };
+    let transactionTypeLegacy: ILegacyTransaction;
+    let transactionType2930: ILegacyTransaction & { accessList: never[] };
     let reverterContract: ethers.Contract;
     let reverterContractAddress: string;
-    let transactionType2;
+    let transactionType2: ILegacyTransaction & { maxFeePerGas: number; maxPriorityFeePerGas: number };
     const defaultGasLimit = numberTo0x(3_000_000);
     const bytecode = EstimateGasContract.bytecode;
     const tracerConfigTrue = { onlyTopCall: true };
@@ -1965,7 +1975,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         expect(res.filter((r) => r.id === 3)[0].result).to.be.equal('0x' + Assertions.defaultGasPrice.toString(16));
       }
 
-      let transactionHash;
+      let transactionHash: string;
       {
         const deployerContract = await Utils.deployContract(
           DeployerContractJson.abi,
