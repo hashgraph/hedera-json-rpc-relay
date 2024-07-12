@@ -28,11 +28,14 @@ import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
 import { AliasAccount } from '../types/AliasAccount';
 import ServicesClient from '../clients/servicesClient';
 import http from 'http';
-import { GCProfiler, setFlagsFromString, writeHeapSnapshot } from 'node:v8';
+import { GCProfiler, setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 import { Context } from 'mocha';
+import { writeSnapshot } from 'heapdump';
 
 export class Utils {
+  static readonly MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
+
   /**
    * Converts a number to its hexadecimal representation.
    *
@@ -376,10 +379,16 @@ export class Utils {
     await new Promise((r) => setTimeout(r, time));
   }
 
-  static async writeHeapSnapshotAsync(context: Context): Promise<void> {
-    context.timeout(60000);
-    const snapshotFile = writeHeapSnapshot();
-    console.error(`Heap snapshot written to ${snapshotFile}`);
+  static async writeHeapSnapshotAsync(): Promise<string | undefined> {
+    return new Promise((resolve, reject) => {
+      writeSnapshot((error, fileName) => {
+        if (error) {
+          reject(error);
+        }
+        console.info(`Heap snapshot written to ${fileName}`);
+        resolve(fileName);
+      });
+    });
   }
 
   /**
@@ -396,46 +405,56 @@ export class Utils {
       profiler.start();
     });
 
-    afterEach(async function () {
-      this.timeout(10000);
-      // force a garbage collection to get accurate memory usage
-      gc();
-      const result = profiler.stop();
-      const memoryLeaks = result.statistics.filter((stats) => {
-        return stats.afterGC.heapStatistics.totalHeapSize > stats.beforeGC.heapStatistics.totalHeapSize;
-      });
-      if (memoryLeaks.length > 0) {
-        const totalDiffBytes = memoryLeaks.reduce((acc, stats) => {
-          const diff = stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize;
-          return acc + diff;
-        }, 0);
-        const statsDiff = memoryLeaks.map((stats) => ({
-          gcType: stats.gcType,
-          cost: stats.cost,
-          diffGC: {
-            heapStatistics: Utils.difference(stats.afterGC.heapStatistics, stats.beforeGC.heapStatistics),
-            heapSpaceStatistics: Utils.difference(
-              stats.afterGC.heapSpaceStatistics,
-              stats.beforeGC.heapSpaceStatistics,
-            ),
-          },
-        }));
-        console.error(`Memory leak of ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2));
-        // write a heap snapshot if the memory leak is more than 0.5 MB
-        if (totalDiffBytes > 5e6) {
-          await Utils.writeHeapSnapshotAsync(this);
+    afterEach(async function (this: Context) {
+      this.timeout(60000);
+      await gc(); // force a garbage collection to get accurate memory usage
+      try {
+        const result = profiler.stop();
+        const statsGrowingHeapSize = result.statistics.filter((stats) => {
+          return stats.afterGC.heapStatistics.totalHeapSize > stats.beforeGC.heapStatistics.totalHeapSize;
+        });
+        const isPotentialMemoryLeak = statsGrowingHeapSize.some((stats) => {
+          return stats.afterGC.heapStatistics.totalHeapSize > Utils.MEMORY_LEAK_THRESHOLD;
+        });
+
+        if (isPotentialMemoryLeak) {
+          console.warn('Potential memory leak detected!');
+          const totalDiffBytes = statsGrowingHeapSize.reduce((acc, stats) => {
+            const diff = stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize;
+            return acc + diff;
+          }, 0);
+          const statsDiff = statsGrowingHeapSize.map((stats) => ({
+            gcType: stats.gcType,
+            cost: stats.cost,
+            diffGC: {
+              heapStatistics: Utils.difference(stats.afterGC.heapStatistics, stats.beforeGC.heapStatistics),
+              heapSpaceStatistics: Utils.difference(
+                stats.afterGC.heapSpaceStatistics,
+                stats.beforeGC.heapSpaceStatistics,
+              ),
+            },
+          }));
+          console.error(
+            `Memory leak of ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2),
+          );
+          // write a heap snapshot if the memory leak is more than 1 MB
+          if (totalDiffBytes > 1e6) {
+            console.info('Writing heap snapshot...');
+            await Utils.writeHeapSnapshotAsync();
+          }
         }
+      } catch (error) {
+        console.error('Error capturing memory leaks:', error);
       }
     });
   }
 
   /**
    * Calculates the difference between two objects or arrays of objects.
-   * The difference is calculated by subtracting the values of the properties in the second object from the first.
-   * If the objects are arrays, the function will return an array of the differences.
-   * @param after
-   * @param before
-   * @throws {Error} If the objects are not of the same type or if there are any mismatched properties or values.
+   * This utility method is used to calculate the difference in heap statistics before and after GC.
+   * @param after The object representing the state after an operation.
+   * @param before The object representing the state before the operation.
+   * @returns The difference between the two states.
    */
   static difference<T extends number | string | object | object[]>(after: T, before: T): T {
     if (Array.isArray(after) && Array.isArray(before)) {
@@ -479,14 +498,16 @@ export class Utils {
     return after.map((item: object, index: number) => this.difference(item, before[index])) as T;
   }
 
-  private static formatBytes(bytes: number) {
-    let unitIndex = 0;
-
-    while (bytes >= 1000) {
-      bytes /= 1000;
-      unitIndex++;
-    }
-
-    return `${bytes.toFixed(2)} ${['bytes', 'KB', 'MB', 'GB'][unitIndex]}`;
+  /**
+   * Formats bytes into a readable string.
+   * @param {number} bytes The number of bytes.
+   * @returns {string} A formatted string representing the size in bytes, KB, MB, GB, or TB.
+   */
+  private static formatBytes(bytes: number): string {
+    const units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
+    let power = Math.floor(Math.log(bytes) / Math.log(1000));
+    power = Math.min(power, units.length - 1);
+    const size = bytes / Math.pow(1000, power);
+    return `${size.toFixed(2)} ${units[power]}`;
   }
 }

@@ -35,14 +35,14 @@ import { GCProfiler } from 'node:v8';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 
-// leak detection middleware
-if (process.env.MEMWATCH_ENABLED) {
-  Utils.captureMemoryLeaks(new GCProfiler());
-}
-
 describe('RPC Server', function () {
   let testServer: Server;
   let testClient: AxiosInstance;
+
+  // leak detection middleware
+  if (process.env.MEMWATCH_ENABLED) {
+    Utils.captureMemoryLeaks(new GCProfiler());
+  }
 
   before(function () {
     testServer = app.listen(process.env.E2E_SERVER_PORT);
