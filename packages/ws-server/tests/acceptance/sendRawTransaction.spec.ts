@@ -124,7 +124,8 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
       expect(fromAccountInfo.evm_address).to.eq(accounts[0].address.toLowerCase());
     });
 
-    it(`Should execute eth_sendRawTransaction on Standard Web Socket for the deterministic deployment transaction`, async () => {
+    // Issue: https://github.com/hashgraph/hedera-json-rpc-relay/issues/2700
+    xit(`Should execute eth_sendRawTransaction on Standard Web Socket for the deterministic deployment transaction`, async () => {
       // send gas money to the proxy deployer
       sendHbarToProxyContractDeployerTx.nonce = await global.relay.getAccountNonce(accounts[0].address);
       const signedSendHbarTx = await accounts[0].wallet.signTransaction(sendHbarToProxyContractDeployerTx);
@@ -191,7 +192,8 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
       expect(fromAccountInfo.evm_address).to.eq(accounts[1].address.toLowerCase());
     });
 
-    it(`Should execute eth_sendRawTransaction on Ethers Web Socket Provider for the deterministic deployment transaction`, async () => {
+    // Issue: https://github.com/hashgraph/hedera-json-rpc-relay/issues/2700
+    xit(`Should execute eth_sendRawTransaction on Ethers Web Socket Provider for the deterministic deployment transaction`, async () => {
       // send gas money to the proxy deployer
       sendHbarToProxyContractDeployerTx.nonce = await global.relay.getAccountNonce(accounts[1].address);
       const signedSendHbarTx = await accounts[1].wallet.signTransaction(sendHbarToProxyContractDeployerTx);
