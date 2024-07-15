@@ -537,7 +537,7 @@ export class Utils {
           'POST',
           { body: commentBody },
         );
-        console.debug('Comment posted successfully:', response.url);
+        console.log('Comment posted successfully:', response.url);
       }
     } catch (error) {
       console.warn('Failed to post comment to PR:', error);
