@@ -145,7 +145,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
       it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
         const gasPrice = await relay.gasPrice(requestId);
-        const remainingHbarsBefore = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
         const transaction = {
           ...defaultLondonTransactionData,
@@ -158,12 +158,12 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
         await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
           .fulfilled;
-        const remainingHbarsAfter = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsAfter).to.be.eq(remainingHbarsBefore);
       });
 
       it('should deploy a large contract and decrease remaining HBAR in limiter when transaction data is large', async function () {
-        const remainingHbarsBefore = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsBefore).to.be.gt(0);
 
         const largeContract = await Utils.deployContract(
@@ -172,13 +172,13 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
           accounts[0].wallet,
         );
         await largeContract.waitForDeployment();
-        const remainingHbarsAfter = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(largeContract.target).to.not.be.null;
         expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
       });
 
       it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
-        const remainingHbarsBefore = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsBefore).to.be.gt(0);
         try {
           for (let i = 0; i < 1000; i++) {
@@ -196,7 +196,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
           expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
         }
 
-        const remainingHbarsAfter = Number(await metrics.get('rpc_relay_hbar_rate_remaining'));
+        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsAfter).to.be.lte(0);
       });
     });
