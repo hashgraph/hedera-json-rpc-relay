@@ -38,7 +38,6 @@ import {
   FeeComponents,
   Query,
   Transaction,
-  TransactionRecord,
   Status,
   FileCreateTransaction,
   FileAppendTransaction,
