@@ -399,6 +399,7 @@ export class Utils {
    */
   static captureMemoryLeaks(profiler: GCProfiler): void {
     setFlagsFromString('--expose_gc');
+    // TODO: Used for debugging, remove this as its cluttering the logs with traces from the garbage collector
     setFlagsFromString('--trace_gc');
     const gc = runInNewContext('gc');
 
