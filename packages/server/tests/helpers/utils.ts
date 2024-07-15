@@ -532,44 +532,55 @@ export class Utils {
 
       if (prs.data.length > 0) {
         const prNumber = prs.data[0].number;
-        const response: CreateCommentResponse = await axios.post(
+        const response = await Utils.executeGithubRequest<CreateCommentResponse>(
           `https://api.github.com/repos/${state.owner}/${state.repository}/issues/${prNumber}/comments`,
+          'POST',
           { body: commentBody },
-          {
-            headers: {
-              Authorization: `token ${state.token}`,
-              'User-Agent': 'Hedera JSON-RPC Relay',
-            },
-          },
         );
-        console.debug('Comment posted successfully:', response.data.url);
+        console.debug('Comment posted successfully:', response.url);
       }
     } catch (error) {
       console.warn('Failed to post comment to PR:', error);
     }
   }
 
-  private static async getPullRequestDetails({
-    owner,
-    repository,
-    token,
-    prNumber,
-  }: GithubContext): Promise<ListPullsResponse> {
-    const url = `https://api.github.com/repos/${owner}/${repository}/pulls/${prNumber}`;
-    return await axios.get(url, {
-      headers: {
-        Authorization: `token ${token}`,
-        'User-Agent': 'Hedera JSON-RPC Relay',
-      },
-    });
+  private static async getPullRequestDetails(context: GithubContext): Promise<ListPullsResponse> {
+    return await Utils.executeGithubRequest<ListPullsResponse>(
+      `https://api.github.com/repos/${context.owner}/${context.repository}/pulls/${context.prNumber}`,
+      'GET',
+    );
   }
 
   private static getGithubContext(): GithubContext {
     const { GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_TOKEN } = process.env;
     if (!GITHUB_REPOSITORY || !GITHUB_PR_NUMBER || !GITHUB_TOKEN) {
-      throw new Error('Missing required environment variables: GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_TOKEN');
+      throw new Error(`Missing required environment variables: $GITHUB_REPOSITORY, $GITHUB_PR_NUMBER, $GITHUB_TOKEN`);
     }
     const [owner, repo] = GITHUB_REPOSITORY!.split('/');
     return { owner, repository: repo, token: GITHUB_TOKEN, prNumber: GITHUB_PR_NUMBER };
+  }
+
+  private static async executeGithubRequest<T>(url: string, method: 'GET' | 'POST', body?: any): Promise<T> {
+    const { GITHUB_TOKEN } = process.env;
+    if (!GITHUB_TOKEN) {
+      throw new Error('GitHub token is not set in environment variables.');
+    }
+    try {
+      const headers = {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        'User-Agent': 'Hedera JSON-RPC Relay',
+        'Content-Type': 'application/json',
+      };
+      const response = await axios({
+        headers,
+        method,
+        url,
+        data: body,
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`GitHub API call to ${url} failed:`, error);
+      throw new Error(`Failed to make GitHub API call to ${url}`);
+    }
   }
 }
