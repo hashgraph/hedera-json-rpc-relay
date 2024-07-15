@@ -34,7 +34,8 @@ import { Context } from 'mocha';
 import { writeSnapshot } from 'heapdump';
 
 export class Utils {
-  static readonly MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
+  static readonly TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
+  static readonly MEMORY_LEAK_SNAPSHOT_THRESHOLD: number = 1e6; // 1 MB
 
   /**
    * Converts a number to its hexadecimal representation.
@@ -414,7 +415,7 @@ export class Utils {
           return stats.afterGC.heapStatistics.totalHeapSize > stats.beforeGC.heapStatistics.totalHeapSize;
         });
         const isPotentialMemoryLeak = statsGrowingHeapSize.some((stats) => {
-          return stats.afterGC.heapStatistics.totalHeapSize > Utils.MEMORY_LEAK_THRESHOLD;
+          return stats.afterGC.heapStatistics.totalHeapSize > Utils.TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD;
         });
 
         if (isPotentialMemoryLeak) {
@@ -438,7 +439,8 @@ export class Utils {
             `Memory leak of ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2),
           );
           // write a heap snapshot if the memory leak is more than 1 MB
-          if (totalDiffBytes > 1e6) {
+          const isMemoryLeakSnapshotEnabled = process.env.WRITE_SNAPSHOT_ON_MEMORY_LEAK === 'true';
+          if (isMemoryLeakSnapshotEnabled && totalDiffBytes > Utils.MEMORY_LEAK_SNAPSHOT_THRESHOLD) {
             console.info('Writing heap snapshot...');
             await Utils.writeHeapSnapshotAsync();
           }

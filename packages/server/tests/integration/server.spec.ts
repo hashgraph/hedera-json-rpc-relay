@@ -40,7 +40,7 @@ describe('RPC Server', function () {
   let testClient: AxiosInstance;
 
   // leak detection middleware
-  if (process.env.MEMWATCH_ENABLED) {
+  if (process.env.MEMWATCH_ENABLED === 'true') {
     Utils.captureMemoryLeaks(new GCProfiler());
   }
 

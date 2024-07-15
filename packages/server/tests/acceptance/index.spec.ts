@@ -94,7 +94,7 @@ describe('RPC Server Acceptance Tests', function () {
   global.initialBalance = INITIAL_BALANCE;
 
   // leak detection middleware
-  if (process.env.MEMWATCH_ENABLED) {
+  if (process.env.MEMWATCH_ENABLED === 'true') {
     Utils.captureMemoryLeaks(new GCProfiler());
   }
 
