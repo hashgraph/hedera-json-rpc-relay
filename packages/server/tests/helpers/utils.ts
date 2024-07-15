@@ -32,6 +32,12 @@ import { GCProfiler, setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 import { Context } from 'mocha';
 import { writeSnapshot } from 'heapdump';
+import { Endpoints } from '@octokit/types';
+import axios from 'axios';
+
+type ListPullsResponse = Endpoints['GET /repos/{owner}/{repo}/pulls']['response'];
+type CreateCommentResponse = Endpoints['POST /repos/{owner}/{repo}/issues/{issue_number}/comments']['response'];
+type GithubState = { owner: string; repo: string; token: string; prNumber: string };
 
 export class Utils {
   static readonly TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
@@ -439,6 +445,11 @@ export class Utils {
           console.error(
             `Memory leak of ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2),
           );
+          // add comment on PR highlighting after which test the memory leak is happening
+          await Utils.postCommentToPR(
+            `Memory leak detected in test: ${this.currentTest?.title}\n
+            Details: ${JSON.stringify(statsDiff, null, 2)}`,
+          );
           // write a heap snapshot if the memory leak is more than 1 MB
           const isMemoryLeakSnapshotEnabled = process.env.WRITE_SNAPSHOT_ON_MEMORY_LEAK === 'true';
           if (isMemoryLeakSnapshotEnabled && totalDiffBytes > Utils.MEMORY_LEAK_SNAPSHOT_THRESHOLD) {
@@ -512,5 +523,48 @@ export class Utils {
     power = Math.min(power, units.length - 1);
     const size = bytes / Math.pow(1000, power);
     return `${size.toFixed(2)} ${units[power]}`;
+  }
+
+  static async postCommentToPR(commentBody: string): Promise<void> {
+    try {
+      const state = Utils.getGithubState();
+      const prs = await Utils.getPRDetails(state);
+
+      if (prs.data.length > 0) {
+        const prNumber = prs.data[0].number;
+        const response: CreateCommentResponse = await axios.post(
+          `https://api.github.com/repos/${state.owner}/${state.repo}/issues/${prNumber}/comments`,
+          { body: commentBody },
+          {
+            headers: {
+              Authorization: `token ${state.token}`,
+              'User-Agent': 'Hedera JSON-RPC Relay',
+            },
+          },
+        );
+        console.debug('Comment posted successfully:', response.data.url);
+      }
+    } catch (error) {
+      console.warn('Failed to post comment to PR:', error);
+    }
+  }
+
+  private static async getPRDetails({ owner, repo, token, prNumber }: GithubState): Promise<ListPullsResponse> {
+    const url = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`;
+    return await axios.get(url, {
+      headers: {
+        Authorization: `token ${token}`,
+        'User-Agent': 'Hedera JSON-RPC Relay',
+      },
+    });
+  }
+
+  private static getGithubState(): GithubState {
+    const { GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_TOKEN } = process.env;
+    if (!GITHUB_REPOSITORY || !GITHUB_PR_NUMBER || !GITHUB_TOKEN) {
+      throw new Error('Missing required environment variables: GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_TOKEN');
+    }
+    const [owner, repo] = GITHUB_REPOSITORY!.split('/');
+    return { owner, repo, token: GITHUB_TOKEN, prNumber: GITHUB_PR_NUMBER };
   }
 }
