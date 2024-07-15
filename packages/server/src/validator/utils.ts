@@ -13,12 +13,11 @@ export function validateParam(index: number | string, param: any, validation: an
   if (requiredIsMissing(param, validation.required)) {
     throw predefined.MISSING_REQUIRED_PARAMETER(index);
   }
-
   if (param === null) {
     throw predefined.INVALID_PARAMETER(index, `The value passed is not valid: ${param}.`);
   }
 
-  if (Array.isArray(paramType)) {
+  if (param != null && Array.isArray(paramType)) {
     const results: any[] = [];
     for (const type of paramType) {
       const validator = Validator.TYPES[type];
@@ -31,7 +30,7 @@ export function validateParam(index: number | string, param: any, validation: an
     }
   }
 
-  if (!Array.isArray(paramType)) {
+  if (param != null && !Array.isArray(paramType)) {
     const result = isArray ? paramType.test(index, param, validation.type[1]) : paramType.test(param);
     if (result === false) {
       throw predefined.INVALID_PARAMETER(index, `${paramType.error}, value: ${param}`);
