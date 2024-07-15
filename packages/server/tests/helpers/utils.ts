@@ -37,7 +37,7 @@ import axios from 'axios';
 
 type ListPullsResponse = Endpoints['GET /repos/{owner}/{repo}/pulls']['response'];
 type CreateCommentResponse = Endpoints['POST /repos/{owner}/{repo}/issues/{issue_number}/comments']['response'];
-type GithubState = { owner: string; repo: string; token: string; prNumber: string };
+type GithubContext = { owner: string; repository: string; token: string; prNumber: string };
 
 export class Utils {
   static readonly TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
@@ -446,7 +446,7 @@ export class Utils {
             `Memory leak of ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2),
           );
           // add comment on PR highlighting after which test the memory leak is happening
-          await Utils.postCommentToPR(
+          await Utils.addCommentToPullRequest(
             `Memory leak detected in test: ${this.currentTest?.title}\n
             Details: ${JSON.stringify(statsDiff, null, 2)}`,
           );
@@ -525,15 +525,15 @@ export class Utils {
     return `${size.toFixed(2)} ${units[power]}`;
   }
 
-  static async postCommentToPR(commentBody: string): Promise<void> {
+  private static async addCommentToPullRequest(commentBody: string): Promise<void> {
     try {
-      const state = Utils.getGithubState();
-      const prs = await Utils.getPRDetails(state);
+      const state = Utils.getGithubContext();
+      const prs = await Utils.getPullRequestDetails(state);
 
       if (prs.data.length > 0) {
         const prNumber = prs.data[0].number;
         const response: CreateCommentResponse = await axios.post(
-          `https://api.github.com/repos/${state.owner}/${state.repo}/issues/${prNumber}/comments`,
+          `https://api.github.com/repos/${state.owner}/${state.repository}/issues/${prNumber}/comments`,
           { body: commentBody },
           {
             headers: {
@@ -549,8 +549,13 @@ export class Utils {
     }
   }
 
-  private static async getPRDetails({ owner, repo, token, prNumber }: GithubState): Promise<ListPullsResponse> {
-    const url = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`;
+  private static async getPullRequestDetails({
+    owner,
+    repository,
+    token,
+    prNumber,
+  }: GithubContext): Promise<ListPullsResponse> {
+    const url = `https://api.github.com/repos/${owner}/${repository}/pulls/${prNumber}`;
     return await axios.get(url, {
       headers: {
         Authorization: `token ${token}`,
@@ -559,12 +564,12 @@ export class Utils {
     });
   }
 
-  private static getGithubState(): GithubState {
+  private static getGithubContext(): GithubContext {
     const { GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_TOKEN } = process.env;
     if (!GITHUB_REPOSITORY || !GITHUB_PR_NUMBER || !GITHUB_TOKEN) {
       throw new Error('Missing required environment variables: GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_TOKEN');
     }
     const [owner, repo] = GITHUB_REPOSITORY!.split('/');
-    return { owner, repo, token: GITHUB_TOKEN, prNumber: GITHUB_PR_NUMBER };
+    return { owner, repository: repo, token: GITHUB_TOKEN, prNumber: GITHUB_PR_NUMBER };
   }
 }
