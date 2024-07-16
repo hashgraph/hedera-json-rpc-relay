@@ -8,7 +8,7 @@
   "dependencies": {
     "@hashgraph/json-rpc-relay": "file:../relay",
     "axios": "^1.4.0",
-    "co-body": "6.1.0",
+    "co-body": "6.2.0",
     "dotenv": "^16.0.0",
     "koa": "^2.13.4",
     "koa-body-parser": "^0.2.1",
