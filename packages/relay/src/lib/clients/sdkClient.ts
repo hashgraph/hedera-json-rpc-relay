@@ -468,61 +468,20 @@ export class SDKClient {
     const transactionType = transaction.constructor.name;
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
-    try {
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
-      if (shouldLimit) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
-
-      this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
-      const resp = await transaction.execute(this.clientMain);
-
-      this.logger.info(
-        `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
-      );
-      return resp;
-    } catch (e: any) {
-      const sdkClientError = new SDKClientError(e, e.message);
-      let transactionFee: number | Hbar = 0;
-
-      // if valid network error utilize transaction id
-      if (sdkClientError.isValidNetworkError()) {
-        try {
-          const transactionRecord = await new TransactionRecordQuery()
-            .setTransactionId(transaction.transactionId!)
-            .setNodeAccountIds(transaction.nodeAccountIds!)
-            .setValidateReceiptStatus(false)
-            .execute(this.clientMain);
-          transactionFee = transactionRecord.transactionFee;
-
-          this.captureMetrics(
-            SDKClient.transactionMode,
-            transactionType,
-            sdkClientError.status,
-            transactionFee.toTinybars().toNumber(),
-            transactionRecord?.contractFunctionResult?.gasUsed,
-            callerName,
-            interactingEntity,
-          );
-
-          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-        } catch (err: any) {
-          const recordQueryError = new SDKClientError(err, err.message);
-          this.logger.error(
-            recordQueryError,
-            `${requestIdPrefix} Error raised during TransactionRecordQuery for ${transaction.transactionId}`,
-          );
-        }
-      }
-
-      this.logger.trace(
-        `${requestIdPrefix} ${transaction.transactionId} ${callerName} ${transactionType} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
-      );
-      if (e instanceof JsonRpcError) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
-      throw sdkClientError;
+    const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+    if (shouldLimit) {
+      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
     }
+
+    this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
+    const resp = await transaction.execute(this.clientMain);
+
+    await this.executeGetTransactionRecord(resp, transactionType, callerName, interactingEntity, requestId);
+
+    this.logger.info(
+      `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
+    );
+    return resp;
   };
 
   async executeGetTransactionRecord(
@@ -541,15 +500,10 @@ export class SDKClient {
           `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(resp)}`,
         );
       }
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, transactionName);
-      if (shouldLimit) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
-
       const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
       const cost = transactionRecord.transactionFee.toTinybars().toNumber();
-      this.hbarLimiter.addExpense(cost, currentDateNow);
-      this.logger.info(
+
+      this.logger.debug(
         `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionName} record status: ${Status.Success} (${Status.Success._code}), cost: ${transactionRecord.transactionFee}`,
       );
       this.captureMetrics(
@@ -563,7 +517,6 @@ export class SDKClient {
       );
 
       this.hbarLimiter.addExpense(cost, currentDateNow);
-
       return transactionRecord;
     } catch (e: any) {
       // capture sdk record retrieval errors and shorten familiar stack trace
