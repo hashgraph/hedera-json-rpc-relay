@@ -53,6 +53,7 @@ config:
   DEBUG_API_ENABLED: false
   FILTER_API_ENABLED: true
   MULTI_SET: true
+  GAS_PRICE_PERCENTAGE_BUFFER: 0
 
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []

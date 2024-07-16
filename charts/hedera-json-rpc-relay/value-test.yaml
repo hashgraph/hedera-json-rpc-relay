@@ -135,6 +135,7 @@ config:
   DEBUG_API_ENABLED: false
   FILTER_API_ENABLED: true
   MULTI_SET: true
+  GAS_PRICE_PERCENTAGE_BUFFER: 0
 
 # Enable rolling_restarts if SDK calls fail this is usually due to stale connections that get cycled on restart
 rolling_restart:
