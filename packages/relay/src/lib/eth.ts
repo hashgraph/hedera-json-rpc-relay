@@ -680,10 +680,10 @@ export class EthImpl implements Eth {
    */
   private async getAccount(address: string, requestIdPrefix?: string) {
     const key = `${constants.CACHE_KEY.ACCOUNT}_${address}`;
-    let account = this.cacheService.getSharedWithFallback(key, EthImpl.ethEstimateGas, requestIdPrefix);
+    let account = await this.cacheService.getSharedWithFallback(key, EthImpl.ethEstimateGas, requestIdPrefix);
     if (!account) {
       account = await this.mirrorNodeClient.getAccount(address, requestIdPrefix);
-      this.cacheService.set(key, account, EthImpl.ethEstimateGas, undefined, requestIdPrefix);
+      await this.cacheService.set(key, account, EthImpl.ethEstimateGas, undefined, requestIdPrefix);
     }
     return account;
   }
