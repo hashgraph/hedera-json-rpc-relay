@@ -43,58 +43,58 @@ describe('LocalLRUCache Test Suite', async function () {
 
   describe('verify simple cache', async function () {
     it('get on empty cache return null', async function () {
-      const cacheValue = localLRUCache.get('test', callingMethod);
+      const cacheValue = await localLRUCache.get('test', callingMethod);
       expect(cacheValue).to.be.null;
     });
 
     it('get on valid string cache returns non null', async function () {
       const key = 'key';
       const expectedValue = 'value';
-      localLRUCache.set(key, expectedValue, callingMethod);
-      const cacheValue = localLRUCache.get(key, callingMethod);
+      await localLRUCache.set(key, expectedValue, callingMethod);
+      const cacheValue = await localLRUCache.get(key, callingMethod);
       expect(cacheValue).to.be.equal(expectedValue);
     });
 
     it('get on valid int cache returns non null', async function () {
       const key = 'key';
       const expectedValue = 1;
-      localLRUCache.set(key, expectedValue, callingMethod);
-      const cacheValue = localLRUCache.get(key, callingMethod);
+      await localLRUCache.set(key, expectedValue, callingMethod);
+      const cacheValue = await localLRUCache.get(key, callingMethod);
       expect(cacheValue).to.be.equal(expectedValue);
     });
 
     it('get on valid false boolean cache returns non null', async function () {
       const key = 'key';
       const expectedValue = false;
-      localLRUCache.set(key, expectedValue, callingMethod);
-      const cacheValue = localLRUCache.get(key, callingMethod);
+      await localLRUCache.set(key, expectedValue, callingMethod);
+      const cacheValue = await localLRUCache.get(key, callingMethod);
       expect(cacheValue).to.be.equal(expectedValue);
     });
 
     it('get on valid true boolean cache returns non null', async function () {
       const key = 'key';
       const expectedValue = true;
-      localLRUCache.set(key, expectedValue, callingMethod);
-      const cacheValue = localLRUCache.get(key, callingMethod);
+      await localLRUCache.set(key, expectedValue, callingMethod);
+      const cacheValue = await localLRUCache.get(key, callingMethod);
       expect(cacheValue).to.be.equal(expectedValue);
     });
 
     it('get on valid object cache returns non null', async function () {
       const key = 'key';
       const expectedValue = { key: 'value' };
-      localLRUCache.set(key, expectedValue, callingMethod);
-      const cacheValue = localLRUCache.get(key, callingMethod);
+      await localLRUCache.set(key, expectedValue, callingMethod);
+      const cacheValue = await localLRUCache.get(key, callingMethod);
       expect(cacheValue).to.be.equal(expectedValue);
     });
 
     it('delete a valid object', async function () {
       const key = 'key';
       const expectedValue = { key: 'value' };
-      localLRUCache.set(key, expectedValue, callingMethod);
-      const cacheValueBeforeDelete = localLRUCache.get(key, callingMethod);
+      await localLRUCache.set(key, expectedValue, callingMethod);
+      const cacheValueBeforeDelete = await localLRUCache.get(key, callingMethod);
       localLRUCache.delete(key, callingMethod);
 
-      const cacheValueAfterDelete = localLRUCache.get(key, callingMethod);
+      const cacheValueAfterDelete = await localLRUCache.get(key, callingMethod);
       expect(cacheValueBeforeDelete).to.not.be.null;
       expect(cacheValueAfterDelete).to.be.null;
     });
@@ -119,20 +119,23 @@ describe('LocalLRUCache Test Suite', async function () {
         customLocalLRUCache.set(key, value, callingMethod);
       });
 
+      const key1 = await customLocalLRUCache.get('key1', callingMethod);
+      const key2 = await customLocalLRUCache.get('key2', callingMethod);
+      const key3 = await customLocalLRUCache.get('key3', callingMethod);
       // expect cache to have capped at max size
-      expect(customLocalLRUCache.get('key1', callingMethod)).to.be.null; // key1 should have been evicted
-      expect(customLocalLRUCache.get('key2', callingMethod)).to.be.equal(keyValuePairs.key2);
-      expect(customLocalLRUCache.get('key3', callingMethod)).to.be.equal(keyValuePairs.key3);
+      expect(key1).to.be.null; // key1 should have been evicted
+      expect(key2).to.be.equal(keyValuePairs.key2);
+      expect(key3).to.be.equal(keyValuePairs.key3);
     });
 
     it('verify cache LRU nature', async function () {
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const key = 'key';
       let valueCount = 0; // keep track of values sets
-      customLocalLRUCache.set(key, ++valueCount, callingMethod);
-      customLocalLRUCache.set(key, ++valueCount, callingMethod);
-      customLocalLRUCache.set(key, ++valueCount, callingMethod);
-      const cacheValue = customLocalLRUCache.get(key, callingMethod);
+      await customLocalLRUCache.set(key, ++valueCount, callingMethod);
+      await customLocalLRUCache.set(key, ++valueCount, callingMethod);
+      await customLocalLRUCache.set(key, ++valueCount, callingMethod);
+      const cacheValue = await customLocalLRUCache.get(key, callingMethod);
       // expect cache to have latest value for key
       expect(cacheValue).to.be.equal(valueCount);
     });
@@ -140,9 +143,10 @@ describe('LocalLRUCache Test Suite', async function () {
     it('verify cache ttl nature', async function () {
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const key = 'key';
-      customLocalLRUCache.set(key, 'value', callingMethod, 100); // set ttl to 1 ms
+      await customLocalLRUCache.set(key, 'value', callingMethod, 100); // set ttl to 1 ms
       await new Promise((r) => setTimeout(r, 500)); // wait for ttl to expire
-      const cacheValue = customLocalLRUCache.get(key, callingMethod);
+      const cacheValue = await customLocalLRUCache.get(key, callingMethod);
+      console.log(cacheValue);
       expect(cacheValue).to.be.null;
     });
   });
