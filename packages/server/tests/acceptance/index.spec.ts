@@ -94,6 +94,15 @@ describe('RPC Server Acceptance Tests', function () {
   global.logger = logger;
   global.initialBalance = INITIAL_BALANCE;
 
+  global.restartLocalRelay = async function () {
+    if (global.relayIsLocal) {
+      stopRelay();
+      await new Promise((r) => setTimeout(r, 5000)); // wait for server to shutdown
+
+      runLocalRelay();
+    }
+  };
+
   before(async () => {
     // configuration details
     logger.info('Acceptance Tests Configurations successfully loaded');
@@ -154,15 +163,7 @@ describe('RPC Server Acceptance Tests', function () {
     const cost = startOperatorBalance.toTinybars().subtract(endOperatorBalance.toTinybars());
     logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
 
-    //stop relay
-    logger.info('Stop relay');
-    if (relayServer !== undefined) {
-      relayServer.close();
-    }
-
-    if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
-      socketServer.close();
-    }
+    stopRelay();
   });
 
   describe('Acceptance tests', async () => {
@@ -180,6 +181,18 @@ describe('RPC Server Acceptance Tests', function () {
   function loadTest(testFile) {
     if (testFile !== 'index.spec.ts' && testFile.endsWith('.spec.ts')) {
       require(`./${testFile}`);
+    }
+  }
+
+  function stopRelay() {
+    //stop relay
+    logger.info('Stop relay');
+    if (relayServer !== undefined) {
+      relayServer.close();
+    }
+
+    if (process.env.TEST_WS_SERVER === 'true' && global.socketServer !== undefined) {
+      global.socketServer.close();
     }
   }
 

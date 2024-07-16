@@ -567,8 +567,7 @@ export class SDKClient {
         .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
 
       const fileCreateTxResponse = await fileCreateTx.execute(client);
-      const fileCreateReceipt = await fileCreateTxResponse.getReceipt(client);
-      const { fileId } = fileCreateReceipt;
+      const { fileId } = await fileCreateTxResponse.getReceipt(client);
 
       // get transaction fee and add expense to limiter
       const createFileRecord = await fileCreateTxResponse.getRecord(this.clientMain);
@@ -593,24 +592,21 @@ export class SDKClient {
           .setMaxChunks(this.maxChunks);
         const fileAppendTxResponses = await fileAppendTx.executeAll(client);
 
-        let totalTinybarsCost = 0;
         for (let fileAppendTxResponse of fileAppendTxResponses) {
           // get transaction fee and add expense to limiter
           const appendFileRecord = await fileAppendTxResponse.getRecord(this.clientMain);
-          totalTinybarsCost += appendFileRecord.transactionFee.toTinybars().toNumber();
-        }
+          const tinybarsCost = appendFileRecord.transactionFee.toTinybars().toNumber();
 
-        if (totalTinybarsCost > 0) {
-          this.hbarLimiter.addExpense(totalTinybarsCost, currentDateNow);
           this.captureMetrics(
             SDKClient.transactionMode,
             fileAppendTx.constructor.name,
             Status.Success,
-            totalTinybarsCost,
+            tinybarsCost,
             0,
             callerName,
             interactingEntity,
           );
+          this.hbarLimiter.addExpense(tinybarsCost, currentDateNow);
         }
       }
 

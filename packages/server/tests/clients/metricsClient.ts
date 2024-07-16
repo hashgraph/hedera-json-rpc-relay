@@ -45,7 +45,13 @@ export default class MetricsClient {
   }
 
   /**
-   * Retrieves the value of a specified metric
+   * Retrieves the value of a specified metric.
+   *
+   * The response from the /metrics endpoint is a large string with multiple rows of key-value pairs,
+   * separated by " ", where the key is the metric name.
+   * Rows may begin with #, which represents a comment and should be ignored.
+   * This method retrieves the whole response, splits it into rows, finds the first row that starts with the
+   * provided metric name and returns the corresponding value.
    * @param metric
    * @param requestId
    */
