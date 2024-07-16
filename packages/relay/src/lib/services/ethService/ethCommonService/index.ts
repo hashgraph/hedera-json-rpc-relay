@@ -109,8 +109,10 @@ export class CommonService implements ICommonService {
       toBlock = CommonService.blockLatest;
     }
 
+    const latestBlockNumber: string = await this.getLatestBlockNumber(requestIdPrefix);
+
     // toBlock is a number and is less than the current block number and fromBlock is not defined
-    if (Number(toBlock) < Number(await this.getLatestBlockNumber(requestIdPrefix)) && !fromBlock) {
+    if (Number(toBlock) < Number(latestBlockNumber) && !fromBlock) {
       throw predefined.MISSING_FROM_BLOCK_PARAM;
     }
 

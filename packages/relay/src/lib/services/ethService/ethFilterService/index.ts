@@ -209,9 +209,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = this.cacheService.isRedisEnabled()
-      ? await this.cacheService.getSharedWithFallback(cacheKey, this.ethGetFilterChanges, requestIdPrefix)
-      : await this.cacheService.get(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
+    const filter = await this.cacheService.getSharedWithFallback(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
 
     if (!filter) {
       throw predefined.FILTER_NOT_FOUND;
