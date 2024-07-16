@@ -500,10 +500,14 @@ export class SDKClient {
           `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(resp)}`,
         );
       }
-      const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
+      const transactionRecord = await new TransactionRecordQuery()
+        .setTransactionId(resp.transactionId!)
+        .setValidateReceiptStatus(false)
+        .execute(this.clientMain);
+
       const cost = transactionRecord.transactionFee.toTinybars().toNumber();
 
-      this.logger.debug(
+      this.logger.trace(
         `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionName} record status: ${Status.Success} (${Status.Success._code}), cost: ${transactionRecord.transactionFee}`,
       );
       this.captureMetrics(
