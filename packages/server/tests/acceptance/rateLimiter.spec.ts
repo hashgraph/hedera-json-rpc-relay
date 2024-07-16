@@ -103,7 +103,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
         // Set new env values and restart the relay
         // Make sure the operator is not 0.0.2 because it is exempt from fees
         process.env.OPERATOR_ID_MAIN = process.env.OPERATOR_ID_MAIN_NON_GENESIS;
-        process.env.OPERATOR_ID_MAIN = process.env.OPERATOR_KEY_MAIN_NON_GENESIS;
+        process.env.OPERATOR_KEY_MAIN = process.env.OPERATOR_KEY_MAIN_NON_GENESIS;
 
         // Set the limit to a lower value
         process.env.HBAR_RATE_LIMIT_TINYBAR = '3000000000';
@@ -113,7 +113,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
       after(async () => {
         // Reset original env values
         process.env.OPERATOR_ID_MAIN = originalOperatorId;
-        process.env.OPERATOR_ID_MAIN = originalOperatorKey;
+        process.env.OPERATOR_KEY_MAIN = originalOperatorKey;
         process.env.HBAR_RATE_LIMIT_TINYBAR = originalHbarRateLimit;
       });
 
