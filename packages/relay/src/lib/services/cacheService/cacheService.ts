@@ -23,7 +23,6 @@ import { Counter, Registry } from 'prom-client';
 import { ICacheClient } from '../../clients/cache/ICacheClient';
 import { LocalLRUCache, RedisCache } from '../../clients';
 import { RedisCacheError } from '../../errors/RedisCacheError';
-import { IRedisCacheClient } from '../../clients/cache/IRedisCacheClient';
 
 /**
  * A service that manages caching using different cache implementations based on configuration.
@@ -92,12 +91,13 @@ export class CacheService {
     this.register = register;
 
     this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
-    this.sharedCache = this.internalCache;
     this.isSharedCacheEnabled = process.env.TEST === 'true' ? false : this.isRedisEnabled();
     this.shouldMultiSet = process.env.MULTI_SET && process.env.MULTI_SET === 'true' ? true : false;
 
     if (this.isSharedCacheEnabled) {
       this.sharedCache = new RedisCache(logger.child({ name: 'redisCache' }), register);
+    } else {
+      this.sharedCache = this.internalCache;
     }
 
     /**
