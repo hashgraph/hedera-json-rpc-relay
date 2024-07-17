@@ -38,6 +38,7 @@ import {
   FeeComponents,
   Query,
   Transaction,
+  TransactionRecord,
   Status,
   FileCreateTransaction,
   FileAppendTransaction,
@@ -523,6 +524,91 @@ export class SDKClient {
       throw sdkClientError;
     }
   };
+
+  async executeGetTransactionRecord(
+    resp: TransactionResponse,
+    transactionName: string,
+    callerName: string,
+    interactingEntity: string,
+    requestId?: string,
+  ): Promise<TransactionRecord> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const currentDateNow = Date.now();
+    try {
+      if (!resp.getRecord) {
+        throw new SDKClientError(
+          {},
+          `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(resp)}`,
+        );
+      }
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, transactionName);
+      if (shouldLimit) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+
+      const transactionRecord: TransactionRecord = await resp.getRecord(this.clientMain);
+      const cost = transactionRecord.transactionFee.toTinybars().toNumber();
+      this.hbarLimiter.addExpense(cost, currentDateNow);
+      this.logger.info(
+        `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionName} record status: ${Status.Success} (${Status.Success._code}), cost: ${transactionRecord.transactionFee}`,
+      );
+      this.captureMetrics(
+        SDKClient.transactionMode,
+        transactionName,
+        transactionRecord.receipt.status,
+        cost,
+        transactionRecord?.contractFunctionResult?.gasUsed,
+        callerName,
+        interactingEntity,
+      );
+
+      this.hbarLimiter.addExpense(cost, currentDateNow);
+
+      return transactionRecord;
+    } catch (e: any) {
+      // capture sdk record retrieval errors and shorten familiar stack trace
+      const sdkClientError = new SDKClientError(e, e.message);
+      let transactionFee: number | Hbar = 0;
+      if (sdkClientError.isValidNetworkError()) {
+        try {
+          // pull transaction record for fee
+          const transactionRecord = await new TransactionRecordQuery()
+            .setTransactionId(resp.transactionId!)
+            .setNodeAccountIds([resp.nodeId])
+            .setValidateReceiptStatus(false)
+            .execute(this.clientMain);
+          transactionFee = transactionRecord.transactionFee;
+
+          this.captureMetrics(
+            SDKClient.transactionMode,
+            transactionName,
+            sdkClientError.status,
+            transactionFee.toTinybars().toNumber(),
+            transactionRecord?.contractFunctionResult?.gasUsed,
+            callerName,
+            interactingEntity,
+          );
+
+          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+        } catch (err: any) {
+          const recordQueryError = new SDKClientError(err, err.message);
+          this.logger.error(
+            recordQueryError,
+            `${requestIdPrefix} Error raised during TransactionRecordQuery for ${resp.transactionId}`,
+          );
+        }
+      }
+
+      this.logger.debug(
+        `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionName} record status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+      );
+
+      if (e instanceof JsonRpcError) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+      throw sdkClientError;
+    }
+  }
 
   private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
     const resolvedCost = cost ? cost : 0;
