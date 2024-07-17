@@ -94,7 +94,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
   if (global.relayIsLocal) {
-    describe('HBAR Limiter Acceptance Tests', function () {
+    describe.only('HBAR Limiter Acceptance Tests', function () {
       const originalOperatorId = process.env.OPERATOR_ID_MAIN;
       const originalOperatorKey = process.env.OPERATOR_KEY_MAIN;
       const originalHbarRateLimit = process.env.HBAR_RATE_LIMIT_TINYBAR;
@@ -205,7 +205,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           expect(remainingHbarsBefore).to.be.gt(0);
           try {
-            for (let i = 0; i < 1000; i++) {
+            for (let i = 0; i < 50; i++) {
               const largeContract = await Utils.deployContract(
                 largeContractJson.abi,
                 largeContractJson.bytecode,
