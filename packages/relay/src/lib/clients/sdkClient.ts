@@ -747,45 +747,48 @@ export class SDKClient {
    * @param callerName
    * @param interactingEntity
    */
-  public deleteFile = async (fileId: FileId, requestId?: string, callerName?: string, interactingEntity?: string) => {
-    // format request ID msg
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-
+  public deleteFile = async (fileId: FileId, requestId: string, callerName: string, interactingEntity: string) => {
+    const currentDateNow = Date.now();
+    let fileDeleteTx: any;
     try {
+      /**
+       *  @note The shouldLimitHbar check is intentionally omitted here.
+       * The deleteFile() method functions as a supplementary operation
+       * that will execute regardless at the end of sendRawTransaction.
+       * Consequently, this method should not be interrupted.
+       */
+
       // Create fileDeleteTx
-      const fileDeleteTx = new FileDeleteTransaction()
+      fileDeleteTx = new FileDeleteTransaction()
         .setFileId(fileId)
         .setMaxTransactionFee(new Hbar(2))
         .freezeWith(this.clientMain);
 
       // execute fileDeleteTx
-      const fileDeleteTxResponse = await fileDeleteTx.execute(this.clientMain);
+      await fileDeleteTx.execute(this.clientMain);
 
-      // get fileDeleteTx's record
-      const deleteFileRecord = await fileDeleteTxResponse.getRecord(this.clientMain);
-
-      // capture metrics
-      this.captureMetrics(
-        SDKClient.transactionMode,
+      // ensure the file is deleted
+      // @todo: figure out the relationship between query.getCost() with the actual HBAR operator get charged => capture in metrics
+      const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
+      if (fileInfo.isDeleted) {
+        this.logger.trace(`${requestId} File ${fileId} is deleted.`);
+      } else {
+        this.logger.warn(`${requestId} Fail to delete file ${fileId}`);
+      }
+    } catch (error: any) {
+      this.logger.warn(`${requestId} ${error['message']} `);
+    } finally {
+      // retrieve txFee for fileDeleteTx and capture them in metrics and rate limitter
+      await this.retrieveAndCaptureChargedTxFee(
+        fileDeleteTx.transactionId!.toString(),
+        0,
+        requestId,
+        currentDateNow,
         fileDeleteTx.constructor.name,
-        Status.Success,
-        deleteFileRecord.transactionFee.toTinybars().toNumber(),
-        deleteFileRecord?.contractFunctionResult?.gasUsed,
+        0,
         callerName,
         interactingEntity,
       );
-
-      // ensure the file is deleted
-      const receipt = deleteFileRecord.receipt;
-      const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
-
-      if (receipt.status === Status.Success && fileInfo.isDeleted) {
-        this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);
-      } else {
-        this.logger.warn(`${requestIdPrefix} Fail to delete file with fileId: ${fileId} `);
-      }
-    } catch (error: any) {
-      this.logger.warn(`${requestIdPrefix} ${error['message']} `);
     }
   };
 
