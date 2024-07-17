@@ -96,7 +96,7 @@ export default class HAPIService {
       gasHistogram: this.consensusNodeClientHistogramGasFee,
     };
     this.cacheService = cacheService;
-    this.client = this.initSDKClient(logger, this.metrics);
+    this.client = this.initSDKClient(logger, this.metrics, register);
 
     const currentDateNow = Date.now();
     this.initialTransactionCount = parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!) || 0;
@@ -172,7 +172,7 @@ export default class HAPIService {
       .inc(1);
 
     this.clientMain = this.initClient(this.logger, this.hederaNetwork);
-    this.client = this.initSDKClient(this.logger, this.metrics);
+    this.client = this.initSDKClient(this.logger, this.metrics, this.register);
     this.resetCounters();
   }
 
@@ -191,13 +191,14 @@ export default class HAPIService {
    * @param {Logger} logger
    * @returns SDK Client
    */
-  private initSDKClient(logger: Logger, metrics: any): SDKClient {
+  private initSDKClient(logger: Logger, metrics: any, register: Registry): SDKClient {
     return new SDKClient(
       this.clientMain,
       logger.child({ name: `consensus-node` }),
       this.hbarLimiter,
       metrics,
       this.cacheService,
+      register,
     );
   }
 

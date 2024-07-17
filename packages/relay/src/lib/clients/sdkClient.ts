@@ -59,6 +59,8 @@ import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
+import { MirrorNodeClient } from './mirrorNodeClient';
+import { Registry } from 'prom-client';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -98,9 +100,22 @@ export class SDKClient {
   private operatorAccountGauge;
   private maxChunks;
   private fileAppendChunkSize;
+  private mirrorNodeClient;
+
+  private readonly MirrorNodeRetries = parseNumericEnvVar(
+    'MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES',
+    'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES',
+  );
 
   // populate with consensusnode requests via SDK
-  constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, cacheService: CacheService) {
+  constructor(
+    clientMain: Client,
+    logger: Logger,
+    hbarLimiter: HbarLimit,
+    metrics: any,
+    cacheService: CacheService,
+    register: Registry,
+  ) {
     this.clientMain = clientMain;
 
     if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
@@ -118,6 +133,15 @@ export class SDKClient {
     this.cacheService = cacheService;
     this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     this.fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+
+    this.mirrorNodeClient = new MirrorNodeClient(
+      process.env.MIRROR_NODE_URL || '',
+      logger.child({ name: `mirror-node` }),
+      register,
+      this.cacheService,
+      undefined,
+      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
+    );
   }
 
   async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
