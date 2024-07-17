@@ -52,6 +52,16 @@ export default class MetricsClient {
    * Rows may begin with #, which represents a comment and should be ignored.
    * This method retrieves the whole response, splits it into rows, finds the first row that starts with the
    * provided metric name and returns the corresponding value.
+   *
+   * Example extract:
+   *
+   * pc_relay_hbar_rate_remaining 11000000000
+   * rpc_relay_cache 0
+   * rpc_websocket_subscription_times_bucket{le="0.05"} 0
+   * rpc_websocket_subscription_times_bucket{le="1"} 0
+   * rpc_websocket_subscription_times_bucket{le="10"} 0
+   * rpc_websocket_subscription_times_bucket{le="60"} 0
+   *
    * @param metric
    * @param requestId
    */
