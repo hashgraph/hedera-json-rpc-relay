@@ -53,7 +53,7 @@ import {
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
-import { formatRequestIdMessage } from '../../formatters';
+import { formatRequestIdMessage, formatTransactionId, parseNumericEnvVar } from '../../formatters';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
@@ -857,5 +857,67 @@ export class SDKClient {
     } catch (error: any) {
       this.logger.warn(`${requestIdPrefix} ${error['message']} `);
     }
+  };
+
+  /**
+   * /**
+   * @dev retrieves charged transaction fee by making repeated calls to Mirror Node. Eventually capture the fee in metrics and rate limitter class.
+   * @param transactionId
+   * @param nonce
+   * @param requestId
+   * @param currentDateNow
+   * @param txConstructorName
+   * @param gasFee
+   * @param callerName
+   * @param interactingEntity
+   */
+  private retrieveAndCaptureChargedTxFee = async (
+    transactionId: string,
+    nonce: number,
+    requestId: string,
+    currentDateNow: number,
+    txConstructorName: string,
+    gasFee: number,
+    callerName: string,
+    interactingEntity: any,
+  ) => {
+    // note: getting transaction record using mirror node instead of the SDK to avoid transaction costs
+    const transactionRecord = await this.mirrorNodeClient.repeatedRequest(
+      this.mirrorNodeClient.getTransactionById.name,
+      [transactionId, nonce],
+      this.MirrorNodeRetries,
+      requestId,
+    );
+
+    // in case transactionRecord is null (i.e. transaction not found), warn and throw not found error
+    if (!transactionRecord) {
+      this.logger.warn(
+        `${requestId} No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
+      );
+      throw predefined.INTERNAL_ERROR(
+        `No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
+      );
+    }
+
+    // extract charged transaction fee from transaction record
+    const txChargedFee = Number(
+      transactionRecord.transactions.find((tx: any) => tx.transaction_id === formatTransactionId(transactionId))
+        .charged_tx_fee,
+    );
+
+    // capture charged transaction fee in metrics and rate limitter class
+    this.logger.trace(
+      `${requestId} Capturing HBAR charged transaction fee: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, txChargedFee=${txChargedFee} tinybars`,
+    );
+    this.hbarLimiter.addExpense(txChargedFee, currentDateNow);
+    this.captureMetrics(
+      SDKClient.transactionMode,
+      txConstructorName,
+      Status.Success,
+      txChargedFee,
+      gasFee,
+      callerName,
+      interactingEntity,
+    );
   };
 }

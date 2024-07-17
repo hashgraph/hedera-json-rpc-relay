@@ -1271,8 +1271,16 @@ export class MirrorNodeClient {
    */
   public async repeatedRequest(methodName: string, args: any[], repeatCount: number, requestId?: string) {
     let result;
+
     for (let i = 0; i < repeatCount; i++) {
-      result = await this[methodName](...args, requestId);
+      // note: for some methods, it will throw 404 not found error when the record is not yet recorded in mirror-node
+      //       Any error would result in a null `result`
+      try {
+        result = await this[methodName](...args, requestId);
+      } catch {
+        result = null;
+      }
+
       if (result) {
         break;
       }
@@ -1282,7 +1290,6 @@ export class MirrorNodeClient {
           args,
         )} retry count ${i} of ${repeatCount}. Waiting ${this.MIRROR_NODE_RETRY_DELAY} ms before repeating request`,
       );
-
       // Backoff before repeating request
       await new Promise((r) => setTimeout(r, this.MIRROR_NODE_RETRY_DELAY));
     }
