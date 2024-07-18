@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -471,6 +471,15 @@ describe('Formatters', () => {
 
     it('should return false for an address with an undefined value', () => {
       const address = undefined;
+      expect(isValidEthereumAddress(address as any)).to.equal(false);
+    });
+    it('should return false for an address with a null value', () => {
+      const address = null;
+      expect(isValidEthereumAddress(address as any)).to.equal(false);
+    });
+
+    it('should return false for an address with a null value', () => {
+      const address = null;
       expect(isValidEthereumAddress(address)).to.equal(false);
     });
   });

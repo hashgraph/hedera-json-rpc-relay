@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
  *
  */
 
-import { methodConfiguration } from './lib/methodConfiguration';
+import { IMethodRateLimitConfiguration, methodConfiguration } from './lib/methodConfiguration';
 import jsonResp from './lib/RpcResponse';
 import RateLimit from '../rateLimit';
 import parse from 'co-body';
@@ -27,79 +27,66 @@ import path from 'path';
 import { Logger } from 'pino';
 
 import {
-  ParseError,
-  InvalidRequest,
   InternalError,
+  InvalidRequest,
   IPRateLimitExceeded,
-  MethodNotFound,
-  Unauthorized,
   JsonRpcError as JsonRpcErrorServer,
+  MethodNotFound,
+  ParseError,
 } from './lib/RpcError';
 import Koa from 'koa';
 import { Histogram, Registry } from 'prom-client';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
-import { RpcErrorCodeToStatusMap, HttpStatusCodeAndMessage } from './lib/HttpStatusCodeAndMessage';
+import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
+import {
+  getBatchRequestsEnabled,
+  getBatchRequestsMaxSize,
+  getDefaultRateLimit,
+  getLimitDuration,
+  getRequestIdIsOptional,
+  hasOwnProperty,
+} from './lib/utils';
+import { IJsonRpcRequest } from './lib/IJsonRpcRequest';
 
-const hasOwnProperty = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-
-const INTERNAL_ERROR = 'INTERNAL ERROR';
-const INVALID_PARAMS_ERROR = 'INVALID PARAMS ERROR';
 const INVALID_REQUEST = 'INVALID REQUEST';
-const IP_RATE_LIMIT_EXCEEDED = 'IP RATE LIMIT EXCEEDED';
-const JSON_RPC_ERROR = 'JSON RPC ERROR';
-const CONTRACT_REVERT = 'CONTRACT REVERT';
-const METHOD_NOT_FOUND = 'METHOD NOT FOUND';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';
 const responseSuccessStatusCode = '200';
+const METRIC_HISTOGRAM_NAME = 'rpc_relay_method_result';
 const BATCH_REQUEST_METHOD_NAME = 'batch_request';
 
 export default class KoaJsonRpc {
-  private registry: any;
-  private registryTotal: any;
-  private token: any;
-  private methodConfig: any;
-  private duration: number;
-  private limit: string;
-  private rateLimit: RateLimit;
-  private metricsRegistry: any;
-  private koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
-  private requestId: string;
-  private logger: Logger;
-  private startTimestamp!: number;
-  private readonly requestIdIsOptional = process.env.REQUEST_ID_IS_OPTIONAL == 'true'; // default to false
-  private readonly batchRequestsMaxSize: number = process.env.BATCH_REQUESTS_MAX_SIZE
-    ? parseInt(process.env.BATCH_REQUESTS_MAX_SIZE)
-    : 100; // default to 100
-  private methodResponseHistogram: Histogram | undefined;
+  private readonly registry: { [key: string]: (params?: any) => Promise<any> };
+  private readonly registryTotal: { [key: string]: number };
+  private readonly methodConfig: IMethodRateLimitConfiguration;
+  private readonly duration: number = getLimitDuration();
+  private readonly defaultRateLimit: number = getDefaultRateLimit();
+  private readonly limit: string;
+  private readonly rateLimit: RateLimit;
+  private readonly metricsRegistry: Registry;
+  private readonly koaApp: Koa<Koa.DefaultState, Koa.DefaultContext>;
+  private readonly logger: Logger;
+  private readonly requestIdIsOptional: boolean = getRequestIdIsOptional(); // default to false
+  private readonly batchRequestsMaxSize: number = getBatchRequestsMaxSize(); // default to 100
+  private readonly methodResponseHistogram: Histogram;
 
-  constructor(logger: Logger, register: Registry, opts?) {
+  private requestId: string;
+
+  constructor(logger: Logger, register: Registry, opts?: { limit: string | null }) {
     this.koaApp = new Koa();
     this.requestId = '';
-    this.limit = '1mb';
-    this.duration = process.env.LIMIT_DURATION
-      ? parseInt(process.env.LIMIT_DURATION)
-      : constants.DEFAULT_RATE_LIMIT.DURATION;
     this.registry = Object.create(null);
     this.registryTotal = Object.create(null);
     this.methodConfig = methodConfiguration;
-    if (opts) {
-      this.limit = opts.limit || this.limit;
-    }
+    this.limit = opts?.limit ?? '1mb';
     this.logger = logger;
     this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, this.duration);
     this.metricsRegistry = register;
-    this.initMetrics();
-  }
-
-  private initMetrics() {
     // clear and create metric in registry
-    const metricHistogramName = 'rpc_relay_method_result';
-    this.metricsRegistry.removeSingleMetric(metricHistogramName);
+    this.metricsRegistry.removeSingleMetric(METRIC_HISTOGRAM_NAME);
     this.methodResponseHistogram = new Histogram({
-      name: metricHistogramName,
+      name: METRIC_HISTOGRAM_NAME,
       help: 'JSON RPC method statusCode latency histogram',
       labelNames: ['method', 'statusCode', 'isPartOfBatch'],
       registers: [this.metricsRegistry],
@@ -107,24 +94,17 @@ export default class KoaJsonRpc {
     });
   }
 
-  // we do it as a method so we can mock it in tests, since by default is false, but we need to test it as true
-  private getBatchRequestsEnabled(): boolean {
-    return process.env.BATCH_REQUESTS_ENABLED == 'true'; // default to false
-  }
-
-  useRpc(name, func) {
+  useRpc(name: string, func: (params?: any) => Promise<any>): void {
     this.registry[name] = func;
-    this.registryTotal[name] = this.methodConfig[name].total;
+    this.registryTotal[name] = this.methodConfig[name]?.total;
 
     if (!this.registryTotal[name]) {
-      this.registryTotal[name] = process.env.DEFAULT_RATE_LIMIT || 200;
+      this.registryTotal[name] = this.defaultRateLimit;
     }
   }
 
-  rpcApp() {
-    return async (ctx, next) => {
-      this.startTimestamp = ctx.state.start;
-
+  rpcApp(): (ctx: Koa.Context, _next: Koa.Next) => Promise<void> {
+    return async (ctx: Koa.Context, _next: Koa.Next) => {
       this.requestId = ctx.state.reqId;
       ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
 
@@ -135,20 +115,11 @@ export default class KoaJsonRpc {
         return;
       }
 
-      if (this.token) {
-        const headerToken = ctx.get('authorization').split(' ').pop();
-        if (headerToken !== this.token) {
-          ctx.body = jsonResp(null, new Unauthorized(), undefined);
-          return;
-        }
-      }
-
       let body: any;
       try {
         body = await parse.json(ctx, { limit: this.limit });
       } catch (err) {
-        const errBody = jsonResp(null, new ParseError(), undefined);
-        ctx.body = errBody;
+        ctx.body = jsonResp(null, new ParseError(), undefined);
         return;
       }
       //check if body is array or object
@@ -160,7 +131,7 @@ export default class KoaJsonRpc {
     };
   }
 
-  private async handleSingleRequest(ctx, body: any): Promise<void> {
+  private async handleSingleRequest(ctx: Koa.Context, body: any): Promise<void> {
     ctx.state.methodName = body.method;
     const response = await this.getRequestResult(body, ctx.ip);
     ctx.body = response;
@@ -175,9 +146,9 @@ export default class KoaJsonRpc {
     }
   }
 
-  private async handleMultipleRequest(ctx, body: any): Promise<void> {
+  private async handleMultipleRequest(ctx: Koa.Context, body: any[]): Promise<void> {
     // verify that batch requests are enabled
-    if (!this.getBatchRequestsEnabled()) {
+    if (!getBatchRequestsEnabled()) {
       ctx.body = jsonResp(null, predefined.BATCH_REQUESTS_DISABLED, undefined);
       ctx.status = 400;
       ctx.state.status = `${ctx.status} (${INVALID_REQUEST})`;
@@ -196,26 +167,17 @@ export default class KoaJsonRpc {
       return;
     }
 
-    // verify rate limit for batch request
-    const batchRequestTotalLimit = this.methodConfig[BATCH_REQUEST_METHOD_NAME].total;
-    // check rate limit for method and ip
-    if (this.rateLimit.shouldRateLimit(ctx.ip, BATCH_REQUEST_METHOD_NAME, batchRequestTotalLimit, this.requestId)) {
-      return jsonResp(null, new IPRateLimitExceeded(BATCH_REQUEST_METHOD_NAME), undefined);
-    }
-
     const response: any[] = [];
     ctx.state.methodName = BATCH_REQUEST_METHOD_NAME;
 
     // we do the requests in parallel to save time, but we need to keep track of the order of the responses (since the id might be optional)
-    const promises = body.map((item: any) => {
+    const promises: Promise<any>[] = body.map(async (item: any) => {
       const startTime = Date.now();
-      const result = this.getRequestResult(item, ctx.ip).then((res) => {
+      return this.getRequestResult(item, ctx.ip).then((res) => {
         const ms = Date.now() - startTime;
         this.methodResponseHistogram?.labels(item.method, `${res.error ? res.error.code : 200}`, 'true').observe(ms);
         return res;
       });
-
-      return result;
     });
     const results = await Promise.all(promises);
     response.push(...results);
@@ -226,7 +188,7 @@ export default class KoaJsonRpc {
     ctx.state.status = responseSuccessStatusCode;
   }
 
-  async getRequestResult(request: any, ip: any): Promise<any> {
+  async getRequestResult(request: any, ip: string): Promise<any> {
     try {
       const methodName = request.method;
 
@@ -259,12 +221,12 @@ export default class KoaJsonRpc {
     }
   }
 
-  validateJsonRpcRequest(body): boolean {
+  validateJsonRpcRequest(body: IJsonRpcRequest): boolean {
     // validate it has the correct jsonrpc version, method, and id
     if (
       body.jsonrpc !== '2.0' ||
       !hasOwnProperty(body, 'method') ||
-      this.hasInvalidReqestId(body) ||
+      this.hasInvalidRequestId(body) ||
       !hasOwnProperty(body, 'id')
     ) {
       this.logger.warn(
@@ -295,7 +257,7 @@ export default class KoaJsonRpc {
     return this.requestId;
   }
 
-  hasInvalidReqestId(body): boolean {
+  hasInvalidRequestId(body: IJsonRpcRequest): boolean {
     const hasId = hasOwnProperty(body, 'id');
     if (this.requestIdIsOptional && !hasId) {
       // If the request is invalid, we still want to return a valid JSON-RPC response, default id to 0

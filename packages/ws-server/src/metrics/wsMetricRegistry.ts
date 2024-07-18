@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,7 +115,7 @@ export default class WsMetricRegistry {
       registers: [register],
       async collect() {
         switch (mode) {
-          case 'CPU':
+          case 'CPU': {
             let lastCpuUsage = process.cpuUsage();
             let lastTime = process.hrtime();
             const currentCpuUsage = process.cpuUsage();
@@ -136,10 +136,12 @@ export default class WsMetricRegistry {
 
             this.set({ cpu: 'CPU' }, cpuUsagePercentage);
             break;
-          case 'Memory Usage':
+          }
+          case 'Memory Usage': {
             const memoryUsage = process.memoryUsage();
             this.set({ memory: 'Memory Usage' }, memoryUsage.heapUsed);
             break;
+          }
         }
       },
     });

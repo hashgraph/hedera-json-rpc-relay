@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay - Hardhat Example
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ task('contract-call', async (taskArgs) => {
 
 const mnemonic = process.env.MNEMONIC;
 if (!mnemonic) {
-  throw new Error("Please set your MNEMONIC in a .env file");
+  throw new Error('Please set your MNEMONIC in a .env file');
 }
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -72,7 +72,7 @@ module.exports = {
       allowUnlimitedContractSize: true,
       accounts: {
         mnemonic,
-      }
+      },
     },
     local: {
       url: process.env.RELAY_ENDPOINT,
@@ -81,9 +81,7 @@ module.exports = {
     },
     testnet: {
       url: 'https://testnet.hashio.io/api',
-      accounts: process.env.TESTNET_OPERATOR_PRIVATE_KEY
-        ? [process.env.TESTNET_OPERATOR_PRIVATE_KEY]
-        : [],
+      accounts: process.env.TESTNET_OPERATOR_PRIVATE_KEY ? [process.env.TESTNET_OPERATOR_PRIVATE_KEY] : [],
       chainId: 296,
     },
   },

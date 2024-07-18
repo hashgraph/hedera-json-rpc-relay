@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ export default class RateLimit {
   private logger: Logger;
   private ipRateLimitCounter: Counter;
 
-  constructor(logger: Logger, register: Registry, duration) {
+  constructor(logger: Logger, register: Registry, duration: number) {
     this.logger = logger;
     this.duration = duration;
     this.database = Object.create(null);

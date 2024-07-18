@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ describe('Precheck', async function () {
       let hasError = false;
       try {
         precheck.value(parsedTxWithValueLessThanOneTinybar);
-      } catch (e) {
+      } catch (e: any) {
         expect(e).to.exist;
         expect(e.code).to.eq(-32602);
         expect(e.message).to.eq('Value below 10_000_000_000 wei which is 1 tinybar');
