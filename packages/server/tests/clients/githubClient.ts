@@ -47,7 +47,7 @@ export class GitHubClient {
    */
   async addOrUpdateExistingCommentOnPullRequest(
     commentBody: string,
-    predicate: (comment: string) => boolean,
+    predicate: (existingComment: string) => boolean,
   ): Promise<void> {
     const comments = await this.getCommentsOnPullRequest();
     // TODO: Used for debugging, remove this later
