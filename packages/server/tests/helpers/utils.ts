@@ -449,7 +449,7 @@ export class Utils {
           const testTitle = this.currentTest?.title ?? 'Unknown test';
           const comment = Utils.generateMemoryLeakComment(testTitle, statsDiff);
           await githubClient.addOrUpdateExistingCommentOnPullRequest(comment, (existing: string) =>
-            existing.startsWith(`Memory leak detected in test: ${this.currentTest?.title}`),
+            existing.includes(`\`${testTitle}\``),
           );
           // write a heap snapshot if the memory leak is more than 1 MB
           const isMemoryLeakSnapshotEnabled = process.env.WRITE_SNAPSHOT_ON_MEMORY_LEAK === 'true';
@@ -517,7 +517,7 @@ export class Utils {
    * @param textInCamelCase The text in camel case.
    * @return The text in title case.
    */
-  static camelCaseToTitleCase(textInCamelCase: string): string {
+  private static camelCaseToTitleCase(textInCamelCase: string): string {
     return textInCamelCase
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, (str) => str.toUpperCase())
@@ -531,7 +531,7 @@ export class Utils {
    * @param before The object representing the state before the operation.
    * @returns The difference between the two states.
    */
-  static difference<T extends number | string | object | object[]>(after: T, before: T): T {
+  private static difference<T extends number | string | object | object[]>(after: T, before: T): T {
     if (Array.isArray(after) && Array.isArray(before)) {
       return this.arrayDifference(after, before);
     } else if (typeof after === 'object' && typeof before === 'object') {
