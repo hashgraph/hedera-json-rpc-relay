@@ -438,15 +438,15 @@ export class Utils {
               heapSpaceStatistics: Utils.difference(
                 stats.afterGC.heapSpaceStatistics,
                 stats.beforeGC.heapSpaceStatistics,
-              ),
+              ).filter((spaceStatistics) => spaceStatistics.spaceSize > 0),
             },
           }));
           console.error(
             `Memory leak of ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2),
           );
           // add comment on PR highlighting after which test the memory leak is happening
-          const comment = `Memory leak detected in test: \`${this.currentTest
-            ?.title}\`\nDetails:\n\`\`\`json\n${JSON.stringify(statsDiff, null, 2)}\n\`\`\``;
+          const testTitle = this.currentTest?.title ?? 'Unknown test';
+          const comment = Utils.generateMemoryLeakComment(testTitle, statsDiff);
           await githubClient.addOrUpdateExistingCommentOnPullRequest(comment, (existing: string) =>
             existing.startsWith(`Memory leak detected in test: ${this.currentTest?.title}`),
           );
@@ -461,6 +461,24 @@ export class Utils {
         console.error('Error capturing memory leaks:', error);
       }
     });
+  }
+
+  /**
+   * Generates a comment indicating a memory leak detected during tests.
+   * @param {string} testTitle The title of the current test.
+   * @param {object} statsDiff The difference in memory statistics indicating the leak.
+   * @returns {string} The formatted comment.
+   */
+  private static generateMemoryLeakComment(testTitle: string, statsDiff: object): string {
+    const commentHeader = '🚨 **Memory Leak Detected** 🚨';
+    const summary = `A potential memory leak has been detected in the test titled \`${testTitle}\`. This may impact the application's performance and stability.`;
+    const detailsHeader = '### Details';
+    const jsonDetails = `\`\`\`json\n${JSON.stringify(statsDiff, null, 2)}\n\`\`\``;
+    const recommendationsHeader = '### Recommendations';
+    const recommendations =
+      'Please investigate the memory allocations in this test, focusing on objects that are not being properly deallocated.';
+
+    return `${commentHeader}\n\n${summary}\n\n${detailsHeader}\n${jsonDetails}\n\n${recommendationsHeader}\n${recommendations}`;
   }
 
   /**
