@@ -468,30 +468,63 @@ export class SDKClient {
     const transactionType = transaction.constructor.name;
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
+    let gasUsed: any = 0;
+    let transactionFee: number = 0;
+    let transactionId: string = '';
     try {
       if (this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName))
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
 
       this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
-
       const transactionResponse = await transaction.execute(this.clientMain);
 
-      const transactionRecord = await transactionResponse.getRecord(this.clientMain);
+      try {
+        const transactionRecord = await transactionResponse.getRecord(this.clientMain);
+        transactionId = transactionRecord.transactionId.toString();
 
-      // get transactionFee and capture it in metrics and HBAR limiter class
-      // @todo: The transactionFee includes the entire charges of the transaction, with some portions charged by tx.from, not the operator.
-      //        Determine how to separate the fee charged exclusively by the operator.
-      let transactionFee = transactionRecord.transactionFee;
-      this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-      this.captureMetrics(
-        SDKClient.transactionMode,
-        transaction.constructor.name,
-        Status.Success,
-        transactionRecord.transactionFee.toTinybars().toNumber(),
-        transactionRecord?.contractFunctionResult?.gasUsed,
-        callerName,
-        interactingEntity,
-      );
+        // get transactionFee and gasUsed for metrics
+        /**
+         * @todo: Determine how to separate the fee charged exclusively by the operator because
+         *        the transactionFee below includes the entire charges of the transaction,
+         *        with some portions paid by tx.from, not the operator.
+         */
+        transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+        gasUsed = transactionRecord?.contractFunctionResult?.gasUsed.toNumber();
+      } catch (e: any) {
+        transactionId = e.transactionId.toString();
+
+        // get transactionFee and gasUsed for metrics
+        const transactionRecord = await new TransactionRecordQuery()
+          .setTransactionId(transactionId)
+          .setValidateReceiptStatus(false)
+          .execute(this.clientMain);
+        transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+        gasUsed = transactionRecord?.contractFunctionResult?.gasUsed.toNumber();
+
+        // throw error
+        const sdkClientError = new SDKClientError(e, e.message);
+        this.logger.warn(sdkClientError);
+        throw sdkClientError;
+      } finally {
+        /**
+         * @note Retrieving and capturing the charged transaction fees at the end of the flow
+         *       ensures these fees are eventually captured in the metrics and rate limiter class,
+         *       even if SDK transactions fail at any point.
+         */
+        this.logger.trace(
+          `${requestId} Capturing HBAR charged transaction fee: transactionId=${transactionId}, txConstructorName=${transaction.constructor.name}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
+        );
+        this.hbarLimiter.addExpense(transactionFee, currentDateNow);
+        this.captureMetrics(
+          SDKClient.transactionMode,
+          transaction.constructor.name,
+          Status.Success,
+          transactionFee,
+          gasUsed,
+          callerName,
+          interactingEntity,
+        );
+      }
 
       this.logger.info(
         `${requestIdPrefix} ${transactionResponse.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
