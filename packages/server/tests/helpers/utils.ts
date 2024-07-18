@@ -32,13 +32,11 @@ import { GCProfiler, setFlagsFromString } from 'v8';
 import { runInNewContext } from 'vm';
 import { Context } from 'mocha';
 import { writeSnapshot } from 'heapdump';
-import path from 'path';
 import { GitHubClient } from '../clients/githubClient';
 import MirrorClient from '../clients/mirrorClient';
 import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
 
 export class Utils {
-  static readonly PROJECT_ROOT_PATH = path.resolve('../..');
   static readonly TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
   static readonly MEMORY_LEAK_SNAPSHOT_THRESHOLD: number = 1e6; // 1 MB
 
@@ -404,8 +402,6 @@ export class Utils {
    */
   static captureMemoryLeaks(profiler: GCProfiler): void {
     setFlagsFromString('--expose_gc');
-    // TODO: Used for debugging, remove this as its cluttering the logs with traces from the garbage collector
-    setFlagsFromString('--trace_gc');
     const gc = runInNewContext('gc');
     const githubClient = new GitHubClient();
 

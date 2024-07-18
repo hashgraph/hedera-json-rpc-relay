@@ -50,8 +50,6 @@ export class GitHubClient {
     predicate: (existingComment: string) => boolean,
   ): Promise<void> {
     const comments = await this.getCommentsOnPullRequest();
-    // TODO: Used for debugging, remove this later
-    console.log(comments);
     const existingComment = comments.data.find((comment) => comment.body && predicate(comment.body));
     if (existingComment) {
       await this.updateCommentOnPullRequest(commentBody, existingComment.id);
@@ -72,7 +70,7 @@ export class GitHubClient {
         repo: context.repo,
         issue_number: context.pullNumber,
       });
-      console.info('Comments retrieved successfully:', response);
+      console.debug('Comments retrieved successfully:', response);
       return response;
     } catch (error) {
       console.error('Failed to retrieve comments on PR:', error);
@@ -95,7 +93,7 @@ export class GitHubClient {
         comment_id: commentId,
         body: commentBody,
       });
-      console.info('Comment updated successfully:', response);
+      console.debug('Comment updated successfully:', response);
     } catch (error) {
       console.error('Failed to update comment on PR:', error);
     }
@@ -115,7 +113,7 @@ export class GitHubClient {
         issue_number: context.pullNumber,
         body: commentBody,
       });
-      console.info('Comment posted successfully:', response);
+      console.debug('Comment posted successfully:', response);
     } catch (error) {
       console.error('Failed to post comment to PR:', error);
     }
