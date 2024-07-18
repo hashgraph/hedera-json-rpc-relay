@@ -23,5 +23,4 @@ export interface GitHubContext {
   readonly repo: string;
   readonly token: string;
   readonly pullNumber: number;
-  readonly commitId: string;
 }

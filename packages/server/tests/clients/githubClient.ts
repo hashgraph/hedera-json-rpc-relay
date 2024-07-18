@@ -126,12 +126,9 @@ export class GitHubClient {
    * @returns {GitHubContext} The GitHub context.
    */
   private static getContext(): GitHubContext {
-    const { GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_COMMIT_SHA, GITHUB_TOKEN } = process.env;
-    if (!GITHUB_REPOSITORY || !GITHUB_PR_NUMBER || !GITHUB_COMMIT_SHA || !GITHUB_TOKEN) {
-      throw new Error(
-        `Missing required environment variables: 
-        $GITHUB_REPOSITORY, $GITHUB_PR_NUMBER, $GITHUB_COMMIT_SHA, $GITHUB_TOKEN`,
-      );
+    const { GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_TOKEN } = process.env;
+    if (!GITHUB_REPOSITORY || !GITHUB_PR_NUMBER || !GITHUB_TOKEN) {
+      throw new Error(`Missing required environment variables: $GITHUB_REPOSITORY, $GITHUB_PR_NUMBER, $GITHUB_TOKEN`);
     }
 
     const pullNumber = parseInt(GITHUB_PR_NUMBER);
@@ -144,6 +141,6 @@ export class GitHubClient {
       throw new Error('Invalid $GITHUB_REPOSITORY format: Expected "owner/repo".');
     }
 
-    return { owner, repo, pullNumber, token: GITHUB_TOKEN, commitId: GITHUB_COMMIT_SHA };
+    return { owner, repo, pullNumber, token: GITHUB_TOKEN };
   }
 }
