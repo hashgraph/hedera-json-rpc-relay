@@ -802,6 +802,7 @@ export class SDKClient {
    */
   public deleteFile = async (fileId: FileId, requestId?: string, callerName?: string, interactingEntity?: string) => {
     // format request ID msg
+    const currentDateNow = Date.now();
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
     try {
@@ -817,7 +818,8 @@ export class SDKClient {
       // get fileDeleteTx's record
       const deleteFileRecord = await fileDeleteTxResponse.getRecord(this.clientMain);
 
-      // capture metrics
+      // capture transactionFee in metrics and HBAR limiter class
+      this.hbarLimiter.addExpense(deleteFileRecord.transactionFee.toTinybars().toNumber(), currentDateNow);
       this.captureMetrics(
         SDKClient.transactionMode,
         fileDeleteTx.constructor.name,
