@@ -42,13 +42,17 @@ export class GitHubClient {
   /**
    * Update or add a comment to a pull request.
    * @param {string} commentBody - The body of the comment.
+   * @param {function} predicate - A function that determines if an existing comment should be updated.
    * @returns {Promise<void>} A promise that resolves when the comment is successfully updated or added.
    */
-  async updateOrAddCommentToPullRequest(commentBody: string): Promise<void> {
+  async addOrUpdateExistingCommentOnPullRequest(
+    commentBody: string,
+    predicate: (comment: string) => boolean,
+  ): Promise<void> {
     const comments = await this.getCommentsOnPullRequest();
     // TODO: Used for debugging, remove this later
     console.log(comments);
-    const existingComment = comments.data.find((comment) => comment.user?.login === 'github-actions[bot]');
+    const existingComment = comments.data.find((comment) => comment.body && predicate(comment.body));
     if (existingComment) {
       await this.updateCommentOnPullRequest(commentBody, existingComment.id);
     } else {
