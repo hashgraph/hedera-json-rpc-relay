@@ -539,6 +539,7 @@ export class Utils {
           pull_number: context.pullNumber,
           body: commentBody,
           commit_id: context.commitId,
+          subject_type: 'file',
           path,
         },
       );
