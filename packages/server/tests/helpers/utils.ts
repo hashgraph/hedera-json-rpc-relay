@@ -445,10 +445,8 @@ export class Utils {
             `Memory leak of ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2),
           );
           // add comment on PR highlighting after which test the memory leak is happening
-          await githubClient.addCommentToPullRequest(
-            `Memory leak detected in test: ${this.currentTest?.title}\n
-            Details: ${JSON.stringify(statsDiff, null, 2)}`,
-            this.test?.file ? path.relative(Utils.PROJECT_ROOT_PATH, this.test?.file) : '',
+          await githubClient.updateOrAddCommentToPullRequest(
+            `Memory leak detected in test: ${this.currentTest?.title}\n Details: ${JSON.stringify(statsDiff)}`,
           );
           // write a heap snapshot if the memory leak is more than 1 MB
           const isMemoryLeakSnapshotEnabled = process.env.WRITE_SNAPSHOT_ON_MEMORY_LEAK === 'true';
