@@ -31,6 +31,7 @@ import fs from 'fs';
 import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
+import MetricsClient from '../clients/metricsClient';
 
 // Server related
 import app from '../../dist/server';
@@ -87,11 +88,21 @@ describe('RPC Server Acceptance Tests', function () {
     logger.child({ name: `services-test-client` }),
   );
   global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
+  global.metrics = new MetricsClient(RELAY_URL, logger.child({ name: `metrics-test-client` }));
   global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
   global.relayServer = relayServer;
   global.socketServer = socketServer;
   global.logger = logger;
   global.initialBalance = INITIAL_BALANCE;
+
+  global.restartLocalRelay = async function () {
+    if (global.relayIsLocal) {
+      stopRelay();
+      await new Promise((r) => setTimeout(r, 5000)); // wait for server to shutdown
+
+      runLocalRelay();
+    }
+  };
 
   // leak detection middleware
   if (process.env.MEMWATCH_ENABLED === 'true') {
@@ -158,15 +169,7 @@ describe('RPC Server Acceptance Tests', function () {
     const cost = startOperatorBalance.toTinybars().subtract(endOperatorBalance.toTinybars());
     logger.info(`Acceptance Tests spent ${Hbar.fromTinybars(cost)}`);
 
-    //stop relay
-    logger.info('Stop relay');
-    if (relayServer !== undefined) {
-      relayServer.close();
-    }
-
-    if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
-      socketServer.close();
-    }
+    stopRelay();
   });
 
   describe('Acceptance tests', async () => {
@@ -184,6 +187,18 @@ describe('RPC Server Acceptance Tests', function () {
   function loadTest(testFile) {
     if (testFile !== 'index.spec.ts' && testFile.endsWith('.spec.ts')) {
       require(`./${testFile}`);
+    }
+  }
+
+  function stopRelay() {
+    //stop relay
+    logger.info('Stop relay');
+    if (relayServer !== undefined) {
+      relayServer.close();
+    }
+
+    if (process.env.TEST_WS_SERVER === 'true' && global.socketServer !== undefined) {
+      global.socketServer.close();
     }
   }
 
