@@ -32,13 +32,11 @@ import { GCProfiler, setFlagsFromString } from 'v8';
 import { runInNewContext } from 'vm';
 import { Context } from 'mocha';
 import { writeSnapshot } from 'heapdump';
-import { Octokit } from '@octokit/core';
 import path from 'path';
-
-type GithubContext = { owner: string; repo: string; token: string; pullNumber: number; commitId: string };
+import { GitHubClient } from '../clients/githubClient';
+import MirrorClient from '../clients/mirrorClient';
 
 export class Utils {
-  static readonly CREATE_COMMENT_ENDPOINT = 'POST /repos/{owner}/{repo}/pulls/{pull_number}/comments';
   static readonly PROJECT_ROOT_PATH = path.resolve('../..');
   static readonly TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
   static readonly MEMORY_LEAK_SNAPSHOT_THRESHOLD: number = 1e6; // 1 MB
@@ -261,11 +259,11 @@ export class Utils {
    * @param {MirrorClient} mirrorNode The mirror node client.
    * @param {AliasAccount} creator The creator account for the alias.
    * @param {string} requestId The unique identifier for the request.
-   * @param {string} balanceInWeiBars The initial balance for the alias account in wei bars. Defaults to 10 HBAR (10,000,000,000,000,000,000 wei).
+   * @param {string} balanceInTinyBar The initial balance for the alias account in tiny bars. Defaults to 10 HBAR.
    * @returns {Promise<AliasAccount>} A promise resolving to the created alias account.
    */
   static readonly createAliasAccount = async (
-    mirrorNode,
+    mirrorNode: MirrorClient,
     creator: AliasAccount,
     requestId: string,
     balanceInTinyBar: string = '1000000000', //10 HBAR
@@ -305,7 +303,7 @@ export class Utils {
   };
 
   static async createMultipleAliasAccounts(
-    mirrorNode,
+    mirrorNode: MirrorClient,
     initialAccount: AliasAccount,
     neededAccounts: number,
     initialAmountInTinyBar: string,
@@ -408,6 +406,7 @@ export class Utils {
     // TODO: Used for debugging, remove this as its cluttering the logs with traces from the garbage collector
     setFlagsFromString('--trace_gc');
     const gc = runInNewContext('gc');
+    const githubClient = new GitHubClient();
 
     beforeEach(function () {
       profiler.start();
@@ -446,7 +445,7 @@ export class Utils {
             `Memory leak of ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2),
           );
           // add comment on PR highlighting after which test the memory leak is happening
-          await Utils.addCommentToPullRequest(
+          await githubClient.addCommentToPullRequest(
             `Memory leak detected in test: ${this.currentTest?.title}\n
             Details: ${JSON.stringify(statsDiff, null, 2)}`,
             this.test?.file ? path.relative(Utils.PROJECT_ROOT_PATH, this.test?.file) : '',
@@ -524,37 +523,5 @@ export class Utils {
     power = Math.min(power, units.length - 1);
     const size = bytes / Math.pow(1000, power);
     return `${size.toFixed(2)} ${units[power]}`;
-  }
-
-  private static async addCommentToPullRequest(commentBody: string, path: string): Promise<void> {
-    try {
-      const context = Utils.getGithubContext();
-      const octokit = new Octokit({ auth: context.token });
-      const response = await octokit.request(Utils.CREATE_COMMENT_ENDPOINT, {
-        owner: context.owner,
-        repo: context.repo,
-        pull_number: context.pullNumber,
-        body: commentBody,
-        commit_id: context.commitId,
-        subject_type: 'FILE',
-        path,
-      });
-      console.log('Comment posted successfully:', response);
-    } catch (error) {
-      console.warn('Failed to post comment to PR:', error);
-    }
-  }
-
-  private static getGithubContext(): GithubContext {
-    const { GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_COMMIT_SHA, GITHUB_TOKEN } = process.env;
-    if (!GITHUB_REPOSITORY || !GITHUB_PR_NUMBER || !GITHUB_COMMIT_SHA || !GITHUB_TOKEN) {
-      throw new Error(
-        `Missing required environment variables: 
-        $GITHUB_REPOSITORY, $GITHUB_PR_NUMBER, $GITHUB_COMMIT_SHA, $GITHUB_TOKEN`,
-      );
-    }
-    const [owner, repo] = GITHUB_REPOSITORY.split('/');
-    const pullNumber = parseInt(GITHUB_PR_NUMBER);
-    return { owner, repo, pullNumber, token: GITHUB_TOKEN, commitId: GITHUB_COMMIT_SHA };
   }
 }
