@@ -1,5 +1,4 @@
 import { expect } from 'chai';
-import { describe, it } from 'mocha';
 import { OBJECTS_VALIDATIONS, TransactionObject, Validator } from '../../src/validator';
 
 describe('Validator', async () => {

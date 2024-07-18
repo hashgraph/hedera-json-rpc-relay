@@ -26,6 +26,7 @@ import { IContractCallRequest, IContractCallResponse, MirrorNodeClient } from '.
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
+import { Utils } from './../utils';
 import constants from './constants';
 import { Precheck } from './precheck';
 import {
@@ -729,7 +730,8 @@ export class EthImpl implements Eth {
       );
 
       if (!gasPrice) {
-        gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix);
+        gasPrice = Utils.addPercentageBufferToGasPrice(await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix));
+
         this.cacheService.set(
           constants.CACHE_KEY.GAS_PRICE,
           gasPrice,
@@ -1616,11 +1618,11 @@ export class EthImpl implements Eth {
     const callData = call.data ? call.data : call.input;
     // log request
     this.logger.trace(
-      `${requestIdPrefix} call({to=${call.to}, from=${call.from}, data=${callData}, gas=${call.gas}, ...}, blockParam=${blockParam})`,
+      `${requestIdPrefix} call({to=${call.to}, from=${call.from}, data=${callData}, gas=${call.gas}, gasPrice=${call.gasPrice} blockParam=${blockParam}, estimate=${call.estimate})`,
     );
-    // log call data size and gas
+    // log call data size
     const callDataSize = callData ? callData.length : 0;
-    this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}, gas: ${call.gas}`);
+    this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}`);
     // metrics for selector
     if (callDataSize >= constants.FUNCTION_SELECTOR_CHAR_LENGTH) {
       this.ethExecutionsCounter
@@ -1629,7 +1631,6 @@ export class EthImpl implements Eth {
     }
 
     const blockNumberOrTag = await this.extractBlockNumberOrTag(blockParam, requestIdPrefix);
-
     await this.performCallChecks(call);
 
     // Get a reasonable value for "gas" if it is not specified.
@@ -1891,8 +1892,8 @@ export class EthImpl implements Eth {
    * @param call
    */
   async performCallChecks(call: any): Promise<void> {
-    // The "to" address must always be 42 chars.
-    if (!call.to || call.to.length != 42) {
+    // after this PR https://github.com/hashgraph/hedera-mirror-node/pull/8100 in mirror-node, call.to is allowed to be empty or null
+    if (call.to && !isValidEthereumAddress(call.to)) {
       throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
   }
