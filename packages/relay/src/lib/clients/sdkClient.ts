@@ -630,17 +630,6 @@ export class SDKClient {
     return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
   }
 
-  private async calculateFileAppendTxTotalTinybarsCost(fileAppendTx: FileAppendTransaction): Promise<number> {
-    // @ts-ignore
-    const fileAppendTxs = fileAppendTx._transactionIds.list.map((txId) =>
-      new TransactionRecordQuery().setTransactionId(txId).execute(this.clientMain),
-    );
-
-    return (await Promise.all(fileAppendTxs)).reduce((base, record) => {
-      return base + record.transactionFee.toTinybars().toNumber();
-    }, 0);
-  }
-
   private createFile = async (
     callData: Uint8Array,
     client: Client,
@@ -687,22 +676,24 @@ export class SDKClient {
           .setContents(hexedCallData.substring(this.fileAppendChunkSize, hexedCallData.length))
           .setChunkSize(this.fileAppendChunkSize)
           .setMaxChunks(this.maxChunks);
-        const fileAppendTxResponse = await fileAppendTx.execute(client);
+        const fileAppendTxResponses = await fileAppendTx.executeAll(client);
 
-        // get transaction fee and add expense to limiter
-        const appendFileRecord = await fileAppendTxResponse.getRecord(this.clientMain);
-        transactionFee = appendFileRecord.transactionFee;
-        this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+        for (let fileAppendTxResponse of fileAppendTxResponses) {
+          // get transaction fee and add expense to limiter
+          const appendFileRecord = await fileAppendTxResponse.getRecord(this.clientMain);
+          const tinybarsCost = appendFileRecord.transactionFee.toTinybars().toNumber();
 
-        this.captureMetrics(
-          SDKClient.transactionMode,
-          fileAppendTx.constructor.name,
-          Status.Success,
-          await this.calculateFileAppendTxTotalTinybarsCost(fileAppendTx),
-          0,
-          callerName,
-          interactingEntity,
-        );
+          this.captureMetrics(
+            SDKClient.transactionMode,
+            fileAppendTx.constructor.name,
+            Status.Success,
+            tinybarsCost,
+            0,
+            callerName,
+            interactingEntity,
+          );
+          this.hbarLimiter.addExpense(tinybarsCost, currentDateNow);
+        }
       }
 
       // Ensure that the calldata file is not empty
