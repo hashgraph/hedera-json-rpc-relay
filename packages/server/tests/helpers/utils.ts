@@ -495,14 +495,14 @@ export class Utils {
       message += `**Cost**: ${entry.cost.toLocaleString()} ms\n\n`;
       message += '**Heap Statistics**:\n';
       Object.entries(entry.diffGC.heapStatistics).forEach(([key, value]) => {
-        message += `- **${key}**: ${this.formatBytes(value)}\n`;
+        message += `- **${this.camelCaseToTitleCase(key)}**: ${this.formatBytes(value)}\n`;
       });
       message += '\n**Heap Space Statistics**:\n';
       entry.diffGC.heapSpaceStatistics.forEach((space) => {
         message += `  - **${space.spaceName}**:\n`;
         Object.entries(space).forEach(([key, value]) => {
           if (key !== 'spaceName') {
-            message += `    - **${key}**: ${this.formatBytes(value)}\n`;
+            message += `    - **${this.camelCaseToTitleCase(key)}**: ${this.formatBytes(value)}\n`;
           }
         });
         message += '\n';
@@ -510,6 +510,18 @@ export class Utils {
     });
 
     return message;
+  }
+
+  /**
+   * Converts a string in camel case to title case.
+   * @param textInCamelCase The text in camel case.
+   * @return The text in title case.
+   */
+  static camelCaseToTitleCase(textInCamelCase: string): string {
+    return textInCamelCase
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim();
   }
 
   /**
