@@ -109,7 +109,9 @@ export default class Assertions {
     );
     expect(relayResponse.uncles, "Assert block: 'uncles' property exists").to.be.exist;
     expect(relayResponse.uncles.length, "Assert block: 'uncles' length should equal 0").to.eq(0);
-    expect(relayResponse.logsBloom, "Assert block: 'logsBloom' should equal emptyBloom").to.eq(Assertions.emptyBloom);
+    expect(relayResponse.logsBloom, "Assert block: 'logsBloom' should equal mirrorNode response").to.eq(
+      mirrorNodeResponse.logs_bloom === Assertions.emptyHex ? Assertions.emptyBloom : mirrorNodeResponse.logs_bloom,
+    );
     expect(relayResponse.gasLimit, "Assert block: 'gasLimit' should equal 'maxBlockGasLimit'").to.equal(
       ethers.toQuantity(Assertions.maxBlockGasLimit),
     );
