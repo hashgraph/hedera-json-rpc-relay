@@ -22,7 +22,8 @@ import Axios, { AxiosInstance } from 'axios';
 import { expect } from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';
-import { Server } from 'node:http';
+import { Server } from 'http';
+import { GCProfiler } from 'v8';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
 
 import Assertions from '../helpers/assertions';
@@ -31,7 +32,6 @@ import { Validator } from '../../src/validator';
 import RelayCalls from '../../tests/helpers/constants';
 import * as Constants from '../../src/validator/constants';
 import { Utils } from '../helpers/utils';
-import { GCProfiler } from 'node:v8';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 

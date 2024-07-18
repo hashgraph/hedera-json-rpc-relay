@@ -35,6 +35,7 @@ import { writeSnapshot } from 'heapdump';
 import path from 'path';
 import { GitHubClient } from '../clients/githubClient';
 import MirrorClient from '../clients/mirrorClient';
+import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
 
 export class Utils {
   static readonly PROJECT_ROOT_PATH = path.resolve('../..');
@@ -430,7 +431,7 @@ export class Utils {
             const diff = stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize;
             return acc + diff;
           }, 0);
-          const statsDiff = statsGrowingHeapSize.map((stats) => ({
+          const statsDiff: HeapDifferenceStatistics = statsGrowingHeapSize.map((stats) => ({
             gcType: stats.gcType,
             cost: stats.cost,
             diffGC: {
@@ -466,19 +467,48 @@ export class Utils {
   /**
    * Generates a comment indicating a memory leak detected during tests.
    * @param {string} testTitle The title of the current test.
-   * @param {object} statsDiff The difference in memory statistics indicating the leak.
+   * @param {HeapDifferenceStatistics} statsDiff The difference in memory statistics indicating the leak.
    * @returns {string} The formatted comment.
    */
-  private static generateMemoryLeakComment(testTitle: string, statsDiff: object): string {
+  private static generateMemoryLeakComment(testTitle: string, statsDiff: HeapDifferenceStatistics): string {
     const commentHeader = '🚨 **Memory Leak Detected** 🚨';
     const summary = `A potential memory leak has been detected in the test titled \`${testTitle}\`. This may impact the application's performance and stability.`;
     const detailsHeader = '### Details';
-    const jsonDetails = `\`\`\`json\n${JSON.stringify(statsDiff, null, 2)}\n\`\`\``;
+    const formattedStatsDiff = this.formatHeapDifferenceStatistics(statsDiff);
     const recommendationsHeader = '### Recommendations';
     const recommendations =
       'Please investigate the memory allocations in this test, focusing on objects that are not being properly deallocated.';
 
-    return `${commentHeader}\n\n${summary}\n\n${detailsHeader}\n${jsonDetails}\n\n${recommendationsHeader}\n${recommendations}`;
+    return `${commentHeader}\n\n${summary}\n\n${detailsHeader}\n${formattedStatsDiff}\n\n${recommendationsHeader}\n${recommendations}`;
+  }
+
+  /**
+   * Formats the difference in heap statistics into a readable string.
+   * @param {HeapDifferenceStatistics} statsDiff The difference in heap statistics.
+   * @returns {string} The formatted string.
+   */
+  private static formatHeapDifferenceStatistics(statsDiff: HeapDifferenceStatistics): string {
+    let message = '📊 **Memory Leak Detection Report** 📊\n\n';
+
+    statsDiff.forEach((entry) => {
+      message += `**GC Type**: ${entry.gcType}\n`;
+      message += `**Cost**: ${entry.cost.toLocaleString()} ms\n\n`;
+      message += '**Heap Statistics**:\n';
+      Object.entries(entry.diffGC.heapStatistics).forEach(([key, value]) => {
+        message += `- **${key}**: ${value.toLocaleString()}\n`;
+      });
+      message += '\n**Heap Space Statistics**:\n';
+      entry.diffGC.heapSpaceStatistics.forEach((space) => {
+        message += `  - **${space.spaceName}**:\n`;
+        Object.entries(space).forEach(([key, value]) => {
+          // Include spaceName in the listing
+          message += `    - **${key}**: ${value.toLocaleString()}\n`;
+        });
+        message += '\n'; // Add extra newline for spacing between spaces
+      });
+    });
+
+    return message;
   }
 
   /**

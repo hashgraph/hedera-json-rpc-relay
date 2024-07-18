@@ -23,6 +23,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
+import { GCProfiler } from 'v8';
 
 // Other external resources
 import fs from 'fs';
@@ -47,7 +48,6 @@ import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
 import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
-import { GCProfiler } from 'node:v8';
 
 chai.use(chaiAsPromised);
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });

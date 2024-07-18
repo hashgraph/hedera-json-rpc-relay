@@ -18,9 +18,13 @@
  *
  */
 
-export interface GitHubContext {
-  readonly owner: string;
-  readonly repo: string;
-  readonly token: string;
-  readonly pullNumber: number;
-}
+import { HeapSpaceStatistics, HeapStatistics } from 'v8';
+
+export type HeapDifferenceStatistics = Array<{
+  gcType: string;
+  cost: number;
+  diffGC: {
+    heapStatistics: HeapStatistics;
+    heapSpaceStatistics: HeapSpaceStatistics[];
+  };
+}>;
