@@ -580,6 +580,7 @@ export class Utils {
    */
   private static formatBytes(bytes: number): string {
     if (bytes === 0) return '0.00 bytes';
+    if (bytes < 0) return `-${this.formatBytes(Math.abs(bytes))}`;
     const units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
     let power = Math.floor(Math.log(bytes) / Math.log(1000));
     power = Math.min(power, units.length - 1);
