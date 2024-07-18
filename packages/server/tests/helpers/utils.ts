@@ -579,6 +579,7 @@ export class Utils {
    * @returns {string} A formatted string representing the size in bytes, KB, MB, GB, or TB.
    */
   private static formatBytes(bytes: number): string {
+    if (bytes === 0) return '0.00 bytes';
     const units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
     let power = Math.floor(Math.log(bytes) / Math.log(1000));
     power = Math.min(power, units.length - 1);
