@@ -32,12 +32,12 @@ import { GCProfiler, setFlagsFromString } from 'v8';
 import { runInNewContext } from 'vm';
 import { Context } from 'mocha';
 import { writeSnapshot } from 'heapdump';
+import { Octokit } from '@octokit/core';
 import { Endpoints } from '@octokit/types';
-import axios from 'axios';
 import path from 'path';
 
 type CreateCommentResponse = Endpoints['POST /repos/{owner}/{repo}/pulls/{pull_number}/comments']['response'];
-type GithubContext = { owner: string; repository: string; token: string; prNumber: string; commitId: string };
+type GithubContext = { owner: string; repo: string; token: string; pullNumber: string; commitId: string };
 
 export class Utils {
   static readonly PROJECT_ROOT_PATH = path.resolve('../..');
@@ -527,19 +527,22 @@ export class Utils {
     return `${size.toFixed(2)} ${units[power]}`;
   }
 
-  private static async addCommentToPullRequest(commentBody: string, filePath: string): Promise<void> {
+  private static async addCommentToPullRequest(commentBody: string, path: string): Promise<void> {
     try {
       const context = Utils.getGithubContext();
-      const response = await Utils.executeGithubRequest<CreateCommentResponse>(
-        `https://api.github.com/repos/${context.owner}/${context.repository}/pulls/${context.prNumber}/comments`,
-        'POST',
+      const octokit = new Octokit({ auth: context.token });
+      const response = await octokit.request(
+        `POST https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}/comments`,
         {
+          owner: context.owner,
+          repo: context.repo,
+          pull_number: context.pullNumber,
           body: commentBody,
           commit_id: context.commitId,
-          path: filePath,
+          path,
         },
       );
-      console.log('Comment posted successfully:', response.url);
+      console.log('Comment posted successfully:', response);
     } catch (error) {
       console.warn('Failed to post comment to PR:', error);
     }
@@ -553,31 +556,7 @@ export class Utils {
         $GITHUB_REPOSITORY, $GITHUB_PR_NUMBER, $GITHUB_COMMIT_SHA, $GITHUB_TOKEN`,
       );
     }
-    const [owner, repository] = GITHUB_REPOSITORY!.split('/');
-    return { owner, repository, token: GITHUB_TOKEN, prNumber: GITHUB_PR_NUMBER, commitId: GITHUB_COMMIT_SHA };
-  }
-
-  private static async executeGithubRequest<T>(url: string, method: 'GET' | 'POST', body?: any): Promise<T> {
-    const { GITHUB_TOKEN } = process.env;
-    if (!GITHUB_TOKEN) {
-      throw new Error('GitHub token is not set in environment variables.');
-    }
-    try {
-      const headers = {
-        Authorization: `token ${GITHUB_TOKEN}`,
-        'User-Agent': 'hedera-json-rpc-relay',
-        'Content-Type': 'application/json',
-      };
-      const response = await axios({
-        headers,
-        method,
-        url,
-        data: body,
-      });
-      return response.data;
-    } catch (error) {
-      console.error(`GitHub API call to ${url} failed:`, error);
-      throw new Error(`Failed to make GitHub API call to ${url}`);
-    }
+    const [owner, repo] = GITHUB_REPOSITORY.split('/');
+    return { owner, repo, token: GITHUB_TOKEN, pullNumber: GITHUB_PR_NUMBER, commitId: GITHUB_COMMIT_SHA };
   }
 }
