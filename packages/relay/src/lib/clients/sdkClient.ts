@@ -469,18 +469,34 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
     try {
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
-      if (shouldLimit) {
+      if (this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName))
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
 
       this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
-      const resp = await transaction.execute(this.clientMain);
+
+      const transactionResponse = await transaction.execute(this.clientMain);
+
+      const transactionRecord = await transactionResponse.getRecord(this.clientMain);
+
+      // get transactionFee and capture it in metrics and HBAR limiter class
+      // @todo: The transactionFee includes the entire charges of the transaction, with some portions charged by tx.from, not the operator.
+      //        Determine how to separate the fee charged exclusively by the operator.
+      let transactionFee = transactionRecord.transactionFee;
+      this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+      this.captureMetrics(
+        SDKClient.transactionMode,
+        transaction.constructor.name,
+        Status.Success,
+        transactionRecord.transactionFee.toTinybars().toNumber(),
+        transactionRecord?.contractFunctionResult?.gasUsed,
+        callerName,
+        interactingEntity,
+      );
 
       this.logger.info(
-        `${requestIdPrefix} ${resp.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
+        `${requestIdPrefix} ${transactionResponse.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
       );
-      return resp;
+      return transactionResponse;
     } catch (e: any) {
       const sdkClientError = new SDKClientError(e, e.message);
       let transactionFee: number | Hbar = 0;
