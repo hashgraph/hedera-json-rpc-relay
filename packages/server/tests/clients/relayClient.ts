@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
-import { expectedError } from '../../../relay/tests/helpers';
 
 export default class RelayClient {
   private readonly provider: ethers.JsonRpcProvider;
@@ -32,9 +31,7 @@ export default class RelayClient {
   constructor(relayUrl: string, logger: Logger) {
     this.logger = logger;
     let fr: ethers.FetchRequest = new ethers.FetchRequest(relayUrl);
-    this.provider = new ethers.JsonRpcProvider(fr, undefined, {
-      batchMaxCount: 1,
-    });
+    this.provider = new ethers.JsonRpcProvider(fr);
   }
 
   /**

@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,6 +162,10 @@ const ACTUAL_GAS_USED = {
   ERC_TOKEN_URI_NFT: 27508,
 };
 
+const METRICS = {
+  REMAINING_HBAR_LIMIT: 'rpc_relay_hbar_rate_remaining',
+};
+
 const NON_EXISTING_ADDRESS = '0x5555555555555555555555555555555555555555';
 const NON_EXISTING_TX_HASH = '0x5555555555555555555555555555555555555555555555555555555555555555';
 const NON_EXISTING_BLOCK_HASH = '0x5555555555555555555555555555555555555555555555555555555555555555';
@@ -189,4 +193,5 @@ export default {
   AMOUNT,
   ACTUAL_GAS_USED,
   TINYBAR_TO_WEIBAR_COEF,
+  METRICS,
 };

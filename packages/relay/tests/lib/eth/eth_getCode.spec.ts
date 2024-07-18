@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,7 +143,7 @@ describe('@ethGetCode using MirrorNode', async function () {
         try {
           await ethImpl.getCode(EthImpl.iHTSAddress, blockParam);
           expect(true).to.eq(false);
-        } catch (error) {
+        } catch (error: any) {
           const expectedError = predefined.UNKNOWN_BLOCK(
             `The value passed is not a valid blockHash/blockNumber/blockTag value: ${blockParam}`,
           );

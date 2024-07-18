@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -215,7 +215,6 @@ export class Precheck {
     };
     const txGas = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
     const txTotalValue = tx.value + txGas * tx.gasLimit;
-    let tinybars: BigInt;
 
     if (account == null) {
       this.logger.trace(
@@ -226,6 +225,7 @@ export class Precheck {
       throw predefined.RESOURCE_NOT_FOUND(`tx.from '${tx.from}'.`);
     }
 
+    let tinybars: bigint;
     try {
       tinybars = BigInt(account.balance.balance.toString()) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
       result.passes = tinybars >= txTotalValue;
@@ -294,7 +294,7 @@ export class Precheck {
    * @returns {number} The intrinsic gas cost.
    * @private
    */
-  private static transactionIntrinsicGasCost(data: string): number {
+  public static transactionIntrinsicGasCost(data: string): number {
     const trimmedData = data.replace('0x', '');
 
     let zeros = 0;

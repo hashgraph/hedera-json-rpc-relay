@@ -2,7 +2,7 @@
  *
  * Hedera Hardhat Viem Example Project
  *
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@
  *
  */
 
-const hre = require("hardhat");
+const hre = require('hardhat');
 
 module.exports = async (address) => {
   //Assign the greeter contract object in a variable, this is used for already deployed contract, which we have the address for. ethers.getContractAt accepts:
   //name of contract as first parameter
   //address of our contract
-  const greeter = await hre.viem.getContractAt("Greeter", address);
+  const greeter = await hre.viem.getContractAt('Greeter', address);
   //using the greeter object(which is our contract) we can call functions from the contract. In this case we call greet which returns our greeting msg
   const callRes = await greeter.read.greet();
 

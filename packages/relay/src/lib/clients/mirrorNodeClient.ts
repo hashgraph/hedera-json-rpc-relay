@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,27 @@ export interface IContractLogsResultsParams {
   topic1?: string | string[];
   topic2?: string | string[];
   topic3?: string | string[];
+}
+
+export interface IContractCallRequest {
+  block?: string;
+  estimate?: boolean;
+  from?: string;
+  to?: string | null;
+  gas?: number | string;
+  gasPrice?: number | string;
+  value?: number | string | null;
+  data?: string | null;
+  input?: string;
+}
+
+export interface IContractCallResponse {
+  result?: string;
+  errorMessage?: string;
+  statusCode?: number;
+  _status?: {
+    messages: Array<{ message: string; detail: string; data: string }>;
+  };
 }
 
 export class MirrorNodeClient {
@@ -1020,7 +1041,15 @@ export class MirrorNodeClient {
     return this.get(`${apiEndpoint}${queryParams}`, MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT, requestIdPrefix);
   }
 
-  public async postContractCall(callData: string, requestIdPrefix?: string) {
+  /**
+   * Send a contract call request to mirror node
+   * @param callData {IContractCallRequest} contract call request data
+   * @param requestIdPrefix {string} optional request id prefix
+   */
+  public async postContractCall(
+    callData: IContractCallRequest,
+    requestIdPrefix?: string,
+  ): Promise<IContractCallResponse | null> {
     return this.post(
       MirrorNodeClient.CONTRACT_CALL_ENDPOINT,
       callData,
