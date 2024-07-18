@@ -495,16 +495,17 @@ export class Utils {
       message += `**Cost**: ${entry.cost.toLocaleString()} ms\n\n`;
       message += '**Heap Statistics**:\n';
       Object.entries(entry.diffGC.heapStatistics).forEach(([key, value]) => {
-        message += `- **${key}**: ${value.toLocaleString()}\n`;
+        message += `- **${key}**: ${this.formatBytes(value)}\n`;
       });
       message += '\n**Heap Space Statistics**:\n';
       entry.diffGC.heapSpaceStatistics.forEach((space) => {
         message += `  - **${space.spaceName}**:\n`;
         Object.entries(space).forEach(([key, value]) => {
-          // Include spaceName in the listing
-          message += `    - **${key}**: ${value.toLocaleString()}\n`;
+          if (key !== 'spaceName') {
+            message += `    - **${key}**: ${this.formatBytes(value)}\n`;
+          }
         });
-        message += '\n'; // Add extra newline for spacing between spaces
+        message += '\n';
       });
     });
 
