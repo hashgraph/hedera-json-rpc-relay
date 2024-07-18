@@ -33,13 +33,12 @@ import { runInNewContext } from 'vm';
 import { Context } from 'mocha';
 import { writeSnapshot } from 'heapdump';
 import { Octokit } from '@octokit/core';
-import { Endpoints } from '@octokit/types';
 import path from 'path';
 
-type CreateCommentResponse = Endpoints['POST /repos/{owner}/{repo}/pulls/{pull_number}/comments']['response'];
-type GithubContext = { owner: string; repo: string; token: string; pullNumber: string; commitId: string };
+type GithubContext = { owner: string; repo: string; token: string; pullNumber: number; commitId: string };
 
 export class Utils {
+  static readonly CREATE_COMMENT_ENDPOINT = 'POST /repos/{owner}/{repo}/pulls/{pull_number}/comments';
   static readonly PROJECT_ROOT_PATH = path.resolve('../..');
   static readonly TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
   static readonly MEMORY_LEAK_SNAPSHOT_THRESHOLD: number = 1e6; // 1 MB
@@ -531,18 +530,15 @@ export class Utils {
     try {
       const context = Utils.getGithubContext();
       const octokit = new Octokit({ auth: context.token });
-      const response = await octokit.request(
-        `POST https://api.github.com/repos/{owner}/{repo}/pulls/{pull_number}/comments`,
-        {
-          owner: context.owner,
-          repo: context.repo,
-          pull_number: context.pullNumber,
-          body: commentBody,
-          commit_id: context.commitId,
-          subject_type: 'file',
-          path,
-        },
-      );
+      const response = await octokit.request(Utils.CREATE_COMMENT_ENDPOINT, {
+        owner: context.owner,
+        repo: context.repo,
+        pull_number: context.pullNumber,
+        body: commentBody,
+        commit_id: context.commitId,
+        subject_type: 'FILE',
+        path,
+      });
       console.log('Comment posted successfully:', response);
     } catch (error) {
       console.warn('Failed to post comment to PR:', error);
@@ -558,6 +554,7 @@ export class Utils {
       );
     }
     const [owner, repo] = GITHUB_REPOSITORY.split('/');
-    return { owner, repo, token: GITHUB_TOKEN, pullNumber: GITHUB_PR_NUMBER, commitId: GITHUB_COMMIT_SHA };
+    const pullNumber = parseInt(GITHUB_PR_NUMBER);
+    return { owner, repo, pullNumber, token: GITHUB_TOKEN, commitId: GITHUB_COMMIT_SHA };
   }
 }
