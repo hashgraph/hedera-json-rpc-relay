@@ -30,7 +30,9 @@ import relayConstants from '../../../../packages/relay/src/lib/constants';
 
 // Local resources
 import parentContractJson from '../contracts/Parent.json';
+import largeContractJson from '../contracts/EstimatePrecompileContract.json';
 import { Utils } from '../helpers/utils';
+import { predefined } from '@hashgraph/json-rpc-relay';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds
@@ -38,7 +40,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { mirrorNode, relay, logger, initialBalance } = global;
+  const { mirrorNode, relay, logger, initialBalance, metrics } = global;
 
   // cached entities
   let parentContractAddress: string;
@@ -90,72 +92,121 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
     });
   });
 
-  describe('HBAR Limiter Acceptance Tests', function () {
-    this.timeout(480 * 1000); // 480 seconds
+  // The following tests exhaust the hbar limit, so they should only be run against a local relay
+  if (global.relayIsLocal) {
+    describe('HBAR Limiter Acceptance Tests', function () {
+      before(async () => {
+        // Restart the relay to reset the limits
+        await global.restartLocalRelay();
+      });
 
-    this.beforeAll(async () => {
-      requestId = Utils.generateRequestId();
-      const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+      this.timeout(480 * 1000); // 480 seconds
 
-      logger.info(`${requestIdPrefix} Creating accounts`);
-      logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
+      this.beforeAll(async () => {
+        requestId = Utils.generateRequestId();
+        const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
-      const initialAccount: AliasAccount = global.accounts[0];
+        logger.info(`${requestIdPrefix} Creating accounts`);
+        logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
 
-      const neededAccounts: number = 2;
-      accounts.push(
-        ...(await Utils.createMultipleAliasAccounts(
-          mirrorNode,
-          initialAccount,
-          neededAccounts,
-          initialBalance,
-          requestId,
-        )),
-      );
-      global.accounts.push(...accounts);
+        const initialAccount: AliasAccount = global.accounts[0];
 
-      const parentContract = await Utils.deployContract(
-        parentContractJson.abi,
-        parentContractJson.bytecode,
-        accounts[0].wallet,
-      );
+        const neededAccounts: number = 2;
+        accounts.push(
+          ...(await Utils.createMultipleAliasAccounts(
+            mirrorNode,
+            initialAccount,
+            neededAccounts,
+            initialBalance,
+            requestId,
+          )),
+        );
+        global.accounts.push(...accounts);
 
-      parentContractAddress = parentContract.target as string;
-      global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
-    });
+        const parentContract = await Utils.deployContract(
+          parentContractJson.abi,
+          parentContractJson.bytecode,
+          accounts[0].wallet,
+        );
 
-    this.beforeEach(async () => {
-      requestId = Utils.generateRequestId();
-    });
+        parentContractAddress = parentContract.target as string;
+        global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
+      });
 
-    describe('HBAR Rate Limit Tests', () => {
-      const defaultGasPrice = Assertions.defaultGasPrice;
-      const defaultGasLimit = 3_000_000;
+      this.beforeEach(async () => {
+        requestId = Utils.generateRequestId();
+      });
 
-      const defaultLondonTransactionData = {
-        value: ONE_TINYBAR,
-        chainId: Number(CHAIN_ID),
-        maxPriorityFeePerGas: defaultGasPrice,
-        maxFeePerGas: defaultGasPrice,
-        gasLimit: defaultGasLimit,
-        type: 2,
-      };
+      describe('HBAR Rate Limit Tests', () => {
+        const defaultGasPrice = Assertions.defaultGasPrice;
+        const defaultGasLimit = 3_000_000;
 
-      it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded ', async function () {
-        const gasPrice = await relay.gasPrice(requestId);
-
-        const transaction = {
-          ...defaultLondonTransactionData,
-          to: parentContractAddress,
-          nonce: await relay.getAccountNonce(accounts[1].address, requestId),
-          maxPriorityFeePerGas: gasPrice,
-          maxFeePerGas: gasPrice,
+        const defaultLondonTransactionData = {
+          value: ONE_TINYBAR,
+          chainId: Number(CHAIN_ID),
+          maxPriorityFeePerGas: defaultGasPrice,
+          maxFeePerGas: defaultGasPrice,
+          gasLimit: defaultGasLimit,
+          type: 2,
         };
-        const signedTx = await accounts[1].wallet.signTransaction(transaction);
 
-        await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
-          .fulfilled;
+        it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
+          const gasPrice = await relay.gasPrice(requestId);
+          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+
+          const transaction = {
+            ...defaultLondonTransactionData,
+            to: parentContractAddress,
+            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+            maxPriorityFeePerGas: gasPrice,
+            maxFeePerGas: gasPrice,
+          };
+          const signedTx = await accounts[1].wallet.signTransaction(transaction);
+
+          await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
+            .fulfilled;
+          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(remainingHbarsAfter).to.be.eq(remainingHbarsBefore);
+        });
+
+        it('should deploy a large contract and decrease remaining HBAR in limiter when transaction data is large', async function () {
+          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(remainingHbarsBefore).to.be.gt(0);
+
+          const largeContract = await Utils.deployContract(
+            largeContractJson.abi,
+            largeContractJson.bytecode,
+            accounts[0].wallet,
+          );
+          await largeContract.waitForDeployment();
+          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(largeContract.target).to.not.be.null;
+          expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
+        });
+
+        it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
+          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(remainingHbarsBefore).to.be.gt(0);
+          try {
+            for (let i = 0; i < 50; i++) {
+              const largeContract = await Utils.deployContract(
+                largeContractJson.abi,
+                largeContractJson.bytecode,
+                accounts[0].wallet,
+              );
+              await largeContract.waitForDeployment();
+              expect(largeContract.target).to.not.be.null;
+            }
+
+            expect(true).to.be.false;
+          } catch (e: any) {
+            expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+          }
+
+          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(remainingHbarsAfter).to.be.lte(0);
+        });
       });
     });
-  });
+  }
 });
