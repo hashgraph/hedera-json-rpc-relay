@@ -28,18 +28,19 @@ import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
 import { AliasAccount } from '../types/AliasAccount';
 import ServicesClient from '../clients/servicesClient';
 import http from 'http';
-import { GCProfiler, setFlagsFromString } from 'node:v8';
-import { runInNewContext } from 'node:vm';
+import { GCProfiler, setFlagsFromString } from 'v8';
+import { runInNewContext } from 'vm';
 import { Context } from 'mocha';
 import { writeSnapshot } from 'heapdump';
 import { Endpoints } from '@octokit/types';
 import axios from 'axios';
+import path from 'path';
 
-type ListPullsResponse = Endpoints['GET /repos/{owner}/{repo}/pulls']['response'];
-type CreateCommentResponse = Endpoints['POST /repos/{owner}/{repo}/issues/{issue_number}/comments']['response'];
-type GithubContext = { owner: string; repository: string; token: string; prNumber: string };
+type CreateCommentResponse = Endpoints['POST /repos/{owner}/{repo}/pulls/{pull_number}/comments']['response'];
+type GithubContext = { owner: string; repository: string; token: string; prNumber: string; commitId: string };
 
 export class Utils {
+  static readonly PROJECT_ROOT_PATH = path.resolve('../..');
   static readonly TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
   static readonly MEMORY_LEAK_SNAPSHOT_THRESHOLD: number = 1e6; // 1 MB
 
@@ -449,6 +450,7 @@ export class Utils {
           await Utils.addCommentToPullRequest(
             `Memory leak detected in test: ${this.currentTest?.title}\n
             Details: ${JSON.stringify(statsDiff, null, 2)}`,
+            this.test?.file ? path.relative(Utils.PROJECT_ROOT_PATH, this.test?.file) : '',
           );
           // write a heap snapshot if the memory leak is more than 1 MB
           const isMemoryLeakSnapshotEnabled = process.env.WRITE_SNAPSHOT_ON_MEMORY_LEAK === 'true';
@@ -525,39 +527,34 @@ export class Utils {
     return `${size.toFixed(2)} ${units[power]}`;
   }
 
-  private static async addCommentToPullRequest(commentBody: string): Promise<void> {
+  private static async addCommentToPullRequest(commentBody: string, filePath: string): Promise<void> {
     try {
-      const state = Utils.getGithubContext();
-      const prs = await Utils.getPullRequestDetails(state);
-
-      if (prs.data.length > 0) {
-        const prNumber = prs.data[0].number;
-        const response = await Utils.executeGithubRequest<CreateCommentResponse>(
-          `https://api.github.com/repos/${state.owner}/${state.repository}/issues/${prNumber}/comments`,
-          'POST',
-          { body: commentBody },
-        );
-        console.log('Comment posted successfully:', response.url);
-      }
+      const context = Utils.getGithubContext();
+      const response = await Utils.executeGithubRequest<CreateCommentResponse>(
+        `https://api.github.com/repos/${context.owner}/${context.repository}/pulls/${context.prNumber}/comments`,
+        'POST',
+        {
+          body: commentBody,
+          commit_id: context.commitId,
+          path: filePath,
+        },
+      );
+      console.log('Comment posted successfully:', response.url);
     } catch (error) {
       console.warn('Failed to post comment to PR:', error);
     }
   }
 
-  private static async getPullRequestDetails(context: GithubContext): Promise<ListPullsResponse> {
-    return await Utils.executeGithubRequest<ListPullsResponse>(
-      `https://api.github.com/repos/${context.owner}/${context.repository}/pulls/${context.prNumber}`,
-      'GET',
-    );
-  }
-
   private static getGithubContext(): GithubContext {
-    const { GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_TOKEN } = process.env;
-    if (!GITHUB_REPOSITORY || !GITHUB_PR_NUMBER || !GITHUB_TOKEN) {
-      throw new Error(`Missing required environment variables: $GITHUB_REPOSITORY, $GITHUB_PR_NUMBER, $GITHUB_TOKEN`);
+    const { GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_COMMIT_SHA, GITHUB_TOKEN } = process.env;
+    if (!GITHUB_REPOSITORY || !GITHUB_PR_NUMBER || !GITHUB_COMMIT_SHA || !GITHUB_TOKEN) {
+      throw new Error(
+        `Missing required environment variables: 
+        $GITHUB_REPOSITORY, $GITHUB_PR_NUMBER, $GITHUB_COMMIT_SHA, $GITHUB_TOKEN`,
+      );
     }
-    const [owner, repo] = GITHUB_REPOSITORY!.split('/');
-    return { owner, repository: repo, token: GITHUB_TOKEN, prNumber: GITHUB_PR_NUMBER };
+    const [owner, repository] = GITHUB_REPOSITORY!.split('/');
+    return { owner, repository, token: GITHUB_TOKEN, prNumber: GITHUB_PR_NUMBER, commitId: GITHUB_COMMIT_SHA };
   }
 
   private static async executeGithubRequest<T>(url: string, method: 'GET' | 'POST', body?: any): Promise<T> {
@@ -568,7 +565,7 @@ export class Utils {
     try {
       const headers = {
         Authorization: `token ${GITHUB_TOKEN}`,
-        'User-Agent': 'Hedera JSON-RPC Relay',
+        'User-Agent': 'hedera-json-rpc-relay',
         'Content-Type': 'application/json',
       };
       const response = await axios({
