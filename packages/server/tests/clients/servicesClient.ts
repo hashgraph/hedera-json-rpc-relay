@@ -75,13 +75,28 @@ export default class ServicesClient {
     this.network = network;
 
     if (!network) network = '{}';
-    const opPrivateKey = PrivateKey.fromStringECDSA(key);
+    const opPrivateKey = this.createPrivateKeyBasedOnFormat(key);
     if (supportedEnvs.includes(network.toLowerCase())) {
       this.client = Client.forName(network);
     } else {
       this.client = Client.forNetwork(JSON.parse(network));
     }
     this.client.setOperator(AccountId.fromString(accountId), opPrivateKey);
+  }
+
+  createPrivateKeyBasedOnFormat(operatorMainKey: string): PrivateKey {
+    switch (process.env.OPERATOR_KEY_FORMAT) {
+      case 'DER':
+      case undefined:
+      case null:
+        return PrivateKey.fromStringDer(operatorMainKey);
+      case 'HEX_ED25519':
+        return PrivateKey.fromStringED25519(operatorMainKey);
+      case 'HEX_ECDSA':
+        return PrivateKey.fromStringECDSA(operatorMainKey);
+      default:
+        throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${process.env.OPERATOR_KEY_FORMAT}`);
+    }
   }
 
   getLogger(): Logger {
