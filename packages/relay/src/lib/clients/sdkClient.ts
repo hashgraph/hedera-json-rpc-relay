@@ -477,21 +477,21 @@ export class SDKClient {
       const transactionResponse = await transaction.execute(this.clientMain);
 
       const transactionRecord = await transactionResponse.getRecord(this.clientMain);
-
+      executeGetTransactionRecord(transactionResponse, transactionType, callerName, interactingEntity, requestId);
       // get transactionFee and capture it in metrics and HBAR limiter class
       // @todo: The transactionFee includes the entire charges of the transaction, with some portions charged by tx.from, not the operator.
       //        Determine how to separate the fee charged exclusively by the operator.
-      let transactionFee = transactionRecord.transactionFee;
-      this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-      this.captureMetrics(
-        SDKClient.transactionMode,
-        transaction.constructor.name,
-        Status.Success,
-        transactionRecord.transactionFee.toTinybars().toNumber(),
-        transactionRecord?.contractFunctionResult?.gasUsed,
-        callerName,
-        interactingEntity,
-      );
+      // let transactionFee = transactionRecord.transactionFee;
+      // this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+      // this.captureMetrics(
+      //   SDKClient.transactionMode,
+      //   transaction.constructor.name,
+      //   Status.Success,
+      //   transactionRecord.transactionFee.toTinybars().toNumber(),
+      //   transactionRecord?.contractFunctionResult?.gasUsed,
+      //   callerName,
+      //   interactingEntity,
+      // );
 
       this.logger.info(
         `${requestIdPrefix} ${transactionResponse.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
