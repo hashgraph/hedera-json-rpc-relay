@@ -469,9 +469,16 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
     try {
+      // check hbar limit before executing transaction
+      if (this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName)) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+
+      // execute transaction
       this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
       const transactionResponse = await transaction.execute(this.clientMain);
 
+      // retrieve and capture transaction fee in metrics and rate limiter class
       await this.executeGetTransactionRecord(
         transactionResponse,
         callerName,
