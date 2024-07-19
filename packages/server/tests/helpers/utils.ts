@@ -467,7 +467,7 @@ export class Utils {
    * @returns {string} The formatted comment.
    */
   private static generateMemoryLeakComment(testTitle: string, statsDiff: HeapDifferenceStatistics): string {
-    const commentHeader = '🚨 **Memory Leak Detected** 🚨';
+    const commentHeader = '## 🚨 Memory Leak Detected 🚨##';
     const summary = `A potential memory leak has been detected in the test titled \`${testTitle}\`. This may impact the application's performance and stability.`;
     const detailsHeader = '### Details';
     const formattedStatsDiff = this.formatHeapDifferenceStatistics(statsDiff);
@@ -489,13 +489,13 @@ export class Utils {
     statsDiff.forEach((entry) => {
       message += `**GC Type**: ${entry.gcType}\n`;
       message += `**Cost**: ${entry.cost.toLocaleString()} ms\n\n`;
-      message += '**Heap Statistics**:\n';
+      message += '**Heap Statistics (before vs after executing the test)**:\n';
       Object.entries(entry.diffGC.heapStatistics).forEach(([key, value]) => {
         message += `- **${this.camelCaseToTitleCase(key)}**: ${this.formatBytes(value)}\n`;
       });
-      message += '\n**Heap Space Statistics**:\n';
+      message += '\n**Heap Space Statistics (before vs after executing the test)**:\n';
       entry.diffGC.heapSpaceStatistics.forEach((space) => {
-        message += `  - **${space.spaceName}**:\n`;
+        message += `  - **${this.snakeCaseToTitleCase(space.spaceName)}**:\n`;
         Object.entries(space).forEach(([key, value]) => {
           if (key !== 'spaceName') {
             message += `    - **${this.camelCaseToTitleCase(key)}**: ${this.formatBytes(value)}\n`;
@@ -517,6 +517,19 @@ export class Utils {
     return textInCamelCase
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, (str) => str.toUpperCase())
+      .trim();
+  }
+
+  /**
+   * Converts a string in snake case to title case.
+   * @param textInSnakeCase The text in snake case.
+   * @return The text in title case.
+   */
+  private static snakeCaseToTitleCase(textInSnakeCase: string): string {
+    return textInSnakeCase
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
       .trim();
   }
 
@@ -575,12 +588,12 @@ export class Utils {
    * @returns {string} A formatted string representing the size in bytes, KB, MB, GB, or TB.
    */
   private static formatBytes(bytes: number): string {
-    if (bytes === 0) return '0.00 bytes';
-    if (bytes < 0) return `-${this.formatBytes(Math.abs(bytes))}`;
+    if (bytes === 0) return 'no changes';
+    const prefix = bytes > 0 ? 'increased with' : 'decreased with';
     const units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
-    let power = Math.floor(Math.log(bytes) / Math.log(1000));
+    let power = Math.floor(Math.log(Math.abs(bytes)) / Math.log(1000));
     power = Math.min(power, units.length - 1);
-    const size = bytes / Math.pow(1000, power);
-    return `${size.toFixed(2)} ${units[power]}`;
+    const size = Math.abs(bytes) / Math.pow(1000, power);
+    return `${prefix} ${size.toFixed(2)} ${units[power]}`;
   }
 }
