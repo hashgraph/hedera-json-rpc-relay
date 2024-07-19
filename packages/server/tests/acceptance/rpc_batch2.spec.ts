@@ -812,7 +812,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     let storageContract: ethers.Contract;
     let storageContractAddress: string;
     const STORAGE_CONTRACT_UPDATE = '0x2de4e884';
-    const NEXT_STORAGE_CONTRACT_UPDATE = '0x160D6484';
 
     this.beforeEach(async () => {
       storageContract = await Utils.deployContract(
@@ -985,7 +984,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const transaction1 = {
         ...transaction,
         nonce: await relay.getAccountNonce(accounts[1].address),
-        data: NEXT_STORAGE_CONTRACT_UPDATE,
+        data: STORAGE_CONTRACT_UPDATE,
       };
 
       const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
@@ -1030,7 +1029,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const transaction1 = {
         ...transaction,
         nonce: await relay.getAccountNonce(accounts[1].address),
-        data: NEXT_STORAGE_CONTRACT_UPDATE,
+        data: STORAGE_CONTRACT_UPDATE,
       };
 
       const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
