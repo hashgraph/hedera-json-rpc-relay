@@ -1379,6 +1379,7 @@ export class EthImpl implements Eth {
     transaction,
     transactionBuffer,
     txSubmitted,
+    parsedTx,
     requestIdPrefix,
   ): Promise<string | JsonRpcError> {
     this.logger.error(
@@ -1391,6 +1392,36 @@ export class EthImpl implements Eth {
 
     if (e instanceof SDKClientError) {
       this.hapiService.decrementErrorCounter(e.statusCode);
+      if (e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
+        // note: because this is a WRONG_NONCE error handler, the nonce of the account is expected to be different from the nonce of the parsedTx
+        //       running a polling loop to give mirror node enough time to update account nonce
+        let accountNonce: number | null = null;
+        for (let i = 0; i < this.MirrorNodeGetContractResultRetries; i++) {
+          const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestIdPrefix);
+          if (accountInfo.ethereum_nonce !== parsedTx.nonce) {
+            accountNonce = accountInfo.ethereum_nonce;
+            break;
+          }
+
+          this.logger.trace(
+            `${requestIdPrefix} Repeating retry to poll for updated account nonce. Count ${i} of ${
+              this.MirrorNodeGetContractResultRetries
+            }. Waiting ${this.mirrorNodeClient.getMirrorNodeRetryDelay()} ms before initiating a new request`,
+          );
+          await new Promise((r) => setTimeout(r, this.mirrorNodeClient.getMirrorNodeRetryDelay()));
+        }
+
+        if (!accountNonce) {
+          this.logger.warn(`${requestIdPrefix} Cannot find updated account nonce.`);
+          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONT_NONCE error.`);
+        }
+
+        if (parsedTx.nonce > accountNonce) {
+          return predefined.NONCE_TOO_HIGH(parsedTx.nonce, accountNonce);
+        } else {
+          return predefined.NONCE_TOO_LOW(parsedTx.nonce, accountNonce);
+        }
+      }
     }
 
     if (!txSubmitted) {
@@ -1462,20 +1493,6 @@ export class EthImpl implements Eth {
 
       if (!contractResult) {
         this.logger.warn(`${requestIdPrefix} No record retrieved`);
-        const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestIdPrefix);
-
-        if (tx?.transactions?.length) {
-          const result = tx.transactions[0].result;
-          if (result === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
-            const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestIdPrefix);
-            const accountNonce = accountInfo.ethereum_nonce;
-            if (parsedTx.nonce > accountNonce) {
-              throw predefined.NONCE_TOO_HIGH(parsedTx.nonce, accountNonce);
-            }
-
-            throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountNonce);
-          }
-        }
         throw predefined.INTERNAL_ERROR(`No matching record found for transaction id ${txId}`);
       }
 
@@ -1488,7 +1505,14 @@ export class EthImpl implements Eth {
 
       return contractResult.hash;
     } catch (e: any) {
-      return this.sendRawTransactionErrorHandler(e, transaction, transactionBuffer, txSubmitted, requestIdPrefix);
+      return this.sendRawTransactionErrorHandler(
+        e,
+        transaction,
+        transactionBuffer,
+        txSubmitted,
+        parsedTx,
+        requestIdPrefix,
+      );
     } finally {
       /**
        *  For transactions of type CONTRACT_CREATE, if the contract's bytecode (calldata) exceeds 5120 bytes, HFS is employed to temporarily store the bytecode on the network.
