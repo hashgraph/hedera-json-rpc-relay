@@ -40,6 +40,44 @@ entries:
     - https://hashgraph.github.io/hedera-json-rpc-relay/charts/hedera-json-rpc-0.52.0-rc1.tgz
     version: 0.52.0-rc1
   - apiVersion: v2
+    appVersion: 0.51.3
+    created: "2024-07-19T19:18:12.35090764Z"
+    dependencies:
+    - alias: relay
+      condition: relay.enabled
+      name: hedera-json-rpc-relay
+      repository: file://../hedera-json-rpc-relay
+      version: '>=0.24.0-0'
+    - alias: ws
+      condition: ws.enabled
+      name: hedera-json-rpc-relay-websocket
+      repository: file://../hedera-json-rpc-relay-websocket
+      version: '>=0.24.0-0'
+    description: Umbrella Helm chart deployment of the hashgraph/hedera-json-rpc products
+    digest: 55e081b3415e9fb399f6e40d6d77856b52079d0227eeb0570fc856855552a16e
+    home: https://github.com/hashgraph/hedera-json-rpc-relay
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    keywords:
+    - blockchain
+    - dlt
+    - hedera
+    - hashgraph
+    - smart
+    - contracts
+    - evm
+    - json
+    - rpc
+    maintainers:
+    - email: engsmartcontracts@hedera.com
+      name: Hedera Smart Contracts Team
+    name: hedera-json-rpc
+    sources:
+    - https://github.com/hashgraph/hedera-json-rpc-relay
+    type: application
+    urls:
+    - https://hashgraph.github.io/hedera-json-rpc-relay/charts/hedera-json-rpc-0.51.3.tgz
+    version: 0.51.3
+  - apiVersion: v2
     appVersion: 0.51.2
     created: "2024-07-18T03:08:12.069988598Z"
     dependencies:
@@ -2007,6 +2045,34 @@ entries:
     - https://hashgraph.github.io/hedera-json-rpc-relay/charts/hedera-json-rpc-relay-0.52.0-rc1.tgz
     version: 0.52.0-rc1
   - apiVersion: v2
+    appVersion: 0.51.3
+    created: "2024-07-19T19:18:12.352125839Z"
+    description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
+    digest: 9908030ba0e19793d2fa1e526a4285ca87aa9000bcf81ad0e633fe23a0da21da
+    home: https://github.com/hashgraph/hedera-json-rpc-relay
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    keywords:
+    - blockchain
+    - dlt
+    - hedera
+    - hashgraph
+    - smart
+    - contracts
+    - evm
+    - relay
+    - json
+    - rpc
+    maintainers:
+    - email: engsmartcontracts@hedera.com
+      name: Hedera Smart Contracts Team
+    name: hedera-json-rpc-relay
+    sources:
+    - https://github.com/hashgraph/hedera-json-rpc-relay
+    type: application
+    urls:
+    - https://hashgraph.github.io/hedera-json-rpc-relay/charts/hedera-json-rpc-relay-0.51.3.tgz
+    version: 0.51.3
+  - apiVersion: v2
     appVersion: 0.51.2
     created: "2024-07-18T03:08:12.07210566Z"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
@@ -3617,6 +3683,36 @@ entries:
     - https://hashgraph.github.io/hedera-json-rpc-relay/charts/hedera-json-rpc-relay-websocket-0.52.0-rc1.tgz
     version: 0.52.0-rc1
   - apiVersion: v2
+    appVersion: 0.51.3
+    created: "2024-07-19T19:18:12.352994548Z"
+    description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
+      socket server
+    digest: 11b8f3575fec10ffc92cd5903ece075f813f8cf99a050a41c912d6400e0adeac
+    home: https://github.com/hashgraph/hedera-json-rpc-relay
+    icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+    keywords:
+    - blockchain
+    - dlt
+    - hedera
+    - hashgraph
+    - smart
+    - contracts
+    - evm
+    - relay
+    - json
+    - rpc
+    - websocket
+    maintainers:
+    - email: engsmartcontracts@hedera.com
+      name: Hedera Smart Contracts Team
+    name: hedera-json-rpc-relay-websocket
+    sources:
+    - https://github.com/hashgraph/hedera-json-rpc-relay
+    type: application
+    urls:
+    - https://hashgraph.github.io/hedera-json-rpc-relay/charts/hedera-json-rpc-relay-websocket-0.51.3.tgz
+    version: 0.51.3
+  - apiVersion: v2
     appVersion: 0.51.2
     created: "2024-07-18T03:08:12.073940982Z"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
@@ -5207,4 +5303,4 @@ entries:
     urls:
     - json-rpc-relay-websocket-0.26.0-SNAPSHOT.tgz
     version: 0.26.0-SNAPSHOT
-generated: "2024-07-18T03:08:12.060139409Z"
+generated: "2024-07-19T19:18:12.347864875Z"
