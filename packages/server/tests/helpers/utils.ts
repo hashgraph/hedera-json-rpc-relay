@@ -37,8 +37,7 @@ import MirrorClient from '../clients/mirrorClient';
 import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
 
 export class Utils {
-  static readonly TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
-  static readonly MEMORY_LEAK_SNAPSHOT_THRESHOLD: number = 5e5; // 500 KB
+  static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 5e5; // 500 KB
 
   /**
    * Converts a number to its hexadecimal representation.
@@ -417,16 +416,14 @@ export class Utils {
         const statsGrowingHeapSize = result.statistics.filter((stats) => {
           return stats.afterGC.heapStatistics.totalHeapSize > stats.beforeGC.heapStatistics.totalHeapSize;
         });
-        const isPotentialMemoryLeak = statsGrowingHeapSize.some((stats) => {
-          return stats.afterGC.heapStatistics.totalHeapSize > Utils.TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD;
-        });
+        const totalDiffBytes = statsGrowingHeapSize.reduce((acc, stats) => {
+          const diff = stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize;
+          return acc + diff;
+        }, 0);
+        const isPotentialMemoryLeak = totalDiffBytes > Utils.HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD;
 
         if (isPotentialMemoryLeak) {
           console.warn('Potential memory leak detected!');
-          const totalDiffBytes = statsGrowingHeapSize.reduce((acc, stats) => {
-            const diff = stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize;
-            return acc + diff;
-          }, 0);
           const statsDiff: HeapDifferenceStatistics = statsGrowingHeapSize.map((stats) => ({
             gcType: stats.gcType,
             cost: stats.cost,
@@ -449,7 +446,7 @@ export class Utils {
           );
           // write a heap snapshot if the memory leak is more than 1 MB
           const isMemoryLeakSnapshotEnabled = process.env.WRITE_SNAPSHOT_ON_MEMORY_LEAK === 'true';
-          if (isMemoryLeakSnapshotEnabled && totalDiffBytes > Utils.MEMORY_LEAK_SNAPSHOT_THRESHOLD) {
+          if (isMemoryLeakSnapshotEnabled) {
             console.info('Writing heap snapshot...');
             await Utils.writeHeapSnapshotAsync();
           }
@@ -467,7 +464,7 @@ export class Utils {
    * @returns {string} The formatted comment.
    */
   private static generateMemoryLeakComment(testTitle: string, statsDiff: HeapDifferenceStatistics): string {
-    const commentHeader = '## 🚨 Memory Leak Detected 🚨##';
+    const commentHeader = '## 🚨 Memory Leak Detected 🚨';
     const summary = `A potential memory leak has been detected in the test titled \`${testTitle}\`. This may impact the application's performance and stability.`;
     const detailsHeader = '### Details';
     const formattedStatsDiff = this.formatHeapDifferenceStatistics(statsDiff);
