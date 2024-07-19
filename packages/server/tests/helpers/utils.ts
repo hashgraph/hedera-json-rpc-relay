@@ -38,7 +38,7 @@ import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
 
 export class Utils {
   static readonly TOTAL_HEAP_SIZE_MEMORY_LEAK_THRESHOLD: number = 100e6; // 100 MB
-  static readonly MEMORY_LEAK_SNAPSHOT_THRESHOLD: number = 1e6; // 1 MB
+  static readonly MEMORY_LEAK_SNAPSHOT_THRESHOLD: number = 5e5; // 500 KB
 
   /**
    * Converts a number to its hexadecimal representation.
@@ -439,7 +439,7 @@ export class Utils {
             },
           }));
           console.error(
-            `Memory leak of ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2),
+            `Total Heap Size ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2),
           );
           // add comment on PR highlighting after which test the memory leak is happening
           const testTitle = this.currentTest?.title ?? 'Unknown test';
