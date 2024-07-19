@@ -38,6 +38,7 @@ import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
 
 export class Utils {
   static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 5e5; // 500 KB
+  static readonly HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD: number = 1e6; // 1 MB
 
   /**
    * Converts a number to its hexadecimal representation.
@@ -446,7 +447,7 @@ export class Utils {
           );
           // write a heap snapshot if the memory leak is more than 1 MB
           const isMemoryLeakSnapshotEnabled = process.env.WRITE_SNAPSHOT_ON_MEMORY_LEAK === 'true';
-          if (isMemoryLeakSnapshotEnabled) {
+          if (isMemoryLeakSnapshotEnabled && totalDiffBytes > Utils.HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD) {
             console.info('Writing heap snapshot...');
             await Utils.writeHeapSnapshotAsync();
           }
