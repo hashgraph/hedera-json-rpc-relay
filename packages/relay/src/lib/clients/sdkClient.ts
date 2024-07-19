@@ -501,10 +501,11 @@ export class SDKClient {
         transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
         gasUsed = transactionRecord?.contractFunctionResult?.gasUsed.toNumber();
 
-        // throw error
         const sdkClientError = new SDKClientError(e, e.message);
         this.logger.warn(sdkClientError);
-        throw sdkClientError;
+
+        // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler(). Otherwise, still return transactionResponse.
+        if (e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) throw sdkClientError;
       } finally {
         /**
          * @note Retrieving and capturing the charged transaction fees at the end of the flow
