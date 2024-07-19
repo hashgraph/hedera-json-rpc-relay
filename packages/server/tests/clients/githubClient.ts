@@ -65,13 +65,11 @@ export class GitHubClient {
   async getCommentsOnPullRequest() {
     try {
       const context = GitHubClient.getContext();
-      const response = await this.octokit.request(GitHubClient.GET_COMMENTS_ENDPOINT, {
+      return await this.octokit.request(GitHubClient.GET_COMMENTS_ENDPOINT, {
         owner: context.owner,
         repo: context.repo,
         issue_number: context.pullNumber,
       });
-      console.debug('Comments retrieved successfully:', response);
-      return response;
     } catch (error) {
       console.error('Failed to retrieve comments on PR:', error);
       return { data: [] };
@@ -87,13 +85,12 @@ export class GitHubClient {
   async updateCommentOnPullRequest(commentBody: string, commentId: number): Promise<void> {
     try {
       const context = GitHubClient.getContext();
-      const response = await this.octokit.request(GitHubClient.UPDATE_COMMENT_ENDPOINT, {
+      await this.octokit.request(GitHubClient.UPDATE_COMMENT_ENDPOINT, {
         owner: context.owner,
         repo: context.repo,
         comment_id: commentId,
         body: commentBody,
       });
-      console.debug('Comment updated successfully:', response);
     } catch (error) {
       console.error('Failed to update comment on PR:', error);
     }
@@ -107,13 +104,12 @@ export class GitHubClient {
   async addCommentToPullRequest(commentBody: string): Promise<void> {
     try {
       const context = GitHubClient.getContext();
-      const response = await this.octokit.request(GitHubClient.CREATE_COMMENT_ENDPOINT, {
+      await this.octokit.request(GitHubClient.CREATE_COMMENT_ENDPOINT, {
         owner: context.owner,
         repo: context.repo,
         issue_number: context.pullNumber,
         body: commentBody,
       });
-      console.debug('Comment posted successfully:', response);
     } catch (error) {
       console.error('Failed to post comment to PR:', error);
     }
