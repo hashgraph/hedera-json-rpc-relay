@@ -2264,7 +2264,7 @@ export class EthImpl implements Eth {
       gasLimit: numberTo0x(maxGasLimit),
       gasUsed: numberTo0x(gasUsed),
       hash: blockHash,
-      logsBloom: EthImpl.emptyBloom, //TODO calculate full block boom in mirror node
+      logsBloom: blockResponse.logs_bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : blockResponse.logs_bloom,
       miner: EthImpl.zeroAddressHex,
       mixHash: EthImpl.zeroHex32Byte,
       nonce: EthImpl.zeroHex8Byte,
