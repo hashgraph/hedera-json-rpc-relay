@@ -766,47 +766,50 @@ export class SDKClient {
    * @param callerName
    * @param interactingEntity
    */
-  public deleteFile = async (fileId: FileId, requestId?: string, callerName?: string, interactingEntity?: string) => {
+  public deleteFile = async (fileId: FileId, requestId: string, callerName: string, interactingEntity: string) => {
     // format request ID msg
     const currentDateNow = Date.now();
     const requestIdPrefix = formatRequestIdMessage(requestId);
+    let fileDeleteTx: FileDeleteTransaction | null = null;
 
     try {
       // Create fileDeleteTx
-      const fileDeleteTx = new FileDeleteTransaction()
+      fileDeleteTx = new FileDeleteTransaction()
         .setFileId(fileId)
         .setMaxTransactionFee(new Hbar(2))
         .freezeWith(this.clientMain);
 
       // execute fileDeleteTx
-      const fileDeleteTxResponse = await fileDeleteTx.execute(this.clientMain);
+      await fileDeleteTx.execute(this.clientMain);
+    } catch (error: any) {
+      this.logger.warn(`${requestIdPrefix} Error raised during file delete process: ${error['message']} `);
+    } finally {
+      /**
+       * @note Retrieving and capturing the charged transaction fees of FileCreateTx and FileAppendTx at the end of the flow
+       *       ensures these fees will eventually be captured in the metrics and rate limiter class, even if SDK transactions fail at any point.
+       */
+      // retrieve txFee for fileDeleteTx and capture them in metrics and rate limitter
+      if (fileDeleteTx) {
+        await this.retrieveAndCaptureChargedTxFee(
+          fileDeleteTx.transactionId!.toString(),
+          0,
+          requestId,
+          currentDateNow,
+          fileDeleteTx.constructor.name,
+          0,
+          callerName,
+          interactingEntity,
+        );
+      }
 
-      // get fileDeleteTx's record
-      const deleteFileRecord = await fileDeleteTxResponse.getRecord(this.clientMain);
-
-      // capture transactionFee in metrics and HBAR limiter class
-      this.hbarLimiter.addExpense(deleteFileRecord.transactionFee.toTinybars().toNumber(), currentDateNow);
-      this.captureMetrics(
-        SDKClient.transactionMode,
-        fileDeleteTx.constructor.name,
-        Status.Success,
-        deleteFileRecord.transactionFee.toTinybars().toNumber(),
-        deleteFileRecord?.contractFunctionResult?.gasUsed,
-        callerName,
-        interactingEntity,
-      );
-
-      // ensure the file is deleted
-      const receipt = deleteFileRecord.receipt;
+      // check if file is deleted
+      // @todo: figure out the relationship between query.getCost() with the actual HBAR operator get charged as they are different => capture in metrics
       const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
-
-      if (receipt.status === Status.Success && fileInfo.isDeleted) {
+      if (fileInfo.isDeleted) {
         this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);
       } else {
         this.logger.warn(`${requestIdPrefix} Fail to delete file with fileId: ${fileId} `);
       }
-    } catch (error: any) {
-      this.logger.warn(`${requestIdPrefix} ${error['message']} `);
     }
   };
 
