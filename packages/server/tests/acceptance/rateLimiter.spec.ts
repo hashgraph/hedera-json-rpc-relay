@@ -166,7 +166,7 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
           await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
             .fulfilled;
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          expect(remainingHbarsAfter).to.be.eq(remainingHbarsBefore);
+          expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
         });
 
         it('should deploy a large contract and decrease remaining HBAR in limiter when transaction data is large', async function () {
