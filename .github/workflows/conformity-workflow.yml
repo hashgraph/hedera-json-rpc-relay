@@ -14,8 +14,9 @@ jobs:
 
     steps:
       - name: Checkout execution-apis repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
+          ref: 7907424db935b93c2fe6a3c0faab943adebe8557
           repository: 'ethereum/execution-apis'
           path: 'execution-apis'
 
@@ -41,10 +42,10 @@ jobs:
   build-and-test:
     runs-on: [self-hosted, Linux, medium, ephemeral]
     needs: clone-and-build-execution-apis
-  
+
     steps:
-      - name: Checkout relay repo
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: Use Node.js TLS 18
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
