@@ -42,14 +42,7 @@ jobs:
         run: npm install -g pnpm
 
       - name: Build Typescript and Run tests
-        run: |
-          output=$(npm run build-and-test 2>&1)
-          echo "$output"
-          if echo "$output" | grep -q "JavaScript heap out of memory"; then
-            echo "Heap out of Memory error detected"
-            exit 1
-          fi
-        shell: bash    
+        run: npm run build-and-test  // reset this to npm run test.  PR #2695 addresses memory leaks.
 
       - name: Upload coverage report
         if: ${{ always() && !cancelled() }}
