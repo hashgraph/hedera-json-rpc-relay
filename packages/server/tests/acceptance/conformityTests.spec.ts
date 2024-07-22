@@ -38,7 +38,7 @@ const EMPTY_TX_HASH = '0x0000000000000000000000000000000000000000000000000000000
 const NONEXISTENT_TX_HASH = '0x00000000000000000000000000000000000000000000000000000000deadbeef';
 const ajv = new Ajv({ strict: false });
 addFormats(ajv);
-
+let execApisOpenRpcData;
 let legacyTransaction = {
   chainId: 0x12a,
   to: receiveAccountAddress,
@@ -209,7 +209,6 @@ function checkResponseFormat(fileName, actualReponse, expectedResponse) {
 }
 
 function findSchema(file) {
-  const execApisOpenRpcData = require('../../../../openrpc_exec_apis.json');
   const schema = execApisOpenRpcData.methods.find((method) => method.name === file)?.result?.schema;
 
   return schema;
@@ -222,18 +221,6 @@ function isResponseValid(schema, response) {
   expect(validate.errors).to.be.null;
 
   return valid;
-}
-
-function validateBlockNumber() {
-  const schema = {
-    title: 'hex encoded unsigned integer',
-    type: 'string',
-    pattern: '^0x([1-9a-f]+[0-9a-f]*|0)$',
-  };
-  const validate = ajv.compile(schema);
-  const valid = validate('d76');
-  console.log(valid);
-  console.log(validate.errors);
 }
 
 function extractKeys(obj, prefix = '') {
@@ -327,7 +314,7 @@ describe('@api-conformity Ethereum execution apis tests', function () {
 
   //Filtering in order to use only the tests for methods we support in our relay
   directories = directories.filter((directory) => relaySupportedMethodNames.includes(directory));
-  validateBlockNumber();
+  execApisOpenRpcData = require('../../../../openrpc_exec_apis.json');
   for (const directory of directories) {
     const filePath = path.join(directoryPath, directory);
 
