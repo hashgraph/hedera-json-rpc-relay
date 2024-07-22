@@ -314,7 +314,6 @@ describe('@api-conformity Ethereum execution apis tests', function () {
 
   //Filtering in order to use only the tests for methods we support in our relay
   directories = directories.filter((directory) => relaySupportedMethodNames.includes(directory));
-  execApisOpenRpcData = require('../../../../openrpc_exec_apis.json');
   for (const directory of directories) {
     const filePath = path.join(directoryPath, directory);
 
@@ -322,6 +321,7 @@ describe('@api-conformity Ethereum execution apis tests', function () {
       const files = fs.readdirSync(path.resolve(directoryPath, directory));
       for (const file of files) {
         it(`Executing for ${directory}`, async () => {
+          execApisOpenRpcData = require('../../../../openrpc_exec_apis.json');
           const data = fs.readFileSync(path.resolve(directoryPath, directory, file));
           const content = splitReqAndRes(data.toString('utf-8'));
           const missingKeys = await processFileContent(directory, file, content);
