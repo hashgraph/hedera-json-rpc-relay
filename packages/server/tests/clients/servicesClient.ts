@@ -58,6 +58,7 @@ import { Logger } from 'pino';
 import { ethers } from 'ethers';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
+import { Utils as relayUtils } from '@hashgraph/json-rpc-relay/dist/utils';
 
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
 
@@ -75,7 +76,7 @@ export default class ServicesClient {
     this.network = network;
 
     if (!network) network = '{}';
-    const opPrivateKey = PrivateKey.fromString(key);
+    const opPrivateKey = relayUtils.createPrivateKeyBasedOnFormat(key);
     if (supportedEnvs.includes(network.toLowerCase())) {
       this.client = Client.forName(network);
     } else {
