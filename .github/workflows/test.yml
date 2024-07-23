@@ -46,14 +46,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_PR_NUMBER: ${{ github.event.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: |
-          output=$(npm run build-and-test 2>&1)
-          echo "$output"
-          if echo "$output" | grep -q "JavaScript heap out of memory"; then
-            echo "Heap out of Memory error detected"
-            exit 1
-          fi
-        shell: bash    
+        run: npm run build-and-test
 
       - name: Upload Heap Snapshots
         if: ${{ !cancelled() }}

@@ -53,6 +53,7 @@ import { MAX_GAS_LIMIT_HEX } from './eth/eth-config';
 import { getRequestId, signTransaction } from '../helpers';
 import { TransactionReceipt } from 'ethers';
 import exp from 'constants';
+import { Utils } from '../../src/utils';
 
 describe('SdkClient', async function () {
   this.timeout(20000);
@@ -180,7 +181,7 @@ describe('SdkClient', async function () {
   });
 
   describe('HAPIService', async () => {
-    let originalEnv: NodeJS.ProcessEnv;
+    let originalEnv: NodeJS.ProcessEnv, keyFormat;
 
     const OPERATOR_KEY_ED25519 = {
       DER: '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
@@ -218,47 +219,35 @@ describe('SdkClient', async function () {
 
     it('Initialize the privateKey for default which is DER', async () => {
       const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
     });
 
     it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is undefined', async () => {
       delete process.env.OPERATOR_KEY_FORMAT;
       const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
-      expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
-    });
-
-    it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is null', async () => {
-      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
       process.env.OPERATOR_KEY_FORMAT = 'DER';
       const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.DER);
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.DER);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
       process.env.OPERATOR_KEY_FORMAT = 'HEX_ED25519';
       const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(
-        hapiService,
-        OPERATOR_KEY_ED25519.HEX_ED25519,
-      );
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.HEX_ED25519);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
       process.env.OPERATOR_KEY_FORMAT = 'HEX_ECDSA';
       const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(
-        hapiService,
-        OPERATOR_KEY_ECDSA.HEX_ECDSA,
-      );
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.HEX_ECDSA);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
     });
 

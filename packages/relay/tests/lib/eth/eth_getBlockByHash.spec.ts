@@ -25,7 +25,7 @@ import chaiAsPromised from 'chai-as-promised';
 
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
-import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
+import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import { numberTo0x } from '../../../dist/formatters';
@@ -110,6 +110,29 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       timestamp: BLOCK_TIMESTAMP_HEX,
       transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
     });
+  });
+
+  it('eth_getBlockByHash with match and valid logsBloom field', async function () {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, {
+      ...DEFAULT_BLOCK,
+      logs_bloom: blockLogsBloom,
+    });
+    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
+    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
+
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false);
+    RelayAssertions.assertBlock(result, {
+      hash: BLOCK_HASH_TRIMMED,
+      gasUsed: TOTAL_GAS_USED,
+      number: BLOCK_NUMBER_HEX,
+      parentHash: BLOCK_HASH_PREV_TRIMMED,
+      timestamp: BLOCK_TIMESTAMP_HEX,
+      transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+    });
+
+    expect(result?.logsBloom).equal(blockLogsBloom);
   });
 
   it('eth_getBlockByHash with match paginated', async function () {
