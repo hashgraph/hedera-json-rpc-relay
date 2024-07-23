@@ -97,7 +97,7 @@ export default class HbarLimit {
    */
 
   shouldPreemtivelyLimit(transactionFee: number): boolean {
-    return this.remainingBudget - transactionFee <= 0;
+    return this.remainingBudget - transactionFee < 0;
   }
 
   /**
