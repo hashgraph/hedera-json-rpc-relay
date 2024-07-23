@@ -35,61 +35,61 @@ import largeContractJson from '../contracts/EstimatePrecompileContract.json';
 import largeSizeContract from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
 
-// The following tests exhaust the hbar limit, so they should only be run against a local relay
-if (global.relayIsLocal) {
-  describe.only('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
-    const accounts: AliasAccount[] = [];
+describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
+  const accounts: AliasAccount[] = [];
 
-    // @ts-ignore
-    const { mirrorNode, relay, logger, initialBalance, metrics } = global;
+  // @ts-ignore
+  const { mirrorNode, relay, logger, initialBalance, metrics } = global;
 
-    // cached entities
-    let parentContractAddress: string;
-    let requestId: string;
+  // cached entities
+  let parentContractAddress: string;
+  let requestId: string;
 
-    const CHAIN_ID = process.env.CHAIN_ID || 0;
-    const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
+  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
-    this.timeout(480 * 1000); // 480 seconds
+  this.timeout(480 * 1000); // 480 seconds
 
-    before(async function () {
-      // Restart the relay to reset the limits
-      await global.restartLocalRelay();
+  before(async function () {
+    // Restart the relay to reset the limits
+    await global.restartLocalRelay();
 
-      requestId = Utils.generateRequestId();
-      const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+    requestId = Utils.generateRequestId();
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
-      logger.info(`${requestIdPrefix} Creating accounts`);
-      logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
+    logger.info(`${requestIdPrefix} Creating accounts`);
+    logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
 
-      const initialAccount: AliasAccount = global.accounts[0];
+    const initialAccount: AliasAccount = global.accounts[0];
 
-      const neededAccounts: number = 2;
-      accounts.push(
-        ...(await Utils.createMultipleAliasAccounts(
-          mirrorNode,
-          initialAccount,
-          neededAccounts,
-          initialBalance,
-          requestId,
-        )),
-      );
-      global.accounts.push(...accounts);
+    const neededAccounts: number = 2;
+    accounts.push(
+      ...(await Utils.createMultipleAliasAccounts(
+        mirrorNode,
+        initialAccount,
+        neededAccounts,
+        initialBalance,
+        requestId,
+      )),
+    );
+    global.accounts.push(...accounts);
 
-      const parentContract = await Utils.deployContract(
-        parentContractJson.abi,
-        parentContractJson.bytecode,
-        accounts[0].wallet,
-      );
+    const parentContract = await Utils.deployContract(
+      parentContractJson.abi,
+      parentContractJson.bytecode,
+      accounts[0].wallet,
+    );
 
-      parentContractAddress = parentContract.target as string;
-      global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
-    });
+    parentContractAddress = parentContract.target as string;
+    global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
+  });
 
-    beforeEach(async function () {
-      requestId = Utils.generateRequestId();
-    });
+  beforeEach(async function () {
+    requestId = Utils.generateRequestId();
+  });
 
+  // The following tests exhaust the hbar limit, so they should only be run against a local relay
+  if (global.relayIsLocal) {
     describe('HBAR Rate Limit Tests', function () {
       const defaultGasPrice = Assertions.defaultGasPrice;
       const defaultGasLimit = 3_000_000;
@@ -211,5 +211,5 @@ if (global.relayIsLocal) {
         }
       });
     });
-  });
-}
+  }
+});
