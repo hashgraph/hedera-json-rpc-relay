@@ -23,6 +23,9 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
+import { predefined } from '@hashgraph/json-rpc-relay';
+import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { ContractId, Hbar, HbarUnit } from '@hashgraph/sdk';
 
 // Assertions from local resources
@@ -35,15 +38,10 @@ import storageContractJson from '../contracts/Storage.json';
 import TokenCreateJson from '../contracts/TokenCreateContract.json';
 import ERC20MockJson from '../contracts/ERC20Mock.json';
 
-// Errors from local resources
-import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
-
 // Helper functions/constants from local resources
-import { EthImpl } from '../../../../packages/relay/src/lib/eth';
 import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
-import { numberTo0x } from '../../../../packages/relay/src/formatters';
 import constants from '../../tests/helpers/constants';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
@@ -195,7 +193,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         ],
         requestId,
       );
-      const gasPriceDeviation = parseFloat((EthImpl.gasTxBaseCost * 0.2).toString());
+      const gasPriceDeviation = parseFloat((Number(EthImpl.gasTxBaseCost) * 0.2).toString());
       expect(res).to.contain('0x');
       expect(parseInt(res)).to.be.lessThan(Number(EthImpl.gasTxBaseCost) * (1 + gasPriceDeviation));
       expect(parseInt(res)).to.be.greaterThan(Number(EthImpl.gasTxBaseCost) * (1 - gasPriceDeviation));
@@ -812,7 +810,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     let storageContract: ethers.Contract;
     let storageContractAddress: string;
     const STORAGE_CONTRACT_UPDATE = '0x2de4e884';
-    const NEXT_STORAGE_CONTRACT_UPDATE = '0x160D6484';
 
     this.beforeEach(async () => {
       storageContract = await Utils.deployContract(
@@ -985,7 +982,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const transaction1 = {
         ...transaction,
         nonce: await relay.getAccountNonce(accounts[1].address),
-        data: NEXT_STORAGE_CONTRACT_UPDATE,
+        data: STORAGE_CONTRACT_UPDATE,
       };
 
       const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
@@ -1030,7 +1027,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const transaction1 = {
         ...transaction,
         nonce: await relay.getAccountNonce(accounts[1].address),
-        data: NEXT_STORAGE_CONTRACT_UPDATE,
+        data: STORAGE_CONTRACT_UPDATE,
       };
 
       const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);

@@ -471,7 +471,11 @@ describe('Formatters', () => {
 
     it('should return false for an address with an undefined value', () => {
       const address = undefined;
-      expect(isValidEthereumAddress(address)).to.equal(false);
+      expect(isValidEthereumAddress(address as any)).to.equal(false);
+    });
+    it('should return false for an address with a null value', () => {
+      const address = null;
+      expect(isValidEthereumAddress(address as any)).to.equal(false);
     });
 
     it('should return false for an address with a null value', () => {

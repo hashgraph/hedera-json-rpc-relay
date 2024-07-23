@@ -26,6 +26,7 @@ import { IContractCallRequest, IContractCallResponse, MirrorNodeClient } from '.
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
+import { Utils } from './../utils';
 import constants from './constants';
 import { Precheck } from './precheck';
 import {
@@ -729,7 +730,8 @@ export class EthImpl implements Eth {
       );
 
       if (!gasPrice) {
-        gasPrice = await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix);
+        gasPrice = Utils.addPercentageBufferToGasPrice(await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix));
+
         this.cacheService.set(
           constants.CACHE_KEY.GAS_PRICE,
           gasPrice,
@@ -1436,6 +1438,7 @@ export class EthImpl implements Eth {
     transaction,
     transactionBuffer,
     txSubmitted,
+    parsedTx,
     requestIdPrefix,
   ): Promise<string | JsonRpcError> {
     this.logger.error(
@@ -1448,6 +1451,36 @@ export class EthImpl implements Eth {
 
     if (e instanceof SDKClientError) {
       this.hapiService.decrementErrorCounter(e.statusCode);
+      if (e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
+        // note: because this is a WRONG_NONCE error handler, the nonce of the account is expected to be different from the nonce of the parsedTx
+        //       running a polling loop to give mirror node enough time to update account nonce
+        let accountNonce: number | null = null;
+        for (let i = 0; i < this.MirrorNodeGetContractResultRetries; i++) {
+          const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestIdPrefix);
+          if (accountInfo.ethereum_nonce !== parsedTx.nonce) {
+            accountNonce = accountInfo.ethereum_nonce;
+            break;
+          }
+
+          this.logger.trace(
+            `${requestIdPrefix} Repeating retry to poll for updated account nonce. Count ${i} of ${
+              this.MirrorNodeGetContractResultRetries
+            }. Waiting ${this.mirrorNodeClient.getMirrorNodeRetryDelay()} ms before initiating a new request`,
+          );
+          await new Promise((r) => setTimeout(r, this.mirrorNodeClient.getMirrorNodeRetryDelay()));
+        }
+
+        if (!accountNonce) {
+          this.logger.warn(`${requestIdPrefix} Cannot find updated account nonce.`);
+          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONT_NONCE error.`);
+        }
+
+        if (parsedTx.nonce > accountNonce) {
+          return predefined.NONCE_TOO_HIGH(parsedTx.nonce, accountNonce);
+        } else {
+          return predefined.NONCE_TOO_LOW(parsedTx.nonce, accountNonce);
+        }
+      }
     }
 
     if (!txSubmitted) {
@@ -1520,20 +1553,6 @@ export class EthImpl implements Eth {
 
       if (!contractResult) {
         this.logger.warn(`${requestIdPrefix} No record retrieved`);
-        const tx = await this.mirrorNodeClient.getTransactionById(txId, 0, requestIdPrefix);
-
-        if (tx?.transactions?.length) {
-          const result = tx.transactions[0].result;
-          if (result === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
-            const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestIdPrefix);
-            const accountNonce = accountInfo.ethereum_nonce;
-            if (parsedTx.nonce > accountNonce) {
-              throw predefined.NONCE_TOO_HIGH(parsedTx.nonce, accountNonce);
-            }
-
-            throw predefined.NONCE_TOO_LOW(parsedTx.nonce, accountNonce);
-          }
-        }
         throw predefined.INTERNAL_ERROR(`No matching record found for transaction id ${txId}`);
       }
 
@@ -1546,7 +1565,14 @@ export class EthImpl implements Eth {
 
       return contractResult.hash;
     } catch (e: any) {
-      return this.sendRawTransactionErrorHandler(e, transaction, transactionBuffer, txSubmitted, requestIdPrefix);
+      return this.sendRawTransactionErrorHandler(
+        e,
+        transaction,
+        transactionBuffer,
+        txSubmitted,
+        parsedTx,
+        requestIdPrefix,
+      );
     } finally {
       /**
        *  For transactions of type CONTRACT_CREATE, if the contract's bytecode (calldata) exceeds 5120 bytes, HFS is employed to temporarily store the bytecode on the network.
@@ -1616,11 +1642,11 @@ export class EthImpl implements Eth {
     const callData = call.data ? call.data : call.input;
     // log request
     this.logger.trace(
-      `${requestIdPrefix} call({to=${call.to}, from=${call.from}, data=${callData}, gas=${call.gas}, ...}, blockParam=${blockParam})`,
+      `${requestIdPrefix} call({to=${call.to}, from=${call.from}, data=${callData}, gas=${call.gas}, gasPrice=${call.gasPrice} blockParam=${blockParam}, estimate=${call.estimate})`,
     );
-    // log call data size and gas
+    // log call data size
     const callDataSize = callData ? callData.length : 0;
-    this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}, gas: ${call.gas}`);
+    this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}`);
     // metrics for selector
     if (callDataSize >= constants.FUNCTION_SELECTOR_CHAR_LENGTH) {
       this.ethExecutionsCounter
@@ -1629,7 +1655,6 @@ export class EthImpl implements Eth {
     }
 
     const blockNumberOrTag = await this.extractBlockNumberOrTag(blockParam, requestIdPrefix);
-
     await this.performCallChecks(call);
 
     // Get a reasonable value for "gas" if it is not specified.
@@ -1891,8 +1916,8 @@ export class EthImpl implements Eth {
    * @param call
    */
   async performCallChecks(call: any): Promise<void> {
-    // The "to" address must always be 42 chars.
-    if (!call.to || call.to.length != 42) {
+    // after this PR https://github.com/hashgraph/hedera-mirror-node/pull/8100 in mirror-node, call.to is allowed to be empty or null
+    if (call.to && !isValidEthereumAddress(call.to)) {
       throw predefined.INVALID_CONTRACT_ADDRESS(call.to);
     }
   }
@@ -2239,7 +2264,7 @@ export class EthImpl implements Eth {
       gasLimit: numberTo0x(maxGasLimit),
       gasUsed: numberTo0x(gasUsed),
       hash: blockHash,
-      logsBloom: EthImpl.emptyBloom, //TODO calculate full block boom in mirror node
+      logsBloom: blockResponse.logs_bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : blockResponse.logs_bloom,
       miner: EthImpl.zeroAddressHex,
       mixHash: EthImpl.zeroHex32Byte,
       nonce: EthImpl.zeroHex8Byte,

@@ -24,18 +24,18 @@ import pino from 'pino';
 import dotenv from 'dotenv';
 import { v4 as uuid } from 'uuid';
 import websockify from 'koa-websocket';
-import { Registry } from 'prom-client';
+import { collectDefaultMetrics, Registry } from 'prom-client';
 import { getRequestResult } from './controllers';
 import { WS_CONSTANTS } from './utils/constants';
 import { formatIdMessage } from './utils/formatters';
 import WsMetricRegistry from './metrics/wsMetricRegistry';
 import ConnectionLimiter from './metrics/connectionLimiter';
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
-import { type Relay, RelayImpl, predefined, JsonRpcError } from '@hashgraph/json-rpc-relay';
-import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
-import { sendToClient, handleConnectionClose, getBatchRequestsMaxSize, getWsBatchRequestsEnabled } from './utils/utils';
+import { JsonRpcError, predefined, type Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
+
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -145,14 +145,6 @@ app.ws.use(async (ctx) => {
         return;
       }
 
-      // verify rate limit for batch_request method based on IP
-      if (limiter.shouldRateLimitOnMethod(ctx.ip, WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME, ctx.websocket.requestId)) {
-        ctx.websocket.send(
-          JSON.stringify([jsonResp(null, new IPRateLimitExceeded(WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME), undefined)]),
-        );
-        return;
-      }
-
       // process requests
       const requestPromises = request.map((item: any) => {
         return getRequestResult(
@@ -210,6 +202,8 @@ app.ws.use(async (ctx) => {
 });
 
 const httpApp = new KoaJsonRpc(logger, register).getKoaApp();
+collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
+
 httpApp.use(async (ctx, next) => {
   // prometheus metrics exposure
   if (ctx.url === '/metrics') {

@@ -41,6 +41,7 @@ import {
   NON_EXISTENT_CONTRACT_ADDRESS,
   WRONG_CONTRACT_ADDRESS,
   ONE_TINYBAR_IN_WEI_HEX,
+  EXAMPLE_CONTRACT_BYTECODE,
 } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
@@ -115,21 +116,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     this.afterAll(() => {
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
-    });
-
-    it('eth_call with missing `to` field', async function () {
-      await ethCallFailing(
-        ethImpl,
-        {
-          from: CONTRACT_ADDRESS_1,
-          data: CONTRACT_CALL_DATA,
-          gas: MAX_GAS_LIMIT_HEX,
-        },
-        'latest',
-        (error) => {
-          expect(error.message).to.equal(`Invalid Contract Address: ${undefined}.`);
-        },
-      );
     });
 
     it('eth_call with incorrect `to` field length', async function () {
@@ -702,31 +688,12 @@ describe('@ethCall Eth Call spec', async function () {
       expect((result as JsonRpcError).data).to.equal(defaultErrorMessageHex);
     });
 
-    it('eth_call with missing `to` field', async function () {
-      const args = [
-        {
-          ...defaultCallData,
-          from: CONTRACT_ADDRESS_1,
-          data: CONTRACT_CALL_DATA,
-          gas: MAX_GAS_LIMIT,
-        },
-        'latest',
-      ];
-
-      await RelayAssertions.assertRejection(
-        predefined.INVALID_CONTRACT_ADDRESS(undefined),
-        ethImpl.call,
-        false,
-        ethImpl,
-        args,
-      );
-    });
-
     it('eth_call with wrong `to` field', async function () {
       const args = [
         {
           ...defaultCallData,
           from: CONTRACT_ADDRESS_1,
+          to: WRONG_CONTRACT_ADDRESS,
           data: CONTRACT_CALL_DATA,
           gas: MAX_GAS_LIMIT,
         },
@@ -774,6 +741,33 @@ describe('@ethCall Eth Call spec', async function () {
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect(result).to.equal('0x');
+    });
+
+    it('eth_call to simulate deploying a smart contract with `to` field being null', async function () {
+      const callData = {
+        data: EXAMPLE_CONTRACT_BYTECODE,
+        to: null,
+        from: ACCOUNT_ADDRESS_1,
+      };
+
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(200, { result: EXAMPLE_CONTRACT_BYTECODE });
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.eq(EXAMPLE_CONTRACT_BYTECODE);
+    });
+
+    it('eth_call to simulate deploying a smart contract with `to` field being empty/undefined', async function () {
+      const callData = {
+        data: EXAMPLE_CONTRACT_BYTECODE,
+        from: ACCOUNT_ADDRESS_1,
+      };
+
+      web3Mock
+        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
+        .reply(200, { result: EXAMPLE_CONTRACT_BYTECODE });
+      const result = await ethImpl.call(callData, 'latest');
+      expect(result).to.eq(EXAMPLE_CONTRACT_BYTECODE);
     });
   });
 
