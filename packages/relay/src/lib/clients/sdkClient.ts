@@ -614,6 +614,7 @@ export class SDKClient {
       }
 
       // get transactionRecord
+      this.logger.trace(`${requestId} Get transaction record: transactionId=${transactionId}`);
       const transactionRecord: TransactionRecord = await transactionResponse.getRecord(this.clientMain);
 
       // get transactionFee and gasUsed for metrics
@@ -814,7 +815,6 @@ export class SDKClient {
    */
   async deleteFile(fileId: FileId, requestId: string, callerName: string, interactingEntity: string): Promise<void> {
     // format request ID msg
-    const currentDateNow = Date.now();
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
     try {
@@ -824,29 +824,12 @@ export class SDKClient {
         .setMaxTransactionFee(new Hbar(2))
         .freezeWith(this.clientMain);
 
-      // execute fileDeleteTx
-      const fileDeleteTxResponse = await fileDeleteTx.execute(this.clientMain);
-
-      // get fileDeleteTx's record
-      const deleteFileRecord = await fileDeleteTxResponse.getRecord(this.clientMain);
-
-      // capture transactionFee in metrics and HBAR limiter class
-      this.hbarLimiter.addExpense(deleteFileRecord.transactionFee.toTinybars().toNumber(), currentDateNow);
-      this.captureMetrics(
-        SDKClient.transactionMode,
-        fileDeleteTx.constructor.name,
-        Status.Success,
-        deleteFileRecord.transactionFee.toTinybars().toNumber(),
-        deleteFileRecord?.contractFunctionResult?.gasUsed,
-        callerName,
-        interactingEntity,
-      );
+      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId);
 
       // ensure the file is deleted
-      const receipt = deleteFileRecord.receipt;
       const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
 
-      if (receipt.status === Status.Success && fileInfo.isDeleted) {
+      if (fileInfo.isDeleted) {
         this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);
       } else {
         this.logger.warn(`${requestIdPrefix} Fail to delete file with fileId: ${fileId} `);
