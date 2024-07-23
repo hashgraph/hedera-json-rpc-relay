@@ -73,6 +73,9 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
 
       it(`should not throw rate limit exceeded error for ${testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID}`, async function () {
         await sendMultipleRequests(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], belowThreshold);
+        // wait until rate limit is reset
+        await new Promise((r) => setTimeout(r, LIMIT_DURATION));
+        await sendMultipleRequests(testConstants.ETH_ENDPOINTS.ETH_CHAIN_ID, [null], belowThreshold);
       });
     });
   });
