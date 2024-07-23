@@ -45,6 +45,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
   if (relayIsLocal) {
+    const deployContract = async (contractJson: any, wallet: ethers.Wallet): Promise<ethers.Contract> => {
+      const contract = await Utils.deployContract(contractJson.abi, contractJson.bytecode, wallet);
+      expect(contract).to.be.instanceOf(BaseContract);
+      await contract.waitForDeployment();
+      expect(contract.target).to.not.be.null;
+      return contract;
+    };
+
     describe('HBAR Rate Limit Tests', function () {
       this.timeout(480 * 1000); // 480 seconds
 
@@ -95,12 +103,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
-        const parentContract = await Utils.deployContract(
-          parentContractJson.abi,
-          parentContractJson.bytecode,
-          accounts[0].wallet,
-        );
-
+        const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
         const parentContractAddress = parentContract.target as string;
         global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
 
@@ -126,54 +129,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsBefore).to.be.gt(0);
 
-        const largeContract = await Utils.deployContract(
-          largeContractJson.abi,
-          largeContractJson.bytecode,
-          accounts[0].wallet,
-        );
-        await largeContract.waitForDeployment();
-        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(largeContract.target).to.not.be.null;
-        expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
-      });
-
-      it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
-        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(remainingHbarsBefore).to.be.gt(0);
-        try {
-          for (let i = 0; i < 50; i++) {
-            const largeContract = await Utils.deployContract(
-              largeContractJson.abi,
-              largeContractJson.bytecode,
-              accounts[0].wallet,
-            );
-            await largeContract.waitForDeployment();
-            expect(largeContract.target).to.not.be.null;
-          }
-          expect.fail(`Expected an error but nothing was thrown`);
-        } catch (e: any) {
-          expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
-        }
+        await deployContract(largeContractJson, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(remainingHbarsAfter).to.be.lte(0);
-      });
-
-      it('should be able to deploy a medium size contract with fileCreate', async function () {
-        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(remainingHbarsBefore).to.be.gt(0);
-
-        // This flow should spend hbars from the operator, for fileCreate
-        const contract = await Utils.deployContract(
-          mediumSizeContract.abi,
-          mediumSizeContract.bytecode,
-          accounts[0].wallet,
-        );
-        expect(contract).to.be.instanceOf(BaseContract);
-        await contract.waitForDeployment();
-
-        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(contract.target).to.not.be.null;
         expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
       });
 
@@ -182,17 +140,37 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         expect(remainingHbarsBefore).to.be.gt(0);
 
         // This flow should not spend any hbars from the operator, as it's fully paid by the signer
-        const contract = await Utils.deployContract(
-          EstimateGasContract.abi,
-          EstimateGasContract.bytecode,
-          accounts[0].wallet,
-        );
-        expect(contract).to.be.instanceOf(BaseContract);
-        await contract.waitForDeployment();
+        await deployContract(EstimateGasContract, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(contract.target).to.not.be.null;
         expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
+      });
+
+      it('should be able to deploy a medium size contract with fileCreate', async function () {
+        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        expect(remainingHbarsBefore).to.be.gt(0);
+
+        // This flow should spend hbars from the operator, for fileCreate
+        await deployContract(mediumSizeContract, accounts[0].wallet);
+
+        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
+      });
+
+      it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
+        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        expect(remainingHbarsBefore).to.be.gt(0);
+        try {
+          for (let i = 0; i < 50; i++) {
+            await deployContract(largeContractJson, accounts[0].wallet);
+          }
+          expect.fail(`Expected an error but nothing was thrown`);
+        } catch (e: any) {
+          expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+        }
+
+        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        expect(remainingHbarsAfter).to.be.lte(0);
       });
     });
   }
