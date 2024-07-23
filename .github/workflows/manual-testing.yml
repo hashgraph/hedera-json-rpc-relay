@@ -66,6 +66,14 @@ jobs:
       testfilter: ratelimiter
       networkTag: ${{inputs.networkNodeTag}}
       mirrorTag: ${{inputs.mirrorNodeTag}}
+
+  hbarlimiter:
+    name: HBar Limiter
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: hbarlimiter
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
       
   tokencreate:
     name: Token Create

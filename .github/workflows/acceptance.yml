@@ -49,6 +49,12 @@ jobs:
       testfilter: ratelimiter
       test_ws_server: true
 
+  hbarlimiter:
+    name: HBar Limiter
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: hbarlimiter
+
   tokencreate:
     name: Token Create
     uses: ./.github/workflows/acceptance-workflow.yml
