@@ -31,8 +31,7 @@ import testConstants from '../helpers/constants';
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
-import largeContractJson from '../contracts/EstimatePrecompileContract.json';
-import largeSizeContract from '../contracts/hbarLimiterContracts/largeSizeContract.json';
+import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
 
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
@@ -42,19 +41,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { mirrorNode, relay, logger, initialBalance, metrics } = global;
-
-  // cached entities
-  let requestId: string;
-  let requestIdPrefix: string;
-
-  beforeEach(async function () {
-    requestId = Utils.generateRequestId();
-    requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-  });
+  const { mirrorNode, relay, logger, initialBalance, metrics, relayIsLocal } = global;
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
-  if (global.relayIsLocal) {
+  if (relayIsLocal) {
     describe('HBAR Rate Limit Tests', function () {
       this.timeout(480 * 1000); // 480 seconds
 
@@ -69,6 +59,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         gasLimit: defaultGasLimit,
         type: 2,
       };
+
+      // cached entities
+      let requestId: string;
+      let requestIdPrefix: string;
 
       before(async function () {
         // Restart the relay to reset the limits
@@ -93,6 +87,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           )),
         );
         global.accounts.push(...accounts);
+      });
+
+      beforeEach(async function () {
+        requestId = Utils.generateRequestId();
+        requestIdPrefix = Utils.formatRequestIdMessage(requestId);
       });
 
       it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
@@ -151,32 +150,13 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             await largeContract.waitForDeployment();
             expect(largeContract.target).to.not.be.null;
           }
-
-          expect(true).to.be.false;
+          expect.fail(`Expected an error but nothing was thrown`);
         } catch (e: any) {
           expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
         }
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsAfter).to.be.lte(0);
-      });
-
-      it('should be able to deploy a contract without creating file', async function () {
-        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(remainingHbarsBefore).to.be.gt(0);
-
-        // This flow should not spend any hbars from the operator, as it's fully paid by the signer
-        const contract = await Utils.deployContract(
-          EstimateGasContract.abi,
-          EstimateGasContract.bytecode,
-          accounts[0].wallet,
-        );
-        expect(contract).to.be.instanceOf(BaseContract);
-        await contract.waitForDeployment();
-
-        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(contract.target).to.not.be.null;
-        expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
       });
 
       it('should be able to deploy a medium size contract with fileCreate', async function () {
@@ -197,19 +177,22 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
       });
 
-      it('should fail to deploy a larger size contract with fileCreate and fileAppend due to hbar limit exceeded', async function () {
+      it('should be able to deploy a contract without creating file', async function () {
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsBefore).to.be.gt(0);
 
-        // This flow should not allow spending hbars from the operator, for fileCreate operation and fileAppend operation
-        try {
-          await Utils.deployContract(largeSizeContract.abi, largeSizeContract.bytecode, accounts[0].wallet);
-          Assertions.expectedError();
-        } catch (e: any) {
-          expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
-          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          expect(remainingHbarsAfter).to.be.lte(0);
-        }
+        // This flow should not spend any hbars from the operator, as it's fully paid by the signer
+        const contract = await Utils.deployContract(
+          EstimateGasContract.abi,
+          EstimateGasContract.bytecode,
+          accounts[0].wallet,
+        );
+        expect(contract).to.be.instanceOf(BaseContract);
+        await contract.waitForDeployment();
+
+        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        expect(contract.target).to.not.be.null;
+        expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
       });
     });
   }
