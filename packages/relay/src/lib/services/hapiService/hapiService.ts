@@ -27,6 +27,7 @@ import { SDKClient } from '../../clients/sdkClient';
 import constants from '../../constants';
 import HbarLimit from '../../hbarlimiter';
 import { CacheService } from '../cacheService/cacheService';
+import { Utils } from './../../../utils';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -218,14 +219,14 @@ export default class HAPIService {
 
     if (type === 'eth_sendRawTransaction') {
       if (process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION && process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION) {
-        privateKey = this.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION);
+        privateKey = Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION);
         client = client.setOperator(AccountId.fromString(process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION), privateKey);
       } else {
         logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
       }
     } else {
       if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
-        privateKey = this.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN);
+        privateKey = Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN);
         client = client.setOperator(AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()), privateKey);
       } else {
         logger.warn(`Invalid 'OPERATOR' env variables provided`);
@@ -244,21 +245,6 @@ export default class HAPIService {
     );
 
     return client;
-  }
-
-  private createPrivateKeyBasedOnFormat(operatorMainKey: string): PrivateKey {
-    switch (process.env.OPERATOR_KEY_FORMAT) {
-      case 'DER':
-      case undefined:
-      case null:
-        return PrivateKey.fromStringDer(operatorMainKey);
-      case 'HEX_ED25519':
-        return PrivateKey.fromStringED25519(operatorMainKey);
-      case 'HEX_ECDSA':
-        return PrivateKey.fromStringECDSA(operatorMainKey);
-      default:
-        throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${process.env.OPERATOR_KEY_FORMAT}`);
-    }
   }
 
   /**

@@ -83,7 +83,7 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
       value: (10 * 10 ** 18).toString(), // 10hbar - the gasPrice to deploy deterministic proxy contract
       to: constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
       gasPrice: await global.relay.gasPrice(),
-      gasLimit: numberTo0x(5000000),
+      gasLimit: constants.TX_HOLLOW_ACCOUNT_CREATION_GAS,
     };
   });
 
