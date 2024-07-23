@@ -1263,6 +1263,9 @@ export class MirrorNodeClient {
   public getMirrorNodeWeb3Instance() {
     return this.web3Client;
   }
+  public getMirrorNodeRetryDelay() {
+    return this.MIRROR_NODE_RETRY_DELAY;
+  }
 
   /**
    * This method is intended to be used in cases when the default axios-retry settings do not provide

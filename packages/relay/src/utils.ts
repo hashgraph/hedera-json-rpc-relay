@@ -18,6 +18,7 @@
  *
  */
 
+import { PrivateKey } from '@hashgraph/sdk';
 import constants from './lib/constants';
 
 export class Utils {
@@ -35,4 +36,23 @@ export class Utils {
 
     return gasPrice;
   };
+
+  /**
+   * @param operatorMainKey
+   * @returns PrivateKey
+   */
+  public static createPrivateKeyBasedOnFormat(operatorMainKey: string): PrivateKey {
+    switch (process.env.OPERATOR_KEY_FORMAT) {
+      case 'DER':
+      case undefined:
+      case null:
+        return PrivateKey.fromStringDer(operatorMainKey);
+      case 'HEX_ED25519':
+        return PrivateKey.fromStringED25519(operatorMainKey);
+      case 'HEX_ECDSA':
+        return PrivateKey.fromStringECDSA(operatorMainKey);
+      default:
+        throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${process.env.OPERATOR_KEY_FORMAT}`);
+    }
+  }
 }
