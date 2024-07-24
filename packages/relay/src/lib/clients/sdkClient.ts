@@ -650,15 +650,9 @@ export class SDKClient {
   }
 
   async executeGetTransactionRecord(transactionResponse: TransactionResponse, callerName: string, requestId: string) {
-    const currentDateNow = Date.now();
     let gasUsed: any = 0;
     let transactionFee: number = 0;
     const transactionId: string = transactionResponse.transactionId.toString();
-
-    const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName);
-    if (shouldLimit) {
-      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-    }
 
     try {
       if (!transactionResponse.getRecord) {
