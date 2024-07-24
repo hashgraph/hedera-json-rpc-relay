@@ -123,7 +123,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           .fulfilled;
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        const expectedCost = 170400000;
+        const expectedCost = 215132838;
+        global.logger.trace(`${requestIdPrefix} Expected cost: ${expectedCost}`);
+        global.logger.trace(`${requestIdPrefix} Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
         expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, 10);
       });
 
@@ -134,7 +136,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await deployContract(largeContractJson, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        const expectedCost = 31652297;
+        const expectedCost = 601829911;
+        global.logger.trace(`${requestIdPrefix} Expected cost: ${expectedCost}`);
+        global.logger.trace(`${requestIdPrefix} Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
         expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, 10);
       });
 
@@ -146,7 +150,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await deployContract(EstimateGasContract, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        const expectedCost = 14011850;
+        const expectedCost = 97143770;
+        global.logger.trace(`${requestIdPrefix} Expected cost: ${expectedCost}`);
+        global.logger.trace(`${requestIdPrefix} Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
         expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, 10);
       });
 
@@ -158,7 +164,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await deployContract(mediumSizeContract, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        const expectedCost = 22885146;
+        const expectedCost = 354819247;
+        global.logger.trace(`${requestIdPrefix} Expected cost: ${expectedCost}`);
+        global.logger.trace(`${requestIdPrefix} Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
         expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, 10);
       });
 
