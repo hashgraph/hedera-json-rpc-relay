@@ -48,6 +48,13 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       return contract;
     };
 
+    const verifyRemainingLimit = (expectedCost: number, remainingHbarsBefore: number, remainingHbarsAfter: number) => {
+      const delta = 0.001 * expectedCost; // 0.1% tolerance
+      global.logger.trace(`Expected cost: ${expectedCost} ±${delta}`);
+      global.logger.trace(`Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
+      expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, delta);
+    };
+
     describe('HBAR Rate Limit Tests', function () {
       this.timeout(480 * 1000); // 480 seconds
 
@@ -117,10 +124,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         const expectedCost = 215132838;
-        const delta = 0.001 * expectedCost; // 0.1% tolerance
-        global.logger.trace(`${requestIdPrefix} Expected cost: ${expectedCost}`);
-        global.logger.trace(`${requestIdPrefix} Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
-        expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, delta);
+        verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
       it('should deploy a large contract and decrease remaining HBAR in limiter when transaction data is large', async function () {
@@ -131,10 +135,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         const expectedCost = 601829911;
-        const delta = 0.001 * expectedCost; // 0.1% tolerance
-        global.logger.trace(`${requestIdPrefix} Expected cost: ${expectedCost}`);
-        global.logger.trace(`${requestIdPrefix} Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
-        expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, delta);
+        verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
       it('should be able to deploy a contract without creating file', async function () {
@@ -146,10 +147,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         const expectedCost = 97143770;
-        const delta = 0.001 * expectedCost; // 0.1% tolerance
-        global.logger.trace(`${requestIdPrefix} Expected cost: ${expectedCost}`);
-        global.logger.trace(`${requestIdPrefix} Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
-        expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, delta);
+        verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
       it('should be able to deploy a medium size contract with fileCreate', async function () {
@@ -161,10 +159,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         const expectedCost = 354819247;
-        const delta = 0.001 * expectedCost; // 0.1% tolerance
-        global.logger.trace(`${requestIdPrefix} Expected cost: ${expectedCost}`);
-        global.logger.trace(`${requestIdPrefix} Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
-        expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, delta);
+        verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
       it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
