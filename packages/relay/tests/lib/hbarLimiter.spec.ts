@@ -168,4 +168,16 @@ describe('HBAR Rate Limiter', async function () {
     expect(limiterResetTime).to.equal(futureDate + validDuration);
     expect(limiterRemainingBudget).to.equal(validTotal - 100);
   });
+
+  it('Should preemtively limit while expected transactionFee is greater than remaining balance', () => {
+    const validTotalTxFee = validTotal - 100;
+    const invalidTotalTxFee = validTotal + 100;
+    rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
+
+    const shouldNotPreemtivelyLimit = rateLimiter.shouldPreemtivelyLimit(validTotalTxFee);
+    const shouldPreemtivelyLimit = rateLimiter.shouldPreemtivelyLimit(invalidTotalTxFee);
+
+    expect(shouldPreemtivelyLimit).to.be.true;
+    expect(shouldNotPreemtivelyLimit).to.be.false;
+  });
 });
