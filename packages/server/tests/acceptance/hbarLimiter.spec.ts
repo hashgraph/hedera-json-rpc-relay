@@ -121,8 +121,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
           .fulfilled;
+
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
+        const expectedCost = 170400000;
+        expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, 10);
       });
 
       it('should deploy a large contract and decrease remaining HBAR in limiter when transaction data is large', async function () {
@@ -132,7 +134,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await deployContract(largeContractJson, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
+        const expectedCost = 31652297;
+        expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, 10);
       });
 
       it('should be able to deploy a contract without creating file', async function () {
@@ -143,7 +146,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await deployContract(EstimateGasContract, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
+        const expectedCost = 14011850;
+        expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, 10);
       });
 
       it('should be able to deploy a medium size contract with fileCreate', async function () {
@@ -154,7 +158,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await deployContract(mediumSizeContract, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
+        const expectedCost = 22885146;
+        expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, 10);
       });
 
       it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
