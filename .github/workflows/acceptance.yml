@@ -122,6 +122,7 @@ jobs:
       - rpc_api_schema_conformity
       - erc20
       - ratelimiter
+      - hbarlimiter
       - tokencreate
       - tokenmanagement
       - htsprecompilev1
