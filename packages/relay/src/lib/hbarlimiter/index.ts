@@ -43,6 +43,8 @@ export default class HbarLimit {
       this.duration = duration;
     }
     this.remainingBudget = this.total;
+    this.logger.trace(`this.remainingBudget: ${this.remainingBudget}`);
+
     this.reset = currentDateNow + this.duration;
 
     const metricCounterName = 'rpc_relay_hbar_rate_limit';
@@ -86,6 +88,16 @@ export default class HbarLimit {
     }
 
     return false;
+  }
+
+  /**
+   * Determines whether a transaction fee should be preemptively limited based on the remaining budget.
+   * @param {number} transactionFee - The transaction fee to be evaluated.
+   * @returns {boolean} A boolean indicating whether the transaction fee should be preemptively limited.
+   */
+
+  shouldPreemtivelyLimit(transactionFee: number): boolean {
+    return this.remainingBudget - transactionFee <= 0;
   }
 
   /**

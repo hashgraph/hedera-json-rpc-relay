@@ -58,6 +58,10 @@ export const predefined = {
     code: -32606,
     message: 'HBAR Rate limit exceeded',
   }),
+  HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED: new JsonRpcError({
+    code: -32606,
+    message: 'The HBAR rate limit was preemptively exceeded due to an excessively large callData size.',
+  }),
   INSUFFICIENT_ACCOUNT_BALANCE: new JsonRpcError({
     code: -32000,
     message: 'Insufficient funds for transfer',
