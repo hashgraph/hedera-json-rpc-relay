@@ -20,7 +20,7 @@ import os
 import unittest
 from dotenv import load_dotenv
 from web3 import Web3
-from solcx import install_solc, compile_source
+from solcx import install_solc, compile_files
 
 def setup_environment():
     # install latest solc
@@ -46,12 +46,8 @@ def get_balance(w3, acc):
 
 
 def deploy_contract(w3, acc):
-    # read contract from file
-    with open('contract/Greeter.sol', 'r') as f:
-        source = f.read()
-
     # compile our Greeter contract
-    compiled_sol = compile_source(source, output_values=['abi', 'bin'])
+    compiled_sol = compile_files(['contract/Greeter.sol'], output_values=['abi', 'bin'])
 
     # retrieve the contract interface
     contract_id, contract_interface = compiled_sol.popitem()
