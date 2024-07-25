@@ -1,12 +1,11 @@
 name: Conformity Test Workflow
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
+    branches: [main, release/**]
+  push:
+    branches: [main, release/**]
+    tags: [v*]
 
 jobs:
   clone-and-build-execution-apis:
@@ -92,9 +91,6 @@ jobs:
       
       - name: Rename file
         run: mv openrpc.json openrpc_exec_apis.json
-
-      - name: List files in dir
-        run: ls -al
 
       - name: Run conformity tests
         run: npm run acceptancetest:rpc_api_schema_conformity
