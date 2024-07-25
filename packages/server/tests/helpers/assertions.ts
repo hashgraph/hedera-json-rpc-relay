@@ -460,13 +460,15 @@ export default class Assertions {
   };
 
   /**
-   * Checks if the given value is within a % range, relative to the expected value
-   * @param value
+   * Checks if the expected value is within a % range, relative to the actual value
    * @param expected
+   * @param actual
    * @param tolerance
    */
-  static expectWithinTolerance(value: number, expected: number, tolerance: number) {
-    expect(value).to.be.gte(expected * (1 - tolerance));
-    expect(value).to.be.lte(expected * (1 + tolerance));
+  static expectWithinTolerance(expected: number, actual: number, tolerance: number) {
+    global.logger.trace(`Expected: ${expected} ±${tolerance}`);
+    global.logger.trace(`Actual: ${expected}`);
+    expect(expected).to.be.gte(actual * (1 - tolerance));
+    expect(expected).to.be.lte(actual * (1 + tolerance));
   }
 }

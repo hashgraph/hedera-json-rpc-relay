@@ -123,7 +123,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           .fulfilled;
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        const expectedCost = 215132838;
+        const expectedCost = 44732838;
         verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
@@ -134,7 +134,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await deployContract(largeContractJson, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        const expectedCost = 601829911;
+        const expectedCost = 570177621;
         verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
@@ -146,7 +146,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await deployContract(EstimateGasContract, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        const expectedCost = 97143770;
+        const expectedCost = 83131926;
         verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
@@ -158,7 +158,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await deployContract(mediumSizeContract, accounts[0].wallet);
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        const expectedCost = 354819247;
+        const expectedCost = 331926551;
         verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
@@ -169,8 +169,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         const operatorAccount = process.env.OPERATOR_ID_MAIN;
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsBefore).to.be.gt(0);
-        const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
-          .balance;
+        const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance.balance;
 
         const largeContract = await Utils.deployContract(
           largeContractJson.abi,
@@ -180,8 +179,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await largeContract.waitForDeployment();
         expect(largeContract.target).to.not.be.null;
 
-        const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
-          .balance;
+        const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance.balance;
 
         const amountPaidByOperator = operatorBalanceBefore - operatorBalanceAfter;
 
@@ -199,7 +197,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             requestId,
           )
         ).transactions;
-        expect(fileAppendTxs.length).to.eq(9);
+        expect(fileAppendTxs.length).to.eq(6);
         const ethereumTransaction = (
           await mirrorNode.get(
             `/transactions?transactiontype=ETHEREUMTRANSACTION&order=desc&account.id=${operatorAccount}&limit=1`,
