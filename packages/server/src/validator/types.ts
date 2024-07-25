@@ -64,7 +64,7 @@ export const TYPES = {
     error: Constants.DEFAULT_HEX_ERROR,
   },
   hex64: {
-    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '{64}$').test(param),
+    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '{1,64}$').test(param),
     error: Constants.HASH_ERROR,
   },
   topicHash: {
