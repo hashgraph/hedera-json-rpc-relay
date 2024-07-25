@@ -424,13 +424,13 @@ export class SDKClient {
     );
   };
 
-  executeQuery = async (
-    query: Query<any>,
+  async executeQuery<T>(
+    query: Query<T>,
     client: Client,
     callerName: string,
     interactingEntity: string,
     requestId?: string,
-  ) => {
+  ): Promise<T> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
     try {
@@ -496,14 +496,14 @@ export class SDKClient {
       }
       throw sdkClientError;
     }
-  };
+  }
 
-  executeTransaction = async (
+  async executeTransaction(
     transaction: Transaction,
     callerName: string,
     interactingEntity: string,
     requestId?: string,
-  ): Promise<TransactionResponse> => {
+  ): Promise<TransactionResponse> {
     const transactionType = transaction.constructor.name;
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
@@ -572,7 +572,7 @@ export class SDKClient {
       }
       throw sdkClientError;
     }
-  };
+  }
 
   async executeGetTransactionRecord(
     transactionResponse: TransactionResponse,
@@ -680,17 +680,17 @@ export class SDKClient {
     return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
   }
 
-  createFile = async (
+  async createFile(
     callData: Uint8Array,
     client: Client,
     requestId: string,
     callerName: string,
     interactingEntity: string,
-  ) => {
+  ): Promise<FileId | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
     const currentDateNow = Date.now();
-    let fileCreateTx, fileAppendTx;
+    let fileCreateTx: FileCreateTransaction, fileAppendTx: FileAppendTransaction;
 
     try {
       const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
@@ -825,7 +825,7 @@ export class SDKClient {
       }
       throw sdkClientError;
     }
-  };
+  }
 
   /**
    * @dev Deletes `fileId` file from the Hedera Network utilizing Hashgraph SDK client
@@ -834,7 +834,7 @@ export class SDKClient {
    * @param callerName
    * @param interactingEntity
    */
-  public deleteFile = async (fileId: FileId, requestId: string, callerName: string, interactingEntity: string) => {
+  async deleteFile(fileId: FileId, requestId: string, callerName: string, interactingEntity: string): Promise<void> {
     // format request ID msg
     const currentDateNow = Date.now();
     const requestIdPrefix = formatRequestIdMessage(requestId);
@@ -882,5 +882,5 @@ export class SDKClient {
     } catch (error: any) {
       this.logger.warn(`${requestIdPrefix} ${error['message']} `);
     }
-  };
+  }
 }

@@ -35,6 +35,7 @@ import {
   FileCreateTransaction,
   FileDeleteTransaction,
   FileId,
+  FileInfo,
   FileInfoQuery,
   Hbar,
   PrivateKey,
@@ -43,7 +44,6 @@ import {
   TransactionId,
   TransactionReceipt,
   TransactionRecord,
-  TransactionRecordQuery,
   TransactionResponse,
 } from '@hashgraph/sdk';
 import constants from '../../src/lib/constants';
@@ -81,7 +81,6 @@ describe('SdkClient', async function () {
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-    const register = new Registry();
     sdkClient = new SDKClient(
       client,
       logger.child({ name: `consensus-node` }),
@@ -91,13 +90,13 @@ describe('SdkClient', async function () {
           name: 'rpc_relay_consensusnode_response',
           help: 'Relay consensusnode mode type status cost histogram',
           labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-          registers: [register],
+          registers: [registry],
         }),
         gasHistogram: new Histogram({
           name: 'rpc_relay_consensusnode_gasfee',
           help: 'Relay consensusnode mode type status gas fee histogram',
           labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-          registers: [register],
+          registers: [registry],
         }),
       },
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -2090,9 +2089,15 @@ describe('SdkClient', async function () {
       getReceipt: (_client: NodeClient) => Promise.resolve({ fileId } as TransactionReceipt),
       getRecord: (_client: NodeClient) => Promise.resolve(transactionRecord),
     } as unknown as TransactionResponse;
-    const queryResponse = {
+    const fileInfo = {
+      fileId,
+      fileMemo: 'memo',
+      expirationTime: new Date(),
+      keys: [],
+      isDeleted: false,
+      ledgerId: '0.0.1234',
       size: Promise.resolve(Long.fromNumber(FILE_APPEND_CHUNK_SIZE)),
-    };
+    } as unknown as FileInfo;
 
     let hbarLimitMock: sinon.SinonMock;
     let createFileStub: sinon.SinonStub;
@@ -2107,10 +2112,7 @@ describe('SdkClient', async function () {
       createFileStub = sinon.stub(FileCreateTransaction.prototype, 'execute').resolves(transactionResponse);
       appendFileStub = sinon.stub(FileAppendTransaction.prototype, 'executeAll').resolves([transactionResponse]);
       deleteFileStub = sinon.stub(FileDeleteTransaction.prototype, 'execute').resolves(transactionResponse);
-      queryStub = sinon.stub(Query.prototype, 'execute').callsFake(async function () {
-        // @ts-ignore
-        return this instanceof TransactionRecordQuery ? transactionRecord : queryResponse;
-      });
+      queryStub = sinon.stub(Query.prototype, 'execute').resolves(fileInfo);
       queryCostStub = sinon.stub(Query.prototype, 'getCost').resolves(transactionCost);
       transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
     });
@@ -2194,7 +2196,7 @@ describe('SdkClient', async function () {
         requestId,
       );
 
-      expect(result).to.equal(queryResponse);
+      expect(result).to.equal(fileInfo);
       expect(queryStub.called).to.be.true;
       expect(queryCostStub.called).to.be.false;
       hbarLimitMock.verify();
@@ -2212,7 +2214,7 @@ describe('SdkClient', async function () {
         requestId,
       );
 
-      expect(result).to.equal(queryResponse);
+      expect(result).to.equal(fileInfo);
       expect(queryStub.called).to.be.true;
       expect(queryCostStub.called).to.be.true;
       hbarLimitMock.verify();
