@@ -840,12 +840,6 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
     try {
-      // TODO: Limiting was missing here, not sure if it was intentional
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
-      if (shouldLimit) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
-
       // Create fileDeleteTx
       const fileDeleteTx = new FileDeleteTransaction()
         .setFileId(fileId)
