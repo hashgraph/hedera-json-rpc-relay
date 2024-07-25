@@ -367,11 +367,7 @@ export class EthImpl implements Eth {
         const cacheKey = `${constants.CACHE_KEY.FEE_HISTORY}_${blockCount}_${newestBlock}_${rewardPercentiles?.join(
           '',
         )}`;
-        const cachedFeeHistory = await this.cacheService.getSharedWithFallback(
-          cacheKey,
-          EthImpl.ethFeeHistory,
-          requestIdPrefix,
-        );
+        const cachedFeeHistory = await this.cacheService.getAsync(cacheKey, EthImpl.ethFeeHistory, requestIdPrefix);
 
         if (cachedFeeHistory) {
           feeHistory = cachedFeeHistory;
@@ -680,7 +676,7 @@ export class EthImpl implements Eth {
    */
   private async getAccount(address: string, requestIdPrefix?: string) {
     const key = `${constants.CACHE_KEY.ACCOUNT}_${address}`;
-    let account = await this.cacheService.getSharedWithFallback(key, EthImpl.ethEstimateGas, requestIdPrefix);
+    let account = await this.cacheService.getAsync(key, EthImpl.ethEstimateGas, requestIdPrefix);
     if (!account) {
       account = await this.mirrorNodeClient.getAccount(address, requestIdPrefix);
       await this.cacheService.set(key, account, EthImpl.ethEstimateGas, undefined, requestIdPrefix);
@@ -722,7 +718,7 @@ export class EthImpl implements Eth {
   async gasPrice(requestIdPrefix?: string): Promise<string> {
     this.logger.trace(`${requestIdPrefix} gasPrice()`);
     try {
-      let gasPrice: number | undefined = await this.cacheService.getSharedWithFallback(
+      let gasPrice: number | undefined = await this.cacheService.getAsync(
         constants.CACHE_KEY.GAS_PRICE,
         EthImpl.ethGasPrice,
         requestIdPrefix,
@@ -924,11 +920,7 @@ export class EthImpl implements Eth {
     if (!this.common.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
       let blockHashNumber, isHash;
       const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
-      const blockNumberCached = await this.cacheService.getSharedWithFallback(
-        cacheKey,
-        EthImpl.ethGetBalance,
-        requestIdPrefix,
-      );
+      const blockNumberCached = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetBalance, requestIdPrefix);
 
       if (blockNumberCached) {
         this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
@@ -959,7 +951,7 @@ export class EthImpl implements Eth {
     // check cache first
     // create a key for the cache
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTagOrHash}`;
-    let cachedBalance = await this.cacheService.getSharedWithFallback(cacheKey, EthImpl.ethGetBalance, requestIdPrefix);
+    let cachedBalance = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetBalance, requestIdPrefix);
     if (cachedBalance && this.shouldUseCacheForBalance(blockNumberOrTagOrHash)) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
       return cachedBalance;
@@ -1100,7 +1092,7 @@ export class EthImpl implements Eth {
     }
 
     const cachedLabel = `getCode.${address}.${blockNumber}`;
-    const cachedResponse: string | undefined = await this.cacheService.getSharedWithFallback(
+    const cachedResponse: string | undefined = await this.cacheService.getAsync(
       cachedLabel,
       EthImpl.ethGetCode,
       requestIdPrefix,
@@ -1194,7 +1186,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_HASH}_${hash}_${showDetails}`;
-    let block = await this.cacheService.getSharedWithFallback(cacheKey, EthImpl.ethGetBlockByHash, requestIdPrefix);
+    let block = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetBlockByHash, requestIdPrefix);
     if (!block) {
       block = await this.getBlock(hash, showDetails, requestIdPrefix).catch((e: any) => {
         throw this.common.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
@@ -1215,7 +1207,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_NUMBER}_${blockNumOrTag}_${showDetails}`;
-    let block = await this.cacheService.getSharedWithFallback(cacheKey, EthImpl.ethGetBlockByNumber, requestIdPrefix);
+    let block = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetBlockByNumber, requestIdPrefix);
     if (!block) {
       block = await this.getBlock(blockNumOrTag, showDetails, requestIdPrefix).catch((e: any) => {
         throw this.common.genericErrorHandler(
@@ -1242,7 +1234,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByHash(hash=${hash}, showDetails=%o)`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_HASH}_${hash}`;
-    const cachedResponse = await this.cacheService.getSharedWithFallback(
+    const cachedResponse = await this.cacheService.getAsync(
       cacheKey,
       EthImpl.ethGetTransactionCountByHash,
       requestIdPrefix,
@@ -1281,7 +1273,7 @@ export class EthImpl implements Eth {
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestIdPrefix);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_NUMBER}_${blockNum}`;
-    const cachedResponse = await this.cacheService.getSharedWithFallback(
+    const cachedResponse = await this.cacheService.getAsync(
       cacheKey,
       EthImpl.ethGetTransactionCountByNumber,
       requestIdPrefix,
@@ -1393,11 +1385,7 @@ export class EthImpl implements Eth {
 
     // cache considerations for high load
     const cacheKey = `eth_getTransactionCount_${address}_${blockNumOrTag}`;
-    let nonceCount = await this.cacheService.getSharedWithFallback(
-      cacheKey,
-      EthImpl.ethGetTransactionCount,
-      requestIdPrefix,
-    );
+    let nonceCount = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetTransactionCount, requestIdPrefix);
     if (nonceCount) {
       this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(nonceCount)}`);
       return nonceCount;
@@ -1902,7 +1890,7 @@ export class EthImpl implements Eth {
       }
 
       const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:.${call.to}.${data}`;
-      const cachedResponse = await this.cacheService.getSharedWithFallback(cacheKey, EthImpl.ethCall, requestIdPrefix);
+      const cachedResponse = await this.cacheService.getAsync(cacheKey, EthImpl.ethCall, requestIdPrefix);
 
       if (cachedResponse != undefined) {
         this.logger.debug(`${requestIdPrefix} eth_call returned cached response: ${cachedResponse}`);
@@ -1988,6 +1976,7 @@ export class EthImpl implements Eth {
   async getTransactionByHash(hash: string, requestIdPrefix?: string): Promise<Transaction | null> {
     this.logger.trace(`${requestIdPrefix} getTransactionByHash(hash=${hash})`, hash);
 
+<<<<<<< HEAD
     const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
     if (contractResult === null || contractResult.hash === undefined) {
       // handle synthetic transactions
@@ -1996,6 +1985,14 @@ export class EthImpl implements Eth {
         {
           'transaction.hash': hash,
         },
+=======
+    if (this.shouldPopulateSyntheticContractResults) {
+      // check if tx is synthetic and exists in cache
+      const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
+      const cachedLog = await this.cacheService.getAsync(
+        cacheKeySyntheticLog,
+        EthImpl.ethGetTransactionReceipt,
+>>>>>>> fcc1ceff (Renames getSharedWithFallback method and addresses PR comments)
         requestIdPrefix,
       );
 
@@ -2035,7 +2032,7 @@ export class EthImpl implements Eth {
     this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_RECEIPT}_${hash}`;
-    const cachedResponse = await this.cacheService.getSharedWithFallback(
+    const cachedResponse = await this.cacheService.getAsync(
       cacheKey,
       EthImpl.ethGetTransactionReceipt,
       requestIdPrefix,

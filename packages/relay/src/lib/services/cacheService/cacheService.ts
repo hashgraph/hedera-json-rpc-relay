@@ -33,14 +33,14 @@ export class CacheService {
    *
    * @private
    */
-  private readonly internalCache: ICacheClient;
+  private readonly internalCache!: ICacheClient;
 
   /**
    * The Redis cache used for caching items from requests.
    *
    * @private
    */
-  private readonly sharedCache: ICacheClient;
+  private readonly sharedCache!: ICacheClient;
 
   /**
    * The logger used for logging all output from this class.
@@ -90,14 +90,13 @@ export class CacheService {
     this.logger = logger;
     this.register = register;
 
-    this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     this.isSharedCacheEnabled = process.env.TEST === 'true' ? false : this.isRedisEnabled();
     this.shouldMultiSet = process.env.MULTI_SET && process.env.MULTI_SET === 'true' ? true : false;
 
     if (this.isSharedCacheEnabled) {
       this.sharedCache = new RedisCache(logger.child({ name: 'redisCache' }), register);
     } else {
-      this.sharedCache = this.internalCache;
+      this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     }
 
     /**
@@ -171,11 +170,11 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
-  public async getSharedWithFallback(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
+  public async getAsync(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
     if (this.isSharedCacheEnabled) {
       return await this.getFromSharedCache(key, callingMethod, requestIdPrefix);
     } else {
-      return this.getFromInternalCache(key, callingMethod, requestIdPrefix);
+      return await this.getFromInternalCache(key, callingMethod, requestIdPrefix);
     }
   }
 
@@ -187,10 +186,10 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
-  private getFromInternalCache(key: string, callingMethod: string, requestIdPrefix?: string): any {
+  private async getFromInternalCache(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
     this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.GET).inc(1);
 
-    return this.internalCache.get(key, callingMethod, requestIdPrefix);
+    return await this.internalCache.get(key, callingMethod, requestIdPrefix);
   }
 
   /**

@@ -206,7 +206,7 @@ export class CommonService implements ICommonService {
   public async getLatestBlockNumber(requestIdPrefix?: string): Promise<string> {
     // check for cached value
     const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
-    const blockNumberCached = await this.cacheService.getSharedWithFallback(
+    const blockNumberCached = await this.cacheService.getAsync(
       cacheKey,
       CommonService.latestBlockNumber,
       requestIdPrefix,

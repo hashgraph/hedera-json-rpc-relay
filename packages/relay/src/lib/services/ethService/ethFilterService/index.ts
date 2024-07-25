@@ -169,7 +169,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.getSharedWithFallback(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethUninstallFilter, requestIdPrefix);
 
     if (filter) {
       await this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix, true);
@@ -189,7 +189,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.getSharedWithFallback(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
     if (filter?.type != constants.FILTER.TYPE.LOG) {
       throw predefined.FILTER_NOT_FOUND;
     }
@@ -209,7 +209,7 @@ export class FilterService implements IFilterService {
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.getSharedWithFallback(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
 
     if (!filter) {
       throw predefined.FILTER_NOT_FOUND;

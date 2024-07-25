@@ -215,7 +215,7 @@ export class SDKClient {
   }
 
   async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
-    const cachedResponse: number | undefined = await this.cacheService.getSharedWithFallback(
+    const cachedResponse: number | undefined = await this.cacheService.getAsync(
       constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
       callerName,
       requestId,

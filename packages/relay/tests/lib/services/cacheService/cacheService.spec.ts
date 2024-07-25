@@ -51,7 +51,7 @@ describe('CacheService Test Suite', async function () {
       const value = 'value';
 
       await cacheService.set(key, value, callingMethod);
-      const cachedValue = await cacheService.getSharedWithFallback(key, callingMethod);
+      const cachedValue = await cacheService.getAsync(key, callingMethod);
 
       expect(cachedValue).eq(value);
     });
@@ -62,17 +62,17 @@ describe('CacheService Test Suite', async function () {
 
       await cacheService.set(key, value, callingMethod);
       await cacheService.delete(key, callingMethod);
-      const cachedValue = await cacheService.getSharedWithFallback(key, callingMethod);
+      const cachedValue = await cacheService.getAsync(key, callingMethod);
 
       expect(cachedValue).to.be.null;
     });
 
-    it('should be able to get from internal cache when calling getSharedWithFallback', async function () {
+    it('should be able to get from internal cache when calling getAsync', async function () {
       const key = 'string';
       const value = 'value';
 
       await cacheService.set(key, value, callingMethod, undefined, undefined, true);
-      const cachedValue = await cacheService.getSharedWithFallback(key, callingMethod);
+      const cachedValue = await cacheService.getAsync(key, callingMethod);
 
       expect(cachedValue).eq(value);
     });
@@ -86,7 +86,7 @@ describe('CacheService Test Suite', async function () {
       await cacheService.multiSet(entries, callingMethod, undefined, undefined, true);
 
       for (const [key, value] of Object.entries(entries)) {
-        const valueFromCache = await cacheService.getSharedWithFallback(key, callingMethod, undefined);
+        const valueFromCache = await cacheService.getAsync(key, callingMethod, undefined);
         expect(valueFromCache).eq(value);
       }
     });
@@ -122,8 +122,8 @@ describe('CacheService Test Suite', async function () {
 
       cacheService.set(key, value, callingMethod, undefined, undefined, true);
 
-      mock.stub(cacheService, 'getSharedWithFallback').returns(Promise.resolve(value));
-      const cachedValue = await cacheService.getSharedWithFallback(key, callingMethod, undefined);
+      mock.stub(cacheService, 'getAsync').returns(Promise.resolve(value));
+      const cachedValue = await cacheService.getAsync(key, callingMethod, undefined);
 
       expect(cachedValue).eq(value);
     });
@@ -135,8 +135,8 @@ describe('CacheService Test Suite', async function () {
       cacheService.set(key, value, callingMethod, undefined, undefined, true);
 
       await cacheService.delete(key, callingMethod, undefined, true);
-      mock.stub(cacheService, 'getSharedWithFallback').returns(Promise.resolve(null));
-      const cachedValue = await cacheService.getSharedWithFallback(key, callingMethod, undefined);
+      mock.stub(cacheService, 'getAsync').returns(Promise.resolve(null));
+      const cachedValue = await cacheService.getAsync(key, callingMethod, undefined);
 
       expect(cachedValue).to.be.null;
     });
@@ -147,8 +147,8 @@ describe('CacheService Test Suite', async function () {
 
       cacheService.set(key, value, callingMethod, undefined, undefined, true);
 
-      mock.stub(cacheService, 'getSharedWithFallback').returns(Promise.resolve(value));
-      const cachedValue = await cacheService.getSharedWithFallback(key, callingMethod, undefined);
+      mock.stub(cacheService, 'getAsync').returns(Promise.resolve(value));
+      const cachedValue = await cacheService.getAsync(key, callingMethod, undefined);
 
       expect(cachedValue).eq(value);
     });
@@ -161,7 +161,7 @@ describe('CacheService Test Suite', async function () {
 
       cacheService.multiSet(entries, callingMethod, undefined, undefined, false);
       mock
-        .stub(cacheService, 'getSharedWithFallback')
+        .stub(cacheService, 'getAsync')
         .onFirstCall()
         .returns(entries['key1'])
         .onSecondCall()
@@ -170,7 +170,7 @@ describe('CacheService Test Suite', async function () {
         .returns(entries['key3']);
 
       for (const [key, value] of Object.entries(entries)) {
-        const valueFromCache = cacheService.getSharedWithFallback(key, callingMethod, undefined);
+        const valueFromCache = cacheService.getAsync(key, callingMethod, undefined);
         expect(valueFromCache).eq(value);
       }
     });
@@ -186,7 +186,7 @@ describe('CacheService Test Suite', async function () {
 
       cacheService.multiSet(entries, callingMethod, undefined, undefined, false);
       mock
-        .stub(cacheService, 'getSharedWithFallback')
+        .stub(cacheService, 'getAsync')
         .onFirstCall()
         .returns(entries['key1'])
         .onSecondCall()
@@ -195,7 +195,7 @@ describe('CacheService Test Suite', async function () {
         .returns(entries['key3']);
 
       for (const [key, value] of Object.entries(entries)) {
-        const valueFromCache = cacheService.getSharedWithFallback(key, callingMethod, undefined);
+        const valueFromCache = cacheService.getAsync(key, callingMethod, undefined);
         expect(valueFromCache).eq(value);
       }
     });

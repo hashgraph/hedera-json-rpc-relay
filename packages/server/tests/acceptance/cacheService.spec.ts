@@ -43,20 +43,20 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     await cacheService.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
     await new Promise((r) => setTimeout(r, 200));
 
-    const cache = await cacheService.getSharedWithFallback(dataLabel, CALLING_METHOD);
+    const cache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
     expect(cache).to.deep.eq(DATA, 'set method saves to shared cache');
 
-    const cacheFromService = await cacheService.getSharedWithFallback(dataLabel, CALLING_METHOD);
-    expect(cacheFromService).to.deep.eq(DATA, 'getSharedWithFallback method reads correctly from shared cache');
+    const cacheFromService = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+    expect(cacheFromService).to.deep.eq(DATA, 'getAsync method reads correctly from shared cache');
 
     await cacheService.delete(dataLabel, CALLING_METHOD, undefined, true);
     await new Promise((r) => setTimeout(r, 200));
 
-    const deletedCache = await cacheService.getSharedWithFallback(dataLabel, CALLING_METHOD);
+    const deletedCache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
     expect(deletedCache).to.eq(null, 'the delete method correctly deletes from shared cache');
 
-    const deletedCacheFromService = await cacheService.getSharedWithFallback(dataLabel, CALLING_METHOD);
-    expect(deletedCacheFromService).to.eq(null, 'getSharedWithFallback method cannot read deleted cache');
+    const deletedCacheFromService = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+    expect(deletedCacheFromService).to.eq(null, 'getAsync method cannot read deleted cache');
   });
 
   it('Correctly sets TTL time', async () => {
@@ -66,16 +66,16 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     await cacheService.set(dataLabel, DATA, CALLING_METHOD, ttl, undefined, true);
     await new Promise((r) => setTimeout(r, 200));
 
-    const cache = await cacheService.getSharedWithFallback(dataLabel, CALLING_METHOD);
+    const cache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
     expect(cache).to.deep.eq(DATA, 'data is stored with TTL');
 
     await new Promise((r) => setTimeout(r, ttl));
 
-    const expiredCache = await cacheService.getSharedWithFallback(dataLabel, CALLING_METHOD);
+    const expiredCache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
     expect(expiredCache).to.eq(null, 'cache expires after TTL period');
 
-    const deletedCacheFromService = await cacheService.getSharedWithFallback(dataLabel, CALLING_METHOD);
-    expect(deletedCacheFromService).to.eq(null, 'getSharedWithFallback method cannot read expired cache');
+    const deletedCacheFromService = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+    expect(deletedCacheFromService).to.eq(null, 'getAsync method cannot read expired cache');
   });
 
   it('Fallsback to local cache for REDIS_ENABLED !== true', async () => {
@@ -88,7 +88,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     await serviceWithDisabledRedis.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
     await new Promise((r) => setTimeout(r, 200));
 
-    const dataInLRU = await serviceWithDisabledRedis.getSharedWithFallback(dataLabel, CALLING_METHOD);
+    const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD);
     expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
 
     process.env.REDIS_ENABLED = 'true';
@@ -100,7 +100,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     await cacheService.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
     await new Promise((r) => setTimeout(r, 200));
 
-    const cachedData = await otherServiceInstance.getSharedWithFallback(dataLabel, CALLING_METHOD);
+    const cachedData = await otherServiceInstance.getAsync(dataLabel, CALLING_METHOD);
     expect(cachedData).to.deep.eq(DATA, 'cached data is read correctly by other service instance');
   });
 });
