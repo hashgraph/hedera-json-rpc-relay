@@ -180,6 +180,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         } catch (e) {
           expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED.message);
         }
+
+        delete process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
       });
 
       it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
