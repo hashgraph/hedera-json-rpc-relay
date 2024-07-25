@@ -690,7 +690,7 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
     const currentDateNow = Date.now();
-    let fileCreateTx: FileCreateTransaction, fileAppendTx: FileAppendTransaction;
+    let fileCreateTx, fileAppendTx;
 
     try {
       const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
