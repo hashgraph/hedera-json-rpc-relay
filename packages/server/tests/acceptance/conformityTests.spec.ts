@@ -115,7 +115,7 @@ function splitReqAndRes(content) {
    * @returns {{ request: string, response: string }} - An object containing the separated request and response strings.
    */
   const lines = content.split('\n');
-  const filteredLines = lines.filter((line) => line != '').map((line) => line.slice(3));
+  const filteredLines = lines.filter((line) => line != '' && !line.startsWith('//')).map((line) => line.slice(3));
 
   return { request: filteredLines[0], response: filteredLines[1] };
 }
