@@ -2121,11 +2121,12 @@ describe('SdkClient', async function () {
     });
 
     it('should rate limit before creating file', async () => {
+      hbarLimitMock
+        .expects('shouldLimit')
+        .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
+        .once()
+        .returns(true);
       try {
-        hbarLimitMock
-          .expects('shouldLimit')
-          .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
-          .returns(true);
         await sdkClient.submitEthereumTransaction(transactionBuffer, callerName, requestId);
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
@@ -2140,6 +2141,7 @@ describe('SdkClient', async function () {
       hbarLimitMock
         .expects('shouldLimit')
         .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
+        .once()
         .returns(false);
 
       await sdkClient.createFile(callData, client, requestId, callerName, interactingEntity);
@@ -2155,6 +2157,7 @@ describe('SdkClient', async function () {
       hbarLimitMock
         .expects('shouldLimit')
         .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
+        .once()
         .returns(false);
 
       await sdkClient.createFile(callData, client, requestId, callerName, interactingEntity);
@@ -2169,6 +2172,7 @@ describe('SdkClient', async function () {
       hbarLimitMock
         .expects('shouldLimit')
         .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
+        .once()
         .returns(false);
 
       await sdkClient.deleteFile(fileId, requestId, callerName, interactingEntity);
@@ -2179,7 +2183,11 @@ describe('SdkClient', async function () {
 
     it('should execute FileInfoQuery (without paymentTransactionId) and NOT add expenses to limiter', async () => {
       hbarLimitMock.expects('addExpense').never();
-      hbarLimitMock.expects('shouldLimit').withArgs(sinon.match.any, SDKClient.queryMode, callerName).returns(false);
+      hbarLimitMock
+        .expects('shouldLimit')
+        .withArgs(sinon.match.any, SDKClient.queryMode, callerName)
+        .once()
+        .returns(false);
 
       const result = await sdkClient.executeQuery(
         new FileInfoQuery().setFileId(fileId).setQueryPayment(transactionCost),
@@ -2197,7 +2205,11 @@ describe('SdkClient', async function () {
 
     it('should execute FileInfoQuery (with paymentTransactionId) and add expenses to limiter', async () => {
       hbarLimitMock.expects('addExpense').withArgs(transactionCost.toTinybars().toNumber()).once();
-      hbarLimitMock.expects('shouldLimit').withArgs(sinon.match.any, SDKClient.queryMode, callerName).returns(false);
+      hbarLimitMock
+        .expects('shouldLimit')
+        .withArgs(sinon.match.any, SDKClient.queryMode, callerName)
+        .once()
+        .returns(false);
 
       const result = await sdkClient.executeQuery(
         new FileInfoQuery().setFileId(fileId).setPaymentTransactionId(transactionId),
