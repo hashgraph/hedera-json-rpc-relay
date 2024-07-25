@@ -24,8 +24,10 @@ import { expect } from 'chai';
 import { Context } from 'mocha';
 import * as sinon from 'sinon';
 import { Histogram, Registry } from 'prom-client';
-import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import pino from 'pino';
+import Long from 'long';
+import { v4 as uuid } from 'uuid';
+import NodeClient from '@hashgraph/sdk/lib/client/NodeClient';
 import {
   AccountId,
   Client,
@@ -48,10 +50,8 @@ import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { SDKClient } from '../../src/lib/clients';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { Utils } from '../../src/utils';
-import * as Long from 'long';
-import NodeClient from '@hashgraph/sdk/lib/client/NodeClient';
-import { v4 as uuid } from 'uuid';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -2089,7 +2089,7 @@ describe('SdkClient', async function () {
     const fileInfo = {
       fileId,
       isDeleted: true,
-      size: Promise.resolve(Long.fromNumber(FILE_APPEND_CHUNK_SIZE)),
+      size: Long.fromNumber(FILE_APPEND_CHUNK_SIZE),
     };
     const callerName = 'eth_sendRawTransaction';
     const interactingEntity = fileId.toString();
