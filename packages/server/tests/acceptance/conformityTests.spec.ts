@@ -89,7 +89,7 @@ async function getTransactionCount() {
     params: [sendAccountAddress, 'latest'],
   };
 
-  const response = await sendRequestToRelay(request);
+  const response = await sendRequestToRelay(request, false);
 
   return response.result;
 }
@@ -102,7 +102,7 @@ async function getLatestBlockHash() {
     id: 0,
   };
 
-  const response = await sendRequestToRelay(request);
+  const response = await sendRequestToRelay(request, false);
 
   return response.result.hash;
 }
@@ -120,13 +120,17 @@ function splitReqAndRes(content) {
   return { request: filteredLines[0], response: filteredLines[1] };
 }
 
-async function sendRequestToRelay(request) {
+async function sendRequestToRelay(request, needError) {
   try {
     const response = await axios.post(relayUrl, request);
     return response.data;
   } catch (error) {
     console.error(error);
-    throw error;
+    if (needError) {
+      return error;
+    } else {
+      throw error;
+    }
   }
 }
 
@@ -140,14 +144,14 @@ async function signAndSendRawTransaction(transaction) {
     params: [signed],
   };
 
-  const response = await sendRequestToRelay(request);
+  const response = await sendRequestToRelay(request, false);
   const requestTransactionReceipt = {
     id: 'test_id',
     jsonrpc: '2.0',
     method: 'eth_getTransactionReceipt',
     params: [response.result],
   };
-  const transactionReceipt = await sendRequestToRelay(requestTransactionReceipt);
+  const transactionReceipt = await sendRequestToRelay(requestTransactionReceipt, false);
   return {
     transactionHash: response.result,
     blockHash: transactionReceipt.result.blockHash,
@@ -197,12 +201,14 @@ async function checkRequestBody(fileName, request) {
   return request;
 }
 
-function checkResponseFormat(fileName, actualReponse, expectedResponse) {
+function checkResponseFormat(actualReponse, expectedResponse) {
   const actualResponseKeys = extractKeys(actualReponse);
   const expectedResponseKeys = extractKeys(expectedResponse);
   const missingKeys = expectedResponseKeys.filter((key) => !actualResponseKeys.includes(key));
-  if ((fileName === DYNAMIC_FEE_FILE_NAME || fileName === ACCESS_LIST_FILE_NAME) && missingKeys[0] === 'result.v') {
-    return [];
+  if (missingKeys.length > 0) {
+    return true;
+  } else {
+    return false;
   }
 }
 
@@ -288,9 +294,12 @@ async function processFileContent(directory, file, content) {
    */
   console.log('Executing for ', file);
   const modifiedRequest = await checkRequestBody(file, JSON.parse(content.request));
-  const response = await sendRequestToRelay(modifiedRequest);
+  const needError = JSON.parse(content.response).error ? true : false;
+  const response = await sendRequestToRelay(modifiedRequest, needError);
   const schema = findSchema(directory);
-  const valid = isResponseValid(schema, response);
+  const valid = needError
+    ? checkResponseFormat(response.response.data, content.response)
+    : isResponseValid(schema, response);
   expect(valid).to.be.true;
 }
 
@@ -315,10 +324,13 @@ describe('@api-conformity Ethereum execution apis tests', function () {
       const files = fs.readdirSync(path.resolve(directoryPath, directory));
       for (const file of files) {
         it(`Executing for ${directory} and ${file}`, async () => {
+          //We are excluding these directories, since these tests in execution-apis repos
+          //use set of contracts which are not deployed on our network
           if (directory === 'eth_getLogs' || directory === 'eth_call' || directory === 'eth_estimateGas') {
             return;
           }
           execApisOpenRpcData = require('../../../../openrpc_exec_apis.json');
+          //Currently, we do not support blobs
           if (file.includes('blob')) {
             return;
           }
