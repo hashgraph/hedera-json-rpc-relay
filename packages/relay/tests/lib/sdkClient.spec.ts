@@ -35,25 +35,21 @@ import {
   FileCreateTransaction,
   FileDeleteTransaction,
   FileId,
-  FileInfo,
   FileInfoQuery,
   Hbar,
   PrivateKey,
   Query,
   Status,
   TransactionId,
-  TransactionReceipt,
-  TransactionRecord,
-  TransactionResponse,
 } from '@hashgraph/sdk';
 import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { SDKClient } from '../../src/lib/clients';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { getRequestId } from '../helpers';
 import { Utils } from '../../src/utils';
 import Long from 'long';
 import NodeClient from '@hashgraph/sdk/lib/client/NodeClient';
+import { v4 as uuid } from 'uuid';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -2067,38 +2063,34 @@ describe('SdkClient', async function () {
       124, 18, 190, 114, 79, 189, 99, 27, 157, 117, 227, 107, 74, 255, 111, 74, 166, 7, 78, 25, 35, 131, 85, 47, 52,
       120, 20,
     ]);
-    const callerName = 'eth_sendRawTransaction';
-    const requestId = getRequestId();
     const accountId = AccountId.fromString('0.0.1234');
     const transactionId = TransactionId.generate(accountId);
-    const transactionHash = Uint8Array.from([1, 2, 3, 4]);
     const fileId = FileId.fromString('0.0.1234');
-    const interactingEntity = fileId.toString();
     const transactionCost = Hbar.fromTinybars(1000);
-    const gasUsed = Long.fromNumber(10000);
-    const transactionRecord = {
-      transactionFee: transactionCost,
-      contractFunctionResult: {
-        gasUsed,
-      },
-    } as TransactionRecord;
+    const transactionReceipt = { fileId, status: Status.Success };
     const transactionResponse = {
       nodeId: accountId,
-      transactionHash,
+      transactionHash: Uint8Array.from([1, 2, 3, 4]),
       transactionId,
-      getReceipt: (_client: NodeClient) => Promise.resolve({ fileId } as TransactionReceipt),
-      getRecord: (_client: NodeClient) => Promise.resolve(transactionRecord),
-    } as unknown as TransactionResponse;
+      getReceipt: (_client: NodeClient) => Promise.resolve(transactionReceipt),
+      getRecord: (_client: NodeClient) =>
+        Promise.resolve({
+          receipt: transactionReceipt,
+          transactionFee: transactionCost,
+          contractFunctionResult: {
+            gasUsed: Long.fromNumber(10000),
+          },
+        }),
+    };
     const fileInfo = {
       fileId,
-      fileMemo: 'memo',
-      expirationTime: new Date(),
-      keys: [],
-      isDeleted: false,
-      ledgerId: '0.0.1234',
+      isDeleted: true,
       size: Promise.resolve(Long.fromNumber(FILE_APPEND_CHUNK_SIZE)),
-    } as unknown as FileInfo;
+    };
+    const callerName = 'eth_sendRawTransaction';
+    const interactingEntity = fileId.toString();
 
+    let requestId: string;
     let hbarLimitMock: sinon.SinonMock;
     let createFileStub: sinon.SinonStub;
     let appendFileStub: sinon.SinonStub;
@@ -2108,6 +2100,7 @@ describe('SdkClient', async function () {
     let transactionStub: sinon.SinonStub;
 
     beforeEach(() => {
+      requestId = uuid();
       hbarLimitMock = sinon.mock(hbarLimiter);
       createFileStub = sinon.stub(FileCreateTransaction.prototype, 'execute').resolves(transactionResponse);
       appendFileStub = sinon.stub(FileAppendTransaction.prototype, 'executeAll').resolves([transactionResponse]);
