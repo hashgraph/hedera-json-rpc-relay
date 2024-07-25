@@ -212,14 +212,12 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         ).transactions[0];
 
         const fileCreateFee = sumAccountTransfers(fileCreateTx.transfers, operatorAccount);
-
         const fileAppendFee = fileAppendTxs.reduce((total, data) => {
           const sum = sumAccountTransfers(data.transfers, operatorAccount);
           return total + sum;
         }, 0);
 
         const ethTxFee = sumAccountTransfers(ethereumTransaction.transfers, operatorAccount);
-
         const totalOperatorFees = Math.abs(fileCreateFee + fileAppendFee + ethTxFee);
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         const hbarLimitReducedAmount = remainingHbarsBefore - remainingHbarsAfter;
