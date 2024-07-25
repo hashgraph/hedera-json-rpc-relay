@@ -55,6 +55,12 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, delta);
     };
 
+    const sumAccountTransfers = (transfers: any, account?: string) => {
+      return transfers
+        .filter((transfer) => transfer.account === account)
+        .reduce((acc, transfer) => acc + transfer.amount, 0);
+    };
+
     describe('HBAR Rate Limit Tests', function () {
       this.timeout(480 * 1000); // 480 seconds
 
@@ -205,20 +211,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           )
         ).transactions[0];
 
-        const fileCreateFee = fileCreateTx.transfers
-          .filter((transfer) => transfer.account === operatorAccount)
-          .reduce((acc, transfer) => acc + transfer.amount, 0);
+        const fileCreateFee = sumAccountTransfers(fileCreateTx.transfers, operatorAccount);
 
         const fileAppendFee = fileAppendTxs.reduce((total, data) => {
-          const sum = data.transfers
-            .filter((transfer) => transfer.account === operatorAccount)
-            .reduce((acc, transfer) => acc + transfer.amount, 0);
+          const sum = sumAccountTransfers(data.transfers, operatorAccount);
           return total + sum;
         }, 0);
 
-        const ethTxFee = ethereumTransaction.transfers
-          .filter((transfer) => transfer.account === operatorAccount)
-          .reduce((acc, transfer) => acc + transfer.amount, 0);
+        const ethTxFee = sumAccountTransfers(ethereumTransaction.transfers, operatorAccount);
 
         const totalOperatorFees = Math.abs(fileCreateFee + fileAppendFee + ethTxFee);
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
