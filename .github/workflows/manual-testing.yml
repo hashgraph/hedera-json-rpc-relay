@@ -66,6 +66,14 @@ jobs:
       testfilter: ratelimiter
       networkTag: ${{inputs.networkNodeTag}}
       mirrorTag: ${{inputs.mirrorNodeTag}}
+
+  hbarlimiter:
+    name: HBar Limiter
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: hbarlimiter
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
       
   tokencreate:
     name: Token Create
@@ -126,6 +134,7 @@ jobs:
       - rpc_api_schema_conformity
       - erc20
       - ratelimiter
+      - hbarlimiter
       - tokencreate
       - tokenmanagement
       - htsprecompilev1

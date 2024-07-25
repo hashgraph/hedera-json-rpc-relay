@@ -49,6 +49,12 @@ jobs:
       testfilter: ratelimiter
       test_ws_server: true
 
+  hbarlimiter:
+    name: HBar Limiter
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: hbarlimiter
+
   tokencreate:
     name: Token Create
     uses: ./.github/workflows/acceptance-workflow.yml
@@ -116,6 +122,7 @@ jobs:
       - rpc_api_schema_conformity
       - erc20
       - ratelimiter
+      - hbarlimiter
       - tokencreate
       - tokenmanagement
       - htsprecompilev1
