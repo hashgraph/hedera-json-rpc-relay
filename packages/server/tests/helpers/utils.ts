@@ -39,6 +39,7 @@ import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
 export class Utils {
   static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 5e5; // 500 KB
   static readonly HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD: number = 1e6; // 1 MB
+  static readonly WARM_UP_TEST_COUNT: number = 3;
 
   /**
    * Converts a number to its hexadecimal representation.
@@ -405,7 +406,20 @@ export class Utils {
     const gc = runInNewContext('gc');
     const githubClient = new GitHubClient();
 
-    beforeEach(function () {
+    let isWarmUpCompleted = false;
+
+    const warmUp = async () => {
+      for (let i = 0; i < Utils.WARM_UP_TEST_COUNT; i++) {
+        // Run dummy tests to warm up the environment
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      isWarmUpCompleted = true;
+    };
+
+    beforeEach(async function () {
+      if (!isWarmUpCompleted) {
+        await warmUp();
+      }
       profiler.start();
     });
 

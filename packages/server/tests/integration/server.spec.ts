@@ -39,11 +39,6 @@ describe('RPC Server', function () {
   let testServer: Server;
   let testClient: AxiosInstance;
 
-  // leak detection middleware
-  if (process.env.MEMWATCH_ENABLED === 'true') {
-    Utils.captureMemoryLeaks(new GCProfiler());
-  }
-
   before(function () {
     testServer = app.listen(process.env.E2E_SERVER_PORT);
     testClient = BaseTest.createTestClient();
@@ -56,6 +51,11 @@ describe('RPC Server', function () {
       }
     });
   });
+
+  // leak detection middleware
+  if (process.env.MEMWATCH_ENABLED === 'true') {
+    Utils.captureMemoryLeaks(new GCProfiler());
+  }
 
   this.timeout(5000);
 
