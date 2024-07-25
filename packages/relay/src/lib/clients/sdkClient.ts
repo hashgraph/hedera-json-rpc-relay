@@ -22,34 +22,34 @@ import {
   AccountBalance,
   AccountBalanceQuery,
   AccountId,
+  AccountInfo,
   AccountInfoQuery,
   Client,
   ContractByteCodeQuery,
   ContractCallQuery,
-  ExchangeRates,
-  FeeSchedules,
-  FileContentsQuery,
-  ContractId,
   ContractFunctionResult,
-  TransactionResponse,
-  AccountInfo,
-  HbarUnit,
-  TransactionId,
-  FeeComponents,
-  Query,
-  Transaction,
-  TransactionRecord,
-  Status,
-  FileCreateTransaction,
-  FileAppendTransaction,
-  FileInfoQuery,
+  ContractId,
   EthereumTransaction,
   EthereumTransactionData,
-  PrecheckStatusError,
-  TransactionRecordQuery,
-  Hbar,
-  FileId,
+  ExchangeRates,
+  FeeComponents,
+  FeeSchedules,
+  FileAppendTransaction,
+  FileContentsQuery,
+  FileCreateTransaction,
   FileDeleteTransaction,
+  FileId,
+  FileInfoQuery,
+  Hbar,
+  HbarUnit,
+  PrecheckStatusError,
+  Query,
+  Status,
+  Transaction,
+  TransactionId,
+  TransactionRecord,
+  TransactionRecordQuery,
+  TransactionResponse,
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
@@ -59,6 +59,7 @@ import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
+import { Histogram } from 'prom-client';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -93,13 +94,31 @@ export class SDKClient {
    */
   private readonly cacheService: CacheService;
 
-  private consensusNodeClientHistogramCost;
-  private consensusNodeClientHistogramGasFee;
-  private operatorAccountGauge;
-  private maxChunks;
-  private fileAppendChunkSize;
+  /**
+   * Histogram for capturing the cost of transactions and queries.
+   * @private
+   */
+  private readonly consensusNodeClientHistogramCost: Histogram;
 
-  // populate with consensusnode requests via SDK
+  /**
+   * Histogram for capturing the gas fee of transactions and queries.
+   * @private
+   */
+  private readonly consensusNodeClientHistogramGasFee: Histogram;
+
+  /**
+   * Maximum number of chunks for file append transaction.
+   * @private
+   */
+  private readonly maxChunks: number;
+
+  /**
+   * Size of each chunk for file append transaction.
+   * @private
+   */
+  private readonly fileAppendChunkSize: number;
+
+  // populate with consensus node requests via SDK
   constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, cacheService: CacheService) {
     this.clientMain = clientMain;
 
@@ -112,8 +131,6 @@ export class SDKClient {
     this.logger = logger;
     this.consensusNodeClientHistogramCost = metrics.costHistogram;
     this.consensusNodeClientHistogramGasFee = metrics.gasHistogram;
-    this.operatorAccountGauge = metrics.operatorGauge;
-
     this.hbarLimiter = hbarLimiter;
     this.cacheService = cacheService;
     this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
@@ -407,7 +424,7 @@ export class SDKClient {
     );
   };
 
-  private executeQuery = async (
+  executeQuery = async (
     query: Query<any>,
     client: Client,
     callerName: string,
@@ -481,7 +498,7 @@ export class SDKClient {
     }
   };
 
-  private executeTransaction = async (
+  executeTransaction = async (
     transaction: Transaction,
     callerName: string,
     interactingEntity: string,
@@ -663,7 +680,7 @@ export class SDKClient {
     return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
   }
 
-  private createFile = async (
+  createFile = async (
     callData: Uint8Array,
     client: Client,
     requestId: string,
@@ -817,12 +834,18 @@ export class SDKClient {
    * @param callerName
    * @param interactingEntity
    */
-  public deleteFile = async (fileId: FileId, requestId?: string, callerName?: string, interactingEntity?: string) => {
+  public deleteFile = async (fileId: FileId, requestId: string, callerName: string, interactingEntity: string) => {
     // format request ID msg
     const currentDateNow = Date.now();
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
     try {
+      // TODO: Limiting was missing here, not sure if it was intentional
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+      if (shouldLimit) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+
       // Create fileDeleteTx
       const fileDeleteTx = new FileDeleteTransaction()
         .setFileId(fileId)
