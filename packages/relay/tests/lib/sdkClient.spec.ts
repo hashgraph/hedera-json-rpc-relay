@@ -18,11 +18,11 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { resolve } from 'path';
+import { config } from 'dotenv';
 import { expect } from 'chai';
 import { Context } from 'mocha';
-import sinon from 'sinon';
+import * as sinon from 'sinon';
 import { Histogram, Registry } from 'prom-client';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import pino from 'pino';
@@ -31,6 +31,7 @@ import {
   Client,
   ContractCallQuery,
   EthereumTransaction,
+  FeeSchedules,
   FileAppendTransaction,
   FileCreateTransaction,
   FileDeleteTransaction,
@@ -41,17 +42,18 @@ import {
   Query,
   Status,
   TransactionId,
+  TransactionResponse,
 } from '@hashgraph/sdk';
 import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { SDKClient } from '../../src/lib/clients';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { Utils } from '../../src/utils';
-import Long from 'long';
+import * as Long from 'long';
 import NodeClient from '@hashgraph/sdk/lib/client/NodeClient';
 import { v4 as uuid } from 'uuid';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
 const logger = pino();
 
@@ -72,7 +74,7 @@ describe('SdkClient', async function () {
 
     client = client.setOperator(
       AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
-      PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN!),
+      PrivateKey.fromStringDer(process.env.OPERATOR_KEY_MAIN!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
@@ -100,7 +102,7 @@ describe('SdkClient', async function () {
   });
 
   describe('increaseCostAndRetryExecution', async () => {
-    let queryStub, contractCallQuery;
+    let queryStub: sinon.SinonStub, contractCallQuery: ContractCallQuery;
     const successResponse = '0x00001';
     const costTinybars = 1000;
     const baseCost = Hbar.fromTinybars(costTinybars);
@@ -166,7 +168,7 @@ describe('SdkClient', async function () {
 
     it('should return cached getTinyBarGasFee value', async () => {
       const getFeeScheduleStub = sinon.stub(sdkClient, 'getFeeSchedule').callsFake(() => {
-        return {
+        return Promise.resolve({
           current: {
             transactionFeeSchedule: [
               {
@@ -181,9 +183,11 @@ describe('SdkClient', async function () {
               },
             ],
           },
-        };
+        } as unknown as FeeSchedules);
       });
+      // @ts-ignore
       const getExchangeRateStub = sinon.stub(sdkClient, 'getExchangeRate').callsFake(() => {});
+      // @ts-ignore
       const convertGasPriceToTinyBarsStub = sinon.stub(sdkClient, 'convertGasPriceToTinyBars').callsFake(() => 0x160c);
 
       for (let i = 0; i < 5; i++) {
@@ -2081,7 +2085,7 @@ describe('SdkClient', async function () {
             gasUsed: Long.fromNumber(10000),
           },
         }),
-    };
+    } as unknown as TransactionResponse;
     const fileInfo = {
       fileId,
       isDeleted: true,
@@ -2246,6 +2250,11 @@ describe('SdkClient', async function () {
 
     it('should execute TransactionRecordQuery and add expenses to limiter', async () => {
       hbarLimitMock.expects('addExpense').withArgs(transactionCost.toTinybars().toNumber()).once();
+      hbarLimitMock
+        .expects('shouldLimit')
+        .withArgs(sinon.match.any, SDKClient.recordMode, callerName)
+        .once()
+        .returns(false);
 
       await sdkClient.executeGetTransactionRecord(
         transactionResponse,
