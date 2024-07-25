@@ -125,7 +125,7 @@ export const METHODS = {
     },
     1: {
       required: true,
-      type: 'hex',
+      type: 'hex64',
     },
     2: {
       type: 'blockNumber|blockHash',
