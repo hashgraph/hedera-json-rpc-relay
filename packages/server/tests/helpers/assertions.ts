@@ -458,4 +458,15 @@ export default class Assertions {
       });
     }
   };
+
+  /**
+   * Checks if the given value is within a % range, relative to the expected value
+   * @param value
+   * @param expected
+   * @param tolerance
+   */
+  static expectWithinTolerance(value: number, expected: number, tolerance: number) {
+    expect(value).to.be.gte(expected * (1 - tolerance));
+    expect(value).to.be.lte(expected * (1 + tolerance));
+  }
 }

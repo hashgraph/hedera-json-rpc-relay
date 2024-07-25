@@ -53,7 +53,7 @@ import {
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
-import { formatRequestIdMessage } from '../../formatters';
+import { formatRequestIdMessage, getTransferAmountSumForAccount } from '../../formatters';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
@@ -587,12 +587,7 @@ export class SDKClient {
       const transactionRecord: TransactionRecord = await transactionResponse.getRecord(this.clientMain);
 
       // get transactionFee and gasUsed for metrics
-      /**
-       * @todo: Determine how to separate the fee charged exclusively by the operator because
-       *        the transactionFee below includes the entire charges of the transaction,
-       *        with some portions paid by tx.from, not the operator.
-       */
-      transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+      transactionFee = getTransferAmountSumForAccount(transactionRecord, this.clientMain.operatorAccountId?.toString());
       gasUsed = transactionRecord?.contractFunctionResult?.gasUsed.toNumber();
     } catch (e: any) {
       try {
@@ -603,7 +598,10 @@ export class SDKClient {
           .setNodeAccountIds([transactionResponse.nodeId])
           .setValidateReceiptStatus(false)
           .execute(this.clientMain);
-        transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+        transactionFee = getTransferAmountSumForAccount(
+          transactionRecord,
+          this.clientMain.operatorAccountId?.toString(),
+        );
         gasUsed = transactionRecord?.contractFunctionResult?.gasUsed.toNumber();
       } catch (err: any) {
         const recordQueryError = new SDKClientError(err, err.message);

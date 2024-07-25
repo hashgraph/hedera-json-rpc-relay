@@ -162,6 +162,75 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
+      it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
+        const TOLERANCE = 0.01;
+
+        await new Promise((r) => setTimeout(r, 3000));
+        const operatorAccount = process.env.OPERATOR_ID_MAIN;
+        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        expect(remainingHbarsBefore).to.be.gt(0);
+        const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
+          .balance;
+
+        const largeContract = await Utils.deployContract(
+          largeContractJson.abi,
+          largeContractJson.bytecode,
+          accounts[0].wallet,
+        );
+        await largeContract.waitForDeployment();
+        expect(largeContract.target).to.not.be.null;
+
+        const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
+          .balance;
+
+        const amountPaidByOperator = operatorBalanceBefore - operatorBalanceAfter;
+
+        // Calculate all fees based on transaction records in the mirror node
+        const fileCreateTx = (
+          await mirrorNode.get(
+            `/transactions?transactiontype=FILECREATE&order=desc&account.id=${operatorAccount}&limit=1`,
+            requestId,
+          )
+        ).transactions[0];
+        const fileCreateTimestamp = fileCreateTx.consensus_timestamp;
+        const fileAppendTxs = (
+          await mirrorNode.get(
+            `/transactions?order=desc&transactiontype=FILEAPPEND&account.id=${operatorAccount}&timestamp=gt:${fileCreateTimestamp}`,
+            requestId,
+          )
+        ).transactions;
+        expect(fileAppendTxs.length).to.eq(9);
+        const ethereumTransaction = (
+          await mirrorNode.get(
+            `/transactions?transactiontype=ETHEREUMTRANSACTION&order=desc&account.id=${operatorAccount}&limit=1`,
+            requestId,
+          )
+        ).transactions[0];
+
+        const fileCreateFee = fileCreateTx.transfers
+          .filter((transfer) => transfer.account === operatorAccount)
+          .reduce((acc, transfer) => acc + transfer.amount, 0);
+
+        const fileAppendFee = fileAppendTxs.reduce((total, data) => {
+          const sum = data.transfers
+            .filter((transfer) => transfer.account === operatorAccount)
+            .reduce((acc, transfer) => acc + transfer.amount, 0);
+          return total + sum;
+        }, 0);
+
+        const ethTxFee = ethereumTransaction.transfers
+          .filter((transfer) => transfer.account === operatorAccount)
+          .reduce((acc, transfer) => acc + transfer.amount, 0);
+
+        const totalOperatorFees = Math.abs(fileCreateFee + fileAppendFee + ethTxFee);
+        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        const hbarLimitReducedAmount = remainingHbarsBefore - remainingHbarsAfter;
+
+        expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
+        Assertions.expectWithinTolerance(hbarLimitReducedAmount, amountPaidByOperator, TOLERANCE);
+        Assertions.expectWithinTolerance(totalOperatorFees, amountPaidByOperator, TOLERANCE);
+      });
+
       it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsBefore).to.be.gt(0);
