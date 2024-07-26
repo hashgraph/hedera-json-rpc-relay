@@ -55,6 +55,7 @@ import {
   DEFAULT_NETWORK_FEES,
   DEFAULT_NULL_LOG_TOPICS,
   NOT_FOUND_RES,
+  MIRROR_NODE_LIMIT_PARAM,
 } from './eth-config';
 import { ethers } from 'ethers';
 import { generateEthTestEnv } from './eth-helpers';
@@ -333,7 +334,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).reply(200, filteredLogsAddress1);
     restMock
       .onGet(
-        `contracts/${CONTRACT_ADDRESS_2}/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=100&order=asc`,
+        `contracts/${CONTRACT_ADDRESS_2}/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
       )
       .reply(200, filteredLogsAddress2);
     for (const log of filteredLogsAddress1.logs) {
@@ -388,7 +389,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet('blocks/16').reply(200, toBlock);
     restMock
       .onGet(
-        `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${toBlock.timestamp.to}&limit=100&order=asc`,
+        `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${toBlock.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
       )
       .reply(200, filteredLogs);
     for (const log of filteredLogs.logs) {
@@ -423,7 +424,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCK);
     restMock.onGet('blocks/16').reply(404, NOT_FOUND_RES);
     restMock
-      .onGet(`contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&limit=100&order=asc`)
+      .onGet(
+        `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
+      )
       .reply(200, filteredLogs);
     restMock.onGet(`contracts/${filteredLogs.logs[0].address}`).reply(200, DEFAULT_CONTRACT);
 
@@ -517,7 +520,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
           `?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}` +
           `&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}` +
           `&topic0=${DEFAULT_LOG_TOPICS[0]}&topic1=${DEFAULT_LOG_TOPICS[1]}` +
-          `&topic2=${DEFAULT_LOG_TOPICS[2]}&topic3=${DEFAULT_LOG_TOPICS[3]}&limit=100&order=asc`,
+          `&topic2=${DEFAULT_LOG_TOPICS[2]}&topic3=${DEFAULT_LOG_TOPICS[3]}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
       )
       .reply(200, filteredLogs);
     for (const log of filteredLogs.logs) {
@@ -542,7 +545,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
           `?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}` +
           `&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}` +
           `&topic0=${DEFAULT_LOG_TOPICS_1[0]}` +
-          `&topic1=${DEFAULT_LOG_TOPICS_1[1]}&limit=100&order=asc`,
+          `&topic1=${DEFAULT_LOG_TOPICS_1[1]}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
       )
       .reply(200, filteredLogs);
     for (const log of filteredLogs.logs) {
@@ -571,7 +574,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
           `?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}` +
           `&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}` +
           `&topic0=${DEFAULT_LOG_TOPICS[0]}&topic1=${DEFAULT_LOG_TOPICS[1]}` +
-          `&topic2=${DEFAULT_LOG_TOPICS[2]}&topic3=${DEFAULT_LOG_TOPICS[3]}&limit=100&order=asc`,
+          `&topic2=${DEFAULT_LOG_TOPICS[2]}&topic3=${DEFAULT_LOG_TOPICS[3]}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
       )
       .reply(200, filteredLogs);
     for (const log of filteredLogs.logs) {

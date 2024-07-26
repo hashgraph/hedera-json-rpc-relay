@@ -49,6 +49,7 @@ import {
   DEFAULT_NETWORK_FEES,
   LINKS_NEXT_RES,
   NO_SUCH_BLOCK_EXISTS_RES,
+  MIRROR_NODE_LIMIT_PARAM,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 
@@ -223,12 +224,12 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, randomBlock);
     restMock
       .onGet(
-        `contracts/results?timestamp=gte:${randomBlock.timestamp.from}&timestamp=lte:${randomBlock.timestamp.to}&limit=100&order=asc`,
+        `contracts/results?timestamp=gte:${randomBlock.timestamp.from}&timestamp=lte:${randomBlock.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
       )
       .reply(200, []);
     restMock
       .onGet(
-        `contracts/results/logs?timestamp=gte:${randomBlock.timestamp.from}&timestamp=lte:${randomBlock.timestamp.to}&limit=100&order=asc`,
+        `contracts/results/logs?timestamp=gte:${randomBlock.timestamp.from}&timestamp=lte:${randomBlock.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
       )
       .reply(200, { logs: [] });
 
@@ -263,7 +264,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, randomBlock);
     restMock
       .onGet(
-        `contracts/results?timestamp=gte:${randomBlock.timestamp.from}&timestamp=lte:${randomBlock.timestamp.to}&limit=100&order=asc`,
+        `contracts/results?timestamp=gte:${randomBlock.timestamp.from}&timestamp=lte:${randomBlock.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
       )
       .abortRequestOnce();
     await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(), ethImpl.getBlockByHash, false, ethImpl, [

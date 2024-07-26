@@ -27,13 +27,14 @@ import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import MockAdapter from 'axios-mock-adapter';
 import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import { EthImpl } from '../../../src/lib/eth';
+import { MIRROR_NODE_LIMIT_PARAM } from './eth-config';
 
 export function contractResultsByNumberByIndexURL(number: number, index: number): string {
-  return `contracts/results?block.number=${number}&transaction.index=${index}&limit=100&order=asc`;
+  return `contracts/results?block.number=${number}&transaction.index=${index}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`;
 }
 
 export function contractResultsByHashByIndexURL(hash: string, index: number): string {
-  return `contracts/results?block.hash=${hash}&transaction.index=${index}&limit=100&order=asc`;
+  return `contracts/results?block.hash=${hash}&transaction.index=${index}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`;
 }
 
 export function balancesByAccountIdByTimestampURL(id: string, timestamp?: string): string {
