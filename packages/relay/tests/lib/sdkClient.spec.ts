@@ -91,7 +91,7 @@ describe('SdkClient', async function () {
 
     client = client.setOperator(
       AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
-      PrivateKey.fromStringDer(process.env.OPERATOR_KEY_MAIN!),
+      Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;

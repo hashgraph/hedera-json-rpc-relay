@@ -20,6 +20,10 @@
 import { defaultEvmAddress, defaultLogs1, defaultLogs2, defaultLogs3, mockData, toHex } from '../../helpers';
 import { numberTo0x } from '../../../dist/formatters';
 import constants from '../../../src/lib/constants';
+import dotenv from 'dotenv';
+import { resolve } from 'path';
+
+dotenv.config({ path: resolve(__dirname, '../../test.env'), override: true });
 
 export const BLOCK_TRANSACTION_COUNT = 77;
 export const GAS_USED_1 = 200000;
@@ -37,10 +41,9 @@ export const BLOCK_HASH_3 = `${BLOCK_HASH_TRIMMED}999fc7e86699f60f2a3fb3ed9a646c
 export const RECEIVER_ADDRESS = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
 export const WRONG_CONTRACT_ADDRESS = '0x00000000000000000000000000000000055e';
 export const LATEST_BLOCK_QUERY = 'blocks?limit=1&order=desc';
-export const CONTRACT_QUERY =
-  'contracts/results?timestamp=gte:1713966020.010306294&timestamp=lte:1713966021.974483904&limit=100&order=asc';
-export const LOG_QUERY =
-  'contracts/results/logs?timestamp=gte:1713966020.010306294&timestamp=lte:1713966021.974483904&limit=100&order=asc';
+export const MIRROR_NODE_LIMIT_PARAM = parseInt(process.env.MIRROR_NODE_LIMIT_PARAM || '100');
+export const CONTRACT_QUERY = `contracts/results?timestamp=gte:1713966020.010306294&timestamp=lte:1713966021.974483904&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`;
+export const LOG_QUERY = `contracts/results/logs?timestamp=gte:1713966020.010306294&timestamp=lte:1713966021.974483904&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`;
 
 export const DEFAULT_BLOCK = {
   count: BLOCK_TRANSACTION_COUNT,
@@ -671,11 +674,11 @@ export const DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED = {
 };
 
 // URLS:
-export const CONTRACT_RESULTS_WITH_FILTER_URL = `contracts/results?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=100&order=asc`;
-export const CONTRACTS_LOGS_WITH_FILTER = `contracts/${CONTRACT_ADDRESS_1}/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=100&order=asc`;
-export const CONTRACT_RESULTS_LOGS_WITH_FILTER_URL = `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=100&order=asc`;
+export const CONTRACT_RESULTS_WITH_FILTER_URL = `contracts/results?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`;
+export const CONTRACTS_LOGS_WITH_FILTER = `contracts/${CONTRACT_ADDRESS_1}/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`;
+export const CONTRACT_RESULTS_LOGS_WITH_FILTER_URL = `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`;
 export const BLOCKS_LIMIT_ORDER_URL = 'blocks?limit=1&order=desc';
-export const CONTRACTS_RESULTS_NEXT_URL = `contracts/results?timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&limit=100&order=asc`; // just flip the timestamp parameters for simplicity
+export const CONTRACTS_RESULTS_NEXT_URL = `contracts/results?timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`; // just flip the timestamp parameters for simplicity
 
 //responce objects
 export const MOCK_BLOCK_NUMBER_1000_RES = {
