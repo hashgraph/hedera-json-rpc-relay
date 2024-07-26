@@ -21,11 +21,18 @@
 import { assert, expect } from 'chai';
 import { Utils } from '../helpers/utils';
 import ServicesClient from '../clients/servicesClient';
-import { ContractFunctionParameters } from '@hashgraph/sdk';
+import {
+  AccountId,
+  AccountInfoQuery,
+  ContractFunctionParameters,
+  EvmAddress,
+  Hbar,
+  TransferTransaction,
+} from '@hashgraph/sdk';
 import EstimatePrecompileContractJson from '../contracts/EstimatePrecompileContract.json';
 import Constants from '../helpers/constants';
 import EquivalenceContractJson from '../contracts/EquivalenceContract.json';
-import { ethers, toUtf8Bytes } from 'ethers';
+import { ethers, toUtf8Bytes, Transaction } from 'ethers';
 import { Precheck } from '../../../relay/src/lib/precheck';
 import pino from 'pino';
 import { MirrorNodeClient } from '../../../relay/src/lib/clients';
@@ -104,7 +111,8 @@ describe('Equivalence tests', async function () {
   const ADDRESS_0_0_359 = '0.0.359';
   const ADDRESS_0_0_360 = '0.0.360';
   const ADDRESS_0_0_361 = '0.0.361';
-  const ADDRESS_0_0_362 = '0.0.362';
+  const ADDRESS_0_0_362 = '0.0.362'; // (Hedera Account Service)
+  const ADDRESS_0_0_363 = '0.0.363';
   const ADDRESS_0_0_556 = '0.0.556';
   const ADDRESS_0_0_750 = '0.0.750';
   const ADDRESS_0_0_751 = '0.0.751';
@@ -137,7 +145,7 @@ describe('Equivalence tests', async function () {
   };
 
   const validateContractActions = (contractAction, callType: CallTypes, outcome: Outcomes, message?: string) => {
-    const txLookup = `\nCheck transaction record by timestamp:'${contractAction.timestamp}'`;
+    const txLookup = `\nTransaction timestamp:'${contractAction.timestamp}'\n`;
     expect(contractAction.call_operation_type).to.equal(
       callType.toUpperCase(),
       `Internal call type was not as expected`,
@@ -320,6 +328,10 @@ describe('Equivalence tests', async function () {
             functionName = `make${callType}`;
             break;
           }
+          case CallTypes.CallCode: {
+            functionName = isWithAmount ? 'callCodeToContractWithAmount' : 'callCodeToContractWithoutAmount';
+            break;
+          }
         }
       }
     }
@@ -358,6 +370,15 @@ describe('Equivalence tests', async function () {
     return await mirrorNode.get(`/contracts/${entityId}/results/${txTimestamp}`);
   }
 
+  async function isAccountCreated(address) {
+    const response = await fetch(`${mirrorNode.client.getUri()}/accounts?account.id=${address}`, {
+      method: 'GET',
+      headers: {},
+    });
+    const data = await response.json();
+    return data?.accounts[0]?.account === address;
+  }
+
   /**
    * Returns a list of ContractActions for a contract's function executions for a given transactionId or ethereum transaction hash.
    * @param transactionIdOrHash Transaction Id or a 32 byte hash with optional 0x prefix
@@ -384,23 +405,65 @@ describe('Equivalence tests', async function () {
     return tokenAddress;
   }
 
-  it('direct CALL to ethereum precompile 0x1 should succeed', async function () {
-    const { contractExecuteTimestamp } = await servicesClient.executeContractCall(
-      ADDRESS_0_0_1,
-      NON_EXISTING_FUNCTION,
-      EMPTY_FUNCTION_PARAMS,
-      Constants.GAS_AS_NUMBER.LIMIT_500_000,
-    );
-
-    const record = await getResultByEntityIdAndTxTimestamp(ADDRESS_0_0_1, contractExecuteTimestamp);
-    validateContractCall(record, ADDRESS_0_0_1, SUCCESS, STATUS_SUCCESS);
-
-    const contractActions = await getContractActions(record.hash);
-    validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output);
+  [
+    ADDRESS_0_0_0,
+    ADDRESS_0_0_1,
+    ADDRESS_0_0_2,
+    ADDRESS_0_0_3,
+    ADDRESS_0_0_4,
+    ADDRESS_0_0_5,
+    ADDRESS_0_0_6,
+    ADDRESS_0_0_7,
+    ADDRESS_0_0_8,
+    ADDRESS_0_0_9,
+    ADDRESS_0_0_10,
+  ].forEach((address) => {
+    it(`direct CALL to address ${address} with amount should fail with INVALID_FEE_SUBMITTED`, async function () {
+      let contractCallResult;
+      try {
+        contractCallResult = await servicesClient.executeContractCallWithAmount(
+          address,
+          NON_EXISTING_FUNCTION,
+          EMPTY_FUNCTION_PARAMS,
+          Constants.GAS_AS_NUMBER.LIMIT_500_000,
+          Constants.AMOUNT.AMOUNT_10,
+        );
+      } catch (e) {
+        const contractActions = await getContractActions(getTransactionIdFromException(e));
+        if (contractActions.actions.length > 0) {
+          validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Error, INVALID_FEE_SUBMITTED);
+        } else {
+          expect(e.status.toString()).to.equal(
+            INVALID_FEE_SUBMITTED,
+            `Direct CALL to address ${address} did not fail with expected reason`,
+          );
+        }
+        return;
+      }
+      const record = await getResultByEntityIdAndTxTimestamp(address, contractCallResult.contractExecuteTimestamp);
+      const contractActions = await getContractActions(record.hash);
+      validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Error, INVALID_FEE_SUBMITTED);
+    });
   });
 
-  // Address 0.0.362 currently skipped because of ongoing issue being investigated
-  [/*ADDRESS_0_0_362,*/ ADDRESS_0_0_556, ADDRESS_0_0_750].forEach((address) => {
+  [ADDRESS_0_0_0, ADDRESS_0_0_1, ADDRESS_0_0_2, ADDRESS_0_0_3, ADDRESS_0_0_4].forEach((address) => {
+    it(`direct CALL to address ${address} without amount should succeed with noop`, async function () {
+      const { contractExecuteTimestamp } = await servicesClient.executeContractCall(
+        address,
+        NON_EXISTING_FUNCTION,
+        EMPTY_FUNCTION_PARAMS,
+        Constants.GAS_AS_NUMBER.LIMIT_500_000,
+      );
+
+      const record = await getResultByEntityIdAndTxTimestamp(address, contractExecuteTimestamp);
+      validateContractCall(record, address, SUCCESS, STATUS_SUCCESS);
+
+      const contractActions = await getContractActions(record.hash);
+      validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output);
+    });
+  });
+
+  [ADDRESS_0_0_363, ADDRESS_0_0_556, ADDRESS_0_0_750].forEach((address) => {
     it(`direct CALL to ethereum precompile ${address} without amount should succeed with noop`, async function () {
       let contractCallResult;
       try {
@@ -421,8 +484,7 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  // Address 0.0.362 currently skipped because of ongoing issue being investigated
-  [/*ADDRESS_0_0_362,*/ ADDRESS_0_0_556, ADDRESS_0_0_750].forEach((address) => {
+  [ADDRESS_0_0_363, ADDRESS_0_0_556, ADDRESS_0_0_750].forEach((address) => {
     it(`direct CALL to ethereum precompile ${address} with amount should fail with INVALID_FEE_SUBMITTED`, async function () {
       let contractCallResult;
       try {
@@ -465,9 +527,15 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  // Address range [0.0.751-0.0.799] currently skipped because of ongoing issue being investigated
-  [/*ADDRESS_0_0_751, ADDRESS_0_0_799,*/ ADDRESS_0_0_800, ADDRESS_0_0_1000].forEach((address) => {
+  [ADDRESS_0_0_751, ADDRESS_0_0_799, ADDRESS_0_0_800, ADDRESS_0_0_1000].forEach((address) => {
     it(`direct CALL to address ${address} with amount should succeed`, async function () {
+      /* calls with value must not be executed for accounts in range 0.0.751 to 0.0.799 if they don't exist on the environment
+      https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/docs/system-accounts-operations.md */
+      const addressNum = parseInt(address.split('.')[2], 10);
+      if (addressNum > 750 && addressNum < 800 && !(await isAccountCreated(address))) {
+        this.skip();
+      }
+
       let contractCallResult;
       try {
         contractCallResult = await servicesClient.executeContractCallWithAmount(
@@ -583,51 +651,70 @@ describe('Equivalence tests', async function () {
     validateContractCall(record, ETH_PRECOMPILE_0x1001, SUCCESS, CONTRACT_EXECUTION_EXCEPTION);
   });
 
-  // Skipped as test is not ready
-  it.skip('should execute direct call to address over 1000 with amount - case hollow acconut', async function () {
+  it.skip('direct call to hollow account with amount should be successful', async function () {
     const hollowAccount = ethers.Wallet.createRandom();
-    // convert evm address to hedera address
-    const hollowAcAddress = hollowAccount.address.toString();
-    let contractCallResult;
+    const hollowAcAddress = hollowAccount.address;
 
-    try {
-      contractCallResult = await servicesClient.executeContractCallWithAmount(
-        hollowAcAddress,
-        NON_EXISTING_FUNCTION,
-        EMPTY_FUNCTION_PARAMS,
-        Constants.GAS_AS_NUMBER.LIMIT_1_000_000,
-        Constants.AMOUNT.AMOUNT_100,
-      );
-    } catch (e) {
-      const contractActions = await getContractActions(getTransactionIdFromException(e));
-      assert.fail(`${e.message}\ncontact actions:\n${JSON.stringify(contractActions, null, 2)}`);
+    const tx = await accounts[0].wallet.sendTransaction({
+      to: hollowAcAddress,
+      value: ethers.parseEther('1'),
+    });
+
+    if (tx.to === null) {
+      assert.fail(`Hollow account creation was not successful.\nTransaction response:\n${JSON.stringify(tx, null, 2)}`);
     }
+    const hollowAccountQuery = new AccountInfoQuery().setAccountId(tx.to);
+    const hollowAccountInfo = await servicesClient.executeQuery(hollowAccountQuery);
 
-    const record = await getResultByEntityIdAndTxTimestamp(
-      ETH_PRECOMPILE_0x1001,
-      contractCallResult.contractExecuteTimestamp,
+    expect(hollowAccountInfo.key._toProtobufKey().keyList.keys.length).to.equal(
+      0,
+      `Account ${tx.to} has a public key, therefore it is not a hollow account`,
     );
-    validateContractCall(record, ETH_PRECOMPILE_0x1001, SUCCESS, CONTRACT_EXECUTION_EXCEPTION);
+    const contractActions = await getContractActions(tx.hash);
+    validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, Constants.EMPTY_HEX);
+  });
+
+  it('direct call to hollow account with amount should be successful', async function () {
+    const hollowAccount = ethers.Wallet.createRandom();
+    const hollowAcAddress = hollowAccount.address;
+
+    let initialBalance = 100;
+    const aliasCreationResponse = await servicesClient.executeTransaction(
+      new TransferTransaction()
+        .addHbarTransfer(servicesClient._thisAccountId(), new Hbar(initialBalance).negated())
+        .addHbarTransfer(AccountId.fromEvmAddress(0, 0, hollowAcAddress), new Hbar(initialBalance))
+        .setTransactionMemo('Relay test crypto transfer'),
+      Utils.generateRequestId(),
+    );
+
+    await aliasCreationResponse?.getRecord(servicesClient.client);
+    const hollowAccountQuery = new AccountInfoQuery().setAccountId(hollowAcAddress);
+    const hollowAccountInfo = await servicesClient.executeQuery(hollowAccountQuery);
+
+    expect(hollowAccountInfo.key._toProtobufKey().keyList.keys.length).to.equal(
+      0,
+      `Created account ${hollowAcAddress} has a public key, therefore it is not a hollow account`,
+    );
   });
 
   const basicInternalCallTests = [
     {
       // Equivalence 014, 040, 052
-      callTypes: [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall],
+      callTypes: [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall, CallTypes.CallCode],
       addresses: [ADDRESS_0_0_0],
       amount: Constants.AMOUNT.AMOUNT_0,
       outcome: Outcomes.Output,
       message: Constants.EMPTY_HEX,
     },
     {
-      callTypes: [CallTypes.Call],
+      callTypes: [CallTypes.Call, CallTypes.CallCode],
       addresses: [ADDRESS_0_0_0],
       amount: Constants.AMOUNT.AMOUNT_100,
       outcome: Outcomes.Error,
       message: INVALID_FEE_SUBMITTED,
     },
     {
-      callTypes: [CallTypes.Call],
+      callTypes: [CallTypes.Call, CallTypes.CallCode],
       addresses: [
         ADDRESS_0_0_1,
         ADDRESS_0_0_2,
@@ -644,7 +731,7 @@ describe('Equivalence tests', async function () {
       message: INVALID_FEE_SUBMITTED,
     },
     {
-      callTypes: [CallTypes.Call],
+      callTypes: [CallTypes.Call, CallTypes.CallCode],
       addresses: [ADDRESS_0_0_10, ADDRESS_0_0_100, ADDRESS_0_0_358],
       amount: Constants.AMOUNT.AMOUNT_100,
       outcome: Outcomes.Error,
@@ -652,32 +739,29 @@ describe('Equivalence tests', async function () {
     },
     {
       // Address 0.0.10 currently skipped because of ongoing issue being investigated
-      callTypes: [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall],
-      addresses: [/*ADDRESS_0_0_10,*/ ADDRESS_0_0_100, ADDRESS_0_0_358],
+      callTypes: [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall, CallTypes.CallCode],
+      addresses: [ADDRESS_0_0_10, ADDRESS_0_0_100, ADDRESS_0_0_358],
       amount: Constants.AMOUNT.AMOUNT_0,
       outcome: Outcomes.Output,
       message: Constants.EMPTY_HEX,
     },
     {
-      // Address 0.0.362 currently skipped because of ongoing issue being investigated
-      callTypes: [CallTypes.Call],
-      addresses: [/*ADDRESS_0_0_362,*/ ADDRESS_0_0_556, ADDRESS_0_0_750],
+      callTypes: [CallTypes.Call, CallTypes.CallCode],
+      addresses: [ADDRESS_0_0_363, ADDRESS_0_0_556, ADDRESS_0_0_750],
       amount: Constants.AMOUNT.AMOUNT_100,
       outcome: Outcomes.Error,
       message: INVALID_FEE_SUBMITTED,
     },
     {
-      // Address range [0.0.751-0.0.799] currently skipped because of ongoing issue being investigated
-      callTypes: [CallTypes.Call],
-      addresses: [/*ADDRESS_0_0_751, ADDRESS_0_0_799,*/ ADDRESS_0_0_800, ADDRESS_0_0_1000],
+      callTypes: [CallTypes.Call, CallTypes.CallCode],
+      addresses: [ADDRESS_0_0_751, ADDRESS_0_0_799, ADDRESS_0_0_800, ADDRESS_0_0_1000],
       amount: Constants.AMOUNT.AMOUNT_100,
       outcome: Outcomes.Output,
       message: '',
     },
     {
-      // Address 0.0.362 currently skipped because of ongoing issue being investigated
-      callTypes: [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall],
-      addresses: [/*ADDRESS_0_0_362,*/ ADDRESS_0_0_750, ADDRESS_0_0_751, ADDRESS_0_0_1000],
+      callTypes: [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall, CallTypes.CallCode],
+      addresses: [ADDRESS_0_0_363, ADDRESS_0_0_750, ADDRESS_0_0_751, ADDRESS_0_0_1000],
       amount: Constants.AMOUNT.AMOUNT_0,
       outcome: Outcomes.Output,
       message: Constants.EMPTY_HEX,
@@ -694,6 +778,13 @@ describe('Equivalence tests', async function () {
           address,
           test.message,
         )} when called through an intermediary contract`, async function () {
+          /* calls with value must not be executed for accounts in range 0.0.751 to 0.0.799 if they don't exist on the environment
+          https://github.com/hashgraph/hedera-services/blob/develop/hedera-node/docs/system-accounts-operations.md */
+          const addressNum = parseInt(address.split('.')[2], 10);
+          if (test.amount > 0 && addressNum > 750 && addressNum < 800 && !(await isAccountCreated(address))) {
+            this.skip();
+          }
+
           let contractCallResult;
           try {
             contractCallResult = await servicesClient.executeContractCallWithAmount(
@@ -722,7 +813,7 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall].forEach((callType) => {
+  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall, CallTypes.CallCode].forEach((callType) => {
     it(`internal ${callType.toUpperCase()} to address 0.0.1 without amount with knowh hash and signature should execute the ecrecover precompile through the intermediary contract.`, async function () {
       const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_1);
       const messageSignerAddress = '05fba803be258049a27b820088bab1cad2058871';
@@ -746,8 +837,8 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall].forEach((callType) => {
-    it(`internal ${callType.toUpperCase()} to address 0.0.2 without amount with knowh hash and signature should execute the SHA-256 precompile through the intermediary contract.`, async function () {
+  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall, CallTypes.CallCode].forEach((callType) => {
+    it(`internal ${callType.toUpperCase()} to address 0.0.2 (SHA-256 precompile) without amount with knowh hash and signature should execute the SHA-256 precompile through the intermediary contract.`, async function () {
       const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_2);
       const message = 'Encode me!';
       const hashedMessage = '0x68907fbd785a694c3617d35a6ce49477ac5704d75f0e727e353da7bc664aacc2';
@@ -769,7 +860,7 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall].forEach((callType) => {
+  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall, CallTypes.CallCode].forEach((callType) => {
     it(`internal ${callType.toUpperCase()} to address 0.0.3 without amount with knowh hash and signature should execute the RIPEMD-160 precompile through the intermediary contract.`, async function () {
       const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_3);
       const message = 'Encode me!';
@@ -792,7 +883,7 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall].forEach((callType) => {
+  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall, CallTypes.CallCode].forEach((callType) => {
     it(`internal ${callType.toUpperCase()} to address 0.0.4 without amount with knowh hash and signature should execute the identity precompile through the intermediary contract.`, async function () {
       const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_4);
       const message = 'Encode me!';
@@ -810,14 +901,14 @@ describe('Equivalence tests', async function () {
       const childRecord = contractActions.actions[1];
 
       validateContractActions(childRecord, callType, Outcomes.Output);
-      expect(decodeResultData(childRecord.result_data)).to.equal(
+      expect(decodeResultData(childRecord.result_data)).to.include(
         message,
         `Decoded 'result_data' from child record is not encoded message:'${message}'`,
       );
     });
   });
 
-  // Addresses 0.0.359 and 0.0.361 currently skipped because of ongoing issue being investigated
+  // enable addresses 359 and 361 after https://github.com/hashgraph/hedera-services/issues/13397 is resolved
   [/*ADDRESS_0_0_359,*/ ADDRESS_0_0_360 /*ADDRESS_0_0_361*/].forEach((address) => {
     it(`internal CALL to address ${address} with amount ${getTestSummaryOutcome(
       Outcomes.Error,
@@ -850,7 +941,7 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  // Address 0.0.359 currently skipped because of ongoing issue being investigated
+  // enable address 359 after https://github.com/hashgraph/hedera-services/issues/13397 is resolved
   [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall].forEach((callType) => {
     [/*ADDRESS_0_0_359,*/ ADDRESS_0_0_360, ADDRESS_0_0_361].forEach((address) => {
       it(`internal ${callType.toUpperCase()} to address ${address} without amount ${getTestSummaryOutcome(
