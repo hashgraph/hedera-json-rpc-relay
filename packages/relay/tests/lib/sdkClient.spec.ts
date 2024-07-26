@@ -2446,11 +2446,11 @@ describe('SdkClient', async function () {
       expect(transactionRecordStub.called).to.be.true;
     });
 
-    it('should execute FileInfoQuery (without paymentTransactionId) and NOT add expenses to limiter', async () => {
+    it('should execute FileInfoQuery (without paymentTransactionId) and add expenses to limiter', async () => {
       const queryStub = sinon.stub(Query.prototype, 'execute').resolves(fileInfo);
       const queryCostStub = sinon.stub(Query.prototype, 'getCost');
 
-      hbarLimitMock.expects('addExpense').never();
+      hbarLimitMock.expects('addExpense').once();
 
       const result = await sdkClient.executeQuery(
         new FileInfoQuery().setFileId(fileId).setQueryPayment(Hbar.fromTinybars(defaultTransactionFee)),
