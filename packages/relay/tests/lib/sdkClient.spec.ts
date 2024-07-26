@@ -40,7 +40,6 @@ import {
   FileId,
   FileInfoQuery,
   Hbar,
-  PrivateKey,
   Query,
   Status,
   TransactionId,
