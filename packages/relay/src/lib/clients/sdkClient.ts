@@ -502,11 +502,13 @@ export class SDKClient {
     transaction: Transaction,
     callerName: string,
     interactingEntity: string,
-    requestId?: string,
+    requestId: string,
   ): Promise<TransactionResponse> {
     const transactionType = transaction.constructor.name;
-    const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
+    let gasUsed: number = 0;
+    let transactionFee: number = 0;
+    let transactionResponse: TransactionResponse | null = null;
     try {
       // check hbar limit before executing transaction
       if (this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName)) {
@@ -514,27 +516,23 @@ export class SDKClient {
       }
 
       // execute transaction
-      this.logger.info(`${requestIdPrefix} Execute ${transactionType} transaction`);
-      const transactionResponse = await transaction.execute(this.clientMain);
+      this.logger.info(`${requestId} Execute ${transactionType} transaction`);
+      transactionResponse = await transaction.execute(this.clientMain);
 
       // retrieve and capture transaction fee in metrics and rate limiter class
-      await this.executeGetTransactionRecord(
-        transactionResponse,
-        callerName,
-        interactingEntity,
-        transaction.constructor.name,
-        requestId,
-      );
+      const getRecordResult = await this.executeGetTransactionRecord(transactionResponse, callerName, requestId);
+      gasUsed = getRecordResult.gasUsed;
+      transactionFee = getRecordResult.transactionFee;
 
       this.logger.info(
-        `${requestIdPrefix} ${transactionResponse.transactionId} ${callerName} ${transactionType} status: ${Status.Success} (${Status.Success._code})`,
+        `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
       return transactionResponse;
     } catch (e: any) {
+      // declare main error
       const sdkClientError = new SDKClientError(e, e.message);
-      let transactionFee: number | Hbar = 0;
 
-      // if valid network error utilize transaction id
+      // if valid network error utilize transaction id to get transactionFee and gasUsed for metrics
       if (sdkClientError.isValidNetworkError()) {
         try {
           const transactionRecord = await new TransactionRecordQuery()
@@ -542,62 +540,77 @@ export class SDKClient {
             .setNodeAccountIds(transaction.nodeAccountIds!)
             .setValidateReceiptStatus(false)
             .execute(this.clientMain);
-          transactionFee = transactionRecord.transactionFee;
 
-          this.captureMetrics(
-            SDKClient.transactionMode,
-            transactionType,
-            sdkClientError.status,
-            transactionFee.toTinybars().toNumber(),
-            transactionRecord?.contractFunctionResult?.gasUsed,
-            callerName,
-            interactingEntity,
-          );
-
-          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+          // extract gas and txFee
+          transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+          gasUsed = transactionRecord.contractFunctionResult
+            ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
+            : 0;
         } catch (err: any) {
           const recordQueryError = new SDKClientError(err, err.message);
           this.logger.error(
             recordQueryError,
-            `${requestIdPrefix} Error raised during TransactionRecordQuery for ${transaction.transactionId}`,
+            `${requestId} Error raised during TransactionRecordQuery for ${transaction.transactionId}`,
           );
         }
       }
 
-      this.logger.trace(
-        `${requestIdPrefix} ${transaction.transactionId} ${callerName} ${transactionType} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+      // log and throw
+      this.logger.debug(
+        `${requestId} Fail to execute ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
-      if (e instanceof JsonRpcError) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+
+      // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler(). Otherwise, move on and return transactionResponse eventually.
+      if (e.status && e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
+        throw sdkClientError;
+      } else {
+        if (!transactionResponse) {
+          throw predefined.INTERNAL_ERROR(
+            `${requestId} Transaction execution returns a null value for transaction ${transaction.transactionId}`,
+          );
+        }
+        return transactionResponse;
       }
-      throw sdkClientError;
+    } finally {
+      /**
+       * @note Capturing the charged transaction fees at the end of the flow ensures these fees are eventually
+       *       captured in the metrics and rate limiter class, even if SDK transactions fail at any point.
+       */
+      if (transactionFee !== 0) {
+        this.logger.trace(
+          `${requestId} Capturing HBAR charged transaction fee: transactionId=${transaction.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
+        );
+        this.hbarLimiter.addExpense(transactionFee, currentDateNow);
+        this.captureMetrics(
+          SDKClient.transactionMode,
+          transactionType,
+          Status.Success,
+          transactionFee,
+          gasUsed,
+          callerName,
+          interactingEntity,
+        );
+      }
     }
   }
 
-  async executeGetTransactionRecord(
-    transactionResponse: TransactionResponse,
-    callerName: string,
-    interactingEntity: string,
-    txConstructorName: string,
-    requestId?: string,
-  ) {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
+  async executeGetTransactionRecord(transactionResponse: TransactionResponse, callerName: string, requestId: string) {
     const currentDateNow = Date.now();
     let gasUsed: any = 0;
     let transactionFee: number = 0;
     const transactionId: string = transactionResponse.transactionId.toString();
 
+    const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName);
+    if (shouldLimit) {
+      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+    }
+
     try {
       if (!transactionResponse.getRecord) {
         throw new SDKClientError(
           {},
-          `${requestIdPrefix} Invalid response format, expected record availability: ${JSON.stringify(
-            transactionResponse,
-          )}`,
+          `${requestId} Invalid response format, expected record availability: ${JSON.stringify(transactionResponse)}`,
         );
-      }
-      if (this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName)) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
 
       // get transactionRecord
@@ -610,53 +623,18 @@ export class SDKClient {
        *        with some portions paid by tx.from, not the operator.
        */
       transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
-      gasUsed = transactionRecord?.contractFunctionResult?.gasUsed.toNumber();
-    } catch (e: any) {
-      try {
-        // get transactionFee and gasUsed for metrics
-        // Only utilize SDK query when .getRecord throws an error. This can limit the number of calls to the SDK.
-        const transactionRecord = await new TransactionRecordQuery()
-          .setTransactionId(transactionId)
-          .setNodeAccountIds([transactionResponse.nodeId])
-          .setValidateReceiptStatus(false)
-          .execute(this.clientMain);
-        transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
-        gasUsed = transactionRecord?.contractFunctionResult?.gasUsed.toNumber();
-      } catch (err: any) {
-        const recordQueryError = new SDKClientError(err, err.message);
-        this.logger.error(
-          recordQueryError,
-          `${requestIdPrefix} Error raised during TransactionRecordQuery for ${transactionId}`,
-        );
-      }
+      gasUsed = transactionRecord.contractFunctionResult
+        ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
+        : 0;
 
+      return { transactionFee, gasUsed };
+    } catch (e: any) {
       // log error from getRecord
       const sdkClientError = new SDKClientError(e, e.message);
       this.logger.debug(
-        `${requestIdPrefix} ${transactionId} ${callerName} record status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
+        `${requestId} Error raised during transactionResponse.getRecord: transactionId=${transactionId} callerName=${callerName} recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
       );
-
-      // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler(). Otherwise, move on and return transactionResponse eventually.
-      if (e.status && e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) throw sdkClientError;
-    } finally {
-      /**
-       * @note Retrieving and capturing the charged transaction fees at the end of the flow
-       *       ensures these fees are eventually captured in the metrics and rate limiter class,
-       *       even if SDK transactions fail at any point.
-       */
-      this.logger.trace(
-        `${requestId} Capturing HBAR charged transaction fee: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
-      );
-      this.hbarLimiter.addExpense(transactionFee, currentDateNow);
-      this.captureMetrics(
-        SDKClient.transactionMode,
-        txConstructorName,
-        Status.Success,
-        transactionFee,
-        gasUsed,
-        callerName,
-        interactingEntity,
-      );
+      throw sdkClientError;
     }
   }
 
