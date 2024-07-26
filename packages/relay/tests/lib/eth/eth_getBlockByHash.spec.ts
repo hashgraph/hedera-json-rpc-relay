@@ -19,6 +19,8 @@
  */
 import path from 'path';
 import dotenv from 'dotenv';
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -53,7 +55,6 @@ import {
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub;

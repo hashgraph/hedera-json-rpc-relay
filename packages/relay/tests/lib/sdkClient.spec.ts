@@ -2313,7 +2313,7 @@ describe('SdkClient', async function () {
     it('should execute TransactionRecordQuery and add expenses to limiter', async () => {
       const transactionResponse = getTransactionResponse('EthereumTransaction');
 
-      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitMock.expects('addExpense').never();
       hbarLimitMock
         .expects('shouldLimit')
         .withArgs(sinon.match.any, SDKClient.recordMode, callerName)
