@@ -429,8 +429,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           ],
           requestId,
         );
-        //resetting mirror node limit to 100
-        process.env['MIRROR_NODE_LIMIT_PARAM'] = '100';
         expect(logs.length).to.be.greaterThan(2);
       });
 
