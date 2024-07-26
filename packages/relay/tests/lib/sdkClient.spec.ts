@@ -2303,6 +2303,7 @@ describe('SdkClient', async function () {
         new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
         callerName,
         interactingEntity,
+        requestId,
       );
 
       expect(response).to.eq(transactionResponse);
@@ -2319,12 +2320,7 @@ describe('SdkClient', async function () {
         .once()
         .returns(false);
 
-      await sdkClient.executeGetTransactionRecord(
-        transactionResponse,
-        callerName,
-        interactingEntity,
-        'EthereumTransaction',
-      );
+      await sdkClient.executeGetTransactionRecord(transactionResponse, callerName, requestId);
     });
   });
 });
