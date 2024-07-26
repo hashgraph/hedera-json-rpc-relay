@@ -2395,7 +2395,6 @@ export class EthImpl implements Eth {
         EthImpl.ethGetBlockByHash,
         this.syntheticLogCacheTtl,
         requestIdPrefix,
-        true,
       );
     }
   }

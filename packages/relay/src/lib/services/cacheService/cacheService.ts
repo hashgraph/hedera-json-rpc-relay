@@ -209,9 +209,8 @@ export class CacheService {
     callingMethod: string,
     ttl?: number,
     requestIdPrefix?: string,
-    shared: boolean = false,
   ): Promise<void> {
-    if (shared && this.isSharedCacheEnabled) {
+    if (this.isSharedCacheEnabled) {
       try {
         this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.SET).inc(1);
 
@@ -245,9 +244,8 @@ export class CacheService {
     callingMethod: string,
     ttl?: number,
     requestIdPrefix?: string,
-    shared: boolean = true,
   ): Promise<void> {
-    if (shared && this.isSharedCacheEnabled) {
+    if (this.isSharedCacheEnabled) {
       const metricsMethod = this.shouldMultiSet ? CacheService.methods.MSET : CacheService.methods.PIPELINE;
       try {
         if (this.shouldMultiSet) {
@@ -282,13 +280,8 @@ export class CacheService {
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
    */
-  public async delete(
-    key: string,
-    callingMethod: string,
-    requestIdPrefix?: string,
-    shared: boolean = false,
-  ): Promise<void> {
-    if (shared && this.isSharedCacheEnabled) {
+  public async delete(key: string, callingMethod: string, requestIdPrefix?: string): Promise<void> {
+    if (this.isSharedCacheEnabled) {
       try {
         this.cacheMethodsCounter
           .labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.DELETE)
@@ -314,8 +307,8 @@ export class CacheService {
    * Else the internal cache clearing is attempted.
    * @param {boolean} shared - Whether to clear the shared cache (optional, default: false).
    */
-  public async clear(requestIdPrefix?: string, shared: boolean = false): Promise<void> {
-    if (shared && this.isSharedCacheEnabled) {
+  public async clear(requestIdPrefix?: string): Promise<void> {
+    if (this.isSharedCacheEnabled) {
       try {
         await this.sharedCache.clear();
       } catch (error) {

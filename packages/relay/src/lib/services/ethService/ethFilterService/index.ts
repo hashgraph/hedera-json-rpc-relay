@@ -91,7 +91,6 @@ export class FilterService implements IFilterService {
       this.ethNewFilter,
       constants.FILTER.TTL,
       requestIdPrefix,
-      true,
     );
     this.logger.trace(`${requestIdPrefix} created filter with TYPE=${type}, params: ${params}`);
     return filterId;
@@ -172,7 +171,7 @@ export class FilterService implements IFilterService {
     const filter = await this.cacheService.getAsync(cacheKey, this.ethUninstallFilter, requestIdPrefix);
 
     if (filter) {
-      await this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix, true);
+      await this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix);
       return true;
     }
 
@@ -265,7 +264,6 @@ export class FilterService implements IFilterService {
       this.ethGetFilterChanges,
       constants.FILTER.TTL,
       requestIdPrefix,
-      true,
     );
 
     return result;
