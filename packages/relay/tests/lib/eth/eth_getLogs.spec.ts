@@ -225,11 +225,12 @@ describe('@ethGetLogs using MirrorNode', async function () {
     unfilteredLogs.logs.forEach((log, index) => {
       restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
     });
-    //setting mirror node limit to 2 for this test only
+    // setting mirror node limit to 2 for this test only
+    const PREV_MIRROR_NODE_LIMIT_PARAM = process.env.MIRROR_NODE_LIMIT_PARAM;
     process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
     const result = await ethImpl.getLogs(null, null, null, null, null);
-    //resetting mirror node limit to 100
-    process.env['MIRROR_NODE_LIMIT_PARAM'] = '100';
+    // resetting mirror node limit
+    process.env['MIRROR_NODE_LIMIT_PARAM'] = PREV_MIRROR_NODE_LIMIT_PARAM;
     expect(result).to.exist;
 
     expect(result.length).to.eq(4);

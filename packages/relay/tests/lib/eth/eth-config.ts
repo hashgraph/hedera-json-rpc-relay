@@ -20,10 +20,6 @@
 import { defaultEvmAddress, defaultLogs1, defaultLogs2, defaultLogs3, mockData, toHex } from '../../helpers';
 import { numberTo0x } from '../../../dist/formatters';
 import constants from '../../../src/lib/constants';
-import dotenv from 'dotenv';
-import { resolve } from 'path';
-
-dotenv.config({ path: resolve(__dirname, '../../test.env'), override: true });
 
 export const BLOCK_TRANSACTION_COUNT = 77;
 export const GAS_USED_1 = 200000;
