@@ -408,6 +408,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
+        //for the purpose of the test, we are settings limit to 2, and fetching all.
+        //setting mirror node limit to 2 for this test only
+        process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
         // calculate blocks behind latest, so we can fetch logs from the past.
         // if current block is less than 10, we will fetch logs from the beginning otherwise we will fetch logs from 10 blocks behind latest
         const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
@@ -415,10 +418,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         if (currentBlock > 10) {
           blocksBehindLatest = currentBlock - 10;
         }
-        // for the purpose of the test, we are settings limit to 2, and fetching all.
-        // setting mirror node limit to 2 for this test only
-        const PREV_MIRROR_NODE_LIMIT_PARAM = process.env.MIRROR_NODE_LIMIT_PARAM;
-        process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
@@ -430,8 +429,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           ],
           requestId,
         );
-        // resetting mirror node limit
-        process.env['MIRROR_NODE_LIMIT_PARAM'] = PREV_MIRROR_NODE_LIMIT_PARAM;
         expect(logs.length).to.be.greaterThan(2);
       });
 

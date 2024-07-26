@@ -105,14 +105,14 @@ describe('MirrorNodeClient', async function () {
 
   it('Can extract the account number out of an account pagination next link url', async () => {
     const accountId = '0.0.123';
-    const url = `/api/v1/accounts/${accountId}?limit=${MIRROR_NODE_LIMIT_PARAM}&timestamp=lt:1682455406.562695326`;
+    const url = `/api/v1/accounts/${accountId}?limit=100&timestamp=lt:1682455406.562695326`;
     const extractedAccountId = mirrorNodeInstance.extractAccountIdFromUrl(url);
     expect(extractedAccountId).to.eq(accountId);
   });
 
   it('Can extract the evm address out of an account pagination next link url', async () => {
     const evmAddress = '0x583031d1113ad414f02576bd6afa5bbdf935b7d9';
-    const url = `/api/v1/accounts/${evmAddress}?limit=${MIRROR_NODE_LIMIT_PARAM}&timestamp=lt:1682455406.562695326`;
+    const url = `/api/v1/accounts/${evmAddress}?limit=100&timestamp=lt:1682455406.562695326`;
     const extractedEvmAddress = mirrorNodeInstance.extractAccountIdFromUrl(url);
     expect(extractedEvmAddress).to.eq(evmAddress);
   });
@@ -135,14 +135,14 @@ describe('MirrorNodeClient', async function () {
 
   it('Can extract the account number out of an account pagination next link url', async () => {
     const accountId = '0.0.123';
-    const url = `/api/v1/accounts/${accountId}?limit=${MIRROR_NODE_LIMIT_PARAM}&timestamp=lt:1682455406.562695326`;
+    const url = `/api/v1/accounts/${accountId}?limit=100&timestamp=lt:1682455406.562695326`;
     const extractedAccountId = mirrorNodeInstance.extractAccountIdFromUrl(url);
     expect(extractedAccountId).to.eq(accountId);
   });
 
   it('Can extract the evm address out of an account pagination next link url', async () => {
     const evmAddress = '0x583031d1113ad414f02576bd6afa5bbdf935b7d9';
-    const url = `/api/v1/accounts/${evmAddress}?limit=${MIRROR_NODE_LIMIT_PARAM}&timestamp=lt:1682455406.562695326`;
+    const url = `/api/v1/accounts/${evmAddress}?limit=100&timestamp=lt:1682455406.562695326`;
     const extractedEvmAddress = mirrorNodeInstance.extractAccountIdFromUrl(url);
     expect(extractedEvmAddress).to.eq(evmAddress);
   });
