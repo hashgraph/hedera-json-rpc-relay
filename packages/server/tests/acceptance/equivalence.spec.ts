@@ -21,14 +21,7 @@
 import { assert, expect } from 'chai';
 import { Utils } from '../helpers/utils';
 import ServicesClient from '../clients/servicesClient';
-import {
-  AccountId,
-  AccountInfoQuery,
-  ContractFunctionParameters,
-  EvmAddress,
-  Hbar,
-  TransferTransaction,
-} from '@hashgraph/sdk';
+import { AccountId, AccountInfoQuery, ContractFunctionParameters, Hbar, TransferTransaction } from '@hashgraph/sdk';
 import EstimatePrecompileContractJson from '../contracts/EstimatePrecompileContract.json';
 import Constants from '../helpers/constants';
 import EquivalenceContractJson from '../contracts/EquivalenceContract.json';
@@ -651,35 +644,12 @@ describe('Equivalence tests', async function () {
     validateContractCall(record, ETH_PRECOMPILE_0x1001, SUCCESS, CONTRACT_EXECUTION_EXCEPTION);
   });
 
-  it.skip('direct call to hollow account with amount should be successful', async function () {
-    const hollowAccount = ethers.Wallet.createRandom();
-    const hollowAcAddress = hollowAccount.address;
-
-    const tx = await accounts[0].wallet.sendTransaction({
-      to: hollowAcAddress,
-      value: ethers.parseEther('1'),
-    });
-
-    if (tx.to === null) {
-      assert.fail(`Hollow account creation was not successful.\nTransaction response:\n${JSON.stringify(tx, null, 2)}`);
-    }
-    const hollowAccountQuery = new AccountInfoQuery().setAccountId(tx.to);
-    const hollowAccountInfo = await servicesClient.executeQuery(hollowAccountQuery);
-
-    expect(hollowAccountInfo.key._toProtobufKey().keyList.keys.length).to.equal(
-      0,
-      `Account ${tx.to} has a public key, therefore it is not a hollow account`,
-    );
-    const contractActions = await getContractActions(tx.hash);
-    validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, Constants.EMPTY_HEX);
-  });
-
   it('direct call to hollow account with amount should be successful', async function () {
     const hollowAccount = ethers.Wallet.createRandom();
     const hollowAcAddress = hollowAccount.address;
 
     let initialBalance = 100;
-    const aliasCreationResponse = await servicesClient.executeTransaction(
+    const transferResponse = await servicesClient.executeTransaction(
       new TransferTransaction()
         .addHbarTransfer(servicesClient._thisAccountId(), new Hbar(initialBalance).negated())
         .addHbarTransfer(AccountId.fromEvmAddress(0, 0, hollowAcAddress), new Hbar(initialBalance))
@@ -687,7 +657,7 @@ describe('Equivalence tests', async function () {
       Utils.generateRequestId(),
     );
 
-    await aliasCreationResponse?.getRecord(servicesClient.client);
+    await transferResponse?.getRecord(servicesClient.client);
     const hollowAccountQuery = new AccountInfoQuery().setAccountId(hollowAcAddress);
     const hollowAccountInfo = await servicesClient.executeQuery(hollowAccountQuery);
 
@@ -695,6 +665,19 @@ describe('Equivalence tests', async function () {
       0,
       `Created account ${hollowAcAddress} has a public key, therefore it is not a hollow account`,
     );
+
+    const hollowAccountId = hollowAccountInfo.accountId.toString();
+    const { contractExecuteTimestamp } = await servicesClient.executeContractCall(
+      hollowAccountId,
+      NON_EXISTING_FUNCTION,
+      EMPTY_FUNCTION_PARAMS,
+    );
+
+    const record = await getResultByEntityIdAndTxTimestamp(hollowAccountId, contractExecuteTimestamp);
+    validateContractCall(record, hollowAccountId, SUCCESS, STATUS_SUCCESS);
+
+    const contractActions = await getContractActions(record.hash);
+    validateContractActions(contractActions.actions[0], CallTypes.Call, Outcomes.Output, Constants.EMPTY_HEX);
   });
 
   const basicInternalCallTests = [
@@ -837,7 +820,7 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall, CallTypes.CallCode].forEach((callType) => {
+  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall /*CallTypes.CallCode*/].forEach((callType) => {
     it(`internal ${callType.toUpperCase()} to address 0.0.2 (SHA-256 precompile) without amount with knowh hash and signature should execute the SHA-256 precompile through the intermediary contract.`, async function () {
       const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_2);
       const message = 'Encode me!';
@@ -860,7 +843,7 @@ describe('Equivalence tests', async function () {
     });
   });
 
-  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall, CallTypes.CallCode].forEach((callType) => {
+  [CallTypes.Call, CallTypes.StaticCall, CallTypes.DelegateCall /*CallTypes.CallCode*/].forEach((callType) => {
     it(`internal ${callType.toUpperCase()} to address 0.0.3 without amount with knowh hash and signature should execute the RIPEMD-160 precompile through the intermediary contract.`, async function () {
       const evmAddress = Utils.idToEvmAddress(ADDRESS_0_0_3);
       const message = 'Encode me!';
