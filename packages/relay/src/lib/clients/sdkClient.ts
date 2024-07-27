@@ -273,7 +273,11 @@ export class SDKClient {
           this.logger.trace(
             `${requestIdPrefix} The total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size.: numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, callDataSize=${ethereumTransactionData.callData.length}`,
           );
-          throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
+          throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED(
+            this.hbarLimiter.getRemainingBudget(),
+            totalPreemtiveTransactionFee,
+            this.hbarLimiter.getResetTime(),
+          );
         }
       }
 
@@ -417,9 +421,12 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
     try {
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.queryMode, callerName);
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.queryMode, callerName, requestId);
       if (shouldLimit) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED(
+          this.hbarLimiter.getRemainingBudget(),
+          this.hbarLimiter.getResetTime(),
+        );
       }
 
       let resp, cost;
@@ -428,7 +435,7 @@ export class SDKClient {
         const res = await this.increaseCostAndRetryExecution(query, baseCost, client, 3, 0, requestId);
         resp = res.resp;
         cost = res.cost.toTinybars().toNumber();
-        this.hbarLimiter.addExpense(cost, currentDateNow);
+        this.hbarLimiter.addExpense(cost, currentDateNow, requestId);
       } else {
         resp = await query.execute(client);
         cost = query._queryPayment?.toTinybars().toNumber();
@@ -463,7 +470,7 @@ export class SDKClient {
         `${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${query._queryPayment}`,
       );
       if (cost) {
-        this.hbarLimiter.addExpense(cost, currentDateNow);
+        this.hbarLimiter.addExpense(cost, currentDateNow, requestId);
       }
 
       if (e instanceof PrecheckStatusError && e.contractFunctionResult?.errorMessage) {
@@ -471,7 +478,10 @@ export class SDKClient {
       }
 
       if (e instanceof JsonRpcError) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED(
+          this.hbarLimiter.getRemainingBudget(),
+          this.hbarLimiter.getResetTime(),
+        );
       }
 
       if (sdkClientError.isGrpcTimeout()) {
@@ -494,8 +504,12 @@ export class SDKClient {
     let transactionResponse: TransactionResponse | null = null;
     try {
       // check hbar limit before executing transaction
-      if (this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName)) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName, requestId);
+      if (shouldLimit) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED(
+          this.hbarLimiter.getRemainingBudget(),
+          this.hbarLimiter.getResetTime(),
+        );
       }
 
       // execute transaction
@@ -512,6 +526,10 @@ export class SDKClient {
       );
       return transactionResponse;
     } catch (e: any) {
+      if (e.code === predefined.HBAR_RATE_LIMIT_EXCEEDED().code) {
+        throw e;
+      }
+
       // declare main error
       const sdkClientError = new SDKClientError(e, e.message);
 
@@ -563,7 +581,7 @@ export class SDKClient {
         this.logger.trace(
           `${requestId} Capturing HBAR charged transaction fee: transactionId=${transaction.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
         );
-        this.hbarLimiter.addExpense(transactionFee, currentDateNow);
+        this.hbarLimiter.addExpense(transactionFee, currentDateNow, requestId);
         this.captureMetrics(
           SDKClient.transactionMode,
           transactionType,
@@ -583,9 +601,9 @@ export class SDKClient {
     let transactionFee: number = 0;
     const transactionId: string = transactionResponse.transactionId.toString();
 
-    const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName);
+    const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName, requestId);
     if (shouldLimit) {
-      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      throw predefined.HBAR_RATE_LIMIT_EXCEEDED(this.hbarLimiter.getRemainingBudget(), this.hbarLimiter.getResetTime());
     }
 
     try {
@@ -654,9 +672,17 @@ export class SDKClient {
     let fileCreateTx, fileAppendTx;
 
     try {
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+      const shouldLimit = this.hbarLimiter.shouldLimit(
+        currentDateNow,
+        SDKClient.transactionMode,
+        callerName,
+        requestId,
+      );
       if (shouldLimit) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED(
+          this.hbarLimiter.getRemainingBudget(),
+          this.hbarLimiter.getResetTime(),
+        );
       }
 
       fileCreateTx = await new FileCreateTransaction()
@@ -669,7 +695,7 @@ export class SDKClient {
       // get transaction fee and add expense to limiter
       const createFileRecord = await fileCreateTxResponse.getRecord(this.clientMain);
       let transactionFee = createFileRecord.transactionFee as Hbar;
-      this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+      this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow, requestId);
 
       this.captureMetrics(
         SDKClient.transactionMode,
@@ -703,7 +729,7 @@ export class SDKClient {
             callerName,
             interactingEntity,
           );
-          this.hbarLimiter.addExpense(tinybarsCost, currentDateNow);
+          this.hbarLimiter.addExpense(tinybarsCost, currentDateNow, requestId);
         }
       }
 
@@ -731,7 +757,7 @@ export class SDKClient {
             .setValidateReceiptStatus(false)
             .execute(this.clientMain);
           transactionFee = transactionCreateRecord.transactionFee;
-          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow, requestId);
 
           this.captureMetrics(
             SDKClient.transactionMode,
@@ -754,7 +780,7 @@ export class SDKClient {
               .setValidateReceiptStatus(false)
               .execute(this.clientMain);
             transactionFee = transactionAppendRecord.transactionFee;
-            this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
+            this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow, requestId);
 
             this.captureMetrics(
               SDKClient.transactionMode,
@@ -782,7 +808,10 @@ export class SDKClient {
       this.logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_EXCEEDED cost: ${transactionFee}`);
 
       if (error instanceof JsonRpcError) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED(
+          this.hbarLimiter.getRemainingBudget(),
+          this.hbarLimiter.getResetTime(),
+        );
       }
       throw sdkClientError;
     }
@@ -814,7 +843,7 @@ export class SDKClient {
       const deleteFileRecord = await fileDeleteTxResponse.getRecord(this.clientMain);
 
       // capture transactionFee in metrics and HBAR limiter class
-      this.hbarLimiter.addExpense(deleteFileRecord.transactionFee.toTinybars().toNumber(), currentDateNow);
+      this.hbarLimiter.addExpense(deleteFileRecord.transactionFee.toTinybars().toNumber(), currentDateNow, requestId);
       this.captureMetrics(
         SDKClient.transactionMode,
         fileDeleteTx.constructor.name,

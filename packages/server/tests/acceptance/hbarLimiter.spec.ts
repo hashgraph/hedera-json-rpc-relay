@@ -164,6 +164,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       it('Should preemtively check the rate limit before submitting EthereumTransaction', async function () {
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        const rateLimitErrorMessage =
+          'The HBAR rate limit was preemptively exceeded due to an excessively large callData size';
 
         process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'true';
         process.env.HOT_FIX_FILE_APPEND_FEE = (remainingHbarsBefore - 100000000).toString();
@@ -178,7 +180,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
           expect(true).to.be.false;
         } catch (e) {
-          expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED.message);
+          expect(e.message).to.contain(rateLimitErrorMessage);
         }
 
         delete process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
@@ -186,6 +188,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        const rateLimitErrorMessage = 'HBAR Rate limit exceeded';
         expect(remainingHbarsBefore).to.be.gt(0);
         try {
           for (let i = 0; i < 50; i++) {
@@ -193,7 +196,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           }
           expect.fail(`Expected an error but nothing was thrown`);
         } catch (e: any) {
-          expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+          expect(e.message).to.contain(rateLimitErrorMessage);
         }
 
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));

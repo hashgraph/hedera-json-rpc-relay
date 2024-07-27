@@ -54,14 +54,16 @@ export const predefined = {
       code: -32009,
       message: `Gas price '${gasPrice}' is below configured minimum gas price '${minGasPrice}'`,
     }),
-  HBAR_RATE_LIMIT_EXCEEDED: new JsonRpcError({
-    code: -32606,
-    message: 'HBAR Rate limit exceeded',
-  }),
-  HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED: new JsonRpcError({
-    code: -32606,
-    message: 'The HBAR rate limit was preemptively exceeded due to an excessively large callData size.',
-  }),
+  HBAR_RATE_LIMIT_EXCEEDED: (remainingBudget?, resetTimeStamp?) =>
+    new JsonRpcError({
+      code: -32606,
+      message: `HBAR Rate limit exceeded: remainingBudget=${remainingBudget}, resetTimeStamp=${resetTimeStamp}`,
+    }),
+  HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED: (remainingBudget?, expense?, resetTimeStamp?) =>
+    new JsonRpcError({
+      code: -32606,
+      message: `The HBAR rate limit was preemptively exceeded due to an excessively large callData size: remainingBudget=${remainingBudget}, expense=${expense}, resetTimeStamp=${resetTimeStamp}`,
+    }),
   INSUFFICIENT_ACCOUNT_BALANCE: new JsonRpcError({
     code: -32000,
     message: 'Insufficient funds for transfer',
