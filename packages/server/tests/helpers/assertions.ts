@@ -466,9 +466,9 @@ export default class Assertions {
    * @param tolerance
    */
   static expectWithinTolerance(expected: number, actual: number, tolerance: number) {
-    global.logger.trace(`Expected: ${expected} ±${tolerance}`);
-    global.logger.trace(`Actual: ${expected}`);
-    expect(expected).to.be.gte(actual * (1 - tolerance));
-    expect(expected).to.be.lte(actual * (1 + tolerance));
+    global.logger.trace(`Expected: ${expected} ±${tolerance}%`);
+    global.logger.trace(`Actual: ${actual}`);
+    const delta = tolerance * expected;
+    expect(actual).to.be.approximately(expected, delta);
   }
 }

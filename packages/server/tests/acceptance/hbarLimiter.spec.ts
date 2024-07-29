@@ -170,20 +170,12 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
         const TOLERANCE = 0.01;
-
         await new Promise((r) => setTimeout(r, 3000));
         const operatorAccount = process.env.OPERATOR_ID_MAIN;
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsBefore).to.be.gt(0);
         const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance.balance;
-
-        const largeContract = await Utils.deployContract(
-          largeContractJson.abi,
-          largeContractJson.bytecode,
-          accounts[0].wallet,
-        );
-        await largeContract.waitForDeployment();
-        expect(largeContract.target).to.not.be.null;
+        const largeContract = await deployContract(largeContractJson, accounts[0].wallet);
 
         const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance.balance;
 
@@ -203,7 +195,13 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             requestId,
           )
         ).transactions;
-        expect(fileAppendTxs.length).to.eq(6);
+
+        const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+
+        // The first chunk goes in with FileCreateTransaciton, the rest are FileAppendTransactions
+        const expectedChunks = Math.ceil(largeContract.deploymentTransaction().data.length / fileAppendChunkSize) - 1;
+        expect(fileAppendTxs.length).to.eq(expectedChunks);
+
         const ethereumTransaction = (
           await mirrorNode.get(
             `/transactions?transactiontype=ETHEREUMTRANSACTION&order=desc&account.id=${operatorAccount}&limit=1`,
@@ -223,8 +221,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         const hbarLimitReducedAmount = remainingHbarsBefore - remainingHbarsAfter;
 
         expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
-        Assertions.expectWithinTolerance(hbarLimitReducedAmount, amountPaidByOperator, TOLERANCE);
-        Assertions.expectWithinTolerance(totalOperatorFees, amountPaidByOperator, TOLERANCE);
+        Assertions.expectWithinTolerance(amountPaidByOperator, hbarLimitReducedAmount, TOLERANCE);
+        Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
       });
 
       it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {

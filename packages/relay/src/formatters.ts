@@ -290,7 +290,7 @@ const isHex = (value: string): boolean => {
 
 // Returns the sum of all transfer amounts for the specified account. The amount is negative if the account is charged,
 // it is positive if the account is receiving it, thus the amount is first negated and then added to the sum.
-const getTransferAmountSumForAccount = (transactionRecord, accountId: undefined | string): number => {
+const getTransferAmountSumForAccount = (transactionRecord, accountId: string): number => {
   return transactionRecord.transfers
     .filter((transfer) => transfer.accountId.toString() === accountId)
     .reduce((acc, transfer) => {

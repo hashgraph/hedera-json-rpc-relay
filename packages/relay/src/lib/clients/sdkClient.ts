@@ -587,7 +587,7 @@ export class SDKClient {
       const transactionRecord: TransactionRecord = await transactionResponse.getRecord(this.clientMain);
 
       // get transactionFee and gasUsed for metrics
-      transactionFee = getTransferAmountSumForAccount(transactionRecord, this.clientMain.operatorAccountId?.toString());
+      transactionFee = getTransferAmountSumForAccount(transactionRecord, this.clientMain.operatorAccountId!.toString());
       gasUsed = transactionRecord?.contractFunctionResult?.gasUsed.toNumber();
     } catch (e: any) {
       try {
@@ -600,7 +600,7 @@ export class SDKClient {
           .execute(this.clientMain);
         transactionFee = getTransferAmountSumForAccount(
           transactionRecord,
-          this.clientMain.operatorAccountId?.toString(),
+          this.clientMain.operatorAccountId!.toString(),
         );
         gasUsed = transactionRecord?.contractFunctionResult?.gasUsed.toNumber();
       } catch (err: any) {
