@@ -168,6 +168,28 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
+      it('Should preemtively check the rate limit before submitting EthereumTransaction', async function () {
+        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+
+        process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'true';
+        process.env.HOT_FIX_FILE_APPEND_FEE = (remainingHbarsBefore - 100000000).toString();
+
+        try {
+          const largeContract = await Utils.deployContract(
+            largeContractJson.abi,
+            largeContractJson.bytecode,
+            accounts[0].wallet,
+          );
+          await largeContract.waitForDeployment();
+
+          expect(true).to.be.false;
+        } catch (e) {
+          expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED.message);
+        }
+
+        delete process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
+      });
+
       it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
         const TOLERANCE = 0.01;
         await new Promise((r) => setTimeout(r, 3000));
@@ -227,10 +249,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        let lastRemainingHbars = remainingHbarsBefore;
         expect(remainingHbarsBefore).to.be.gt(0);
         try {
-          for (let i = 0; i < 50; i++) {
+          for (let i = 0; i < 100; i++) {
             await deployContract(largeContractJson, accounts[0].wallet);
+            const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+            expect(remainingHbars).to.be.lt(lastRemainingHbars);
+            lastRemainingHbars = remainingHbars;
           }
           expect.fail(`Expected an error but nothing was thrown`);
         } catch (e: any) {
