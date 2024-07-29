@@ -36,7 +36,7 @@ export const TYPES = {
   },
   blockParams: {
     test: (param: any) => {
-      if (Object.prototype.toString.call(param) === '[object Object]') {
+      if (typeof param === 'object') {
         if (param.hasOwnProperty('blockHash')) {
           return new Validator.BlockHashObject(param).validate();
         }
@@ -51,7 +51,7 @@ export const TYPES = {
   },
   filter: {
     test: (param: any) => {
-      if (Object.prototype.toString.call(param) === '[object Object]') {
+      if (typeof param === 'object') {
         return new Validator.FilterObject(param).validate();
       }
 
@@ -75,7 +75,7 @@ export const TYPES = {
   },
   transaction: {
     test: (param: any) => {
-      if (Object.prototype.toString.call(param) === '[object Object]') {
+      if (typeof param === 'object') {
         return new Validator.TransactionObject(param).validate();
       }
 
