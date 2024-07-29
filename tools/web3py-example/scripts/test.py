@@ -23,8 +23,13 @@ from web3 import Web3
 from solcx import install_solc, compile_files
 
 def setup_environment():
-    # install latest solc
-    install_solc(version='latest')
+    """
+    Returns:
+    - w3: Initialized Web3 instance
+    - acc: Web3 account object
+    """
+    # install solc
+    install_solc(version='0.8.24')
 
     # load values from our .env file
     load_dotenv()
@@ -41,11 +46,27 @@ def setup_environment():
 
 
 def get_balance(w3, acc):
+    """
+    Args:
+    - w3: Initialized Web3 instance
+    - acc: Web3 account object
+
+    Returns:
+    - Account balance in wei
+    """
     balance = w3.eth.get_balance(acc.address)
     return balance
 
 
 def deploy_contract(w3, acc):
+    """
+    Args:
+    - w3: Initialized Web3 instance
+    - acc: Web3 account object
+
+    Returns:
+    - tuple: (Deployed contract instance, Contract address)
+    """
     # compile our Greeter contract
     compiled_sol = compile_files(['contract/Greeter.sol'], output_values=['abi', 'bin'])
 
@@ -81,11 +102,27 @@ def deploy_contract(w3, acc):
 
 
 def contract_view_call(greeter):
+    """
+    Args:
+    - greeter: Deployed Greeter contract instance
+
+    Returns:
+    - Current greeting message
+    """
     greeting = greeter.functions.greet().call()
     return greeting
 
 
 def contract_call(w3, acc, greeter):
+    """
+    Args:
+    - w3: Initialized Web3 instance
+    - acc: Web3 account object
+    - greeter: Deployed Greeter contract instance
+
+    Returns:
+    - Updated greeting message
+    """
     # build contract call transaction
     unsent_call_tx_hash = greeter.functions.setGreeting('Hello2').build_transaction({
         "from": acc.address,

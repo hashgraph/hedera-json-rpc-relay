@@ -2,14 +2,7 @@
 Example scripts for basic operations
 
 ### How to start
-1. **Install Solidity Compiler (`solc`)**:
-    - Install `solc` by following the instructions in the [Solidity documentation](https://docs.soliditylang.org/en/latest/installing-solidity.html).
-    - On Ubuntu, you can run:
-      ```sh
-      sudo apt install solc
-      ```
-
-2. **Set up a clean environment (with virtual env)**
+1. **Set up a clean environment (with virtual env)**
 
 ```bash
 # Install pip if it is not available:
@@ -45,9 +38,9 @@ Remember that each new terminal session requires you to reactivate your virtuale
 $ source ~/.venv-py3/bin/activate
 ```
 
-3. **Create and complete `.env` file from `.env.example`**
+2. **Create and complete `.env` file from `.env.example`**
 
-4. **Run script**
+3. **Run script**
 ```bash
 python scripts/test.py
 ```
