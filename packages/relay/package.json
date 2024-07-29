@@ -69,7 +69,7 @@
     "rlp": "^3.0.0"
   },
   "nyc": {
-    "check-coverage": false,
+    "check-coverage": true,
     "reporter": [
       "html",
       "lcov",
