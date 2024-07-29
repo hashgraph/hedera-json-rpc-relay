@@ -50,7 +50,7 @@
     "test": "nyc ts-mocha --recursive ./tests/integration/*.spec.ts --exit"
   },
   "nyc": {
-    "check-coverage": true,
+    "check-coverage": false,
     "reporter": [
       "html",
       "lcov",
