@@ -552,6 +552,12 @@ export const DEFAULT_LOGS_3 = [
   },
 ];
 export const DEFAULT_LOGS_LIST = defaultLogs1.concat(defaultLogs2).concat(defaultLogs3);
+export const EMPTY_LOGS_RESPONSE = {
+  logs: [],
+  links: {
+    next: null,
+  },
+};
 export const DEFAULT_LOGS = {
   logs: DEFAULT_LOGS_LIST,
 };
