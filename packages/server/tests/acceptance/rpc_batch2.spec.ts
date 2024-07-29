@@ -973,13 +973,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
-      const transactionResult = await relay.call(
+      const transactionReceipt = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
         [transactionHash],
         requestId,
       );
 
-      const blockNumber = transactionResult.blockNumber;
+      const blockNumber = transactionReceipt.blockNumber;
       const transaction1 = {
         ...transaction,
         nonce: await relay.getAccountNonce(accounts[1].address),
@@ -1019,13 +1019,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
-      const transactionResult = await relay.call(
+      const transactionReceipt = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
         [transactionHash],
         requestId,
       );
 
-      const blockHash = transactionResult.blockHash;
+      const blockHash = transactionReceipt.blockHash;
 
       const transaction1 = {
         ...transaction,
