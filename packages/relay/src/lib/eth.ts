@@ -2012,38 +2012,44 @@ export class EthImpl implements Eth {
       return cachedResponse;
     }
 
-    const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
-    const cachedLog = await this.cacheService.getSharedWithFallback(
-      cacheKeySyntheticLog,
-      EthImpl.ethGetTransactionReceipt,
-      requestIdPrefix,
-    );
+    const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
+    if (receiptResponse === null || receiptResponse.hash === undefined) {
+      // handle synthetic transactions
+      const syntheticLogs = await this.common.getLogsWithParams(
+        null,
+        {
+          'transaction.hash': hash,
+        },
+        requestIdPrefix,
+      );
 
-    if (cachedLog) {
-      const gasPriceForTimestamp = await this.getCurrentGasPriceForBlock(cachedLog.blockHash);
+      // no tx found
+      if (!syntheticLogs.length) {
+        this.logger.trace(`${requestIdPrefix} no receipt for ${hash}`);
+        return null;
+      }
+
+      const gasPriceForTimestamp = await this.getCurrentGasPriceForBlock(syntheticLogs[0].blockHash);
       const receipt: ITransactionReceipt = {
-        blockHash: cachedLog.blockHash,
-        blockNumber: cachedLog.blockNumber,
-        contractAddress: cachedLog.address,
+        blockHash: syntheticLogs[0].blockHash,
+        blockNumber: syntheticLogs[0].blockNumber,
+        contractAddress: syntheticLogs[0].address,
         cumulativeGasUsed: EthImpl.zeroHex,
         effectiveGasPrice: gasPriceForTimestamp,
         from: EthImpl.zeroAddressHex,
         gasUsed: EthImpl.zeroHex,
-        logs: [cachedLog],
+        logs: [syntheticLogs[0]],
         logsBloom: EthImpl.emptyBloom,
         root: EthImpl.zeroHex32Byte,
         status: EthImpl.oneHex,
-        to: cachedLog.address,
-        transactionHash: cachedLog.transactionHash,
-        transactionIndex: cachedLog.transactionIndex,
+        to: syntheticLogs[0].address,
+        transactionHash: syntheticLogs[0].transactionHash,
+        transactionIndex: syntheticLogs[0].transactionIndex,
         type: null, // null from HAPI transactions
       };
 
-      this.logger.debug(
-        `${requestIdPrefix} getTransactionReceipt returned cached synthetic receipt response: ${JSON.stringify(
-          cachedResponse,
-        )}`,
-      );
+      this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
+
       this.cacheService.set(
         cacheKey,
         receipt,
@@ -2051,15 +2057,7 @@ export class EthImpl implements Eth {
         constants.CACHE_TTL.ONE_DAY,
         requestIdPrefix,
       );
-
       return receipt;
-    }
-
-    const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
-    if (receiptResponse === null || receiptResponse.hash === undefined) {
-      this.logger.trace(`${requestIdPrefix} no receipt for ${hash}`);
-      // block not found
-      return null;
     } else {
       const effectiveGas = await this.getCurrentGasPriceForBlock(receiptResponse.blockHash);
       // support stricter go-eth client which requires the transaction hash property on logs
