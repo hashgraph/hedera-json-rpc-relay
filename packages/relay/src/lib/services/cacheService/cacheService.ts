@@ -33,14 +33,14 @@ export class CacheService {
    *
    * @private
    */
-  private readonly internalCache!: ICacheClient;
+  private readonly internalCache: ICacheClient;
 
   /**
    * The Redis cache used for caching items from requests.
    *
    * @private
    */
-  private readonly sharedCache!: ICacheClient;
+  private readonly sharedCache: ICacheClient;
 
   /**
    * The logger used for logging all output from this class.
@@ -77,7 +77,7 @@ export class CacheService {
 
   private static readonly methods = {
     GET: 'get',
-    GET_ASYNC: 'getFromSharedCache',
+    GET_ASYNC: 'getAsync',
     SET: 'set',
     DELETE: 'delete',
     MSET: 'mSet',
@@ -90,13 +90,13 @@ export class CacheService {
     this.logger = logger;
     this.register = register;
 
+    this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
+    this.sharedCache = this.internalCache;
     this.isSharedCacheEnabled = process.env.TEST === 'true' ? false : this.isRedisEnabled();
     this.shouldMultiSet = process.env.MULTI_SET && process.env.MULTI_SET === 'true' ? true : false;
 
     if (this.isSharedCacheEnabled) {
       this.sharedCache = new RedisCache(logger.child({ name: 'redisCache' }), register);
-    } else {
-      this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     }
 
     /**
