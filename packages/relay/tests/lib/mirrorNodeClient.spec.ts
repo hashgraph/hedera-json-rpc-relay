@@ -35,7 +35,6 @@ import { ethers } from 'ethers';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { MIRROR_NODE_LIMIT_PARAM } from './eth/eth-config';
 const logger = pino();
 const noTransactions = '?transactions=false';
 
@@ -342,7 +341,7 @@ describe('MirrorNodeClient', async function () {
   it('`getBlocks` by number', async () => {
     const number = 3;
     mock
-      .onGet(`blocks?block.number=${number}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`)
+      .onGet(`blocks?block.number=${number}&limit=100&order=asc`)
       .reply(200, { blocks: [block], links: { next: null } });
 
     const result = await mirrorNodeInstance.getBlocks(number);
@@ -358,7 +357,7 @@ describe('MirrorNodeClient', async function () {
   it('`getBlocks` by timestamp', async () => {
     const timestamp = '1651560786.960890949';
     mock
-      .onGet(`blocks?timestamp=${timestamp}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`)
+      .onGet(`blocks?timestamp=${timestamp}&limit=100&order=asc`)
       .reply(200, { blocks: [block], links: { next: null } });
 
     const result = await mirrorNodeInstance.getBlocks(undefined, timestamp);
@@ -606,7 +605,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`getContractResults` detailed', async () => {
     mock
-      .onGet(`contracts/results?limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`)
+      .onGet(`contracts/results?limit=100&order=asc`)
       .reply(200, { results: [detailedContractResult], links: { next: null } });
 
     const result = await mirrorNodeInstance.getContractResults();
@@ -636,7 +635,7 @@ describe('MirrorNodeClient', async function () {
   it('`getContractResults` by id', async () => {
     const contractId = '0.0.5001';
     mock
-      .onGet(`contracts/${contractId}/results?limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`)
+      .onGet(`contracts/${contractId}/results?limit=100&order=asc`)
       .reply(200, { results: [contractResult], links: { next: null } });
 
     const result = await mirrorNodeInstance.getContractResultsByAddress(contractId);
@@ -653,7 +652,7 @@ describe('MirrorNodeClient', async function () {
   it('`getContractResults` by address', async () => {
     const address = '0x0000000000000000000000000000000000001f41';
     mock
-      .onGet(`contracts/${address}/results?limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`)
+      .onGet(`contracts/${address}/results?limit=100&order=asc`)
       .reply(200, { results: [contractResult], links: { next: null } });
 
     const result = await mirrorNodeInstance.getContractResultsByAddress(address);
@@ -712,7 +711,7 @@ describe('MirrorNodeClient', async function () {
     timestamp: '1586567700.453054000',
   };
   it('`getContractResultsLogs` ', async () => {
-    mock.onGet(`contracts/results/logs?limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`).reply(200, { logs: [log] });
+    mock.onGet(`contracts/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
 
     const results = await mirrorNodeInstance.getContractResultsLogs();
     expect(results).to.exist;
@@ -724,9 +723,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getContractResultsLogsByAddress` ', async () => {
-    mock
-      .onGet(`contracts/${log.address}/results/logs?limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`)
-      .reply(200, { logs: [log] });
+    mock.onGet(`contracts/${log.address}/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
 
     const results = await mirrorNodeInstance.getContractResultsLogsByAddress(log.address);
     expect(results).to.exist;
@@ -796,9 +793,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getContractResultsLogsByAddress` - incorrect address', async () => {
-    mock
-      .onGet(`contracts/${log.address}/results/logs?limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`)
-      .reply(200, { logs: [log] });
+    mock.onGet(`contracts/${log.address}/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
 
     const incorrectAddress = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed';
     try {

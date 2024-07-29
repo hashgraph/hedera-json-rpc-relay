@@ -32,7 +32,6 @@ import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import * as sinon from 'sinon';
-import { MIRROR_NODE_LIMIT_PARAM } from '../../eth/eth-config';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();
@@ -170,7 +169,7 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
       restMock
         .onGet(
-          `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
+          `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
         )
         .reply(200, defaultLogs1);
       const filterChanges = await filterService.getFilterChanges(filterId);
@@ -392,7 +391,7 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
       restMock
         .onGet(
-          `contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
+          `contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=100&order=asc`,
         )
         .reply(200, filteredLogs);
       cacheMock.stub(cacheService, 'getAsync').returns({
@@ -424,7 +423,7 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet('blocks/3').reply(200, customBlock);
       restMock
         .onGet(
-          `contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
+          `contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=100&order=asc`,
         )
         .reply(200, filteredLogs);
 
@@ -454,7 +453,7 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
       restMock
         .onGet(
-          `contracts/${defaultEvmAddress}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
+          `contracts/${defaultEvmAddress}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
         )
         .reply(200, filteredLogs);
 
@@ -489,7 +488,7 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
       restMock
         .onGet(
-          `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&topic0=${customTopic[0]}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
+          `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&topic0=${customTopic[0]}&limit=100&order=asc`,
         )
         .reply(200, filteredLogs);
       cacheMock.stub(cacheService, 'getAsync').returns({
@@ -614,7 +613,7 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [customBlock] });
       restMock
         .onGet(
-          `contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
+          `contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=100&order=asc`,
         )
         .reply(200, filteredLogs);
       restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
@@ -635,7 +634,7 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
       restMock
         .onGet(
-          `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=${MIRROR_NODE_LIMIT_PARAM}&order=asc`,
+          `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
         )
         .reply(200, []);
       restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
