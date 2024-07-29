@@ -22,34 +22,34 @@ import {
   AccountBalance,
   AccountBalanceQuery,
   AccountId,
+  AccountInfo,
   AccountInfoQuery,
   Client,
   ContractByteCodeQuery,
   ContractCallQuery,
-  ExchangeRates,
-  FeeSchedules,
-  FileContentsQuery,
-  ContractId,
   ContractFunctionResult,
-  TransactionResponse,
-  AccountInfo,
-  HbarUnit,
-  TransactionId,
-  FeeComponents,
-  Query,
-  Transaction,
-  TransactionRecord,
-  Status,
-  FileCreateTransaction,
-  FileAppendTransaction,
-  FileInfoQuery,
+  ContractId,
   EthereumTransaction,
   EthereumTransactionData,
-  PrecheckStatusError,
-  TransactionRecordQuery,
-  Hbar,
-  FileId,
+  ExchangeRates,
+  FeeComponents,
+  FeeSchedules,
+  FileAppendTransaction,
+  FileContentsQuery,
+  FileCreateTransaction,
   FileDeleteTransaction,
+  FileId,
+  FileInfoQuery,
+  Hbar,
+  HbarUnit,
+  PrecheckStatusError,
+  Query,
+  Status,
+  Transaction,
+  TransactionId,
+  TransactionRecord,
+  TransactionRecordQuery,
+  TransactionResponse,
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
@@ -59,6 +59,7 @@ import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
+import { Histogram } from 'prom-client';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -93,13 +94,31 @@ export class SDKClient {
    */
   private readonly cacheService: CacheService;
 
-  private consensusNodeClientHistogramCost;
-  private consensusNodeClientHistogramGasFee;
-  private operatorAccountGauge;
-  private maxChunks;
-  private fileAppendChunkSize;
+  /**
+   * Histogram for capturing the cost of transactions and queries.
+   * @private
+   */
+  private readonly consensusNodeClientHistogramCost: Histogram;
 
-  // populate with consensusnode requests via SDK
+  /**
+   * Histogram for capturing the gas fee of transactions and queries.
+   * @private
+   */
+  private readonly consensusNodeClientHistogramGasFee: Histogram;
+
+  /**
+   * Maximum number of chunks for file append transaction.
+   * @private
+   */
+  private readonly maxChunks: number;
+
+  /**
+   * Size of each chunk for file append transaction.
+   * @private
+   */
+  private readonly fileAppendChunkSize: number;
+
+  // populate with consensus node requests via SDK
   constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, cacheService: CacheService) {
     this.clientMain = clientMain;
 
@@ -112,8 +131,6 @@ export class SDKClient {
     this.logger = logger;
     this.consensusNodeClientHistogramCost = metrics.costHistogram;
     this.consensusNodeClientHistogramGasFee = metrics.gasHistogram;
-    this.operatorAccountGauge = metrics.operatorGauge;
-
     this.hbarLimiter = hbarLimiter;
     this.cacheService = cacheService;
     this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
@@ -407,13 +424,13 @@ export class SDKClient {
     );
   };
 
-  private executeQuery = async (
-    query: Query<any>,
+  async executeQuery<T>(
+    query: Query<T>,
     client: Client,
     callerName: string,
     interactingEntity: string,
     requestId?: string,
-  ) => {
+  ): Promise<T> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
     try {
@@ -479,14 +496,14 @@ export class SDKClient {
       }
       throw sdkClientError;
     }
-  };
+  }
 
-  private executeTransaction = async (
+  async executeTransaction(
     transaction: Transaction,
     callerName: string,
     interactingEntity: string,
     requestId: string,
-  ): Promise<TransactionResponse> => {
+  ): Promise<TransactionResponse> {
     const transactionType = transaction.constructor.name;
     const currentDateNow = Date.now();
     let gasUsed: number = 0;
@@ -575,7 +592,7 @@ export class SDKClient {
         );
       }
     }
-  };
+  }
 
   async executeGetTransactionRecord(transactionResponse: TransactionResponse, callerName: string, requestId: string) {
     const currentDateNow = Date.now();
@@ -641,13 +658,13 @@ export class SDKClient {
     return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
   }
 
-  private createFile = async (
+  async createFile(
     callData: Uint8Array,
     client: Client,
     requestId: string,
     callerName: string,
     interactingEntity: string,
-  ) => {
+  ): Promise<FileId | null> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
     const currentDateNow = Date.now();
@@ -786,7 +803,7 @@ export class SDKClient {
       }
       throw sdkClientError;
     }
-  };
+  }
 
   /**
    * @dev Deletes `fileId` file from the Hedera Network utilizing Hashgraph SDK client
@@ -795,7 +812,7 @@ export class SDKClient {
    * @param callerName
    * @param interactingEntity
    */
-  public deleteFile = async (fileId: FileId, requestId?: string, callerName?: string, interactingEntity?: string) => {
+  async deleteFile(fileId: FileId, requestId: string, callerName: string, interactingEntity: string): Promise<void> {
     // format request ID msg
     const currentDateNow = Date.now();
     const requestIdPrefix = formatRequestIdMessage(requestId);
@@ -837,5 +854,5 @@ export class SDKClient {
     } catch (error: any) {
       this.logger.warn(`${requestIdPrefix} ${error['message']} `);
     }
-  };
+  }
 }
