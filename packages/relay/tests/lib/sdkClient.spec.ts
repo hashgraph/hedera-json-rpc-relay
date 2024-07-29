@@ -2192,8 +2192,11 @@ describe('SdkClient', async function () {
         .resolves(Array.from({ length: fileAppendChunks }, () => getTransactionResponse('FileAppendTransaction')));
 
       hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).thrice();
-      hbarLimitMock.expects('shouldLimit').once().returns(false);
+      hbarLimitMock
+        .expects('addExpense')
+        .withArgs(fileAppendFee * fileAppendChunks)
+        .once();
+      hbarLimitMock.expects('shouldLimit').twice().returns(false);
 
       const response = await sdkClient.createFile(callData, client, requestId, callerName, interactingEntity);
 
@@ -2232,7 +2235,11 @@ describe('SdkClient', async function () {
         .resolves(getTransactionResponse('FileDeleteTransaction'));
 
       hbarLimitMock.expects('addExpense').withArgs(fileDeleteFee).once();
-      hbarLimitMock.expects('shouldLimit').never();
+      hbarLimitMock
+        .expects('shouldLimit')
+        .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
+        .once()
+        .returns(false);
 
       await sdkClient.deleteFile(fileId, requestId, callerName, interactingEntity);
 
@@ -2295,8 +2302,8 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
       hbarLimitMock
         .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.recordMode, callerName)
-        .twice()
+        .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
+        .once()
         .returns(false);
 
       const response = await sdkClient.executeTransaction(
@@ -2310,15 +2317,11 @@ describe('SdkClient', async function () {
       expect(transactionStub.called).to.be.true;
     });
 
-    it('should execute TransactionRecordQuery and add expenses to limiter', async () => {
+    it('should execute TransactionRecordQuery and do not add expenses to limiter', async () => {
       const transactionResponse = getTransactionResponse('EthereumTransaction');
 
       hbarLimitMock.expects('addExpense').never();
-      hbarLimitMock
-        .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.recordMode, callerName)
-        .once()
-        .returns(false);
+      hbarLimitMock.expects('shouldLimit').never();
 
       await sdkClient.executeGetTransactionRecord(transactionResponse, callerName, requestId);
     });

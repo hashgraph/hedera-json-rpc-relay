@@ -525,7 +525,7 @@ export class SDKClient {
     let transactionResponse: TransactionResponse | TransactionResponse[] | null = null;
     try {
       // check hbar limit before executing transaction
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName);
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
       if (shouldLimit) {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
