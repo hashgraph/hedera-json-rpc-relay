@@ -162,6 +162,28 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
       });
 
+      it('Should preemtively check the rate limit before submitting EthereumTransaction', async function () {
+        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+
+        process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'true';
+        process.env.HOT_FIX_FILE_APPEND_FEE = (remainingHbarsBefore - 100000000).toString();
+
+        try {
+          const largeContract = await Utils.deployContract(
+            largeContractJson.abi,
+            largeContractJson.bytecode,
+            accounts[0].wallet,
+          );
+          await largeContract.waitForDeployment();
+
+          expect(true).to.be.false;
+        } catch (e) {
+          expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED.message);
+        }
+
+        delete process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
+      });
+
       it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsBefore).to.be.gt(0);
