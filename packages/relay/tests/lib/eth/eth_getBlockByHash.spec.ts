@@ -19,7 +19,6 @@
  */
 import path from 'path';
 import dotenv from 'dotenv';
-
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';

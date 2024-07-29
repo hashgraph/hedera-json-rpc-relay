@@ -37,7 +37,6 @@ export const BLOCK_HASH_3 = `${BLOCK_HASH_TRIMMED}999fc7e86699f60f2a3fb3ed9a646c
 export const RECEIVER_ADDRESS = '0x5b98Ce3a4D1e1AC55F15Da174D5CeFcc5b8FB994';
 export const WRONG_CONTRACT_ADDRESS = '0x00000000000000000000000000000000055e';
 export const LATEST_BLOCK_QUERY = 'blocks?limit=1&order=desc';
-export const MIRROR_NODE_LIMIT_PARAM = parseInt(process.env.MIRROR_NODE_LIMIT_PARAM || '100');
 export const CONTRACT_QUERY =
   'contracts/results?timestamp=gte:1713966020.010306294&timestamp=lte:1713966021.974483904&limit=100&order=asc';
 export const LOG_QUERY =
