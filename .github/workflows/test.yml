@@ -54,5 +54,6 @@ jobs:
         with:
           check_name: Tests
           check_run_disabled: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           json_thousands_separator: ','
           junit_files: 'test-*.xml'
