@@ -1,9 +1,0 @@
-{
-  "targetDefaults": {
-    "test": {
-      "outputs": [
-        "{projectRoot}/coverage"
-      ]
-    }
-  }
-}
