@@ -50,7 +50,7 @@ jobs:
         run: |
           curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov
           for dir in packages/*; do
-            if [ -f "${dir}/coverage" ]; then
+            if [ -d "${dir}/coverage" ]; then
               echo "Uploading coverage report for ${dir}"
               ./codecov --dir "${dir}" --flags "$(basename "${dir}")" --token "${CODECOV_TOKEN}" --verbose
             else
