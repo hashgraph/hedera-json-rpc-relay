@@ -1,5 +1,7 @@
 # Always comment on PRs
 comment:
+  layout: "diff, flags, files" # delete old and post new
+  behavior: new
   require_changes: false
 
 coverage:
