@@ -46,7 +46,11 @@ jobs:
 
       - name: Upload coverage report
         if: ${{ always() && !cancelled() }}
-        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
+        run: |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov
+          for dir in packages/*; do
+            ./codecov --dir "${dir}" --flags "$(basename "${dir}")" --token "${CODECOV_TOKEN}" --verbose
+          done
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
