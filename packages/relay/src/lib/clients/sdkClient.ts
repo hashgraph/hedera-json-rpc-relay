@@ -602,11 +602,6 @@ export class SDKClient {
       const transactionRecord: TransactionRecord = await transactionResponse.getRecord(this.clientMain);
 
       // get transactionFee and gasUsed for metrics
-      /**
-       * @todo: Determine how to separate the fee charged exclusively by the operator because
-       *        the transactionFee below includes the entire charges of the transaction,
-       *        with some portions paid by tx.from, not the operator.
-       */
       transactionFee = getTransferAmountSumForAccount(transactionRecord, this.clientMain.operatorAccountId!.toString());
       gasUsed = transactionRecord.contractFunctionResult
         ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
