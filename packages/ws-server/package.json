@@ -33,6 +33,7 @@
     "@types/koa-router": "^7.4.4",
     "@types/mocha": "^9.1.0",
     "@types/node": "^17.0.31",
+    "@types/ws": "^8.5.12",
     "axios-retry": "^3.5.1",
     "chai": "^4.3.6",
     "ethers": "^6.7.0",
@@ -60,4 +61,3 @@
     "report-dir": "coverage"
   }
 }
-
