@@ -90,6 +90,17 @@ jobs:
         env:
           TEST_WS_SERVER: ${{ inputs.test_ws_server }}
           SUBSCRIPTIONS_ENABLED: ${{ inputs.test_ws_server }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PR_NUMBER: ${{ github.event.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Upload Heap Snapshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        with:
+          name: Heap Snapshots
+          path: "**/*.heapsnapshot"
+          if-no-files-found: ignore
 
       - name: Upload Test Results
         if: always()
