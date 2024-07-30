@@ -25,6 +25,7 @@
         /* Type Checking */
         "declaration": true,
         "strict": true,
+        "sourceMap": true,
         /* Enable all strict type-checking options. */
         "typeRoots": ["./node_modules/@types", "./src/types"]
     },

@@ -3,6 +3,7 @@
   "devDependencies": {
     "@types/chai-as-promised": "^7.1.5",
     "@types/co-body": "6.1.0",
+    "@types/koa-cors": "^0.0.6",
     "@typescript-eslint/eslint-plugin": "^6.5.0",
     "@typescript-eslint/parser": "^6.5.0",
     "axios-mock-adapter": "^1.20.0",
@@ -68,7 +69,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@hashgraph/hedera-local": "^2.27.0",
+    "@hashgraph/hedera-local": "^2.28.0",
     "@open-rpc/schema-utils-js": "^1.16.1",
     "@types/find-config": "^1.0.4",
     "@types/sinon": "^10.0.20",

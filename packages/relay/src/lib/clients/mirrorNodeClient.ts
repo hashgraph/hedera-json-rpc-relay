@@ -52,6 +52,7 @@ export interface IContractResultsParams {
 }
 
 export interface IContractLogsResultsParams {
+  'transaction.hash': string;
   index?: number;
   timestamp?: string | string[];
   topic0?: string | string[];
@@ -839,6 +840,7 @@ export class MirrorNodeClient {
   ) {
     const queryParamObject = {};
     if (contractLogsResultsParams) {
+      this.setQueryParam(queryParamObject, 'transaction.hash', contractLogsResultsParams['transaction.hash']);
       this.setQueryParam(queryParamObject, 'index', contractLogsResultsParams.index);
       this.setQueryParam(queryParamObject, 'timestamp', contractLogsResultsParams.timestamp);
       this.setQueryParam(queryParamObject, 'topic0', contractLogsResultsParams.topic0);
