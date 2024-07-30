@@ -782,13 +782,13 @@ export class SDKClient {
       .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
 
     // use executeTransaction() to execute fileCreateTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
-    const fileCreateTxResponse = (await this.executeTransaction(
+    const fileCreateTxResponse = await this.executeTransaction(
       fileCreateTx,
       callerName,
       interactingEntity,
       formattedRequestId,
       true,
-    )) as TransactionResponse;
+    );
 
     const { fileId } = await fileCreateTxResponse.getReceipt(client);
 

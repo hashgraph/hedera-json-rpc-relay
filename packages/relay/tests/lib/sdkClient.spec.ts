@@ -2168,8 +2168,8 @@ describe('SdkClient', async function () {
 
       hbarLimitMock.expects('shouldLimit').thrice().returns(false);
       hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).atLeast(fileAppendChunks);
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
 
       await sdkClient.submitEthereumTransaction(transactionBuffer, callerName, requestId);
 
@@ -2192,7 +2192,7 @@ describe('SdkClient', async function () {
         .resolves(Array.from({ length: fileAppendChunks }, () => getTransactionResponse('FileAppendTransaction')));
 
       hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).atLeast(fileAppendChunks);
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
       hbarLimitMock.expects('shouldLimit').twice().returns(false);
 
       const response = await sdkClient.createFile(callData, client, requestId, callerName, interactingEntity);
@@ -2212,7 +2212,7 @@ describe('SdkClient', async function () {
         .resolves(Array.from({ length: fileAppendChunks }, () => getTransactionResponse('FileAppendTransaction')));
 
       hbarLimitMock.expects('shouldLimit').once().returns(false);
-      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).atLeast(fileAppendChunks);
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
 
       await sdkClient.executeAllTransaction(
         new FileAppendTransaction(),
