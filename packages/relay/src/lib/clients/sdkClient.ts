@@ -513,20 +513,22 @@ export class SDKClient {
     interactingEntity: string,
     requestId: string,
   ): Promise<TransactionResponse> {
+    const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
     const currentDateNow = Date.now();
     let gasUsed: number = 0;
     let transactionFee: number = 0;
     let transactionResponse: TransactionResponse | null = null;
-    try {
-      // check hbar limit before executing transaction
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
-      if (shouldLimit) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
 
+    // check hbar limit before executing transaction
+    const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+    if (shouldLimit) {
+      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+    }
+
+    try {
       // execute transaction
-      this.logger.info(`${requestId} Execute ${transactionType} transaction`);
+      this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
       transactionResponse = await transaction.execute(this.clientMain);
 
       // retrieve and capture transaction fee in metrics and rate limiter class
@@ -535,15 +537,10 @@ export class SDKClient {
       transactionFee = getRecordResult.transactionFee;
 
       this.logger.info(
-        `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
+        `${formattedRequestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
       return transactionResponse;
     } catch (e: any) {
-      // throw e right away if it's a rate limit exceeded error
-      if (e === predefined.HBAR_RATE_LIMIT_EXCEEDED) {
-        throw e;
-      }
-
       // declare main error as SDKClientError
       const sdkClientError = new SDKClientError(e, e.message);
 
@@ -566,14 +563,14 @@ export class SDKClient {
           const recordQueryError = new SDKClientError(err, err.message);
           this.logger.error(
             recordQueryError,
-            `${requestId} Error raised during TransactionRecordQuery for ${transaction.transactionId}`,
+            `${formattedRequestId} Error raised during TransactionRecordQuery for ${transaction.transactionId}`,
           );
         }
       }
 
       // log and throw
-      this.logger.debug(
-        `${requestId} Fail to execute ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
+      this.logger.warn(
+        `${formattedRequestId} Fail to execute ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
 
       // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler(). Otherwise, move on and return transactionResponse eventually.
@@ -582,7 +579,7 @@ export class SDKClient {
       } else {
         if (!transactionResponse) {
           throw predefined.INTERNAL_ERROR(
-            `${requestId} Transaction execution returns a null value for transaction ${transaction.transactionId}`,
+            `${formattedRequestId} Transaction execution returns a null value for transaction ${transaction.transactionId}`,
           );
         }
         return transactionResponse;
@@ -594,7 +591,7 @@ export class SDKClient {
        */
       if (transactionFee !== 0) {
         this.logger.trace(
-          `${requestId} Capturing HBAR charged transaction fee: transactionId=${transaction.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
+          `${formattedRequestId} Capturing HBAR charged transaction fee: transactionId=${transaction.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
         );
         this.hbarLimiter.addExpense(transactionFee, currentDateNow);
         this.captureMetrics(
@@ -613,18 +610,21 @@ export class SDKClient {
   async executeGetTransactionRecord(transactionResponse: TransactionResponse, callerName: string, requestId: string) {
     let gasUsed: any = 0;
     let transactionFee: number = 0;
+    const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionId: string = transactionResponse.transactionId.toString();
 
     try {
       if (!transactionResponse.getRecord) {
         throw new SDKClientError(
           {},
-          `${requestId} Invalid response format, expected record availability: ${JSON.stringify(transactionResponse)}`,
+          `${formattedRequestId} Invalid response format, expected record availability: ${JSON.stringify(
+            transactionResponse,
+          )}`,
         );
       }
 
       // get transactionRecord
-      this.logger.trace(`${requestId} Get transaction record: transactionId=${transactionId}`);
+      this.logger.trace(`${formattedRequestId} Get transaction record: transactionId=${transactionId}`);
       const transactionRecord: TransactionRecord = await transactionResponse.getRecord(this.clientMain);
 
       // get transactionFee and gasUsed for metrics
@@ -638,7 +638,7 @@ export class SDKClient {
       // log error from getRecord
       const sdkClientError = new SDKClientError(e, e.message);
       this.logger.debug(
-        `${requestId} Error raised during transactionResponse.getRecord: transactionId=${transactionId} callerName=${callerName} recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
+        `${formattedRequestId} Error raised during transactionResponse.getRecord: transactionId=${transactionId} callerName=${callerName} recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
       );
       throw sdkClientError;
     }
@@ -671,6 +671,7 @@ export class SDKClient {
     callerName: string,
     interactingEntity: string,
   ): Promise<FileId | null> {
+    const formattedRequestId = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
 
     // prepare fileCreateTx
@@ -683,7 +684,7 @@ export class SDKClient {
       fileCreateTx,
       callerName,
       interactingEntity,
-      requestId,
+      formattedRequestId,
     )) as TransactionResponse;
 
     const { fileId } = await fileCreateTxResponse.getReceipt(client);
@@ -696,7 +697,7 @@ export class SDKClient {
         .setMaxChunks(this.maxChunks);
 
       // use executeTransaction() to execute fileAppendTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
-      await this.executeTransaction(fileAppendTx, callerName, interactingEntity, requestId);
+      await this.executeTransaction(fileAppendTx, callerName, interactingEntity, formattedRequestId);
     }
 
     // Ensure that the calldata file is not empty
@@ -704,9 +705,9 @@ export class SDKClient {
       const fileSize = (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
 
       if (callData.length > 0 && fileSize.isZero()) {
-        throw new SDKClientError({}, `${requestId} Created file is empty. `);
+        throw new SDKClientError({}, `${formattedRequestId} Created file is empty. `);
       }
-      this.logger.trace(`${requestId} Created file with fileId: ${fileId} and file size ${fileSize}`);
+      this.logger.trace(`${formattedRequestId} Created file with fileId: ${fileId} and file size ${fileSize}`);
     }
 
     return fileId;
