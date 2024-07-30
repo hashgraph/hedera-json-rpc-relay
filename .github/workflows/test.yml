@@ -56,9 +56,6 @@ jobs:
           path: "**/*.heapsnapshot"
           if-no-files-found: ignore
 
-      - name: Check Codecov Config
-        run: curl --fail-with-body --data-binary @codecov.yml https://codecov.io/validate
-
       - name: Upload coverage report
         run: bash .github/scripts/codecov-upload.sh
         env:

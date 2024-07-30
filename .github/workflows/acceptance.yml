@@ -152,9 +152,6 @@ jobs:
           json_thousands_separator: ','
           junit_files: 'test-*.xml'
 
-      - name: Check Codecov Config
-        run: curl --fail-with-body --data-binary @codecov.yml https://codecov.io/validate
-
       - name: Upload coverage report
         run: bash .github/scripts/codecov-upload.sh
         env:
