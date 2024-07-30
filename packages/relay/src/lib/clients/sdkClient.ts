@@ -313,12 +313,7 @@ export class SDKClient {
 
     return {
       fileId,
-      txResponse: (await this.executeTransaction(
-        ethereumTransaction,
-        callerName,
-        interactingEntity,
-        requestId,
-      )) as TransactionResponse,
+      txResponse: await this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId),
     };
   }
 
@@ -504,25 +499,25 @@ export class SDKClient {
   }
 
   /**
-   * Executes transaction -> handle errors -> capture burned HBAR in metrics and HBAR rate limit class.
-   * @param transaction
-   * @param callerName
-   * @param interactingEntity
-   * @param requestId
-   * @returns
+   * Executes a single transaction, handling rate limits, logging, and metrics.
+   * @param {Transaction} transaction - The transaction to be executed.
+   * @param {string} callerName - The name of the caller executing the transaction.
+   * @param {string} interactingEntity - The entity interacting with the transaction.
+   * @param {string} requestId - The request ID associated with the transaction.
+   * @returns {Promise<TransactionResponse>} A promise that resolves to the transaction response.
+   * @throws Will throw an error if the HBAR rate limit is exceeded, the transaction execution fails, or if a valid network error occurs.
    */
   async executeTransaction(
     transaction: Transaction,
     callerName: string,
     interactingEntity: string,
     requestId: string,
-  ): Promise<TransactionResponse | TransactionResponse[]> {
+  ): Promise<TransactionResponse> {
     const transactionType = transaction.constructor.name;
     const currentDateNow = Date.now();
     let gasUsed: number = 0;
     let transactionFee: number = 0;
-    let transactionId = [] as string[];
-    let transactionResponse: TransactionResponse | TransactionResponse[] | null = null;
+    let transactionResponse: TransactionResponse | null = null;
     try {
       // check hbar limit before executing transaction
       const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
@@ -531,44 +526,17 @@ export class SDKClient {
       }
 
       // execute transaction
-      // logic: if transaction is typed FileAppendTransaction, use executeAll() to retrieve all fileAppend transaction responses
-      // logic: if transaction is any other type, use execute() to get the only transaction response
       this.logger.info(`${requestId} Execute ${transactionType} transaction`);
-      if (transactionType === FileAppendTransaction.name) {
-        // execute transaction
-        transactionResponse = await (transaction as FileAppendTransaction).executeAll(this.clientMain);
+      transactionResponse = await transaction.execute(this.clientMain);
 
-        // retrieve transaction fee
-        for (let txResp of transactionResponse) {
-          // get transactionId - mainly for logging purposes when capture metrics
-          transactionId.push(txResp.transactionId.toString());
+      // retrieve and capture transaction fee in metrics and rate limiter class
+      const getRecordResult = await this.executeGetTransactionRecord(transactionResponse, callerName, requestId);
+      gasUsed = getRecordResult.gasUsed;
+      transactionFee = getRecordResult.transactionFee;
 
-          // get transaction fee
-          const getRecordResult = await this.executeGetTransactionRecord(txResp, callerName, requestId);
-          gasUsed += getRecordResult.gasUsed;
-          transactionFee += getRecordResult.transactionFee;
-
-          this.logger.info(
-            `${requestId} Successfully execute ${transactionType} transaction: transactionId=${txResp.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${getRecordResult.transactionFee} tinybars, gasUsed=${getRecordResult.gasUsed}`,
-          );
-        }
-      } else {
-        // execute transaction
-        transactionResponse = await transaction.execute(this.clientMain);
-
-        // get transactionId after execution
-        transactionId = [transactionResponse.transactionId.toString()];
-
-        // retrieve and capture transaction fee in metrics and rate limiter class
-        const getRecordResult = await this.executeGetTransactionRecord(transactionResponse, callerName, requestId);
-        gasUsed = getRecordResult.gasUsed;
-        transactionFee = getRecordResult.transactionFee;
-
-        this.logger.info(
-          `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionId[0]}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
-        );
-      }
-
+      this.logger.info(
+        `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
+      );
       return transactionResponse;
     } catch (e: any) {
       // throw e right away if it's a rate limit exceeded error
@@ -576,42 +544,36 @@ export class SDKClient {
         throw e;
       }
 
-      // declare main error
+      // declare main error as SDKClientError
       const sdkClientError = new SDKClientError(e, e.message);
-
-      // get transactionId from error
-      // Note: In case of a FileAppendTransaction failure, expand the transactionId array.
-      transactionId.push(e.transactionId);
 
       // if valid network error utilize transaction id to get transactionFee and gasUsed for metrics
       if (sdkClientError.isValidNetworkError()) {
         try {
           const transactionRecord = await new TransactionRecordQuery()
-            .setTransactionId(transactionId[0]) // transactionId attached in error
+            .setTransactionId(transaction.transactionId!)
             .setNodeAccountIds(transaction.nodeAccountIds!)
             .setValidateReceiptStatus(false)
             .execute(this.clientMain);
 
           // extract gas and txFee
           // Note: In case of a FileAppendTransaction failure, complement transactionFee and gasUsed.
-          transactionFee += transactionRecord.transactionFee.toTinybars().toNumber();
-          gasUsed += transactionRecord.contractFunctionResult
+          transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+          gasUsed = transactionRecord.contractFunctionResult
             ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
             : 0;
         } catch (err: any) {
           const recordQueryError = new SDKClientError(err, err.message);
           this.logger.error(
             recordQueryError,
-            `${requestId} Error raised during TransactionRecordQuery for ${transactionId}`,
+            `${requestId} Error raised during TransactionRecordQuery for ${transaction.transactionId}`,
           );
         }
       }
 
-      // log main error
+      // log and throw
       this.logger.debug(
-        `${requestId} Fail to execute ${transactionType} transaction: transactionId=${transactionId.flat()}, callerName=${callerName}, transactionType=${transactionType}, status=${
-          sdkClientError.status
-        }(${sdkClientError.status._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
+        `${requestId} Fail to execute ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
 
       // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler(). Otherwise, move on and return transactionResponse eventually.
@@ -619,9 +581,8 @@ export class SDKClient {
         throw sdkClientError;
       } else {
         if (!transactionResponse) {
-          this.logger.error(`${requestId} Transaction execution returns a null value for transaction ${transactionId}`);
           throw predefined.INTERNAL_ERROR(
-            `${requestId} Transaction execution returns a null value for transaction ${transactionId}`,
+            `${requestId} Transaction execution returns a null value for transaction ${transaction.transactionId}`,
           );
         }
         return transactionResponse;
@@ -633,7 +594,7 @@ export class SDKClient {
        */
       if (transactionFee !== 0) {
         this.logger.trace(
-          `${requestId} Capturing HBAR charged transaction fee: transactionId=${transactionId.flat()}, transactionType=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
+          `${requestId} Capturing HBAR charged transaction fee: transactionId=${transaction.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
         );
         this.hbarLimiter.addExpense(transactionFee, currentDateNow);
         this.captureMetrics(
@@ -667,11 +628,6 @@ export class SDKClient {
       const transactionRecord: TransactionRecord = await transactionResponse.getRecord(this.clientMain);
 
       // get transactionFee and gasUsed for metrics
-      /**
-       * @todo: Determine how to separate the fee charged exclusively by the operator because
-       *        the transactionFee below includes the entire charges of the transaction,
-       *        with some portions paid by tx.from, not the operator.
-       */
       transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
       gasUsed = transactionRecord.contractFunctionResult
         ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
@@ -680,10 +636,11 @@ export class SDKClient {
       return { transactionFee, gasUsed };
     } catch (e: any) {
       // log error from getRecord
+      const sdkClientError = new SDKClientError(e, e.message);
       this.logger.debug(
-        `${requestId} Error raised during transactionResponse.getRecord: transactionId=${transactionId} callerName=${callerName} recordStatus=${e.status} (${e.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
+        `${requestId} Error raised during transactionResponse.getRecord: transactionId=${transactionId} callerName=${callerName} recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
       );
-      throw e;
+      throw sdkClientError;
     }
   }
 
