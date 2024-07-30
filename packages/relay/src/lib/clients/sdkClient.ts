@@ -807,7 +807,7 @@ export class SDKClient {
     if (fileId) {
       const fileSize = (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
 
-      if (callData.length > 0 && fileSize.isZero()) {
+      if (fileSize.isZero()) {
         throw new SDKClientError({}, `${formattedRequestId} Created file is empty. `);
       }
       this.logger.trace(`${formattedRequestId} Created file with fileId: ${fileId} and file size ${fileSize}`);
