@@ -660,25 +660,9 @@ export class SDKClient {
             `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${getRecordResult.transactionFee} tinybars, gasUsed=${getRecordResult.gasUsed}`,
           );
         } catch (e: any) {
-          try {
-            const transactionRecord = await new TransactionRecordQuery()
-              .setTransactionId(transactionResponse.transactionId)
-              .setNodeAccountIds(transaction.nodeAccountIds!)
-              .setValidateReceiptStatus(false)
-              .execute(this.clientMain);
-
-            // get gasUsed and transaction fee
-            transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
-            gasUsed = transactionRecord.contractFunctionResult
-              ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
-              : 0;
-          } catch (err: any) {
-            const recordQueryError = new SDKClientError(err, err.message);
-            this.logger.error(
-              recordQueryError,
-              `${formattedRequestId} Error raised during TransactionRecordQuery for ${transactionResponse.transactionId}`,
-            );
-          }
+          const result = await this.handleExecuteAllError(transactionResponse, formattedRequestId);
+          transactionFee = result.transactionFee;
+          gasUsed = result.gasUsed;
         } finally {
           if (transactionFee !== 0) {
             this.logger.trace(
@@ -744,26 +728,6 @@ export class SDKClient {
       );
       throw sdkClientError;
     }
-  }
-
-  private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
-    const resolvedCost = cost ? cost : 0;
-    const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
-    this.consensusNodeClientHistogramCost.labels(mode, type, status, caller, interactingEntity).observe(resolvedCost);
-    this.consensusNodeClientHistogramGasFee.labels(mode, type, status, caller, interactingEntity).observe(resolvedGas);
-  };
-
-  /**
-   * Internal helper method that removes the leading 0x if there is one.
-   * @param input
-   * @private
-   */
-  private static prune0x(input: string): string {
-    return input.startsWith('0x') ? input.substring(2) : input;
-  }
-
-  private static HbarToWeiBar(balance: AccountBalance): BigNumber {
-    return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
   }
 
   async createFile(
@@ -847,5 +811,60 @@ export class SDKClient {
     } catch (error: any) {
       this.logger.warn(`${requestIdPrefix} ${error['message']} `);
     }
+  }
+
+  private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
+    const resolvedCost = cost ? cost : 0;
+    const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
+    this.consensusNodeClientHistogramCost.labels(mode, type, status, caller, interactingEntity).observe(resolvedCost);
+    this.consensusNodeClientHistogramGasFee.labels(mode, type, status, caller, interactingEntity).observe(resolvedGas);
+  };
+
+  /**
+   * Internal helper method that removes the leading 0x if there is one.
+   * @param input
+   * @private
+   */
+  private static prune0x(input: string): string {
+    return input.startsWith('0x') ? input.substring(2) : input;
+  }
+
+  private static HbarToWeiBar(balance: AccountBalance): BigNumber {
+    return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
+  }
+
+  /**
+   * Handles errors encountered during the execution of all transactions by retrieving the transaction record.
+   * @private
+   * @param {TransactionResponse} transactionResponse - The response of the transaction that encountered an error.
+   * @param {string} formattedRequestId - The formatted request ID for logging purposes.
+   * @returns {Promise<{transactionFee: number, gasUsed: number}>} A promise that resolves to an object containing the transaction fee and gas used.
+   */
+  private async handleExecuteAllError(
+    transactionResponse: TransactionResponse,
+    formattedRequestId: string,
+  ): Promise<{ transactionFee: number; gasUsed: number }> {
+    let gasUsed: number = 0;
+    let transactionFee: number = 0;
+    try {
+      const transactionRecord = await new TransactionRecordQuery()
+        .setTransactionId(transactionResponse.transactionId)
+        .setValidateReceiptStatus(false)
+        .execute(this.clientMain);
+
+      // get gasUsed and transaction fee
+      transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+      gasUsed = transactionRecord.contractFunctionResult
+        ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
+        : 0;
+    } catch (err: any) {
+      const recordQueryError = new SDKClientError(err, err.message);
+      this.logger.error(
+        recordQueryError,
+        `${formattedRequestId} Error raised during TransactionRecordQuery for ${transactionResponse.transactionId}`,
+      );
+    }
+
+    return { transactionFee, gasUsed };
   }
 }
