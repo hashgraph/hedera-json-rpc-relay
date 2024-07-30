@@ -10,3 +10,6 @@ coverage:
       default:
         target: 80%
         threshold: 1%
+
+ignore:
+  - "packages/*/dist"
