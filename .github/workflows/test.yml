@@ -57,7 +57,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Check Codecov Config
-        uses: formsort/action-check-codecov-config@v1
+        run: curl --fail-with-body --data-binary @codecov.yml https://codecov.io/validate
 
       - name: Upload coverage report
         if: ${{ always() && !cancelled() }}
