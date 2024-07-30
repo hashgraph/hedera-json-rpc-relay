@@ -155,3 +155,5 @@ jobs:
       - name: Upload coverage report
         if: ${{ always() && !cancelled() }}
         uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed #  v4.3.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
