@@ -36,7 +36,7 @@ export function validateParam(index: number | string, param: any, validation: an
   }
 
   if (!Array.isArray(paramType)) {
-    const result = isArray ? paramType.test(index, param, validation.type[1]) : paramType.test(param);
+    const result = paramType.test(param);
     if (result === false) {
       throw predefined.INVALID_PARAMETER(index, `${paramType.error}, value: ${param}`);
     }
