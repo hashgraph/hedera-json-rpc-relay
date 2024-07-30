@@ -6,6 +6,7 @@ tsconfig.tsbuildinfo
 .idea
 .vscode/
 .devcontainer/
+.nx/
 **/**/coverage/
 **/**/.nyc_output/
 .DS_Store

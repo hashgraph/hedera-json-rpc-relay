@@ -1,24 +1,7 @@
+# Always comment on PRs
 comment:
-  layout: "header, diff, flags, components"  # show component info in the PR comment
-component_management:
-  default_rules:
-    statuses:
-      - type: project
-        target: auto
-      - type: patch
-  individual_components:
-    - component_id: relay  # this is an identifier that should not be changed
-      name: relay
-      paths:
-        - packages/relay/**
-    - component_id: server  # this is an identifier that should not be changed
-      name: server
-      paths:
-        - packages/server/**
-    - component_id: ws-server  # this is an identifier that should not be changed
-      name: ws-server
-      paths:
-        - packages/ws-server/**
+  require_changes: false
+
 coverage:
   status:
     project:
