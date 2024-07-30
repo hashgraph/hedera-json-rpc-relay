@@ -607,6 +607,102 @@ export class SDKClient {
     }
   }
 
+  /**
+   * Executes all transactions of a given type, handling rate limits and logging the results.
+   * @param {FileAppendTransaction} transaction - The transaction to be executed.
+   * @param {string} callerName - The name of the caller executing the transaction.
+   * @param {string} interactingEntity - The entity interacting with the transaction.
+   * @param {string} requestId - The request ID associated with the transaction.
+   * @returns {Promise<void>} A promise that resolves when all transactions have been executed.
+   * @throws Will throw an error if the HBAR rate limit is exceeded or if the transaction execution fails.
+   */
+  async executeAllTransaction(
+    transaction: FileAppendTransaction,
+    callerName: string,
+    interactingEntity: string,
+    requestId: string,
+  ): Promise<void> {
+    const formattedRequestId = formatRequestIdMessage(requestId);
+    const transactionType = transaction.constructor.name;
+    const currentDateNow = Date.now();
+    let transactionResponses: TransactionResponse[] | null = null;
+
+    // check hbar limit before executing transaction
+    const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+    if (shouldLimit) {
+      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+    }
+
+    try {
+      // execute transaction
+      this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
+
+      transactionResponses = await transaction.executeAll(this.clientMain);
+
+      for (let transactionResponse of transactionResponses) {
+        let gasUsed: number = 0;
+        let transactionFee: number = 0;
+
+        // Since this is a loop, and it's unclear which transactionResponse might throw an error,
+        // use a try/catch/finally block to ensure the loop completes even if an error is thrown, and all the metrics are recorded.
+        try {
+          // get gasUsed and transaction fee
+          const getRecordResult = await this.executeGetTransactionRecord(transactionResponse, callerName, requestId);
+          gasUsed = getRecordResult.gasUsed;
+          transactionFee = getRecordResult.transactionFee;
+          this.logger.info(
+            `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${getRecordResult.transactionFee} tinybars, gasUsed=${getRecordResult.gasUsed}`,
+          );
+        } catch (e: any) {
+          try {
+            const transactionRecord = await new TransactionRecordQuery()
+              .setTransactionId(transactionResponse.transactionId)
+              .setNodeAccountIds(transaction.nodeAccountIds!)
+              .setValidateReceiptStatus(false)
+              .execute(this.clientMain);
+
+            // get gasUsed and transaction fee
+            transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+            gasUsed = transactionRecord.contractFunctionResult
+              ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
+              : 0;
+          } catch (err: any) {
+            const recordQueryError = new SDKClientError(err, err.message);
+            this.logger.error(
+              recordQueryError,
+              `${formattedRequestId} Error raised during TransactionRecordQuery for ${transactionResponse.transactionId}`,
+            );
+          }
+        } finally {
+          if (transactionFee !== 0) {
+            this.logger.trace(
+              `${formattedRequestId} Capturing HBAR charged transaction fee: transactionId=${transactionResponse.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
+            );
+            this.hbarLimiter.addExpense(transactionFee, currentDateNow);
+            this.captureMetrics(
+              SDKClient.transactionMode,
+              transactionType,
+              Status.Success,
+              transactionFee,
+              gasUsed,
+              callerName,
+              interactingEntity,
+            );
+          }
+        }
+      }
+    } catch (e: any) {
+      // declare main error as SDKClientError
+      const sdkClientError = new SDKClientError(e, e.message);
+
+      // log and throw
+      this.logger.warn(
+        `${formattedRequestId} Fail to executeAll for ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
+      );
+      throw sdkClientError;
+    }
+  }
+
   async executeGetTransactionRecord(transactionResponse: TransactionResponse, callerName: string, requestId: string) {
     let gasUsed: any = 0;
     let transactionFee: number = 0;
@@ -697,7 +793,7 @@ export class SDKClient {
         .setMaxChunks(this.maxChunks);
 
       // use executeTransaction() to execute fileAppendTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
-      await this.executeTransaction(fileAppendTx, callerName, interactingEntity, formattedRequestId);
+      await this.executeAllTransaction(fileAppendTx, callerName, interactingEntity, formattedRequestId);
     }
 
     // Ensure that the calldata file is not empty

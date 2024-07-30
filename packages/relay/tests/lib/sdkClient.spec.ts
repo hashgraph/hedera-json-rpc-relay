@@ -2192,10 +2192,7 @@ describe('SdkClient', async function () {
         .resolves(Array.from({ length: fileAppendChunks }, () => getTransactionResponse('FileAppendTransaction')));
 
       hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
-      hbarLimitMock
-        .expects('addExpense')
-        .withArgs(fileAppendFee * fileAppendChunks)
-        .once();
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).atLeast(fileAppendChunks);
       hbarLimitMock.expects('shouldLimit').twice().returns(false);
 
       const response = await sdkClient.createFile(callData, client, requestId, callerName, interactingEntity);
@@ -2204,6 +2201,54 @@ describe('SdkClient', async function () {
       expect(queryStub.called).to.be.true;
       expect(createFileStub.called).to.be.true;
       expect(appendFileStub.called).to.be.true;
+    });
+
+    it('should execute executeAllTransaction and add expenses to limiter', async () => {
+      const callData = new Uint8Array(FILE_APPEND_CHUNK_SIZE * 2 + 1);
+      const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(callData.length / FILE_APPEND_CHUNK_SIZE));
+
+      const appendFileStub = sinon
+        .stub(FileAppendTransaction.prototype, 'executeAll')
+        .resolves(Array.from({ length: fileAppendChunks }, () => getTransactionResponse('FileAppendTransaction')));
+
+      hbarLimitMock.expects('shouldLimit').once().returns(false);
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).atLeast(fileAppendChunks);
+
+      await sdkClient.executeAllTransaction(
+        new FileAppendTransaction(),
+        callerName,
+        interactingEntity,
+        requestId,
+        true,
+      );
+
+      expect(appendFileStub.called).to.be.true;
+    });
+
+    it('should rate limit before executing executeAllTransaction', async () => {
+      const callData = new Uint8Array(FILE_APPEND_CHUNK_SIZE * 2 + 1);
+      const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(callData.length / FILE_APPEND_CHUNK_SIZE));
+
+      const appendFileStub = sinon
+        .stub(FileAppendTransaction.prototype, 'executeAll')
+        .resolves(Array.from({ length: fileAppendChunks }, () => getTransactionResponse('FileAppendTransaction')));
+
+      hbarLimitMock.expects('shouldLimit').once().returns(true);
+
+      try {
+        await sdkClient.executeAllTransaction(
+          new FileAppendTransaction(),
+          callerName,
+          interactingEntity,
+          requestId,
+          true,
+        );
+        expect.fail(`Expected an error but nothing was thrown`);
+      } catch (error: any) {
+        expect(error.message).to.equal('HBAR Rate limit exceeded');
+      }
+
+      expect(appendFileStub.called).to.be.false;
     });
 
     it('should execute FileCreateTransaction with callData.length <= fileAppendChunkSize and add expenses to limiter', async () => {
