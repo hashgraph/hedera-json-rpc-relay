@@ -61,16 +61,7 @@ jobs:
 
       - name: Upload coverage report
         if: ${{ always() && !cancelled() }}
-        run: |
-          curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov
-          for dir in packages/*; do
-            if [ -d "${dir}/coverage" ]; then
-              echo "Uploading coverage report for ${dir}"
-              ./codecov --dir "${dir}" --flags "$(basename "${dir}")" --token "${CODECOV_TOKEN}"
-            else
-              echo "No coverage report found for ${dir}"
-            fi
-          done
+        run: .github/scripts/codecov-upload.sh
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
