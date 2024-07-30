@@ -44,11 +44,13 @@ jobs:
       - name: Build Typescript and Run tests
         run: npm run build-and-test
 
+      - name: Check Codecov Config
+        uses: formsort/action-check-codecov-config@v1
+
       - name: Upload coverage report
         if: ${{ always() && !cancelled() }}
-        uses: formsort/action-check-codecov-config@v1
         run: |
-          curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov
+          curl -s https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov
           for dir in packages/*; do
             if [ -d "${dir}/coverage" ]; then
               echo "Uploading coverage report for ${dir}"
