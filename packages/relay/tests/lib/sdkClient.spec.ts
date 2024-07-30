@@ -2280,11 +2280,7 @@ describe('SdkClient', async function () {
         .resolves(getTransactionResponse('FileDeleteTransaction'));
 
       hbarLimitMock.expects('addExpense').withArgs(fileDeleteFee).once();
-      hbarLimitMock
-        .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
-        .once()
-        .returns(false);
+      hbarLimitMock.expects('shouldLimit').never();
 
       await sdkClient.deleteFile(fileId, requestId, callerName, interactingEntity);
 
@@ -2356,6 +2352,7 @@ describe('SdkClient', async function () {
         callerName,
         interactingEntity,
         requestId,
+        true,
       );
 
       expect(response).to.eq(transactionResponse);

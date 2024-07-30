@@ -313,7 +313,7 @@ export class SDKClient {
 
     return {
       fileId,
-      txResponse: await this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId),
+      txResponse: await this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId, true),
     };
   }
 
@@ -512,6 +512,7 @@ export class SDKClient {
     callerName: string,
     interactingEntity: string,
     requestId: string,
+    shouldThrowHbarLimit: boolean,
   ): Promise<TransactionResponse> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
@@ -521,9 +522,11 @@ export class SDKClient {
     let transactionResponse: TransactionResponse | null = null;
 
     // check hbar limit before executing transaction
-    const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
-    if (shouldLimit) {
-      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+    if (shouldThrowHbarLimit) {
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+      if (shouldLimit) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
     }
 
     try {
@@ -621,6 +624,7 @@ export class SDKClient {
     callerName: string,
     interactingEntity: string,
     requestId: string,
+    shouldThrowHbarLimit: boolean,
   ): Promise<void> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
@@ -628,9 +632,11 @@ export class SDKClient {
     let transactionResponses: TransactionResponse[] | null = null;
 
     // check hbar limit before executing transaction
-    const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
-    if (shouldLimit) {
-      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+    if (shouldThrowHbarLimit) {
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+      if (shouldLimit) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
     }
 
     try {
@@ -781,6 +787,7 @@ export class SDKClient {
       callerName,
       interactingEntity,
       formattedRequestId,
+      true,
     )) as TransactionResponse;
 
     const { fileId } = await fileCreateTxResponse.getReceipt(client);
@@ -792,8 +799,8 @@ export class SDKClient {
         .setChunkSize(this.fileAppendChunkSize)
         .setMaxChunks(this.maxChunks);
 
-      // use executeTransaction() to execute fileAppendTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
-      await this.executeAllTransaction(fileAppendTx, callerName, interactingEntity, formattedRequestId);
+      // use executeAllTransaction() to executeAll fileAppendTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
+      await this.executeAllTransaction(fileAppendTx, callerName, interactingEntity, formattedRequestId, true);
     }
 
     // Ensure that the calldata file is not empty
@@ -827,7 +834,7 @@ export class SDKClient {
         .setMaxTransactionFee(new Hbar(2))
         .freezeWith(this.clientMain);
 
-      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId);
+      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId, false);
 
       // ensure the file is deleted
       const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
