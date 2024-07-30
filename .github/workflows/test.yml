@@ -47,8 +47,6 @@ jobs:
       - name: Upload coverage report
         if: ${{ always() && !cancelled() }}
         uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed #  v4.3.0
-        with:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Publish Test Report
         if: ${{ github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name && github.actor != 'dependabot[bot]' && github.actor != 'swirlds-automation' && !cancelled() && !failure() }}
