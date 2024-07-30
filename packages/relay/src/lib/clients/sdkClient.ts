@@ -546,6 +546,8 @@ export class SDKClient {
       // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler(). Otherwise, move on and return transactionResponse eventually.
       if (e.status && e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
         throw sdkClientError;
+      } else if (e instanceof JsonRpcError) {
+        throw e;
       } else {
         if (!transactionResponse) {
           throw predefined.INTERNAL_ERROR(

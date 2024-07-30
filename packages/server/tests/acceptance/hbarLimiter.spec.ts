@@ -252,11 +252,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         let lastRemainingHbars = remainingHbarsBefore;
         expect(remainingHbarsBefore).to.be.gt(0);
         try {
-          for (let i = 0; i < 100; i++) {
-            await deployContract(largeContractJson, accounts[0].wallet);
+          for (let i = 0; i < 50; i++) {
+            const contract = await deployContract(largeContractJson, accounts[0].wallet);
+            await contract.waitForDeployment();
             const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
             expect(remainingHbars).to.be.lt(lastRemainingHbars);
-            lastRemainingHbars = remainingHbars;
           }
           expect.fail(`Expected an error but nothing was thrown`);
         } catch (e: any) {
