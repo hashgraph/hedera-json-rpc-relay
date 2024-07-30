@@ -158,7 +158,7 @@ jobs:
       - name: Upload coverage report
         if: ${{ always() && !cancelled() }}
         run: |
-          curl -s https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov
+          curl -0s https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov
           for dir in packages/*; do
             if [ -d "${dir}/coverage" ]; then
               echo "Uploading coverage report for ${dir}"
