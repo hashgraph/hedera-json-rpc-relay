@@ -156,7 +156,6 @@ jobs:
         run: curl --fail-with-body --data-binary @codecov.yml https://codecov.io/validate
 
       - name: Upload coverage report
-        if: ${{ always() && !cancelled() }}
         run: .github/scripts/codecov-upload.sh
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
