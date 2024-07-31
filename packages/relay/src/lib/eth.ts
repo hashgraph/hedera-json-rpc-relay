@@ -1529,7 +1529,12 @@ export class EthImpl implements Eth {
     try {
       const sendRawTransactionResult = await this.hapiService
         .getSDKClient()
-        .submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix);
+        .submitEthereumTransaction(
+          transactionBuffer,
+          EthImpl.ethSendRawTransaction,
+          requestIdPrefix,
+          this.mirrorNodeClient,
+        );
 
       txSubmitted = true;
       fileId = sendRawTransactionResult!.fileId;
@@ -1580,7 +1585,7 @@ export class EthImpl implements Eth {
       if (fileId) {
         this.hapiService
           .getSDKClient()
-          .deleteFile(fileId, requestIdPrefix, EthImpl.ethSendRawTransaction, fileId.toString());
+          .deleteFile(fileId, requestIdPrefix, EthImpl.ethSendRawTransaction, fileId.toString(), this.mirrorNodeClient);
       }
     }
   }

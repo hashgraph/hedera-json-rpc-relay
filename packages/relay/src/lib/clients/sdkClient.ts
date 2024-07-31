@@ -60,6 +60,8 @@ import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
 import { Histogram } from 'prom-client';
+import { MirrorNodeClient } from './mirrorNodeClient';
+import { getTransactionStatusAndMetrrics } from './helper/clientHelper';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -267,6 +269,7 @@ export class SDKClient {
     transactionBuffer: Uint8Array,
     callerName: string,
     requestId: string,
+    mirrorNodeClient: MirrorNodeClient,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
@@ -306,6 +309,7 @@ export class SDKClient {
         requestId,
         callerName,
         interactingEntity,
+        mirrorNodeClient,
       );
       if (!fileId) {
         throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
@@ -319,7 +323,14 @@ export class SDKClient {
 
     return {
       fileId,
-      txResponse: await this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId, true),
+      txResponse: await this.executeTransaction(
+        ethereumTransaction,
+        callerName,
+        interactingEntity,
+        requestId,
+        true,
+        mirrorNodeClient,
+      ),
     };
   }
 
@@ -519,6 +530,7 @@ export class SDKClient {
     interactingEntity: string,
     requestId: string,
     shouldThrowHbarLimit: boolean,
+    mirrorNodeClient: MirrorNodeClient,
   ): Promise<TransactionResponse> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
@@ -535,49 +547,83 @@ export class SDKClient {
       }
     }
 
+    const txRecordClientNode =
+      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true' ? this.clientMain : mirrorNodeClient;
+
     try {
       // execute transaction
       this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
       transactionResponse = await transaction.execute(this.clientMain);
 
-      // retrieve and capture transaction fee in metrics and rate limiter class
-      const getRecordResult = await this.executeGetTransactionRecord(transactionResponse, callerName, requestId);
-      gasUsed = getRecordResult.gasUsed;
-      transactionFee = getRecordResult.transactionFee;
+      // retrieve transaction status and metrics (transaction fee & gasUsed)
+      const getTxResultAndMetricsResult = await getTransactionStatusAndMetrrics(
+        transactionResponse.transactionId.toString(),
+        callerName,
+        formattedRequestId,
+        this.logger,
+        transaction.constructor.name,
+        txRecordClientNode,
+      );
+      const transactionStatus = getTxResultAndMetricsResult.transactionStatus;
+      gasUsed = getTxResultAndMetricsResult.gasUsed;
+      transactionFee = getTxResultAndMetricsResult.transactionFee;
+
+      // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler().
+      // Otherwise, move on and return transactionResponse eventually.
+      if (transactionStatus === Status.WrongNonce.toString()) {
+        const error = {
+          status: Status.WrongNonce,
+          message: `receipt for transaction ${transactionResponse.transactionId} contained error status WRONG_NONCE`,
+        };
+
+        throw new SDKClientError(error, error.message);
+      }
 
       this.logger.info(
         `${formattedRequestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
       return transactionResponse;
     } catch (e: any) {
-      // declare main error as SDKClientError
+      // throw if JsonRpcError
+      if (e instanceof JsonRpcError) {
+        throw e;
+      }
+
+      // declare error as SDKClientError
       const sdkClientError = new SDKClientError(e, e.message);
 
+      // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler().
+      if (sdkClientError.status && sdkClientError.status === Status.WrongNonce) {
+        throw sdkClientError;
+      }
+
+      // capture metrics in case .execute() fails and throw an error
       // if valid network error utilize transaction id to get transactionFee and gasUsed for metrics
       if (sdkClientError.isValidNetworkError()) {
-        const result = await this.getTransactionMetrics(transaction.transactionId!.toString(), formattedRequestId);
-        transactionFee = result.transactionFee;
-        gasUsed = result.gasUsed;
+        const getTxRecordResult = await getTransactionStatusAndMetrrics(
+          transaction.transactionId!.toString(),
+          callerName,
+          requestId,
+          this.logger,
+          transaction.constructor.name,
+          txRecordClientNode,
+        );
+        transactionFee = getTxRecordResult.transactionFee;
+        gasUsed = getTxRecordResult.gasUsed;
       }
 
       // log and throw
       this.logger.warn(
+        sdkClientError,
         `${formattedRequestId} Fail to execute ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
 
-      // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler(). Otherwise, move on and return transactionResponse eventually.
-      if (e.status && e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
-        throw sdkClientError;
-      } else if (e instanceof JsonRpcError) {
-        throw e;
-      } else {
-        if (!transactionResponse) {
-          throw predefined.INTERNAL_ERROR(
-            `${formattedRequestId} Transaction execution returns a null value for transaction ${transaction.transactionId}`,
-          );
-        }
-        return transactionResponse;
+      if (!transactionResponse) {
+        throw predefined.INTERNAL_ERROR(
+          `${formattedRequestId} Transaction execution returns a null value for transaction ${transaction.transactionId}`,
+        );
       }
+      return transactionResponse;
     } finally {
       /**
        * @note Capturing the charged transaction fees at the end of the flow ensures these fees are eventually
@@ -730,6 +776,7 @@ export class SDKClient {
     requestId: string,
     callerName: string,
     interactingEntity: string,
+    mirrorNodeClient: MirrorNodeClient,
   ): Promise<FileId | null> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
@@ -746,6 +793,7 @@ export class SDKClient {
       interactingEntity,
       formattedRequestId,
       true,
+      mirrorNodeClient,
     );
 
     const { fileId } = await fileCreateTxResponse.getReceipt(client);
@@ -764,7 +812,6 @@ export class SDKClient {
     // Ensure that the calldata file is not empty
     if (fileId) {
       const fileSize = (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
-
       if (fileSize.isZero()) {
         throw new SDKClientError({}, `${formattedRequestId} Created file is empty. `);
       }
@@ -781,7 +828,13 @@ export class SDKClient {
    * @param callerName
    * @param interactingEntity
    */
-  async deleteFile(fileId: FileId, requestId: string, callerName: string, interactingEntity: string): Promise<void> {
+  async deleteFile(
+    fileId: FileId,
+    requestId: string,
+    callerName: string,
+    interactingEntity: string,
+    mirrorNodeClient: MirrorNodeClient,
+  ): Promise<void> {
     // format request ID msg
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
@@ -792,7 +845,7 @@ export class SDKClient {
         .setMaxTransactionFee(new Hbar(2))
         .freezeWith(this.clientMain);
 
-      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId, false);
+      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId, false, mirrorNodeClient);
 
       // ensure the file is deleted
       const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
