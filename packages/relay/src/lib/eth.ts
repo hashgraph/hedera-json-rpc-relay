@@ -1976,7 +1976,6 @@ export class EthImpl implements Eth {
   async getTransactionByHash(hash: string, requestIdPrefix?: string): Promise<Transaction | null> {
     this.logger.trace(`${requestIdPrefix} getTransactionByHash(hash=${hash})`, hash);
 
-<<<<<<< HEAD
     const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
     if (contractResult === null || contractResult.hash === undefined) {
       // handle synthetic transactions
@@ -1985,14 +1984,6 @@ export class EthImpl implements Eth {
         {
           'transaction.hash': hash,
         },
-=======
-    if (this.shouldPopulateSyntheticContractResults) {
-      // check if tx is synthetic and exists in cache
-      const cacheKeySyntheticLog = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${hash}`;
-      const cachedLog = await this.cacheService.getAsync(
-        cacheKeySyntheticLog,
-        EthImpl.ethGetTransactionReceipt,
->>>>>>> fcc1ceff (Renames getSharedWithFallback method and addresses PR comments)
         requestIdPrefix,
       );
 
@@ -2312,13 +2303,6 @@ export class EthImpl implements Eth {
     transactionArray = this.populateSyntheticTransactions(showDetails, logs, transactionArray, requestIdPrefix);
 
     const blockHash = toHash32(blockResponse.hash);
-<<<<<<< HEAD
-=======
-    // Gating feature in case of unexpected behavior with other apps.
-    if (this.shouldPopulateSyntheticContractResults) {
-      await this.filterAndPopulateSyntheticContractResults(showDetails, logs, transactionArray, requestIdPrefix);
-    }
->>>>>>> b8a23f62 (Makes ICacheClient return type promise and changes LRUCache accordingly)
     return new Block({
       baseFeePerGas: await this.gasPrice(requestIdPrefix),
       difficulty: EthImpl.zeroHex,
@@ -2344,67 +2328,6 @@ export class EthImpl implements Eth {
     });
   }
 
-<<<<<<< HEAD
-=======
-  /**
-   * Filter contract logs to remove the duplicate ones with the contract results to get only the synthetic ones.
-   * If showDetails is set to false filter the contract logs and add missing transaction hashes
-   * If showDetails is set to true filter the contract logs and add construct missing transaction objects
-   * @param showDetails
-   * @param logs
-   * @param transactionArray
-   * @param requestIdPrefix
-   */
-  async filterAndPopulateSyntheticContractResults(
-    showDetails: boolean,
-    logs: Log[],
-    transactionArray: Array<any>,
-    requestIdPrefix?: string,
-  ): Promise<void> {
-    let filteredLogs: Log[];
-    const keyValuePairs: Record<string, any> = {}; // Object to accumulate cache entries
-
-    if (showDetails) {
-      filteredLogs = logs.filter(
-        (log) => !transactionArray.some((transaction) => transaction.hash === log.transactionHash),
-      );
-      filteredLogs.forEach((log) => {
-        const transaction: Transaction1559 = this.createTransactionFromLog(log);
-        transactionArray.push(transaction);
-
-        const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
-        keyValuePairs[cacheKey] = log;
-      });
-    } else {
-      filteredLogs = logs.filter((log) => !transactionArray.includes(log.transactionHash));
-      filteredLogs.forEach((log) => {
-        transactionArray.push(log.transactionHash);
-
-        const cacheKey = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${log.transactionHash}`;
-        keyValuePairs[cacheKey] = log;
-      });
-
-      this.logger.trace(
-        `${requestIdPrefix} ${filteredLogs.length} Synthetic transaction hashes will be added in the block response`,
-      );
-    }
-    // cache the whole array using mSet
-    if (Object.keys(keyValuePairs).length > 0) {
-      await this.cacheService.multiSet(
-        keyValuePairs,
-        EthImpl.ethGetBlockByHash,
-        this.syntheticLogCacheTtl,
-        requestIdPrefix,
-      );
-    }
-  }
-
-  /**
-   * Creates a new instance of transaction object using the information in the log, all unavailable information will be null
-   * @param log
-   * @returns Transaction Object
-   */
->>>>>>> b8a23f62 (Makes ICacheClient return type promise and changes LRUCache accordingly)
   private createTransactionFromLog(log: Log): Transaction1559 {
     return new Transaction1559({
       accessList: undefined, // we don't support access lists for now
