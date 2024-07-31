@@ -2087,6 +2087,7 @@ describe('SdkClient', async function () {
         getReceipt: (_client: NodeClient) => Promise.resolve(transactionReceipt),
         getRecord: (_client: NodeClient) => {
           let transactionFee: number;
+          let transfers: any = [];
           switch (transactionType) {
             case 'FileCreateTransaction':
               transactionFee = fileCreateFee;
@@ -2099,6 +2100,24 @@ describe('SdkClient', async function () {
               break;
             default:
               transactionFee = defaultTransactionFee;
+
+              transfers = [
+                {
+                  accountId: '0.0.800',
+                  amount: Hbar.fromTinybars(defaultTransactionFee),
+                  is_approval: false,
+                },
+                {
+                  accountId: process.env.OPERATOR_ID_MAIN,
+                  amount: Hbar.fromTinybars(-1 * defaultTransactionFee),
+                  is_approval: false,
+                },
+                {
+                  accountId: accountId.toString(),
+                  amount: Hbar.fromTinybars(-1 * defaultTransactionFee),
+                  is_approval: false,
+                },
+              ];
               break;
           }
           return Promise.resolve({
@@ -2107,6 +2126,7 @@ describe('SdkClient', async function () {
             contractFunctionResult: {
               gasUsed: Long.fromNumber(10000),
             },
+            transfers,
           });
         },
       }) as unknown as TransactionResponse;
