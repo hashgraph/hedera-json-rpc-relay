@@ -549,26 +549,9 @@ export class SDKClient {
 
       // if valid network error utilize transaction id to get transactionFee and gasUsed for metrics
       if (sdkClientError.isValidNetworkError()) {
-        try {
-          const transactionRecord = await new TransactionRecordQuery()
-            .setTransactionId(transaction.transactionId!)
-            .setNodeAccountIds(transaction.nodeAccountIds!)
-            .setValidateReceiptStatus(false)
-            .execute(this.clientMain);
-
-          // extract gas and txFee
-          // Note: In case of a FileAppendTransaction failure, complement transactionFee and gasUsed.
-          transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
-          gasUsed = transactionRecord.contractFunctionResult
-            ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
-            : 0;
-        } catch (err: any) {
-          const recordQueryError = new SDKClientError(err, err.message);
-          this.logger.error(
-            recordQueryError,
-            `${formattedRequestId} Error raised during TransactionRecordQuery for ${transaction.transactionId}`,
-          );
-        }
+        const result = await this.getTransactionMetrics(transaction.transactionId!.toString(), formattedRequestId);
+        transactionFee = result.transactionFee;
+        gasUsed = result.gasUsed;
       }
 
       // log and throw
@@ -660,7 +643,10 @@ export class SDKClient {
             `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${getRecordResult.transactionFee} tinybars, gasUsed=${getRecordResult.gasUsed}`,
           );
         } catch (e: any) {
-          const result = await this.handleExecuteAllError(transactionResponse, formattedRequestId);
+          const result = await this.getTransactionMetrics(
+            transactionResponse.transactionId.toString(),
+            formattedRequestId,
+          );
           transactionFee = result.transactionFee;
           gasUsed = result.gasUsed;
         } finally {
@@ -834,21 +820,21 @@ export class SDKClient {
   }
 
   /**
-   * Handles errors encountered during the execution of all transactions by retrieving the transaction record.
+   * Retrieves the metrics (transaction fee and gas used) for a given transaction response.
    * @private
-   * @param {TransactionResponse} transactionResponse - The response of the transaction that encountered an error.
+   * @param {string} transactionId - The ID of the transaction.
    * @param {string} formattedRequestId - The formatted request ID for logging purposes.
    * @returns {Promise<{transactionFee: number, gasUsed: number}>} A promise that resolves to an object containing the transaction fee and gas used.
    */
-  private async handleExecuteAllError(
-    transactionResponse: TransactionResponse,
+  private async getTransactionMetrics(
+    transactionId: string,
     formattedRequestId: string,
   ): Promise<{ transactionFee: number; gasUsed: number }> {
     let gasUsed: number = 0;
     let transactionFee: number = 0;
     try {
       const transactionRecord = await new TransactionRecordQuery()
-        .setTransactionId(transactionResponse.transactionId)
+        .setTransactionId(transactionId)
         .setValidateReceiptStatus(false)
         .execute(this.clientMain);
 
@@ -861,7 +847,7 @@ export class SDKClient {
       const recordQueryError = new SDKClientError(err, err.message);
       this.logger.error(
         recordQueryError,
-        `${formattedRequestId} Error raised during TransactionRecordQuery for ${transactionResponse.transactionId}`,
+        `${formattedRequestId} Error raised during TransactionRecordQuery for ${transactionId}`,
       );
     }
 
