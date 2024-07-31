@@ -51,7 +51,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     };
 
     const verifyRemainingLimit = (expectedCost: number, remainingHbarsBefore: number, remainingHbarsAfter: number) => {
-      const delta = 0.02 * expectedCost; // 0.1% tolerance
+      const delta = 0.02 * expectedCost; // 0.2% tolerance
       global.logger.debug(`Expected cost: ${expectedCost} ±${delta}`);
       global.logger.debug(`Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
       global.logger.debug(`Actual delta: ${(remainingHbarsBefore - remainingHbarsAfter) / (expectedCost * 100)}`);
