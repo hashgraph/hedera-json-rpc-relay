@@ -313,7 +313,7 @@ export class SDKClient {
 
     return {
       fileId,
-      txResponse: await this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId),
+      txResponse: await this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId, true),
     };
   }
 
@@ -498,25 +498,40 @@ export class SDKClient {
     }
   }
 
+  /**
+   * Executes a single transaction, handling rate limits, logging, and metrics.
+   * @param {Transaction} transaction - The transaction to be executed.
+   * @param {string} callerName - The name of the caller executing the transaction.
+   * @param {string} interactingEntity - The entity interacting with the transaction.
+   * @param {string} requestId - The request ID associated with the transaction.
+   * @returns {Promise<TransactionResponse>} A promise that resolves to the transaction response.
+   * @throws Will throw an error if the HBAR rate limit is exceeded, the transaction execution fails, or if a valid network error occurs.
+   */
   async executeTransaction(
     transaction: Transaction,
     callerName: string,
     interactingEntity: string,
     requestId: string,
+    shouldThrowHbarLimit: boolean,
   ): Promise<TransactionResponse> {
+    const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
     const currentDateNow = Date.now();
     let gasUsed: number = 0;
     let transactionFee: number = 0;
     let transactionResponse: TransactionResponse | null = null;
-    try {
-      // check hbar limit before executing transaction
-      if (this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName)) {
+
+    // check hbar limit before executing transaction
+    if (shouldThrowHbarLimit) {
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+      if (shouldLimit) {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
+    }
 
+    try {
       // execute transaction
-      this.logger.info(`${requestId} Execute ${transactionType} transaction`);
+      this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
       transactionResponse = await transaction.execute(this.clientMain);
 
       // retrieve and capture transaction fee in metrics and rate limiter class
@@ -525,39 +540,23 @@ export class SDKClient {
       transactionFee = getRecordResult.transactionFee;
 
       this.logger.info(
-        `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
+        `${formattedRequestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
       return transactionResponse;
     } catch (e: any) {
-      // declare main error
+      // declare main error as SDKClientError
       const sdkClientError = new SDKClientError(e, e.message);
 
       // if valid network error utilize transaction id to get transactionFee and gasUsed for metrics
       if (sdkClientError.isValidNetworkError()) {
-        try {
-          const transactionRecord = await new TransactionRecordQuery()
-            .setTransactionId(transaction.transactionId!)
-            .setNodeAccountIds(transaction.nodeAccountIds!)
-            .setValidateReceiptStatus(false)
-            .execute(this.clientMain);
-
-          // extract gas and txFee
-          transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
-          gasUsed = transactionRecord.contractFunctionResult
-            ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
-            : 0;
-        } catch (err: any) {
-          const recordQueryError = new SDKClientError(err, err.message);
-          this.logger.error(
-            recordQueryError,
-            `${requestId} Error raised during TransactionRecordQuery for ${transaction.transactionId}`,
-          );
-        }
+        const result = await this.getTransactionMetrics(transaction.transactionId!.toString(), formattedRequestId);
+        transactionFee = result.transactionFee;
+        gasUsed = result.gasUsed;
       }
 
       // log and throw
-      this.logger.debug(
-        `${requestId} Fail to execute ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
+      this.logger.warn(
+        `${formattedRequestId} Fail to execute ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
 
       // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler(). Otherwise, move on and return transactionResponse eventually.
@@ -566,7 +565,7 @@ export class SDKClient {
       } else {
         if (!transactionResponse) {
           throw predefined.INTERNAL_ERROR(
-            `${requestId} Transaction execution returns a null value for transaction ${transaction.transactionId}`,
+            `${formattedRequestId} Transaction execution returns a null value for transaction ${transaction.transactionId}`,
           );
         }
         return transactionResponse;
@@ -578,7 +577,7 @@ export class SDKClient {
        */
       if (transactionFee !== 0) {
         this.logger.trace(
-          `${requestId} Capturing HBAR charged transaction fee: transactionId=${transaction.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
+          `${formattedRequestId} Capturing HBAR charged transaction fee: transactionId=${transaction.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
         );
         this.hbarLimiter.addExpense(transactionFee, currentDateNow);
         this.captureMetrics(
@@ -594,34 +593,113 @@ export class SDKClient {
     }
   }
 
-  async executeGetTransactionRecord(transactionResponse: TransactionResponse, callerName: string, requestId: string) {
+  /**
+   * Executes all transactions of a given type, handling rate limits and logging the results.
+   * @param {FileAppendTransaction} transaction - The transaction to be executed.
+   * @param {string} callerName - The name of the caller executing the transaction.
+   * @param {string} interactingEntity - The entity interacting with the transaction.
+   * @param {string} requestId - The request ID associated with the transaction.
+   * @returns {Promise<void>} A promise that resolves when all transactions have been executed.
+   * @throws Will throw an error if the HBAR rate limit is exceeded or if the transaction execution fails.
+   */
+  async executeAllTransaction(
+    transaction: FileAppendTransaction,
+    callerName: string,
+    interactingEntity: string,
+    requestId: string,
+    shouldThrowHbarLimit: boolean,
+  ): Promise<void> {
+    const formattedRequestId = formatRequestIdMessage(requestId);
+    const transactionType = transaction.constructor.name;
     const currentDateNow = Date.now();
+    let transactionResponses: TransactionResponse[] | null = null;
+
+    // check hbar limit before executing transaction
+    if (shouldThrowHbarLimit) {
+      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+      if (shouldLimit) {
+        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+      }
+    }
+
+    try {
+      // execute transaction
+      this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
+
+      transactionResponses = await transaction.executeAll(this.clientMain);
+
+      for (let transactionResponse of transactionResponses) {
+        let gasUsed: number = 0;
+        let transactionFee: number = 0;
+
+        // Since this is a loop, and it's unclear which transactionResponse might throw an error,
+        // use a try/catch/finally block to ensure the loop completes even if an error is thrown, and all the metrics are recorded.
+        try {
+          // get gasUsed and transaction fee
+          const getRecordResult = await this.executeGetTransactionRecord(transactionResponse, callerName, requestId);
+          gasUsed = getRecordResult.gasUsed;
+          transactionFee = getRecordResult.transactionFee;
+          this.logger.info(
+            `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${getRecordResult.transactionFee} tinybars, gasUsed=${getRecordResult.gasUsed}`,
+          );
+        } catch (e: any) {
+          const result = await this.getTransactionMetrics(
+            transactionResponse.transactionId.toString(),
+            formattedRequestId,
+          );
+          transactionFee = result.transactionFee;
+          gasUsed = result.gasUsed;
+        } finally {
+          if (transactionFee !== 0) {
+            this.logger.trace(
+              `${formattedRequestId} Capturing HBAR charged transaction fee: transactionId=${transactionResponse.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
+            );
+            this.hbarLimiter.addExpense(transactionFee, currentDateNow);
+            this.captureMetrics(
+              SDKClient.transactionMode,
+              transactionType,
+              Status.Success,
+              transactionFee,
+              gasUsed,
+              callerName,
+              interactingEntity,
+            );
+          }
+        }
+      }
+    } catch (e: any) {
+      // declare main error as SDKClientError
+      const sdkClientError = new SDKClientError(e, e.message);
+
+      // log and throw
+      this.logger.warn(
+        `${formattedRequestId} Fail to executeAll for ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
+      );
+      throw sdkClientError;
+    }
+  }
+
+  async executeGetTransactionRecord(transactionResponse: TransactionResponse, callerName: string, requestId: string) {
     let gasUsed: any = 0;
     let transactionFee: number = 0;
+    const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionId: string = transactionResponse.transactionId.toString();
-
-    const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.recordMode, callerName);
-    if (shouldLimit) {
-      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-    }
 
     try {
       if (!transactionResponse.getRecord) {
         throw new SDKClientError(
           {},
-          `${requestId} Invalid response format, expected record availability: ${JSON.stringify(transactionResponse)}`,
+          `${formattedRequestId} Invalid response format, expected record availability: ${JSON.stringify(
+            transactionResponse,
+          )}`,
         );
       }
 
       // get transactionRecord
+      this.logger.trace(`${formattedRequestId} Get transaction record: transactionId=${transactionId}`);
       const transactionRecord: TransactionRecord = await transactionResponse.getRecord(this.clientMain);
 
       // get transactionFee and gasUsed for metrics
-      /**
-       * @todo: Determine how to separate the fee charged exclusively by the operator because
-       *        the transactionFee below includes the entire charges of the transaction,
-       *        with some portions paid by tx.from, not the operator.
-       */
       transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
       gasUsed = transactionRecord.contractFunctionResult
         ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
@@ -632,9 +710,92 @@ export class SDKClient {
       // log error from getRecord
       const sdkClientError = new SDKClientError(e, e.message);
       this.logger.debug(
-        `${requestId} Error raised during transactionResponse.getRecord: transactionId=${transactionId} callerName=${callerName} recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
+        `${formattedRequestId} Error raised during transactionResponse.getRecord: transactionId=${transactionId} callerName=${callerName} recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
       );
       throw sdkClientError;
+    }
+  }
+
+  async createFile(
+    callData: Uint8Array,
+    client: Client,
+    requestId: string,
+    callerName: string,
+    interactingEntity: string,
+  ): Promise<FileId | null> {
+    const formattedRequestId = formatRequestIdMessage(requestId);
+    const hexedCallData = Buffer.from(callData).toString('hex');
+
+    // prepare fileCreateTx
+    const fileCreateTx = new FileCreateTransaction()
+      .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
+      .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
+
+    // use executeTransaction() to execute fileCreateTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
+    const fileCreateTxResponse = await this.executeTransaction(
+      fileCreateTx,
+      callerName,
+      interactingEntity,
+      formattedRequestId,
+      true,
+    );
+
+    const { fileId } = await fileCreateTxResponse.getReceipt(client);
+
+    if (fileId && callData.length > this.fileAppendChunkSize) {
+      const fileAppendTx = new FileAppendTransaction()
+        .setFileId(fileId)
+        .setContents(hexedCallData.substring(this.fileAppendChunkSize, hexedCallData.length))
+        .setChunkSize(this.fileAppendChunkSize)
+        .setMaxChunks(this.maxChunks);
+
+      // use executeAllTransaction() to executeAll fileAppendTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
+      await this.executeAllTransaction(fileAppendTx, callerName, interactingEntity, formattedRequestId, true);
+    }
+
+    // Ensure that the calldata file is not empty
+    if (fileId) {
+      const fileSize = (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
+
+      if (fileSize.isZero()) {
+        throw new SDKClientError({}, `${formattedRequestId} Created file is empty. `);
+      }
+      this.logger.trace(`${formattedRequestId} Created file with fileId: ${fileId} and file size ${fileSize}`);
+    }
+
+    return fileId;
+  }
+
+  /**
+   * @dev Deletes `fileId` file from the Hedera Network utilizing Hashgraph SDK client
+   * @param fileId
+   * @param requestId
+   * @param callerName
+   * @param interactingEntity
+   */
+  async deleteFile(fileId: FileId, requestId: string, callerName: string, interactingEntity: string): Promise<void> {
+    // format request ID msg
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+
+    try {
+      // Create fileDeleteTx
+      const fileDeleteTx = new FileDeleteTransaction()
+        .setFileId(fileId)
+        .setMaxTransactionFee(new Hbar(2))
+        .freezeWith(this.clientMain);
+
+      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId, false);
+
+      // ensure the file is deleted
+      const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
+
+      if (fileInfo.isDeleted) {
+        this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);
+      } else {
+        this.logger.warn(`${requestIdPrefix} Fail to delete file with fileId: ${fileId} `);
+      }
+    } catch (error: any) {
+      this.logger.warn(`${requestIdPrefix} ${error['message']} `);
     }
   }
 
@@ -658,201 +819,38 @@ export class SDKClient {
     return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
   }
 
-  async createFile(
-    callData: Uint8Array,
-    client: Client,
-    requestId: string,
-    callerName: string,
-    interactingEntity: string,
-  ): Promise<FileId | null> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    const hexedCallData = Buffer.from(callData).toString('hex');
-    const currentDateNow = Date.now();
-    let fileCreateTx, fileAppendTx;
-
-    try {
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
-      if (shouldLimit) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
-
-      fileCreateTx = await new FileCreateTransaction()
-        .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
-        .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
-
-      const fileCreateTxResponse = await fileCreateTx.execute(client);
-      const { fileId } = await fileCreateTxResponse.getReceipt(client);
-
-      // get transaction fee and add expense to limiter
-      const createFileRecord = await fileCreateTxResponse.getRecord(this.clientMain);
-      let transactionFee = createFileRecord.transactionFee as Hbar;
-      this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-
-      this.captureMetrics(
-        SDKClient.transactionMode,
-        fileCreateTx.constructor.name,
-        Status.Success,
-        createFileRecord.transactionFee.toTinybars().toNumber(),
-        createFileRecord?.contractFunctionResult?.gasUsed,
-        callerName,
-        interactingEntity,
-      );
-
-      if (fileId && callData.length > this.fileAppendChunkSize) {
-        fileAppendTx = await new FileAppendTransaction()
-          .setFileId(fileId)
-          .setContents(hexedCallData.substring(this.fileAppendChunkSize, hexedCallData.length))
-          .setChunkSize(this.fileAppendChunkSize)
-          .setMaxChunks(this.maxChunks);
-        const fileAppendTxResponses = await fileAppendTx.executeAll(client);
-
-        for (let fileAppendTxResponse of fileAppendTxResponses) {
-          // get transaction fee and add expense to limiter
-          const appendFileRecord = await fileAppendTxResponse.getRecord(this.clientMain);
-          const tinybarsCost = appendFileRecord.transactionFee.toTinybars().toNumber();
-
-          this.captureMetrics(
-            SDKClient.transactionMode,
-            fileAppendTx.constructor.name,
-            Status.Success,
-            tinybarsCost,
-            0,
-            callerName,
-            interactingEntity,
-          );
-          this.hbarLimiter.addExpense(tinybarsCost, currentDateNow);
-        }
-      }
-
-      // Ensure that the calldata file is not empty
-      if (fileId) {
-        const fileSize = await (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
-
-        if (callData.length > 0 && fileSize.isZero()) {
-          throw new SDKClientError({}, `${requestIdPrefix} Created file is empty. `);
-        }
-        this.logger.trace(`${requestIdPrefix} Created file with fileId: ${fileId} and file size ${fileSize}`);
-      }
-
-      return fileId;
-    } catch (error: any) {
-      const sdkClientError = new SDKClientError(error, error.message);
-      let transactionFee: number | Hbar = 0;
-
-      // if valid network error utilize transaction id
-      if (sdkClientError.isValidNetworkError()) {
-        try {
-          const transactionCreateRecord = await new TransactionRecordQuery()
-            .setTransactionId(fileCreateTx.transactionId!)
-            .setNodeAccountIds(fileCreateTx.nodeAccountIds!)
-            .setValidateReceiptStatus(false)
-            .execute(this.clientMain);
-          transactionFee = transactionCreateRecord.transactionFee;
-          this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-
-          this.captureMetrics(
-            SDKClient.transactionMode,
-            fileCreateTx.constructor.name,
-            sdkClientError.status,
-            transactionFee.toTinybars().toNumber(),
-            transactionCreateRecord?.contractFunctionResult?.gasUsed,
-            callerName,
-            interactingEntity,
-          );
-
-          this.logger.info(
-            `${requestIdPrefix} ${fileCreateTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
-          );
-
-          if (fileAppendTx) {
-            const transactionAppendRecord = await new TransactionRecordQuery()
-              .setTransactionId(fileAppendTx.transactionId!)
-              .setNodeAccountIds(fileAppendTx.nodeAccountIds!)
-              .setValidateReceiptStatus(false)
-              .execute(this.clientMain);
-            transactionFee = transactionAppendRecord.transactionFee;
-            this.hbarLimiter.addExpense(transactionFee.toTinybars().toNumber(), currentDateNow);
-
-            this.captureMetrics(
-              SDKClient.transactionMode,
-              fileCreateTx.constructor.name,
-              sdkClientError.status,
-              transactionFee.toTinybars().toNumber(),
-              transactionCreateRecord?.contractFunctionResult?.gasUsed,
-              callerName,
-              interactingEntity,
-            );
-
-            this.logger.info(
-              `${requestIdPrefix} ${fileAppendTx.transactionId} ${callerName} ${fileCreateTx.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${transactionFee}`,
-            );
-          }
-        } catch (err: any) {
-          const recordQueryError = new SDKClientError(err, err.message);
-          this.logger.error(
-            recordQueryError,
-            `${requestIdPrefix} Error raised during TransactionRecordQuery for ${fileCreateTx.transactionId}`,
-          );
-        }
-      }
-
-      this.logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_EXCEEDED cost: ${transactionFee}`);
-
-      if (error instanceof JsonRpcError) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
-      throw sdkClientError;
-    }
-  }
-
   /**
-   * @dev Deletes `fileId` file from the Hedera Network utilizing Hashgraph SDK client
-   * @param fileId
-   * @param requestId
-   * @param callerName
-   * @param interactingEntity
+   * Retrieves the metrics (transaction fee and gas used) for a given transaction response.
+   * @private
+   * @param {string} transactionId - The ID of the transaction.
+   * @param {string} formattedRequestId - The formatted request ID for logging purposes.
+   * @returns {Promise<{transactionFee: number, gasUsed: number}>} A promise that resolves to an object containing the transaction fee and gas used.
    */
-  async deleteFile(fileId: FileId, requestId: string, callerName: string, interactingEntity: string): Promise<void> {
-    // format request ID msg
-    const currentDateNow = Date.now();
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-
+  private async getTransactionMetrics(
+    transactionId: string,
+    formattedRequestId: string,
+  ): Promise<{ transactionFee: number; gasUsed: number }> {
+    let gasUsed: number = 0;
+    let transactionFee: number = 0;
     try {
-      // Create fileDeleteTx
-      const fileDeleteTx = new FileDeleteTransaction()
-        .setFileId(fileId)
-        .setMaxTransactionFee(new Hbar(2))
-        .freezeWith(this.clientMain);
+      const transactionRecord = await new TransactionRecordQuery()
+        .setTransactionId(transactionId)
+        .setValidateReceiptStatus(false)
+        .execute(this.clientMain);
 
-      // execute fileDeleteTx
-      const fileDeleteTxResponse = await fileDeleteTx.execute(this.clientMain);
-
-      // get fileDeleteTx's record
-      const deleteFileRecord = await fileDeleteTxResponse.getRecord(this.clientMain);
-
-      // capture transactionFee in metrics and HBAR limiter class
-      this.hbarLimiter.addExpense(deleteFileRecord.transactionFee.toTinybars().toNumber(), currentDateNow);
-      this.captureMetrics(
-        SDKClient.transactionMode,
-        fileDeleteTx.constructor.name,
-        Status.Success,
-        deleteFileRecord.transactionFee.toTinybars().toNumber(),
-        deleteFileRecord?.contractFunctionResult?.gasUsed,
-        callerName,
-        interactingEntity,
+      // get gasUsed and transaction fee
+      transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+      gasUsed = transactionRecord.contractFunctionResult
+        ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
+        : 0;
+    } catch (err: any) {
+      const recordQueryError = new SDKClientError(err, err.message);
+      this.logger.error(
+        recordQueryError,
+        `${formattedRequestId} Error raised during TransactionRecordQuery for ${transactionId}`,
       );
-
-      // ensure the file is deleted
-      const receipt = deleteFileRecord.receipt;
-      const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
-
-      if (receipt.status === Status.Success && fileInfo.isDeleted) {
-        this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);
-      } else {
-        this.logger.warn(`${requestIdPrefix} Fail to delete file with fileId: ${fileId} `);
-      }
-    } catch (error: any) {
-      this.logger.warn(`${requestIdPrefix} ${error['message']} `);
     }
+
+    return { transactionFee, gasUsed };
   }
 }
