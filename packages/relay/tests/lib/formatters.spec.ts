@@ -38,11 +38,32 @@ import {
   trimPrecedingZeros,
   isHex,
   ASCIIToHex,
+  formatRequestIdMessage,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
 
 describe('Formatters', () => {
+  describe('formatRequestIdMessage', () => {
+    const exampleRequestId = '46530e63-e33a-4f42-8e44-b125f99f1a9b';
+    const expectedFormattedId = '[Request ID: 46530e63-e33a-4f42-8e44-b125f99f1a9b]';
+
+    it('Should format request ID message', () => {
+      const result = formatRequestIdMessage(exampleRequestId);
+      expect(result).to.eq(expectedFormattedId);
+    });
+
+    it('Should return formated request ID if already formatted request ID is passed in', () => {
+      const result = formatRequestIdMessage(expectedFormattedId);
+      expect(result).to.eq(expectedFormattedId);
+    });
+
+    it('Should return an empty string if undefined is passed in', () => {
+      const result = formatRequestIdMessage(undefined);
+      expect(result).to.eq('');
+    });
+  });
+
   describe('hexToASCII', () => {
     const inputs = ['4C6F72656D20497073756D', '466F6F', '426172'];
 
