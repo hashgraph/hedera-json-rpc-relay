@@ -23,6 +23,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
+import { GCProfiler } from 'v8';
 
 // Other external resources
 import fs from 'fs';
@@ -102,6 +103,11 @@ describe('RPC Server Acceptance Tests', function () {
       runLocalRelay();
     }
   };
+
+  // leak detection middleware
+  if (process.env.MEMWATCH_ENABLED === 'true') {
+    Utils.captureMemoryLeaks(new GCProfiler());
+  }
 
   before(async () => {
     // configuration details
