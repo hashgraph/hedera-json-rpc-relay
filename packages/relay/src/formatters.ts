@@ -38,7 +38,10 @@ const generateRandomHex = (bytesLength = 16) => {
  * Format message prefix for logger.
  */
 const formatRequestIdMessage = (requestId?: string): string => {
-  return requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  if (!requestId) {
+    return '';
+  }
+  return requestId.includes(constants.REQUEST_ID_STRING) ? requestId : `[${constants.REQUEST_ID_STRING}${requestId}]`;
 };
 
 function hexToASCII(str: string): string {

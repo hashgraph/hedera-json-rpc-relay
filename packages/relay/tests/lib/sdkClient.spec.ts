@@ -2188,8 +2188,8 @@ describe('SdkClient', async function () {
 
       hbarLimitMock.expects('shouldLimit').thrice().returns(false);
       hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).atLeast(fileAppendChunks);
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
 
       await sdkClient.submitEthereumTransaction(transactionBuffer, callerName, requestId);
 
@@ -2212,8 +2212,8 @@ describe('SdkClient', async function () {
         .resolves(Array.from({ length: fileAppendChunks }, () => getTransactionResponse('FileAppendTransaction')));
 
       hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).thrice();
-      hbarLimitMock.expects('shouldLimit').once().returns(false);
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
+      hbarLimitMock.expects('shouldLimit').twice().returns(false);
 
       const response = await sdkClient.createFile(callData, client, requestId, callerName, interactingEntity);
 
@@ -2221,6 +2221,54 @@ describe('SdkClient', async function () {
       expect(queryStub.called).to.be.true;
       expect(createFileStub.called).to.be.true;
       expect(appendFileStub.called).to.be.true;
+    });
+
+    it('should execute executeAllTransaction and add expenses to limiter', async () => {
+      const callData = new Uint8Array(FILE_APPEND_CHUNK_SIZE * 2 + 1);
+      const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(callData.length / FILE_APPEND_CHUNK_SIZE));
+
+      const appendFileStub = sinon
+        .stub(FileAppendTransaction.prototype, 'executeAll')
+        .resolves(Array.from({ length: fileAppendChunks }, () => getTransactionResponse('FileAppendTransaction')));
+
+      hbarLimitMock.expects('shouldLimit').once().returns(false);
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
+
+      await sdkClient.executeAllTransaction(
+        new FileAppendTransaction(),
+        callerName,
+        interactingEntity,
+        requestId,
+        true,
+      );
+
+      expect(appendFileStub.called).to.be.true;
+    });
+
+    it('should rate limit before executing executeAllTransaction', async () => {
+      const callData = new Uint8Array(FILE_APPEND_CHUNK_SIZE * 2 + 1);
+      const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(callData.length / FILE_APPEND_CHUNK_SIZE));
+
+      const appendFileStub = sinon
+        .stub(FileAppendTransaction.prototype, 'executeAll')
+        .resolves(Array.from({ length: fileAppendChunks }, () => getTransactionResponse('FileAppendTransaction')));
+
+      hbarLimitMock.expects('shouldLimit').once().returns(true);
+
+      try {
+        await sdkClient.executeAllTransaction(
+          new FileAppendTransaction(),
+          callerName,
+          interactingEntity,
+          requestId,
+          true,
+        );
+        expect.fail(`Expected an error but nothing was thrown`);
+      } catch (error: any) {
+        expect(error.message).to.equal('HBAR Rate limit exceeded');
+      }
+
+      expect(appendFileStub.called).to.be.false;
     });
 
     it('should execute FileCreateTransaction with callData.length <= fileAppendChunkSize and add expenses to limiter', async () => {
@@ -2315,8 +2363,8 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
       hbarLimitMock
         .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.recordMode, callerName)
-        .twice()
+        .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
+        .once()
         .returns(false);
 
       const response = await sdkClient.executeTransaction(
@@ -2324,21 +2372,18 @@ describe('SdkClient', async function () {
         callerName,
         interactingEntity,
         requestId,
+        true,
       );
 
       expect(response).to.eq(transactionResponse);
       expect(transactionStub.called).to.be.true;
     });
 
-    it('should execute TransactionRecordQuery and add expenses to limiter', async () => {
+    it('should execute TransactionRecordQuery and do not add expenses to limiter', async () => {
       const transactionResponse = getTransactionResponse('EthereumTransaction');
 
       hbarLimitMock.expects('addExpense').never();
-      hbarLimitMock
-        .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.recordMode, callerName)
-        .once()
-        .returns(false);
+      hbarLimitMock.expects('shouldLimit').never();
 
       await sdkClient.executeGetTransactionRecord(transactionResponse, callerName, requestId);
     });
