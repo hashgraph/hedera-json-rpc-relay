@@ -151,8 +151,3 @@ jobs:
           check_run_disabled: true
           json_thousands_separator: ','
           junit_files: 'test-*.xml'
-
-      - name: Upload coverage report
-        run: bash .github/scripts/codecov-upload.sh
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
