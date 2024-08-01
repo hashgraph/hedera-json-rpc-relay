@@ -131,7 +131,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     });
 
     describe('eth_getLogs', () => {
-      let log0Block, log4Block, contractAddress: string, contractAddress2: string, latestBlock, previousBlock;
+      let log0Block, log4Block, contractAddress: string, contractAddress2: string, latestBlock, previousTwelveBlocks;
 
       before(async () => {
         const logsContract = await Utils.deployContract(
@@ -147,22 +147,21 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         contractAddress = logsContract.target.toString();
         contractAddress2 = logsContract2.target.toString();
 
-        previousBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
-
         // @ts-ignore
-        await (await logsContract.connect(accounts[1].wallet).log0(1)).wait();
+        await logsContract.connect(accounts[1].wallet).log0(1);
         // @ts-ignore
-        await (await logsContract.connect(accounts[1].wallet).log1(1)).wait();
+        await logsContract.connect(accounts[1].wallet).log1(1);
         // @ts-ignore
-        await (await logsContract.connect(accounts[1].wallet).log2(1, 1)).wait();
+        await logsContract.connect(accounts[1].wallet).log2(1, 1);
         // @ts-ignore
-        await (await logsContract.connect(accounts[1].wallet).log3(1, 1, 1)).wait();
+        await logsContract.connect(accounts[1].wallet).log3(1, 1, 1);
         // @ts-ignore
-        await (await logsContract.connect(accounts[1].wallet).log4(1, 1, 1, 1)).wait();
+        await logsContract.connect(accounts[1].wallet).log4(1, 1, 1, 1);
         // @ts-ignore
-        await (await logsContract2.connect(accounts[1].wallet).log4(1, 1, 1, 1)).wait();
+        await logsContract2.connect(accounts[1].wallet).log4(1, 1, 1, 1);
 
         latestBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
+        previousTwelveBlocks = latestBlock - 12;
       });
 
       it('@release should deploy a contract', async () => {
@@ -171,7 +170,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
             {
-              fromBlock: numberTo0x(previousBlock),
+              fromBlock: numberTo0x(previousTwelveBlocks),
               address: [contractAddress, contractAddress2],
             },
           ],
@@ -285,7 +284,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
             {
-              fromBlock: numberTo0x(previousBlock),
+              fromBlock: numberTo0x(previousTwelveBlocks),
               address: contractAddress,
             },
           ],
@@ -328,7 +327,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
             {
-              fromBlock: numberTo0x(previousBlock),
+              fromBlock: numberTo0x(previousTwelveBlocks),
               address: [contractAddress, contractAddress2, Address.NON_EXISTING_ADDRESS],
             },
           ],
