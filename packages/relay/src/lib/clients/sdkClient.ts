@@ -53,7 +53,7 @@ import {
 } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
-import { formatRequestIdMessage } from '../../formatters';
+import { formatRequestIdMessage, getTransferAmountSumForAccount } from '../../formatters';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { SDKClientError } from './../errors/SDKClientError';
@@ -562,6 +562,8 @@ export class SDKClient {
       // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler(). Otherwise, move on and return transactionResponse eventually.
       if (e.status && e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
         throw sdkClientError;
+      } else if (e instanceof JsonRpcError) {
+        throw e;
       } else {
         if (!transactionResponse) {
           throw predefined.INTERNAL_ERROR(
@@ -700,7 +702,7 @@ export class SDKClient {
       const transactionRecord: TransactionRecord = await transactionResponse.getRecord(this.clientMain);
 
       // get transactionFee and gasUsed for metrics
-      transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+      transactionFee = getTransferAmountSumForAccount(transactionRecord, this.clientMain.operatorAccountId!.toString());
       gasUsed = transactionRecord.contractFunctionResult
         ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
         : 0;

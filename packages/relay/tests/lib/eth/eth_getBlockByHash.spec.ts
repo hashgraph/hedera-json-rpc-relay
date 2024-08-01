@@ -30,6 +30,7 @@ import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import { numberTo0x } from '../../../dist/formatters';
 import {
+  ACCOUNT_WITHOUT_TRANSACTIONS,
   BLOCK_HASH,
   BLOCK_HASH_PREV_TRIMMED,
   BLOCK_HASH_TRIMMED,
@@ -45,10 +46,13 @@ import {
   CONTRACT_TIMESTAMP_1,
   CONTRACT_TIMESTAMP_2,
   DEFAULT_BLOCK,
+  DEFAULT_CONTRACT,
   DEFAULT_ETH_GET_BLOCK_BY_LOGS,
   DEFAULT_NETWORK_FEES,
   LINKS_NEXT_RES,
+  MOCK_ACCOUNT_WITHOUT_TRANSACTIONS,
   NO_SUCH_BLOCK_EXISTS_RES,
+  contractByEvmAddress,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 
@@ -75,6 +79,13 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(ACCOUNT_WITHOUT_TRANSACTIONS).reply(200, MOCK_ACCOUNT_WITHOUT_TRANSACTIONS);
+    restMock
+      .onGet(contractByEvmAddress(CONTRACT_ADDRESS_1))
+      .reply(200, { ...DEFAULT_CONTRACT, evmAddress: CONTRACT_ADDRESS_1 });
+    restMock
+      .onGet(contractByEvmAddress(CONTRACT_ADDRESS_2))
+      .reply(200, { ...DEFAULT_CONTRACT, evmAddress: CONTRACT_ADDRESS_2 });
 
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
@@ -265,7 +276,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       .onGet(
         `contracts/results?timestamp=gte:${randomBlock.timestamp.from}&timestamp=lte:${randomBlock.timestamp.to}&limit=100&order=asc`,
       )
-      .abortRequestOnce();
+      .abortRequest();
     await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(), ethImpl.getBlockByHash, false, ethImpl, [
       BLOCK_HASH,
       false,
