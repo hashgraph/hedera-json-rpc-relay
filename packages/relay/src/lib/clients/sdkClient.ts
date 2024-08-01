@@ -694,6 +694,7 @@ export class SDKClient {
         this.logger,
         transaction.constructor.name,
         txRecordClientNode,
+        this.clientMain.operatorAccountId!.toString(),
       );
       const transactionStatus = getTxResultAndMetricsResult.transactionStatus;
       gasUsed = getTxResultAndMetricsResult.gasUsed;
@@ -738,6 +739,7 @@ export class SDKClient {
           this.logger,
           transaction.constructor.name,
           txRecordClientNode,
+          this.clientMain.operatorAccountId!.toString(),
         );
         transactionFee = getTxRecordResult.transactionFee;
         gasUsed = getTxRecordResult.gasUsed;
@@ -831,6 +833,7 @@ export class SDKClient {
           this.logger,
           transaction.constructor.name,
           txRecordClientNode,
+          this.clientMain.operatorAccountId!.toString(),
         );
 
         this.logger.info(

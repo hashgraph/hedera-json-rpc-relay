@@ -22,7 +22,12 @@ import { Logger } from 'pino';
 import { MirrorNodeClient } from '../mirrorNodeClient';
 import { Client, Status, TransactionRecordQuery } from '@hashgraph/sdk';
 import { SDKClientError } from '../../errors/SDKClientError';
-import { formatRequestIdMessage, formatTransactionId, parseNumericEnvVar } from '../../../formatters';
+import {
+  formatRequestIdMessage,
+  formatTransactionId,
+  getTransferAmountSumForAccount,
+  parseNumericEnvVar,
+} from '../../../formatters';
 
 /**
  * Retrieves the status and metrics (transaction fee and gas used) for a given transaction ID using mirror node or consensus node.
@@ -41,6 +46,7 @@ export const getTransactionStatusAndMetrrics = async (
   logger: Logger,
   txConstructorName: string,
   clientMain: Client | MirrorNodeClient,
+  operatorAccountId: string,
 ): Promise<{ transactionFee: number; gasUsed: number; transactionStatus: string }> => {
   let gasUsed: number = 0;
   let transactionFee: number = 0;
@@ -62,7 +68,7 @@ export const getTransactionStatusAndMetrrics = async (
 
       // get transactionStatus, transactionFee, and gasUsed
       transactionStatus = transactionReceipt.status.toString();
-      transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
+      transactionFee = getTransferAmountSumForAccount(transactionRecord, operatorAccountId);
       gasUsed = transactionRecord.contractFunctionResult
         ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
         : 0;
@@ -102,7 +108,7 @@ export const getTransactionStatusAndMetrrics = async (
 
       // get transactionStatus, transactionFee
       transactionStatus = transactionReceipt.result;
-      transactionFee = Number(transactionReceipt.charged_tx_fee);
+      transactionFee = getTransferAmountSumForAccount(transactionReceipt, operatorAccountId);
     }
   }
 

@@ -2199,6 +2199,7 @@ describe('SdkClient', async function () {
       contractFunctionResult: {
         gasUsed,
       },
+      transfers: getMockedTransaction(transactionType, false).transfers,
     });
 
     const fileInfo = {
@@ -2250,6 +2251,7 @@ describe('SdkClient', async function () {
     it('should execute submitEthereumTransaction add expenses to limiter for large transaction data', async () => {
       const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(transactionBuffer.length / FILE_APPEND_CHUNK_SIZE));
       const queryStub = sinon.stub(FileInfoQuery.prototype, 'execute').resolves(fileInfo as any);
+
       const transactionStub = sinon
         .stub(EthereumTransaction.prototype, 'execute')
         .resolves(getMockedTransactionResponse(EthereumTransaction.name));
@@ -2533,6 +2535,7 @@ describe('SdkClient', async function () {
         logger,
         'constructor_name',
         client,
+        process.env.OPERATOR_ID_MAIN as string,
       );
 
       expect(transactionRecordStub.called).to.be.true;
@@ -2555,6 +2558,18 @@ describe('SdkClient', async function () {
             charged_tx_fee: defaultTransactionFee,
             result: 'SUCCESS',
             transaction_id: mockedTransactionIdFormatted,
+            transfers: [
+              {
+                account: '0.0.800',
+                amount: defaultTransactionFee,
+                is_approval: false,
+              },
+              {
+                account: process.env.OPERATOR_ID_MAIN,
+                amount: -1 * defaultTransactionFee,
+                is_approval: false,
+              },
+            ],
           },
         ],
       };

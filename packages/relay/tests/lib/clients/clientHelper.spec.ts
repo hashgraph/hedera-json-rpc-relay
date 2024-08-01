@@ -46,15 +46,24 @@ describe('Client Helper', function () {
   let instance: AxiosInstance;
   let mirrorNodeClient: MirrorNodeClient;
 
+  const mockedTxFee = 36900000;
+  const operatorAcocuntId = `0.0.1022`;
   const callerName = 'eth_sendRawTransaction';
   const mockedTransactionId = '0.0.1022@1681130064.409933500';
   const mockedTransactionIdFormatted = '0.0.1022-1681130064-409933500';
   const mockedMirrorNodeTransactionRecord = {
     transactions: [
       {
-        charged_tx_fee: 56800000,
+        charged_tx_fee: mockedTxFee,
         result: 'SUCCESS',
         transaction_id: '0.0.1022-1681130064-409933500',
+        transfers: [
+          {
+            account: operatorAcocuntId,
+            amount: -1 * mockedTxFee,
+            is_approval: false,
+          },
+        ],
       },
     ],
   };
@@ -63,10 +72,17 @@ describe('Client Helper', function () {
     receipt: {
       status: Status.Success,
     },
-    transactionFee: new Hbar(36900000),
+    transactionFee: new Hbar(mockedTxFee),
     contractFunctionResult: {
       gasUsed: new Long(0, 1000, true),
     },
+    transfers: [
+      {
+        accountId: operatorAcocuntId,
+        amount: Hbar.fromTinybars(-1 * mockedTxFee),
+        is_approval: false,
+      },
+    ],
   };
 
   before(() => {
@@ -117,6 +133,7 @@ describe('Client Helper', function () {
         logger,
         `constructor_name`,
         mirrorNodeClient,
+        operatorAcocuntId,
       );
 
       expect(getTxResultAndMetricsResult.gasUsed).to.eq(0);
@@ -129,6 +146,8 @@ describe('Client Helper', function () {
     });
 
     it('Should getTransactionStatusAndMetrrics via CONSENSUS NODE client', async () => {
+      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
+
       const transactionRecordStub = sinon
         .stub(TransactionRecordQuery.prototype, 'execute')
         .resolves(mockedConsensusNodeTransactionRecord as any);
@@ -140,13 +159,14 @@ describe('Client Helper', function () {
         logger,
         `constructor_name`,
         client,
+        operatorAcocuntId,
       );
 
       expect(transactionRecordStub.called).to.be.true;
       expect(getTxResultAndMetricsResult.gasUsed).to.eq(
         mockedConsensusNodeTransactionRecord.contractFunctionResult.gasUsed.toNumber(),
       );
-      expect(getTxResultAndMetricsResult.transactionFee).to.eq(
+      expect(getTxResultAndMetricsResult.transactionFee * 10 ** 8).to.eq(
         mockedConsensusNodeTransactionRecord.transactionFee.toTinybars().toNumber(),
       );
       expect(getTxResultAndMetricsResult.transactionStatus).to.eq(
