@@ -2194,7 +2194,9 @@ describe('SdkClient', async function () {
 
     it('should rate limit before creating file and add expenses to limiter for large transaction data', async () => {
       const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(transactionBuffer.length / FILE_APPEND_CHUNK_SIZE));
+
       const queryStub = sinon.stub(FileInfoQuery.prototype, 'execute').resolves(fileInfo);
+
       const transactionStub = sinon
         .stub(EthereumTransaction.prototype, 'execute')
         .resolves(getTransactionResponse('EthereumTransaction'));
