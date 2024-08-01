@@ -386,6 +386,7 @@ export const contractId1 = '0.0.5001';
 export const contractId2 = '0.0.5002';
 export const signedTransactionHash =
   '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad';
+export const LONG_ZERO_ADDRESS = '0x0000000000000000000000000000000000000557';
 
 export const defaultBlock = {
   count: blockTransactionCount,
@@ -435,7 +436,7 @@ export const defaultContractResults = {
       contract_id: '0.0.1375',
       created_contract_ids: ['0.0.1375'],
       error_message: null,
-      from: '0x0000000000000000000000000000000000000557',
+      from: LONG_ZERO_ADDRESS,
       function_parameters: '0x',
       gas_limit: maxGasLimit,
       gas_used: gasUsed1,
@@ -467,7 +468,7 @@ export const defaultContractResults = {
       contract_id: '0.0.1374',
       created_contract_ids: [],
       error_message: null,
-      from: '0x0000000000000000000000000000000000000557',
+      from: LONG_ZERO_ADDRESS,
       function_parameters:
         '0x2b6adf430000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000084865792c204d6121000000000000000000000000000000000000000000000000',
       gas_limit: maxGasLimit - 1000,

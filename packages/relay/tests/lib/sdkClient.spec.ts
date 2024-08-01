@@ -2091,16 +2091,36 @@ describe('SdkClient', async function () {
           switch (transactionType) {
             case 'FileCreateTransaction':
               transactionFee = fileCreateFee;
+              transfers = [
+                {
+                  accountId: process.env.OPERATOR_ID_MAIN,
+                  amount: Hbar.fromTinybars(-1 * fileCreateFee),
+                  is_approval: false,
+                },
+              ];
               break;
             case 'FileAppendTransaction':
               transactionFee = fileAppendFee;
+              transfers = [
+                {
+                  accountId: process.env.OPERATOR_ID_MAIN,
+                  amount: Hbar.fromTinybars(-1 * fileAppendFee),
+                  is_approval: false,
+                },
+              ];
               break;
             case 'FileDeleteTransaction':
               transactionFee = fileDeleteFee;
+              transfers = [
+                {
+                  accountId: process.env.OPERATOR_ID_MAIN,
+                  amount: Hbar.fromTinybars(-1 * fileDeleteFee),
+                  is_approval: false,
+                },
+              ];
               break;
             default:
               transactionFee = defaultTransactionFee;
-
               transfers = [
                 {
                   accountId: '0.0.800',
@@ -2174,8 +2194,7 @@ describe('SdkClient', async function () {
 
     it('should rate limit before creating file and add expenses to limiter for large transaction data', async () => {
       const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(transactionBuffer.length / FILE_APPEND_CHUNK_SIZE));
-
-      const queryStub = sinon.stub(Query.prototype, 'execute').resolves(fileInfo);
+      const queryStub = sinon.stub(FileInfoQuery.prototype, 'execute').resolves(fileInfo);
       const transactionStub = sinon
         .stub(EthereumTransaction.prototype, 'execute')
         .resolves(getTransactionResponse('EthereumTransaction'));
