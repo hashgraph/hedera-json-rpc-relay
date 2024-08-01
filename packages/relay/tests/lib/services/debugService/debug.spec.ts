@@ -74,19 +74,19 @@ describe('Debug API Test Suite', async function () {
       disableStack: true,
     },
     {
-      disableMemory: true,
+      enableMemory: true,
     },
     {
       disableStorage: true,
     },
     {
+      enableMemory: true,
       disableStack: true,
-      disableMemory: true,
       disableStorage: true,
     },
     {
+      enableMemory: false,
       disableStack: false,
-      disableMemory: false,
       disableStorage: false,
     },
   ];
@@ -295,7 +295,7 @@ describe('Debug API Test Suite', async function () {
       });
       for (const config of opcodeLoggerConfigs) {
         const opcodeLoggerParams = getQueryParams({
-          memory: !config.disableMemory,
+          memory: config.enableMemory,
           stack: !config.disableStack,
           storage: !config.disableStorage,
         });
@@ -305,7 +305,7 @@ describe('Debug API Test Suite', async function () {
           opcodes: opcodesResponse.opcodes?.map((opcode) => ({
             ...opcode,
             stack: config.disableStack ? [] : opcode.stack,
-            memory: config.disableMemory ? [] : opcode.memory,
+            memory: config.enableMemory ? opcode.memory : [],
             storage: config.disableStorage ? {} : opcode.storage,
           })),
         });
@@ -455,7 +455,7 @@ describe('Debug API Test Suite', async function () {
                 gasCost: opcode.gas_cost,
                 depth: opcode.depth,
                 stack: config.disableStack ? null : opcode.stack,
-                memory: config.disableMemory ? null : opcode.memory,
+                memory: config.enableMemory ? opcode.memory : null,
                 storage: config.disableStorage ? null : opcode.storage,
                 reason: opcode.reason ? strip0x(opcode.reason) : null,
               })),

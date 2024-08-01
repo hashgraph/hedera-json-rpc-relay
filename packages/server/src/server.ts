@@ -662,13 +662,23 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
 
 app.useRpc('debug_traceTransaction', async (params: any) => {
   const transactionIdOrHash = params[0];
-  const { tracer, ...otherParams } = params[1];
+  let { tracer, tracerConfig } = params[1];
 
-  let tracerConfig: object;
+  if (tracer === undefined) {
+    tracer = TracerType.OpcodeLogger;
+  }
+
+  if (tracerConfig === undefined) {
+    tracerConfig = {};
+  }
+
   if (tracer === TracerType.CallTracer) {
-    tracerConfig = otherParams?.tracerConfig ?? { onlyTopCall: false };
+    tracerConfig.onlyTopCall = tracerConfig.onlyTopCall ?? false;
   } else {
-    tracerConfig = otherParams ?? { disableMemory: false, disableStack: false, disableStorage: false };
+    tracerConfig.enableMemory = tracerConfig.enableMemory ?? false;
+    tracerConfig.disableStack = tracerConfig.disableStack ?? false;
+    tracerConfig.disableStorage = tracerConfig.disableStorage ?? false;
+    tracerConfig.enableReturnData = tracerConfig.enableReturnData ?? false;
   }
 
   return logAndHandleResponse('debug_traceTransaction', [transactionIdOrHash, tracer, tracerConfig], (requestId) =>

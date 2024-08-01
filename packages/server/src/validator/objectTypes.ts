@@ -1,4 +1,4 @@
-import { Validator } from '.';
+import { TracerType, Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
 
 export const OBJECTS_VALIDATIONS = {
@@ -34,6 +34,45 @@ export const OBJECTS_VALIDATIONS = {
     topics: {
       type: 'topics',
       nullable: false,
+    },
+  },
+  tracerOptions: {
+    onlyTopCall: {
+      type: 'boolean',
+      nullable: false,
+      required: false,
+    },
+    enableMemory: {
+      type: 'boolean',
+      nullable: false,
+      required: false,
+    },
+    disableStack: {
+      type: 'boolean',
+      nullable: false,
+      required: false,
+    },
+    disableStorage: {
+      type: 'boolean',
+      nullable: false,
+      required: false,
+    },
+    enableReturnData: {
+      type: 'boolean',
+      nullable: false,
+      required: false,
+    },
+  },
+  traceConfig: {
+    tracer: {
+      type: 'tracerType',
+      nullable: false,
+      required: false,
+    },
+    tracerConfig: {
+      type: 'tracerOptions',
+      nullable: false,
+      required: false,
     },
   },
   transaction: {
@@ -102,6 +141,52 @@ export const OBJECTS_VALIDATIONS = {
     },
   },
 };
+
+export class TracerOptions {
+  onlyTopCall?: boolean;
+  enableMemory?: boolean;
+  disableStack?: boolean;
+  disableStorage?: boolean;
+  enableReturnData?: boolean;
+
+  constructor(tracerOptions: any) {
+    Validator.hasUnexpectedParams(tracerOptions, OBJECTS_VALIDATIONS.tracerOptions, this.name());
+    this.onlyTopCall = tracerOptions.onlyTopCall;
+    this.enableMemory = tracerOptions.enableMemory;
+    this.disableStack = tracerOptions.disableStack;
+    this.disableStorage = tracerOptions.disableStorage;
+    this.enableReturnData = tracerOptions.enableReturnData;
+  }
+
+  validate() {
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.tracerOptions);
+  }
+
+  name() {
+    return this.constructor.name;
+  }
+}
+
+export class TraceConfig {
+  tracer?: TracerType;
+  tracerConfig?: TracerOptions;
+
+  constructor(traceConfig: any) {
+    Validator.hasUnexpectedParams(traceConfig, OBJECTS_VALIDATIONS.traceConfig, this.name());
+    this.tracer = traceConfig.tracer;
+    if (traceConfig.tracerConfig) {
+      this.tracerConfig = new TracerOptions(traceConfig.tracerConfig);
+    }
+  }
+
+  validate() {
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.traceConfig);
+  }
+
+  name() {
+    return this.constructor.name;
+  }
+}
 
 export class TransactionObject {
   from?: string;

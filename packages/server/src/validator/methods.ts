@@ -168,12 +168,8 @@ export const METHODS = {
       type: 'hex|transactionId',
     },
     1: {
-      required: true,
-      type: 'tracerType',
-    },
-    2: {
       required: false,
-      type: 'tracerConfig',
+      type: 'traceConfig',
     },
   },
 };

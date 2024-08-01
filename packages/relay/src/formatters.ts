@@ -211,6 +211,13 @@ const formatContractResult = (cr: any) => {
   return null;
 };
 
+const mapKeysAndValues = (target: object, mapFn: (key: any) => any): object => {
+  return Object.keys(target).reduce((result, key) => {
+    result[mapFn(key)] = mapFn(target[key]);
+    return result;
+  }, {});
+};
+
 const strip0x = (input: string): string => {
   return input.startsWith(EMPTY_HEX) ? input.substring(2) : input;
 };
@@ -317,4 +324,5 @@ export {
   isValidEthereumAddress,
   isHex,
   ASCIIToHex,
+  mapKeysAndValues,
 };

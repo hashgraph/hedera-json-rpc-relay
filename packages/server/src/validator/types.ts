@@ -95,18 +95,23 @@ export const TYPES = {
     test: (param: Constants.TracerType) => Object.values(Constants.TracerType).includes(param),
     error: 'Invalid tracer type',
   },
-  tracerConfig: {
-    test: (param: Record<string, any>) => {
-      const isValidCallTracerConfig: boolean =
-        typeof param === 'object' && 'onlyTopCall' in param && typeof param.onlyTopCall === 'boolean';
+  traceConfig: {
+    test: (param: any) => {
+      if (typeof param === 'object') {
+        return new Validator.TraceConfig(param).validate();
+      }
 
-      const isValidOpcodeLoggerConfig: boolean =
-        typeof param === 'object' &&
-        (!('disableMemory' in param) || typeof param.disableMemory === 'boolean') &&
-        (!('disableStack' in param) || typeof param.disableStack === 'boolean') &&
-        (!('disableStorage' in param) || typeof param.disableStorage === 'boolean');
+      return false;
+    },
+    error: 'Expected TraceConfig',
+  },
+  tracerOptions: {
+    test: (param: any) => {
+      if (typeof param === 'object') {
+        return new Validator.TracerOptions(param).validate();
+      }
 
-      return isValidCallTracerConfig || isValidOpcodeLoggerConfig;
+      return false;
     },
     error: 'Invalid tracerConfig',
   },
