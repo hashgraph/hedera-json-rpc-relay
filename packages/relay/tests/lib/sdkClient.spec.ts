@@ -2211,16 +2211,19 @@ describe('SdkClient', async function () {
 
     let requestId: string;
     let hbarLimitMock: sinon.SinonMock;
+    let sdkClientMock: sinon.SinonMock;
 
     beforeEach(() => {
       requestId = uuid();
       hbarLimitMock = sinon.mock(hbarLimiter);
+      sdkClientMock = sinon.mock(sdkClient);
       mock = new MockAdapter(instance);
     });
 
     afterEach(() => {
       hbarLimitMock.verify();
       sinon.restore();
+      sdkClientMock.restore();
     });
 
     it('should rate limit before creating file', async () => {
@@ -2244,7 +2247,7 @@ describe('SdkClient', async function () {
       expect(transactionStub.called).to.be.false;
     });
 
-    it('should rate limit before creating file and add expenses to limiter for large transaction data', async () => {
+    it('should execute submitEthereumTransaction add expenses to limiter for large transaction data', async () => {
       const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(transactionBuffer.length / FILE_APPEND_CHUNK_SIZE));
       const queryStub = sinon.stub(FileInfoQuery.prototype, 'execute').resolves(fileInfo as any);
       const transactionStub = sinon
@@ -2259,6 +2262,20 @@ describe('SdkClient', async function () {
           Array.from({ length: fileAppendChunks }, () => getMockedTransactionResponse(FileAppendTransaction.name)),
         );
 
+      const transactionRecordStub = sinon.stub(TransactionRecordQuery.prototype, 'execute');
+      // first call for FileCreate
+      transactionRecordStub.onCall(0).resolves(getMockedTransactionRecord(FileCreateTransaction.name));
+
+      // next fileAppendChunks calls for FileAppend
+      let i = 1;
+      for (i; i <= fileAppendChunks; i++) {
+        transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(FileAppendTransaction.name));
+      }
+
+      // last call for EthereumTransaction
+      transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(EthereumTransaction.name));
+
+      sdkClientMock.expects('getTinyBarGasFee').once().returns(1000);
       hbarLimitMock.expects('shouldLimit').thrice().returns(false);
       hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
