@@ -55,6 +55,7 @@ import {
   TransactionRecordQuery,
 } from '@hashgraph/sdk';
 import { formatTransactionId } from '../../src/formatters';
+import { getTransactionStatusAndMetrrics } from '../../src/lib/clients/helper/clientHelper';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -2110,6 +2111,7 @@ describe('SdkClient', async function () {
     const transactionId = TransactionId.generate(accountId);
     const fileId = FileId.fromString('0.0.1234');
     const transactionReceipt = { fileId, status: Status.Success };
+    const gasUsed = Long.fromNumber(10000);
 
     const getMockedTransaction = (transactionType: string, toHbar: boolean) => {
       let transactionFee: any;
@@ -2182,7 +2184,7 @@ describe('SdkClient', async function () {
             receipt: transactionReceipt,
             transactionFee: Hbar.fromTinybars(transactionFee),
             contractFunctionResult: {
-              gasUsed: Long.fromNumber(10000),
+              gasUsed,
             },
             transfers,
           });
@@ -2195,7 +2197,7 @@ describe('SdkClient', async function () {
       },
       transactionFee: getMockedTransaction(transactionType, true).transactionFee,
       contractFunctionResult: {
-        gasUsed: new Long(0, 1000, true),
+        gasUsed,
       },
     });
 
@@ -2497,13 +2499,33 @@ describe('SdkClient', async function () {
       expect(transactionRecordStub.called).to.be.true;
     });
 
-    it('should execute TransactionRecordQuery and do not add expenses to limiter', async () => {
+    it('should execute getTransactionStatusAndMetrrics to get transaction receipt and metrics but do not add expenses to limiter', async () => {
       const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
+
+      const transactionRecordStub = sinon
+        .stub(TransactionRecordQuery.prototype, 'execute')
+        .resolves(getMockedTransactionRecord(EthereumTransaction.name));
 
       hbarLimitMock.expects('addExpense').never();
       hbarLimitMock.expects('shouldLimit').never();
 
-      await sdkClient.executeGetTransactionRecord(transactionResponse, callerName, requestId);
+      const result = await getTransactionStatusAndMetrrics(
+        transactionResponse.transactionId.toString(),
+        callerName,
+        requestId,
+        logger,
+        'constructor_name',
+        client,
+      );
+
+      expect(transactionRecordStub.called).to.be.true;
+      expect(result.transactionStatus).to.eq((await transactionResponse.getRecord(client)).receipt.status.toString());
+      expect(result.transactionFee).to.eq(
+        (await transactionResponse.getRecord(client)).transactionFee.toTinybars().toNumber(),
+      );
+      expect(result.gasUsed).to.eq(
+        (await transactionResponse.getRecord(client)).contractFunctionResult?.gasUsed.toNumber(),
+      );
     });
 
     it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
