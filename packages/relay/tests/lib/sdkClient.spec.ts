@@ -2283,9 +2283,12 @@ describe('SdkClient', async function () {
         .resolves(
           Array.from({ length: fileAppendChunks }, () => getMockedTransactionResponse(FileAppendTransaction.name)),
         );
-      const transactionRecordStub = sinon
-        .stub(TransactionRecordQuery.prototype, 'execute')
-        .resolves(getMockedTransactionRecord(FileCreateTransaction.name));
+      const transactionRecordStub = sinon.stub(TransactionRecordQuery.prototype, 'execute');
+
+      transactionRecordStub.onCall(0).resolves(getMockedTransactionRecord(FileCreateTransaction.name));
+      for (let i = 1; i <= fileAppendChunks; i++) {
+        transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(FileAppendTransaction.name));
+      }
 
       hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
       hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
@@ -2317,6 +2320,10 @@ describe('SdkClient', async function () {
           Array.from({ length: fileAppendChunks }, () => getMockedTransactionResponse(FileAppendTransaction.name)),
         );
 
+      const transactionRecordStub = sinon
+        .stub(TransactionRecordQuery.prototype, 'execute')
+        .resolves(getMockedTransactionRecord(FileAppendTransaction.name));
+
       hbarLimitMock.expects('shouldLimit').once().returns(false);
       hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
 
@@ -2326,9 +2333,11 @@ describe('SdkClient', async function () {
         interactingEntity,
         requestId,
         true,
+        mirrorNodeClient,
       );
 
       expect(appendFileStub.called).to.be.true;
+      expect(transactionRecordStub.called).to.be.true;
     });
 
     it('should rate limit before executing executeAllTransaction', async () => {
@@ -2350,6 +2359,7 @@ describe('SdkClient', async function () {
           interactingEntity,
           requestId,
           true,
+          mirrorNodeClient,
         );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {

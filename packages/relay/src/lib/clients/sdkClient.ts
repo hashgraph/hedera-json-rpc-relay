@@ -662,6 +662,7 @@ export class SDKClient {
     interactingEntity: string,
     requestId: string,
     shouldThrowHbarLimit: boolean,
+    mirrorNodeClient: MirrorNodeClient,
   ): Promise<void> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
@@ -676,49 +677,54 @@ export class SDKClient {
       }
     }
 
+    const txRecordClientNode =
+      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true' ? this.clientMain : mirrorNodeClient;
+
     try {
       // execute transaction
       this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
-
       transactionResponses = await transaction.executeAll(this.clientMain);
 
+      // loop through transactionResponses to retrieve metrics from each response
       for (let transactionResponse of transactionResponses) {
         let gasUsed: number = 0;
         let transactionFee: number = 0;
 
-        // Since this is a loop, and it's unclear which transactionResponse might throw an error,
-        // use a try/catch/finally block to ensure the loop completes even if an error is thrown, and all the metrics are recorded.
-        try {
-          // get gasUsed and transaction fee
-          const getRecordResult = await this.executeGetTransactionRecord(transactionResponse, callerName, requestId);
-          gasUsed = getRecordResult.gasUsed;
-          transactionFee = getRecordResult.transactionFee;
-          this.logger.info(
-            `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${getRecordResult.transactionFee} tinybars, gasUsed=${getRecordResult.gasUsed}`,
+        // retrieve transaction status and metrics (transaction fee & gasUsed).
+        // getTransactionStatusAndMetrics() will not throw an error when transactions contain error statuses.
+        // Instead, it will return transaction records with statuses attached, ensuring the loop won't be broken.
+        const getTxResultAndMetricsResult = await getTransactionStatusAndMetrrics(
+          transactionResponse.transactionId.toString(),
+          callerName,
+          formattedRequestId,
+          this.logger,
+          transaction.constructor.name,
+          txRecordClientNode,
+        );
+
+        this.logger.info(
+          `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${getTxResultAndMetricsResult.transactionFee} tinybars, gasUsed=${getTxResultAndMetricsResult.gasUsed}`,
+        );
+
+        // extract metrics
+        gasUsed = getTxResultAndMetricsResult.gasUsed;
+        transactionFee = getTxResultAndMetricsResult.transactionFee;
+
+        // capture metrics
+        if (transactionFee !== 0) {
+          this.logger.trace(
+            `${formattedRequestId} Capturing HBAR charged transaction fee: transactionId=${transactionResponse.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars, gasUsed=${getTxResultAndMetricsResult.gasUsed}`,
           );
-        } catch (e: any) {
-          const result = await this.getTransactionMetrics(
-            transactionResponse.transactionId.toString(),
-            formattedRequestId,
+          this.hbarLimiter.addExpense(transactionFee, currentDateNow);
+          this.captureMetrics(
+            SDKClient.transactionMode,
+            transactionType,
+            Status.Success,
+            transactionFee,
+            gasUsed,
+            callerName,
+            interactingEntity,
           );
-          transactionFee = result.transactionFee;
-          gasUsed = result.gasUsed;
-        } finally {
-          if (transactionFee !== 0) {
-            this.logger.trace(
-              `${formattedRequestId} Capturing HBAR charged transaction fee: transactionId=${transactionResponse.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
-            );
-            this.hbarLimiter.addExpense(transactionFee, currentDateNow);
-            this.captureMetrics(
-              SDKClient.transactionMode,
-              transactionType,
-              Status.Success,
-              transactionFee,
-              gasUsed,
-              callerName,
-              interactingEntity,
-            );
-          }
         }
       }
     } catch (e: any) {
@@ -806,7 +812,14 @@ export class SDKClient {
         .setMaxChunks(this.maxChunks);
 
       // use executeAllTransaction() to executeAll fileAppendTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
-      await this.executeAllTransaction(fileAppendTx, callerName, interactingEntity, formattedRequestId, true);
+      await this.executeAllTransaction(
+        fileAppendTx,
+        callerName,
+        interactingEntity,
+        formattedRequestId,
+        true,
+        mirrorNodeClient,
+      );
     }
 
     // Ensure that the calldata file is not empty
