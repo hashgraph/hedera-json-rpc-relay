@@ -109,5 +109,15 @@
     "hooks": {
       "pre-commit": "lint-staged"
     }
+  },
+  "nyc": {
+    "check-coverage": false,
+    "reporter": [
+      "html",
+      "lcov",
+      "text",
+      "text-summary"
+    ],
+    "report-dir": "coverage"
   }
 }
