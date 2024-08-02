@@ -57,6 +57,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload coverage report
+        if: ${{ !cancelled() && always() }}
         run: bash .github/scripts/codecov-upload.sh
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
