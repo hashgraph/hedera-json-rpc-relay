@@ -2188,6 +2188,33 @@ export class EthImpl implements Eth {
     return gas;
   }
 
+  populateSyntheticTransactionHashes(
+    showDetails: boolean,
+    logs: Log[],
+    transactionArray: Array<any>,
+    requestIdPrefix?: string,
+  ): Array<any> {
+    let filteredLogs: Log[];
+    if (showDetails) {
+      filteredLogs = logs.filter(
+        (log) => !transactionArray.some((transaction) => transaction.hash === log.transactionHash),
+      );
+      filteredLogs.forEach((log) => {
+        const transaction: Transaction1559 = this.createTransactionFromLog(log);
+        transactionArray.push(transaction);
+      });
+    } else {
+      filteredLogs = logs.filter((log) => !transactionArray.includes(log.transactionHash));
+      filteredLogs.forEach((log) => {
+        transactionArray.push(log.transactionHash);
+      });
+    }
+
+    this.logger.trace(`${requestIdPrefix} Synthetic transaction hashes will be populated in the block response`);
+
+    return transactionArray;
+  }
+
   /**
    * Gets the block with the given hash.
    * Given an ethereum transaction hash, call the mirror node to get the block info.
@@ -2242,6 +2269,8 @@ export class EthImpl implements Eth {
 
       transactionArray.push(showDetails ? formatContractResult(contractResult) : contractResult.hash);
     }
+
+    transactionArray = this.populateSyntheticTransactionHashes(showDetails, logs, transactionArray, requestIdPrefix);
 
     const blockHash = toHash32(blockResponse.hash);
     return new Block({
