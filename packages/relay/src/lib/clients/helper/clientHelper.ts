@@ -20,8 +20,8 @@
 
 import { Logger } from 'pino';
 import { MirrorNodeClient } from '../mirrorNodeClient';
-import { Client, Status, TransactionRecordQuery } from '@hashgraph/sdk';
 import { SDKClientError } from '../../errors/SDKClientError';
+import { Client, Status, TransactionRecordQuery } from '@hashgraph/sdk';
 import {
   formatRequestIdMessage,
   formatTransactionId,
@@ -39,7 +39,7 @@ import {
  * @param {Client | MirrorNodeClient} clientMain - The main consensus node client or mirror node client to use for retrieving the transaction record.
  * @returns {Promise<{transactionFee: number, gasUsed: number, transactionStatus: string}>} A promise that resolves to an object containing the transaction fee, gas used, and transaction status.
  */
-export const getTransactionStatusAndMetrrics = async (
+export const getTransactionStatusAndMetrics = async (
   transactionId: string,
   callerName: string,
   requestId: string,
@@ -50,7 +50,7 @@ export const getTransactionStatusAndMetrrics = async (
 ): Promise<{ transactionFee: number; gasUsed: number; transactionStatus: string }> => {
   let gasUsed: number = 0;
   let transactionFee: number = 0;
-  let transactionStatus = Status.Unknown.toString();
+  let transactionStatus: string = Status.Unknown.toString();
   const formattedRequestId = formatRequestIdMessage(requestId);
 
   if (clientMain instanceof Client) {

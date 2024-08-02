@@ -55,7 +55,7 @@ import {
   TransactionRecordQuery,
 } from '@hashgraph/sdk';
 import { formatTransactionId } from '../../src/formatters';
-import { getTransactionStatusAndMetrrics } from '../../src/lib/clients/helper/clientHelper';
+import { getTransactionStatusAndMetrics } from '../../src/lib/clients/helper/clientHelper';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -2518,7 +2518,7 @@ describe('SdkClient', async function () {
       expect(transactionRecordStub.called).to.be.true;
     });
 
-    it('should execute getTransactionStatusAndMetrrics to get transaction receipt and metrics but do not add expenses to limiter', async () => {
+    it('should execute getTransactionStatusAndMetrics to get transaction receipt and metrics but do not add expenses to limiter', async () => {
       const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
 
       const transactionRecordStub = sinon
@@ -2528,7 +2528,7 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').never();
       hbarLimitMock.expects('shouldLimit').never();
 
-      const result = await getTransactionStatusAndMetrrics(
+      const result = await getTransactionStatusAndMetrics(
         transactionResponse.transactionId.toString(),
         callerName,
         requestId,

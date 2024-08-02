@@ -59,7 +59,7 @@ import { formatRequestIdMessage } from '../../formatters';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
-import { getTransactionStatusAndMetrrics } from './helper/clientHelper';
+import { getTransactionStatusAndMetrics } from './helper/clientHelper';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -687,7 +687,7 @@ export class SDKClient {
       transactionResponse = await transaction.execute(this.clientMain);
 
       // retrieve transaction status and metrics (transaction fee & gasUsed)
-      const getTxResultAndMetricsResult = await getTransactionStatusAndMetrrics(
+      const getTxResultAndMetricsResult = await getTransactionStatusAndMetrics(
         transactionResponse.transactionId.toString(),
         callerName,
         formattedRequestId,
@@ -732,7 +732,7 @@ export class SDKClient {
       // capture metrics in case .execute() fails and throw an error
       // if valid network error utilize transaction id to get transactionFee and gasUsed for metrics
       if (sdkClientError.isValidNetworkError()) {
-        const getTxRecordResult = await getTransactionStatusAndMetrrics(
+        const getTxRecordResult = await getTransactionStatusAndMetrics(
           transaction.transactionId!.toString(),
           callerName,
           requestId,
@@ -826,7 +826,7 @@ export class SDKClient {
         // retrieve transaction status and metrics (transaction fee & gasUsed).
         // getTransactionStatusAndMetrics() will not throw an error when transactions contain error statuses.
         // Instead, it will return transaction records with statuses attached, ensuring the loop won't be broken.
-        const getTxResultAndMetricsResult = await getTransactionStatusAndMetrrics(
+        const getTxResultAndMetricsResult = await getTransactionStatusAndMetrics(
           transactionResponse.transactionId.toString(),
           callerName,
           formattedRequestId,

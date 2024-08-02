@@ -32,7 +32,7 @@ import constants from '../../../src/lib/constants';
 import { MirrorNodeClient } from '../../../src/lib/clients';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import { AccountId, Client, Hbar, Long, Status, TransactionRecordQuery } from '@hashgraph/sdk';
-import { getTransactionStatusAndMetrrics } from '../../../src/lib/clients/helper/clientHelper';
+import { getTransactionStatusAndMetrics } from '../../../src/lib/clients/helper/clientHelper';
 
 config({ path: resolve(__dirname, '../../test.env') });
 const registry = new Registry();
@@ -122,11 +122,11 @@ describe('Client Helper', function () {
     mock = new MockAdapter(instance);
   });
 
-  describe('getTransactionStatusAndMetrrics', () => {
-    it('Should getTransactionStatusAndMetrrics via MIRROR NODE client', async () => {
+  describe('getTransactionStatusAndMetrics', () => {
+    it('Should getTransactionStatusAndMetrics via MIRROR NODE client', async () => {
       mock.onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`).reply(200, mockedMirrorNodeTransactionRecord);
 
-      const getTxResultAndMetricsResult = await getTransactionStatusAndMetrrics(
+      const getTxResultAndMetricsResult = await getTransactionStatusAndMetrics(
         mockedTransactionId,
         callerName,
         getRequestId(),
@@ -145,14 +145,14 @@ describe('Client Helper', function () {
       );
     });
 
-    it('Should getTransactionStatusAndMetrrics via CONSENSUS NODE client', async () => {
+    it('Should getTransactionStatusAndMetrics via CONSENSUS NODE client', async () => {
       process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
 
       const transactionRecordStub = sinon
         .stub(TransactionRecordQuery.prototype, 'execute')
         .resolves(mockedConsensusNodeTransactionRecord as any);
 
-      const getTxResultAndMetricsResult = await getTransactionStatusAndMetrrics(
+      const getTxResultAndMetricsResult = await getTransactionStatusAndMetrics(
         mockedTransactionId,
         callerName,
         getRequestId(),
