@@ -668,6 +668,7 @@ export class SDKClient {
     const currentDateNow = Date.now();
     let gasUsed: number = 0;
     let transactionFee: number = 0;
+    let txRecordChargeAmount: number = 0;
     let transactionResponse: TransactionResponse | null = null;
 
     // check hbar limit before executing transaction
@@ -699,6 +700,7 @@ export class SDKClient {
       const transactionStatus = getTxResultAndMetricsResult.transactionStatus;
       gasUsed = getTxResultAndMetricsResult.gasUsed;
       transactionFee = getTxResultAndMetricsResult.transactionFee;
+      txRecordChargeAmount = getTxResultAndMetricsResult.txRecordChargeAmount;
 
       // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler().
       // Otherwise, move on and return transactionResponse eventually.
@@ -742,6 +744,7 @@ export class SDKClient {
           this.clientMain.operatorAccountId!.toString(),
         );
         transactionFee = getTxRecordResult.transactionFee;
+        txRecordChargeAmount = getTxRecordResult.txRecordChargeAmount;
         gasUsed = getTxRecordResult.gasUsed;
       }
 
@@ -759,22 +762,33 @@ export class SDKClient {
       return transactionResponse;
     } finally {
       /**
-       * @note Capturing the charged transaction fees at the end of the flow ensures these fees are eventually
+       * @note Capturing the charged fees at the end of the flow ensures these fees are eventually
        *       captured in the metrics and rate limiter class, even if SDK transactions fail at any point.
        */
+
       if (transactionFee !== 0) {
-        this.logger.trace(
-          `${formattedRequestId} Capturing HBAR charged transaction fee: transactionId=${transaction.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
-        );
-        this.hbarLimiter.addExpense(transactionFee, currentDateNow);
-        this.captureMetrics(
-          SDKClient.transactionMode,
+        this.addExpenseAndCaptureMetrics(
+          `TransactionExecution`,
+          transaction.transactionId!,
           transactionType,
-          Status.Success,
+          callerName,
           transactionFee,
           gasUsed,
-          callerName,
           interactingEntity,
+          formattedRequestId,
+        );
+      }
+
+      if (txRecordChargeAmount !== 0) {
+        this.addExpenseAndCaptureMetrics(
+          `TransactionRecordQuery`,
+          transaction.transactionId!,
+          transactionType,
+          callerName,
+          txRecordChargeAmount,
+          gasUsed,
+          interactingEntity,
+          formattedRequestId,
         );
       }
     }
@@ -822,6 +836,7 @@ export class SDKClient {
       for (let transactionResponse of transactionResponses) {
         let gasUsed: number = 0;
         let transactionFee: number = 0;
+        let txRecordChargeAmount: number = 0;
 
         // retrieve transaction status and metrics (transaction fee & gasUsed).
         // getTransactionStatusAndMetrics() will not throw an error when transactions contain error statuses.
@@ -843,21 +858,32 @@ export class SDKClient {
         // extract metrics
         gasUsed = getTxResultAndMetricsResult.gasUsed;
         transactionFee = getTxResultAndMetricsResult.transactionFee;
+        txRecordChargeAmount = getTxResultAndMetricsResult.txRecordChargeAmount;
 
         // capture metrics
         if (transactionFee !== 0) {
-          this.logger.trace(
-            `${formattedRequestId} Capturing HBAR charged transaction fee: transactionId=${transactionResponse.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars, gasUsed=${getTxResultAndMetricsResult.gasUsed}`,
-          );
-          this.hbarLimiter.addExpense(transactionFee, currentDateNow);
-          this.captureMetrics(
-            SDKClient.transactionMode,
+          this.addExpenseAndCaptureMetrics(
+            `TransactionExecution`,
+            transaction.transactionId!,
             transactionType,
-            Status.Success,
+            callerName,
             transactionFee,
             gasUsed,
-            callerName,
             interactingEntity,
+            formattedRequestId,
+          );
+        }
+
+        if (txRecordChargeAmount !== 0) {
+          this.addExpenseAndCaptureMetrics(
+            `TransactionRecordQuery`,
+            transaction.transactionId!,
+            transactionType,
+            callerName,
+            txRecordChargeAmount,
+            gasUsed,
+            interactingEntity,
+            formattedRequestId,
           );
         }
       }
@@ -1039,4 +1065,42 @@ export class SDKClient {
   private static HbarToWeiBar(balance: AccountBalance): BigNumber {
     return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
   }
+
+  /**
+   * Adds an expense and captures metrics related to the transaction execution.
+   * @private
+   * @param {string} executionType - The type of execution (e.g., transaction or query).
+   * @param {string} transactionId - The ID of the transaction being executed.
+   * @param {string} transactionType - The type of transaction (e.g., contract call, file create).
+   * @param {string} callerName - The name of the entity calling the transaction.
+   * @param {number} cost - The cost of the transaction in tinybars.
+   * @param {number} gasUsed - The amount of gas used for the transaction.
+   * @param {string} interactingEntity - The entity interacting with the transaction.
+   * @param {string} formattedRequestId - The formatted request ID for logging purposes.
+   */
+  private addExpenseAndCaptureMetrics = (
+    executionType: string,
+    transactionId: TransactionId,
+    transactionType: string,
+    callerName: string,
+    cost: number,
+    gasUsed: number,
+    interactingEntity: string,
+    formattedRequestId: string,
+  ) => {
+    const currentDateNow = Date.now();
+    this.logger.trace(
+      `${formattedRequestId} Capturing HBAR charged: executionType=${executionType} transactionId=${transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, cost=${cost} tinybars`,
+    );
+    this.hbarLimiter.addExpense(cost, currentDateNow);
+    this.captureMetrics(
+      SDKClient.transactionMode,
+      transactionType,
+      Status.Success,
+      cost,
+      gasUsed,
+      callerName,
+      interactingEntity,
+    );
+  };
 }

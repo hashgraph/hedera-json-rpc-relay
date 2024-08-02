@@ -53,6 +53,7 @@ import {
   FileCreateTransaction,
   FileDeleteTransaction,
   TransactionRecordQuery,
+  AccountBalanceQuery,
 } from '@hashgraph/sdk';
 import { formatTransactionId } from '../../src/formatters';
 import { getTransactionStatusAndMetrics } from '../../src/lib/clients/helper/clientHelper';
@@ -2491,13 +2492,24 @@ describe('SdkClient', async function () {
     });
 
     it('should execute EthereumTransaction and add expenses to limiter', async () => {
+      const balanceBefore = new Hbar(6);
+      const balanceAfter = new Hbar(3);
       const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
       const transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
       const transactionRecordStub = sinon
         .stub(TransactionRecordQuery.prototype, 'execute')
         .resolves(getMockedTransactionRecord(EthereumTransaction.name));
 
+      const accountBalanceStub = sinon.stub(AccountBalanceQuery.prototype, 'execute');
+
+      accountBalanceStub.onCall(0).resolves({ hbars: balanceBefore } as any);
+      accountBalanceStub.onCall(1).resolves({ hbars: balanceAfter } as any);
+
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitMock
+        .expects('addExpense')
+        .withArgs(balanceBefore.toTinybars().toNumber() - balanceAfter.toTinybars().toNumber())
+        .once();
       hbarLimitMock
         .expects('shouldLimit')
         .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
@@ -2516,6 +2528,7 @@ describe('SdkClient', async function () {
       expect(response).to.eq(transactionResponse);
       expect(transactionStub.called).to.be.true;
       expect(transactionRecordStub.called).to.be.true;
+      expect(accountBalanceStub.called).to.be.true;
     });
 
     it('should execute getTransactionStatusAndMetrics to get transaction receipt and metrics but do not add expenses to limiter', async () => {

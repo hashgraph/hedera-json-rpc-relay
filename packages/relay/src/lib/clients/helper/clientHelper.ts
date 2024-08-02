@@ -21,12 +21,12 @@
 import { Logger } from 'pino';
 import { MirrorNodeClient } from '../mirrorNodeClient';
 import { SDKClientError } from '../../errors/SDKClientError';
-import { Client, Status, TransactionRecordQuery } from '@hashgraph/sdk';
+import { AccountBalanceQuery, Client, Status, TransactionRecordQuery } from '@hashgraph/sdk';
 import {
-  formatRequestIdMessage,
-  formatTransactionId,
-  getTransferAmountSumForAccount,
   parseNumericEnvVar,
+  formatTransactionId,
+  formatRequestIdMessage,
+  getTransferAmountSumForAccount,
 } from '../../../formatters';
 
 /**
@@ -37,7 +37,7 @@ import {
  * @param {Logger} logger - The logger object for logging purposes.
  * @param {string} txConstructorName - The constructor name of the transaction.
  * @param {Client | MirrorNodeClient} clientMain - The main consensus node client or mirror node client to use for retrieving the transaction record.
- * @returns {Promise<{transactionFee: number, gasUsed: number, transactionStatus: string}>} A promise that resolves to an object containing the transaction fee, gas used, and transaction status.
+ * @returns {Promise<{transactionFee: number, gasUsed: number, transactionStatus: string, txRecordChargeAmount: number}>} A promise that resolves to an object containing the transaction fee, gas used, and transaction status.
  */
 export const getTransactionStatusAndMetrics = async (
   transactionId: string,
@@ -47,9 +47,10 @@ export const getTransactionStatusAndMetrics = async (
   txConstructorName: string,
   clientMain: Client | MirrorNodeClient,
   operatorAccountId: string,
-): Promise<{ transactionFee: number; gasUsed: number; transactionStatus: string }> => {
+): Promise<{ transactionFee: number; gasUsed: number; transactionStatus: string; txRecordChargeAmount: number }> => {
   let gasUsed: number = 0;
   let transactionFee: number = 0;
+  let txRecordChargeAmount: number = 0;
   let transactionStatus: string = Status.Unknown.toString();
   const formattedRequestId = formatRequestIdMessage(requestId);
 
@@ -59,12 +60,21 @@ export const getTransactionStatusAndMetrics = async (
         `${formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
       );
 
+      // retrieve operaotr's balance before the execution
+      const operatorBalanceBefore = await getBalanceInTinyBars(operatorAccountId, clientMain, 200);
+
       // submit query and get transaction receipt
       const transactionRecord = await new TransactionRecordQuery()
         .setTransactionId(transactionId)
         .setValidateReceiptStatus(false)
         .execute(clientMain);
       const transactionReceipt = transactionRecord.receipt;
+
+      // retrieve operaotr's balance after the execution
+      const operatorBalanceAfter = await getBalanceInTinyBars(operatorAccountId, clientMain, 200);
+
+      // capture transactionRecord fee by comparing operator balance before and after the execution
+      txRecordChargeAmount = operatorBalanceBefore - operatorBalanceAfter;
 
       // get transactionStatus, transactionFee, and gasUsed
       transactionStatus = transactionReceipt.status.toString();
@@ -112,5 +122,17 @@ export const getTransactionStatusAndMetrics = async (
     }
   }
 
-  return { transactionFee, gasUsed, transactionStatus };
+  return { transactionFee, gasUsed, transactionStatus, txRecordChargeAmount };
+};
+
+/**
+ * Retrieves the balance of an account in tinybars after a specified delay.
+ * @param {string} accountId - The ID of the account to retrieve the balance for.
+ * @param {Client} client - The client used to execute the balance query.
+ * @param {number} ms - The delay in milliseconds before executing the query.
+ * @returns {Promise<number>} - A promise that resolves to the account balance in tinybars.
+ */
+const getBalanceInTinyBars = async (accountId: string, client: Client, ms: number): Promise<number> => {
+  await new Promise((r) => setTimeout(r, ms));
+  return (await new AccountBalanceQuery().setAccountId(accountId).execute(client)).hbars.toTinybars().toNumber();
 };
