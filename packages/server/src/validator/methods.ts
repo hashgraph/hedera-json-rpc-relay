@@ -171,5 +171,9 @@ export const METHODS = {
       required: false,
       type: 'tracerType|tracerConfig|tracerConfigWrapper',
     },
+    2: {
+      required: false,
+      type: 'tracerConfig',
+    },
   },
 };
