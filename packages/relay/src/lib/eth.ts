@@ -2188,7 +2188,7 @@ export class EthImpl implements Eth {
     return gas;
   }
 
-  populateSyntheticTransactionHashes(
+  populateSyntheticTransaction(
     showDetails: boolean,
     logs: Log[],
     transactionArray: Array<any>,
@@ -2270,7 +2270,7 @@ export class EthImpl implements Eth {
       transactionArray.push(showDetails ? formatContractResult(contractResult) : contractResult.hash);
     }
 
-    transactionArray = this.populateSyntheticTransactionHashes(showDetails, logs, transactionArray, requestIdPrefix);
+    transactionArray = this.populateSyntheticTransaction(showDetails, logs, transactionArray, requestIdPrefix);
 
     const blockHash = toHash32(blockResponse.hash);
     return new Block({
