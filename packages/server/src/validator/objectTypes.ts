@@ -1,5 +1,7 @@
 import { TracerType, Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
+import { ITracerConfigWrapper } from '@hashgraph/json-rpc-relay/src/lib/types/ITracerConfigWrapper';
+import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types/ITracerConfig';
 
 export const OBJECTS_VALIDATIONS = {
   blockHashObject: {
@@ -36,7 +38,7 @@ export const OBJECTS_VALIDATIONS = {
       nullable: false,
     },
   },
-  tracerOptions: {
+  tracerConfig: {
     onlyTopCall: {
       type: 'boolean',
       nullable: false,
@@ -57,20 +59,15 @@ export const OBJECTS_VALIDATIONS = {
       nullable: false,
       required: false,
     },
-    enableReturnData: {
-      type: 'boolean',
-      nullable: false,
-      required: false,
-    },
   },
-  traceConfig: {
+  tracerConfigWrapper: {
     tracer: {
       type: 'tracerType',
       nullable: false,
       required: false,
     },
     tracerConfig: {
-      type: 'tracerOptions',
+      type: 'tracerConfig',
       nullable: false,
       required: false,
     },
@@ -142,24 +139,22 @@ export const OBJECTS_VALIDATIONS = {
   },
 };
 
-export class TracerOptions {
+export class TracerConfig {
   onlyTopCall?: boolean;
   enableMemory?: boolean;
   disableStack?: boolean;
   disableStorage?: boolean;
-  enableReturnData?: boolean;
 
-  constructor(tracerOptions: any) {
-    Validator.hasUnexpectedParams(tracerOptions, OBJECTS_VALIDATIONS.tracerOptions, this.name());
-    this.onlyTopCall = tracerOptions.onlyTopCall;
-    this.enableMemory = tracerOptions.enableMemory;
-    this.disableStack = tracerOptions.disableStack;
-    this.disableStorage = tracerOptions.disableStorage;
-    this.enableReturnData = tracerOptions.enableReturnData;
+  constructor(tracerConfig: ITracerConfig) {
+    Validator.hasUnexpectedParams(tracerConfig, OBJECTS_VALIDATIONS.tracerConfig, this.name());
+    this.onlyTopCall = tracerConfig.onlyTopCall;
+    this.enableMemory = tracerConfig.enableMemory;
+    this.disableStack = tracerConfig.disableStack;
+    this.disableStorage = tracerConfig.disableStorage;
   }
 
   validate() {
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.tracerOptions);
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.tracerConfig);
   }
 
   name() {
@@ -167,20 +162,20 @@ export class TracerOptions {
   }
 }
 
-export class TraceConfig {
+export class TracerConfigWrapper {
   tracer?: TracerType;
-  tracerConfig?: TracerOptions;
+  tracerConfig?: TracerConfig;
 
-  constructor(traceConfig: any) {
-    Validator.hasUnexpectedParams(traceConfig, OBJECTS_VALIDATIONS.traceConfig, this.name());
-    this.tracer = traceConfig.tracer;
-    if (traceConfig.tracerConfig) {
-      this.tracerConfig = new TracerOptions(traceConfig.tracerConfig);
+  constructor(tracerConfigWrapper: ITracerConfigWrapper) {
+    Validator.hasUnexpectedParams(tracerConfigWrapper, OBJECTS_VALIDATIONS.tracerConfigWrapper, this.name());
+    this.tracer = tracerConfigWrapper.tracer;
+    if (tracerConfigWrapper.tracerConfig) {
+      this.tracerConfig = new TracerConfig(tracerConfigWrapper.tracerConfig);
     }
   }
 
   validate() {
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.traceConfig);
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.tracerConfigWrapper);
   }
 
   name() {

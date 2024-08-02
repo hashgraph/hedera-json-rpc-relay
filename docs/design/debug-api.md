@@ -49,12 +49,17 @@ This is achieved by utilizing the /api/v1/contracts/results/{transactionIdOrHash
 The relevant fields retrieved from this endpoint are processed and formatted to generate the expected response as outlined below.
 
 #### Parameters
-`transactionHash` - string - This is the hash of the transaction that we want to trace. <br>
-`traceConfig` - object
-  * `tracer` - string - to specify the type of tracer. Possible values are `callTracer` or `opcodeLogger`. In the beginning only `callTracer` will be accepted. <br>
-  * `tracerConfig` - object 
-    * For `callTracer` it can have one property - `onlyTopCall`, which is a boolean. <br>
-    * For `opcodeLogger` it can have four properties - `enableMemory`, `disableStack`, `disableStorage`, `enableReturnData` - all booleans
+
+1. `transactionHash` - string - This is the hash of the transaction that we want to trace.
+2. One of the following:
+   * `tracer` - string - to specify the type of tracer. Possible values are `callTracer` or `opcodeLogger`
+   * `tracerConfig` - object - to specify the configuration for the tracer
+     * For `callTracer` it can have one property - `onlyTopCall`, which is a boolean.
+     * For `opcodeLogger` it can have three properties - `enableMemory`, `disableStack`, `disableStorage` - all booleans
+   * `tracerConfigWrapper` - object
+     * `tracer` - string - same as above
+     * `tracerConfig` - object - same as above
+
 #### Returns for callTracer
 `object` - trace object: 
 
@@ -250,8 +255,7 @@ The relevant fields retrieved from this endpoint are processed and formatted to 
         "tracerConfig": {
           "enableMemory": true,
           "disableStack": false,
-          "disableStorage": false,
-          "enableReturnData": false
+          "disableStorage": false
         }
       }
     ]

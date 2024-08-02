@@ -93,26 +93,26 @@ export const TYPES = {
   },
   tracerType: {
     test: (param: Constants.TracerType) => Object.values(Constants.TracerType).includes(param),
-    error: 'Invalid tracer type',
+    error: 'Expected TracerType',
   },
-  traceConfig: {
+  tracerConfig: {
     test: (param: any) => {
       if (typeof param === 'object') {
-        return new Validator.TraceConfig(param).validate();
+        return new Validator.TracerConfig(param).validate();
       }
 
       return false;
     },
-    error: 'Expected TraceConfig',
+    error: 'Expected TracerConfig',
   },
-  tracerOptions: {
+  tracerConfigWrapper: {
     test: (param: any) => {
       if (typeof param === 'object') {
-        return new Validator.TracerOptions(param).validate();
+        return new Validator.TracerConfigWrapper(param).validate();
       }
 
       return false;
     },
-    error: 'Invalid tracerConfig',
+    error: 'Expected TracerConfigWrapper',
   },
 };

@@ -18,7 +18,7 @@
  *
  */
 
-export interface ITracerOptions {
+export interface ITracerConfig {
   onlyTopCall?: boolean;
   enableMemory?: boolean;
   disableStack?: boolean;

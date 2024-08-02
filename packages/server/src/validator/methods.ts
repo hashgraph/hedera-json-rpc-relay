@@ -169,7 +169,7 @@ export const METHODS = {
     },
     1: {
       required: false,
-      type: 'traceConfig',
+      type: 'tracerType|tracerConfig|tracerConfigWrapper',
     },
   },
 };

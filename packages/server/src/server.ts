@@ -19,9 +19,11 @@
  */
 
 import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types/ITracerConfig';
+import { ITracerConfigWrapper } from '@hashgraph/json-rpc-relay/src/lib/types/ITracerConfigWrapper';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
-import { TracerType, Validator } from './validator';
+import { TracerType, TYPES, Validator } from './validator';
 import pino from 'pino';
 import path from 'path';
 import fs from 'fs';
@@ -203,6 +205,9 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
   try {
     const methodValidations = Validator.METHODS[methodName];
     if (methodValidations) {
+      logger.debug(
+        `${requestIdPrefix} Validating method parameters for ${methodName}, params: ${JSON.stringify(methodParams)}`,
+      );
       Validator.validateParams(methodParams, methodValidations);
     }
 
@@ -662,14 +667,28 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
 
 app.useRpc('debug_traceTransaction', async (params: any) => {
   const transactionIdOrHash = params[0];
-  let { tracer, tracerConfig } = params[1];
 
-  if (tracer === undefined) {
-    tracer = TracerType.OpcodeLogger;
-  }
+  let tracer: TracerType = TracerType.OpcodeLogger;
+  let tracerConfig: ITracerConfig = {};
 
-  if (tracerConfig === undefined) {
-    tracerConfig = {};
+  // Check if the second parameter is a valid TracerType, TracerConfig, or TracerConfigWrapper
+  if (TYPES.tracerType.test(params[1])) {
+    tracer = params[1];
+  } else if (TYPES.tracerConfig.test(params[1])) {
+    tracerConfig = params[1];
+  } else if (TYPES.tracerConfigWrapper.test(params[1])) {
+    const { tracer: wrapperTracer, tracerConfig: wrapperConfig }: ITracerConfigWrapper = params[1];
+    if (wrapperTracer) {
+      tracer = wrapperTracer;
+    }
+    if (wrapperConfig) {
+      tracerConfig = wrapperConfig;
+    }
+  } else {
+    throw predefined.INVALID_PARAMETER(
+      1,
+      `Invalid parameter: ${params[1]}. Expected TracerType, TracerConfig, or TracerConfigWrapper.`,
+    );
   }
 
   if (tracer === TracerType.CallTracer) {
@@ -678,7 +697,6 @@ app.useRpc('debug_traceTransaction', async (params: any) => {
     tracerConfig.enableMemory = tracerConfig.enableMemory ?? false;
     tracerConfig.disableStack = tracerConfig.disableStack ?? false;
     tracerConfig.disableStorage = tracerConfig.disableStorage ?? false;
-    tracerConfig.enableReturnData = tracerConfig.enableReturnData ?? false;
   }
 
   return logAndHandleResponse('debug_traceTransaction', [transactionIdOrHash, tracer, tracerConfig], (requestId) =>
