@@ -262,7 +262,7 @@ const defaultNetworkFees = {
   timestamp: '1653644164.591111113',
 };
 
-describe.only('eth_getBlockBy', async function () {
+describe('eth_getBlockBy', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
   const sandbox = sinon.createSandbox();
