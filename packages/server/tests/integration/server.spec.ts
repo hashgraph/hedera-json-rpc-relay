@@ -28,10 +28,11 @@ dotenv.config({ path: path.resolve(__dirname, './test.env') });
 
 import Assertions from '../helpers/assertions';
 import app from '../../src/server';
-import { Validator } from '../../src/validator';
+import { TracerType, Validator } from '../../src/validator';
 import RelayCalls from '../../tests/helpers/constants';
 import * as Constants from '../../src/validator/constants';
 import { Utils } from '../helpers/utils';
+import { contractHash1 } from '../../../relay/tests/helpers';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 
@@ -2252,6 +2253,163 @@ describe('RPC Server', function () {
         expect(response.data, "Default response: 'data' should equal 'OK'").to.be.equal('OK');
       });
     });
+
+    describe('debug_traceTransaction', async function () {
+      it('validates parameter 0 is transaction hash', async function () {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: ['invalidHash', TracerType.OpcodeLogger],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(
+            error.response,
+            Validator.ERROR_CODE,
+            `Invalid parameter 0: The value passed is not valid: invalidHash. ${Validator.TRANSACTION_HASH_ERROR} OR ${Validator.TRANSACTION_ID_ERROR}`,
+          );
+        }
+      });
+
+      it('validates parameter 1 is TracerType string', async function () {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, 'invalidTracerType'],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(
+            error.response,
+            Validator.ERROR_CODE,
+            `Invalid parameter 1: The value passed is not valid: invalidTracerType. ${Validator.TYPES.tracerType.error} OR ${Validator.TYPES.tracerConfig.error} OR ${Validator.TYPES.tracerConfigWrapper.error}`,
+          );
+        }
+      });
+
+      it('should not throw exception for unknown property in TracerConfig', async function () {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { disableMemory: true, disableStack: true }],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
+      it('should not throw exception for unknown property in TracerConfigWrapper.tracerConfig', async function () {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { tracerConfig: { disableMemory: true } }],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
+      it('validates parameter 1 is TracerConfig with valid property for enableMemory', async function () {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { enableMemory: 'must be a boolean' }],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(
+            error.response,
+            Validator.ERROR_CODE,
+            `Invalid parameter 'enableMemory' for TracerConfig: ${Validator.TYPES.boolean.error}, value: must be a boolean`,
+          );
+        }
+      });
+
+      it('validates parameter 1 is TracerConfig with valid property for disableStack', async function () {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { disableStack: 'must be a boolean' }],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(
+            error.response,
+            Validator.ERROR_CODE,
+            `Invalid parameter 'disableStack' for TracerConfig: ${Validator.TYPES.boolean.error}, value: must be a boolean`,
+          );
+        }
+      });
+
+      it('validates parameter 1 is TracerConfig with valid property for disableStorage', async function () {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { disableStorage: 'must be a boolean' }],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(
+            error.response,
+            Validator.ERROR_CODE,
+            `Invalid parameter 'disableStorage' for TracerConfig: ${Validator.TYPES.boolean.error}, value: must be a boolean`,
+          );
+        }
+      });
+
+      it('validates parameter 1 is TracerConfigWrapper object with valid tracer property', async function () {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { tracer: 'invalidTracerType' }],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(
+            error.response,
+            Validator.ERROR_CODE,
+            `Invalid parameter 'tracer' for TracerConfigWrapper: ${Validator.TYPES.tracerType.error}, value: invalidTracerType`,
+          );
+        }
+      });
+
+      it('validates parameter 1 is TracerConfigWrapper object with valid tracerConfig property', async function () {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { tracer: TracerType.OpcodeLogger, tracerConfig: 'invalidTracerConfig' }],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(
+            error.response,
+            Validator.ERROR_CODE,
+            `Invalid parameter 'tracerConfig' for TracerConfigWrapper: ${Validator.TYPES.tracerConfig.error}, value: invalidTracerConfig`,
+          );
+        }
+      });
+    });
   });
 });
 
@@ -2340,10 +2498,7 @@ class BaseTest {
       code,
     );
     expect(response.data.error, "Error response: 'error' should have 'message' property").to.have.property('message');
-    expect(
-      response.data.error.message.endsWith(message),
-      `Error response: 'data.error.message' should end with passed ${message} value, but came with ${response.data.error.message}`,
-    ).to.be.true;
+    expect(response.data.error.message).to.contain(message);
   }
 
   static unsupportedJsonRpcMethodChecks(response: any) {

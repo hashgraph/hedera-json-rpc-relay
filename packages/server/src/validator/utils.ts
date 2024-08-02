@@ -21,7 +21,7 @@ export function validateParam(index: number | string, param: any, validation: an
       const result = validator.test(param);
       results.push(result);
     }
-    if (results.every((item) => item === false)) {
+    if (!results.some((item) => item === true)) {
       const errorMessages = paramType.map((t) => Validator.TYPES[t].error).join(' OR ');
       throw predefined.INVALID_PARAMETER(index, `The value passed is not valid: ${param}. ${errorMessages}`);
     }

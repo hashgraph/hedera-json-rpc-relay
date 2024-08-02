@@ -92,7 +92,11 @@ export const TYPES = {
     error: Constants.TRANSACTION_ID_ERROR,
   },
   tracerType: {
-    test: (param: Constants.TracerType) => Object.values(Constants.TracerType).includes(param),
+    test: (param: any): param is Constants.TracerType =>
+      typeof param === 'string' &&
+      Object.values(Constants.TracerType)
+        .map((tracerType) => tracerType.toString())
+        .includes(param),
     error: 'Expected TracerType',
   },
   tracerConfig: {

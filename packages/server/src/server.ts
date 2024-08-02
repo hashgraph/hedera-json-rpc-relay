@@ -666,42 +666,28 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
  */
 
 app.useRpc('debug_traceTransaction', async (params: any) => {
-  const transactionIdOrHash = params[0];
+  return logAndHandleResponse('debug_traceTransaction', params, (requestId) => {
+    const transactionIdOrHash = params[0];
+    let tracer: TracerType = TracerType.OpcodeLogger;
+    let tracerConfig: ITracerConfig = {};
 
-  let tracer: TracerType = TracerType.OpcodeLogger;
-  let tracerConfig: ITracerConfig = {};
-
-  // Check if the second parameter is a valid TracerType, TracerConfig, or TracerConfigWrapper
-  if (TYPES.tracerType.test(params[1])) {
-    tracer = params[1];
-  } else if (TYPES.tracerConfig.test(params[1])) {
-    tracerConfig = params[1];
-  } else if (TYPES.tracerConfigWrapper.test(params[1])) {
-    const { tracer: wrapperTracer, tracerConfig: wrapperConfig }: ITracerConfigWrapper = params[1];
-    if (wrapperTracer) {
-      tracer = wrapperTracer;
+    // Check if the second parameter is a valid TracerType, TracerConfig, or TracerConfigWrapper
+    if (typeof params[1] === 'string' && TYPES.tracerType.test(params[1])) {
+      tracer = params[1];
+    } else if (typeof params[1] === 'object' && TYPES.tracerConfig.test(params[1])) {
+      tracerConfig = params[1];
+    } else if (typeof params[1] === 'object' && TYPES.tracerConfigWrapper.test(params[1])) {
+      const { tracer: wrapperTracer, tracerConfig: wrapperConfig }: ITracerConfigWrapper = params[1];
+      if (typeof wrapperTracer === 'string') {
+        tracer = wrapperTracer;
+      }
+      if (typeof wrapperConfig === 'object' && TYPES.tracerConfig.test(wrapperConfig)) {
+        tracerConfig = wrapperConfig;
+      }
     }
-    if (wrapperConfig) {
-      tracerConfig = wrapperConfig;
-    }
-  } else {
-    throw predefined.INVALID_PARAMETER(
-      1,
-      `Invalid parameter: ${params[1]}. Expected TracerType, TracerConfig, or TracerConfigWrapper.`,
-    );
-  }
 
-  if (tracer === TracerType.CallTracer) {
-    tracerConfig.onlyTopCall = tracerConfig.onlyTopCall ?? false;
-  } else {
-    tracerConfig.enableMemory = tracerConfig.enableMemory ?? false;
-    tracerConfig.disableStack = tracerConfig.disableStack ?? false;
-    tracerConfig.disableStorage = tracerConfig.disableStorage ?? false;
-  }
-
-  return logAndHandleResponse('debug_traceTransaction', [transactionIdOrHash, tracer, tracerConfig], (requestId) =>
-    relay.eth().debugService().debug_traceTransaction(transactionIdOrHash, tracer, tracerConfig, requestId),
-  );
+    return relay.eth().debugService().debug_traceTransaction(transactionIdOrHash, tracer, tracerConfig, requestId);
+  });
 });
 
 /**

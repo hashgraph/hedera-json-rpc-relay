@@ -146,7 +146,6 @@ export class TracerConfig {
   disableStorage?: boolean;
 
   constructor(tracerConfig: ITracerConfig) {
-    Validator.hasUnexpectedParams(tracerConfig, OBJECTS_VALIDATIONS.tracerConfig, this.name());
     this.onlyTopCall = tracerConfig.onlyTopCall;
     this.enableMemory = tracerConfig.enableMemory;
     this.disableStack = tracerConfig.disableStack;
@@ -164,14 +163,11 @@ export class TracerConfig {
 
 export class TracerConfigWrapper {
   tracer?: TracerType;
-  tracerConfig?: TracerConfig;
+  tracerConfig?: ITracerConfig;
 
   constructor(tracerConfigWrapper: ITracerConfigWrapper) {
-    Validator.hasUnexpectedParams(tracerConfigWrapper, OBJECTS_VALIDATIONS.tracerConfigWrapper, this.name());
     this.tracer = tracerConfigWrapper.tracer;
-    if (tracerConfigWrapper.tracerConfig) {
-      this.tracerConfig = new TracerConfig(tracerConfigWrapper.tracerConfig);
-    }
+    this.tracerConfig = tracerConfigWrapper.tracerConfig;
   }
 
   validate() {

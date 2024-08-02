@@ -107,8 +107,12 @@ export class DebugService implements IDebugService {
     try {
       DebugService.requireDebugAPIEnabled();
       if (tracer === TracerType.CallTracer) {
+        tracerConfig.onlyTopCall = tracerConfig.onlyTopCall ?? false;
         return await this.callTracer(transactionIdOrHash, tracerConfig, requestIdPrefix);
       } else if (tracer === TracerType.OpcodeLogger) {
+        tracerConfig.enableMemory = tracerConfig.enableMemory ?? false;
+        tracerConfig.disableStack = tracerConfig.disableStack ?? false;
+        tracerConfig.disableStorage = tracerConfig.disableStorage ?? false;
         return await this.callOpcodeLogger(transactionIdOrHash, tracerConfig, requestIdPrefix);
       }
     } catch (e) {
@@ -267,7 +271,7 @@ export class DebugService implements IDebugService {
   ): Promise<object> {
     try {
       const options = {
-        memory: tracerConfig.enableMemory,
+        memory: !!tracerConfig.enableMemory,
         stack: !tracerConfig.disableStack,
         storage: !tracerConfig.disableStorage,
       };
