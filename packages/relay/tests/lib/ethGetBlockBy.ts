@@ -262,7 +262,7 @@ const defaultNetworkFees = {
   timestamp: '1653644164.591111113',
 };
 
-describe('eth_getBlockBy', async function () {
+describe.only('eth_getBlockBy', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
   const sandbox = sinon.createSandbox();
@@ -334,42 +334,42 @@ describe('eth_getBlockBy', async function () {
   const modelLog2 = mirrorLogToModelLog(defaultLogs1[1]);
   const modelLog3 = mirrorLogToModelLog(defaultLogs1[2]);
   const referenceLogs = [modelLog1, modelLog2, modelLog3];
-  describe('populateSyntheticTransactionHashes w showDetails=false', () => {
+  describe('populateSyntheticTransactions w showDetails=false', () => {
     const showDetails = false;
 
-    it('populateSyntheticTransactionHashes with no dupes in empty transactionHashes', async function () {
+    it('populateSyntheticTransactions with no dupes in empty transactionHashes', async function () {
       const initHashes = [];
-      ethImpl.populateSyntheticTransactionHashes(showDetails, referenceLogs, initHashes, '1');
+      ethImpl.populateSyntheticTransactions(showDetails, referenceLogs, initHashes, '1');
       expect(initHashes.length).to.equal(defaultLogs1.length);
       expect(initHashes[0]).to.equal(modelLog1.transactionHash);
       expect(initHashes[1]).to.equal(modelLog2.transactionHash);
       expect(initHashes[2]).to.equal(modelLog3.transactionHash);
     });
 
-    it('populateSyntheticTransactionHashes with no dupes in non empty transactionHashes', async function () {
+    it('populateSyntheticTransactions with no dupes in non empty transactionHashes', async function () {
       const initHashes = ['txHash1', 'txHash2'];
       const txHashes = initHashes.slice();
-      ethImpl.populateSyntheticTransactionHashes(showDetails, referenceLogs, txHashes, '1');
+      ethImpl.populateSyntheticTransactions(showDetails, referenceLogs, txHashes, '1');
       expect(txHashes.length).to.equal(initHashes.length + defaultLogs1.length);
       expect(txHashes[initHashes.length + 0]).to.equal(modelLog1.transactionHash);
       expect(txHashes[initHashes.length + 1]).to.equal(modelLog2.transactionHash);
       expect(txHashes[initHashes.length + 2]).to.equal(modelLog3.transactionHash);
     });
 
-    it('populateSyntheticTransactionHashes with 1 transaction dupes in transactionHashes', async function () {
+    it('populateSyntheticTransactions with 1 transaction dupes in transactionHashes', async function () {
       const initHashes = [modelLog2.transactionHash];
       const txHashes = initHashes.slice();
-      ethImpl.populateSyntheticTransactionHashes(showDetails, referenceLogs, txHashes, '1');
+      ethImpl.populateSyntheticTransactions(showDetails, referenceLogs, txHashes, '1');
       expect(txHashes.length).to.equal(referenceLogs.length);
       expect(txHashes[0]).to.equal(contractHash2);
       expect(txHashes[1]).to.equal(modelLog1.transactionHash);
       expect(txHashes[2]).to.equal(modelLog3.transactionHash);
     });
 
-    it('populateSyntheticTransactionHashes with all dupes in transactionHashes', async function () {
+    it('populateSyntheticTransactions with all dupes in transactionHashes', async function () {
       const initHashes = [modelLog1.transactionHash, modelLog2.transactionHash, modelLog3.transactionHash];
       const txHashes = initHashes.slice();
-      ethImpl.populateSyntheticTransactionHashes(showDetails, referenceLogs, txHashes, '1');
+      ethImpl.populateSyntheticTransactions(showDetails, referenceLogs, txHashes, '1');
       expect(txHashes.length).to.equal(referenceLogs.length);
       expect(txHashes[0]).to.equal(modelLog1.transactionHash);
       expect(txHashes[1]).to.equal(modelLog2.transactionHash);
@@ -377,8 +377,8 @@ describe('eth_getBlockBy', async function () {
     });
   });
 
-  describe('populateSyntheticTransactionHashes w showDetails=true', () => {
-    const getTranactionModel = (transactionHash) => {
+  describe('populateSyntheticTransactions w showDetails=true', () => {
+    const getTransactionModel = (transactionHash) => {
       return new Transaction({
         accessList: undefined, // we don't support access lists for now, so punt
         blockHash: toHash32(defaultDetailedContractResults.block_hash),
@@ -403,43 +403,43 @@ describe('eth_getBlockBy', async function () {
     };
 
     const showDetails = true;
-    it('populateSyntheticTransactionHashes with no dupes in empty txObjects', async function () {
+    it('populateSyntheticTransactions with no dupes in empty txObjects', async function () {
       const initTxObjects: Transaction[] = [];
-      ethImpl.populateSyntheticTransactionHashes(showDetails, referenceLogs, initTxObjects, '1');
+      ethImpl.populateSyntheticTransactions(showDetails, referenceLogs, initTxObjects, '1');
       expect(initTxObjects.length).to.equal(defaultLogs1.length);
       expect(initTxObjects[0].hash).to.equal(modelLog1.transactionHash);
       expect(initTxObjects[1].hash).to.equal(modelLog2.transactionHash);
       expect(initTxObjects[2].hash).to.equal(modelLog3.transactionHash);
     });
 
-    it('populateSyntheticTransactionHashes with no dupes in non empty txObjects', async function () {
-      const initTxObjects = [getTranactionModel('txHash1'), getTranactionModel('txHash2')];
+    it('populateSyntheticTransactions with no dupes in non empty txObjects', async function () {
+      const initTxObjects = [getTransactionModel('txHash1'), getTransactionModel('txHash2')];
       const txObjects = initTxObjects.slice();
-      ethImpl.populateSyntheticTransactionHashes(showDetails, referenceLogs, txObjects, '1');
+      ethImpl.populateSyntheticTransactions(showDetails, referenceLogs, txObjects, '1');
       expect(txObjects.length).to.equal(initTxObjects.length + defaultLogs1.length);
       expect(txObjects[initTxObjects.length + 0].hash).to.equal(modelLog1.transactionHash);
       expect(txObjects[initTxObjects.length + 1].hash).to.equal(modelLog2.transactionHash);
       expect(txObjects[initTxObjects.length + 2].hash).to.equal(modelLog3.transactionHash);
     });
 
-    it('populateSyntheticTransactionHashes with 1 transaction dupes in txObjects', async function () {
-      const initTxObjects = [getTranactionModel(modelLog2.transactionHash)];
+    it('populateSyntheticTransactions with 1 transaction dupes in txObjects', async function () {
+      const initTxObjects = [getTransactionModel(modelLog2.transactionHash)];
       const txObjects = initTxObjects.slice();
-      ethImpl.populateSyntheticTransactionHashes(showDetails, referenceLogs, txObjects, '1');
+      ethImpl.populateSyntheticTransactions(showDetails, referenceLogs, txObjects, '1');
       expect(txObjects.length).to.equal(referenceLogs.length);
       expect(txObjects[0].hash).to.equal(contractHash2);
       expect(txObjects[1].hash).to.equal(modelLog1.transactionHash);
       expect(txObjects[2].hash).to.equal(modelLog3.transactionHash);
     });
 
-    it('populateSyntheticTransactionHashes with all dupes in txObjects', async function () {
+    it('populateSyntheticTransactions with all dupes in txObjects', async function () {
       const initTxObjects = [
-        getTranactionModel(modelLog1.transactionHash),
-        getTranactionModel(modelLog2.transactionHash),
-        getTranactionModel(modelLog3.transactionHash),
+        getTransactionModel(modelLog1.transactionHash),
+        getTransactionModel(modelLog2.transactionHash),
+        getTransactionModel(modelLog3.transactionHash),
       ];
       const txObjects = initTxObjects.slice();
-      ethImpl.populateSyntheticTransactionHashes(showDetails, referenceLogs, txObjects, '1');
+      ethImpl.populateSyntheticTransactions(showDetails, referenceLogs, txObjects, '1');
       expect(txObjects.length).to.equal(referenceLogs.length);
       expect(txObjects[0].hash).to.equal(modelLog1.transactionHash);
       expect(txObjects[1].hash).to.equal(modelLog2.transactionHash);

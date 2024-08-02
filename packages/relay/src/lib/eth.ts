@@ -2188,31 +2188,31 @@ export class EthImpl implements Eth {
     return gas;
   }
 
-  populateSyntheticTransaction(
+  populateSyntheticTransactions(
     showDetails: boolean,
     logs: Log[],
-    transactionArray: Array<any>,
+    transactionsArray: Array<any>,
     requestIdPrefix?: string,
   ): Array<any> {
     let filteredLogs: Log[];
     if (showDetails) {
       filteredLogs = logs.filter(
-        (log) => !transactionArray.some((transaction) => transaction.hash === log.transactionHash),
+        (log) => !transactionsArray.some((transaction) => transaction.hash === log.transactionHash),
       );
       filteredLogs.forEach((log) => {
         const transaction: Transaction1559 = this.createTransactionFromLog(log);
-        transactionArray.push(transaction);
+        transactionsArray.push(transaction);
       });
     } else {
-      filteredLogs = logs.filter((log) => !transactionArray.includes(log.transactionHash));
+      filteredLogs = logs.filter((log) => !transactionsArray.includes(log.transactionHash));
       filteredLogs.forEach((log) => {
-        transactionArray.push(log.transactionHash);
+        transactionsArray.push(log.transactionHash);
       });
     }
 
     this.logger.trace(`${requestIdPrefix} Synthetic transaction hashes will be populated in the block response`);
 
-    return transactionArray;
+    return transactionsArray;
   }
 
   /**
@@ -2270,7 +2270,7 @@ export class EthImpl implements Eth {
       transactionArray.push(showDetails ? formatContractResult(contractResult) : contractResult.hash);
     }
 
-    transactionArray = this.populateSyntheticTransaction(showDetails, logs, transactionArray, requestIdPrefix);
+    transactionArray = this.populateSyntheticTransactions(showDetails, logs, transactionArray, requestIdPrefix);
 
     const blockHash = toHash32(blockResponse.hash);
     return new Block({
