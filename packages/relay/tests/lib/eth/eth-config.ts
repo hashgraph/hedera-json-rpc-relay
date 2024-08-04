@@ -17,7 +17,15 @@
  * limitations under the License.
  *
  */
-import { defaultEvmAddress, defaultLogs1, defaultLogs2, defaultLogs3, mockData, toHex } from '../../helpers';
+import {
+  defaultEvmAddress,
+  defaultLogs1,
+  defaultLogs2,
+  defaultLogs3,
+  mockData,
+  toHex,
+  LONG_ZERO_ADDRESS,
+} from '../../helpers';
 import { numberTo0x } from '../../../dist/formatters';
 import constants from '../../../src/lib/constants';
 
@@ -436,7 +444,7 @@ export const DEFAULT_CONTRACT_RES_REVERT = {
       created_contract_ids: [],
       error_message:
         '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002645524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e63650000000000000000000000000000000000000000000000000000',
-      from: '0x0000000000000000000000000000000000000557',
+      from: LONG_ZERO_ADDRESS,
       function_parameters: '0x',
       gas_limit: MAX_GAS_LIMIT,
       gas_used: GAS_USED_1,
@@ -682,6 +690,40 @@ export const CONTRACTS_LOGS_WITH_FILTER = `contracts/${CONTRACT_ADDRESS_1}/resul
 export const CONTRACT_RESULTS_LOGS_WITH_FILTER_URL = `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=100&order=asc`;
 export const BLOCKS_LIMIT_ORDER_URL = 'blocks?limit=1&order=desc';
 export const CONTRACTS_RESULTS_NEXT_URL = `contracts/results?timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&limit=100&order=asc`; // just flip the timestamp parameters for simplicity
+export const ACCOUNT_WITHOUT_TRANSACTIONS = `accounts/${LONG_ZERO_ADDRESS}?transactions=false`;
+export const contractByEvmAddress = (evmAddress: string) => `contracts/${evmAddress}`;
+
+export const MOCK_ACCOUNT_WITHOUT_TRANSACTIONS = {
+  account: '0.0.1367',
+  alias: null,
+  auto_renew_period: 105825166,
+  balance: {
+    balance: 350074689935,
+    timestamp: '1722499895.340270625',
+    tokens: [],
+  },
+  created_timestamp: '1706812520.644859499',
+  decline_reward: false,
+  deleted: false,
+  ethereum_nonce: 0,
+  evm_address: LONG_ZERO_ADDRESS,
+  expiry_timestamp: '1812637686.644859499',
+  key: {
+    _type: 'ED25519',
+    key: 'e06b22e0966108fa5d63fc6ae53f9824319b891cd4d6050dbf2b242be7e13344',
+  },
+  max_automatic_token_associations: 0,
+  memo: '',
+  pending_reward: 0,
+  receiver_sig_required: false,
+  staked_account_id: null,
+  staked_node_id: null,
+  stake_period_start: null,
+  transactions: [],
+  links: {
+    next: null,
+  },
+};
 
 //responce objects
 export const MOCK_BLOCK_NUMBER_1000_RES = {
