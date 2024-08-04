@@ -18,14 +18,16 @@
  *
  */
 
-export interface ICallTracerConfig {
-  onlyTopCall?: boolean;
-}
+import { IFeeHistory } from './IFeeHistory';
+import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from './ITracerConfig';
+import { ITracerConfigWrapper } from './ITracerConfigWrapper';
+import { ITransactionReceipt } from './ITransactionReceipt';
 
-export interface IOpcodeLoggerConfig {
-  enableMemory?: boolean;
-  disableStack?: boolean;
-  disableStorage?: boolean;
-}
-
-export type ITracerConfig = ICallTracerConfig | IOpcodeLoggerConfig;
+export {
+  IFeeHistory,
+  ICallTracerConfig,
+  IOpcodeLoggerConfig,
+  ITracerConfig,
+  ITracerConfigWrapper,
+  ITransactionReceipt,
+};

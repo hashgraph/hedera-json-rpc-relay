@@ -33,6 +33,8 @@ import RelayCalls from '../../tests/helpers/constants';
 import * as Constants from '../../src/validator/constants';
 import { Utils } from '../helpers/utils';
 import { contractHash1 } from '../../../relay/tests/helpers';
+import sinon, { SinonStub } from 'sinon';
+import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 
@@ -2255,6 +2257,16 @@ describe('RPC Server', function () {
     });
 
     describe('debug_traceTransaction', async function () {
+      let mirrorNodeStub: SinonStub;
+
+      before(() => {
+        mirrorNodeStub = sinon.stub(MirrorNodeClient.prototype, 'get').resolves();
+      });
+
+      after(() => {
+        mirrorNodeStub.restore();
+      });
+
       it('validates parameter 0 is transaction hash', async function () {
         try {
           await testClient.post('/', {
@@ -2288,7 +2300,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 1: The value passed is not valid: invalidTracerType. ${Validator.TYPES.tracerType.error} OR ${Validator.TYPES.tracerConfig.error} OR ${Validator.TYPES.tracerConfigWrapper.error}`,
+            `Invalid parameter 1: The value passed is not valid: invalidTracerType. ${Validator.TYPES.tracerConfigWrapper.error} OR ${Validator.TYPES.tracerConfig.error} OR ${Validator.TYPES.tracerType.error}`,
           );
         }
       });
@@ -2329,7 +2341,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 'enableMemory' for TracerConfig: ${Validator.TYPES.boolean.error}, value: must be a boolean`,
+            `Invalid parameter 'enableMemory' for OpcodeLoggerConfig: ${Validator.TYPES.boolean.error}, value: must be a boolean`,
           );
         }
       });
@@ -2348,7 +2360,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 'disableStack' for TracerConfig: ${Validator.TYPES.boolean.error}, value: must be a boolean`,
+            `Invalid parameter 'disableStack' for OpcodeLoggerConfig: ${Validator.TYPES.boolean.error}, value: must be a boolean`,
           );
         }
       });
@@ -2367,7 +2379,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 'disableStorage' for TracerConfig: ${Validator.TYPES.boolean.error}, value: must be a boolean`,
+            `Invalid parameter 'disableStorage' for OpcodeLoggerConfig: ${Validator.TYPES.boolean.error}, value: must be a boolean`,
           );
         }
       });

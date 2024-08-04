@@ -19,8 +19,7 @@
  */
 
 import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
-import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types/ITracerConfig';
-import { ITracerConfigWrapper } from '@hashgraph/json-rpc-relay/src/lib/types/ITracerConfigWrapper';
+import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
 import { TracerType, TYPES, Validator } from './validator';
@@ -238,6 +237,8 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
       }
     } else if (e instanceof JsonRpcError) {
       error = e;
+    } else {
+      logger.error(`${requestIdPrefix} ${e.message}`);
     }
 
     logger.error(`${requestIdPrefix} ${error.message}`);
@@ -671,18 +672,20 @@ app.useRpc('debug_traceTransaction', async (params: any) => {
     let tracer: TracerType = TracerType.OpcodeLogger;
     let tracerConfig: ITracerConfig = {};
 
-    // Check if the second parameter is a valid TracerType, TracerConfig, or TracerConfigWrapper
-    if (typeof params[1] === 'string' && TYPES.tracerType.test(params[1])) {
-      tracer = params[1];
-    } else if (typeof params[1] === 'object' && TYPES.tracerConfig.test(params[1])) {
-      tracerConfig = params[1];
-    } else if (typeof params[1] === 'object' && TYPES.tracerConfigWrapper.test(params[1])) {
-      const { tracer: wrapperTracer, tracerConfig: wrapperConfig }: ITracerConfigWrapper = params[1];
-      if (typeof wrapperTracer === 'string') {
-        tracer = wrapperTracer;
+    // Second param can be either a TracerConfigWrapper, TracerConfig or TracerType
+    if (TYPES.tracerConfigWrapper.test(params[1])) {
+      if (TYPES.tracerType.test(params[1].tracer)) {
+        tracer = params[1].tracer;
       }
-      if (typeof wrapperConfig === 'object' && TYPES.tracerConfig.test(wrapperConfig)) {
-        tracerConfig = wrapperConfig;
+      if (TYPES.tracerConfig.test(params[1].tracerConfig)) {
+        tracerConfig = params[1].tracerConfig;
+      }
+    } else if (TYPES.tracerConfig.test(params[1])) {
+      tracerConfig = params[1];
+    } else if (TYPES.tracerType.test(params[1])) {
+      tracer = params[1];
+      if (TYPES.tracerConfig.test(params[2])) {
+        tracerConfig = params[2];
       }
     }
 

@@ -1,5 +1,11 @@
 import * as Constants from './constants';
-import { Validator } from '.';
+import { CallTracerConfig, OpcodeLoggerConfig, TracerConfigWrapper, Validator } from '.';
+import {
+  ICallTracerConfig,
+  IOpcodeLoggerConfig,
+  ITracerConfig,
+  ITracerConfigWrapper,
+} from '@hashgraph/json-rpc-relay/src/lib/types';
 
 export const TYPES = {
   address: {
@@ -99,24 +105,42 @@ export const TYPES = {
         .includes(param),
     error: 'Expected TracerType',
   },
-  tracerConfig: {
-    test: (param: any) => {
-      if (typeof param === 'object') {
-        return new Validator.TracerConfig(param).validate();
+  callTracerConfig: {
+    test: (param: any): param is ICallTracerConfig => {
+      if (param && typeof param === 'object') {
+        return new CallTracerConfig(param).validate();
       }
-
       return false;
     },
-    error: 'Expected TracerConfig',
+    error: 'Expected CallTracerConfig',
+  },
+  opcodeLoggerConfig: {
+    test: (param: any): param is IOpcodeLoggerConfig => {
+      if (param && typeof param === 'object') {
+        return new OpcodeLoggerConfig(param).validate();
+      }
+      return false;
+    },
+    error: 'Expected OpcodeLoggerConfig',
+  },
+  tracerConfig: {
+    test: (param: any): param is ITracerConfig => {
+      if (param && typeof param === 'object') {
+        return (
+          Object.keys(param).length === 0 || TYPES.opcodeLoggerConfig.test(param) || TYPES.callTracerConfig.test(param)
+        );
+      }
+      return false;
+    },
+    error: 'Expected CallTracerConfig OR OpcodeLoggerConfig',
   },
   tracerConfigWrapper: {
-    test: (param: any) => {
-      if (typeof param === 'object') {
-        return new Validator.TracerConfigWrapper(param).validate();
+    test: (param: any): param is ITracerConfigWrapper => {
+      if (param && typeof param === 'object') {
+        return new TracerConfigWrapper(param).validate();
       }
-
       return false;
     },
-    error: 'Expected TracerConfigWrapper',
+    error: 'Expected TracerConfigWrapper which contains a valid TracerType and/or TracerConfig',
   },
 };

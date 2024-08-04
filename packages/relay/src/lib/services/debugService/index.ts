@@ -29,7 +29,7 @@ import { predefined } from '../../errors/JsonRpcError';
 import { EthImpl } from '../../eth';
 import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
 import { IOpcode } from '../../clients/models/IOpcode';
-import { ITracerConfig } from '../../types/ITracerConfig';
+import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from '../../types/ITracerConfig';
 const SUCCESS = 'SUCCESS';
 
 /**
@@ -107,13 +107,9 @@ export class DebugService implements IDebugService {
     try {
       DebugService.requireDebugAPIEnabled();
       if (tracer === TracerType.CallTracer) {
-        tracerConfig.onlyTopCall = tracerConfig.onlyTopCall ?? false;
-        return await this.callTracer(transactionIdOrHash, tracerConfig, requestIdPrefix);
+        return await this.callTracer(transactionIdOrHash, tracerConfig as ICallTracerConfig, requestIdPrefix);
       } else if (tracer === TracerType.OpcodeLogger) {
-        tracerConfig.enableMemory = tracerConfig.enableMemory ?? false;
-        tracerConfig.disableStack = tracerConfig.disableStack ?? false;
-        tracerConfig.disableStorage = tracerConfig.disableStorage ?? false;
-        return await this.callOpcodeLogger(transactionIdOrHash, tracerConfig, requestIdPrefix);
+        return await this.callOpcodeLogger(transactionIdOrHash, tracerConfig as IOpcodeLoggerConfig, requestIdPrefix);
       }
     } catch (e) {
       throw this.common.genericErrorHandler(e);
@@ -257,7 +253,7 @@ export class DebugService implements IDebugService {
    * Returns the final formatted response for opcodeLogger config.
    * @async
    * @param {string} transactionIdOrHash - The ID or hash of the transaction to be debugged.
-   * @param {ITracerConfig} tracerConfig - The tracer config to be used.
+   * @param {IOpcodeLoggerConfig} tracerConfig - The tracer config to be used.
    * @param {boolean} tracerConfig.enableMemory - Whether to enable memory.
    * @param {boolean} tracerConfig.disableStack - Whether to disable stack.
    * @param {boolean} tracerConfig.disableStorage - Whether to disable storage.
@@ -266,7 +262,7 @@ export class DebugService implements IDebugService {
    */
   async callOpcodeLogger(
     transactionIdOrHash: string,
-    tracerConfig: ITracerConfig,
+    tracerConfig: IOpcodeLoggerConfig,
     requestIdPrefix?: string,
   ): Promise<object> {
     try {
@@ -291,11 +287,15 @@ export class DebugService implements IDebugService {
    *
    * @async
    * @param {string} transactionHash - The hash of the transaction to be debugged.
-   * @param {ITracerConfig} tracerConfig - The tracer config to be used.
+   * @param {ICallTracerConfig} tracerConfig - The tracer config to be used.
    * @param {string} requestIdPrefix - The request prefix id.
    * @returns {Promise<object>} The formatted response.
    */
-  async callTracer(transactionHash: string, tracerConfig: ITracerConfig, requestIdPrefix?: string): Promise<object> {
+  async callTracer(
+    transactionHash: string,
+    tracerConfig: ICallTracerConfig,
+    requestIdPrefix?: string,
+  ): Promise<object> {
     try {
       const [actionsResponse, transactionsResponse] = await Promise.all([
         this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestIdPrefix),

@@ -1,7 +1,6 @@
 import { TracerType, Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
-import { ITracerConfigWrapper } from '@hashgraph/json-rpc-relay/src/lib/types/ITracerConfigWrapper';
-import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types/ITracerConfig';
+import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types';
 
 export const OBJECTS_VALIDATIONS = {
   blockHashObject: {
@@ -38,12 +37,14 @@ export const OBJECTS_VALIDATIONS = {
       nullable: false,
     },
   },
-  tracerConfig: {
+  callTracerConfig: {
     onlyTopCall: {
       type: 'boolean',
       nullable: false,
       required: false,
     },
+  },
+  opcodeLoggerConfig: {
     enableMemory: {
       type: 'boolean',
       nullable: false,
@@ -139,21 +140,35 @@ export const OBJECTS_VALIDATIONS = {
   },
 };
 
-export class TracerConfig {
-  onlyTopCall?: boolean;
+export class CallTracerConfig {
+  onlyTopCall: boolean;
+
+  constructor(config: any) {
+    this.onlyTopCall = config.onlyTopCall;
+  }
+
+  validate() {
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.callTracerConfig);
+  }
+
+  name() {
+    return this.constructor.name;
+  }
+}
+
+export class OpcodeLoggerConfig {
   enableMemory?: boolean;
   disableStack?: boolean;
   disableStorage?: boolean;
 
-  constructor(tracerConfig: ITracerConfig) {
-    this.onlyTopCall = tracerConfig.onlyTopCall;
-    this.enableMemory = tracerConfig.enableMemory;
-    this.disableStack = tracerConfig.disableStack;
-    this.disableStorage = tracerConfig.disableStorage;
+  constructor(config: any) {
+    this.enableMemory = config.enableMemory;
+    this.disableStack = config.disableStack;
+    this.disableStorage = config.disableStorage;
   }
 
   validate() {
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.tracerConfig);
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.opcodeLoggerConfig);
   }
 
   name() {
@@ -162,12 +177,12 @@ export class TracerConfig {
 }
 
 export class TracerConfigWrapper {
-  tracer?: TracerType;
-  tracerConfig?: ITracerConfig;
+  tracer: TracerType;
+  tracerConfig: ITracerConfig;
 
-  constructor(tracerConfigWrapper: ITracerConfigWrapper) {
-    this.tracer = tracerConfigWrapper.tracer;
-    this.tracerConfig = tracerConfigWrapper.tracerConfig;
+  constructor(config: any) {
+    this.tracer = config.tracer;
+    this.tracerConfig = config.tracerConfig;
   }
 
   validate() {

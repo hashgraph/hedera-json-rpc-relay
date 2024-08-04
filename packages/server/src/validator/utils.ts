@@ -49,7 +49,7 @@ function getParamType(isArray: boolean, containsOr: boolean, validationType: str
 }
 
 export function validateObject(object: any, filters: any) {
-  for (const property of Object.keys(object)) {
+  for (const property of Object.keys(filters)) {
     const validation = filters[property];
     const param = object[property];
     let result;
