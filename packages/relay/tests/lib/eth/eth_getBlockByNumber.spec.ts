@@ -315,7 +315,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       veriftAggregatedInfo(result);
       expect(result.gasUsed).equal('0x0');
       expect(result.transactions.length).equal(0);
-      expect(result.transactionsRoot).equal(EthImpl.ethEmptyTrie);
+      expect(result.transactionsRoot).equal(await ethImpl.getEmptyTrieRoot());
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
