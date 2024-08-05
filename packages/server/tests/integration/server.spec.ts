@@ -2144,7 +2144,7 @@ describe('RPC Server', function () {
         }
       });
 
-      it.only('validates address filter', async function () {
+      it('validates address filter', async function () {
         try {
           await testClient.post('/', {
             id: '2',
