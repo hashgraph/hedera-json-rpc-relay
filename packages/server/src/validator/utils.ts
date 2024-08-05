@@ -1,10 +1,28 @@
-import { Validator } from '.';
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+import { IMethodParamValidation, IObjectSchema, ITypeValidation, Validator } from '.';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 
-export function validateParam(index: number | string, param: any, validation: any) {
-  const isArray = Array.isArray(validation.type);
-  const containsOr = validation.type?.includes('|');
-  const paramType = getParamType(isArray, containsOr, validation.type);
+export function validateParam(index: number | string, param: any, validation: IMethodParamValidation) {
+  const paramType = getParamType(validation.type);
 
   if (paramType === undefined) {
     throw predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
@@ -16,41 +34,32 @@ export function validateParam(index: number | string, param: any, validation: an
 
   if (param != null && Array.isArray(paramType)) {
     const results: any[] = [];
-    for (const type of paramType) {
-      const validator = Validator.TYPES[type];
+    for (const validator of paramType) {
       const result = validator.test(param);
       results.push(result);
     }
     if (!results.some((item) => item === true)) {
-      const errorMessages = paramType.map((t) => Validator.TYPES[t].error).join(' OR ');
+      const errorMessages = paramType.map((validator) => validator.error).join(' OR ');
       throw predefined.INVALID_PARAMETER(index, `The value passed is not valid: ${param}. ${errorMessages}`);
     }
   }
 
   if (param != null && !Array.isArray(paramType)) {
-    const result = isArray ? paramType.test(index, param, validation.type[1]) : paramType.test(param);
-    if (result === false) {
+    if (!paramType.test(param)) {
       throw predefined.INVALID_PARAMETER(index, `${paramType.error}, value: ${param}`);
     }
   }
 }
 
-function getParamType(isArray: boolean, containsOr: boolean, validationType: string) {
-  let paramType;
-  if (isArray && !containsOr) {
-    paramType = Validator.TYPES[validationType[0]];
-  } else if (!isArray && containsOr) {
-    paramType = validationType.split('|');
+function getParamType(validationType: string): ITypeValidation | ITypeValidation[] {
+  if (validationType?.includes('|')) {
+    return validationType.split('|').map((type) => Validator.TYPES[type]);
   } else {
-    paramType = Validator.TYPES[validationType];
+    return Validator.TYPES[validationType];
   }
-
-  return paramType;
 }
 
-export function validateObject(object: any, filters: any) {
-  const paramsMatchingFilters = Object.keys(filters).filter((key) => object[key] !== undefined);
-
+export function validateObject(object: any, filters: IObjectSchema) {
   for (const property of Object.keys(filters)) {
     const validation = filters[property];
     const param = object[property];
@@ -82,7 +91,8 @@ export function validateObject(object: any, filters: any) {
     }
   }
 
-  return paramsMatchingFilters.length > 0;
+  const paramsMatchingFilters = Object.keys(filters.properties).filter((key) => object[key] !== undefined);
+  return !filters.failOnEmpty || paramsMatchingFilters.length > 0;
 }
 
 export function validateArray(array: any[], innerType?: string) {
@@ -93,8 +103,8 @@ export function validateArray(array: any[], innerType?: string) {
   return array.every(isInnerType);
 }
 
-export function hasUnexpectedParams(actual: any, expected: any, object: string) {
-  const expectedParams = Object.keys(expected);
+export function hasUnexpectedParams(actual: any, expected: IObjectSchema, object: string) {
+  const expectedParams = Object.keys(expected.properties);
   const actualParams = Object.keys(actual);
   const unknownParam = actualParams.find((param: any) => !expectedParams.includes(param));
   if (unknownParam) {
@@ -102,7 +112,7 @@ export function hasUnexpectedParams(actual: any, expected: any, object: string) 
   }
 }
 
-export function requiredIsMissing(param: any, required: boolean) {
+export function requiredIsMissing(param: any, required?: boolean) {
   return required && param === undefined;
 }
 

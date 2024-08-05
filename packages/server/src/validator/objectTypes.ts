@@ -1,141 +1,191 @@
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import { TracerType, Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types';
 
-export const OBJECTS_VALIDATIONS = {
+export type IObjectSchema = {
+  failOnEmpty?: boolean;
+  properties: {
+    [key: string]: {
+      type: string;
+      nullable: boolean;
+      required?: boolean;
+    };
+  };
+};
+
+export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
   blockHashObject: {
-    blockHash: {
-      type: 'blockHash',
-      nullable: false,
+    properties: {
+      blockHash: {
+        type: 'blockHash',
+        nullable: false,
+      },
     },
   },
   blockNumberObject: {
-    blockNumber: {
-      type: 'blockNumber',
-      nullable: false,
+    properties: {
+      blockNumber: {
+        type: 'blockNumber',
+        nullable: false,
+      },
     },
   },
   filter: {
-    blockHash: {
-      type: 'blockHash',
-      nullable: false,
-    },
-    fromBlock: {
-      type: 'blockNumber',
-      nullable: false,
-    },
-    toBlock: {
-      type: 'blockNumber',
-      nullable: false,
-    },
-    address: {
-      type: 'addressFilter',
-      nullable: false,
-    },
-    topics: {
-      type: 'topics',
-      nullable: false,
+    properties: {
+      blockHash: {
+        type: 'blockHash',
+        nullable: false,
+      },
+      fromBlock: {
+        type: 'blockNumber',
+        nullable: false,
+      },
+      toBlock: {
+        type: 'blockNumber',
+        nullable: false,
+      },
+      address: {
+        type: 'addressFilter',
+        nullable: false,
+      },
+      topics: {
+        type: 'topics',
+        nullable: false,
+      },
     },
   },
   callTracerConfig: {
-    onlyTopCall: {
-      type: 'boolean',
-      nullable: false,
-      required: false,
+    failOnEmpty: true,
+    properties: {
+      onlyTopCall: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
     },
   },
   opcodeLoggerConfig: {
-    enableMemory: {
-      type: 'boolean',
-      nullable: false,
-      required: false,
-    },
-    disableStack: {
-      type: 'boolean',
-      nullable: false,
-      required: false,
-    },
-    disableStorage: {
-      type: 'boolean',
-      nullable: false,
-      required: false,
+    failOnEmpty: true,
+    properties: {
+      enableMemory: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+      disableStack: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+      disableStorage: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
     },
   },
   tracerConfigWrapper: {
-    tracer: {
-      type: 'tracerType',
-      nullable: false,
-      required: false,
-    },
-    tracerConfig: {
-      type: 'tracerConfig',
-      nullable: false,
-      required: false,
+    failOnEmpty: true,
+    properties: {
+      tracer: {
+        type: 'tracerType',
+        nullable: false,
+        required: false,
+      },
+      tracerConfig: {
+        type: 'tracerConfig',
+        nullable: false,
+        required: false,
+      },
     },
   },
   transaction: {
-    from: {
-      type: 'address',
-      nullable: false,
-    },
-    to: {
-      type: 'address',
-      nullable: true,
-    },
-    gas: {
-      type: 'hex',
-      nullable: false,
-    },
-    gasPrice: {
-      type: 'hex',
-      nullable: false,
-    },
-    maxPriorityFeePerGas: {
-      type: 'hex',
-      nullable: false,
-    },
-    maxFeePerGas: {
-      type: 'hex',
-      nullable: false,
-    },
-    value: {
-      type: 'hex',
-      nullable: false,
-    },
-    data: {
-      type: 'hex',
-      nullable: true,
-    },
-    type: {
-      type: 'hex',
-      nullable: false,
-    },
-    chainId: {
-      type: 'hex',
-      nullable: false,
-    },
-    nonce: {
-      type: 'hex',
-      nullable: false,
-    },
-    input: {
-      type: 'hex',
-      nullable: false,
-    },
-    accessList: {
-      type: 'array',
-      nullable: false,
+    properties: {
+      from: {
+        type: 'address',
+        nullable: false,
+      },
+      to: {
+        type: 'address',
+        nullable: true,
+      },
+      gas: {
+        type: 'hex',
+        nullable: false,
+      },
+      gasPrice: {
+        type: 'hex',
+        nullable: false,
+      },
+      maxPriorityFeePerGas: {
+        type: 'hex',
+        nullable: false,
+      },
+      maxFeePerGas: {
+        type: 'hex',
+        nullable: false,
+      },
+      value: {
+        type: 'hex',
+        nullable: false,
+      },
+      data: {
+        type: 'hex',
+        nullable: true,
+      },
+      type: {
+        type: 'hex',
+        nullable: false,
+      },
+      chainId: {
+        type: 'hex',
+        nullable: false,
+      },
+      nonce: {
+        type: 'hex',
+        nullable: false,
+      },
+      input: {
+        type: 'hex',
+        nullable: false,
+      },
+      accessList: {
+        type: 'array',
+        nullable: false,
+      },
     },
   },
   ethSubscribeLogsParams: {
-    address: {
-      type: 'addressFilter',
-      nullable: false,
-      required: false,
-    },
-    topics: {
-      type: 'topics',
-      nullable: false,
+    properties: {
+      address: {
+        type: 'addressFilter',
+        nullable: false,
+        required: false,
+      },
+      topics: {
+        type: 'topics',
+        nullable: false,
+      },
     },
   },
 };
@@ -305,7 +355,7 @@ export class EthSubscribeLogsParamsObject {
       valid &&
       Array.isArray(this.address) &&
       this.address.length === 0 &&
-      OBJECTS_VALIDATIONS.ethSubscribeLogsParams.address.required
+      OBJECTS_VALIDATIONS.ethSubscribeLogsParams.properties.address.required
     ) {
       throw predefined.MISSING_REQUIRED_PARAMETER(`'address' for ${this.name()}`);
     }
