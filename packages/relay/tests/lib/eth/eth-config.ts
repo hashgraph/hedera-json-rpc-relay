@@ -564,6 +564,9 @@ export const DEFAULT_LOGS = {
 export const DEFAULT_ETH_GET_BLOCK_BY_LOGS = {
   logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1]],
 };
+
+export const DEFAULT_ROOT_HASH = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
+
 export const BLOCK_BY_HASH_FROM_RELAY = {
   timestamp: '0x652dbbb7',
   difficulty: '0x0',
@@ -582,7 +585,7 @@ export const BLOCK_BY_HASH_FROM_RELAY = {
   stateRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
   totalDifficulty: '0x0',
   transactions: [],
-  transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
+  transactionsRoot: DEFAULT_ROOT_HASH,
   uncles: [],
   withdrawals: [],
   withdrawalsRoot: '0x0',
