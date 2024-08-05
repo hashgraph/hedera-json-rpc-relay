@@ -10,12 +10,14 @@ export function validateParam(index: number | string, param: any, validation: an
     throw predefined.INTERNAL_ERROR(`Missing or unsupported param type '${validation.type}'`);
   }
 
-  if (requiredIsMissing(param, validation.required)) {
-    throw predefined.MISSING_REQUIRED_PARAMETER(index);
-  } else if (!validation.required && param === undefined) {
-    //if parameter is undefined and not required, no need to validate
-    //e.g estimateGas method, blockNumber is not required
-    return;
+  if (param === undefined) {
+    if (validation.required) {
+      throw predefined.MISSING_REQUIRED_PARAMETER(index);
+    } else {
+      // if parameter is undefined and not required, no need to validate
+      // e.g estimateGas method, blockNumber is not required
+      return;
+    }
   }
 
   if (param === null) {
