@@ -60,7 +60,7 @@ function getParamType(validationType: string): ITypeValidation | ITypeValidation
 }
 
 export function validateObject(object: any, filters: IObjectSchema) {
-  for (const property of Object.keys(filters)) {
+  for (const property of Object.keys(filters.properties)) {
     const validation = filters[property];
     const param = object[property];
 
