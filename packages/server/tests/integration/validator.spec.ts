@@ -773,11 +773,19 @@ describe('Validator', async () => {
       );
     });
 
-    it('throws an error if validation type is wrong', async () => {
+    it('throws an error if validation type is missing', async () => {
       const validation = { 0: { type: undefined as unknown as string } };
 
       expect(() => Validator.validateParams(['0x4422E9088662'], validation)).to.throw(
         "Error invoking RPC: Missing or unsupported param type 'undefined'",
+      );
+    });
+
+    it('throws an error if validation type is unknown', async () => {
+      const validation = { 0: { type: 'unknownType' } };
+
+      expect(() => Validator.validateParams(['0x4422E9088662'], validation)).to.throw(
+        "Error invoking RPC: Missing or unsupported param type 'unknownType'",
       );
     });
 

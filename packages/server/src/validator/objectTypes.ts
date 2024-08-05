@@ -33,6 +33,11 @@ export type IObjectSchema = {
   };
 };
 
+export interface IObjectValidation {
+  validate(): boolean;
+  name(): string;
+}
+
 export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
   blockHashObject: {
     properties: {
@@ -190,7 +195,7 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
   },
 };
 
-export class CallTracerConfig {
+export class CallTracerConfig implements IObjectValidation {
   onlyTopCall: boolean;
 
   constructor(config: any) {
@@ -206,7 +211,7 @@ export class CallTracerConfig {
   }
 }
 
-export class OpcodeLoggerConfig {
+export class OpcodeLoggerConfig implements IObjectValidation {
   enableMemory?: boolean;
   disableStack?: boolean;
   disableStorage?: boolean;
@@ -226,7 +231,7 @@ export class OpcodeLoggerConfig {
   }
 }
 
-export class TracerConfigWrapper {
+export class TracerConfigWrapper implements IObjectValidation {
   tracer: TracerType;
   tracerConfig: ITracerConfig;
 
@@ -244,7 +249,7 @@ export class TracerConfigWrapper {
   }
 }
 
-export class TransactionObject {
+export class TransactionObject implements IObjectValidation {
   from?: string;
   to: string;
   gas?: string;
@@ -255,7 +260,7 @@ export class TransactionObject {
   data?: string;
 
   constructor(transaction: any) {
-    Validator.hasUnexpectedParams(transaction, OBJECTS_VALIDATIONS.transaction, this.name());
+    Validator.checkForUnexpectedParams(transaction, OBJECTS_VALIDATIONS.transaction, this.name());
     this.from = transaction.from;
     this.to = transaction.to;
     this.gas = transaction.gas;
@@ -275,7 +280,7 @@ export class TransactionObject {
   }
 }
 
-export class FilterObject {
+export class FilterObject implements IObjectValidation {
   blockHash: string;
   fromBlock?: string;
   toBlock?: string;
@@ -283,7 +288,7 @@ export class FilterObject {
   topics?: string[] | string[][];
 
   constructor(filter: any) {
-    Validator.hasUnexpectedParams(filter, OBJECTS_VALIDATIONS.filter, this.name());
+    Validator.checkForUnexpectedParams(filter, OBJECTS_VALIDATIONS.filter, this.name());
     this.blockHash = filter.blockHash;
     this.fromBlock = filter.fromBlock;
     this.toBlock = filter.toBlock;
@@ -304,11 +309,11 @@ export class FilterObject {
   }
 }
 
-export class BlockHashObject {
+export class BlockHashObject implements IObjectValidation {
   blockHash: string;
 
   constructor(param: any) {
-    Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.blockHashObject, this.name());
+    Validator.checkForUnexpectedParams(param, OBJECTS_VALIDATIONS.blockHashObject, this.name());
     this.blockHash = param.blockHash;
   }
 
@@ -321,11 +326,11 @@ export class BlockHashObject {
   }
 }
 
-export class BlockNumberObject {
+export class BlockNumberObject implements IObjectValidation {
   blockNumber: string;
 
   constructor(param: any) {
-    Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.blockNumberObject, this.name());
+    Validator.checkForUnexpectedParams(param, OBJECTS_VALIDATIONS.blockNumberObject, this.name());
     this.blockNumber = param.blockNumber;
   }
 
@@ -338,12 +343,12 @@ export class BlockNumberObject {
   }
 }
 
-export class EthSubscribeLogsParamsObject {
+export class EthSubscribeLogsParamsObject implements IObjectValidation {
   address?: string | string[];
   topics?: string[] | string[][];
 
   constructor(param: any) {
-    Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.ethSubscribeLogsParams, this.name());
+    Validator.checkForUnexpectedParams(param, OBJECTS_VALIDATIONS.ethSubscribeLogsParams, this.name());
     this.address = param.address;
     this.topics = param.topics;
   }

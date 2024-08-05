@@ -18,10 +18,10 @@
  *
  */
 
-import { IMethodParamValidation, IObjectSchema, ITypeValidation, Validator } from '.';
+import { IMethodParamValidation, IObjectSchema, IObjectValidation, ITypeValidation, Validator } from '.';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 
-export function validateParam(index: number | string, param: any, validation: IMethodParamValidation) {
+export function validateParam(index: number | string, param: any, validation: IMethodParamValidation): void {
   const paramType = getParamType(validation.type);
 
   if (paramType === undefined) {
@@ -59,7 +59,7 @@ function getParamType(validationType: string): ITypeValidation | ITypeValidation
   }
 }
 
-export function validateObject(object: any, filters: IObjectSchema) {
+export function validateObject(object: IObjectValidation, filters: IObjectSchema) {
   for (const property of Object.keys(filters.properties)) {
     const validation = filters.properties[property];
     const param = object[property];
@@ -95,7 +95,7 @@ export function validateObject(object: any, filters: IObjectSchema) {
   return !filters.failOnEmpty || paramsMatchingFilters.length > 0;
 }
 
-export function validateArray(array: any[], innerType?: string) {
+export function validateArray(array: any[], innerType?: string): boolean {
   if (!innerType) return true;
 
   const isInnerType = (element: any) => Validator.TYPES[innerType].test(element);
@@ -103,19 +103,19 @@ export function validateArray(array: any[], innerType?: string) {
   return array.every(isInnerType);
 }
 
-export function hasUnexpectedParams(actual: any, expected: IObjectSchema, object: string) {
+export function checkForUnexpectedParams(actual: any, expected: IObjectSchema, objectName: string): void {
   const expectedParams = Object.keys(expected.properties);
   const actualParams = Object.keys(actual);
   const unknownParam = actualParams.find((param: any) => !expectedParams.includes(param));
   if (unknownParam) {
-    throw predefined.INVALID_PARAMETER(`'${unknownParam}' for ${object}`, `Unknown parameter`);
+    throw predefined.INVALID_PARAMETER(`'${unknownParam}' for ${objectName}`, `Unknown parameter`);
   }
 }
 
-export function requiredIsMissing(param: any, required?: boolean) {
-  return required && param === undefined;
+export function requiredIsMissing(param: any, required: boolean | undefined): boolean {
+  return required === true && param === undefined;
 }
 
-export function isValidAndNonNullableParam(param: any, nullable: boolean) {
+export function isValidAndNonNullableParam(param: any, nullable: boolean): boolean {
   return param !== undefined && (param !== null || !nullable);
 }
