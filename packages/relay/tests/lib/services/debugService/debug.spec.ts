@@ -295,7 +295,7 @@ describe('Debug API Test Suite', async function () {
       });
       for (const config of opcodeLoggerConfigs) {
         const opcodeLoggerParams = getQueryParams({
-          memory: config.enableMemory,
+          memory: !!config.enableMemory,
           stack: !config.disableStack,
           storage: !config.disableStorage,
         });
@@ -437,12 +437,12 @@ describe('Debug API Test Suite', async function () {
 
         describe(`When opcode logger is called with ${opcodeLoggerParams}`, async function () {
           const emptyFields = Object.keys(config)
-            .filter((key) => config[key])
-            .map((key) => key.replace('disable', ''))
+            .filter((key) => (key.startsWith('disable') && config[key]) || (key.startsWith('enable') && !config[key]))
+            .map((key) => (config[key] ? key.replace('disable', '') : key.replace('enable', '')))
             .map((key) => key.toLowerCase());
 
-          it(`Then '${
-            emptyFields.length ? `${emptyFields} should be empty` : 'all should be returned'
+          it(`Then ${
+            emptyFields.length ? `'${emptyFields}' should be empty` : 'all should be returned'
           }`, async function () {
             const expectedResult = {
               gas: opcodesResponse.gas,
