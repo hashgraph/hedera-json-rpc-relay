@@ -1143,7 +1143,7 @@
           "description": "The hash of the transaction to trace."
         },
         {
-          "name": "tracerOrConfig",
+          "name": "tracer",
           "required": false,
           "schema": {
             "oneOf": [
@@ -1473,29 +1473,39 @@
           }
         ]
       },
+      "CallTracerConfig": {
+        "title": "CallTracer config",
+        "type": "object",
+        "properties": {
+          "onlyTopCall": {
+            "type": "boolean"
+          }
+        }
+      },
+      "OpcodeLoggerConfig": {
+        "title": "OpcodeLogger config",
+        "type": "object",
+        "properties": {
+          "enableMemory": {
+            "type": "boolean"
+          },
+          "disableStack": {
+            "type": "boolean"
+          },
+          "disableStorage": {
+            "type": "boolean"
+          }
+        }
+      },
       "TracerConfig": {
         "title": "Tracer config",
         "type": "object",
         "oneOf": [
           {
-            "properties": {
-              "onlyTopCall": {
-                "type": "boolean"
-              }
-            }
+            "$ref": "#/components/schemas/CallTracerConfig"
           },
           {
-            "properties": {
-              "enableMemory": {
-                "type": "boolean"
-              },
-              "disableStack": {
-                "type": "boolean"
-              },
-              "disableStorage": {
-                "type": "boolean"
-              }
-            }
+            "$ref": "#/components/schemas/OpcodeLoggerConfig"
           }
         ]
       },
