@@ -22,6 +22,7 @@ import Axios, { AxiosInstance } from 'axios';
 import { expect } from 'chai';
 import dotenv from 'dotenv';
 import path from 'path';
+import sinon from 'sinon';
 import { Server } from 'http';
 import { GCProfiler } from 'v8';
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
@@ -32,8 +33,8 @@ import { TracerType, Validator } from '../../src/validator';
 import RelayCalls from '../../tests/helpers/constants';
 import * as Constants from '../../src/validator/constants';
 import { Utils } from '../helpers/utils';
-import { contractHash1 } from '../../../relay/tests/helpers';
-import sinon, { SinonStub } from 'sinon';
+import { predefined } from '@hashgraph/json-rpc-relay';
+import { contractAddress1, contractAddress2, contractHash1, contractId1 } from '../../../relay/tests/helpers';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
@@ -2257,17 +2258,203 @@ describe('RPC Server', function () {
     });
 
     describe('debug_traceTransaction', async function () {
-      let mirrorNodeStub: SinonStub;
+      const contractResult = {
+        address: contractAddress1,
+        amount: 0,
+        call_result: '0x2',
+        error_message: null,
+        from: contractAddress2,
+        function_parameters: '0x1',
+        gas_limit: 300000,
+        gas_used: 240000,
+        result: 'SUCCESS',
+      };
 
-      before(() => {
-        mirrorNodeStub = sinon.stub(MirrorNodeClient.prototype, 'get').resolves();
+      const contractActions = {
+        actions: [
+          {
+            call_depth: 0,
+            call_operation_type: 'CREATE',
+            call_type: 'CREATE',
+            caller: '0.0.1016',
+            caller_type: 'ACCOUNT',
+            from: '0x00000000000000000000000000000000000003f8',
+            gas: 247000,
+            gas_used: 77324,
+            index: 0,
+            input: '0x',
+            recipient: '0.0.1033',
+            recipient_type: 'CONTRACT',
+            result_data: '0x',
+            result_data_type: 'OUTPUT',
+            timestamp: '1696438011.462526383',
+            to: '0x0000000000000000000000000000000000000409',
+            value: 0,
+          },
+        ],
+      };
+
+      const contractOpcodes = {
+        address: contractAddress1,
+        contract_id: contractId1,
+        gas: 247000,
+        failed: false,
+        return_value: '0x2',
+        opcodes: [
+          {
+            pc: 0,
+            op: 'PUSH1',
+            gas: 247000,
+            gas_cost: 3,
+            depth: 0,
+            stack: [],
+            storage: {},
+            memory: [],
+          },
+        ],
+      };
+
+      let getContractResults: sinon.SinonStub;
+      let getContractActions: sinon.SinonStub;
+      let getContractOpcodes: sinon.SinonStub;
+
+      beforeEach(() => {
+        getContractResults = sinon
+          .stub(MirrorNodeClient.prototype, 'getContractResultWithRetry')
+          .resolves(contractResult);
+        getContractActions = sinon
+          .stub(MirrorNodeClient.prototype, 'getContractsResultsActions')
+          .resolves(contractActions);
+        getContractOpcodes = sinon
+          .stub(MirrorNodeClient.prototype, 'getContractsResultsOpcodes')
+          .resolves(contractOpcodes);
       });
 
-      after(() => {
-        mirrorNodeStub.restore();
+      afterEach(() => {
+        getContractResults.restore();
+        getContractActions.restore();
+        getContractOpcodes.restore();
       });
 
-      it('validates parameter 0 is transaction hash', async function () {
+      it('should execute with CallTracer type and valid CallTracerConfig', async () => {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, TracerType.CallTracer, { onlyTopCall: true }],
+            id: 1,
+          }),
+        ).to.not.throw;
+      });
+
+      it('should execute with OpcodeLogger type and valid OpcodeLoggerConfig', async () => {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [
+              contractHash1,
+              TracerType.OpcodeLogger,
+              { disableStack: false, disableStorage: false, enableMemory: true },
+            ],
+            id: 1,
+          }),
+        ).to.not.throw;
+      });
+
+      it('should execute with valid hash', async () => {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
+      it('should execute with valid hash and valid TracerType string', async () => {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, TracerType.CallTracer],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
+      it('should execute with valid hash, valid TracerType and empty TracerConfig', async () => {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, TracerType.CallTracer, {}],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
+      it('should execute with valid hash, null TracerType and null TracerConfig', async () => {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, null, null],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
+      it('should execute with unknown property in TracerConfig', async () => {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { disableMemory: true, disableStack: true }],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
+      it('should execute with unknown property in TracerConfigWrapper.tracerConfig', async () => {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { tracerConfig: { disableMemory: true, disableStorage: true } }],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
+      it('should execute with empty TracerConfigWrapper.tracerConfig', async function () {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { tracerConfig: {} }],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
+      it('should fail with missing transaction hash', async () => {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(error.response, Validator.ERROR_CODE, MISSING_PARAM_ERROR + ' 0');
+        }
+      });
+
+      it('should fail with invalid hash', async () => {
         try {
           await testClient.post('/', {
             jsonrpc: '2.0',
@@ -2286,7 +2473,7 @@ describe('RPC Server', function () {
         }
       });
 
-      it('validates parameter 1 is TracerType string', async function () {
+      it('should fail with valid hash and invalid TracerType string', async () => {
         try {
           await testClient.post('/', {
             jsonrpc: '2.0',
@@ -2305,51 +2492,26 @@ describe('RPC Server', function () {
         }
       });
 
-      it('should not throw exception for empty TracerConfig', async function () {
-        expect(
+      it('should fail with valid hash, valid tracer type and invalid tracer configuration', async () => {
+        try {
           await testClient.post('/', {
             jsonrpc: '2.0',
             method: 'debug_traceTransaction',
-            params: [contractHash1, {}],
+            params: [contractHash1, TracerType.CallTracer, { invalidConfig: true }],
             id: '2',
-          }),
-        ).to.not.throw;
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(
+            error.response,
+            Validator.ERROR_CODE,
+            `Invalid parameter 2: ${Validator.TYPES.tracerConfig.error}, value: [object Object]`,
+          );
+        }
       });
 
-      it('should not throw exception for unknown property in TracerConfig', async function () {
-        expect(
-          await testClient.post('/', {
-            jsonrpc: '2.0',
-            method: 'debug_traceTransaction',
-            params: [contractHash1, { disableMemory: true, disableStack: true }],
-            id: '2',
-          }),
-        ).to.not.throw;
-      });
-
-      it('should not throw exception for unknown property in TracerConfigWrapper.tracerConfig', async function () {
-        expect(
-          await testClient.post('/', {
-            jsonrpc: '2.0',
-            method: 'debug_traceTransaction',
-            params: [contractHash1, { tracerConfig: { disableMemory: true, disableStorage: true } }],
-            id: '2',
-          }),
-        ).to.not.throw;
-      });
-
-      it('should not throw exception for empty TracerConfigWrapper.tracerConfig', async function () {
-        expect(
-          await testClient.post('/', {
-            jsonrpc: '2.0',
-            method: 'debug_traceTransaction',
-            params: [contractHash1, { tracerConfig: {} }],
-            id: '2',
-          }),
-        ).to.not.throw;
-      });
-
-      it('validates parameter 1 is TracerConfig with valid property for enableMemory', async function () {
+      it('should fail with valid hash and invalid type for TracerConfig.enableMemory', async () => {
         try {
           await testClient.post('/', {
             jsonrpc: '2.0',
@@ -2368,7 +2530,7 @@ describe('RPC Server', function () {
         }
       });
 
-      it('validates parameter 1 is TracerConfig with valid property for disableStack', async function () {
+      it('should fail with valid hash and invalid type for TracerConfig.disableStack', async () => {
         try {
           await testClient.post('/', {
             jsonrpc: '2.0',
@@ -2387,7 +2549,7 @@ describe('RPC Server', function () {
         }
       });
 
-      it('validates parameter 1 is TracerConfig with valid property for disableStorage', async function () {
+      it('should fail with valid hash and invalid type for TracerConfig.disableStorage', async () => {
         try {
           await testClient.post('/', {
             jsonrpc: '2.0',
@@ -2406,7 +2568,7 @@ describe('RPC Server', function () {
         }
       });
 
-      it('validates parameter 1 is TracerConfigWrapper object with valid tracer property', async function () {
+      it('should fail with valid hash and invalid type for TracerConfigWrapper.tracer', async () => {
         try {
           await testClient.post('/', {
             jsonrpc: '2.0',
@@ -2425,7 +2587,7 @@ describe('RPC Server', function () {
         }
       });
 
-      it('validates parameter 1 is TracerConfigWrapper object with valid tracerConfig property', async function () {
+      it('should fail with valid hash and invalid type for TracerConfigWrapper.tracerConfig', async () => {
         try {
           await testClient.post('/', {
             jsonrpc: '2.0',
@@ -2441,6 +2603,59 @@ describe('RPC Server', function () {
             Validator.ERROR_CODE,
             `Invalid parameter 'tracerConfig' for TracerConfigWrapper: ${Validator.TYPES.tracerConfig.error}, value: invalidTracerConfig`,
           );
+        }
+      });
+
+      it('should fail with empty TracerConfig containing invalid properties', async () => {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, TracerType.CallTracer, { invalidProperty: true }],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(
+            error.response,
+            Validator.ERROR_CODE,
+            `Invalid parameter 2: ${Validator.TYPES.tracerConfig.error}, value: [object Object]`,
+          );
+        }
+      });
+
+      it('should fail with invalid JSON-RPC method name', async () => {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'invalid_method',
+            params: [contractHash1, TracerType.CallTracer, { onlyTopCall: true }],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(
+            error.response,
+            predefined.UNSUPPORTED_METHOD.code,
+            `Method invalid_method not found`,
+          );
+        }
+      });
+
+      it('should fail with invalid JSON-RPC version', async () => {
+        try {
+          await testClient.post('/', {
+            jsonrpc: '1.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, TracerType.CallTracer, { onlyTopCall: true }],
+            id: '2',
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.invalidParamError(error.response, predefined.INVALID_REQUEST.code, `Invalid Request`);
         }
       });
     });
