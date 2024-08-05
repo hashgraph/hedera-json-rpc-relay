@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { OBJECTS_VALIDATIONS, TransactionObject, Validator } from '../../src/validator';
+import { OBJECTS_VALIDATIONS, TracerType, TransactionObject, Validator } from '../../src/validator';
 
 describe('Validator', async () => {
   function expectInvalidParam(index: number | string, message: string, paramValue?: string) {
@@ -612,6 +612,145 @@ describe('Validator', async () => {
       );
 
       expect(result).to.eq(undefined);
+    });
+  });
+
+  describe('validates tracerType correctly', async () => {
+    const validation = { 0: { type: 'tracerType', required: true } };
+
+    it('throws an error if tracerType is undefined', async () => {
+      expect(() => Validator.validateParams([undefined], validation)).to.throw(
+        'Missing value for required parameter 0',
+      );
+    });
+
+    it('throws an error if tracerType is invalid', async () => {
+      expect(() => Validator.validateParams(['invalidType'], validation)).to.throw(
+        expectInvalidParam(0, Validator.TYPES.tracerType.error, 'invalidType'),
+      );
+    });
+
+    it('does not throw an error if tracerType is CallTracer', async () => {
+      expect(() => Validator.validateParams([TracerType.CallTracer], validation)).to.not.throw;
+    });
+
+    it('does not throw an error if tracerType is OpcodeLogger', async () => {
+      expect(() => Validator.validateParams([TracerType.OpcodeLogger], validation)).to.not.throw;
+    });
+  });
+
+  describe('validates callTracerConfig correctly', async () => {
+    const validation = { 0: { type: 'callTracerConfig' } };
+
+    it('throws an error if callTracerConfig is invalid', async () => {
+      expect(() => Validator.validateParams([{ onlyTopCall: 'invalid' }], validation)).to.throw(
+        expectInvalidParam("'onlyTopCall' for CallTracerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      );
+    });
+
+    it('does not throw an error if callTracerConfig is valid', async () => {
+      expect(() => Validator.validateParams([{ onlyTopCall: true }], validation)).to.not.throw;
+    });
+
+    it('does not throw an error if tracerConfig contains unknown property', async () => {
+      expect(() => Validator.validateParams([{ onlyTopCall: true, unknownProperty: true }], validation)).to.not.throw;
+    });
+
+    it('does not throw an error if callTracerConfig is empty', async () => {
+      expect(() => Validator.validateParams([{}], validation)).to.not.throw;
+    });
+  });
+
+  describe('validates opcodeLoggerConfig correctly', async () => {
+    const validation = { 0: { type: 'opcodeLoggerConfig' } };
+
+    it('throws an error if opcodeLoggerConfig is invalid', async () => {
+      expect(() => Validator.validateParams([{ enableMemory: 'invalid' }], validation)).to.throw(
+        expectInvalidParam("'enableMemory' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      );
+    });
+
+    it('does not throw an error if opcodeLoggerConfig is valid', async () => {
+      expect(() =>
+        Validator.validateParams([{ enableMemory: true, disableStack: false, disableStorage: true }], validation),
+      ).to.not.throw;
+    });
+
+    it('does not throw an error if tracerConfig contains unknown property', async () => {
+      expect(() => Validator.validateParams([{ disableStack: true, unknownProperty: true }], validation)).to.not.throw;
+    });
+
+    it('does not throw an error if opcodeLoggerConfig is empty', async () => {
+      expect(() => Validator.validateParams([{}], validation)).to.not.throw;
+    });
+  });
+
+  describe('validates tracerConfig correctly', async () => {
+    const validation = { 0: { type: 'tracerConfig' } };
+
+    it('throws an error if enableMemory is invalid', async () => {
+      expect(() => Validator.validateParams([{ enableMemory: 'invalid' }], validation)).to.throw(
+        expectInvalidParam("'enableMemory' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      );
+    });
+
+    it('throws an error if disableStack is invalid', async () => {
+      expect(() => Validator.validateParams([{ disableStack: 'invalid' }], validation)).to.throw(
+        expectInvalidParam("'disableStack' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      );
+    });
+
+    it('throws an error if disableStorage is invalid', async () => {
+      expect(() => Validator.validateParams([{ disableStorage: 'invalid' }], validation)).to.throw(
+        expectInvalidParam("'disableStorage' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      );
+    });
+
+    it('throws an error if onlyTopCall is invalid', async () => {
+      expect(() => Validator.validateParams([{ onlyTopCall: 'invalid' }], validation)).to.throw(
+        expectInvalidParam("'onlyTopCall' for CallTracerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      );
+    });
+
+    it('does not throw an error for valid OpcodeLoggerConfig', async () => {
+      expect(() =>
+        Validator.validateParams([{ enableMemory: true, disableStack: false, disableStorage: true }], validation),
+      ).to.not.throw;
+    });
+
+    it('does not throw an error for valid CallTracerConfig', async () => {
+      expect(() => Validator.validateParams([{ onlyTopCall: true }], validation)).to.not.throw;
+    });
+
+    it('does not throw an error if OpcodeLoggerConfig contains unknown property', async () => {
+      expect(() => Validator.validateParams([{ disableStack: true, unknownProperty: true }], validation)).to.not.throw;
+    });
+
+    it('does not throw an error if CallTracerConfig contains unknown property', async () => {
+      expect(() => Validator.validateParams([{ onlyTopCall: true, unknownProperty: true }], validation)).to.not.throw;
+    });
+
+    it('does not throw an error if config is empty', async () => {
+      expect(() => Validator.validateParams([{}], validation)).to.not.throw;
+    });
+  });
+
+  describe('validates tracerConfigWrapper correctly', async () => {
+    const validation = { 0: { type: 'tracerConfigWrapper' } };
+
+    it('throws an error if tracerConfigWrapper is invalid', async () => {
+      expect(() => Validator.validateParams([{ tracer: 'invalid', tracerConfig: {} }], validation)).to.throw(
+        expectInvalidParam("'tracer' for TracerConfigWrapper", Validator.TYPES.tracerType.error, 'invalid'),
+      );
+    });
+
+    it('does not throw an error if tracerConfigWrapper is valid', async () => {
+      expect(() => Validator.validateParams([{ tracer: TracerType.CallTracer, tracerConfig: {} }], validation)).to.not
+        .throw;
+    });
+
+    it('does not throw an error if tracerConfigWrapper is empty', async () => {
+      expect(() => Validator.validateParams([{}], validation)).to.not.throw;
     });
   });
 
