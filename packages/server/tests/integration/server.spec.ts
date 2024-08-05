@@ -2305,6 +2305,17 @@ describe('RPC Server', function () {
         }
       });
 
+      it('should not throw exception for empty TracerConfig', async function () {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, {}],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
       it('should not throw exception for unknown property in TracerConfig', async function () {
         expect(
           await testClient.post('/', {
@@ -2321,7 +2332,18 @@ describe('RPC Server', function () {
           await testClient.post('/', {
             jsonrpc: '2.0',
             method: 'debug_traceTransaction',
-            params: [contractHash1, { tracerConfig: { disableMemory: true } }],
+            params: [contractHash1, { tracerConfig: { disableMemory: true, disableStorage: true } }],
+            id: '2',
+          }),
+        ).to.not.throw;
+      });
+
+      it('should not throw exception for empty TracerConfigWrapper.tracerConfig', async function () {
+        expect(
+          await testClient.post('/', {
+            jsonrpc: '2.0',
+            method: 'debug_traceTransaction',
+            params: [contractHash1, { tracerConfig: {} }],
             id: '2',
           }),
         ).to.not.throw;
