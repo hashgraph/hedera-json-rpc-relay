@@ -64,7 +64,7 @@ describe('Validator', async () => {
   });
 
   describe('validates Array type correctly', async () => {
-    const validation = { 0: { type: ['array'] } };
+    const validation = { 0: { type: 'array' } };
     const error = Validator.TYPES['array'].error;
 
     it('throws an error if the param is not an array', async () => {
@@ -615,143 +615,153 @@ describe('Validator', async () => {
     });
   });
 
-  describe('validates tracerType correctly', async () => {
-    const validation = { 0: { type: 'tracerType', required: true } };
-
-    it('throws an error if tracerType is undefined', async () => {
-      expect(() => Validator.validateParams([undefined], validation)).to.throw(
-        'Missing value for required parameter 0',
-      );
-    });
-
-    it('throws an error if tracerType is invalid', async () => {
-      expect(() => Validator.validateParams(['invalidType'], validation)).to.throw(
-        expectInvalidParam(0, Validator.TYPES.tracerType.error, 'invalidType'),
-      );
-    });
-
-    it('does not throw an error if tracerType is CallTracer', async () => {
-      expect(() => Validator.validateParams([TracerType.CallTracer], validation)).to.not.throw;
-    });
-
-    it('does not throw an error if tracerType is OpcodeLogger', async () => {
-      expect(() => Validator.validateParams([TracerType.OpcodeLogger], validation)).to.not.throw;
-    });
+  describeTests('tracerType', {
+    validCases: [TracerType.CallTracer, TracerType.OpcodeLogger],
+    invalidCases: [
+      {
+        input: undefined,
+        error: 'Missing value for required parameter 0',
+      },
+      {
+        input: 'invalidType',
+        error: expectInvalidParam(0, Validator.TYPES.tracerType.error, 'invalidType'),
+      },
+    ],
   });
 
-  describe('validates callTracerConfig correctly', async () => {
-    const validation = { 0: { type: 'callTracerConfig' } };
-
-    it('throws an error if callTracerConfig is invalid', async () => {
-      expect(() => Validator.validateParams([{ onlyTopCall: 'invalid' }], validation)).to.throw(
-        expectInvalidParam("'onlyTopCall' for CallTracerConfig", Validator.TYPES.boolean.error, 'invalid'),
-      );
-    });
-
-    it('does not throw an error if callTracerConfig is valid', async () => {
-      expect(() => Validator.validateParams([{ onlyTopCall: true }], validation)).to.not.throw;
-    });
-
-    it('does not throw an error if tracerConfig contains unknown property', async () => {
-      expect(() => Validator.validateParams([{ onlyTopCall: true, unknownProperty: true }], validation)).to.not.throw;
-    });
-
-    it('does not throw an error if callTracerConfig is empty', async () => {
-      expect(() => Validator.validateParams([{}], validation)).to.not.throw;
-    });
+  describeTests('callTracerConfig', {
+    validCases: [{ onlyTopCall: true, unknownParam: true }, { onlyTopCall: true }, {}],
+    invalidCases: [
+      {
+        input: { onlyTopCall: 'invalid' },
+        error: expectInvalidParam("'onlyTopCall' for CallTracerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+    ],
   });
 
-  describe('validates opcodeLoggerConfig correctly', async () => {
-    const validation = { 0: { type: 'opcodeLoggerConfig' } };
-
-    it('throws an error if opcodeLoggerConfig is invalid', async () => {
-      expect(() => Validator.validateParams([{ enableMemory: 'invalid' }], validation)).to.throw(
-        expectInvalidParam("'enableMemory' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
-      );
-    });
-
-    it('does not throw an error if opcodeLoggerConfig is valid', async () => {
-      expect(() =>
-        Validator.validateParams([{ enableMemory: true, disableStack: false, disableStorage: true }], validation),
-      ).to.not.throw;
-    });
-
-    it('does not throw an error if tracerConfig contains unknown property', async () => {
-      expect(() => Validator.validateParams([{ disableStack: true, unknownProperty: true }], validation)).to.not.throw;
-    });
-
-    it('does not throw an error if opcodeLoggerConfig is empty', async () => {
-      expect(() => Validator.validateParams([{}], validation)).to.not.throw;
-    });
+  describeTests('opcodeLoggerConfig', {
+    validCases: [
+      { enableMemory: true, disableStack: false, disableStorage: true, unknownParam: true },
+      { enableMemory: true, disableStack: false, disableStorage: true },
+      { enableMemory: true },
+      { disableStack: false },
+      { disableStorage: true },
+      {},
+    ],
+    invalidCases: [
+      {
+        input: { enableMemory: 'invalid' },
+        error: expectInvalidParam("'enableMemory' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+      {
+        input: { disableStack: 'invalid' },
+        error: expectInvalidParam("'disableStack' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+      {
+        input: { disableStorage: 'invalid' },
+        error: expectInvalidParam("'disableStorage' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+    ],
   });
 
-  describe('validates tracerConfig correctly', async () => {
-    const validation = { 0: { type: 'tracerConfig' } };
-
-    it('throws an error if enableMemory is invalid', async () => {
-      expect(() => Validator.validateParams([{ enableMemory: 'invalid' }], validation)).to.throw(
-        expectInvalidParam("'enableMemory' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
-      );
-    });
-
-    it('throws an error if disableStack is invalid', async () => {
-      expect(() => Validator.validateParams([{ disableStack: 'invalid' }], validation)).to.throw(
-        expectInvalidParam("'disableStack' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
-      );
-    });
-
-    it('throws an error if disableStorage is invalid', async () => {
-      expect(() => Validator.validateParams([{ disableStorage: 'invalid' }], validation)).to.throw(
-        expectInvalidParam("'disableStorage' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
-      );
-    });
-
-    it('throws an error if onlyTopCall is invalid', async () => {
-      expect(() => Validator.validateParams([{ onlyTopCall: 'invalid' }], validation)).to.throw(
-        expectInvalidParam("'onlyTopCall' for CallTracerConfig", Validator.TYPES.boolean.error, 'invalid'),
-      );
-    });
-
-    it('does not throw an error for valid OpcodeLoggerConfig', async () => {
-      expect(() =>
-        Validator.validateParams([{ enableMemory: true, disableStack: false, disableStorage: true }], validation),
-      ).to.not.throw;
-    });
-
-    it('does not throw an error for valid CallTracerConfig', async () => {
-      expect(() => Validator.validateParams([{ onlyTopCall: true }], validation)).to.not.throw;
-    });
-
-    it('does not throw an error if OpcodeLoggerConfig contains unknown property', async () => {
-      expect(() => Validator.validateParams([{ disableStack: true, unknownProperty: true }], validation)).to.not.throw;
-    });
-
-    it('does not throw an error if CallTracerConfig contains unknown property', async () => {
-      expect(() => Validator.validateParams([{ onlyTopCall: true, unknownProperty: true }], validation)).to.not.throw;
-    });
-
-    it('does not throw an error if config is empty', async () => {
-      expect(() => Validator.validateParams([{}], validation)).to.not.throw;
-    });
+  describeTests('tracerConfig', {
+    validCases: [
+      // OpcodeLoggerConfig
+      { enableMemory: true, disableStack: false, disableStorage: true, unknownParam: true },
+      { enableMemory: true, disableStack: false, disableStorage: true },
+      { enableMemory: true },
+      { disableStack: false },
+      { disableStorage: true },
+      // CallTracerConfig
+      { onlyTopCall: true, unknownParam: true },
+      { onlyTopCall: true },
+      // Empty object
+      {},
+    ],
+    invalidCases: [
+      {
+        input: { enableMemory: 'invalid' },
+        error: expectInvalidParam("'enableMemory' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+      {
+        input: { disableStack: 'invalid' },
+        error: expectInvalidParam("'disableStack' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+      {
+        input: { disableStorage: 'invalid' },
+        error: expectInvalidParam("'disableStorage' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+      {
+        input: { onlyTopCall: 'invalid' },
+        error: expectInvalidParam("'onlyTopCall' for CallTracerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+    ],
   });
 
-  describe('validates tracerConfigWrapper correctly', async () => {
-    const validation = { 0: { type: 'tracerConfigWrapper' } };
-
-    it('throws an error if tracerConfigWrapper is invalid', async () => {
-      expect(() => Validator.validateParams([{ tracer: 'invalid', tracerConfig: {} }], validation)).to.throw(
-        expectInvalidParam("'tracer' for TracerConfigWrapper", Validator.TYPES.tracerType.error, 'invalid'),
-      );
-    });
-
-    it('does not throw an error if tracerConfigWrapper is valid', async () => {
-      expect(() => Validator.validateParams([{ tracer: TracerType.CallTracer, tracerConfig: {} }], validation)).to.not
-        .throw;
-    });
-
-    it('does not throw an error if tracerConfigWrapper is empty', async () => {
-      expect(() => Validator.validateParams([{}], validation)).to.not.throw;
-    });
+  describeTests('tracerConfigWrapper', {
+    validCases: [
+      // CallTracerConfig
+      { tracer: TracerType.CallTracer, tracerConfig: { onlyTopCall: true }, unknownParam: true },
+      { tracer: TracerType.CallTracer, tracerConfig: { onlyTopCall: true } },
+      { tracer: TracerType.CallTracer, tracerConfig: {} },
+      { tracer: TracerType.CallTracer },
+      { tracerConfig: { onlyTopCall: true } },
+      // OpcodeLoggerConfig
+      {
+        tracer: TracerType.OpcodeLogger,
+        tracerConfig: { enableMemory: true, disableStack: false, disableStorage: true, unknownParam: true },
+      },
+      {
+        tracer: TracerType.OpcodeLogger,
+        tracerConfig: { enableMemory: true, disableStack: false, disableStorage: true },
+      },
+      { tracer: TracerType.OpcodeLogger, tracerConfig: { enableMemory: true } },
+      { tracer: TracerType.OpcodeLogger, tracerConfig: { disableStack: false } },
+      { tracer: TracerType.OpcodeLogger, tracerConfig: { disableStorage: true } },
+      { tracer: TracerType.OpcodeLogger, tracerConfig: {} },
+      { tracer: TracerType.OpcodeLogger },
+      { tracerConfig: { enableMemory: true, disableStack: false, disableStorage: true } },
+      // Empty object
+      {},
+    ],
+    invalidCases: [
+      {
+        input: { tracer: 'invalid', tracerConfig: {} },
+        error: expectInvalidParam("'tracer' for TracerConfigWrapper", Validator.TYPES.tracerType.error, 'invalid'),
+      },
+      {
+        input: { tracer: TracerType.CallTracer, tracerConfig: { onlyTopCall: 'invalid' } },
+        error: expectInvalidParam(
+          "'tracerConfig' for TracerConfigWrapper",
+          Validator.TYPES.tracerConfig.error,
+          '[object Object]',
+        ),
+      },
+      {
+        input: { tracer: TracerType.OpcodeLogger, tracerConfig: { enableMemory: 'invalid' } },
+        error: expectInvalidParam(
+          "'tracerConfig' for TracerConfigWrapper",
+          Validator.TYPES.tracerConfig.error,
+          '[object Object]',
+        ),
+      },
+      {
+        input: { tracer: TracerType.OpcodeLogger, tracerConfig: { disableStack: 'invalid' } },
+        error: expectInvalidParam(
+          "'tracerConfig' for TracerConfigWrapper",
+          Validator.TYPES.tracerConfig.error,
+          '[object Object]',
+        ),
+      },
+      {
+        input: { tracer: TracerType.OpcodeLogger, tracerConfig: { disableStorage: 'invalid' } },
+        error: expectInvalidParam(
+          "'tracerConfig' for TracerConfigWrapper",
+          Validator.TYPES.tracerConfig.error,
+          '[object Object]',
+        ),
+      },
+    ],
   });
 
   describe('Other error cases', async () => {
@@ -764,7 +774,7 @@ describe('Validator', async () => {
     });
 
     it('throws an error if validation type is wrong', async () => {
-      const validation = { 0: {} };
+      const validation = { 0: { type: undefined as unknown as string } };
 
       expect(() => Validator.validateParams(['0x4422E9088662'], validation)).to.throw(
         "Error invoking RPC: Missing or unsupported param type 'undefined'",
@@ -979,4 +989,22 @@ describe('Validator', async () => {
       expect(errorOccurred).to.be.eq(false);
     });
   });
+
+  function describeTests(type: string, tests: { validCases: any[]; invalidCases: { input: any; error: any }[] }) {
+    describe(`validates ${type} correctly`, async () => {
+      const validation = { 0: { type, required: true } };
+
+      tests.invalidCases.forEach(({ input, error }) => {
+        it(`throws an error for input: ${JSON.stringify(input)}`, async () => {
+          expect(() => Validator.validateParams([input], validation)).to.throw(error);
+        });
+      });
+
+      tests.validCases.forEach((input) => {
+        it(`does not throw an error for input: ${JSON.stringify(input)}`, async () => {
+          expect(() => Validator.validateParams([input], validation)).to.not.throw;
+        });
+      });
+    });
+  }
 });
