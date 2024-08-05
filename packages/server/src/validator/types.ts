@@ -126,13 +126,14 @@ export const TYPES = {
   tracerConfig: {
     test: (param: any): param is ITracerConfig => {
       if (param && typeof param === 'object') {
-        return (
-          Object.keys(param).length === 0 || TYPES.opcodeLoggerConfig.test(param) || TYPES.callTracerConfig.test(param)
-        );
+        const isEmptyObject = Object.keys(param).length === 0;
+        const isCallTracerConfig = TYPES.callTracerConfig.test(param);
+        const isOpcodeLoggerConfig = TYPES.opcodeLoggerConfig.test(param);
+        return isEmptyObject || isCallTracerConfig || isOpcodeLoggerConfig;
       }
       return false;
     },
-    error: 'Expected CallTracerConfig OR OpcodeLoggerConfig',
+    error: 'Expected TracerConfig',
   },
   tracerConfigWrapper: {
     test: (param: any): param is ITracerConfigWrapper => {

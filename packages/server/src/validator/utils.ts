@@ -49,10 +49,11 @@ function getParamType(isArray: boolean, containsOr: boolean, validationType: str
 }
 
 export function validateObject(object: any, filters: any) {
+  const paramsMatchingFilters = Object.keys(filters).filter((key) => object[key] !== undefined);
+
   for (const property of Object.keys(filters)) {
     const validation = filters[property];
     const param = object[property];
-    let result;
 
     if (requiredIsMissing(param, validation.required)) {
       throw predefined.MISSING_REQUIRED_PARAMETER(`'${property}' for ${object.name()}`);
@@ -60,7 +61,7 @@ export function validateObject(object: any, filters: any) {
 
     if (isValidAndNonNullableParam(param, validation.nullable)) {
       try {
-        result = Validator.TYPES[validation.type].test(param);
+        const result = Validator.TYPES[validation.type].test(param);
 
         if (!result) {
           throw predefined.INVALID_PARAMETER(
@@ -81,7 +82,7 @@ export function validateObject(object: any, filters: any) {
     }
   }
 
-  return true;
+  return paramsMatchingFilters.length > 0;
 }
 
 export function validateArray(array: any[], innerType?: string) {
