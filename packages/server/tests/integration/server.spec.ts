@@ -2314,11 +2314,15 @@ describe('RPC Server', function () {
         ],
       };
 
+      let getAccount: sinon.SinonStub;
+      let getContract: sinon.SinonStub;
       let getContractResults: sinon.SinonStub;
       let getContractActions: sinon.SinonStub;
       let getContractOpcodes: sinon.SinonStub;
 
       beforeEach(() => {
+        getAccount = sinon.stub(MirrorNodeClient.prototype, 'getAccount').resolves({ balance: 1000 });
+        getContract = sinon.stub(MirrorNodeClient.prototype, 'getContract').resolves({ address: contractAddress1 });
         getContractResults = sinon
           .stub(MirrorNodeClient.prototype, 'getContractResultWithRetry')
           .resolves(contractResult);
@@ -2331,6 +2335,8 @@ describe('RPC Server', function () {
       });
 
       afterEach(() => {
+        getAccount.restore();
+        getContract.restore();
         getContractResults.restore();
         getContractActions.restore();
         getContractOpcodes.restore();
