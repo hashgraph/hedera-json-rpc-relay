@@ -658,23 +658,27 @@ describe('Validator', async () => {
     });
     it('returns true when transaction data is null and is nullable is true', async () => {
       const result = Validator.validateObject(transactionFilterObject, {
-        ...OBJECTS_VALIDATIONS.transaction,
-        data: {
-          type: 'hex',
-          nullable: true,
+        properties: {
+          ...OBJECTS_VALIDATIONS.transaction.properties,
+          data: {
+            type: 'hex',
+            nullable: true,
+          },
         },
       });
 
       expect(result).to.be.true;
     });
 
-    it('throws an error if Transaction Object data param is null and isnullable is false', async () => {
+    it('throws an error if Transaction Object data param is null and isNullable is false', async () => {
       expect(() =>
         Validator.validateObject(transactionFilterObject, {
-          ...OBJECTS_VALIDATIONS.transaction,
-          data: {
-            type: 'hex',
-            nullable: false,
+          properties: {
+            ...OBJECTS_VALIDATIONS.transaction.properties,
+            data: {
+              type: 'hex',
+              nullable: false,
+            },
           },
         }),
       ).to.throw(expectInvalidObject('data', 'Expected 0x prefixed hexadecimal value', 'TransactionObject', 'null'));
