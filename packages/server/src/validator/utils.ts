@@ -61,7 +61,7 @@ function getParamType(validationType: string): ITypeValidation | ITypeValidation
 
 export function validateObject(object: any, filters: IObjectSchema) {
   for (const property of Object.keys(filters.properties)) {
-    const validation = filters[property];
+    const validation = filters.properties[property];
     const param = object[property];
 
     if (requiredIsMissing(param, validation.required)) {
