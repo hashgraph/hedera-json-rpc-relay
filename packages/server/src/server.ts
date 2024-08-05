@@ -680,9 +680,13 @@ app.useRpc('debug_traceTransaction', async (params: any) => {
       if (TYPES.tracerConfig.test(params[1].tracerConfig)) {
         tracerConfig = params[1].tracerConfig;
       }
-    } else if (TYPES.tracerConfig.test(params[1])) {
+    }
+
+    if (TYPES.tracerConfig.test(params[1])) {
       tracerConfig = params[1];
-    } else if (TYPES.tracerType.test(params[1])) {
+    }
+
+    if (TYPES.tracerType.test(params[1])) {
       tracer = params[1];
       if (TYPES.tracerConfig.test(params[2])) {
         tracerConfig = params[2];
