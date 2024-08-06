@@ -145,10 +145,6 @@ export class CacheService {
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
   private async getFromSharedCache(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
-    if (!this.isSharedCacheEnabled) {
-      return null;
-    }
-
     try {
       this.cacheMethodsCounter
         .labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.GET_ASYNC)
