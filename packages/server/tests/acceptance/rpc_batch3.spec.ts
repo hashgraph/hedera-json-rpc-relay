@@ -1939,7 +1939,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         const expectedError = predefined.MISSING_REQUIRED_PARAMETER(1);
         const args = [
           RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
-          [transactionHash, { tracer: 'invalidTracer', tracerConfig: tracerConfigTrue }],
+          [transactionHash, { invalidTracer: 'invalidTracer', tracerConfig: tracerConfigTrue }],
           requestId,
         ];
 
