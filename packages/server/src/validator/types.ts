@@ -152,9 +152,9 @@ export const TYPES: { [key: string]: ITypeValidation } = {
     test: (param: any): param is ITracerConfig => {
       if (param && typeof param === 'object') {
         const isEmptyObject = Object.keys(param).length === 0;
-        const isCallTracerConfig = TYPES.callTracerConfig.test(param);
-        const isOpcodeLoggerConfig = TYPES.opcodeLoggerConfig.test(param);
-        return isEmptyObject || isCallTracerConfig || isOpcodeLoggerConfig;
+        const isValidCallTracerConfig = TYPES.callTracerConfig.test(param);
+        const isValidOpcodeLoggerConfig = TYPES.opcodeLoggerConfig.test(param);
+        return isEmptyObject || isValidCallTracerConfig || isValidOpcodeLoggerConfig;
       }
       return false;
     },
