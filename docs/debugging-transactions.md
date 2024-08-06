@@ -211,7 +211,7 @@ Here’s a simple example of how to deploy and interact with a contract in Truff
    
    debug(development:0xe122240e...)> # Clicking enter here will step to the next line
    ```
-6. Output after clicking enter several times:
+6. Output after clicking enter several times to step through the transaction:
    ```bash
    SimpleStorage.sol:
    
@@ -224,7 +224,7 @@ Here’s a simple example of how to deploy and interact with a contract in Truff
    
    Transaction completed successfully.
    ```
-7. Output after
+7. Done! You have successfully debugged a transaction using the Truffle debugger.
 
 ## 3. Advanced Debugging with `debug_traceTransaction`
 
