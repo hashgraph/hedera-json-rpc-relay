@@ -54,7 +54,8 @@ export function validateParam(index: number | string, param: any, validation: IM
 
   if (!Array.isArray(paramType)) {
     if (!paramType.test(param)) {
-      throw predefined.INVALID_PARAMETER(index, `${paramType.error}, value: ${param}`);
+      const paramString = typeof param === 'object' ? JSON.stringify(param) : param;
+      throw predefined.INVALID_PARAMETER(index, `${paramType.error}, value: ${paramString}`);
     }
   }
 }
@@ -81,16 +82,18 @@ export function validateObject(object: IObjectValidation, filters: IObjectSchema
         const result = Validator.TYPES[validation.type].test(param);
 
         if (!result) {
+          const paramString = typeof param === 'object' ? JSON.stringify(param) : param;
           throw predefined.INVALID_PARAMETER(
             `'${property}' for ${object.name()}`,
-            `${Validator.TYPES[validation.type].error}, value: ${param}`,
+            `${Validator.TYPES[validation.type].error}, value: ${paramString}`,
           );
         }
       } catch (error: any) {
         if (error instanceof JsonRpcError) {
+          const paramString = typeof param === 'object' ? JSON.stringify(param) : param;
           throw predefined.INVALID_PARAMETER(
             `'${property}' for ${object.name()}`,
-            `${Validator.TYPES[validation.type].error}, value: ${param}`,
+            `${Validator.TYPES[validation.type].error}, value: ${paramString}`,
           );
         }
 

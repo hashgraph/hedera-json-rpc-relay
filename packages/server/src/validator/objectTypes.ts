@@ -18,8 +18,9 @@
  *
  */
 
-import { Validator } from '.';
+import { TracerType, Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
+import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types';
 
 export type IObjectSchema = {
   failOnEmpty?: boolean;
@@ -75,6 +76,51 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
       topics: {
         type: 'topics',
         nullable: false,
+      },
+    },
+  },
+  callTracerConfig: {
+    failOnEmpty: true,
+    properties: {
+      onlyTopCall: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+    },
+  },
+  opcodeLoggerConfig: {
+    failOnEmpty: true,
+    properties: {
+      enableMemory: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+      disableStack: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+      disableStorage: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+    },
+  },
+  tracerConfigWrapper: {
+    failOnEmpty: true,
+    properties: {
+      tracer: {
+        type: 'tracerType',
+        nullable: false,
+        required: false,
+      },
+      tracerConfig: {
+        type: 'tracerConfig',
+        nullable: false,
+        required: false,
       },
     },
   },
@@ -148,6 +194,60 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
     },
   },
 };
+
+export class CallTracerConfig implements IObjectValidation {
+  onlyTopCall: boolean;
+
+  constructor(config: any) {
+    this.onlyTopCall = config.onlyTopCall;
+  }
+
+  validate() {
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.callTracerConfig);
+  }
+
+  name() {
+    return this.constructor.name;
+  }
+}
+
+export class OpcodeLoggerConfig implements IObjectValidation {
+  enableMemory?: boolean;
+  disableStack?: boolean;
+  disableStorage?: boolean;
+
+  constructor(config: any) {
+    this.enableMemory = config.enableMemory;
+    this.disableStack = config.disableStack;
+    this.disableStorage = config.disableStorage;
+  }
+
+  validate() {
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.opcodeLoggerConfig);
+  }
+
+  name() {
+    return this.constructor.name;
+  }
+}
+
+export class TracerConfigWrapper implements IObjectValidation {
+  tracer: TracerType;
+  tracerConfig: ITracerConfig;
+
+  constructor(config: any) {
+    this.tracer = config.tracer;
+    this.tracerConfig = config.tracerConfig;
+  }
+
+  validate() {
+    return Validator.validateObject(this, OBJECTS_VALIDATIONS.tracerConfigWrapper);
+  }
+
+  name() {
+    return this.constructor.name;
+  }
+}
 
 export class TransactionObject implements IObjectValidation {
   from?: string;
