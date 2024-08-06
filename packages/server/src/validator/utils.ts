@@ -30,9 +30,17 @@ export function validateParam(index: number | string, param: any, validation: IM
 
   if (requiredIsMissing(param, validation.required)) {
     throw predefined.MISSING_REQUIRED_PARAMETER(index);
+  } else if (!validation.required && param === undefined) {
+    //if parameter is undefined and not required, no need to validate
+    //e.g estimateGas method, blockNumber is not required
+    return;
   }
 
-  if (param != null && Array.isArray(paramType)) {
+  if (param === null) {
+    throw predefined.INVALID_PARAMETER(index, `The value passed is not valid: ${param}.`);
+  }
+
+  if (Array.isArray(paramType)) {
     const results: any[] = [];
     for (const validator of paramType) {
       const result = validator.test(param);
@@ -44,7 +52,7 @@ export function validateParam(index: number | string, param: any, validation: IM
     }
   }
 
-  if (param != null && !Array.isArray(paramType)) {
+  if (!Array.isArray(paramType)) {
     if (!paramType.test(param)) {
       throw predefined.INVALID_PARAMETER(index, `${paramType.error}, value: ${param}`);
     }

@@ -57,8 +57,10 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload coverage report
-        if: ${{ always() && !cancelled() }}
-        run: node_modules/codecov/bin/codecov
+        if: ${{ !cancelled() && always() }}
+        run: bash .github/scripts/codecov-upload.sh
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Publish Test Report
         if: ${{ github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name && github.actor != 'dependabot[bot]' && github.actor != 'swirlds-automation' && !cancelled() && !failure() }}

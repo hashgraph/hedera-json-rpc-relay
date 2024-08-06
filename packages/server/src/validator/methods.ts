@@ -35,6 +35,7 @@ export const METHODS: { [key: string]: IMethodValidation } = {
     },
     1: {
       type: 'blockNumber',
+      required: false,
     },
   },
   eth_getBalance: {
