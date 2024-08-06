@@ -107,12 +107,12 @@ The following table lists the available properties along with their default valu
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
 | Name                            | Default  | Description                                                                                                                   |
-| ------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------- |
+|---------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------------|
 | `WS_BATCH_REQUESTS_ENABLED`     | "true"   | Flag to disable or enable batch requests on the websocket server.                                                             |
 | `WS_BATCH_REQUESTS_MAX_SIZE`    | "20"     | Maximum number of requests allowed in a batch on websocket server.                                                            |
 | `SUBSCRIPTIONS_ENABLED`         | "false"  | If enabled eth_subscribe will be enabled using WebSockets.                                                                    |
 | `WS_MAX_INACTIVITY_TTL`         | "300000" | Time in ms that the web socket connection is allowed to stay open without any messages sent or received, currently 5 minutes. |
-| `WS_CONNECTION_LIMIT`           | "10"     | Maximum amount of concurrent web socket connections allowed.                                                                  |
+| `WS_CONNECTION_LIMIT`           | "100"    | Maximum amount of concurrent web socket connections allowed.                                                                  |
 | `WS_POLLING_INTERVAL`           | "500"    | Time in ms in between each poll to mirror node while there are subscriptions.                                                 |
 | `WEB_SOCKET_PORT`               | "8546"   | Port for the web socket connections                                                                                           |
 | `WEB_SOCKET_HTTP_PORT`          | "8547"   | Port for standard http server, used for metrics and health status endpoints                                                   |

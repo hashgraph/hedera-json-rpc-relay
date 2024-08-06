@@ -27,7 +27,8 @@
         "strict": true,
         "sourceMap": true,
         /* Enable all strict type-checking options. */
-        "typeRoots": ["./node_modules/@types", "./src/types"]
+        "typeRoots": ["./node_modules/@types", "./src/types"],
+        "resolveJsonModule": true
     },
     "include": [
         "src"

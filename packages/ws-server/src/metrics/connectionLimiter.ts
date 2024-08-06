@@ -124,7 +124,7 @@ export default class ConnectionLimiter {
 
   public applyLimits(ctx) {
     // Limit total connections
-    const MAX_CONNECTION_LIMIT = process.env.WS_CONNECTION_LIMIT || '10';
+    const MAX_CONNECTION_LIMIT = process.env.WS_CONNECTION_LIMIT || '100';
     if (this.connectedClients > parseInt(MAX_CONNECTION_LIMIT)) {
       this.logger.info(
         `Closing connection ${ctx.websocket.id} due to exceeded maximum connections (max_con=${MAX_CONNECTION_LIMIT})`,
