@@ -1669,7 +1669,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 2: Expected Array, value: [object Object]`,
+            `Invalid parameter 2: Expected Array, value: {}`,
           );
         }
       });
@@ -2181,7 +2181,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}, value: [object Object]`,
+            `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}, value: {}`,
           );
         }
       });
@@ -2512,7 +2512,9 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 2: ${Validator.TYPES.tracerConfig.error}, value: [object Object]`,
+            `Invalid parameter 2: ${Validator.TYPES.tracerConfig.error}, value: ${JSON.stringify({
+              invalidConfig: true,
+            })}`,
           );
         }
       });
@@ -2626,7 +2628,9 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 2: ${Validator.TYPES.tracerConfig.error}, value: [object Object]`,
+            `Invalid parameter 2: ${Validator.TYPES.tracerConfig.error}, value: ${JSON.stringify({
+              invalidProperty: true,
+            })}`,
           );
         }
       });

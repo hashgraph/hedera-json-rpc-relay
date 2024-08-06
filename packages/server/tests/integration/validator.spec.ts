@@ -46,7 +46,7 @@ describe('Validator', async () => {
         expectInvalidParam(0, Validator.ADDRESS_ERROR, ''),
       );
       expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, Validator.ADDRESS_ERROR, '[object Object]'),
+        expectInvalidParam(0, Validator.ADDRESS_ERROR, '{}'),
       );
     });
 
@@ -73,9 +73,7 @@ describe('Validator', async () => {
       );
       expect(() => Validator.validateParams([123], validation)).to.throw(expectInvalidParam(0, error, '123'));
       expect(() => Validator.validateParams([true], validation)).to.throw(expectInvalidParam(0, error, 'true'));
-      expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, error, '[object Object]'),
-      );
+      expect(() => Validator.validateParams([{}], validation)).to.throw(expectInvalidParam(0, error, '{}'));
     });
 
     it('does not throw an error if param is array', async () => {
@@ -130,7 +128,7 @@ describe('Validator', async () => {
         expectInvalidParam(0, Validator.BLOCK_HASH_ERROR, ''),
       );
       expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, Validator.BLOCK_HASH_ERROR, '[object Object]'),
+        expectInvalidParam(0, Validator.BLOCK_HASH_ERROR, '{}'),
       );
     });
 
@@ -191,7 +189,7 @@ describe('Validator', async () => {
         expectInvalidParam(0, Validator.BLOCK_NUMBER_ERROR, ''),
       );
       expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, Validator.BLOCK_NUMBER_ERROR, '[object Object]'),
+        expectInvalidParam(0, Validator.BLOCK_NUMBER_ERROR, '{}'),
       );
     });
 
@@ -228,9 +226,7 @@ describe('Validator', async () => {
       expect(() => Validator.validateParams([123], validation)).to.throw(expectInvalidParam(0, error, '123'));
       expect(() => Validator.validateParams(['0x1'], validation)).to.throw(expectInvalidParam(0, error, '0x1'));
       expect(() => Validator.validateParams([[]], validation)).to.throw(expectInvalidParam(0, error, ''));
-      expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, error, '[object Object]'),
-      );
+      expect(() => Validator.validateParams([{}], validation)).to.throw(expectInvalidParam(0, error, '{}'));
     });
   });
 
@@ -269,7 +265,7 @@ describe('Validator', async () => {
         expectInvalidObject('address', Validator.TYPES.addressFilter.error, object, '0x1'),
       );
       expect(() => Validator.validateParams([{ topics: {} }], validation)).to.throw(
-        expectInvalidObject('topics', Validator.TYPES.topics.error, object, '[object Object]'),
+        expectInvalidObject('topics', Validator.TYPES.topics.error, object, '{}'),
       );
       expect(() => Validator.validateParams([{ topics: [123] }], validation)).to.throw(
         expectInvalidObject('topics', Validator.TYPES.topics.error, object, '123'),
@@ -381,9 +377,7 @@ describe('Validator', async () => {
     it('throws an error if topics is not array', async () => {
       expect(() => Validator.validateParams([123], validation)).to.throw(expectInvalidParam(0, topicsError, '123'));
       expect(() => Validator.validateParams(['0x1'], validation)).to.throw(expectInvalidParam(0, topicsError, '0x1'));
-      expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, topicsError, '[object Object]'),
-      );
+      expect(() => Validator.validateParams([{}], validation)).to.throw(expectInvalidParam(0, topicsError, '{}'));
     });
 
     it('does not throw an error if topics param is valid', async () => {
@@ -500,7 +494,7 @@ describe('Validator', async () => {
         expectInvalidParam(0, Validator.TOPIC_HASH_ERROR, ''),
       );
       expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, Validator.TOPIC_HASH_ERROR, '[object Object]'),
+        expectInvalidParam(0, Validator.TOPIC_HASH_ERROR, '{}'),
       );
     });
 
@@ -601,7 +595,7 @@ describe('Validator', async () => {
         expectInvalidParam(0, Validator.TRANSACTION_HASH_ERROR, ''),
       );
       expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, Validator.TRANSACTION_HASH_ERROR, '[object Object]'),
+        expectInvalidParam(0, Validator.TRANSACTION_HASH_ERROR, '{}'),
       );
     });
 
@@ -734,7 +728,7 @@ describe('Validator', async () => {
         error: expectInvalidParam(
           "'tracerConfig' for TracerConfigWrapper",
           Validator.TYPES.tracerConfig.error,
-          '[object Object]',
+          JSON.stringify({ onlyTopCall: 'invalid' }),
         ),
       },
       {
@@ -742,7 +736,7 @@ describe('Validator', async () => {
         error: expectInvalidParam(
           "'tracerConfig' for TracerConfigWrapper",
           Validator.TYPES.tracerConfig.error,
-          '[object Object]',
+          JSON.stringify({ enableMemory: 'invalid' }),
         ),
       },
       {
@@ -750,7 +744,7 @@ describe('Validator', async () => {
         error: expectInvalidParam(
           "'tracerConfig' for TracerConfigWrapper",
           Validator.TYPES.tracerConfig.error,
-          '[object Object]',
+          JSON.stringify({ disableStack: 'invalid' }),
         ),
       },
       {
@@ -758,7 +752,7 @@ describe('Validator', async () => {
         error: expectInvalidParam(
           "'tracerConfig' for TracerConfigWrapper",
           Validator.TYPES.tracerConfig.error,
-          '[object Object]',
+          JSON.stringify({ disableStorage: 'invalid' }),
         ),
       },
     ],
