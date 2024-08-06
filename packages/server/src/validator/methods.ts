@@ -198,7 +198,7 @@ export const METHODS: { [key: string]: IMethodValidation } = {
     },
     1: {
       required: false,
-      type: 'tracerConfigWrapper|tracerConfig|tracerType',
+      type: 'tracerType|tracerConfig|tracerConfigWrapper',
     },
     2: {
       required: false,

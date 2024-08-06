@@ -2493,7 +2493,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 1: The value passed is not valid: invalidTracerType. ${Validator.TYPES.tracerConfigWrapper.error} OR ${Validator.TYPES.tracerConfig.error} OR ${Validator.TYPES.tracerType.error}`,
+            `Invalid parameter 1: The value passed is not valid: invalidTracerType. ${Validator.TYPES.tracerType.error} OR ${Validator.TYPES.tracerConfig.error} OR ${Validator.TYPES.tracerConfigWrapper.error}`,
           );
         }
       });
