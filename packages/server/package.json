@@ -23,8 +23,8 @@
     "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "@hashgraph/hedera-local": "^2.28.0",
-    "@hashgraph/sdk": "^2.48.1",
+    "@hashgraph/hedera-local": "^2.29.0",
+    "@hashgraph/sdk": "^2.49.2",
     "@koa/cors": "^5.0.0",
     "@types/chai": "^4.3.0",
     "@types/cors": "^2.8.12",
