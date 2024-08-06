@@ -79,8 +79,7 @@ export const getTransactionStatusAndMetrics = async (
       // get transactionStatus, transactionFee, and gasUsed
       transactionStatus = transactionReceipt.status.toString();
       transactionFee = getTransferAmountSumForAccount(transactionRecord, operatorAccountId);
-      gasUsed = transactionRecord.contractFunctionResult
-        ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
+gasUsed = transactionRecord.contractFunctionResult?.gasUsed.toNumber() ?? 0;
         : 0;
     } catch (e: any) {
       // log error from TransactionRecordQuery
