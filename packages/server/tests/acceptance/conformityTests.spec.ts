@@ -294,7 +294,7 @@ async function processFileContent(directory, file, content) {
    */
   console.log('Executing for ', file);
   const modifiedRequest = await checkRequestBody(file, JSON.parse(content.request));
-  const needError = JSON.parse(content.response).error ? true : false;
+  const needError = JSON.parse(content.response).error;
   const response = await sendRequestToRelay(modifiedRequest, needError);
   const schema = findSchema(directory);
   const valid = needError
