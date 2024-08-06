@@ -48,7 +48,7 @@
     "build": "pnpm clean && pnpm compile",
     "clean": "rm -rf ./dist && rm -rf tsconfig.tsbuildinfo",
     "compile": "tsc -b tsconfig.json",
-    "acceptancetest": "ts-mocha tests/acceptance/index.spec.ts",
+    "acceptancetest": "nyc ts-mocha tests/acceptance/index.spec.ts",
     "start": "node dist/index.js",
     "test": "nyc ts-mocha --recursive ./tests/integration/*.spec.ts --exit"
   },
