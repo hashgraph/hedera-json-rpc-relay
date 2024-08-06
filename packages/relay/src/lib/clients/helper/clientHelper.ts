@@ -133,5 +133,8 @@ gasUsed = transactionRecord.contractFunctionResult?.gasUsed.toNumber() ?? 0;
  */
 const getBalanceInTinyBars = async (accountId: string, client: Client, ms: number): Promise<number> => {
   await new Promise((r) => setTimeout(r, ms));
-  return (await new AccountBalanceQuery().setAccountId(accountId).execute(client)).hbars.toTinybars().toNumber();
+  const accountBalance = await new AccountBalanceQuery()
+    .setAccountId(accountId)
+    .execute(client);
+  return accountBalance.hbars.toTinybars().toNumber();
 };
