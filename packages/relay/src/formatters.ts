@@ -291,7 +291,7 @@ const getTransferAmountSumForAccount = (transactionRecord, accountId: string): n
     return transactionRecord.transfers
       .filter((transfer) => transfer.account === accountId)
       .reduce((acc, transfer) => {
-        return (acc += transfer.amount * -1);
+        return acc - transfer.amount;
       }, 0);
   }
 };
