@@ -65,11 +65,11 @@ export class Utils {
    * @param topics
    */
   public static createSyntheticLogsBloom(address: string, topics: string[]): string {
-    const items = [address, ...topics];
-    if (!items.length) {
+    if (!topics.length) {
       return EthImpl.emptyBloom;
     }
 
+    const items = [address, ...topics];
     const BYTE_SIZE = 256;
     const MASK = 0x7ff;
     const bitvector = new Uint8Array(BYTE_SIZE);

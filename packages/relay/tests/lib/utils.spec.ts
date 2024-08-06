@@ -22,6 +22,7 @@ import { expect } from 'chai';
 import { Utils } from '../../src/utils';
 import constants from '../../src/lib/constants';
 import { ZeroAddress } from 'ethers';
+import { EthImpl } from '../../src/lib/eth';
 
 describe('Utils', () => {
   describe('addPercentageBufferToGasPrice', () => {
@@ -60,6 +61,11 @@ describe('Utils', () => {
       '000000000000000000000000000000000000000000000000001000000000000000000400000000000000000000000000000000000000000' +
       '000000000000100000000000000000000000000000000000000000000000000000400000000000000000300000000040000000000000000' +
       '0000000000000000000000080000000000001000000000000000000000000000000000000000000000000001000000';
+
+    it('should be able to generate emptyBloom if there are no logs', () => {
+      const res = Utils.createSyntheticLogsBloom(address, []);
+      expect(EthImpl.emptyBloom).to.equal(res);
+    });
 
     it('should be able to generate logsBloom of transfer event', () => {
       const res = Utils.createSyntheticLogsBloom(address, topics);
