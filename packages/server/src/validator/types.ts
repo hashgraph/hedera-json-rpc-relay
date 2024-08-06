@@ -122,16 +122,20 @@ export const TYPES: { [key: string]: ITypeValidation } = {
   },
   tracerConfig: {
     test: (param: Record<string, any>) => {
-      const isValidCallTracerConfig: boolean =
-        typeof param === 'object' && 'onlyTopCall' in param && typeof param.onlyTopCall === 'boolean';
+      if (param && typeof param === 'object') {
+        const isEmptyObject = Object.keys(param).length === 0;
 
-      const isValidOpcodeLoggerConfig: boolean =
-        typeof param === 'object' &&
-        (!('disableMemory' in param) || typeof param.disableMemory === 'boolean') &&
-        (!('disableStack' in param) || typeof param.disableStack === 'boolean') &&
-        (!('disableStorage' in param) || typeof param.disableStorage === 'boolean');
+        const isValidCallTracerConfig: boolean = 'onlyTopCall' in param && typeof param.onlyTopCall === 'boolean';
 
-      return isValidCallTracerConfig || isValidOpcodeLoggerConfig;
+        const isValidOpcodeLoggerConfig: boolean =
+          ('disableMemory' in param && typeof param.disableMemory === 'boolean') ||
+          ('disableStack' in param && typeof param.disableStack === 'boolean') ||
+          ('disableStorage' in param && typeof param.disableStorage === 'boolean');
+
+        return isEmptyObject || isValidCallTracerConfig || isValidOpcodeLoggerConfig;
+      }
+
+      return false;
     },
     error: 'Invalid tracerConfig',
   },
