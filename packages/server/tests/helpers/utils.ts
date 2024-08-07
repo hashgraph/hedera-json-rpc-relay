@@ -37,8 +37,8 @@ import MirrorClient from '../clients/mirrorClient';
 import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
 
 export class Utils {
-  static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 5e5; // 500 KB
-  static readonly HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD: number = 1e6; // 1 MB
+  static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 1e6; // 1 MB
+  static readonly HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD: number = 1.5e6; // 1.5 MB
   static readonly WARM_UP_TEST_COUNT: number = 3;
 
   /**

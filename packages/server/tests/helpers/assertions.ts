@@ -458,4 +458,18 @@ export default class Assertions {
       });
     }
   };
+
+  /**
+   * Checks if the expected value is within a % range, relative to the actual value
+   * @param expected
+   * @param actual
+   * @param tolerance
+   */
+  static expectWithinTolerance(expected: number, actual: number, tolerance: number) {
+    global.logger.debug(`Expected: ${expected} ±${tolerance}%`);
+    global.logger.debug(`Actual: ${actual}`);
+    global.logger.debug(`Actual delta: ${(actual - expected) / 100}%`);
+    const delta = tolerance * expected;
+    expect(actual).to.be.approximately(expected, delta);
+  }
 }

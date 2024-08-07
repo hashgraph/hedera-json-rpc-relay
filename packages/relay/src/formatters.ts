@@ -38,7 +38,10 @@ const generateRandomHex = (bytesLength = 16) => {
  * Format message prefix for logger.
  */
 const formatRequestIdMessage = (requestId?: string): string => {
-  return requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  if (!requestId) {
+    return '';
+  }
+  return requestId.includes(constants.REQUEST_ID_STRING) ? requestId : `[${constants.REQUEST_ID_STRING}${requestId}]`;
 };
 
 function hexToASCII(str: string): string {
@@ -288,6 +291,16 @@ const isHex = (value: string): boolean => {
   return hexRegex.test(value);
 };
 
+// Returns the sum of all transfer amounts for the specified account. The amount is negative if the account is charged,
+// it is positive if the account is receiving it, thus the amount is first negated and then added to the sum.
+const getTransferAmountSumForAccount = (transactionRecord, accountId: string): number => {
+  return transactionRecord.transfers
+    .filter((transfer) => transfer.accountId.toString() === accountId)
+    .reduce((acc, transfer) => {
+      return BN.sum(acc, transfer.amount.toTinybars().negate()).toNumber();
+    }, 0);
+};
+
 export {
   hashNumber,
   formatRequestIdMessage,
@@ -314,4 +327,5 @@ export {
   isValidEthereumAddress,
   isHex,
   ASCIIToHex,
+  getTransferAmountSumForAccount,
 };
