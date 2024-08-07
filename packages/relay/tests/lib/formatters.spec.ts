@@ -39,6 +39,7 @@ import {
   isHex,
   ASCIIToHex,
   formatRequestIdMessage,
+  strip0x,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -90,6 +91,10 @@ describe('Formatters', () => {
       for (let i = 0; i < inputs.length; i++) {
         expect(decodeErrorMessage(inputs[i])).to.eq(outputs[i]);
       }
+    });
+
+    it('should return empty string when we dont pass params', async function () {
+      expect(decodeErrorMessage()).to.equal('');
     });
   });
 
@@ -325,6 +330,16 @@ describe('Formatters', () => {
       const formattedResult: any = formatContractResult({ ...contractResult, chain_id: '0x' });
       expect(formattedResult.chainId).to.be.undefined;
     });
+
+    it('Should return legacy EIP155 transaction when null type', () => {
+      const formattedResult: any = formatContractResult({ ...contractResult, type: null });
+      expect(formattedResult.type).to.be.eq('0x0');
+    });
+
+    it('Should return null when contract result type is undefined', async function () {
+      const formattedResult = formatContractResult({ ...contractResult, type: undefined });
+      expect(formattedResult).to.be.null;
+    });
   });
 
   describe('prepend0x', () => {
@@ -504,6 +519,7 @@ describe('Formatters', () => {
       expect(isValidEthereumAddress(address)).to.equal(false);
     });
   });
+
   describe('isHex Function', () => {
     it('should return true for valid lowercase hexadecimal string', () => {
       expect(isHex('0x1a3f')).to.be.true;
@@ -541,6 +557,7 @@ describe('Formatters', () => {
       expect(isHex('0x58')).to.be.true;
     });
   });
+
   describe('ASCIIToHex Function', () => {
     const inputs = ['Lorem Ipsum', 'Foo', 'Bar'];
     const outputs = ['4c6f72656d20497073756d', '466f6f', '426172'];
@@ -561,6 +578,38 @@ describe('Formatters', () => {
       for (let i = 0; i < inputs.length; i++) {
         expect(ASCIIToHex(inputs[i])).to.eq(outputs[i]);
       }
+    });
+  });
+
+  describe('strip0x', () => {
+    it('should strip "0x" from the beginning of a string', () => {
+      const input = '0x123abc';
+      const result = strip0x(input);
+      expect(result).to.equal('123abc');
+    });
+
+    it('should return the same string if it does not start with "0x"', () => {
+      const input = '123abc';
+      const result = strip0x(input);
+      expect(result).to.equal('123abc');
+    });
+
+    it('should return an empty string if input is an empty string', () => {
+      const input = '';
+      const result = strip0x(input);
+      expect(result).to.equal('');
+    });
+
+    it('should handle input that only contains "0x"', () => {
+      const input = '0x';
+      const result = strip0x(input);
+      expect(result).to.equal('');
+    });
+
+    it('should not modify a string that contains "0x" not at the start', () => {
+      const input = '1230xabc';
+      const result = strip0x(input);
+      expect(result).to.equal('1230xabc');
     });
   });
 });
