@@ -15,6 +15,9 @@ As they typed on the crate page, this package is barely maintained, and they are
 ___Docs:___
 In my opinion, the documentation is weak, but at least the library provides some examples of the most popular use cases.
 
+___Compile contract___
+In a normal case, you should compile the contract with solc, and everything should work fine. However, in scenarios where you're using an old library, such as those with examples using Solidity 0.4, this may not work. In my tests, this version doesn't work. Therefore, the example only works with the ABI and BIN from the official documentation.
+
 ___Example output:___
 
 ```shell

@@ -5,12 +5,15 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::env;
 use dotenv::dotenv;
+use web3::futures::SinkExt;
 
 #[tokio::main]
 async fn main() -> web3::contract::Result<()> {
     dotenv().ok();
     let operator_private_key= env::var("OPERATOR_PRIVATE_KEY").unwrap();
     let relay_endpoint = env::var("RELAY_ENDPOINT").unwrap();
+
+    let operator_private_key = operator_private_key.strip_prefix("0x").unwrap();
 
     let transport = web3::transports::Http::new(&relay_endpoint)?;
     let web3 = web3::Web3::new(transport);

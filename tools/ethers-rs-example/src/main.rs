@@ -10,7 +10,11 @@ use ethers::middleware::Middleware;
 use std::env;
 use dotenv::dotenv;
 
-abigen!(Greeter, "src/greeter.json",);
+const INITIAL_GREET: &str = "Hello world!";
+const NEW_GREET: &str = "Hello world 2!";
+
+// Check README to see how to compile this artifact
+abigen!(Greeter, "contract/out/Greeter.sol/Greeter.json",);
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -32,12 +36,20 @@ async fn main() -> Result<()> {
 
     // Deploy contract
     let greeter_contract =
-        Greeter::deploy(client, "Hello World!".to_string()).unwrap().send().await.unwrap();
+        Greeter::deploy(client, INITIAL_GREET.to_string()).unwrap().send().await.unwrap();
     println!("Deployed contract at address: {:?}", greeter_contract.address());
 
     // Call view method
     let greeting = greeter_contract.greet().call().await.unwrap();
-    println!("Retrieved: {greeting}");
+    println!("Retrieved greet: {}", greeting);
+
+    // Change greet value
+    let receipt = greeter_contract.set_greeting(NEW_GREET.to_string()).send().await?.await?.unwrap();
+    println!("Change greeting tx_hash: {:?}", receipt.transaction_hash);
+
+    // Call view method to see is value changed
+    let greeting = greeter_contract.greet().call().await.unwrap();
+    println!("After change retrieved greet: {}", greeting);
 
     Ok(())
 }
