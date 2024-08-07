@@ -68,7 +68,7 @@ def deploy_contract(w3, acc):
     - tuple: (Deployed contract instance, Contract address)
     """
     # compile our Greeter contract
-    compiled_sol = compile_files(['contract/Greeter.sol'], output_values=['abi', 'bin'])
+    compiled_sol = compile_files(['contract/Greeter.sol'], output_values=['abi', 'bin'], optimize=True)
 
     # retrieve the contract interface
     contract_id, contract_interface = compiled_sol.popitem()
