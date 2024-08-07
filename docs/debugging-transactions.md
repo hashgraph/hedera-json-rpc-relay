@@ -5,12 +5,13 @@
 1. [Overview](#overview)
 2. [Debugging with Remix](#1-debugging-with-remix)
     - [Steps to Use the Built-in Debugger](#steps-to-use-the-built-in-debugger)
-    - [Example of Debugging a Transaction](#example-of-debugging-a-transaction)
+    - [Example of Debugging a Transaction in Remix](#example-of-debugging-a-transaction-in-remix)
 3. [Debugging with Truffle](#2-debugging-with-truffle)
     - [Steps to Use the Debugger in Truffle](#steps-to-use-the-debugger-in-truffle)
-4. [Advanced Debugging with `debug_traceTransaction`](#2-advanced-debugging-with-debug_traceTransaction)
+    - [Example of Debugging a Transaction in Truffle](#example-of-debugging-a-transaction-in-truffle)
+4. [Advanced Debugging with `debug_traceTransaction`](#3-advanced-debugging-with-debug_traceTransaction)
     - [Manually Calling `debug_traceTransaction`](#manually-calling-debug_traceTransaction)
-    - [Examples of Using `debug_traceTransaction`](#examples-of-using-debug_tracetransaction)
+    - [Examples of Using `debug_traceTransaction`](#examples-of-using-debug_traceTransaction)
         - [With `callTracer`](#1-with-callTracer)
         - [With `opcodeLogger`](#2-with-opcodeLogger)
 
@@ -37,27 +38,30 @@ Official Documentation: [Remix Debugger](https://remix-ide.readthedocs.io/en/lat
 
 1. **Set Up Remix with a Local Node**:
     - Ensure you have a local node running that supports the `debug_traceTransaction` method.
-    - Connect Remix to your local node by selecting
-      the ["External Http Provider"](https://remix-ide.readthedocs.io/en/latest/run.html#more-about-external-http-provider)
-      option in the Remix IDE and entering the URL of your local node (e.g., `http://localhost:7546`).
+      <!-- refer to an actual local node version here after releasing the `debug_traceTransaction` fix from #2777 -->
+    - Set up MetaMask to point to the URL of your local node (`http://localhost:7546`) and connect to an account.
+    - Connect Remix to MetaMask by selecting "Injected Provider - MetaMask" in the
+      ["Deploy & Run"](https://remix-ide.readthedocs.io/en/latest/run.html#environment) tab.
 
 2. **Deploy or Load Contract**:
-    - [Create and deploy your smart contract](https://remix-ide.readthedocs.io/en/latest/create_deploy.html) using Remix
-      or load an existing contract by providing its address.
+    - [Create and deploy your smart contract](https://remix-ide.readthedocs.io/en/latest/create_deploy.html)
+      using the Remix IDE or load an existing contract on the local node by providing its address.
 
 3. **Run a Transaction**:
-    - Interact with your deployed contract by sending a transaction (e.g., calling a function).
+    - [Interact with your deployed contract](https://remix-ide.readthedocs.io/en/latest/udapp.html#deploy-run-part-2)
+      by sending a transaction (e.g., calling a function).
 
 4. **Access the Debugger**:
-    - Remix displays information related to each transaction result in the terminal.
-    - After the transaction has been processed, check in the terminal to see where it is logged.
-    - Find the transaction you just executed and click on the debug icon next to it.
+    - Remix displays information related to each transaction in the terminal. (e.g., transaction hash, status, etc.)
+    - MetaMask blocks access to the `debug_traceTransaction` method, so you need to change the environment to
+      "External Http Provider" pointing to your local node.
+    - Open the "Debugger" tab, enter the transaction hash and click on "Start debugging".
 
 5. **Use the Debugger**:
     - The Remix Debugger will open, allowing you to step through the transaction execution.
     - You can inspect the state, stack, memory, any errors and other details at each step of the execution.
 
-### Example of Debugging a Transaction
+### Example of Debugging a Transaction in Remix
 
 Here’s a simple example of how to deploy and interact with a contract in Remix:
 
@@ -83,16 +87,25 @@ contract SimpleStorage {
 
 #### Steps in Remix
 
-1. **Deploy the Contract**:
-    - Compile the `SimpleStorage` contract.
-    - Deploy it using the "Deploy & Run Transactions" tab.
+1. **Select an Environment**:
+    - Open Remix and go to the "Deploy & Run Transactions" tab.
+    - Select "Injected Provider - MetaMask" to connect to your local node.
 
-2. **Interact with the Contract**:
-    - Call the `set` function with a value (e.g., `set(42)`).
+2. **Deploy the Contract**:
+    - Compile the `SimpleStorage` contract through the "Solidity Compiler" tab.
+    - Deploy it by selecting it in the "Deploy & Run Transactions" tab and clicking "Deploy".
+    - MetaMask will prompt you to confirm the transaction.
 
-3. **Debug the Transaction**:
-    - Go to the terminal in Remix to see the transaction details.
-    - Find the `set` transaction and click the debug icon.
+3. **Interact with the Contract**:
+    - Call the `set` function with a value (e.g., `42`) through the "Deployed Contracts" section.
+    - MetaMask will prompt you again to confirm the transaction.
+
+4. **Change the Environment**:
+    - Switch the environment to "External Http Provider" and enter the URL of your local node (`http://localhost:7546`).
+
+5. **Debug the Transaction**:
+    - Go to the terminal in Remix and click on the transaction to see its details and copy the transaction hash.
+    - Open the "Debugger" tab, paste the transaction hash, and click "Start debugging".
     - Use the debugger to step through the transaction and inspect the state changes.
 
 ## 2. Debugging with Truffle
@@ -173,9 +186,31 @@ Official Documentation:
     - Re-run the debugger to verify the changes and ensure the correct behavior.
     - Continue testing and debugging until you are satisfied with the results.
 
-### Example of Debugging a Transaction
+### Example of Debugging a Transaction in Truffle
 
 Here’s a simple example of how to deploy and interact with a contract in Truffle:
+
+#### Solidity Contract
+
+```solidity
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity ^0.8.0;
+
+contract SimpleStorage {
+    uint256 public storedData;
+
+    function set(uint256 x) public {
+        storedData = x;
+    }
+
+    function get() public view returns (uint256) {
+        return storedData;
+    }
+}
+```
+
+#### Steps in Truffle
 
 1. Modify the `migrations/1_deploy_contracts.js` script to deploy and interact with the `SimpleStorage` contract:
    ```javascript
@@ -405,6 +440,8 @@ It contains the following fields:
 
 The `StructLog` object represents an individual opcode executed during a smart contract transaction.
 
+**NOTE:** The state displayed for each `StructLog` refers to the state after executing said opcode.
+
 It contains the following fields:
 
 - `pc`: **number** - program counter.
@@ -424,7 +461,7 @@ It contains the following fields:
 ```json
 {
   "jsonrpc": "2.0",
-  "id": 1
+  "id": 1,
   "result": {
     "gas": 43718,
     "failed": false,
