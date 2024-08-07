@@ -55,6 +55,7 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { DebugService } from './services/debugService';
 import { IFeeHistory } from './types/IFeeHistory';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
+import { ReceiptsRootUtils } from '../receiptsRootUtils';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -2272,6 +2273,12 @@ export class EthImpl implements Eth {
 
     transactionArray = this.populateSyntheticTransactions(showDetails, logs, transactionArray, requestIdPrefix);
 
+    const receipts = await Promise.all(
+      transactionArray.map((tx) => {
+        return this.getTransactionReceipt(showDetails ? tx.hash : tx);
+      }),
+    );
+
     const blockHash = toHash32(blockResponse.hash);
     return new Block({
       baseFeePerGas: await this.gasPrice(requestIdPrefix),
@@ -2286,7 +2293,7 @@ export class EthImpl implements Eth {
       nonce: EthImpl.zeroHex8Byte,
       number: numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
-      receiptsRoot: EthImpl.zeroHex32Byte,
+      receiptsRoot: await ReceiptsRootUtils.getRootHash(receipts),
       timestamp: numberTo0x(Number(timestamp)),
       sha3Uncles: EthImpl.emptyArrayHex,
       size: numberTo0x(blockResponse.size | 0),
