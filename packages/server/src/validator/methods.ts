@@ -6,6 +6,7 @@ export const METHODS = {
     },
     1: {
       type: 'blockNumber',
+      required: false,
     },
   },
   eth_getBalance: {

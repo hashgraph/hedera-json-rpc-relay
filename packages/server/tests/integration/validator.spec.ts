@@ -211,7 +211,7 @@ describe('Validator', async () => {
   });
 
   describe('validates boolean type correctly', async () => {
-    const validation = { 0: { type: 'boolean' } };
+    const validation = { 0: { type: 'boolean', required: true } };
     const error = Validator.TYPES['boolean'].error;
 
     it('throws an error if param is string', async () => {
@@ -235,7 +235,7 @@ describe('Validator', async () => {
   });
 
   describe('validates Filter Object type correctly', async () => {
-    const validation = { 0: { type: 'filter' } };
+    const validation = { 0: { type: 'filter', required: true } };
     const error = Validator.TYPES['filter'].error;
     const object = Validator.FilterObject.name;
 
@@ -515,7 +515,7 @@ describe('Validator', async () => {
   });
 
   describe('validates Transaction Object type correctly', async () => {
-    const validation = { 0: { type: 'transaction' } };
+    const validation = { 0: { type: 'transaction', required: true } };
     const error = Validator.TYPES['transaction'].error;
     const object = Validator.TransactionObject.name;
 
