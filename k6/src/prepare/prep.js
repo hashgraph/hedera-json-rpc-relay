@@ -1,5 +1,5 @@
 import Greeter from './contracts/Greeter.json' assert { type: 'json' };
-import { ethers } from 'ethers';
+import { ethers, formatEther, parseEther } from 'ethers';
 import * as fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const logPayloads = process.env.DEBUG_MODE === 'true';
 
-class LoggingProvider extends ethers.providers.JsonRpcProvider {
+class LoggingProvider extends ethers.JsonRpcProvider {
   send(method, params) {
     if (logPayloads) {
       const request = {
@@ -45,7 +45,7 @@ async function getSignedTxs(wallet, greeterContracts, gasPrice, gasLimit, chainI
     const greeterContractAddress = randomIntFromInterval(0, greeterContracts.length - 1);
     const greeterContract = new ethers.Contract(greeterContracts[greeterContractAddress], Greeter.abi, wallet);
     const msg = `Greetings from Automated Test Number ${i}, Hello!`;
-    const trx = await greeterContract.populateTransaction.setGreeting(msg);
+    const trx = await greeterContract['setGreeting'].populateTransaction(msg);
     trx.gasLimit = gasLimit;
     trx.chainId = chainId;
     trx.gasPrice = gasPrice;
@@ -59,13 +59,13 @@ async function getSignedTxs(wallet, greeterContracts, gasPrice, gasLimit, chainI
 }
 
 (async () => {
-  const provider = new ethers.providers.JsonRpcProvider(process.env.RELAY_BASE_URL);
+  const provider = new ethers.JsonRpcProvider(process.env.RELAY_BASE_URL);
   const mainPrivateKeyString = process.env.PRIVATE_KEY;
   const mainWallet = new ethers.Wallet(mainPrivateKeyString, new LoggingProvider(process.env.RELAY_BASE_URL));
   console.log('RPC Server:  ' + process.env.RELAY_BASE_URL);
   console.log('Main Wallet Address: ' + mainWallet.address);
   console.log(
-    'Main Wallet Initial Balance: ' + ethers.utils.formatEther(await provider.getBalance(mainWallet.address)) + ' HBAR',
+    'Main Wallet Initial Balance: ' + formatEther(await provider.getBalance(mainWallet.address)) + ' HBAR',
   );
   const usersCount = process.env.WALLETS_AMOUNT ? process.env.WALLETS_AMOUNT : 1;
   const contractsCount = process.env.SMART_CONTRACTS_AMOUNT ? process.env.SMART_CONTRACTS_AMOUNT : 1;
@@ -74,20 +74,19 @@ async function getSignedTxs(wallet, greeterContracts, gasPrice, gasLimit, chainI
     const contractFactory = new ethers.ContractFactory(Greeter.abi, Greeter.bytecode, mainWallet);
     console.log(`Deploying Greeter SC  ${i}`);
     const contract = await contractFactory.deploy('Hey World!');
-    const contractAddress = contract.address;
+    await contract.waitForDeployment();
+    const contractAddress = contract.target;
     console.log(`Greeter SC Address: ${contractAddress}`);
     smartContracts.push(contractAddress);
   }
 
   const wallets = [];
 
-  const chainId = await mainWallet.getChainId();
+  const chainId = (await mainWallet.provider.getNetwork()).chainId;
   const msgForEstimate = `Greetings from Automated Test Number i, Hello!`;
   const contractForEstimate = new ethers.Contract(smartContracts[0], Greeter.abi, mainWallet);
-  const gasLimit = ethers.utils.hexValue(
-    Math.round((await contractForEstimate.estimateGas.setGreeting(msgForEstimate)) * 1.5),
-  ); // extra
-  const gasPrice = ethers.utils.hexValue(Math.round((await mainWallet.getGasPrice()) * 1.5)); // with extra
+  const gasLimit = await contractForEstimate['setGreeting'].estimateGas(msgForEstimate);
+  const gasPrice = (await mainWallet.provider.getFeeData()).gasPrice;
 
   for (let i = 0; i < usersCount; i++) {
     const wallet = ethers.Wallet.createRandom();
@@ -102,7 +101,7 @@ async function getSignedTxs(wallet, greeterContracts, gasPrice, gasLimit, chainI
     let tx = {
       to: wallet.address,
       // Convert currency unit from ether to wei
-      value: ethers.utils.parseEther(amountInEther),
+      value: parseEther(amountInEther),
     };
 
     // Send transaction
@@ -111,7 +110,7 @@ async function getSignedTxs(wallet, greeterContracts, gasPrice, gasLimit, chainI
     });
 
     const balance = await provider.getBalance(wallet.address);
-    console.log('balance: ', ethers.utils.formatEther(balance));
+    console.log('balance: ', formatEther(balance));
 
     const walletProvider = new ethers.Wallet(wallet.privateKey, new LoggingProvider(process.env.RELAY_BASE_URL));
     const signedTxCollection = await getSignedTxs(walletProvider, smartContracts, gasPrice, gasLimit, chainId);
@@ -120,8 +119,8 @@ async function getSignedTxs(wallet, greeterContracts, gasPrice, gasLimit, chainI
     walletData['index'] = i;
     walletData['address'] = wallet.address;
     walletData['privateKey'] = wallet.privateKey;
-    walletData['latestBalance'] = ethers.utils.formatEther(balance);
-    walletData['latestNonce'] = await walletProvider.getTransactionCount();
+    walletData['latestBalance'] = formatEther(balance);
+    walletData['latestNonce'] = await walletProvider.provider.getTransactionCount(wallet.address);
     walletData['signedTxs'] = signedTxCollection;
     wallets.push(walletData);
   }
