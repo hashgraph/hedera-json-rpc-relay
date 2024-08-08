@@ -49,7 +49,7 @@ export class ReceiptsRootUtils {
     } else if (bytesToInt(hexToBytes(receipt.status)) === 0) {
       receiptRoot = Uint8Array.from([]);
     } else {
-      receiptRoot = hexToBytes('0x01');
+      receiptRoot = hexToBytes(EthImpl.oneHex);
     }
 
     const encodedReceipt: Uint8Array = RLP.encode([
@@ -76,10 +76,10 @@ export class ReceiptsRootUtils {
     const trie: Trie = new Trie();
     receipts.map(async (receipt) => {
       const path: Uint8Array =
-        receipt.transactionIndex === '0x0'
+        receipt.transactionIndex === EthImpl.zeroHex
           ? RLP.encode(Buffer.alloc(0))
           : RLP.encode(bytesToInt(hexToBytes(receipt.transactionIndex ?? '')));
-      await trie.put(path, this.encodeReceipt(receipt, bytesToInt(hexToBytes(receipt.type ?? '0x0'))));
+      await trie.put(path, this.encodeReceipt(receipt, bytesToInt(hexToBytes(receipt.type ?? EthImpl.zeroHex))));
     });
 
     trie.checkpoint();
