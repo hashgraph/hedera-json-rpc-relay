@@ -253,7 +253,7 @@ export class EthImpl implements Eth {
    * A 32 byte hex hash of an empty trie root
    * @private
    */
-  private emptyTrieRoot: string;
+  public readonly emptyTrieRoot: string;
 
   /**
    * Create a new Eth implementation.
@@ -284,19 +284,9 @@ export class EthImpl implements Eth {
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
     this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
-    this.emptyTrieRoot = EthImpl.emptyHex;
-  }
 
-  /**
-   * Returns an empty trie root. Only generates a Trie object the first time it is called for optimization purposes.
-   */
-  public async getEmptyTrieRoot(): Promise<string> {
-    if (this.emptyTrieRoot === EthImpl.emptyHex) {
-      const emptyTrie = await Trie.create({});
-      this.emptyTrieRoot = `0x${toHexString(emptyTrie.EMPTY_TRIE_ROOT)}`;
-    }
-
-    return this.emptyTrieRoot;
+    const emptyTrie = new Trie();
+    this.emptyTrieRoot = `0x${toHexString(emptyTrie.EMPTY_TRIE_ROOT)}`;
   }
 
   private shouldUseCacheForBalance(tag: string | null): boolean {
@@ -2083,7 +2073,7 @@ export class EthImpl implements Eth {
         gasUsed: EthImpl.zeroHex,
         logs: [syntheticLogs[0]],
         logsBloom: EthImpl.emptyBloom,
-        root: await this.getEmptyTrieRoot(),
+        root: this.emptyTrieRoot,
         status: EthImpl.oneHex,
         to: syntheticLogs[0].address,
         transactionHash: syntheticLogs[0].transactionHash,
@@ -2131,7 +2121,7 @@ export class EthImpl implements Eth {
         transactionHash: toHash32(receiptResponse.hash),
         transactionIndex: nullableNumberTo0x(receiptResponse.transaction_index),
         effectiveGasPrice: effectiveGas,
-        root: receiptResponse.root || (await this.getEmptyTrieRoot()),
+        root: receiptResponse.root || this.emptyTrieRoot,
         status: receiptResponse.status,
         type: nullableNumberTo0x(receiptResponse.type),
       };
@@ -2336,14 +2326,14 @@ export class EthImpl implements Eth {
       nonce: EthImpl.zeroHex8Byte,
       number: numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
-      receiptsRoot: await this.getEmptyTrieRoot(),
+      receiptsRoot: this.emptyTrieRoot,
       timestamp: numberTo0x(Number(timestamp)),
       sha3Uncles: EthImpl.emptyArrayHex,
       size: numberTo0x(blockResponse.size | 0),
-      stateRoot: await this.getEmptyTrieRoot(),
+      stateRoot: this.emptyTrieRoot,
       totalDifficulty: EthImpl.zeroHex,
       transactions: transactionArray,
-      transactionsRoot: transactionArray.length == 0 ? await this.getEmptyTrieRoot() : blockHash,
+      transactionsRoot: transactionArray.length == 0 ? this.emptyTrieRoot : blockHash,
       uncles: [],
     });
   }
