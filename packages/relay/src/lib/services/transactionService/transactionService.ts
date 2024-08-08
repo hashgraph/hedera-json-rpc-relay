@@ -22,6 +22,7 @@ import { Logger } from 'pino';
 import { MirrorNodeClient } from '../../clients';
 import { SDKClientError } from '../../errors/SDKClientError';
 import { AccountBalanceQuery, Client, Status, TransactionRecordQuery } from '@hashgraph/sdk';
+import { IMirrorNodeTransactionRecord, MirrorNodeTransactionRecord } from '../../types/IMirrorNode';
 import {
   parseNumericEnvVar,
   formatTransactionId,
@@ -149,13 +150,15 @@ export default class TransactionService {
           `${requestId} No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
         );
       } else {
-        const transactionReceipt = transactionRecord.transactions.find(
+        const transactionReceipt: IMirrorNodeTransactionRecord = transactionRecord.transactions.find(
           (tx: any) => tx.transaction_id === formatTransactionId(transactionId),
         );
 
+        const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionReceipt);
+
         // get transactionStatus, transactionFee
         transactionStatus = transactionReceipt.result;
-        transactionFee = getTransferAmountSumForAccount(transactionReceipt, operatorAccountId);
+        transactionFee = getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
       }
     }
 

@@ -22,7 +22,7 @@ import { Eth } from '../index';
 import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Block, Log, Transaction, Transaction1559 } from './model';
-import { IContractCallRequest, IContractCallResponse, MirrorNodeClient } from './clients';
+import { MirrorNodeClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
@@ -56,6 +56,7 @@ import { DebugService } from './services/debugService';
 import { IFeeHistory } from './types/IFeeHistory';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
 import TransactionService from './services/transactionService/transactionService';
+import { IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
 
 const _ = require('lodash');
 const createHash = require('keccak');

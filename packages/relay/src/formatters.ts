@@ -18,11 +18,13 @@
  *
  */
 
-import constants from './lib/constants';
 import crypto from 'crypto';
-import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import constants from './lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
+import { TransactionRecord } from '@hashgraph/sdk';
+import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { MirrorNodeTransactionRecord } from './lib/types/IMirrorNode';
+import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 
 const EMPTY_HEX = '0x';
 
@@ -273,25 +275,26 @@ const isHex = (value: string): boolean => {
 /**
  * Returns the sum of all transfer amounts for the specified account. The amount is negative if the account is charged,
  * it is positive if the account is receiving it, thus the amount is first negated and then added to the sum.
- * @param {TransactionRecord} transactionRecord - The record of the transaction including transfers.
- * @param {string} accountId - The ID of the account for which the transfer amounts are being calculated.
+ *
+ * @param {TransactionRecord | MirrorNodeTransactionRecord} transactionRecord - The transaction record containing transfer information.
+ * @param {string} accountId - The account ID to filter transfers.
  * @returns {number} - The sum of transfer amounts for the specified account.
- * @throws {Error} - Throws an error if the `transactionRecord` is invalid or if the `accountId` is not found.
  */
-const getTransferAmountSumForAccount = (transactionRecord, accountId: string): number => {
-  const isFromConsensusNode = process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true';
-
-  if (isFromConsensusNode) {
-    return transactionRecord.transfers
-      .filter((transfer) => transfer.accountId.toString() === accountId)
-      .reduce((acc, transfer) => {
-        return BN.sum(acc, transfer.amount.toTinybars().negate()).toNumber();
-      }, 0);
-  } else {
+const getTransferAmountSumForAccount = (
+  transactionRecord: TransactionRecord | MirrorNodeTransactionRecord,
+  accountId: string,
+): number => {
+  if (transactionRecord instanceof MirrorNodeTransactionRecord) {
     return transactionRecord.transfers
       .filter((transfer) => transfer.account === accountId)
       .reduce((acc, transfer) => {
         return acc - transfer.amount;
+      }, 0);
+  } else {
+    return transactionRecord.transfers
+      .filter((transfer) => transfer.accountId.toString() === accountId)
+      .reduce((acc, transfer) => {
+        return acc - transfer.amount.toTinybars().toNumber();
       }, 0);
   }
 };
