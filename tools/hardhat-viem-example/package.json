@@ -10,6 +10,7 @@
   "dependencies": {
     "@hashgraph/hedera-local": "^2.25.2",
     "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "@openzeppelin/contracts": "^5.0.2",
     "dotenv": "^16.0.3"
   },
   "devDependencies": {

@@ -5,26 +5,12 @@ const { task } = require("hardhat/config");
 // Import dotenv module to access variables stored in the .env file
 require("dotenv").config();
 
-// Define Hardhat tasks here, which can be accessed in our test file (test/rpc.js) by using hre.run('taskName')
-task("show-balance", async () => {
-  const showBalance = require("./scripts/showBalance");
-  return showBalance();
-});
 
 task("deploy-contract", async () => {
   const deployContract = require("./scripts/deployContract");
   return deployContract();
 });
 
-task("contract-view-call", async (taskArgs) => {
-  const contractViewCall = require("./scripts/contractViewCall");
-  return contractViewCall(taskArgs.contractAddress);
-});
-
-task("contract-call", async (taskArgs) => {
-  const contractCall = require("./scripts/contractCall");
-  return contractCall(taskArgs.contractAddress, taskArgs.msg);
-});
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -32,11 +18,11 @@ module.exports = {
     timeout: 3600000
   },
   solidity: {
-    version: "0.8.9",
+    version: "0.8.21",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 500
+        runs: 1000
       }
     }
   },
