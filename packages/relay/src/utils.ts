@@ -20,9 +20,6 @@
 
 import { PrivateKey } from '@hashgraph/sdk';
 import constants from './lib/constants';
-import { keccak256 } from 'ethers';
-import { prepend0x, strip0x } from './formatters';
-import { EthImpl } from './lib/eth';
 
 export class Utils {
   public static readonly addPercentageBufferToGasPrice = (gasPrice: number): number => {
@@ -57,56 +54,5 @@ export class Utils {
       default:
         throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${process.env.OPERATOR_KEY_FORMAT}`);
     }
-  }
-
-  /**
-   * Generate logs bloom for synthetic transaction
-   * @param address
-   * @param topics
-   */
-  public static createSyntheticLogsBloom(address: string, topics: string[]): string {
-    if (!topics.length) {
-      return EthImpl.emptyBloom;
-    }
-
-    const items = [address, ...topics];
-    const BYTE_SIZE = 256;
-    const MASK = 0x7ff;
-    const bitvector = new Uint8Array(BYTE_SIZE);
-    for (let k = 0; k < items.length; k++) {
-      const item = Buffer.alloc(32, strip0x(keccak256(items[k])), 'hex');
-      for (let i = 0; i < 3; i++) {
-        const first2bytes = new DataView(item.buffer).getUint16(i * 2);
-        const loc = MASK & first2bytes;
-        const byteLoc = loc >> 3;
-        const bitLoc = 1 << loc % 8;
-        bitvector[BYTE_SIZE - byteLoc - 1] |= bitLoc;
-      }
-    }
-
-    return prepend0x(Buffer.from(bitvector).toString('hex'));
-  }
-
-  /**
-   * Check whether an item exists in the hex encoded logs bloom bitvector
-   * @param item
-   * @param bitvector
-   */
-  public static checkInLogsBloom(item: string, bitvector: string): boolean {
-    const bitvectorUint8Arr = Uint8Array.from(Buffer.from(strip0x(bitvector), 'hex'));
-    const itemBuf = Buffer.alloc(32, strip0x(keccak256(item)), 'hex');
-    const BYTE_SIZE = 256;
-    const MASK = 0x7ff;
-
-    let match = true;
-    for (let i = 0; i < 3 && match; i++) {
-      const first2bytes = new DataView(itemBuf.buffer).getUint16(i * 2);
-      const loc = MASK & first2bytes;
-      const byteLoc = loc >> 3;
-      const bitLoc = 1 << loc % 8;
-      match = (bitvectorUint8Arr[BYTE_SIZE - byteLoc - 1] & bitLoc) !== 0;
-    }
-
-    return Boolean(match);
   }
 }
