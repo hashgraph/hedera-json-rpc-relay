@@ -56,7 +56,7 @@ import {
   AccountBalanceQuery,
 } from '@hashgraph/sdk';
 import { formatTransactionId } from '../../src/formatters';
-import { getTransactionStatusAndMetrics } from '../../src/lib/clients/helper/clientHelper';
+import TransactionService from '../../src/lib/services/transactionService/transactionService';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -71,6 +71,7 @@ describe('SdkClient', async function () {
   let hbarLimiter: HbarLimit;
   let instance: AxiosInstance;
   let mirrorNodeClient: MirrorNodeClient;
+  let transactionService: TransactionService;
 
   const feeSchedules = {
     current: {
@@ -144,6 +145,8 @@ describe('SdkClient', async function () {
       new CacheService(logger.child({ name: `cache` }), registry),
       instance,
     );
+
+    transactionService = new TransactionService(logger, client, mirrorNodeClient);
   });
 
   beforeEach(() => {
@@ -2240,7 +2243,7 @@ describe('SdkClient', async function () {
         .returns(true);
 
       try {
-        await sdkClient.submitEthereumTransaction(transactionBuffer, callerName, requestId, {} as MirrorNodeClient);
+        await sdkClient.submitEthereumTransaction(transactionBuffer, callerName, requestId, transactionService);
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
         expect(error.message).to.equal('HBAR Rate limit exceeded');
@@ -2266,16 +2269,16 @@ describe('SdkClient', async function () {
         );
 
       const transactionRecordStub = sinon.stub(TransactionRecordQuery.prototype, 'execute');
-      // first call for FileCreate
+      // first transactionRecordStub call for FileCreate
       transactionRecordStub.onCall(0).resolves(getMockedTransactionRecord(FileCreateTransaction.name));
 
-      // next fileAppendChunks calls for FileAppend
+      // next fileAppendChunks transactionRecordStub calls for FileAppend
       let i = 1;
       for (i; i <= fileAppendChunks; i++) {
         transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(FileAppendTransaction.name));
       }
 
-      // last call for EthereumTransaction
+      // last transactionRecordStub call for EthereumTransaction
       transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(EthereumTransaction.name));
 
       sdkClientMock.expects('getTinyBarGasFee').once().returns(1000);
@@ -2284,7 +2287,7 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
       hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
 
-      await sdkClient.submitEthereumTransaction(transactionBuffer, callerName, requestId, mirrorNodeClient);
+      await sdkClient.submitEthereumTransaction(transactionBuffer, callerName, requestId, transactionService);
 
       expect(queryStub.called).to.be.true;
       expect(transactionStub.called).to.be.true;
@@ -2322,7 +2325,7 @@ describe('SdkClient', async function () {
         requestId,
         callerName,
         interactingEntity,
-        mirrorNodeClient,
+        transactionService,
       );
 
       expect(response).to.eq(fileId);
@@ -2355,7 +2358,7 @@ describe('SdkClient', async function () {
         interactingEntity,
         requestId,
         true,
-        mirrorNodeClient,
+        transactionService,
       );
 
       expect(appendFileStub.called).to.be.true;
@@ -2381,7 +2384,7 @@ describe('SdkClient', async function () {
           interactingEntity,
           requestId,
           true,
-          mirrorNodeClient,
+          transactionService,
         );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
@@ -2415,7 +2418,7 @@ describe('SdkClient', async function () {
         requestId,
         callerName,
         interactingEntity,
-        mirrorNodeClient,
+        transactionService,
       );
 
       expect(response).to.eq(fileId);
@@ -2436,7 +2439,7 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').withArgs(fileDeleteFee).once();
       hbarLimitMock.expects('shouldLimit').never();
 
-      await sdkClient.deleteFile(fileId, requestId, callerName, interactingEntity, mirrorNodeClient);
+      await sdkClient.deleteFile(fileId, requestId, callerName, interactingEntity, transactionService);
 
       expect(deleteFileStub.called).to.be.true;
       expect(fileInfoQueryStub.called).to.be.true;
@@ -2522,7 +2525,7 @@ describe('SdkClient', async function () {
         interactingEntity,
         requestId,
         true,
-        mirrorNodeClient,
+        transactionService,
       );
 
       expect(response).to.eq(transactionResponse);
@@ -2541,13 +2544,11 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').never();
       hbarLimitMock.expects('shouldLimit').never();
 
-      const result = await getTransactionStatusAndMetrics(
+      const result = await transactionService.getTransactionStatusAndMetrics(
         transactionResponse.transactionId.toString(),
         callerName,
         requestId,
-        logger,
-        'constructor_name',
-        client,
+        `constructor_name`,
         process.env.OPERATOR_ID_MAIN as string,
       );
 
@@ -2603,7 +2604,7 @@ describe('SdkClient', async function () {
         interactingEntity,
         requestId,
         true,
-        mirrorNodeClient,
+        transactionService,
       );
 
       expect(response).to.eq(transactionResponse);

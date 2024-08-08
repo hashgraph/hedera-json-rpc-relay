@@ -53,13 +53,12 @@ import { Logger } from 'pino';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { Histogram } from 'prom-client';
-import { MirrorNodeClient } from './mirrorNodeClient';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { formatRequestIdMessage } from '../../formatters';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
-import { getTransactionStatusAndMetrics } from './helper/clientHelper';
+import TransactionService from '../services/transactionService/transactionService';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -356,20 +355,22 @@ export class SDKClient {
   }
 
   /**
-   * Submits an Ethereum transaction, potentially using Hedera File Service (HFS) for large call data.
-   * @param {Uint8Array} transactionBuffer - The transaction data buffer.
-   * @param {string} callerName - The name of the caller for logging purposes.
-   * @param {string} requestId - The request ID for logging purposes.
-   * @param {MirrorNodeClient} mirrorNodeClient - The mirror node client for querying transaction records.
-   * @returns {Promise<{ txResponse: TransactionResponse; fileId: FileId | null }>} The transaction response and the file ID if call data is stored in HFS.
-   * @throws {SDKClientError} Throws an SDK client error if the transaction fails or if a file ID is not created for large call data.
-   * @throws {HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED} Throws if the preemptive HBAR rate limit is exceeded due to large call data.
+   * Submits an Ethereum transaction and handles call data that exceeds the maximum chunk size.
+   * If the call data is too large, it creates a file to store the excess data and updates the transaction accordingly.
+   * Also calculates and sets the maximum transaction fee based on the current gas price.
+   *
+   * @param {Uint8Array} transactionBuffer - The transaction data in bytes.
+   * @param {string} callerName - The name of the caller initiating the transaction.
+   * @param {string} requestId - The unique identifier for the request.
+   * @param {TransactionService} transactionService - The service responsible for handling transaction execution.
+   * @returns {Promise<{ txResponse: TransactionResponse; fileId: FileId | null }>}
+   * @throws {SDKClientError} Throws an error if no file ID is created or if the preemptive fee check fails.
    */
   async submitEthereumTransaction(
     transactionBuffer: Uint8Array,
     callerName: string,
     requestId: string,
-    mirrorNodeClient: MirrorNodeClient,
+    transactionService: TransactionService,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
@@ -409,7 +410,7 @@ export class SDKClient {
         requestId,
         callerName,
         interactingEntity,
-        mirrorNodeClient,
+        transactionService,
       );
       if (!fileId) {
         throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
@@ -429,7 +430,7 @@ export class SDKClient {
         interactingEntity,
         requestId,
         true,
-        mirrorNodeClient,
+        transactionService,
       ),
     };
   }
@@ -648,12 +649,15 @@ export class SDKClient {
 
   /**
    * Executes a single transaction, handling rate limits, logging, and metrics.
-   * @param {Transaction} transaction - The transaction to be executed.
-   * @param {string} callerName - The name of the caller executing the transaction.
+   *
+   * @param {Transaction} transaction - The transaction to execute.
+   * @param {string} callerName - The name of the caller requesting the transaction.
    * @param {string} interactingEntity - The entity interacting with the transaction.
-   * @param {string} requestId - The request ID associated with the transaction.
-   * @returns {Promise<TransactionResponse>} A promise that resolves to the transaction response.
-   * @throws Will throw an error if the HBAR rate limit is exceeded, the transaction execution fails, or if a valid network error occurs.
+   * @param {string} requestId - The ID of the request.
+   * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
+   * @param {TransactionService} transactionService - The service to handle transaction-related operations.
+   * @returns {Promise<TransactionResponse>} - A promise that resolves to the transaction response.
+   * @throws {SDKClientError} - Throws if an error occurs during transaction execution.
    */
   async executeTransaction(
     transaction: Transaction,
@@ -661,7 +665,7 @@ export class SDKClient {
     interactingEntity: string,
     requestId: string,
     shouldThrowHbarLimit: boolean,
-    mirrorNodeClient: MirrorNodeClient,
+    transactionService: TransactionService,
   ): Promise<TransactionResponse> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
@@ -679,22 +683,16 @@ export class SDKClient {
       }
     }
 
-    const txRecordClientNode =
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true' ? this.clientMain : mirrorNodeClient;
-
     try {
       // execute transaction
       this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
       transactionResponse = await transaction.execute(this.clientMain);
 
-      // retrieve transaction status and metrics (transaction fee & gasUsed)
-      const getTxResultAndMetricsResult = await getTransactionStatusAndMetrics(
+      const getTxResultAndMetricsResult = await transactionService.getTransactionStatusAndMetrics(
         transactionResponse.transactionId.toString(),
         callerName,
-        formattedRequestId,
-        this.logger,
+        requestId,
         transaction.constructor.name,
-        txRecordClientNode,
         this.clientMain.operatorAccountId!.toString(),
       );
       const transactionStatus = getTxResultAndMetricsResult.transactionStatus;
@@ -734,18 +732,16 @@ export class SDKClient {
       // capture metrics in case .execute() fails and throw an error
       // if valid network error utilize transaction id to get transactionFee and gasUsed for metrics
       if (sdkClientError.isValidNetworkError()) {
-        const getTxRecordResult = await getTransactionStatusAndMetrics(
+        const getTxResultAndMetricsResult = await transactionService.getTransactionStatusAndMetrics(
           transaction.transactionId!.toString(),
           callerName,
           requestId,
-          this.logger,
           transaction.constructor.name,
-          txRecordClientNode,
           this.clientMain.operatorAccountId!.toString(),
         );
-        transactionFee = getTxRecordResult.transactionFee;
-        txRecordChargeAmount = getTxRecordResult.txRecordChargeAmount;
-        gasUsed = getTxRecordResult.gasUsed;
+        transactionFee = getTxResultAndMetricsResult.transactionFee;
+        txRecordChargeAmount = getTxResultAndMetricsResult.txRecordChargeAmount;
+        gasUsed = getTxResultAndMetricsResult.gasUsed;
       }
 
       // log and throw
@@ -765,7 +761,6 @@ export class SDKClient {
        * @note Capturing the charged fees at the end of the flow ensures these fees are eventually
        *       captured in the metrics and rate limiter class, even if SDK transactions fail at any point.
        */
-
       if (transactionFee !== 0) {
         this.addExpenseAndCaptureMetrics(
           `TransactionExecution`,
@@ -795,13 +790,16 @@ export class SDKClient {
   }
 
   /**
-   * Executes all transactions of a given type, handling rate limits and logging the results.
-   * @param {FileAppendTransaction} transaction - The transaction to be executed.
-   * @param {string} callerName - The name of the caller executing the transaction.
+   * Executes all transactions in a batch, checks HBAR limits, retrieves metrics, and captures expenses.
+   *
+   * @param {FileAppendTransaction} transaction - The batch transaction to execute.
+   * @param {string} callerName - The name of the caller requesting the transaction.
    * @param {string} interactingEntity - The entity interacting with the transaction.
-   * @param {string} requestId - The request ID associated with the transaction.
-   * @returns {Promise<void>} A promise that resolves when all transactions have been executed.
-   * @throws Will throw an error if the HBAR rate limit is exceeded or if the transaction execution fails.
+   * @param {string} requestId - The ID of the request.
+   * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
+   * @param {TransactionService} transactionService - The service to handle transaction-related operations.
+   * @returns {Promise<void>} - A promise that resolves when the batch execution is complete.
+   * @throws {SDKClientError} - Throws if an error occurs during batch transaction execution.
    */
   async executeAllTransaction(
     transaction: FileAppendTransaction,
@@ -809,7 +807,7 @@ export class SDKClient {
     interactingEntity: string,
     requestId: string,
     shouldThrowHbarLimit: boolean,
-    mirrorNodeClient: MirrorNodeClient,
+    transactionService: TransactionService,
   ): Promise<void> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
@@ -824,9 +822,6 @@ export class SDKClient {
       }
     }
 
-    const txRecordClientNode =
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true' ? this.clientMain : mirrorNodeClient;
-
     try {
       // execute transaction
       this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
@@ -839,15 +834,13 @@ export class SDKClient {
         let txRecordChargeAmount: number = 0;
 
         // retrieve transaction status and metrics (transaction fee & gasUsed).
-        // getTransactionStatusAndMetrics() will not throw an error when transactions contain error statuses.
+        // transactionService.getTransactionStatusAndMetrics() will not throw an error when transactions contain error statuses.
         // Instead, it will return transaction records with statuses attached, ensuring the loop won't be broken.
-        const getTxResultAndMetricsResult = await getTransactionStatusAndMetrics(
+        const getTxResultAndMetricsResult = await transactionService.getTransactionStatusAndMetrics(
           transactionResponse.transactionId.toString(),
           callerName,
-          formattedRequestId,
-          this.logger,
+          requestId,
           transaction.constructor.name,
-          txRecordClientNode,
           this.clientMain.operatorAccountId!.toString(),
         );
 
@@ -906,7 +899,7 @@ export class SDKClient {
    * @param {string} requestId - The request ID associated with the transaction.
    * @param {string} callerName - The name of the caller creating the file.
    * @param {string} interactingEntity - The entity interacting with the transaction.
-   * @param {MirrorNodeClient} mirrorNodeClient - The mirror node client for additional transaction processing.
+   * @param {TransactionService} transactionService - The service to handle transaction-related operations.
    * @returns {Promise<FileId | null>} A promise that resolves to the created file ID or null if the creation failed.
    * @throws Will throw an error if the created file is empty or if any transaction fails during execution.
    */
@@ -916,7 +909,7 @@ export class SDKClient {
     requestId: string,
     callerName: string,
     interactingEntity: string,
-    mirrorNodeClient: MirrorNodeClient,
+    transactionService: TransactionService,
   ): Promise<FileId | null> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
@@ -933,7 +926,7 @@ export class SDKClient {
       interactingEntity,
       formattedRequestId,
       true,
-      mirrorNodeClient,
+      transactionService,
     );
 
     const { fileId } = await fileCreateTxResponse.getReceipt(client);
@@ -952,7 +945,7 @@ export class SDKClient {
         interactingEntity,
         formattedRequestId,
         true,
-        mirrorNodeClient,
+        transactionService,
       );
     }
 
@@ -974,13 +967,14 @@ export class SDKClient {
    * @param requestId
    * @param callerName
    * @param interactingEntity
+   * @param {TransactionService} transactionService - The service to handle transaction-related operations.
    */
   async deleteFile(
     fileId: FileId,
     requestId: string,
     callerName: string,
     interactingEntity: string,
-    mirrorNodeClient: MirrorNodeClient,
+    transactionService: TransactionService,
   ): Promise<void> {
     // format request ID msg
     const requestIdPrefix = formatRequestIdMessage(requestId);
@@ -992,7 +986,7 @@ export class SDKClient {
         .setMaxTransactionFee(new Hbar(2))
         .freezeWith(this.clientMain);
 
-      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId, false, mirrorNodeClient);
+      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId, false, transactionService);
 
       // ensure the file is deleted
       const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);

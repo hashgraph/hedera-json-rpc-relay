@@ -24,31 +24,33 @@ import { resolve } from 'path';
 import * as sinon from 'sinon';
 import { config } from 'dotenv';
 import { Registry } from 'prom-client';
-import { Utils } from '../../../src/utils';
-import MockAdapter from 'axios-mock-adapter';
-import { getRequestId } from '../../helpers';
 import axios, { AxiosInstance } from 'axios';
-import constants from '../../../src/lib/constants';
-import { MirrorNodeClient } from '../../../src/lib/clients';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
-import { AccountId, Client, Hbar, Long, Status, TransactionRecordQuery } from '@hashgraph/sdk';
-import { getTransactionStatusAndMetrics } from '../../../src/lib/clients/helper/clientHelper';
+import MockAdapter from 'axios-mock-adapter';
+import { Utils } from '../../../../src/utils';
+import { getRequestId } from '../../../helpers';
+import constants from '../../../../src/lib/constants';
+import { MirrorNodeClient } from '../../../../src/lib/clients';
+import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
+import TransactionService from '../../../../src/lib/services/transactionService/transactionService';
+import { AccountId, Client, Hbar, Long, Status, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
 
-config({ path: resolve(__dirname, '../../test.env') });
+config({ path: resolve(__dirname, '../../../test.env') });
 const registry = new Registry();
 const logger = pino();
 
-describe('Client Helper', function () {
+describe('Transaction Service', function () {
   this.timeout(20000);
 
   let client: Client;
   let mock: MockAdapter;
   let instance: AxiosInstance;
   let mirrorNodeClient: MirrorNodeClient;
+  let transactionService: TransactionService;
 
   const mockedTxFee = 36900000;
   const operatorAcocuntId = `0.0.1022`;
   const callerName = 'eth_sendRawTransaction';
+  const mockedConstructorName = 'constructor_name';
   const mockedTransactionId = '0.0.1022@1681130064.409933500';
   const mockedTransactionIdFormatted = '0.0.1022-1681130064-409933500';
   const mockedMirrorNodeTransactionRecord = {
@@ -83,22 +85,24 @@ describe('Client Helper', function () {
         is_approval: false,
       },
     ],
-  };
+  } as unknown as TransactionRecord;
 
   before(() => {
+    process.env.OPERATOR_KEY_FORMAT = 'DER';
+
+    // consensus node client
     const hederaNetwork = process.env.HEDERA_NETWORK!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
-
-    // consensus node client
     client = client.setOperator(
       AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
       Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
     );
 
+    // mirror node client
     instance = axios.create({
       baseURL: 'https://localhost:5551/api/v1',
       responseType: 'json' as const,
@@ -107,8 +111,6 @@ describe('Client Helper', function () {
       },
       timeout: 20 * 1000,
     });
-
-    // mirror node client
     mirrorNodeClient = new MirrorNodeClient(
       process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
@@ -116,6 +118,9 @@ describe('Client Helper', function () {
       new CacheService(logger.child({ name: `cache` }), registry),
       instance,
     );
+
+    // Init new TransactionService instance
+    transactionService = new TransactionService(logger, client, mirrorNodeClient);
   });
 
   beforeEach(() => {
@@ -123,16 +128,16 @@ describe('Client Helper', function () {
   });
 
   describe('getTransactionStatusAndMetrics', () => {
-    it('Should getTransactionStatusAndMetrics via MIRROR NODE client', async () => {
+    it('Should execute getTransactionStatusAndMetrics() and redirect calls to MIRROR NODE client', async () => {
+      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'false';
+
       mock.onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`).reply(200, mockedMirrorNodeTransactionRecord);
 
-      const getTxResultAndMetricsResult = await getTransactionStatusAndMetrics(
+      const getTxResultAndMetricsResult = await transactionService.getTransactionStatusAndMetrics(
         mockedTransactionId,
         callerName,
         getRequestId(),
-        logger,
-        `constructor_name`,
-        mirrorNodeClient,
+        mockedConstructorName,
         operatorAcocuntId,
       );
 
@@ -145,26 +150,24 @@ describe('Client Helper', function () {
       );
     });
 
-    it('Should getTransactionStatusAndMetrics via CONSENSUS NODE client', async () => {
+    it('Should execute getTransactionStatusAndMetrics() and redirect calls to CONSENSUS NODE client', async () => {
       process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
 
       const transactionRecordStub = sinon
         .stub(TransactionRecordQuery.prototype, 'execute')
-        .resolves(mockedConsensusNodeTransactionRecord as any);
+        .resolves(mockedConsensusNodeTransactionRecord);
 
-      const getTxResultAndMetricsResult = await getTransactionStatusAndMetrics(
+      const getTxResultAndMetricsResult = await transactionService.getTransactionStatusAndMetrics(
         mockedTransactionId,
         callerName,
         getRequestId(),
-        logger,
-        `constructor_name`,
-        client,
+        mockedConstructorName,
         operatorAcocuntId,
       );
 
       expect(transactionRecordStub.called).to.be.true;
       expect(getTxResultAndMetricsResult.gasUsed).to.eq(
-        mockedConsensusNodeTransactionRecord.contractFunctionResult.gasUsed.toNumber(),
+        mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
       );
       expect(getTxResultAndMetricsResult.transactionFee * 10 ** 8).to.eq(
         mockedConsensusNodeTransactionRecord.transactionFee.toTinybars().toNumber(),

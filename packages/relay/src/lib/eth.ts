@@ -55,6 +55,7 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { DebugService } from './services/debugService';
 import { IFeeHistory } from './types/IFeeHistory';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
+import TransactionService from './services/transactionService/transactionService';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -249,6 +250,14 @@ export class EthImpl implements Eth {
   private readonly debugServiceImpl: DebugService;
 
   /**
+   * Service for handling transactions.
+   * @type {TransactionService}
+   * @private
+   * @readonly
+   */
+  private readonly transactionService: TransactionService;
+
+  /**
    * Create a new Eth implementation.
    * @param hapiService
    * @param mirrorNodeClient
@@ -277,6 +286,12 @@ export class EthImpl implements Eth {
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
     this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
+
+    this.transactionService = new TransactionService(
+      logger,
+      this.hapiService.getMainClientInstance(),
+      mirrorNodeClient,
+    );
   }
 
   private shouldUseCacheForBalance(tag: string | null): boolean {
@@ -1533,7 +1548,7 @@ export class EthImpl implements Eth {
           transactionBuffer,
           EthImpl.ethSendRawTransaction,
           requestIdPrefix,
-          this.mirrorNodeClient,
+          this.transactionService,
         );
 
       txSubmitted = true;
@@ -1585,7 +1600,13 @@ export class EthImpl implements Eth {
       if (fileId) {
         this.hapiService
           .getSDKClient()
-          .deleteFile(fileId, requestIdPrefix, EthImpl.ethSendRawTransaction, fileId.toString(), this.mirrorNodeClient);
+          .deleteFile(
+            fileId,
+            requestIdPrefix,
+            EthImpl.ethSendRawTransaction,
+            fileId.toString(),
+            this.transactionService,
+          );
       }
     }
   }
