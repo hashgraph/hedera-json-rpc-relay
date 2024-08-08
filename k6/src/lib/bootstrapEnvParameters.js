@@ -23,9 +23,9 @@ import {
   computeLatestEthereumTransactionParameters,
   computeLatestLogParameters,
   setDefaultValuesForEnvParameters,
-} from '../../lib/parameters.js';
+} from './parameters.js';
 
-const scParams = JSON.parse(open('../../prepare/.smartContractParams.json'));
+const scParams = JSON.parse(open('../prepare/.smartContractParams.json'));
 
 const computeTestParameters = (configuration) =>
   Object.assign(

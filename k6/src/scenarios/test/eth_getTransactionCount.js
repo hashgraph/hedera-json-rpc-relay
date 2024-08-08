@@ -23,7 +23,7 @@ import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.1.0/index.js';
 
 import { TestScenarioBuilder } from '../../lib/common.js';
 import { isNonErrorResponse, httpParams, getPayLoad } from './common.js';
-import { setupTestParameters } from './bootstrapEnvParameters.js';
+import { setupTestParameters } from '../../lib/bootstrapEnvParameters.js';
 
 const methodName = 'eth_getTransactionCount';
 const { options, run } = new TestScenarioBuilder()

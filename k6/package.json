@@ -6,7 +6,8 @@
   "scripts": {
     "prep-and-run": "npm run prep && npm run k6",
     "prep": "env-cmd node src/prepare/prep.js",
-    "k6": "env-cmd --use-shell k6 run src/scenarios/apis.js"
+    "k6": "env-cmd --use-shell k6 run src/scenarios/apis.js",
+    "k6-ws": "env-cmd --use-shell k6 run src/scenarios/ws-apis.js"
   },
   "dependencies": {
     "env-cmd": "^10.1.0",
