@@ -50,7 +50,7 @@ describe('Utils', () => {
     }
   });
 
-  describe.only('buildLogsBloom and checkInLogsBloom', () => {
+  describe('buildLogsBloom and checkInLogsBloom', () => {
     /**
      * Check whether an item exists in the hex encoded logs bloom bitvector
      * @param item
