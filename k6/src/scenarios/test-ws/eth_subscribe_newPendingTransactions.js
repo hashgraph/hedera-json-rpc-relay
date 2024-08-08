@@ -1,9 +1,9 @@
 /*-
- * ‌
+ *
  * Hedera JSON RPC Relay
  *
  * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,30 +15,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
+ *
  */
 
-import http from 'k6/http';
-
 import { TestScenarioBuilder } from '../../lib/common.js';
-import { isNonErrorResponse, httpParams, getPayLoad } from './common.js';
-import { setupTestParameters } from '../../lib/bootstrapEnvParameters.js';
+import { subscribeEvents } from '../../lib/constants.js';
+import { connectToWebSocket, isErrorResponse } from './common.js';
 
-const methodName = 'eth_getBlockTransactionCountByHash';
+const url = __ENV.WS_RELAY_BASE_URL;
+const methodName = 'eth_subscribe';
+
 const { options, run } = new TestScenarioBuilder()
-  .name(methodName) // use unique scenario name among all tests
-  .request((testParameters) => {
-    return http.post(
-      testParameters.RELAY_BASE_URL,
-      getPayLoad(methodName, [testParameters.DEFAULT_BLOCK_HASH]),
-      httpParams,
-    );
-  })
-  .check(methodName, (r) => isNonErrorResponse(r))
-  .maxDuration(3500)
-  .testDuration('4s')
+  .name(methodName + '_newPendingTransactions') // use unique scenario name among all tests
+  .request(() => connectToWebSocket(url, methodName, [subscribeEvents.newPendingTransactions]))
+  .check(methodName, (r) => isErrorResponse(r))
   .build();
 
 export { options, run };
-
-export const setup = setupTestParameters;

@@ -1,9 +1,9 @@
 /*-
- * ‌
+ *
  * Hedera JSON RPC Relay
  *
  * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,25 +15,26 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
+ *
  */
 
-import http from 'k6/http';
-import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
+import ws from 'k6/ws';
 
 import { TestScenarioBuilder } from '../../lib/common.js';
-import { isNonErrorResponse, httpParams, getPayLoad } from './common.js';
+import { connectToWebSocket, isNonErrorResponse } from './common.js';
 import { setupTestParameters } from '../../lib/bootstrapEnvParameters.js';
+import { subscribeEvents } from '../../lib/constants.js';
 
-const methodName = 'eth_getBalance';
+const url = __ENV.WS_RELAY_BASE_URL;
+const methodName = 'eth_subscribe';
+
 const { options, run } = new TestScenarioBuilder()
-  .name(methodName) // use unique scenario name among all tests
+  .name(methodName + '_logs') // use unique scenario name among all tests
   .request((testParameters) => {
-    // select a random  from  address
-    const fromIndex = randomIntBetween(0, testParameters.wallets.length - 1);
-    const from = testParameters.wallets[fromIndex].address;
-
-    return http.post(testParameters.RELAY_BASE_URL, getPayLoad(methodName, [from, 'latest']), httpParams);
+    return connectToWebSocket(url, methodName, [
+      subscribeEvents.logs,
+      { address: testParameters.contractsAddresses[0] },
+    ]);
   })
   .check(methodName, (r) => isNonErrorResponse(r))
   .build();
