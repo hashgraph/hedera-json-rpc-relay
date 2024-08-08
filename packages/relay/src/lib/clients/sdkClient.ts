@@ -144,6 +144,14 @@ export class SDKClient {
   }
 
   /**
+   * Return current main client instance
+   * @returns Main Client
+   */
+  public getMainClientInstance() {
+    return this.clientMain;
+  }
+
+  /**
    * Retrieves the balance of an account.
    * @param {string} account - The account ID to query.
    * @param {string} callerName - The name of the caller for logging purposes.
@@ -159,6 +167,21 @@ export class SDKClient {
       account,
       requestId,
     );
+  }
+
+  /**
+   * Retrieves the balance of an account in tinybars after a specified delay.
+   *
+   * @param {string} accountId - The ID of the account to retrieve the balance for.
+   * @param {string} callerName - The name of the caller requesting the balance.
+   * @param {string} requestId - The unique request ID for tracking the request.
+   * @param {number} ms - The delay in milliseconds before retrieving the balance.
+   * @returns {Promise<number>} - A promise that resolves to the account balance in tinybars.
+   */
+  async getBalanceInTinyBars(accountId: string, callerName: string, requestId: string, ms: number): Promise<number> {
+    await new Promise((r) => setTimeout(r, ms));
+    const accountBalance = await this.getAccountBalance(accountId, callerName, requestId);
+    return accountBalance.hbars.toTinybars().toNumber();
   }
 
   /**
@@ -583,11 +606,6 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
     try {
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.queryMode, callerName);
-      if (shouldLimit) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
-
       let resp, cost;
       if (query.paymentTransactionId) {
         const baseCost = await query.getCost(this.clientMain);

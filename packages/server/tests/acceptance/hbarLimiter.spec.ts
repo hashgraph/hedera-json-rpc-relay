@@ -191,13 +191,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               }
             });
 
-            this.beforeEach(() => {
-              console.log(
-                ` process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: ${process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE}`,
-              );
-              console.log(isFromConsensus);
-            });
-
             it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
               const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
               const parentContractAddress = parentContract.target as string;

@@ -19,7 +19,7 @@
  */
 
 import { Logger } from 'pino';
-import { MirrorNodeClient } from '../../clients';
+import { MirrorNodeClient, SDKClient } from '../../clients';
 import { SDKClientError } from '../../errors/SDKClientError';
 import { AccountBalanceQuery, Client, Status, TransactionRecordQuery } from '@hashgraph/sdk';
 import { IMirrorNodeTransactionRecord, MirrorNodeTransactionRecord } from '../../types/IMirrorNode';
@@ -40,28 +40,28 @@ export default class TransactionService {
 
   /**
    * Main SDK client for executing queries.
-   * @type {Client}
+   * @type {SDKClient}
    * @private
    */
-  private sdkClientMain: Client;
+  private sdkClient: SDKClient;
 
   /**
    * Main Mirror Node client for retrieving transaction records.
    * @type {MirrorNodeClient}
    * @private
    */
-  private mirrorNodeClientMain: MirrorNodeClient;
+  private mirrorNodeClient: MirrorNodeClient;
 
   /**
    * Constructs an instance of the class.
    * @param {Logger} logger - The logger instance for logging information.
-   * @param {Client} sdkClientMain - The main SDK client for executing queries.
-   * @param {MirrorNodeClient} mirrorNodeClientMain - The main Mirror Node client for retrieving transaction records.
+   * @param {Client} sdkClient - The main SDK client for executing queries.
+   * @param {MirrorNodeClient} mirrorNodeClient - The main Mirror Node client for retrieving transaction records.
    */
-  constructor(logger: Logger, sdkClientMain: Client, mirrorNodeClientMain: MirrorNodeClient) {
+  constructor(logger: Logger, sdkClient: SDKClient, mirrorNodeClient: MirrorNodeClient) {
     this.logger = logger;
-    this.sdkClientMain = sdkClientMain;
-    this.mirrorNodeClientMain = mirrorNodeClientMain;
+    this.sdkClient = sdkClient;
+    this.mirrorNodeClient = mirrorNodeClient;
   }
 
   /**
@@ -98,18 +98,28 @@ export default class TransactionService {
         );
 
         // retrieve operaotr's balance before the execution
-        const operatorBalanceBefore = await this.getBalanceInTinyBars(operatorAccountId, this.sdkClientMain, 200);
+        const operatorBalanceBefore = await this.sdkClient.getBalanceInTinyBars(
+          operatorAccountId,
+          callerName,
+          requestId,
+          200,
+        );
 
         // submit query and get transaction receipt
         const transactionRecord = await new TransactionRecordQuery()
           .setTransactionId(transactionId)
           .setValidateReceiptStatus(false)
-          .execute(this.sdkClientMain);
+          .execute(this.sdkClient.getMainClientInstance());
 
         const transactionReceipt = transactionRecord.receipt;
 
         // retrieve operaotr's balance after the execution
-        const operatorBalanceAfter = await this.getBalanceInTinyBars(operatorAccountId, this.sdkClientMain, 200);
+        const operatorBalanceAfter = await this.sdkClient.getBalanceInTinyBars(
+          operatorAccountId,
+          callerName,
+          requestId,
+          200,
+        );
 
         // capture transactionRecord fee by comparing operator balance before and after the execution
         txRecordChargeAmount = operatorBalanceBefore - operatorBalanceAfter;
@@ -138,8 +148,8 @@ export default class TransactionService {
       );
 
       // poll mirror node to get transaction record
-      const transactionRecord = await this.mirrorNodeClientMain.repeatedRequest(
-        this.mirrorNodeClientMain.getTransactionById.name,
+      const transactionRecord = await this.mirrorNodeClient.repeatedRequest(
+        this.mirrorNodeClient.getTransactionById.name,
         [transactionId, 0],
         mirrorNodeRetries,
         formattedRequestId,
@@ -164,19 +174,4 @@ export default class TransactionService {
 
     return { transactionFee, gasUsed, transactionStatus, txRecordChargeAmount };
   }
-
-  /**
-   * Retrieves the balance of an account in tinybars after a specified delay.
-   *
-   * @private
-   * @param {string} accountId - The ID of the account to query.
-   * @param {Client} client - The Hedera client instance to use for the query.
-   * @param {number} ms - The delay in milliseconds before executing the query.
-   * @returns {Promise<number>} - A promise that resolves to the account balance in tinybars.
-   */
-  private getBalanceInTinyBars = async (accountId: string, client: Client, ms: number): Promise<number> => {
-    await new Promise((r) => setTimeout(r, ms));
-    const accountBalance = await new AccountBalanceQuery().setAccountId(accountId).execute(client);
-    return accountBalance.hbars.toTinybars().toNumber();
-  };
 }

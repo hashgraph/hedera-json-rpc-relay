@@ -146,7 +146,7 @@ describe('SdkClient', async function () {
       instance,
     );
 
-    transactionService = new TransactionService(logger, client, mirrorNodeClient);
+    transactionService = new TransactionService(logger, sdkClient, mirrorNodeClient);
   });
 
   beforeEach(() => {
@@ -2451,11 +2451,6 @@ describe('SdkClient', async function () {
       const queryCostStub = sinon.stub(Query.prototype, 'getCost');
 
       hbarLimitMock.expects('addExpense').never();
-      hbarLimitMock
-        .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.queryMode, callerName)
-        .once()
-        .returns(false);
 
       const result = await sdkClient.executeQuery(
         new FileInfoQuery().setFileId(fileId).setQueryPayment(Hbar.fromTinybars(defaultTransactionFee)),
@@ -2475,11 +2470,6 @@ describe('SdkClient', async function () {
       const queryCostStub = sinon.stub(Query.prototype, 'getCost').resolves(Hbar.fromTinybars(defaultTransactionFee));
 
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
-      hbarLimitMock
-        .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.queryMode, callerName)
-        .once()
-        .returns(false);
 
       const result = await sdkClient.executeQuery(
         new FileInfoQuery().setFileId(fileId).setPaymentTransactionId(transactionId),
