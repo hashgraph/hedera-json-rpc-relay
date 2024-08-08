@@ -288,11 +288,7 @@ export class EthImpl implements Eth {
     this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
 
-    this.transactionService = new TransactionService(
-      logger,
-      this.hapiService.getMainClientInstance(),
-      mirrorNodeClient,
-    );
+    this.transactionService = new TransactionService(logger, this.hapiService.getSDKClient(), mirrorNodeClient);
   }
 
   private shouldUseCacheForBalance(tag: string | null): boolean {

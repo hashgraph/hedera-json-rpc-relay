@@ -23,13 +23,14 @@ import { expect } from 'chai';
 import { resolve } from 'path';
 import * as sinon from 'sinon';
 import { config } from 'dotenv';
-import { Registry } from 'prom-client';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { Utils } from '../../../../src/utils';
 import { getRequestId } from '../../../helpers';
+import { Histogram, Registry } from 'prom-client';
 import constants from '../../../../src/lib/constants';
-import { MirrorNodeClient } from '../../../../src/lib/clients';
+import HbarLimit from '../../../../src/lib/hbarlimiter';
+import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import TransactionService from '../../../../src/lib/services/transactionService/transactionService';
 import { AccountId, Client, Hbar, Long, Status, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
@@ -102,6 +103,31 @@ describe('Transaction Service', function () {
       Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
     );
 
+    const duration = constants.HBAR_RATE_LIMIT_DURATION;
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+
+    const sdkClient = new SDKClient(
+      client,
+      logger.child({ name: `consensus-node` }),
+      hbarLimiter,
+      {
+        costHistogram: new Histogram({
+          name: 'rpc_relay_consensusnode_response',
+          help: 'Relay consensusnode mode type status cost histogram',
+          labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+          registers: [registry],
+        }),
+        gasHistogram: new Histogram({
+          name: 'rpc_relay_consensusnode_gasfee',
+          help: 'Relay consensusnode mode type status gas fee histogram',
+          labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+          registers: [registry],
+        }),
+      },
+      new CacheService(logger.child({ name: `cache` }), registry),
+    );
+
     // mirror node client
     instance = axios.create({
       baseURL: 'https://localhost:5551/api/v1',
@@ -120,7 +146,7 @@ describe('Transaction Service', function () {
     );
 
     // Init new TransactionService instance
-    transactionService = new TransactionService(logger, client, mirrorNodeClient);
+    transactionService = new TransactionService(logger, sdkClient, mirrorNodeClient);
   });
 
   beforeEach(() => {
