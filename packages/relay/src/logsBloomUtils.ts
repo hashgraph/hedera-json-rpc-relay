@@ -63,16 +63,14 @@ export class LogsBloomUtils {
   public static checkInLogsBloom(item: string, bitvector: string): boolean {
     const bitvectorUint8Arr = Uint8Array.from(Buffer.from(strip0x(bitvector), 'hex'));
     const itemBuf = Buffer.alloc(32, strip0x(keccak256(item)), 'hex');
-    const BYTE_SIZE = 256;
-    const MASK = 0x7ff;
 
     let match: boolean = true;
     for (let i = 0; i < 3 && match; i++) {
       const first2bytes = new DataView(itemBuf.buffer).getUint16(i * 2);
-      const loc = MASK & first2bytes;
+      const loc = this.MASK & first2bytes;
       const byteLoc = loc >> 3;
       const bitLoc = 1 << loc % 8;
-      match = (bitvectorUint8Arr[BYTE_SIZE - byteLoc - 1] & bitLoc) !== 0;
+      match = (bitvectorUint8Arr[this.BYTE_SIZE - byteLoc - 1] & bitLoc) !== 0;
     }
 
     return match;
