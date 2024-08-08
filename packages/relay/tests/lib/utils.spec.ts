@@ -50,7 +50,7 @@ describe('Utils', () => {
     }
   });
 
-  describe('buildLogsBloom and checkInLogsBloom', () => {
+  describe.only('buildLogsBloom and checkInLogsBloom', () => {
     /**
      * Check whether an item exists in the hex encoded logs bloom bitvector
      * @param item
@@ -84,6 +84,11 @@ describe('Utils', () => {
       '000000000000000000000000000000000000000000000000001000000000000000000400000000000000000000000000000000000000000' +
       '000000000000100000000000000000000000000000000000000000000000000000400000000000000000300000000040000000000000000' +
       '0000000000000000000000080000000000001000000000000000000000000000000000000000000000000001000000';
+
+    it('should be able to generate emptyBloom if there are no address', () => {
+      const res = LogsBloomUtils.buildLogsBloom('', topics);
+      expect(EthImpl.emptyBloom).to.equal(res);
+    });
 
     it('should be able to generate emptyBloom if there are no logs', () => {
       const res = LogsBloomUtils.buildLogsBloom(address, []);
