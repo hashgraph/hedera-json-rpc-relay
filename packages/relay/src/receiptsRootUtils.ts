@@ -24,25 +24,36 @@ import { bytesToInt, concatBytes, hexToBytes, intToBytes } from '@ethereumjs/uti
 import { EthImpl } from './lib/eth';
 import { prepend0x } from './formatters';
 import { Log } from './lib/model';
+import { ITransactionReceipt } from './lib/types/ITransactionReceipt';
+
+type SerializedLog = [Uint8Array, Uint8Array[], Uint8Array];
 
 export class ReceiptsRootUtils {
-  private static encodeLogs(logs: Log[]) {
-    const serializedLogs = [];
+  private static encodeLogs(logs: Log[]): SerializedLog[] {
+    const serializedLogs: SerializedLog[] = [];
     for (let i = 0; i < logs.length; i++) {
       const topics: Uint8Array[] = [];
       for (let j = 0; j < logs[i].topics.length; j++) {
         topics.push(hexToBytes(logs[i].topics[j]));
       }
-      // @ts-ignore
       serializedLogs.push([hexToBytes(logs[i].address), topics, hexToBytes(logs[i].data)]);
     }
 
     return serializedLogs;
   }
 
-  private static encodeReceipt(receipt, txType) {
-    const encodedReceipt = RLP.encode([
-      receipt.root ?? (receipt.status === 0 ? Uint8Array.from([]) : hexToBytes('0x01')),
+  private static encodeReceipt(receipt: ITransactionReceipt, txType: number): Uint8Array {
+    let receiptRoot: Uint8Array;
+    if (receipt.root) {
+      receiptRoot = hexToBytes(receipt.root);
+    } else if (bytesToInt(hexToBytes(receipt.status)) === 0) {
+      receiptRoot = Uint8Array.from([]);
+    } else {
+      receiptRoot = hexToBytes('0x01');
+    }
+
+    const encodedReceipt: Uint8Array = RLP.encode([
+      receiptRoot,
       hexToBytes(receipt.cumulativeGasUsed),
       hexToBytes(receipt.logsBloom),
       this.encodeLogs(receipt.logs),
@@ -57,30 +68,22 @@ export class ReceiptsRootUtils {
     return concatBytes(intToBytes(txType), encodedReceipt);
   }
 
-  public static async getRootHash(receipts) {
+  public static async getRootHash(receipts: ITransactionReceipt[]): Promise<string> {
     if (!receipts.length) {
       return EthImpl.zeroHex32Byte;
     }
 
-    const trie = new Trie();
+    const trie: Trie = new Trie();
     receipts.map(async (receipt) => {
-      let path =
+      const path: Uint8Array =
         receipt.transactionIndex === '0x0'
           ? RLP.encode(Buffer.alloc(0))
-          : RLP.encode(bytesToInt(hexToBytes(receipt.transactionIndex)));
-      await trie.put(path, this.encodeReceipt(receipt, bytesToInt(hexToBytes(receipt.type))));
+          : RLP.encode(bytesToInt(hexToBytes(receipt.transactionIndex ?? '')));
+      await trie.put(path, this.encodeReceipt(receipt, bytesToInt(hexToBytes(receipt.type ?? '0x0'))));
     });
 
     trie.checkpoint();
     await trie.commit();
-
-    console.log('----------------');
-    console.log('----------------');
-    console.log('----------------');
-    console.log('receiptRoot:' + prepend0x(Buffer.from(trie.root()).toString('hex')));
-    console.log('----------------');
-    console.log('----------------');
-    console.log('----------------');
 
     return prepend0x(Buffer.from(trie.root()).toString('hex'));
   }
