@@ -215,7 +215,7 @@ export class SDKClient {
   }
 
   async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
-    const cachedResponse: number | undefined = this.cacheService.get(
+    const cachedResponse: number | undefined = await this.cacheService.getAsync(
       constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
       callerName,
       requestId,
@@ -235,7 +235,13 @@ export class SDKClient {
         const exchangeRates = await this.getExchangeRate(callerName, requestId);
         const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
-        this.cacheService.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, undefined, requestId);
+        await this.cacheService.set(
+          constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
+          tinyBars,
+          callerName,
+          undefined,
+          requestId,
+        );
         return tinyBars;
       }
     }

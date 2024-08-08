@@ -116,7 +116,9 @@ export class CacheService {
   }
 
   async disconnectRedisClient(): Promise<void> {
-    await this.sharedCache.disconnect();
+    if (this.sharedCache instanceof RedisCache) {
+      await this.sharedCache.disconnect();
+    }
   }
 
   /**
@@ -142,11 +144,7 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
-  public async getAsync(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
-    if (!this.isSharedCacheEnabled) {
-      return null;
-    }
-
+  private async getFromSharedCache(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
     try {
       this.cacheMethodsCounter
         .labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.GET_ASYNC)
@@ -168,11 +166,11 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
-  public getSharedWithFallback(key: string, callingMethod: string, requestIdPrefix?: string): any {
+  public async getAsync(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
     if (this.isSharedCacheEnabled) {
-      return this.getAsync(key, callingMethod, requestIdPrefix);
+      return await this.getFromSharedCache(key, callingMethod, requestIdPrefix);
     } else {
-      return this.get(key, callingMethod, requestIdPrefix);
+      return await this.getFromInternalCache(key, callingMethod, requestIdPrefix);
     }
   }
 
@@ -184,10 +182,10 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
-  public get(key: string, callingMethod: string, requestIdPrefix?: string): any {
+  private async getFromInternalCache(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
     this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.GET).inc(1);
 
-    return this.internalCache.get(key, callingMethod, requestIdPrefix);
+    return await this.internalCache.get(key, callingMethod, requestIdPrefix);
   }
 
   /**
@@ -201,19 +199,18 @@ export class CacheService {
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
    */
-  public set(
+  public async set(
     key: string,
     value: any,
     callingMethod: string,
     ttl?: number,
     requestIdPrefix?: string,
-    shared: boolean = false,
-  ): void {
-    if (shared && this.isSharedCacheEnabled) {
+  ): Promise<void> {
+    if (this.isSharedCacheEnabled) {
       try {
         this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.SET).inc(1);
 
-        this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
+        await this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
@@ -223,7 +220,7 @@ export class CacheService {
     } else {
       this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
 
-      this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
+      await this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
     }
   }
 
@@ -238,20 +235,19 @@ export class CacheService {
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
    */
-  public multiSet(
+  public async multiSet(
     entries: Record<string, any>,
     callingMethod: string,
     ttl?: number,
     requestIdPrefix?: string,
-    shared: boolean = true,
-  ): void {
-    if (shared && this.isSharedCacheEnabled) {
+  ): Promise<void> {
+    if (this.isSharedCacheEnabled) {
       const metricsMethod = this.shouldMultiSet ? CacheService.methods.MSET : CacheService.methods.PIPELINE;
       try {
         if (this.shouldMultiSet) {
-          this.sharedCache.multiSet(entries, callingMethod, requestIdPrefix);
+          await this.sharedCache.multiSet(entries, callingMethod, requestIdPrefix);
         } else {
-          this.sharedCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
+          await this.sharedCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
         }
 
         this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.REDIS, metricsMethod).inc(1);
@@ -261,12 +257,12 @@ export class CacheService {
           `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
         );
         // Fallback to internal cache, but use pipeline, because of it's TTL support
-        this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
+        await this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
         this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
       }
     } else {
       // Fallback to internal cache, but use pipeline, because of it's TTL support
-      this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
+      await this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
       this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
     }
   }
@@ -280,14 +276,14 @@ export class CacheService {
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
    */
-  public delete(key: string, callingMethod: string, requestIdPrefix?: string, shared: boolean = false): void {
-    if (shared && this.isSharedCacheEnabled) {
+  public async delete(key: string, callingMethod: string, requestIdPrefix?: string): Promise<void> {
+    if (this.isSharedCacheEnabled) {
       try {
         this.cacheMethodsCounter
           .labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.DELETE)
           .inc(1);
 
-        return this.sharedCache.delete(key, callingMethod, requestIdPrefix);
+        await this.sharedCache.delete(key, callingMethod, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
@@ -297,7 +293,7 @@ export class CacheService {
     } else {
       this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.DELETE).inc(1);
 
-      this.internalCache.delete(key, callingMethod, requestIdPrefix);
+      await this.internalCache.delete(key, callingMethod, requestIdPrefix);
     }
   }
 
@@ -307,8 +303,8 @@ export class CacheService {
    * Else the internal cache clearing is attempted.
    * @param {boolean} shared - Whether to clear the shared cache (optional, default: false).
    */
-  public async clear(requestIdPrefix?: string, shared: boolean = false): Promise<void> {
-    if (shared && this.isSharedCacheEnabled) {
+  public async clear(requestIdPrefix?: string): Promise<void> {
+    if (this.isSharedCacheEnabled) {
       try {
         await this.sharedCache.clear();
       } catch (error) {
@@ -318,7 +314,7 @@ export class CacheService {
         );
       }
     } else {
-      this.internalCache.clear();
+      await this.internalCache.clear();
     }
   }
 }
