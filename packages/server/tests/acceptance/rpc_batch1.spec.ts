@@ -23,7 +23,8 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
-import { FileInfo, FileInfoQuery, TransferTransaction } from '@hashgraph/sdk';
+import { AccountBalanceQuery, FileInfo, FileInfoQuery, Hbar, TransferTransaction } from '@hashgraph/sdk';
+import mediumSizeContract from '../../tests/contracts/hbarLimiterContracts/mediumSizeContract.json';
 
 // Assertions from local resources
 import Assertions from '../helpers/assertions';
@@ -41,6 +42,7 @@ import RelayCalls from '../../tests/helpers/constants';
 // Other imports
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
 import constants from '../../../relay/src/lib/constants';
+import exp from 'constants';
 const Address = RelayCalls;
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
@@ -49,7 +51,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { servicesNode, mirrorNode, relay, initialBalance } = global;
+  const { servicesNode, mirrorNode, logger, relay, initialBalance } = global;
 
   // cached entities
   let parentContractAddress: string;
@@ -1504,6 +1506,52 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           requestId,
         );
         expect(res).to.be.null;
+      });
+    });
+    describe('Transaction Costs', async function () {
+      it.only('should verify the cost of a medium contract deployment to the user and relay operator', async function () {
+        // relay operator account balance before the deployment transaction
+
+        // Create the account balance query
+        const query = new AccountBalanceQuery().setAccountId(process.env.OPERATOR_ID_MAIN!);
+
+        // Execute the query and get the balance
+        let accountBalance = await query.execute(servicesNode.client);
+
+        // Get the balance in hbar
+        const balanceBefore = accountBalance.hbars;
+
+        logger.info(`Account ${process.env.OPERATOR_ID_MAIN} balance: ${balanceBefore.toString()}`);
+
+        const factory = new ethers.ContractFactory(
+          mediumSizeContract.abi,
+          mediumSizeContract.bytecode,
+          accounts[0].wallet,
+        );
+        const contract = await factory.deploy();
+        const deployment = await contract.waitForDeployment();
+        const transactionDetails = await mirrorNode.get(`/contracts/${deployment.target}/results`, requestId);
+        logger.info(JSON.stringify(transactionDetails));
+        const gasUsed = transactionDetails.results[0].gas_used;
+        expect(gasUsed).to.be.eq(322326);
+        logger.info(`Medium size contact deployment cost: ${gasUsed} tinybars to sender`);
+        logger.info(`Medium size contact deployment cost: ${Hbar.fromTinybars(gasUsed)} HBars to sender`);
+
+        // Execute the query and get the balance
+        accountBalance = await query.execute(servicesNode.client);
+
+        // Get the balance in hbar
+        const balanceAfter = accountBalance.hbars;
+
+        logger.info(`Account ${process.env.OPERATOR_ID_MAIN} balance: ${balanceAfter.toString()}`);
+        const costToOperator = Number(balanceBefore._valueInTinybar) - Number(balanceAfter._valueInTinybar);
+        const costToOperatorInHbar = Hbar.fromTinybars(costToOperator).toString();
+        logger.info(
+          `Cost of medium size contract deployment to the Relay Operator: ${
+            Number(balanceBefore._valueInTinybar) - Number(balanceAfter._valueInTinybar)
+          } tinybars`,
+        );
+        logger.info(`Cost of medium size contract deployment to the Relay Operator: ${costToOperatorInHbar} hbar`);
       });
     });
   });
