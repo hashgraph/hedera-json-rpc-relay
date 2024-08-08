@@ -23,8 +23,8 @@ import { prepend0x, strip0x } from './formatters';
 import { EthImpl } from './lib/eth';
 
 export class LogsBloomUtils {
-  private static readonly BYTE_SIZE = 256;
-  private static readonly MASK = 0x7ff;
+  public static readonly BYTE_SIZE = 256;
+  public static readonly MASK = 0x7ff;
 
   /**
    * Generate logs bloom for synthetic transaction
@@ -53,26 +53,5 @@ export class LogsBloomUtils {
     }
 
     return prepend0x(Buffer.from(bitvector).toString('hex'));
-  }
-
-  /**
-   * Check whether an item exists in the hex encoded logs bloom bitvector
-   * @param item
-   * @param bitvector
-   */
-  public static checkInLogsBloom(item: string, bitvector: string): boolean {
-    const bitvectorUint8Arr = Uint8Array.from(Buffer.from(strip0x(bitvector), 'hex'));
-    const itemBuf = Buffer.alloc(32, strip0x(keccak256(item)), 'hex');
-
-    let match: boolean = true;
-    for (let i = 0; i < 3 && match; i++) {
-      const first2bytes = new DataView(itemBuf.buffer).getUint16(i * 2);
-      const loc = this.MASK & first2bytes;
-      const byteLoc = loc >> 3;
-      const bitLoc = 1 << loc % 8;
-      match = (bitvectorUint8Arr[this.BYTE_SIZE - byteLoc - 1] & bitLoc) !== 0;
-    }
-
-    return match;
   }
 }

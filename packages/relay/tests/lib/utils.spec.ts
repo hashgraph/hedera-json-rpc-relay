@@ -22,8 +22,9 @@ import { expect } from 'chai';
 import { Utils } from '../../src/utils';
 import { LogsBloomUtils } from '../../src/logsBloomUtils';
 import constants from '../../src/lib/constants';
-import { ZeroAddress } from 'ethers';
+import { keccak256, ZeroAddress } from 'ethers';
 import { EthImpl } from '../../src/lib/eth';
+import { strip0x } from '../../src/formatters';
 
 describe('Utils', () => {
   describe('addPercentageBufferToGasPrice', () => {
@@ -50,6 +51,27 @@ describe('Utils', () => {
   });
 
   describe('buildLogsBloom and checkInLogsBloom', () => {
+    /**
+     * Check whether an item exists in the hex encoded logs bloom bitvector
+     * @param item
+     * @param bitvector
+     */
+    const checkInLogsBloom = (item: string, bitvector: string) => {
+      const bitvectorUint8Arr = Uint8Array.from(Buffer.from(strip0x(bitvector), 'hex'));
+      const itemBuf = Buffer.alloc(32, strip0x(keccak256(item)), 'hex');
+
+      let match: boolean = true;
+      for (let i = 0; i < 3 && match; i++) {
+        const first2bytes = new DataView(itemBuf.buffer).getUint16(i * 2);
+        const loc = LogsBloomUtils.MASK & first2bytes;
+        const byteLoc = loc >> 3;
+        const bitLoc = 1 << loc % 8;
+        match = (bitvectorUint8Arr[LogsBloomUtils.BYTE_SIZE - byteLoc - 1] & bitLoc) !== 0;
+      }
+
+      return match;
+    };
+
     const address = '0x000000000000000000000000000000000000040c';
     const topics = [
       '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
@@ -74,22 +96,17 @@ describe('Utils', () => {
     });
 
     it('should be able to validate address and topics in generated logsBloom', () => {
-      expect(LogsBloomUtils.checkInLogsBloom(address, expectedLogsBloom)).to.equal(true);
-      expect(LogsBloomUtils.checkInLogsBloom(topics[0], expectedLogsBloom)).to.equal(true);
-      expect(LogsBloomUtils.checkInLogsBloom(topics[1], expectedLogsBloom)).to.equal(true);
-      expect(LogsBloomUtils.checkInLogsBloom(topics[2], expectedLogsBloom)).to.equal(true);
+      expect(checkInLogsBloom(address, expectedLogsBloom)).to.equal(true);
+      expect(checkInLogsBloom(topics[0], expectedLogsBloom)).to.equal(true);
+      expect(checkInLogsBloom(topics[1], expectedLogsBloom)).to.equal(true);
+      expect(checkInLogsBloom(topics[2], expectedLogsBloom)).to.equal(true);
     });
 
     it('should be able to validate non-existing address and topic in generated logsBloom', () => {
-      expect(LogsBloomUtils.checkInLogsBloom(ZeroAddress, expectedLogsBloom)).to.equal(false);
-      expect(LogsBloomUtils.checkInLogsBloom('0xD865b78906938EfDD065Cb443Be31440bE08a7CE', expectedLogsBloom)).to.equal(
-        false,
-      );
+      expect(checkInLogsBloom(ZeroAddress, expectedLogsBloom)).to.equal(false);
+      expect(checkInLogsBloom('0xD865b78906938EfDD065Cb443Be31440bE08a7CE', expectedLogsBloom)).to.equal(false);
       expect(
-        LogsBloomUtils.checkInLogsBloom(
-          '0x0000000000000000000000C70c3C06A4db619B7879d060B9215d528F584FcC',
-          expectedLogsBloom,
-        ),
+        checkInLogsBloom('0x0000000000000000000000C70c3C06A4db619B7879d060B9215d528F584FcC', expectedLogsBloom),
       ).to.equal(false);
     });
   });
