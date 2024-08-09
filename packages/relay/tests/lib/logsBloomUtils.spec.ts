@@ -24,7 +24,7 @@ import { keccak256, ZeroAddress } from 'ethers';
 import { EthImpl } from '../../src/lib/eth';
 import { strip0x } from '../../src/formatters';
 
-describe.only('LogsBloomUtils', () => {
+describe('LogsBloomUtils', () => {
   describe('buildLogsBloom', () => {
     /**
      * Check whether an item exists in the hex encoded logs bloom bitvector
