@@ -1,41 +1,20 @@
-# Initial ethers-rs research
-_More examples and usages will be covered soon_
-
-## ethers rs
+# Ether.rs
 https://crates.io/crates/ethers
 
-Complete Ethereum & Celo library and wallet implementation in Rust. This crate is created to work with Ethereum and Celo chains, with rich features listed below.
+Complete Ethereum library and wallet implementation in Rust. This crate is created to work with Ethereum.
+___
 
-___Features:___
-- Ethereum JSON-RPC Client
-- Interacting with and deploying smart contracts
-- Type-safe smart contract bindings code generation
-- Querying past events
-- Event monitoring as `Stream`s
-- ENS as a first-class citizen
-- Celo support
-- Polygon support
-- Avalanche support
-- Optimism support
-- Websockets / `eth_subscribe`
-- Hardware wallet support
-- Parity APIs (`tracing`, `parity_blockWithReceipts`)
-- Geth TxPool API
+## How to run example
+1. Create `.env` file from `.env.example` file.
+2. Run example with command `cargo run`
 
-Unlike `web3-rs`, `ethers` provides tools for compilation and abigen. The library looks more mature and more developer-friendly.
-
-___Library status:___
-They write on their GitHub: "We are deprecating ethers-rs for Alloy."
-
-___Docs:___
-`Ethers rs` has better documentation represented by the book at https://www.gakonst.com/ethers-rs/. However, it is incomplete and provides examples only for some parts.
-
-___Compile contract artifact using foundry___
+### Compile contract (optional)
+If you want compile contract at your own, you can use for example foundry
 ```shell
 forge build contract/Greeter.sol -o tools/ethers-rs-example/contract/out
 ```
 
-___Example output:___
+### Example output
 
 ```shell
 Address 0x4c003d0e477b7b6c950912ad1dd0db6e253522d1 balance: 942705029140000000000
