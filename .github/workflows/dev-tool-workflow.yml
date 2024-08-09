@@ -32,6 +32,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
+      - name: Install go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.3'
+
       - name: Install packages
         run: npm ci
 
