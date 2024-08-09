@@ -35,7 +35,7 @@ export class LogsBloomUtils {
     if (!address?.length) {
       return EthImpl.emptyBloom;
     }
-    if (!topics.length) {
+    if (!topics?.length) {
       return EthImpl.emptyBloom;
     }
 
