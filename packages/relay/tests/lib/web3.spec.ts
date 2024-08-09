@@ -31,10 +31,18 @@ const logger = pino();
 
 const Relay = new RelayImpl(logger, new Registry());
 
-describe('Web3', async function () {
+describe('Web3', function () {
   it('should execute "web3_clientVersion"', async function () {
-    const clientVersion = await Relay.web3().clientVersion();
+    process.env.npm_package_version = '1.0.0';
+    const clientVersion = Relay.web3().clientVersion();
 
     expect(clientVersion).to.be.equal('relay/' + process.env.npm_package_version);
+  });
+
+  it('should return "relay/" when npm_package_version is not set', () => {
+    delete process.env.npm_package_version;
+    const version = Relay.web3().clientVersion();
+
+    expect(version).to.equal('relay/');
   });
 });

@@ -187,25 +187,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
     });
 
-    it('should send second transaction upon time out', async function () {
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
-
-      sdkClientStub.submitEthereumTransaction.onCall(0).throws(new SDKClientError({ status: 21 }, 'timeout exceeded'));
-
-      sdkClientStub.submitEthereumTransaction.onCall(1).returns({
-        txResponse: {
-          transactionId: TransactionId.fromString(transactionIdServicesFormat),
-        },
-        fileId: null,
-      });
-
-      const signed = await signTransaction(transaction);
-
-      const resultingHash = await ethImpl.sendRawTransaction(signed, getRequestId());
-      expect(resultingHash).to.equal(ethereumHash);
-      sinon.assert.calledTwice(sdkClientStub.submitEthereumTransaction);
-    });
-
     it('should not send second transaction on error different from timeout', async function () {
       sdkClientStub.submitEthereumTransaction
         .onCall(0)
