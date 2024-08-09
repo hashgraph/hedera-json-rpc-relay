@@ -1537,23 +1537,9 @@ export class EthImpl implements Eth {
     let fileId: FileId | null = null;
     let txSubmitted = false;
     try {
-      const sendRawTransactionResult = await this.sendRawTransactionWithRetry(
-        async () =>
-          await this.hapiService
-            .getSDKClient()
-            .submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix),
-        {
-          canRetry: (e: unknown) => {
-            return e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded());
-          },
-          onError: (e: SDKClientError) => {
-            this.logger.warn(
-              `${requestIdPrefix} SDK Client has probably timed out, trying again with a new instance...`,
-            );
-            this.hapiService.decrementErrorCounter(e.statusCode);
-          },
-        },
-      );
+      const sendRawTransactionResult = await this.hapiService
+        .getSDKClient()
+        .submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix);
 
       txSubmitted = true;
       fileId = sendRawTransactionResult!.fileId;
@@ -1605,47 +1591,6 @@ export class EthImpl implements Eth {
         this.hapiService
           .getSDKClient()
           .deleteFile(fileId, requestIdPrefix, EthImpl.ethSendRawTransaction, fileId.toString());
-      }
-    }
-  }
-
-  /**
-   * Sends a raw transaction with retry logic.
-   *
-   * @template T The type of the result returned by the sendRawTransaction function.
-   * @param {Function} sendRawTransaction The function responsible for sending the raw transaction.
-   * @param {object} options The options for retrying the transaction.
-   * @param {number} [options.maxAttempts=2] The maximum number of attempts to send the transaction.
-   * @param {number} [options.backOff=500] The backoff period in milliseconds between retry attempts.
-   * @param {(error: unknown) => boolean} [options.canRetry=(error) => true] A function that determines whether a retry attempt can be made based on the error received.
-   * @param {(error: SDKClientError) => void} [options.onError=(error) => {}] A function to handle errors that occur during retry attempts.
-   * @returns {Promise<T | undefined>} A promise resolving to the result of the transaction, or undefined if all retry attempts fail.
-   */
-  private async sendRawTransactionWithRetry<T>(
-    sendRawTransaction: () => Promise<T>,
-    {
-      maxAttempts = 2,
-      backOff = 500,
-      canRetry = (e: unknown) => true,
-      onError = (e: SDKClientError) => {},
-    }: {
-      maxAttempts?: number;
-      backOff?: number;
-      canRetry?: (error: unknown) => boolean;
-      onError?: (error: SDKClientError) => void;
-    },
-  ): Promise<T | undefined> {
-    const delay = async (backOff: number) => new Promise<void>((resolve) => setTimeout(resolve, backOff));
-    for (let count = 0; count < maxAttempts; count++) {
-      try {
-        return await sendRawTransaction();
-      } catch (e: unknown) {
-        if (!canRetry(e) || count === maxAttempts - 1) {
-          throw e;
-        }
-        onError(e as SDKClientError);
-        // eslint-disable-next-line no-await-in-loop
-        await delay(backOff);
       }
     }
   }

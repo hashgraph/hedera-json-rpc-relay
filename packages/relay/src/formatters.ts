@@ -258,18 +258,6 @@ const toNullIfEmptyHex = (value: string): string | null => {
   return value === EMPTY_HEX ? null : value;
 };
 
-const stringToHex = (str) => {
-  let hex = '';
-  for (let i = 0; i < str.length; i++) {
-    const charCode = str.charCodeAt(i);
-    const hexValue = charCode.toString(16);
-
-    // Pad with zeros to ensure two-digit representation
-    hex += hexValue.padStart(2, '0');
-  }
-  return hex;
-};
-
 const toHexString = (byteArray) => {
   if (typeof byteArray !== 'object') {
     byteArray = Buffer.from(byteArray?.toString() ?? '', 'hex');
@@ -321,9 +309,8 @@ export {
   trimPrecedingZeros,
   stripLeadingZeroForSignatures,
   weibarHexToTinyBarInt,
-  stringToHex,
-  strip0x,
   toHexString,
+  strip0x,
   isValidEthereumAddress,
   isHex,
   ASCIIToHex,
