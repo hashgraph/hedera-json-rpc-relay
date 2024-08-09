@@ -543,6 +543,17 @@ describe('Filter API Test Suite', async function () {
       );
     });
 
+    it('should throw error for invalid filter type', async function () {
+      cacheMock.stub(cacheService, 'getAsync').returns({ type: 'UnsupportedType' });
+      await RelayAssertions.assertRejection(
+        predefined.UNSUPPORTED_METHOD,
+        filterService.getFilterChanges,
+        true,
+        filterService,
+        [nonExistingFilterId],
+      );
+    });
+
     it('should return the hashes of latest blocks', async function () {
       restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock, number: defaultBlock.number + 4 }] });
       restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, {
