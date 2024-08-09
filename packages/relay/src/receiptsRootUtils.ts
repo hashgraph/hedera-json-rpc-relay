@@ -26,6 +26,12 @@ import { prepend0x } from './formatters';
 import { Log } from './lib/model';
 import { ITransactionReceipt } from './lib/types/ITransactionReceipt';
 
+/**
+ * A {Log} serialized as a tuple containing:
+ * - {Uint8Array} address
+ * - {Uint8Array[]} topics
+ * - {Uint8Array} data
+ */
 type SerializedLog = [Uint8Array, Uint8Array[], Uint8Array];
 
 export class ReceiptsRootUtils {
@@ -75,10 +81,11 @@ export class ReceiptsRootUtils {
 
     const trie: Trie = new Trie();
     receipts.map(async (receipt) => {
+      // key of the element that is being added to the trie
       const path: Uint8Array =
         receipt.transactionIndex === EthImpl.zeroHex
           ? RLP.encode(Buffer.alloc(0))
-          : RLP.encode(bytesToInt(hexToBytes(receipt.transactionIndex ?? '')));
+          : RLP.encode(bytesToInt(hexToBytes(receipt.transactionIndex ?? EthImpl.zeroHex)));
       await trie.put(path, this.encodeReceipt(receipt, bytesToInt(hexToBytes(receipt.type ?? EthImpl.zeroHex))));
     });
 

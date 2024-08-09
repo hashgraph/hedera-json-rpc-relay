@@ -95,9 +95,6 @@ export default class Assertions {
     expect(relayResponse.nonce, "Assert block: 'nonce' should equal zero 8byte hex").to.be.equal(
       Assertions.zeroHex8Byte,
     );
-    expect(relayResponse.receiptsRoot, "Assert block: 'receiptsRoot' should equal zero 32bytes hex").to.be.equal(
-      Assertions.zeroHex32Byte,
-    );
     expect(relayResponse.sha3Uncles, "Assert block: 'sha3Uncles' should equal empty array hex").to.be.equal(
       Assertions.emptyArrayHex,
     );
