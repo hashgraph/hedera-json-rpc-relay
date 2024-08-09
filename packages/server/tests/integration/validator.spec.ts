@@ -64,7 +64,7 @@ describe('Validator', async () => {
   });
 
   describe('validates Array type correctly', async () => {
-    const validation = { 0: { type: ['array'] } };
+    const validation = { 0: { type: 'array' } };
     const error = Validator.TYPES['array'].error;
 
     it('throws an error if the param is not an array', async () => {
@@ -624,11 +624,19 @@ describe('Validator', async () => {
       );
     });
 
-    it('throws an error if validation type is wrong', async () => {
-      const validation = { 0: {} };
+    it('throws an error if validation type is missing', async () => {
+      const validation = { 0: { type: undefined as unknown as string } };
 
       expect(() => Validator.validateParams(['0x4422E9088662'], validation)).to.throw(
         "Error invoking RPC: Missing or unsupported param type 'undefined'",
+      );
+    });
+
+    it('throws an error if validation type is unknown', async () => {
+      const validation = { 0: { type: 'unknownType' } };
+
+      expect(() => Validator.validateParams(['0x4422E9088662'], validation)).to.throw(
+        "Error invoking RPC: Missing or unsupported param type 'unknownType'",
       );
     });
 
@@ -658,23 +666,27 @@ describe('Validator', async () => {
     });
     it('returns true when transaction data is null and is nullable is true', async () => {
       const result = Validator.validateObject(transactionFilterObject, {
-        ...OBJECTS_VALIDATIONS.transaction,
-        data: {
-          type: 'hex',
-          nullable: true,
+        properties: {
+          ...OBJECTS_VALIDATIONS.transaction.properties,
+          data: {
+            type: 'hex',
+            nullable: true,
+          },
         },
       });
 
       expect(result).to.be.true;
     });
 
-    it('throws an error if Transaction Object data param is null and isnullable is false', async () => {
+    it('throws an error if Transaction Object data param is null and isNullable is false', async () => {
       expect(() =>
         Validator.validateObject(transactionFilterObject, {
-          ...OBJECTS_VALIDATIONS.transaction,
-          data: {
-            type: 'hex',
-            nullable: false,
+          properties: {
+            ...OBJECTS_VALIDATIONS.transaction.properties,
+            data: {
+              type: 'hex',
+              nullable: false,
+            },
           },
         }),
       ).to.throw(expectInvalidObject('data', 'Expected 0x prefixed hexadecimal value', 'TransactionObject', 'null'));

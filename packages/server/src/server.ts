@@ -203,6 +203,9 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
   try {
     const methodValidations = Validator.METHODS[methodName];
     if (methodValidations) {
+      logger.debug(
+        `${requestIdPrefix} Validating method parameters for ${methodName}, params: ${JSON.stringify(methodParams)}`,
+      );
       Validator.validateParams(methodParams, methodValidations);
     }
 
@@ -233,6 +236,8 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
       }
     } else if (e instanceof JsonRpcError) {
       error = e;
+    } else {
+      logger.error(`${requestIdPrefix} ${e.message}`);
     }
 
     logger.error(`${requestIdPrefix} ${error.message}`);

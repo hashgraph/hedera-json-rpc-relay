@@ -1148,6 +1148,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const bytecode = EstimateGasContract.bytecode;
     const tracerConfigTrue = { onlyTopCall: true };
     const tracerConfigFalse = { onlyTopCall: false };
+    const tracerConfigInvalid = { onlyTopCall: 'invalid' };
     const callTracer: TracerType = TracerType.CallTracer;
 
     before(async () => {
@@ -1898,8 +1899,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     });
 
     describe('Negative scenarios', async function () {
-      const tracerConfigInvalid = '{ onlyTopCall: "invalid" }';
-
       it('should fail to debug a transaction with invalid onlyTopCall value type', async function () {
         const transaction = {
           ...transactionTypeLegacy,
