@@ -258,6 +258,15 @@ const toNullIfEmptyHex = (value: string): string | null => {
   return value === EMPTY_HEX ? null : value;
 };
 
+const toHexString = (byteArray) => {
+  if (typeof byteArray !== 'object') {
+    byteArray = Buffer.from(byteArray?.toString() ?? '', 'hex');
+  }
+
+  const encoded = Buffer.from(byteArray, 'utf8').toString('hex');
+  return encoded;
+};
+
 const isValidEthereumAddress = (address: string | null | undefined): boolean => {
   if (!address) {
     return false;
@@ -300,6 +309,7 @@ export {
   trimPrecedingZeros,
   stripLeadingZeroForSignatures,
   weibarHexToTinyBarInt,
+  toHexString,
   strip0x,
   isValidEthereumAddress,
   isHex,
