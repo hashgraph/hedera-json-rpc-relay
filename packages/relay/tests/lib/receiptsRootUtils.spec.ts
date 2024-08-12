@@ -20,14 +20,13 @@
 
 import { expect } from 'chai';
 import { ReceiptsRootUtils } from '../../src/receiptsRootUtils';
-import { EthImpl } from '../../src/lib/eth';
 
 describe('ReceiptsRootUtils', () => {
   describe('getRootHash', () => {
     const TEST_SUITES = {
       'no receipts': {
         receipts: [],
-        expectedReceiptsRootHash: EthImpl.zeroHex32Byte,
+        expectedReceiptsRootHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
       },
       'one transaction in block without emitted events': {
         receipts: [
@@ -45,7 +44,6 @@ describe('ReceiptsRootUtils', () => {
             transactionHash: '0x119278ad28bb26737e42cd1f9f6bd5fc7ee5e55786ab463421ca45d71adeeab0',
             transactionIndex: '0x2',
             effectiveGasPrice: '0x15896dfd000',
-            root: undefined,
             status: '0x1',
             type: '0x2',
           },
@@ -74,7 +72,6 @@ describe('ReceiptsRootUtils', () => {
                   '0xc797025feeeaf2cd924c99e9205acb8ec04d5cad21c41ce637a38fb6dee6016a',
                   '0x000000000000000000000000000000000000000000000000000000000000025b',
                 ],
-
                 transactionHash: '0x826a2d230af4e2497ded7be5584c63922cd487d36cf2e22d3be666965c7e3e82',
                 transactionIndex: '0x0',
               },
@@ -114,7 +111,6 @@ describe('ReceiptsRootUtils', () => {
             transactionHash: '0x826a2d230af4e2497ded7be5584c63922cd487d36cf2e22d3be666965c7e3e82',
             transactionIndex: '0x0',
             effectiveGasPrice: '0x15896dfd000',
-            root: undefined,
             status: '0x1',
             type: '0x0',
           },
@@ -152,7 +148,6 @@ describe('ReceiptsRootUtils', () => {
             transactionHash: '0xe55b38639d21a0324dc25d787e9a89df2eee3f1ceec4e00b0ce8722f81d5ffe8',
             transactionIndex: '0x1',
             effectiveGasPrice: '0x15896dfd000',
-            root: undefined,
             status: '0x1',
             type: '0x2',
           },
@@ -200,7 +195,6 @@ describe('ReceiptsRootUtils', () => {
             transactionHash: '0x2b468ad98aa8011641e6edba542e03e5c1d7b304016450425865b4bdbfeccdca',
             transactionIndex: '0x2',
             effectiveGasPrice: '0x15896dfd000',
-            root: undefined,
             status: '0x1',
             type: '0x2',
           },
