@@ -22,7 +22,7 @@ import { Eth } from '../index';
 import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Block, Log, Transaction, Transaction1559 } from './model';
-import { IContractCallRequest, IContractCallResponse, MirrorNodeClient } from './clients';
+import { MirrorNodeClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
@@ -56,6 +56,8 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { DebugService } from './services/debugService';
 import { IFeeHistory } from './types/IFeeHistory';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
+import TransactionService from './services/transactionService/transactionService';
+import { IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -250,6 +252,14 @@ export class EthImpl implements Eth {
   private readonly debugServiceImpl: DebugService;
 
   /**
+   * Service for handling transactions.
+   * @type {TransactionService}
+   * @private
+   * @readonly
+   */
+  private readonly transactionService: TransactionService;
+
+  /**
    * Create a new Eth implementation.
    * @param hapiService
    * @param mirrorNodeClient
@@ -278,6 +288,8 @@ export class EthImpl implements Eth {
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
     this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
+
+    this.transactionService = new TransactionService(logger, this.hapiService.getSDKClient(), mirrorNodeClient);
   }
 
   private shouldUseCacheForBalance(tag: string | null): boolean {
@@ -1530,7 +1542,12 @@ export class EthImpl implements Eth {
     try {
       const sendRawTransactionResult = await this.hapiService
         .getSDKClient()
-        .submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix);
+        .submitEthereumTransaction(
+          transactionBuffer,
+          EthImpl.ethSendRawTransaction,
+          requestIdPrefix,
+          this.transactionService,
+        );
 
       txSubmitted = true;
       fileId = sendRawTransactionResult!.fileId;
@@ -1581,7 +1598,13 @@ export class EthImpl implements Eth {
       if (fileId) {
         this.hapiService
           .getSDKClient()
-          .deleteFile(fileId, requestIdPrefix, EthImpl.ethSendRawTransaction, fileId.toString());
+          .deleteFile(
+            fileId,
+            requestIdPrefix,
+            EthImpl.ethSendRawTransaction,
+            fileId.toString(),
+            this.transactionService,
+          );
       }
     }
   }
