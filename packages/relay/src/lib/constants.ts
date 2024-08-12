@@ -182,4 +182,12 @@ export default {
     '0xf8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222',
   DETERMINISTIC_DEPLOYMENT_SIGNER: '0x3fab184622dc19b6109349b94811493bf2a45362',
   DETERMINISTIC_PROXY_CONTRACT: '0x4e59b44847b379578588920ca78fbf26c0b4956c',
+
+  // Only active when process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = true
+  // When eth_call is called with one of the data values it should be forced to go through Consensus node regardless of ETH_CALL_DEFAULT_TO_CONSENSUS_NODE
+  ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS: [
+    // isAssociated()
+    // calls to this method should be handled by Consensus until the required EVM changes are applied to the Mirror node
+    '0x4d8fdd6d',
+  ],
 };

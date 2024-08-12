@@ -44,6 +44,7 @@ import {
   toHash32,
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
+  getFunctionSelector,
 } from '../formatters';
 import crypto from 'crypto';
 import HAPIService from './services/hapiService/hapiService';
@@ -1600,12 +1601,12 @@ export class EthImpl implements Eth {
   ): Promise<string | JsonRpcError> {
     const callData = call.data ? call.data : call.input;
     // log request
-    this.logger.trace(
+    this.logger.info(
       `${requestIdPrefix} call({to=${call.to}, from=${call.from}, data=${callData}, gas=${call.gas}, gasPrice=${call.gasPrice} blockParam=${blockParam}, estimate=${call.estimate})`,
     );
     // log call data size
     const callDataSize = callData ? callData.length : 0;
-    this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}`);
+    this.logger.info(`${requestIdPrefix} call data size: ${callDataSize}`);
     // metrics for selector
     if (callDataSize >= constants.FUNCTION_SELECTOR_CHAR_LENGTH) {
       this.ethExecutionsCounter
@@ -1621,18 +1622,37 @@ export class EthImpl implements Eth {
 
     this.contractCallFormat(call);
 
+    const selector = getFunctionSelector(call.data!);
+
+    // ETH_CALL_FORCE_CONSENSUS_BY_SELECTOR = true
+    const shouldForceToConsensus =
+      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR == 'true' &&
+      constants.ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS.indexOf(selector) !== -1;
+
+    console.log(
+      `SELECTOR: ${selector}, shouldForceToConsensus: ${shouldForceToConsensus}, ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR: ${process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR}`,
+    );
+    // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
+
+    const shouldDefaultToConsensus = !(
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === undefined ||
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false'
+    );
+
+    console.log(`shouldDefaultToConsensus: ${shouldDefaultToConsensus}`);
+    console.log(
+      `shouldForceToConsensus || shouldDefaultToConsensus: ${shouldForceToConsensus || shouldDefaultToConsensus}`,
+    );
+
     let result: string | JsonRpcError = '';
     try {
-      // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-      if (
-        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === undefined ||
-        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false'
-      ) {
+      if (shouldForceToConsensus || shouldDefaultToConsensus) {
+        console.log('CALLING CONESNSUS');
+        result = await this.callConsensusNode(call, gas, requestIdPrefix);
+      } else {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
         result = await this.callMirrorNode(call, gas, call.value, blockNumberOrTag, requestIdPrefix);
-      } else {
-        result = await this.callConsensusNode(call, gas, requestIdPrefix);
       }
 
       this.logger.debug(`${requestIdPrefix} eth_call response: ${JSON.stringify(result)}`);

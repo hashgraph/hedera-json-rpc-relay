@@ -280,6 +280,11 @@ const getTransferAmountSumForAccount = (transactionRecord, accountId: string): n
     }, 0);
 };
 
+const getFunctionSelector = (data: string): string => {
+  if (!isHex(data)) throw new Error(`Unable to get function selector for data: ${data}`);
+  return data.substring(0, 10);
+};
+
 export {
   hashNumber,
   formatRequestIdMessage,
@@ -305,4 +310,5 @@ export {
   isHex,
   ASCIIToHex,
   getTransferAmountSumForAccount,
+  getFunctionSelector,
 };
