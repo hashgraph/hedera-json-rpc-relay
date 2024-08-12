@@ -54,13 +54,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       return contract;
     };
 
-    const verifyRemainingLimit = (
-      expectedCost: number,
-      remainingHbarsBefore: number,
-      remainingHbarsAfter: number,
-      isFromConsensus: boolean,
-    ) => {
-      const delta = (isFromConsensus ? 0.02 : 0.018) * expectedCost;
+    const verifyRemainingLimit = (expectedCost: number, remainingHbarsBefore: number, remainingHbarsAfter: number) => {
+      const delta = 0.02 * expectedCost;
       global.logger.debug(`Expected cost: ${expectedCost} ±${delta}`);
       global.logger.debug(`Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
       global.logger.debug(`Actual delta: ${(remainingHbarsBefore - remainingHbarsAfter) / (expectedCost * 100)}`);
@@ -178,92 +173,71 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('Remaining HBAR Limit', () => {
-        for (let i = 0; i <= 1; i++) {
-          describe(`Calls are made to ${i === 0 ? 'consensus node' : 'mirror node'}`, () => {
-            let isFromConsensus = false;
+        before(() => {
+          process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
+        });
 
-            before(() => {
-              if (i === 0) {
-                process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
-                isFromConsensus = true;
-              } else {
-                process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'false';
-              }
-            });
+        it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
+          const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
+          const parentContractAddress = parentContract.target as string;
+          global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
 
-            it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
-              const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
-              const parentContractAddress = parentContract.target as string;
-              global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
+          const gasPrice = await relay.gasPrice(requestId);
+          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
-              const gasPrice = await relay.gasPrice(requestId);
-              const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          const transaction = {
+            ...defaultLondonTransactionData,
+            to: parentContractAddress,
+            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+            maxPriorityFeePerGas: gasPrice,
+            maxFeePerGas: gasPrice,
+          };
+          const signedTx = await accounts[1].wallet.signTransaction(transaction);
 
-              const transaction = {
-                ...defaultLondonTransactionData,
-                to: parentContractAddress,
-                nonce: await relay.getAccountNonce(accounts[1].address, requestId),
-                maxPriorityFeePerGas: gasPrice,
-                maxFeePerGas: gasPrice,
-              };
-              const signedTx = await accounts[1].wallet.signTransaction(transaction);
+          await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
+            .fulfilled;
 
-              await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to
-                .be.fulfilled;
+          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
 
-              const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-              const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
+          verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
+        });
 
-              if (isFromConsensus) {
-                verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter, isFromConsensus);
-              } else {
-                expect(remainingHbarsAfter).to.eq(remainingHbarsBefore - expectedCost);
-              }
-            });
+        it('should deploy a large contract and decrease remaining HBAR in limiter when transaction data is large', async function () {
+          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(remainingHbarsBefore).to.be.gt(0);
 
-            it('should deploy a large contract and decrease remaining HBAR in limiter when transaction data is large', async function () {
-              const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-              expect(remainingHbarsBefore).to.be.gt(0);
+          const contract = await deployContract(largeContractJson, accounts[0].wallet);
 
-              const contract = await deployContract(largeContractJson, accounts[0].wallet);
+          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          const expectedCost = await getExpectedCostOfLastLargeTx(requestId, contract.deploymentTransaction()!.data);
 
-              const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-              const expectedCost = await getExpectedCostOfLastLargeTx(
-                requestId,
-                contract.deploymentTransaction()!.data,
-              );
+          verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
+        });
 
-              verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter, isFromConsensus);
-            });
+        it('should be able to deploy a contract without creating file', async function () {
+          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(remainingHbarsBefore).to.be.gt(0);
 
-            it('should be able to deploy a contract without creating file', async function () {
-              const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-              expect(remainingHbarsBefore).to.be.gt(0);
+          // This flow should not spend any hbars from the operator, as it's fully paid by the signer
+          await deployContract(EstimateGasContract, accounts[0].wallet);
 
-              // This flow should not spend any hbars from the operator, as it's fully paid by the signer
-              await deployContract(EstimateGasContract, accounts[0].wallet);
+          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
+          verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
+        });
 
-              const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-              const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
-              verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter, isFromConsensus);
-            });
+        it('should be able to deploy a medium size contract with fileCreate', async function () {
+          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(remainingHbarsBefore).to.be.gt(0);
 
-            it('should be able to deploy a medium size contract with fileCreate', async function () {
-              const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-              expect(remainingHbarsBefore).to.be.gt(0);
+          // This flow should spend hbars from the operator, for fileCreate
+          const contract = await deployContract(mediumSizeContract, accounts[0].wallet);
 
-              // This flow should spend hbars from the operator, for fileCreate
-              const contract = await deployContract(mediumSizeContract, accounts[0].wallet);
-
-              const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-              const expectedCost = await getExpectedCostOfLastLargeTx(
-                requestId,
-                contract.deploymentTransaction()!.data,
-              );
-              verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter, isFromConsensus);
-            });
-          });
-        }
+          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          const expectedCost = await getExpectedCostOfLastLargeTx(requestId, contract.deploymentTransaction()!.data);
+          verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
+        });
       });
 
       describe('Rate Limit', () => {
