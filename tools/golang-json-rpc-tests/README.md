@@ -34,7 +34,7 @@ go get github.com/ethereum/go-ethereum/ethclient \
 
 5. Copy `.env.example` to `.env`
 
-6. Run the test script from the root directory of the project. The default network is set to "testnet".
+6. Run the test script from the root directory of the project. The default network is set through the `RELAY_ENDPOINT` environment variable.
 
    ```shell
    go run .
@@ -46,12 +46,14 @@ go get github.com/ethereum/go-ethereum/ethclient \
    go run . --wss
    ```
 
-   To run tests on mainnet or previewnet run one of the following commands:
+   To run tests on mainnet, previewnet or testnet run one of the following commands:
    ```shell
    go run . --mainnet
    go run . --previewnet
+   go run . --testnet
    go run . --mainnet --wss
    go run . --previewnet --wss
+   go run . --testnet --wss
    ```
 
 # Deployment of SampleContract During Tests
