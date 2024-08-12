@@ -611,5 +611,34 @@ describe('Formatters', () => {
       const result = strip0x(input);
       expect(result).to.equal('1230xabc');
     });
+
+    describe('decodeErrorMessage', () => {
+      it('should return an empty string if the message is undefined', () => {
+        expect(decodeErrorMessage(undefined)).to.equal('');
+      });
+
+      it('should return an empty string if the message is an empty string', () => {
+        expect(decodeErrorMessage('')).to.equal('');
+      });
+
+      it('should return the message as is if it does not start with 0x', () => {
+        const message = 'Some non-hex error message';
+        expect(decodeErrorMessage(message)).to.equal(message);
+      });
+
+      it('should decode a valid error message', () => {
+        const hexErrorMessage =
+          '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';
+        const decodedMessage = 'Set to revert';
+
+        expect(decodeErrorMessage(hexErrorMessage)).to.equal(decodedMessage);
+      });
+
+      it('should return an empty string for a valid hex message with no content', () => {
+        const hexErrorMessage =
+          '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000';
+        expect(decodeErrorMessage(hexErrorMessage)).to.equal('');
+      });
+    });
   });
 });
