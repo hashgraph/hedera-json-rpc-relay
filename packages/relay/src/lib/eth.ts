@@ -27,6 +27,7 @@ import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import { Utils } from './../utils';
+import { LogsBloomUtils } from './../logsBloomUtils';
 import constants from './constants';
 import { Precheck } from './precheck';
 import {
@@ -2008,7 +2009,7 @@ export class EthImpl implements Eth {
         from: EthImpl.zeroAddressHex,
         gasUsed: EthImpl.zeroHex,
         logs: [syntheticLogs[0]],
-        logsBloom: EthImpl.emptyBloom,
+        logsBloom: LogsBloomUtils.buildLogsBloom(syntheticLogs[0].address, syntheticLogs[0].topics),
         root: EthImpl.zeroHex32Byte,
         status: EthImpl.oneHex,
         to: syntheticLogs[0].address,
