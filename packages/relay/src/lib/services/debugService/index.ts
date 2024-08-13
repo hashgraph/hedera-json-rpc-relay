@@ -23,13 +23,13 @@ import type { MirrorNodeClient } from '../../clients';
 import type { IDebugService } from './IDebugService';
 import type { CommonService } from '../ethService';
 import { decodeErrorMessage, mapKeysAndValues, numberTo0x, strip0x } from '../../../formatters';
-import constants from '../../constants';
-import { TracerType, CallType } from '../../constants';
+import constants, { CallType, TracerType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
 import { EthImpl } from '../../eth';
 import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
 import { IOpcode } from '../../clients/models/IOpcode';
 import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from '../../types/ITracerConfig';
+
 const SUCCESS = 'SUCCESS';
 
 /**
@@ -190,7 +190,7 @@ export class DebugService implements IDebugService {
           depth: opcode.depth,
           stack: options.stack ? opcode.stack?.map(strip0x) || [] : null,
           memory: options.memory ? opcode.memory?.map(strip0x) || [] : null,
-          storage: options.storage ? mapKeysAndValues(opcode.storage ?? {}, strip0x) : null,
+          storage: options.storage ? mapKeysAndValues(opcode.storage ?? {}, { key: strip0x, value: strip0x }) : null,
           reason: opcode.reason ? strip0x(opcode.reason) : null,
         };
       }),
