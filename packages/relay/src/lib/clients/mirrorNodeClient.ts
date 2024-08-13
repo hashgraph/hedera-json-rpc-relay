@@ -18,69 +18,30 @@
  *
  */
 
-import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
-import { Logger } from 'pino';
-import constants from './../constants';
-import { Histogram, Registry } from 'prom-client';
-import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
-import axiosRetry from 'axios-retry';
-import { predefined } from '../errors/JsonRpcError';
-import { SDKClientError } from '../errors/SDKClientError';
-import { install as betterLookupInstall } from 'better-lookup';
-import { CacheService } from '../services/cacheService/cacheService';
-
 import http from 'http';
 import https from 'https';
+import { Logger } from 'pino';
 import { ethers } from 'ethers';
+import axiosRetry from 'axios-retry';
+import constants from './../constants';
+import { Histogram, Registry } from 'prom-client';
+import { predefined } from '../errors/JsonRpcError';
+import { SDKClientError } from '../errors/SDKClientError';
 import { IOpcodesResponse } from './models/IOpcodesResponse';
+import { install as betterLookupInstall } from 'better-lookup';
+import { CacheService } from '../services/cacheService/cacheService';
+import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
+import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
+import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import {
+  IContractCallRequest,
+  IContractCallResponse,
+  IContractLogsResultsParams,
+  IContractResultsParams,
+  ILimitOrderParams,
+} from '../types/IMirrorNode';
 
 type REQUEST_METHODS = 'GET' | 'POST';
-
-export interface ILimitOrderParams {
-  limit?: number;
-  order?: string;
-}
-
-export interface IContractResultsParams {
-  blockHash?: string;
-  blockNumber?: number;
-  from?: string;
-  internal?: boolean;
-  timestamp?: string | string[];
-  transactionIndex?: number;
-}
-
-export interface IContractLogsResultsParams {
-  'transaction.hash': string;
-  index?: number;
-  timestamp?: string | string[];
-  topic0?: string | string[];
-  topic1?: string | string[];
-  topic2?: string | string[];
-  topic3?: string | string[];
-}
-
-export interface IContractCallRequest {
-  block?: string;
-  estimate?: boolean;
-  from?: string;
-  to?: string | null;
-  gas?: number | string;
-  gasPrice?: number | string;
-  value?: number | string | null;
-  data?: string | null;
-  input?: string;
-}
-
-export interface IContractCallResponse {
-  result?: string;
-  errorMessage?: string;
-  statusCode?: number;
-  _status?: {
-    messages: Array<{ message: string; detail: string; data: string }>;
-  };
-}
 
 export class MirrorNodeClient {
   private static GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
@@ -1281,7 +1242,22 @@ export class MirrorNodeClient {
   public async repeatedRequest(methodName: string, args: any[], repeatCount: number, requestId?: string) {
     let result;
     for (let i = 0; i < repeatCount; i++) {
-      result = await this[methodName](...args, requestId);
+      try {
+        result = await this[methodName](...args, requestId);
+      } catch (e: any) {
+        // note: for some methods, it will throw 404 not found error as the record is not yet recorded in mirror-node
+        //       if error is 404, `result` would be assigned as null for it to not break out the loop.
+        //       Any other error will be notified in logs
+        if (e.statusCode === 404) {
+          result = null;
+        } else {
+          this.logger.warn(
+            e,
+            `${requestId} Error raised during polling mirror node for updated records: method=${methodName}, args=${args}`,
+          );
+        }
+      }
+
       if (result) {
         break;
       }
