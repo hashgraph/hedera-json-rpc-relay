@@ -83,7 +83,7 @@ export class ReceiptsRootUtils {
       const logsPerTx = logs.filter((el) => el.transactionHash == txHash);
       const crPerTx = contractResults.filter((el) => el.hash == txHash);
       receipts.push({
-        transactionIndex: logsPerTx[0].transactionIndex,
+        transactionIndex: crPerTx.length ? intToHex(crPerTx[0].transaction_index) : logsPerTx[0].transactionIndex,
         type: crPerTx.length ? intToHex(crPerTx[0].type) : null,
         root: crPerTx.length ? crPerTx[0].root : EthImpl.zeroHex32Byte,
         status: crPerTx.length ? crPerTx[0].status : EthImpl.oneHex,
