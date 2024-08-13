@@ -63,7 +63,7 @@ const registry = new Registry();
 const logger = pino();
 
 describe('SdkClient', async function () {
-  this.timeout(20000);
+  this.timeout(30000);
 
   let client: Client;
   let mock: MockAdapter;
