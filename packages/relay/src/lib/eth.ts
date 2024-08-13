@@ -254,7 +254,7 @@ export class EthImpl implements Eth {
 
   /**
    * A 32 byte hex hash of an empty trie root
-   * @private
+   * @public
    */
   public readonly emptyTrieRoot: string;
 
@@ -295,7 +295,6 @@ export class EthImpl implements Eth {
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
     this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
-
     this.transactionService = new TransactionService(logger, this.hapiService.getSDKClient(), mirrorNodeClient);
 
     const emptyTrie = new Trie();

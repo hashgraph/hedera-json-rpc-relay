@@ -260,12 +260,8 @@ const toNullIfEmptyHex = (value: string): string | null => {
   return value === EMPTY_HEX ? null : value;
 };
 
-const toHexString = (byteArray) => {
-  if (typeof byteArray !== 'object') {
-    byteArray = Buffer.from(byteArray?.toString() ?? '', 'hex');
-  }
-
-  const encoded = Buffer.from(byteArray, 'utf8').toString('hex');
+const toHexString = (byteArray: Uint8Array): string => {
+  const encoded = Buffer.from(byteArray).toString('hex');
   return encoded;
 };
 
