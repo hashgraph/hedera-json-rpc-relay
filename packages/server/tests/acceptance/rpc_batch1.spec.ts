@@ -25,6 +25,7 @@ import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
 import { AccountBalanceQuery, FileInfo, FileInfoQuery, Hbar, TransferTransaction } from '@hashgraph/sdk';
 import mediumSizeContract from '../../tests/contracts/hbarLimiterContracts/mediumSizeContract.json';
+import largeSizeContract from '../../tests/contracts/hbarLimiterContracts/largeSizeContract.json';
 
 // Assertions from local resources
 import Assertions from '../helpers/assertions';
@@ -1509,7 +1510,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
     });
     describe('Transaction Costs', async function () {
-      it.only('should verify the cost of a medium contract deployment to the user and relay operator', async function () {
+      it('should verify the cost of a medium contract deployment to the user and relay operator', async function () {
         // relay operator account balance before the deployment transaction
 
         // Create the account balance query
@@ -1552,6 +1553,51 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           } tinybars`,
         );
         logger.info(`Cost of medium size contract deployment to the Relay Operator: ${costToOperatorInHbar} hbar`);
+      });
+
+      it('should verify the cost of a large contract deployment to the user and relay operator', async function () {
+        // relay operator account balance before the deployment transaction
+
+        // Create the account balance query
+        const query = new AccountBalanceQuery().setAccountId(process.env.OPERATOR_ID_MAIN!);
+
+        // Execute the query and get the balance
+        let accountBalance = await query.execute(servicesNode.client);
+
+        // Get the balance in hbar
+        const balanceBefore = accountBalance.hbars;
+
+        logger.info(`Account ${process.env.OPERATOR_ID_MAIN} balance: ${balanceBefore.toString()}`);
+
+        const factory = new ethers.ContractFactory(
+          largeSizeContract.abi,
+          largeSizeContract.bytecode,
+          accounts[0].wallet,
+        );
+        const contract = await factory.deploy();
+        const deployment = await contract.waitForDeployment();
+        const transactionDetails = await mirrorNode.get(`/contracts/${deployment.target}/results`, requestId);
+        logger.info(JSON.stringify(transactionDetails));
+        const gasUsed = transactionDetails.results[0].gas_used;
+        expect(gasUsed).to.be.eq(322326);
+        logger.info(`Large size contact deployment cost: ${gasUsed} tinybars to sender`);
+        logger.info(`Large size contact deployment cost: ${Hbar.fromTinybars(gasUsed)} HBars to sender`);
+
+        // Execute the query and get the balance
+        accountBalance = await query.execute(servicesNode.client);
+
+        // Get the balance in hbar
+        const balanceAfter = accountBalance.hbars;
+
+        logger.info(`Account ${process.env.OPERATOR_ID_MAIN} balance: ${balanceAfter.toString()}`);
+        const costToOperator = Number(balanceBefore._valueInTinybar) - Number(balanceAfter._valueInTinybar);
+        const costToOperatorInHbar = Hbar.fromTinybars(costToOperator).toString();
+        logger.info(
+          `Cost of large size contract deployment to the Relay Operator: ${
+            Number(balanceBefore._valueInTinybar) - Number(balanceAfter._valueInTinybar)
+          } tinybars`,
+        );
+        logger.info(`Cost of large size contract deployment to the Relay Operator: ${costToOperatorInHbar} hbar`);
       });
     });
   });
