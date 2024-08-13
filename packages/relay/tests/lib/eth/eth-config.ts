@@ -788,4 +788,5 @@ export const DETAILD_CONTRACT_RESULT_NOT_FOUND = {
 export const EMPTY_RES = {
   results: [],
 };
+export const DEFAULT_BLOCK_RECEIPTS_ROOT_HASH = '0xc9854d764adf76676b7a2b04f36a865ba50ec6cad6807a31188d65693cdc187d';
 //
