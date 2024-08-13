@@ -18,22 +18,20 @@
  *
  */
 
-import { validateParam } from './utils';
+export type IObjectSchema = {
+  failOnEmpty?: boolean;
+  properties: {
+    [key: string]: IObjectParamSchema;
+  };
+};
 
-import { IMethodValidation } from '../types/validator/methods';
+export type IObjectParamSchema = {
+  type: string;
+  nullable: boolean;
+  required?: boolean;
+};
 
-export function validateParams(params: any[], indexes: IMethodValidation) {
-  for (const index of Object.keys(indexes)) {
-    const validation = indexes[Number(index)];
-    const param = params[Number(index)];
-
-    validateParam(index, param, validation);
-  }
+export interface IObjectValidation {
+  validate(): boolean;
+  name(): string;
 }
-
-export * from './constants';
-export * from './types';
-export * from './objectTypes';
-export * from './utils';
-export * from './methods';
-export * as Validator from '.';

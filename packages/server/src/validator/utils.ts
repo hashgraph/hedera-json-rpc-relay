@@ -18,10 +18,13 @@
  *
  */
 
-import { IMethodParamValidation, IObjectSchema, IObjectValidation, ITypeValidation, Validator } from '.';
+import { Validator } from '.';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
+import { IObjectSchema, IObjectValidation } from '../types/validator/objectTypes';
+import { IMethodParamSchema } from '../types/validator/methods';
+import { ITypeValidation } from '../types/validator/types';
 
-export function validateParam(index: number | string, param: any, validation: IMethodParamValidation): void {
+export function validateParam(index: number | string, param: any, validation: IMethodParamSchema): void {
   const paramType = getParamType(validation.type);
 
   if (paramType === undefined) {

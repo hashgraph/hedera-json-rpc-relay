@@ -20,22 +20,7 @@
 
 import { Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
-
-export type IObjectSchema = {
-  failOnEmpty?: boolean;
-  properties: {
-    [key: string]: {
-      type: string;
-      nullable: boolean;
-      required?: boolean;
-    };
-  };
-};
-
-export interface IObjectValidation {
-  validate(): boolean;
-  name(): string;
-}
+import { IObjectSchema, IObjectValidation } from '../types/validator/objectTypes';
 
 export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
   blockHashObject: {

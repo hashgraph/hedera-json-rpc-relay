@@ -20,11 +20,7 @@
 
 import * as Constants from './constants';
 import { Validator } from '.';
-
-export type ITypeValidation = {
-  test: (param: any) => boolean;
-  error: string;
-};
+import { ITypeValidation } from '../types/validator/types';
 
 export const TYPES: { [key: string]: ITypeValidation } = {
   address: {

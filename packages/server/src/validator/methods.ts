@@ -18,14 +18,7 @@
  *
  */
 
-export type IMethodValidation = {
-  [index: number]: IMethodParamValidation;
-};
-
-export type IMethodParamValidation = {
-  type: string;
-  required?: boolean;
-};
+import { IMethodValidation } from '../types/validator/methods';
 
 export const METHODS: { [key: string]: IMethodValidation } = {
   eth_estimateGas: {
