@@ -19,47 +19,46 @@
  */
 
 import {
-  AccountBalance,
-  AccountBalanceQuery,
-  AccountId,
-  AccountInfo,
-  AccountInfoQuery,
-  Client,
-  ContractByteCodeQuery,
-  ContractCallQuery,
-  ContractFunctionResult,
-  ContractId,
-  EthereumTransaction,
-  EthereumTransactionData,
-  ExchangeRates,
-  FeeComponents,
-  FeeSchedules,
-  FileAppendTransaction,
-  FileContentsQuery,
-  FileCreateTransaction,
-  FileDeleteTransaction,
-  FileId,
-  FileInfoQuery,
   Hbar,
-  HbarUnit,
-  PrecheckStatusError,
   Query,
   Status,
+  Client,
+  FileId,
+  HbarUnit,
+  AccountId,
+  ContractId,
   Transaction,
+  AccountInfo,
+  FeeSchedules,
   TransactionId,
-  TransactionRecord,
-  TransactionRecordQuery,
+  ExchangeRates,
+  FileInfoQuery,
+  FeeComponents,
+  AccountBalance,
+  AccountInfoQuery,
+  FileContentsQuery,
+  ContractCallQuery,
   TransactionResponse,
+  PrecheckStatusError,
+  AccountBalanceQuery,
+  EthereumTransaction,
+  ContractByteCodeQuery,
+  FileAppendTransaction,
+  FileCreateTransaction,
+  FileDeleteTransaction,
+  ContractFunctionResult,
+  EthereumTransactionData,
 } from '@hashgraph/sdk';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { Logger } from 'pino';
-import { formatRequestIdMessage, getTransferAmountSumForAccount } from '../../formatters';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
+import { Histogram } from 'prom-client';
+import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { formatRequestIdMessage } from '../../formatters';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
-import { Histogram } from 'prom-client';
+import TransactionService from '../services/transactionService/transactionService';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -118,7 +117,14 @@ export class SDKClient {
    */
   private readonly fileAppendChunkSize: number;
 
-  // populate with consensus node requests via SDK
+  /**
+   * Constructs an instance of the class with specified dependencies and configuration.
+   * @param {Client} clientMain - The main client used for interacting with the network.
+   * @param {Logger} logger - The logger used for logging information and errors.
+   * @param {HbarLimit} hbarLimiter - The service used for limiting HBAR usage.
+   * @param {any} metrics - The metrics object for tracking cost and gas usage.
+   * @param {CacheService} cacheService - The cache service used for caching data.
+   */
   constructor(clientMain: Client, logger: Logger, hbarLimiter: HbarLimit, metrics: any, cacheService: CacheService) {
     this.clientMain = clientMain;
 
@@ -137,6 +143,22 @@ export class SDKClient {
     this.fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
   }
 
+  /**
+   * Return current main client instance
+   * @returns Main Client
+   */
+  public getMainClientInstance() {
+    return this.clientMain;
+  }
+
+  /**
+   * Retrieves the balance of an account.
+   * @param {string} account - The account ID to query.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<AccountBalance>} The balance of the account.
+   * @throws {SDKClientError} Throws an SDK client error if the balance retrieval fails.
+   */
   async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
     return this.executeQuery(
       new AccountBalanceQuery().setAccountId(AccountId.fromString(account)),
@@ -147,16 +169,55 @@ export class SDKClient {
     );
   }
 
+  /**
+   * Retrieves the balance of an account in tinybars after a specified delay.
+   *
+   * @param {string} accountId - The ID of the account to retrieve the balance for.
+   * @param {string} callerName - The name of the caller requesting the balance.
+   * @param {string} requestId - The unique request ID for tracking the request.
+   * @param {number} ms - The delay in milliseconds before retrieving the balance.
+   * @returns {Promise<number>} - A promise that resolves to the account balance in tinybars.
+   */
+  async getBalanceInTinyBars(accountId: string, callerName: string, requestId: string, ms: number): Promise<number> {
+    await new Promise((r) => setTimeout(r, ms));
+    const accountBalance = await this.getAccountBalance(accountId, callerName, requestId);
+    return accountBalance.hbars.toTinybars().toNumber();
+  }
+
+  /**
+   * Retrieves the balance of an account in tinybars.
+   * @param {string} account - The account ID to query.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<BigNumber>} The balance of the account in tinybars.
+   * @throws {SDKClientError} Throws an SDK client error if the balance retrieval fails.
+   */
   async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
     const balance = await this.getAccountBalance(account, callerName, requestId);
     return balance.hbars.to(HbarUnit.Tinybar);
   }
 
+  /**
+   * Retrieves the balance of an account in weiBars.
+   * @param {string} account - The account ID to query.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<BigNumber>} The balance of the account in weiBars.
+   * @throws {SDKClientError} Throws an SDK client error if the balance retrieval fails.
+   */
   async getAccountBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
     const balance = await this.getAccountBalance(account, callerName, requestId);
     return SDKClient.HbarToWeiBar(balance);
   }
 
+  /**
+   * Retrieves information about an account.
+   * @param {string} address - The account ID to query.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<AccountInfo>} The information about the account.
+   * @throws {SDKClientError} Throws an SDK client error if the account info retrieval fails.
+   */
   async getAccountInfo(address: string, callerName: string, requestId?: string): Promise<AccountInfo> {
     return this.executeQuery(
       new AccountInfoQuery().setAccountId(AccountId.fromString(address)),
@@ -167,6 +228,16 @@ export class SDKClient {
     );
   }
 
+  /**
+   * Retrieves the bytecode of a contract.
+   * @param {number | Long} shard - The shard number of the contract.
+   * @param {number | Long} realm - The realm number of the contract.
+   * @param {string} address - The address of the contract.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<Uint8Array>} The bytecode of the contract.
+   * @throws {SDKClientError} Throws an SDK client error if the bytecode retrieval fails.
+   */
   async getContractByteCode(
     shard: number | Long,
     realm: number | Long,
@@ -188,6 +259,14 @@ export class SDKClient {
     );
   }
 
+  /**
+   * Retrieves the balance of a contract.
+   * @param {string} contract - The contract ID to query.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<AccountBalance>} The balance of the contract.
+   * @throws {SDKClientError} Throws an SDK client error if the balance retrieval fails.
+   */
   async getContractBalance(contract: string, callerName: string, requestId?: string): Promise<AccountBalance> {
     return this.executeQuery(
       new AccountBalanceQuery().setContractId(ContractId.fromString(contract)),
@@ -198,24 +277,55 @@ export class SDKClient {
     );
   }
 
+  /**
+   * Retrieves the balance of a contract in weiBars.
+   * Converts the balance from Hbar to weiBars using the `HbarToWeiBar` method.
+   * @param {string} account - The account address of the contract.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<BigNumber>} The contract balance in weiBars.
+   * @throws {SDKClientError} Throws an SDK client error if the balance retrieval fails.
+   */
   async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
     const balance = await this.getContractBalance(account, callerName, requestId);
     return SDKClient.HbarToWeiBar(balance);
   }
 
+  /**
+   * Retrieves the current exchange rates from a file.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<ExchangeRates>} The exchange rates.
+   * @throws {SDKClientError} Throws an SDK client error if the exchange rates file retrieval or parsing fails.
+   */
   async getExchangeRate(callerName: string, requestId?: string): Promise<ExchangeRates> {
     const exchangeFileBytes = await this.getFileIdBytes(constants.EXCHANGE_RATE_FILE_ID, callerName, requestId);
 
     return ExchangeRates.fromBytes(exchangeFileBytes);
   }
 
+  /**
+   * Retrieves the fee schedule from a file.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<FeeSchedules>} The fee schedules.
+   * @throws {SDKClientError} Throws an SDK client error if the fee schedule file retrieval or parsing fails.
+   */
   async getFeeSchedule(callerName: string, requestId?: string): Promise<FeeSchedules> {
     const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID, callerName, requestId);
     return FeeSchedules.fromBytes(feeSchedulesFileBytes);
   }
 
+  /**
+   * Retrieves the gas fee in tinybars for Ethereum transactions.
+   * Caches the result to avoid repeated fee schedule queries.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<number>} The gas fee in tinybars.
+   * @throws {SDKClientError} Throws an SDK client error if the fee schedules or exchange rates are invalid.
+   */
   async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
-    const cachedResponse: number | undefined = this.cacheService.get(
+    const cachedResponse: number | undefined = await this.cacheService.getAsync(
       constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
       callerName,
       requestId,
@@ -235,7 +345,13 @@ export class SDKClient {
         const exchangeRates = await this.getExchangeRate(callerName, requestId);
         const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
-        this.cacheService.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, undefined, requestId);
+        await this.cacheService.set(
+          constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
+          tinyBars,
+          callerName,
+          undefined,
+          requestId,
+        );
         return tinyBars;
       }
     }
@@ -243,6 +359,14 @@ export class SDKClient {
     throw new SDKClientError({}, `${constants.ETH_FUNCTIONALITY_CODE} code not found in feeSchedule`);
   }
 
+  /**
+   * Retrieves the contents of a file identified by its ID and returns them as a byte array.
+   * @param {string} address - The file ID or address of the file to retrieve.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<Uint8Array>} The contents of the file as a byte array.
+   * @throws {SDKClientError} Throws an SDK client error if the file query fails.
+   */
   async getFileIdBytes(address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
     return this.executeQuery(
       new FileContentsQuery().setFileId(address),
@@ -253,14 +377,23 @@ export class SDKClient {
     );
   }
 
-  async getRecord(transactionResponse: TransactionResponse) {
-    return transactionResponse.getRecord(this.clientMain);
-  }
-
+  /**
+   * Submits an Ethereum transaction and handles call data that exceeds the maximum chunk size.
+   * If the call data is too large, it creates a file to store the excess data and updates the transaction accordingly.
+   * Also calculates and sets the maximum transaction fee based on the current gas price.
+   *
+   * @param {Uint8Array} transactionBuffer - The transaction data in bytes.
+   * @param {string} callerName - The name of the caller initiating the transaction.
+   * @param {string} requestId - The unique identifier for the request.
+   * @param {TransactionService} transactionService - The service responsible for handling transaction execution.
+   * @returns {Promise<{ txResponse: TransactionResponse; fileId: FileId | null }>}
+   * @throws {SDKClientError} Throws an error if no file ID is created or if the preemptive fee check fails.
+   */
   async submitEthereumTransaction(
     transactionBuffer: Uint8Array,
     callerName: string,
     requestId: string,
+    transactionService: TransactionService,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
@@ -300,6 +433,7 @@ export class SDKClient {
         requestId,
         callerName,
         interactingEntity,
+        transactionService,
       );
       if (!fileId) {
         throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
@@ -313,10 +447,28 @@ export class SDKClient {
 
     return {
       fileId,
-      txResponse: await this.executeTransaction(ethereumTransaction, callerName, interactingEntity, requestId, true),
+      txResponse: await this.executeTransaction(
+        ethereumTransaction,
+        callerName,
+        interactingEntity,
+        requestId,
+        true,
+        transactionService,
+      ),
     };
   }
 
+  /**
+   * Submits a contract call query to a smart contract on the Hedera network.
+   * @param {string} to - The address of the contract to call, in either Solidity or EVM format.
+   * @param {string} data - The encoded function parameters for the contract call, in hexadecimal format.
+   * @param {number} gas - The amount of gas to use for the contract call.
+   * @param {string} from - The address of the sender in EVM format.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * @returns {Promise<ContractFunctionResult>} The result of the contract function call.
+   * @throws {SDKClientError} Throws an SDK client error if the contract call query fails.
+   */
   async submitContractCallQuery(
     to: string,
     data: string,
@@ -348,6 +500,18 @@ export class SDKClient {
     return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestId);
   }
 
+  /**
+   * Submits a contract call query with retries in case of timeout errors.
+   * @param {string} to - The address of the contract to call.
+   * @param {string} data - The data to send with the contract call.
+   * @param {number} gas - The amount of gas to use for the contract call.
+   * @param {string} from - The address from which the contract call is made.
+   * @param {string} callerName - The name of the caller for logging purposes.
+   * @param {string} [requestId] - The request ID for logging purposes.
+   * @returns {Promise<ContractFunctionResult>} The result of the contract function call.
+   * @throws {JsonRpcError} Throws an error if the error is a JSON-RPC error.
+   * @throws {SDKClientError} Throws an SDK client error if the error is not a timeout error or if the retries are exhausted.
+   */
   async submitContractCallQueryWithRetry(
     to: string,
     data: string,
@@ -383,6 +547,17 @@ export class SDKClient {
     return resp;
   }
 
+  /**
+   * Increases the query cost and retries the query execution if the initial attempt fails due to insufficient transaction fees.
+   * @param {Query<any>} query - The query to be executed.
+   * @param {Hbar} baseCost - The base cost of the query.
+   * @param {Client} client - The client to use for executing the query.
+   * @param {number} maxRetries - The maximum number of retries allowed.
+   * @param {number} currentRetry - The current retry attempt number.
+   * @param {string} [requestId] - The request ID for logging purposes.
+   * @returns {Promise<{resp: any, cost: Hbar}>} The response of the query execution and the cost used.
+   * @throws Will throw an error if the maximum number of retries is exceeded or if the error is not due to insufficient transaction fees.
+   */
   async increaseCostAndRetryExecution(
     query: Query<any>,
     baseCost: Hbar,
@@ -390,7 +565,7 @@ export class SDKClient {
     maxRetries: number,
     currentRetry: number,
     requestId?: string,
-  ) {
+  ): Promise<{ resp: any; cost: Hbar }> {
     const baseMultiplier = constants.QUERY_COST_INCREMENTATION_STEP;
     const multiplier = Math.pow(baseMultiplier, currentRetry);
 
@@ -411,19 +586,16 @@ export class SDKClient {
     }
   }
 
-  private convertGasPriceToTinyBars = (feeComponents: FeeComponents | undefined, exchangeRates: ExchangeRates) => {
-    // gas -> tinCents:  gas / 1000
-    // tinCents -> tinyBars: tinCents * exchangeRate (hbarEquiv/ centsEquiv)
-    if (feeComponents === undefined || feeComponents.contractTransactionGas === undefined) {
-      return constants.DEFAULT_TINY_BAR_GAS;
-    }
-
-    return Math.ceil(
-      (feeComponents.contractTransactionGas.toNumber() / 1_000) *
-        (exchangeRates.currentRate.hbars / exchangeRates.currentRate.cents),
-    );
-  };
-
+  /**
+   * Executes a Hedera query and handles potential errors.
+   * @param {Query<T>} query - The Hedera query to execute.
+   * @param {Client} client - The Hedera client to use for the query.
+   * @param {string} callerName - The name of the caller executing the query.
+   * @param {string} interactingEntity - The entity interacting with the query.
+   * @param {string} [requestId] - The optional request ID for logging and tracking.
+   * @returns {Promise<T>} A promise resolving to the query response.
+   * @throws {Error} Throws an error if the query fails or if rate limits are exceeded.
+   */
   async executeQuery<T>(
     query: Query<T>,
     client: Client,
@@ -434,11 +606,6 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const currentDateNow = Date.now();
     try {
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.queryMode, callerName);
-      if (shouldLimit) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
-
       let resp, cost;
       if (query.paymentTransactionId) {
         const baseCost = await query.getCost(this.clientMain);
@@ -500,12 +667,15 @@ export class SDKClient {
 
   /**
    * Executes a single transaction, handling rate limits, logging, and metrics.
-   * @param {Transaction} transaction - The transaction to be executed.
-   * @param {string} callerName - The name of the caller executing the transaction.
+   *
+   * @param {Transaction} transaction - The transaction to execute.
+   * @param {string} callerName - The name of the caller requesting the transaction.
    * @param {string} interactingEntity - The entity interacting with the transaction.
-   * @param {string} requestId - The request ID associated with the transaction.
-   * @returns {Promise<TransactionResponse>} A promise that resolves to the transaction response.
-   * @throws Will throw an error if the HBAR rate limit is exceeded, the transaction execution fails, or if a valid network error occurs.
+   * @param {string} requestId - The ID of the request.
+   * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
+   * @param {TransactionService} transactionService - The service to handle transaction-related operations.
+   * @returns {Promise<TransactionResponse>} - A promise that resolves to the transaction response.
+   * @throws {SDKClientError} - Throws if an error occurs during transaction execution.
    */
   async executeTransaction(
     transaction: Transaction,
@@ -513,12 +683,14 @@ export class SDKClient {
     interactingEntity: string,
     requestId: string,
     shouldThrowHbarLimit: boolean,
+    transactionService: TransactionService,
   ): Promise<TransactionResponse> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
     const currentDateNow = Date.now();
     let gasUsed: number = 0;
     let transactionFee: number = 0;
+    let txRecordChargeAmount: number = 0;
     let transactionResponse: TransactionResponse | null = null;
 
     // check hbar limit before executing transaction
@@ -534,75 +706,118 @@ export class SDKClient {
       this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
       transactionResponse = await transaction.execute(this.clientMain);
 
-      // retrieve and capture transaction fee in metrics and rate limiter class
-      const getRecordResult = await this.executeGetTransactionRecord(transactionResponse, callerName, requestId);
-      gasUsed = getRecordResult.gasUsed;
-      transactionFee = getRecordResult.transactionFee;
+      const getTxResultAndMetricsResult = await transactionService.getTransactionStatusAndMetrics(
+        transactionResponse.transactionId.toString(),
+        callerName,
+        requestId,
+        transaction.constructor.name,
+        this.clientMain.operatorAccountId!.toString(),
+      );
+      const transactionStatus = getTxResultAndMetricsResult.transactionStatus;
+      gasUsed = getTxResultAndMetricsResult.gasUsed;
+      transactionFee = getTxResultAndMetricsResult.transactionFee;
+      txRecordChargeAmount = getTxResultAndMetricsResult.txRecordChargeAmount;
+
+      // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler().
+      // Otherwise, move on and return transactionResponse eventually.
+      if (transactionStatus === Status.WrongNonce.toString()) {
+        const error = {
+          status: Status.WrongNonce,
+          message: `receipt for transaction ${transactionResponse.transactionId} contained error status WRONG_NONCE`,
+        };
+
+        throw new SDKClientError(error, error.message);
+      }
 
       this.logger.info(
         `${formattedRequestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
       return transactionResponse;
     } catch (e: any) {
-      // declare main error as SDKClientError
+      // throw if JsonRpcError
+      if (e instanceof JsonRpcError) {
+        throw e;
+      }
+
+      // declare error as SDKClientError
       const sdkClientError = new SDKClientError(e, e.message);
 
+      // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler().
+      if (sdkClientError.status && sdkClientError.status === Status.WrongNonce) {
+        throw sdkClientError;
+      }
+
+      // capture metrics in case .execute() fails and throw an error
       // if valid network error utilize transaction id to get transactionFee and gasUsed for metrics
       if (sdkClientError.isValidNetworkError()) {
-        const result = await this.getTransactionMetrics(transaction.transactionId!.toString(), formattedRequestId);
-        transactionFee = result.transactionFee;
-        gasUsed = result.gasUsed;
+        const getTxResultAndMetricsResult = await transactionService.getTransactionStatusAndMetrics(
+          transaction.transactionId!.toString(),
+          callerName,
+          requestId,
+          transaction.constructor.name,
+          this.clientMain.operatorAccountId!.toString(),
+        );
+        transactionFee = getTxResultAndMetricsResult.transactionFee;
+        txRecordChargeAmount = getTxResultAndMetricsResult.txRecordChargeAmount;
+        gasUsed = getTxResultAndMetricsResult.gasUsed;
       }
 
       // log and throw
       this.logger.warn(
+        sdkClientError,
         `${formattedRequestId} Fail to execute ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${transactionFee} tinybars, gasUsed=${gasUsed}`,
       );
 
-      // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler(). Otherwise, move on and return transactionResponse eventually.
-      if (e.status && e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
-        throw sdkClientError;
-      } else if (e instanceof JsonRpcError) {
-        throw e;
-      } else {
-        if (!transactionResponse) {
-          throw predefined.INTERNAL_ERROR(
-            `${formattedRequestId} Transaction execution returns a null value for transaction ${transaction.transactionId}`,
-          );
-        }
-        return transactionResponse;
+      if (!transactionResponse) {
+        throw predefined.INTERNAL_ERROR(
+          `${formattedRequestId} Transaction execution returns a null value for transaction ${transaction.transactionId}`,
+        );
       }
+      return transactionResponse;
     } finally {
       /**
-       * @note Capturing the charged transaction fees at the end of the flow ensures these fees are eventually
+       * @note Capturing the charged fees at the end of the flow ensures these fees are eventually
        *       captured in the metrics and rate limiter class, even if SDK transactions fail at any point.
        */
       if (transactionFee !== 0) {
-        this.logger.trace(
-          `${formattedRequestId} Capturing HBAR charged transaction fee: transactionId=${transaction.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
-        );
-        this.hbarLimiter.addExpense(transactionFee, currentDateNow);
-        this.captureMetrics(
-          SDKClient.transactionMode,
+        this.addExpenseAndCaptureMetrics(
+          `TransactionExecution`,
+          transaction.transactionId!,
           transactionType,
-          Status.Success,
+          callerName,
           transactionFee,
           gasUsed,
-          callerName,
           interactingEntity,
+          formattedRequestId,
+        );
+      }
+
+      if (txRecordChargeAmount !== 0) {
+        this.addExpenseAndCaptureMetrics(
+          `TransactionRecordQuery`,
+          transaction.transactionId!,
+          transactionType,
+          callerName,
+          txRecordChargeAmount,
+          gasUsed,
+          interactingEntity,
+          formattedRequestId,
         );
       }
     }
   }
 
   /**
-   * Executes all transactions of a given type, handling rate limits and logging the results.
-   * @param {FileAppendTransaction} transaction - The transaction to be executed.
-   * @param {string} callerName - The name of the caller executing the transaction.
+   * Executes all transactions in a batch, checks HBAR limits, retrieves metrics, and captures expenses.
+   *
+   * @param {FileAppendTransaction} transaction - The batch transaction to execute.
+   * @param {string} callerName - The name of the caller requesting the transaction.
    * @param {string} interactingEntity - The entity interacting with the transaction.
-   * @param {string} requestId - The request ID associated with the transaction.
-   * @returns {Promise<void>} A promise that resolves when all transactions have been executed.
-   * @throws Will throw an error if the HBAR rate limit is exceeded or if the transaction execution fails.
+   * @param {string} requestId - The ID of the request.
+   * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
+   * @param {TransactionService} transactionService - The service to handle transaction-related operations.
+   * @returns {Promise<void>} - A promise that resolves when the batch execution is complete.
+   * @throws {SDKClientError} - Throws if an error occurs during batch transaction execution.
    */
   async executeAllTransaction(
     transaction: FileAppendTransaction,
@@ -610,6 +825,7 @@ export class SDKClient {
     interactingEntity: string,
     requestId: string,
     shouldThrowHbarLimit: boolean,
+    transactionService: TransactionService,
   ): Promise<void> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
@@ -627,46 +843,59 @@ export class SDKClient {
     try {
       // execute transaction
       this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
-
       transactionResponses = await transaction.executeAll(this.clientMain);
 
+      // loop through transactionResponses to retrieve metrics from each response
       for (let transactionResponse of transactionResponses) {
         let gasUsed: number = 0;
         let transactionFee: number = 0;
+        let txRecordChargeAmount: number = 0;
 
-        // Since this is a loop, and it's unclear which transactionResponse might throw an error,
-        // use a try/catch/finally block to ensure the loop completes even if an error is thrown, and all the metrics are recorded.
-        try {
-          // get gasUsed and transaction fee
-          const getRecordResult = await this.executeGetTransactionRecord(transactionResponse, callerName, requestId);
-          gasUsed = getRecordResult.gasUsed;
-          transactionFee = getRecordResult.transactionFee;
-          this.logger.info(
-            `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${getRecordResult.transactionFee} tinybars, gasUsed=${getRecordResult.gasUsed}`,
-          );
-        } catch (e: any) {
-          const result = await this.getTransactionMetrics(
-            transactionResponse.transactionId.toString(),
+        // retrieve transaction status and metrics (transaction fee & gasUsed).
+        // transactionService.getTransactionStatusAndMetrics() will not throw an error when transactions contain error statuses.
+        // Instead, it will return transaction records with statuses attached, ensuring the loop won't be broken.
+        const getTxResultAndMetricsResult = await transactionService.getTransactionStatusAndMetrics(
+          transactionResponse.transactionId.toString(),
+          callerName,
+          requestId,
+          transaction.constructor.name,
+          this.clientMain.operatorAccountId!.toString(),
+        );
+
+        this.logger.info(
+          `${requestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code}), cost=${getTxResultAndMetricsResult.transactionFee} tinybars, gasUsed=${getTxResultAndMetricsResult.gasUsed}`,
+        );
+
+        // extract metrics
+        gasUsed = getTxResultAndMetricsResult.gasUsed;
+        transactionFee = getTxResultAndMetricsResult.transactionFee;
+        txRecordChargeAmount = getTxResultAndMetricsResult.txRecordChargeAmount;
+
+        // capture metrics
+        if (transactionFee !== 0) {
+          this.addExpenseAndCaptureMetrics(
+            `TransactionExecution`,
+            transaction.transactionId!,
+            transactionType,
+            callerName,
+            transactionFee,
+            gasUsed,
+            interactingEntity,
             formattedRequestId,
           );
-          transactionFee = result.transactionFee;
-          gasUsed = result.gasUsed;
-        } finally {
-          if (transactionFee !== 0) {
-            this.logger.trace(
-              `${formattedRequestId} Capturing HBAR charged transaction fee: transactionId=${transactionResponse.transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, txChargedFee=${transactionFee} tinybars`,
-            );
-            this.hbarLimiter.addExpense(transactionFee, currentDateNow);
-            this.captureMetrics(
-              SDKClient.transactionMode,
-              transactionType,
-              Status.Success,
-              transactionFee,
-              gasUsed,
-              callerName,
-              interactingEntity,
-            );
-          }
+        }
+
+        if (txRecordChargeAmount !== 0) {
+          this.addExpenseAndCaptureMetrics(
+            `TransactionRecordQuery`,
+            transaction.transactionId!,
+            transactionType,
+            callerName,
+            txRecordChargeAmount,
+            gasUsed,
+            interactingEntity,
+            formattedRequestId,
+          );
         }
       }
     } catch (e: any) {
@@ -681,49 +910,24 @@ export class SDKClient {
     }
   }
 
-  async executeGetTransactionRecord(transactionResponse: TransactionResponse, callerName: string, requestId: string) {
-    let gasUsed: any = 0;
-    let transactionFee: number = 0;
-    const formattedRequestId = formatRequestIdMessage(requestId);
-    const transactionId: string = transactionResponse.transactionId.toString();
-
-    try {
-      if (!transactionResponse.getRecord) {
-        throw new SDKClientError(
-          {},
-          `${formattedRequestId} Invalid response format, expected record availability: ${JSON.stringify(
-            transactionResponse,
-          )}`,
-        );
-      }
-
-      // get transactionRecord
-      this.logger.trace(`${formattedRequestId} Get transaction record: transactionId=${transactionId}`);
-      const transactionRecord: TransactionRecord = await transactionResponse.getRecord(this.clientMain);
-
-      // get transactionFee and gasUsed for metrics
-      transactionFee = getTransferAmountSumForAccount(transactionRecord, this.clientMain.operatorAccountId!.toString());
-      gasUsed = transactionRecord.contractFunctionResult
-        ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
-        : 0;
-
-      return { transactionFee, gasUsed };
-    } catch (e: any) {
-      // log error from getRecord
-      const sdkClientError = new SDKClientError(e, e.message);
-      this.logger.debug(
-        `${formattedRequestId} Error raised during transactionResponse.getRecord: transactionId=${transactionId} callerName=${callerName} recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
-      );
-      throw sdkClientError;
-    }
-  }
-
+  /**
+   * Creates a file on the Hedera network using the provided call data.
+   * @param {Uint8Array} callData - The data to be written to the file.
+   * @param {Client} client - The Hedera client to use for the transaction.
+   * @param {string} requestId - The request ID associated with the transaction.
+   * @param {string} callerName - The name of the caller creating the file.
+   * @param {string} interactingEntity - The entity interacting with the transaction.
+   * @param {TransactionService} transactionService - The service to handle transaction-related operations.
+   * @returns {Promise<FileId | null>} A promise that resolves to the created file ID or null if the creation failed.
+   * @throws Will throw an error if the created file is empty or if any transaction fails during execution.
+   */
   async createFile(
     callData: Uint8Array,
     client: Client,
     requestId: string,
     callerName: string,
     interactingEntity: string,
+    transactionService: TransactionService,
   ): Promise<FileId | null> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
@@ -740,6 +944,7 @@ export class SDKClient {
       interactingEntity,
       formattedRequestId,
       true,
+      transactionService,
     );
 
     const { fileId } = await fileCreateTxResponse.getReceipt(client);
@@ -752,13 +957,19 @@ export class SDKClient {
         .setMaxChunks(this.maxChunks);
 
       // use executeAllTransaction() to executeAll fileAppendTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
-      await this.executeAllTransaction(fileAppendTx, callerName, interactingEntity, formattedRequestId, true);
+      await this.executeAllTransaction(
+        fileAppendTx,
+        callerName,
+        interactingEntity,
+        formattedRequestId,
+        true,
+        transactionService,
+      );
     }
 
     // Ensure that the calldata file is not empty
     if (fileId) {
       const fileSize = (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
-
       if (fileSize.isZero()) {
         throw new SDKClientError({}, `${formattedRequestId} Created file is empty. `);
       }
@@ -774,8 +985,15 @@ export class SDKClient {
    * @param requestId
    * @param callerName
    * @param interactingEntity
+   * @param {TransactionService} transactionService - The service to handle transaction-related operations.
    */
-  async deleteFile(fileId: FileId, requestId: string, callerName: string, interactingEntity: string): Promise<void> {
+  async deleteFile(
+    fileId: FileId,
+    requestId: string,
+    callerName: string,
+    interactingEntity: string,
+    transactionService: TransactionService,
+  ): Promise<void> {
     // format request ID msg
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
@@ -786,7 +1004,7 @@ export class SDKClient {
         .setMaxTransactionFee(new Hbar(2))
         .freezeWith(this.clientMain);
 
-      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId, false);
+      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId, false, transactionService);
 
       // ensure the file is deleted
       const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
@@ -801,6 +1019,38 @@ export class SDKClient {
     }
   }
 
+  /**
+   * Converts the gas price to tinybars using the provided fee components and exchange rates.
+   * @private
+   *
+   * @param {FeeComponents | undefined} feeComponents - The fee components to use for the conversion.
+   * @param {ExchangeRates} exchangeRates - The exchange rates to use for the conversion.
+   * @returns {number} The converted gas price in tinybars.
+   */
+  private convertGasPriceToTinyBars = (feeComponents: FeeComponents | undefined, exchangeRates: ExchangeRates) => {
+    // gas -> tinCents:  gas / 1000
+    // tinCents -> tinyBars: tinCents * exchangeRate (hbarEquiv/ centsEquiv)
+    if (feeComponents === undefined || feeComponents.contractTransactionGas === undefined) {
+      return constants.DEFAULT_TINY_BAR_GAS;
+    }
+
+    return Math.ceil(
+      (feeComponents.contractTransactionGas.toNumber() / 1_000) *
+        (exchangeRates.currentRate.hbars / exchangeRates.currentRate.cents),
+    );
+  };
+
+  /**
+   * Captures and records metrics for a transaction.
+   * @private
+   * @param {string} mode - The mode of the transaction (e.g., consensus mode).
+   * @param {string} type - The type of the transaction.
+   * @param {string} status - The status of the transaction.
+   * @param {number} cost - The cost of the transaction in tinybars.
+   * @param {number | object} gas - The gas used by the transaction.
+   * @param {string} caller - The name of the caller executing the transaction.
+   * @param {string} interactingEntity - The entity interacting with the transaction.
+   */
   private captureMetrics = (mode, type, status, cost, gas, caller, interactingEntity) => {
     const resolvedCost = cost ? cost : 0;
     const resolvedGas = typeof gas === 'object' ? gas.toInt() : 0;
@@ -809,50 +1059,60 @@ export class SDKClient {
   };
 
   /**
-   * Internal helper method that removes the leading 0x if there is one.
-   * @param input
+   * Removes the '0x' prefix from a string if it exists.
    * @private
+   * @param {string} input - The input string to be pruned.
+   * @returns {string} The input string without the '0x' prefix.
    */
   private static prune0x(input: string): string {
     return input.startsWith('0x') ? input.substring(2) : input;
   }
 
+  /**
+   * Converts an account balance from Hbars to WeiBars.
+   * @private
+   * @param {AccountBalance} balance - The account balance in Hbars.
+   * @returns {BigNumber} The account balance converted to WeiBars.
+   */
   private static HbarToWeiBar(balance: AccountBalance): BigNumber {
     return balance.hbars.to(HbarUnit.Tinybar).multipliedBy(constants.TINYBAR_TO_WEIBAR_COEF);
   }
 
   /**
-   * Retrieves the metrics (transaction fee and gas used) for a given transaction response.
+   * Adds an expense and captures metrics related to the transaction execution.
    * @private
-   * @param {string} transactionId - The ID of the transaction.
+   * @param {string} executionType - The type of execution (e.g., transaction or query).
+   * @param {string} transactionId - The ID of the transaction being executed.
+   * @param {string} transactionType - The type of transaction (e.g., contract call, file create).
+   * @param {string} callerName - The name of the entity calling the transaction.
+   * @param {number} cost - The cost of the transaction in tinybars.
+   * @param {number} gasUsed - The amount of gas used for the transaction.
+   * @param {string} interactingEntity - The entity interacting with the transaction.
    * @param {string} formattedRequestId - The formatted request ID for logging purposes.
-   * @returns {Promise<{transactionFee: number, gasUsed: number}>} A promise that resolves to an object containing the transaction fee and gas used.
    */
-  private async getTransactionMetrics(
-    transactionId: string,
+  private addExpenseAndCaptureMetrics = (
+    executionType: string,
+    transactionId: TransactionId,
+    transactionType: string,
+    callerName: string,
+    cost: number,
+    gasUsed: number,
+    interactingEntity: string,
     formattedRequestId: string,
-  ): Promise<{ transactionFee: number; gasUsed: number }> {
-    let gasUsed: number = 0;
-    let transactionFee: number = 0;
-    try {
-      const transactionRecord = await new TransactionRecordQuery()
-        .setTransactionId(transactionId)
-        .setValidateReceiptStatus(false)
-        .execute(this.clientMain);
-
-      // get gasUsed and transaction fee
-      transactionFee = transactionRecord.transactionFee.toTinybars().toNumber();
-      gasUsed = transactionRecord.contractFunctionResult
-        ? transactionRecord.contractFunctionResult.gasUsed.toNumber()
-        : 0;
-    } catch (err: any) {
-      const recordQueryError = new SDKClientError(err, err.message);
-      this.logger.error(
-        recordQueryError,
-        `${formattedRequestId} Error raised during TransactionRecordQuery for ${transactionId}`,
-      );
-    }
-
-    return { transactionFee, gasUsed };
-  }
+  ) => {
+    const currentDateNow = Date.now();
+    this.logger.trace(
+      `${formattedRequestId} Capturing HBAR charged: executionType=${executionType} transactionId=${transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, cost=${cost} tinybars`,
+    );
+    this.hbarLimiter.addExpense(cost, currentDateNow);
+    this.captureMetrics(
+      SDKClient.transactionMode,
+      transactionType,
+      Status.Success,
+      cost,
+      gasUsed,
+      callerName,
+      interactingEntity,
+    );
+  };
 }

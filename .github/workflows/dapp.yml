@@ -66,7 +66,7 @@ jobs:
 
       - name: Dump relay logs
         if: ${{ always() && !cancelled() }}
-        uses: jwalton/gh-docker-logs@2741064ab9d7af54b0b1ffb6076cf64c16f0220e # v2.2.2
+        uses: step-security/gh-docker-logs@3ae8dd28117ab6b0e4ef83c53662ef18fcaa2181 # v2.2.2
         with:
           dest: './logs'
 
