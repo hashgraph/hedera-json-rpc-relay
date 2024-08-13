@@ -18,10 +18,13 @@
  *
  */
 
-import { IMethodParamValidation, IObjectSchema, IObjectValidation, ITypeValidation, Validator } from '.';
+import { Validator } from '.';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
+import { IObjectSchema, IObjectValidation } from '../types/validator/objectTypes';
+import { IMethodParamSchema } from '../types/validator/methods';
+import { ITypeValidation } from '../types/validator/types';
 
-export function validateParam(index: number | string, param: any, validation: IMethodParamValidation): void {
+export function validateParam(index: number | string, param: any, validation: IMethodParamSchema): void {
   const paramType = getParamType(validation.type);
 
   if (paramType === undefined) {
@@ -30,9 +33,17 @@ export function validateParam(index: number | string, param: any, validation: IM
 
   if (requiredIsMissing(param, validation.required)) {
     throw predefined.MISSING_REQUIRED_PARAMETER(index);
+  } else if (!validation.required && param === undefined) {
+    //if parameter is undefined and not required, no need to validate
+    //e.g estimateGas method, blockNumber is not required
+    return;
   }
 
-  if (param != null && Array.isArray(paramType)) {
+  if (param === null) {
+    throw predefined.INVALID_PARAMETER(index, `The value passed is not valid: ${param}.`);
+  }
+
+  if (Array.isArray(paramType)) {
     const results: any[] = [];
     for (const validator of paramType) {
       const result = validator.test(param);
@@ -44,7 +55,7 @@ export function validateParam(index: number | string, param: any, validation: IM
     }
   }
 
-  if (param != null && !Array.isArray(paramType)) {
+  if (!Array.isArray(paramType)) {
     if (!paramType.test(param)) {
       const paramString = typeof param === 'object' ? JSON.stringify(param) : param;
       throw predefined.INVALID_PARAMETER(index, `${paramType.error}, value: ${paramString}`);

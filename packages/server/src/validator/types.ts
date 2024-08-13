@@ -20,17 +20,13 @@
 
 import * as Constants from './constants';
 import { CallTracerConfig, OpcodeLoggerConfig, TracerConfigWrapper, Validator } from '.';
+import { ITypeValidation } from '../types/validator/types';
 import {
   ICallTracerConfig,
   IOpcodeLoggerConfig,
   ITracerConfig,
   ITracerConfigWrapper,
 } from '@hashgraph/json-rpc-relay/src/lib/types';
-
-export type ITypeValidation = {
-  test: (param: any) => boolean;
-  error: string;
-};
 
 export const TYPES: { [key: string]: ITypeValidation } = {
   address: {

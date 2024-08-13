@@ -973,12 +973,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
-      const blockNumber = await relay.call(
+      const transactionReceipt = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
         [transactionHash],
         requestId,
-      ).blockNumber;
+      );
 
+      const blockNumber = transactionReceipt.blockNumber;
       const transaction1 = {
         ...transaction,
         nonce: await relay.getAccountNonce(accounts[1].address),
@@ -1018,11 +1019,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
-      const blockHash = await relay.call(
+      const transactionReceipt = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
         [transactionHash],
         requestId,
-      ).blockHash;
+      );
+
+      const blockHash = transactionReceipt.blockHash;
 
       const transaction1 = {
         ...transaction,
@@ -1140,7 +1143,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
   describe('eth_feeHistory', () => {
     it('should call eth_feeHistory', async function () {
-      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY, ['0x1', 'latest', null], requestId);
+      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY, ['0x1', 'latest'], requestId);
       expect(res.baseFeePerGas).to.exist.to.be.an('Array');
       expect(res.baseFeePerGas.length).to.be.gt(0);
       expect(res.gasUsedRatio).to.exist.to.be.an('Array');

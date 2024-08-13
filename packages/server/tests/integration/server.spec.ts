@@ -597,8 +597,8 @@ describe('RPC Server', function () {
       expect(response.data[2].error).to.be.an('Object');
       expect(response.data[2].error.code).to.be.equal(-32602);
       expect(
-        response.data[2].error.message.endsWith('Missing value for required parameter 1'),
-        'Missing value for required parameter 1',
+        response.data[2].error.message.endsWith('Invalid parameter 0: The value passed is not valid: null.'),
+        'Invalid parameter 0: The value passed is not valid: null.',
       ).to.be.equal(true);
     });
 
