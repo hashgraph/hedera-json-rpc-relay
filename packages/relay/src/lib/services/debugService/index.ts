@@ -28,9 +28,7 @@ import { predefined } from '../../errors/JsonRpcError';
 import { EthImpl } from '../../eth';
 import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
 import { IOpcode } from '../../clients/models/IOpcode';
-import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from '../../types/ITracerConfig';
-
-const SUCCESS = 'SUCCESS';
+import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from '../../types';
 
 /**
  * Represents a DebugService for tracing and debugging transactions and debugging
@@ -320,7 +318,7 @@ export class DebugService implements IDebugService {
       const { resolvedFrom, resolvedTo } = await this.resolveMultipleAddresses(from, to, requestIdPrefix);
 
       const value = amount === 0 ? EthImpl.zeroHex : numberTo0x(amount);
-      const errorResult = result !== SUCCESS ? result : undefined;
+      const errorResult = result !== constants.SUCCESS ? result : undefined;
 
       return {
         type,
@@ -330,9 +328,9 @@ export class DebugService implements IDebugService {
         gas: numberTo0x(gas),
         gasUsed: numberTo0x(gasUsed),
         input,
-        output: result !== SUCCESS ? error : output,
-        ...(result !== SUCCESS && { error: errorResult }),
-        ...(result !== SUCCESS && { revertReason: decodeErrorMessage(error) }),
+        output: result !== constants.SUCCESS ? error : output,
+        ...(result !== constants.SUCCESS && { error: errorResult }),
+        ...(result !== constants.SUCCESS && { revertReason: decodeErrorMessage(error) }),
         // if we have more than one call executed during the transactions we would return all calls
         // except the first one in the sub-calls array,
         // therefore we need to exclude the first one from the actions response
