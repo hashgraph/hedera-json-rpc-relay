@@ -2249,10 +2249,10 @@ export class EthImpl implements Eth {
 
     transactionArray = this.populateSyntheticTransactions(showDetails, logs, transactionArray, requestIdPrefix);
 
-    const receipts = await Promise.all(
-      transactionArray.map((tx) => {
-        return this.getTransactionReceipt(showDetails ? tx.hash : tx);
-      }),
+    const receipts = ReceiptsRootUtils.buildReceiptsFromTxHashesContractResultsAndLogs(
+      transactionArray.map((tx) => (showDetails ? tx.hash : tx)),
+      contractResults,
+      logs,
     );
 
     const blockHash = toHash32(blockResponse.hash);

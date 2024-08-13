@@ -20,11 +20,12 @@
 
 import { RLP } from '@ethereumjs/rlp';
 import { Trie } from '@ethereumjs/trie';
-import { bytesToInt, concatBytes, hexToBytes, intToBytes } from '@ethereumjs/util';
+import { bytesToInt, concatBytes, hexToBytes, intToBytes, intToHex } from '@ethereumjs/util';
 import { EthImpl } from './lib/eth';
 import { prepend0x } from './formatters';
 import { Log } from './lib/model';
 import { ITransactionReceipt } from './lib/types/ITransactionReceipt';
+import { LogsBloomUtils } from './logsBloomUtils';
 
 /**
  * A {Log} serialized as a tuple containing:
@@ -72,6 +73,34 @@ export class ReceiptsRootUtils {
 
     // EIP-2718 serialization
     return concatBytes(intToBytes(txType), encodedReceipt);
+  }
+
+  public static buildReceiptsFromTxHashesContractResultsAndLogs(txHashes, contractResults, logs) {
+    const receipts: any = [];
+
+    for (let i in txHashes) {
+      const txHash = txHashes[i];
+      const logsPerTx = logs.filter((el) => el.transactionHash == txHash);
+      const crPerTx = contractResults.filter((el) => el.hash == txHash);
+      receipts.push({
+        transactionIndex: logsPerTx[0].transactionIndex,
+        type: crPerTx.length ? intToHex(crPerTx[0].type) : null,
+        root: crPerTx.length ? crPerTx[0].root : EthImpl.zeroHex32Byte,
+        status: crPerTx.length ? crPerTx[0].status : EthImpl.oneHex,
+        cumulativeGasUsed: crPerTx.length ? intToHex(crPerTx[0].block_gas_used) : EthImpl.zeroHex,
+        logsBloom: crPerTx.length
+          ? crPerTx[0].bloom
+          : LogsBloomUtils.buildLogsBloom(logs[0].address, logsPerTx[0].topics),
+        logs: logsPerTx.map((log) => {
+          return {
+            address: log.address,
+            data: log.data,
+            topics: log.topics,
+          };
+        }),
+      });
+    }
+    return receipts;
   }
 
   public static async getRootHash(receipts: ITransactionReceipt[]): Promise<string> {
