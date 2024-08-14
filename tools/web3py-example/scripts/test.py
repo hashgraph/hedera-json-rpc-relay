@@ -1,5 +1,5 @@
 #
-# Hedera JSON RPC Relay - Web3py Example
+# Hedera JSON RPC Relay
 #
 # Copyright (C) 2022-2024 Hedera Hashgraph, LLC
 #
