@@ -46,8 +46,8 @@ export interface IReceiptRootHash {
   logsBloom: string;
   root: string;
   status: string;
-  transactionIndex: string | null;
-  type: string | null;
+  transactionIndex: string;
+  type: string | null; // null for HAPI transactions
 }
 
 export class ReceiptsRootUtils {
