@@ -42,6 +42,7 @@ import {
   parseNumericEnvVar,
   prepend0x,
   toHash32,
+  toHexString,
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
 } from '../formatters';
@@ -56,6 +57,7 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { DebugService } from './services/debugService';
 import { IFeeHistory } from './types/IFeeHistory';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
+import { Trie } from '@ethereumjs/trie';
 import TransactionService from './services/transactionService/transactionService';
 import { IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
 
@@ -93,7 +95,6 @@ export class EthImpl implements Eth {
   static gasTxBaseCost = numberTo0x(constants.TX_BASE_COST);
   static gasTxHollowAccountCreation = numberTo0x(constants.TX_HOLLOW_ACCOUNT_CREATION_GAS);
   static ethTxType = 'EthereumTransaction';
-  static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasUsedRatio = 0.5;
   static feeHistoryZeroBlockCountResponse: IFeeHistory = {
     gasUsedRatio: null,
@@ -252,6 +253,12 @@ export class EthImpl implements Eth {
   private readonly debugServiceImpl: DebugService;
 
   /**
+   * A 32 byte hex hash of an empty trie root
+   * @public
+   */
+  public readonly emptyTrieRoot: string;
+
+  /**
    * Service for handling transactions.
    * @type {TransactionService}
    * @private
@@ -291,8 +298,10 @@ export class EthImpl implements Eth {
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
     this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
-
     this.transactionService = new TransactionService(logger, this.hapiService.getSDKClient(), mirrorNodeClient);
+
+    const emptyTrie = new Trie();
+    this.emptyTrieRoot = `0x${toHexString(emptyTrie.EMPTY_TRIE_ROOT)}`;
   }
 
   private shouldUseCacheForBalance(tag: string | null): boolean {
@@ -2035,7 +2044,7 @@ export class EthImpl implements Eth {
         gasUsed: EthImpl.zeroHex,
         logs: [syntheticLogs[0]],
         logsBloom: LogsBloomUtils.buildLogsBloom(syntheticLogs[0].address, syntheticLogs[0].topics),
-        root: EthImpl.zeroHex32Byte,
+        root: this.emptyTrieRoot,
         status: EthImpl.oneHex,
         to: syntheticLogs[0].address,
         transactionHash: syntheticLogs[0].transactionHash,
@@ -2083,7 +2092,7 @@ export class EthImpl implements Eth {
         transactionHash: toHash32(receiptResponse.hash),
         transactionIndex: nullableNumberTo0x(receiptResponse.transaction_index),
         effectiveGasPrice: effectiveGas,
-        root: receiptResponse.root,
+        root: receiptResponse.root || this.emptyTrieRoot,
         status: receiptResponse.status,
         type: nullableNumberTo0x(receiptResponse.type),
       };
@@ -2288,14 +2297,14 @@ export class EthImpl implements Eth {
       nonce: EthImpl.zeroHex8Byte,
       number: numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
-      receiptsRoot: EthImpl.zeroHex32Byte,
+      receiptsRoot: this.emptyTrieRoot,
       timestamp: numberTo0x(Number(timestamp)),
       sha3Uncles: EthImpl.emptyArrayHex,
       size: numberTo0x(blockResponse.size | 0),
-      stateRoot: EthImpl.zeroHex32Byte,
+      stateRoot: this.emptyTrieRoot,
       totalDifficulty: EthImpl.zeroHex,
       transactions: transactionArray,
-      transactionsRoot: transactionArray.length == 0 ? EthImpl.ethEmptyTrie : blockHash,
+      transactionsRoot: transactionArray.length == 0 ? this.emptyTrieRoot : blockHash,
       uncles: [],
     });
   }

@@ -40,6 +40,7 @@ import {
   ASCIIToHex,
   formatRequestIdMessage,
   strip0x,
+  toHexString,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -639,6 +640,32 @@ describe('Formatters', () => {
           '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000';
         expect(decodeErrorMessage(hexErrorMessage)).to.equal('');
       });
+    });
+  });
+
+  describe('toHexString', () => {
+    it('should convert a Uint8Array with single byte values to a hex string', () => {
+      const byteArray = new Uint8Array([0x00, 0xff, 0x7f]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('00ff7f');
+    });
+
+    it('should convert a Uint8Array with multiple byte values to a hex string', () => {
+      const byteArray = new Uint8Array([0x12, 0x34, 0x56, 0x78]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('12345678');
+    });
+
+    it('should convert an empty Uint8Array to an empty hex string', () => {
+      const byteArray = new Uint8Array([]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('');
+    });
+
+    it('should convert a Uint8Array with maximum byte value (0xff) to a hex string', () => {
+      const byteArray = new Uint8Array([0xff, 0xff, 0xff]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('ffffff');
     });
   });
 });
