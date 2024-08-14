@@ -24,7 +24,6 @@ import { bytesToInt, concatBytes, hexToBytes, intToBytes, intToHex } from '@ethe
 import { EthImpl } from './lib/eth';
 import { prepend0x } from './formatters';
 import { Log } from './lib/model';
-import { ITransactionReceipt } from './lib/types/ITransactionReceipt';
 import { LogsBloomUtils } from './logsBloomUtils';
 
 /**
@@ -33,10 +32,26 @@ import { LogsBloomUtils } from './logsBloomUtils';
  * - {Uint8Array[]} topics
  * - {Uint8Array} data
  */
-type SerializedLog = [Uint8Array, Uint8Array[], Uint8Array];
+export type SerializedLog = [Uint8Array, Uint8Array[], Uint8Array];
+
+export interface IReceiptRootHashLog {
+  address: string;
+  data: string;
+  topics: string[];
+}
+
+export interface IReceiptRootHash {
+  cumulativeGasUsed: string;
+  logs: IReceiptRootHashLog[];
+  logsBloom: string;
+  root: string;
+  status: string;
+  transactionIndex: string | null;
+  type: string | null;
+}
 
 export class ReceiptsRootUtils {
-  private static encodeLogs(logs: Log[]): SerializedLog[] {
+  private static encodeLogs(logs: IReceiptRootHashLog[]): SerializedLog[] {
     const serializedLogs: SerializedLog[] = [];
     for (let i = 0; i < logs.length; i++) {
       const topics: Uint8Array[] = [];
@@ -49,7 +64,7 @@ export class ReceiptsRootUtils {
     return serializedLogs;
   }
 
-  private static encodeReceipt(receipt: ITransactionReceipt, txType: number): Uint8Array {
+  private static encodeReceipt(receipt: IReceiptRootHash, txType: number): Uint8Array {
     let receiptRoot: Uint8Array;
     if (receipt.root) {
       receiptRoot = hexToBytes(receipt.root);
@@ -75,13 +90,17 @@ export class ReceiptsRootUtils {
     return concatBytes(intToBytes(txType), encodedReceipt);
   }
 
-  public static buildReceiptsFromTxHashesContractResultsAndLogs(txHashes, contractResults, logs) {
-    const receipts: any = [];
+  public static buildReceiptsFromTxHashesContractResultsAndLogs(
+    txHashes: string[],
+    contractResults: any[],
+    logs: Log[],
+  ): IReceiptRootHash[] {
+    const receipts: IReceiptRootHash[] = [];
 
     for (let i in txHashes) {
-      const txHash = txHashes[i];
-      const logsPerTx = logs.filter((el) => el.transactionHash == txHash);
-      const crPerTx = contractResults.filter((el) => el.hash == txHash);
+      const txHash: string = txHashes[i];
+      const logsPerTx: Log[] = logs.filter((log) => log.transactionHash == txHash);
+      const crPerTx: any[] = contractResults.filter((cr) => cr.hash == txHash);
       receipts.push({
         transactionIndex: crPerTx.length ? intToHex(crPerTx[0].transaction_index) : logsPerTx[0].transactionIndex,
         type: crPerTx.length ? intToHex(crPerTx[0].type) : null,
@@ -91,7 +110,7 @@ export class ReceiptsRootUtils {
         logsBloom: crPerTx.length
           ? crPerTx[0].bloom
           : LogsBloomUtils.buildLogsBloom(logs[0].address, logsPerTx[0].topics),
-        logs: logsPerTx.map((log) => {
+        logs: logsPerTx.map((log: IReceiptRootHashLog) => {
           return {
             address: log.address,
             data: log.data,
@@ -100,10 +119,11 @@ export class ReceiptsRootUtils {
         }),
       });
     }
+
     return receipts;
   }
 
-  public static async getRootHash(receipts: ITransactionReceipt[]): Promise<string> {
+  public static async getRootHash(receipts: IReceiptRootHash[]): Promise<string> {
     if (!receipts.length) {
       return EthImpl.zeroHex32Byte;
     }
