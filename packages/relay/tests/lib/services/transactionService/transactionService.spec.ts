@@ -153,6 +153,11 @@ describe('Transaction Service', function () {
     mock = new MockAdapter(instance);
   });
 
+  afterEach(() => {
+    sinon.restore();
+    mock.restore();
+  });
+
   describe('getTransactionStatusAndMetrics', () => {
     it('Should execute getTransactionStatusAndMetrics() and redirect calls to MIRROR NODE client', async () => {
       process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'false';
