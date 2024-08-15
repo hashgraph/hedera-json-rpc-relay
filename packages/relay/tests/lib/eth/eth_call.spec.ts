@@ -850,7 +850,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
   });
 
-  describe.only('eth_call using consensus node because of redirect by selector', async function () {
+  describe('eth_call using consensus node because of redirect by selector', async function () {
     let initialForceToCensensusBySelectorFF;
     const REDIRECTED_SELECTOR = '0x4d8fdd6d';
     const NON_REDIRECTED_SELECTOR = '0xaaaaaaaa';
