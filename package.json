@@ -69,7 +69,6 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@ethereumjs/trie": "^6.2.0",
     "@hashgraph/hedera-local": "^2.29.0",
     "@ethereumjs/rlp": "^5.0.2",
     "@ethereumjs/trie": "^6.2.0",
