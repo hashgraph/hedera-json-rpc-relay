@@ -1536,6 +1536,7 @@ export class EthImpl implements Eth {
         .inc();
 
     const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestIdPrefix);
+    const originalCallerAddress = parsedTx.from?.toString() || '';
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     let fileId: FileId | null = null;
     let txSubmitted = false;
@@ -1547,6 +1548,7 @@ export class EthImpl implements Eth {
           EthImpl.ethSendRawTransaction,
           requestIdPrefix,
           this.transactionService,
+          originalCallerAddress,
         );
 
       txSubmitted = true;
@@ -1604,6 +1606,7 @@ export class EthImpl implements Eth {
             EthImpl.ethSendRawTransaction,
             fileId.toString(),
             this.transactionService,
+            originalCallerAddress,
           );
       }
     }
