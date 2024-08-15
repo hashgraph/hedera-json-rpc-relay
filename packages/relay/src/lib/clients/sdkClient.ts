@@ -421,7 +421,7 @@ export class SDKClient {
         const shouldPreemtivelyLimit = this.hbarLimiter.shouldPreemtivelyLimit(totalPreemtiveTransactionFee);
         if (shouldPreemtivelyLimit) {
           this.logger.trace(
-            `${requestIdPrefix} The total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size.: numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, callDataSize=${ethereumTransactionData.callData.length}`,
+            `${requestIdPrefix} The total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, callDataSize=${ethereumTransactionData.callData.length}`,
           );
           throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
         }
@@ -604,64 +604,60 @@ export class SDKClient {
     requestId?: string,
   ): Promise<T> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const currentDateNow = Date.now();
+    const queryType = query.constructor.name;
+    let queryResponse: any = null;
+    let queryCost: number | undefined = undefined;
+
+    this.logger.info(`${requestIdPrefix} Execute ${queryType} query.`);
+
     try {
-      let resp, cost;
       if (query.paymentTransactionId) {
         const baseCost = await query.getCost(this.clientMain);
         const res = await this.increaseCostAndRetryExecution(query, baseCost, client, 3, 0, requestId);
-        resp = res.resp;
-        cost = res.cost.toTinybars().toNumber();
-        this.hbarLimiter.addExpense(cost, currentDateNow);
+        queryResponse = res.resp;
+        queryCost = res.cost.toTinybars().toNumber();
       } else {
-        resp = await query.execute(client);
-        cost = query._queryPayment?.toTinybars().toNumber();
+        queryResponse = await query.execute(client);
+        queryCost = query._queryPayment?.toTinybars().toNumber();
       }
-
       this.logger.info(
-        `${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${Status.Success} (${Status.Success._code}), cost: ${query._queryPayment}`,
+        `${requestIdPrefix} Successfully execute ${queryType} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, transactionType=${queryType}, cost=${queryCost} tinybars`,
       );
-      this.captureMetrics(
-        SDKClient.queryMode,
-        query.constructor.name,
-        Status.Success,
-        cost,
-        0,
-        callerName,
-        interactingEntity,
-      );
-      return resp;
+      return queryResponse;
     } catch (e: any) {
-      const cost = query._queryPayment?.toTinybars().toNumber();
-      const sdkClientError = new SDKClientError(e, e.message);
-      this.captureMetrics(
-        SDKClient.queryMode,
-        query.constructor.name,
-        sdkClientError.status,
-        cost,
-        0,
-        callerName,
-        interactingEntity,
-      );
-      this.logger.trace(
-        `${requestIdPrefix} ${query.paymentTransactionId} ${callerName} ${query.constructor.name} status: ${sdkClientError.status} (${sdkClientError.status._code}), cost: ${query._queryPayment}`,
-      );
-      if (cost) {
-        this.hbarLimiter.addExpense(cost, currentDateNow);
-      }
+      // in case a query execution throw an error, get query cost from the executed query
+      queryCost = query._queryPayment?.toTinybars().toNumber();
 
+      const sdkClientError = new SDKClientError(e, e.message);
       if (e instanceof PrecheckStatusError && e.contractFunctionResult?.errorMessage) {
         throw predefined.CONTRACT_REVERT(e.contractFunctionResult.errorMessage);
       }
-
-      if (e instanceof JsonRpcError) {
-        throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
-      }
-
       if (sdkClientError.isGrpcTimeout()) {
         throw predefined.REQUEST_TIMEOUT;
       }
+
+      this.logger.debug(
+        `${requestIdPrefix} Fail to execute ${queryType} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, queryType=${queryType}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${queryCost} tinybars`,
+      );
+
       throw sdkClientError;
+    } finally {
+      /**
+       * @note Capturing the charged transaction fees at the end of the flow ensures these fees are eventually
+       *       captured in the metrics and rate limiter class, even if SDK transactions fail at any point.
+       */
+      if (queryCost && queryCost !== 0) {
+        this.addExpenseAndCaptureMetrics(
+          `TransactionExecution`,
+          query.paymentTransactionId!,
+          queryType,
+          callerName,
+          queryCost,
+          0,
+          interactingEntity,
+          requestIdPrefix,
+        );
+      }
     }
   }
 
@@ -969,11 +965,19 @@ export class SDKClient {
 
     // Ensure that the calldata file is not empty
     if (fileId) {
-      const fileSize = (await new FileInfoQuery().setFileId(fileId).execute(client)).size;
-      if (fileSize.isZero()) {
-        throw new SDKClientError({}, `${formattedRequestId} Created file is empty. `);
+      const fileInfo = await this.executeQuery(
+        new FileInfoQuery().setFileId(fileId),
+        this.clientMain,
+        callerName,
+        interactingEntity,
+        requestId,
+      );
+
+      if (fileInfo.size.isZero()) {
+        this.logger.warn(`${requestId} File ${fileId} is empty.`);
+        throw new SDKClientError({}, `${requestId} Created file is empty. `);
       }
-      this.logger.trace(`${formattedRequestId} Created file with fileId: ${fileId} and file size ${fileSize}`);
+      this.logger.trace(`${formattedRequestId} Created file with fileId: ${fileId} and file size ${fileInfo.size}`);
     }
 
     return fileId;
@@ -1007,7 +1011,13 @@ export class SDKClient {
       await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId, false, transactionService);
 
       // ensure the file is deleted
-      const fileInfo = await new FileInfoQuery().setFileId(fileId).execute(this.clientMain);
+      const fileInfo = await this.executeQuery(
+        new FileInfoQuery().setFileId(fileId),
+        this.clientMain,
+        callerName,
+        interactingEntity,
+        requestId,
+      );
 
       if (fileInfo.isDeleted) {
         this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);

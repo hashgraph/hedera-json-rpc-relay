@@ -3,7 +3,7 @@ import { JsonRpcError } from '../src';
 import { EthImpl } from '../src/lib/eth';
 import { Block, Transaction } from '../src/lib/model';
 import { numberTo0x } from '../src/formatters';
-import { BASE_FEE_PER_GAS_DEFAULT } from './lib/eth/eth-config';
+import { BASE_FEE_PER_GAS_DEFAULT, DEFAULT_ROOT_HASH } from './lib/eth/eth-config';
 
 export default class RelayAssertions {
   static assertRejection = async (
@@ -54,7 +54,7 @@ export default class RelayAssertions {
     expect(receipt.contractAddress).to.eq(expectedReceipt.contractAddress);
     expect(receipt.logs).to.deep.eq(expectedReceipt.logs);
     expect(receipt.logsBloom).to.eq(expectedReceipt.logsBloom);
-    expect(receipt.root).to.eq(expectedReceipt.root);
+    expect(receipt.root).to.eq(DEFAULT_ROOT_HASH);
     expect(receipt.status).to.eq(expectedReceipt.status);
     expect(receipt.effectiveGasPrice).to.eq(effectiveGasPrice);
   };
@@ -131,7 +131,7 @@ export default class RelayAssertions {
     expect(block.mixHash).equal(EthImpl.zeroHex32Byte);
     expect(block.nonce).equal(EthImpl.zeroHex8Byte);
     expect(block.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(block.stateRoot).equal(EthImpl.zeroHex32Byte);
+    expect(block.stateRoot).equal(DEFAULT_ROOT_HASH);
     expect(block.totalDifficulty).equal(EthImpl.zeroHex);
     expect(block.uncles).to.deep.equal([]);
     expect(block.withdrawalsRoot).to.equal(EthImpl.zeroHex32Byte);

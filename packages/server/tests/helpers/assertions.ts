@@ -99,7 +99,7 @@ export default class Assertions {
       Assertions.emptyArrayHex,
     );
     expect(relayResponse.stateRoot, "Assert block: 'stateRoot' should equal zero 32bytes hex").to.be.equal(
-      Assertions.zeroHex32Byte,
+      Assertions.ethEmptyTrie,
     );
     expect(relayResponse.totalDifficulty, "Assert block: 'totalDifficulty' should equal zero in hex").to.be.equal(
       ethers.toQuantity(0),
