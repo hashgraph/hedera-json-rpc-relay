@@ -1624,30 +1624,19 @@ export class EthImpl implements Eth {
 
     const selector = getFunctionSelector(call.data!);
 
-    // ETH_CALL_FORCE_CONSENSUS_BY_SELECTOR = true
     const shouldForceToConsensus =
       process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR == 'true' &&
       constants.ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS.indexOf(selector) !== -1;
 
-    console.log(
-      `SELECTOR: ${selector}, shouldForceToConsensus: ${shouldForceToConsensus}, ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR: ${process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR}`,
-    );
     // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-
     const shouldDefaultToConsensus = !(
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === undefined ||
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false'
     );
 
-    console.log(`shouldDefaultToConsensus: ${shouldDefaultToConsensus}`);
-    console.log(
-      `shouldForceToConsensus || shouldDefaultToConsensus: ${shouldForceToConsensus || shouldDefaultToConsensus}`,
-    );
-
     let result: string | JsonRpcError = '';
     try {
       if (shouldForceToConsensus || shouldDefaultToConsensus) {
-        console.log('CALLING CONESNSUS');
         result = await this.callConsensusNode(call, gas, requestIdPrefix);
       } else {
         //temporary workaround until precompiles are implemented in Mirror node evm module
