@@ -849,4 +849,58 @@ describe('@ethCall Eth Call spec', async function () {
       expect(transaction.gas).to.equal(50000);
     });
   });
+
+  describe.only('eth_call using consensus node because of redirect by selector', async function () {
+    let initialForceToCensensusBySelectorFF;
+    const REDIRECTED_SELECTOR = '0x4d8fdd6d';
+    const NON_REDIRECTED_SELECTOR = '0xaaaaaaaa';
+    let callConsensusNodeSpy: sinon.SinonSpy;
+    let callMirrorNodeSpy: sinon.SinonSpy;
+    let sandbox: sinon.SinonSandbox;
+
+    before(() => {
+      initialForceToCensensusBySelectorFF = process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR;
+      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = 'true';
+    });
+
+    after(() => {
+      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = initialForceToCensensusBySelectorFF;
+    });
+
+    beforeEach(() => {
+      sandbox = sinon.createSandbox();
+      callConsensusNodeSpy = sandbox.spy(ethImpl, 'callConsensusNode');
+      callMirrorNodeSpy = sandbox.spy(ethImpl, 'callMirrorNode');
+    });
+
+    afterEach(() => {
+      sandbox.restore();
+    });
+
+    it('eth_call with matched selector redirects to consensus', async function () {
+      await ethImpl.call(
+        {
+          to: ACCOUNT_ADDRESS_1,
+          data: REDIRECTED_SELECTOR,
+        },
+        'latest',
+      );
+
+      assert(callConsensusNodeSpy.calledOnce);
+      assert(callMirrorNodeSpy.notCalled);
+    });
+
+    it('eth_call with non-matched selector redirects to consensus', async function () {
+      await ethImpl.call(
+        {
+          to: ACCOUNT_ADDRESS_1,
+          data: NON_REDIRECTED_SELECTOR,
+        },
+        'latest',
+      );
+
+      assert(callConsensusNodeSpy.notCalled);
+      assert(callMirrorNodeSpy.calledOnce);
+    });
+  });
 });
