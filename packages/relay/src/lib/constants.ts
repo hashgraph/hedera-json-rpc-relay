@@ -188,6 +188,6 @@ export default {
   ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS: [
     // isAssociated()
     // calls to this method should be handled by Consensus until the required EVM changes are applied to the Mirror node
-    '0x4d8fdd6d',
+    '4d8fdd6d',
   ],
 };

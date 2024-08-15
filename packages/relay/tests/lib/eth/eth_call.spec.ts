@@ -852,6 +852,7 @@ describe('@ethCall Eth Call spec', async function () {
 
   describe('eth_call using consensus node because of redirect by selector', async function () {
     let initialForceToCensensusBySelectorFF;
+    let initialEthCallConesneusFF;
     const REDIRECTED_SELECTOR = '0x4d8fdd6d';
     const NON_REDIRECTED_SELECTOR = '0xaaaaaaaa';
     let callConsensusNodeSpy: sinon.SinonSpy;
@@ -860,11 +861,14 @@ describe('@ethCall Eth Call spec', async function () {
 
     before(() => {
       initialForceToCensensusBySelectorFF = process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR;
+      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
       process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = 'true';
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
     });
 
     after(() => {
       process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = initialForceToCensensusBySelectorFF;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
     beforeEach(() => {

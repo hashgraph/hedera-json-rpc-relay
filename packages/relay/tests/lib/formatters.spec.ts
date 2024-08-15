@@ -40,6 +40,7 @@ import {
   ASCIIToHex,
   formatRequestIdMessage,
   strip0x,
+  getFunctionSelector,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -639,6 +640,26 @@ describe('Formatters', () => {
           '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000';
         expect(decodeErrorMessage(hexErrorMessage)).to.equal('');
       });
+    });
+  });
+
+  describe('getFunctionSelector', () => {
+    it('should return an empty string when input is an empty string or undefined', () => {
+      const result = getFunctionSelector('');
+      expect(result).to.eq('');
+
+      const undefinedResult = getFunctionSelector(undefined);
+      expect(undefinedResult).to.eq('');
+    });
+
+    it('should return the first 8 characters of a valid hex string without "0x"', () => {
+      const result = getFunctionSelector('1234567890abcdef');
+      expect(result).to.eq('12345678');
+    });
+
+    it('should return the first 8 characters of a valid hex string starting with "0x"', () => {
+      const result = getFunctionSelector('0x1234567890abcdef');
+      expect(result).to.eq('12345678');
     });
   });
 });
