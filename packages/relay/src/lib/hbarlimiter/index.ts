@@ -20,6 +20,7 @@
 
 import { Logger } from 'pino';
 import { Registry, Counter, Gauge } from 'prom-client';
+import { formatRequestIdMessage } from '../../formatters';
 
 export default class HbarLimit {
   private enabled: boolean = false;
@@ -43,9 +44,9 @@ export default class HbarLimit {
       this.duration = duration;
     }
     this.remainingBudget = this.total;
-    this.logger.trace(`this.remainingBudget: ${this.remainingBudget}`);
 
     this.reset = currentDateNow + this.duration;
+    this.logger.trace(`remainingBudget=${this.remainingBudget} tℏ, resetTimestamp=${this.reset}`);
 
     const metricCounterName = 'rpc_relay_hbar_rate_limit';
     register.removeSingleMetric(metricCounterName);
@@ -68,10 +69,35 @@ export default class HbarLimit {
   }
 
   /**
-   * Decides whether we should limit expenses, based on remaining budget.
+   * Determines whether the HBAR rate limit should be applied to a given caller based on the current state of the limiter.
+   *
+   * Bypass if the originalCallerAddress is whitelisted
+   *
+   * @param {number} currentDateNow - The current date and time in milliseconds since the epoch.
+   * @param {string} mode - The mode of the transaction or request.
+   * @param {string} methodName - The name of the method being invoked.
+   * @param {string} originalCallerAddress - The address of the original caller making the request.
+   * @param {string} [requestId] - An optional unique request ID for tracking the request.
+   * @returns {boolean} - Returns `true` if the rate limit should be enforced, otherwise `false`.
    */
-  shouldLimit(currentDateNow: number, mode: string, methodName: string): boolean {
+  shouldLimit(
+    currentDateNow: number,
+    mode: string,
+    methodName: string,
+    originalCallerAddress: string,
+    requestId?: string,
+  ): boolean {
     if (!this.enabled) {
+      return false;
+    }
+
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+
+    // check if the caller is a whitelisted caller
+    if (this.isAccountWhiteListed(originalCallerAddress)) {
+      this.logger.trace(
+        `${requestIdPrefix} HBAR rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
+      );
       return false;
     }
 
@@ -82,22 +108,44 @@ export default class HbarLimit {
     if (this.remainingBudget <= 0) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
-        `Rate limit incoming calls, ${this.remainingBudget} out of ${this.total} tℏ left in relay budget until ${this.reset}`,
+        `${requestIdPrefix} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}`,
       );
       return true;
     }
+
+    this.logger.trace(
+      `${requestIdPrefix} HBAR rate limit not reached. ${this.remainingBudget} out of ${this.total} tℏ left in relay budget until ${this.reset}.`,
+    );
 
     return false;
   }
 
   /**
-   * Determines whether a transaction fee should be preemptively limited based on the remaining budget.
-   * @param {number} transactionFee - The transaction fee to be evaluated.
-   * @returns {boolean} A boolean indicating whether the transaction fee should be preemptively limited.
+   * Determines whether a preemptive HBAR rate limit should be applied based on the remaining budget and the transaction fee.
+   *
+   * Bypass if the originalCallerAddress is whitelisted
+   *
+   * @param {string} originalCallerAddress - The address of the original caller making the request.
+   * @param {number} transactionFee - The transaction fee in tinybars to be checked against the remaining budget.
+   * @param {string} [requestId] - An optional unique request ID for tracking the request.
+   * @returns {boolean} - Returns `true` if the rate limit should be preemptively enforced, otherwise `false`.
    */
+  shouldPreemtivelyLimit(originalCallerAddress: string, transactionFee: number, requestId?: string): boolean {
+    if (!this.enabled) {
+      return false;
+    }
 
-  shouldPreemtivelyLimit(transactionFee: number): boolean {
-    return this.remainingBudget - transactionFee <= 0;
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+
+    // check if the caller is a whitelisted caller
+    if (this.isAccountWhiteListed(originalCallerAddress)) {
+      this.logger.trace(
+        `${requestIdPrefix} HBAR preemtive rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
+      );
+      return false;
+    }
+
+    return this.remainingBudget - transactionFee < 0;
   }
 
   /**
@@ -113,6 +161,17 @@ export default class HbarLimit {
     }
     this.remainingBudget -= cost;
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
+  }
+
+  /**
+   * Checks if the given account address is whitelisted and exempt from HBAR rate limiting.
+   *
+   * @param {string} originalCallerAddress - The address of the original caller to check against the whitelist.
+   * @returns {boolean} - Returns `true` if the account is whitelisted, otherwise `false`.
+   */
+  isAccountWhiteListed(originalCallerAddress: string): boolean {
+    const whiteListedAccountIDs = process.env.HBAR_RATE_LIMIT_WHITELIST ?? [''];
+    return (whiteListedAccountIDs as string[]).includes(originalCallerAddress);
   }
 
   /**
