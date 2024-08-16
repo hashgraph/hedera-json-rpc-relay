@@ -145,12 +145,16 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
 };
 
 export class DefaultValidation<T extends object = any> implements IObjectValidation<T> {
-  public readonly object: T;
+  private readonly _object: T;
   protected readonly schema: IObjectSchema;
 
   constructor(schema: IObjectSchema, object: T) {
     this.schema = schema;
-    this.object = object;
+    this._object = object;
+  }
+
+  get object(): T {
+    return this._object;
   }
 
   validate() {
