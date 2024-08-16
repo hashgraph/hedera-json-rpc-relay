@@ -609,8 +609,13 @@ export class EthImpl implements Eth {
         `${requestIdPrefix} Error raised while fetching estimateGas from mirror-node: ${JSON.stringify(e)}`,
       );
       // in case of contract revert, we don't want to return a predefined gas but the actual error with the reason
-      if (this.estimateGasThrows && e instanceof MirrorNodeClientError && e.isContractReverted()) {
-        return predefined.CONTRACT_REVERT(e.detail || e.message, e.data);
+      if (
+        this.estimateGasThrows &&
+        e instanceof MirrorNodeClientError &&
+        e.isContractReverted() &&
+        e.message !== MirrorNodeClientError.messages.INVALID_HEX
+      ) {
+        return predefined.CONTRACT_REVERT(e.detail ?? e.message, e.data);
       }
       return this.predefinedGasForTransaction(transaction, requestIdPrefix, e);
     }
