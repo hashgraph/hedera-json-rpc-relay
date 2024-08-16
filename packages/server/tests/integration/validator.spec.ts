@@ -684,8 +684,10 @@ describe('Validator', async () => {
       value: '0x0',
       data: null,
     });
+
     it('returns true when transaction data is null and is nullable is true', async () => {
-      const result = Validator.validateObject(transactionFilterObject, {
+      const result = Validator.validateObject(transactionFilterObject.object, {
+        ...OBJECTS_VALIDATIONS.transaction,
         properties: {
           ...OBJECTS_VALIDATIONS.transaction.properties,
           data: {
@@ -700,7 +702,8 @@ describe('Validator', async () => {
 
     it('throws an error if Transaction Object data param is null and isNullable is false', async () => {
       expect(() =>
-        Validator.validateObject(transactionFilterObject, {
+        Validator.validateObject(transactionFilterObject.object, {
+          ...OBJECTS_VALIDATIONS.transaction,
           properties: {
             ...OBJECTS_VALIDATIONS.transaction.properties,
             data: {

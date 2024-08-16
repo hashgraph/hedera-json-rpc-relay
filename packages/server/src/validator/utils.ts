@@ -20,9 +20,7 @@
 
 import { Validator } from '.';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
-import { IObjectSchema, IObjectValidation } from '../types/validator/objectTypes';
-import { IMethodParamSchema } from '../types/validator/methods';
-import { ITypeValidation } from '../types/validator/types';
+import { IMethodParamSchema, IObjectSchema, ITypeValidation } from '../types/validator';
 
 export function validateParam(index: number | string, param: any, validation: IMethodParamSchema): void {
   const paramType = getParamType(validation.type);
@@ -70,13 +68,13 @@ function getParamType(validationType: string): ITypeValidation | ITypeValidation
   }
 }
 
-export function validateObject(object: IObjectValidation, filters: IObjectSchema) {
+export function validateObject<T extends object = any>(object: T, filters: IObjectSchema) {
   for (const property of Object.keys(filters.properties)) {
     const validation = filters.properties[property];
     const param = object[property];
 
     if (requiredIsMissing(param, validation.required)) {
-      throw predefined.MISSING_REQUIRED_PARAMETER(`'${property}' for ${object.name()}`);
+      throw predefined.MISSING_REQUIRED_PARAMETER(`'${property}' for ${filters.name}`);
     }
 
     if (isValidAndNonNullableParam(param, validation.nullable)) {
@@ -85,14 +83,14 @@ export function validateObject(object: IObjectValidation, filters: IObjectSchema
 
         if (!result) {
           throw predefined.INVALID_PARAMETER(
-            `'${property}' for ${object.name()}`,
+            `'${property}' for ${filters.name}`,
             `${Validator.TYPES[validation.type].error}, value: ${param}`,
           );
         }
       } catch (error: any) {
         if (error instanceof JsonRpcError) {
           throw predefined.INVALID_PARAMETER(
-            `'${property}' for ${object.name()}`,
+            `'${property}' for ${filters.name}`,
             `${Validator.TYPES[validation.type].error}, value: ${param}`,
           );
         }
@@ -112,15 +110,6 @@ export function validateArray(array: any[], innerType?: string): boolean {
   const isInnerType = (element: any) => Validator.TYPES[innerType].test(element);
 
   return array.every(isInnerType);
-}
-
-export function checkForUnexpectedParams(actual: any, expected: IObjectSchema, objectName: string): void {
-  const expectedParams = Object.keys(expected.properties);
-  const actualParams = Object.keys(actual);
-  const unknownParam = actualParams.find((param: any) => !expectedParams.includes(param));
-  if (unknownParam) {
-    throw predefined.INVALID_PARAMETER(`'${unknownParam}' for ${objectName}`, `Unknown parameter`);
-  }
 }
 
 export function requiredIsMissing(param: any, required: boolean | undefined): boolean {

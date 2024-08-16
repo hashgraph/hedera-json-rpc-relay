@@ -20,7 +20,7 @@
 
 import * as Constants from './constants';
 import { Validator } from '.';
-import { ITypeValidation } from '../types/validator/types';
+import { ITypeValidation } from '../types/validator';
 
 export const TYPES: { [key: string]: ITypeValidation } = {
   address: {

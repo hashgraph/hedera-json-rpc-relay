@@ -18,7 +18,7 @@
  *
  */
 
-import { IMethodValidation } from '../types/validator/methods';
+import { IMethodValidation } from '../types/validator';
 
 export const METHODS: { [key: string]: IMethodValidation } = {
   eth_estimateGas: {

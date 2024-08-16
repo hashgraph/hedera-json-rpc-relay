@@ -20,10 +20,12 @@
 
 import { Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
-import { IObjectSchema, IObjectValidation } from '../types/validator/objectTypes';
+import { IObjectSchema, IObjectValidation } from '../types/validator';
 
 export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
   blockHashObject: {
+    name: 'BlockHashObject',
+    failOnUnexpectedParams: true,
     properties: {
       blockHash: {
         type: 'blockHash',
@@ -32,6 +34,8 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
     },
   },
   blockNumberObject: {
+    name: 'BlockNumberObject',
+    failOnUnexpectedParams: true,
     properties: {
       blockNumber: {
         type: 'blockNumber',
@@ -40,6 +44,8 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
     },
   },
   filter: {
+    name: 'FilterObject',
+    failOnUnexpectedParams: true,
     properties: {
       blockHash: {
         type: 'blockHash',
@@ -64,6 +70,8 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
     },
   },
   transaction: {
+    name: 'TransactionObject',
+    failOnUnexpectedParams: true,
     properties: {
       from: {
         type: 'address',
@@ -120,6 +128,8 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
     },
   },
   ethSubscribeLogsParams: {
+    name: 'EthSubscribeLogsParamsObject',
+    failOnUnexpectedParams: true,
     properties: {
       address: {
         type: 'addressFilter',
@@ -134,126 +144,84 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
   },
 };
 
-export class TransactionObject implements IObjectValidation {
-  from?: string;
-  to: string;
-  gas?: string;
-  gasPrice?: string;
-  maxPriorityFeePerGas?: string;
-  maxFeePerGas?: string;
-  value?: string;
-  data?: string;
+export class DefaultValidation<T extends object = any> implements IObjectValidation<T> {
+  public readonly object: T;
+  protected readonly schema: IObjectSchema;
 
-  constructor(transaction: any) {
-    Validator.checkForUnexpectedParams(transaction, OBJECTS_VALIDATIONS.transaction, this.name());
-    this.from = transaction.from;
-    this.to = transaction.to;
-    this.gas = transaction.gas;
-    this.gasPrice = transaction.gasPrice;
-    this.maxPriorityFeePerGas = transaction.maxPriorityFeePerGas;
-    this.maxFeePerGas = transaction.maxFeePerGas;
-    this.value = transaction.value;
-    this.data = transaction.data;
+  constructor(schema: IObjectSchema, object: T) {
+    this.schema = schema;
+    this.object = object;
   }
 
   validate() {
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.transaction);
+    if (this.schema.failOnUnexpectedParams) {
+      this.checkForUnexpectedParams();
+    }
+    return Validator.validateObject(this.object, this.schema);
   }
 
   name() {
-    return this.constructor.name;
+    return this.schema.name;
+  }
+
+  checkForUnexpectedParams() {
+    const expectedParams = Object.keys(this.schema.properties);
+    const actualParams = Object.keys(this.object);
+    const unknownParam = actualParams.find((param) => !expectedParams.includes(param));
+    if (unknownParam) {
+      throw predefined.INVALID_PARAMETER(`'${unknownParam}' for ${this.schema.name}`, `Unknown parameter`);
+    }
   }
 }
 
-export class FilterObject implements IObjectValidation {
-  blockHash: string;
-  fromBlock?: string;
-  toBlock?: string;
-  address?: string | string[];
-  topics?: string[] | string[][];
+export class TransactionObject extends DefaultValidation {
+  constructor(transaction: any) {
+    super(OBJECTS_VALIDATIONS.transaction, transaction);
+  }
+}
 
+export class FilterObject extends DefaultValidation {
   constructor(filter: any) {
-    Validator.checkForUnexpectedParams(filter, OBJECTS_VALIDATIONS.filter, this.name());
-    this.blockHash = filter.blockHash;
-    this.fromBlock = filter.fromBlock;
-    this.toBlock = filter.toBlock;
-    this.address = filter.address;
-    this.topics = filter.topics;
+    super(OBJECTS_VALIDATIONS.filter, filter);
   }
 
   validate() {
-    if (this.blockHash && (this.toBlock || this.fromBlock)) {
+    if (this.object.blockHash && (this.object.toBlock || this.object.fromBlock)) {
       throw predefined.INVALID_PARAMETER(0, "Can't use both blockHash and toBlock/fromBlock");
     }
-
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.filter);
-  }
-
-  name() {
-    return this.constructor.name;
+    return super.validate();
   }
 }
 
-export class BlockHashObject implements IObjectValidation {
-  blockHash: string;
-
+export class BlockHashObject extends DefaultValidation {
   constructor(param: any) {
-    Validator.checkForUnexpectedParams(param, OBJECTS_VALIDATIONS.blockHashObject, this.name());
-    this.blockHash = param.blockHash;
-  }
-
-  validate() {
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.blockHashObject);
-  }
-
-  name() {
-    return this.constructor.name;
+    super(OBJECTS_VALIDATIONS.blockHashObject, param);
   }
 }
 
-export class BlockNumberObject implements IObjectValidation {
-  blockNumber: string;
-
+export class BlockNumberObject extends DefaultValidation {
   constructor(param: any) {
-    Validator.checkForUnexpectedParams(param, OBJECTS_VALIDATIONS.blockNumberObject, this.name());
-    this.blockNumber = param.blockNumber;
-  }
-
-  validate() {
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.blockNumberObject);
-  }
-
-  name() {
-    return this.constructor.name;
+    super(OBJECTS_VALIDATIONS.blockNumberObject, param);
   }
 }
 
-export class EthSubscribeLogsParamsObject implements IObjectValidation {
-  address?: string | string[];
-  topics?: string[] | string[][];
-
+export class EthSubscribeLogsParamsObject extends DefaultValidation {
   constructor(param: any) {
-    Validator.checkForUnexpectedParams(param, OBJECTS_VALIDATIONS.ethSubscribeLogsParams, this.name());
-    this.address = param.address;
-    this.topics = param.topics;
+    super(OBJECTS_VALIDATIONS.ethSubscribeLogsParams, param);
   }
 
   validate() {
-    const valid = Validator.validateObject(this, OBJECTS_VALIDATIONS.ethSubscribeLogsParams);
+    const valid = super.validate();
     // address and is not an empty array
     if (
       valid &&
-      Array.isArray(this.address) &&
-      this.address.length === 0 &&
+      Array.isArray(this.object.address) &&
+      this.object.address.length === 0 &&
       OBJECTS_VALIDATIONS.ethSubscribeLogsParams.properties.address.required
     ) {
-      throw predefined.MISSING_REQUIRED_PARAMETER(`'address' for ${this.name()}`);
+      throw predefined.MISSING_REQUIRED_PARAMETER(`'address' for ${this.schema.name}`);
     }
 
     return valid;
-  }
-
-  name() {
-    return this.constructor.name;
   }
 }
