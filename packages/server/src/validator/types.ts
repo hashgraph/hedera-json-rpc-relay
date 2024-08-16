@@ -20,7 +20,7 @@
 
 import * as Constants from './constants';
 import { CallTracerConfig, OpcodeLoggerConfig, TracerConfigWrapper, Validator } from '.';
-import { ITypeValidation } from '../types/validator/types';
+import { ITypeValidation } from '../types/validator';
 import {
   ICallTracerConfig,
   IOpcodeLoggerConfig,

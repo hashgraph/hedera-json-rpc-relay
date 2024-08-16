@@ -1,3 +1,23 @@
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import { expect } from 'chai';
 import { OBJECTS_VALIDATIONS, TracerType, TransactionObject, Validator } from '../../src/validator';
 
@@ -807,8 +827,10 @@ describe('Validator', async () => {
       value: '0x0',
       data: null,
     });
+
     it('returns true when transaction data is null and is nullable is true', async () => {
-      const result = Validator.validateObject(transactionFilterObject, {
+      const result = Validator.validateObject(transactionFilterObject.object, {
+        ...OBJECTS_VALIDATIONS.transaction,
         properties: {
           ...OBJECTS_VALIDATIONS.transaction.properties,
           data: {
@@ -823,7 +845,8 @@ describe('Validator', async () => {
 
     it('throws an error if Transaction Object data param is null and isNullable is false', async () => {
       expect(() =>
-        Validator.validateObject(transactionFilterObject, {
+        Validator.validateObject(transactionFilterObject.object, {
+          ...OBJECTS_VALIDATIONS.transaction,
           properties: {
             ...OBJECTS_VALIDATIONS.transaction.properties,
             data: {
@@ -989,6 +1012,36 @@ describe('Validator', async () => {
       }
 
       expect(errorOccurred).to.be.eq(false);
+    });
+  });
+
+  describe('validates tracerConfig type correctly', () => {
+    it('returns true for an empty object', () => {
+      expect(Validator.TYPES.tracerConfig.test({})).to.be.true;
+    });
+
+    it('returns true for a valid call tracer config', () => {
+      expect(Validator.TYPES.tracerConfig.test({ onlyTopCall: true })).to.be.true;
+      expect(Validator.TYPES.tracerConfig.test({ onlyTopCall: false })).to.be.true;
+    });
+
+    it('returns true for a valid opcode logger config', () => {
+      expect(Validator.TYPES.tracerConfig.test({ disableMemory: true })).to.be.true;
+      expect(Validator.TYPES.tracerConfig.test({ disableStack: true })).to.be.true;
+      expect(Validator.TYPES.tracerConfig.test({ disableStorage: true })).to.be.true;
+    });
+
+    it('returns false for an invalid config', () => {
+      expect(Validator.TYPES.tracerConfig.test({ invalidKey: true })).to.be.false;
+      expect(Validator.TYPES.tracerConfig.test({ onlyTopCall: 'true' })).to.be.false;
+      expect(Validator.TYPES.tracerConfig.test({ disableMemory: 'true' })).to.be.false;
+    });
+
+    it('returns false for non-object values', () => {
+      expect(Validator.TYPES.tracerConfig.test(null)).to.be.false;
+      expect(Validator.TYPES.tracerConfig.test(undefined)).to.be.false;
+      expect(Validator.TYPES.tracerConfig.test(123)).to.be.false;
+      expect(Validator.TYPES.tracerConfig.test('string')).to.be.false;
     });
   });
 

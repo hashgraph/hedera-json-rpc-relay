@@ -35,7 +35,9 @@ import {
   numberTo0x,
   parseNumericEnvVar,
   prepend0x,
+  strip0x,
   toHash32,
+  toHexString,
   toNullableBigNumber,
   toNullIfEmptyHex,
   trimPrecedingZeros,
@@ -91,6 +93,10 @@ describe('Formatters', () => {
       for (let i = 0; i < inputs.length; i++) {
         expect(decodeErrorMessage(inputs[i])).to.eq(outputs[i]);
       }
+    });
+
+    it('should return empty string when we dont pass params', async function () {
+      expect(decodeErrorMessage()).to.equal('');
     });
   });
 
@@ -326,6 +332,16 @@ describe('Formatters', () => {
       const formattedResult: any = formatContractResult({ ...contractResult, chain_id: '0x' });
       expect(formattedResult.chainId).to.be.undefined;
     });
+
+    it('Should return legacy EIP155 transaction when null type', () => {
+      const formattedResult: any = formatContractResult({ ...contractResult, type: null });
+      expect(formattedResult.type).to.be.eq('0x0');
+    });
+
+    it('Should return null when contract result type is undefined', async function () {
+      const formattedResult = formatContractResult({ ...contractResult, type: undefined });
+      expect(formattedResult).to.be.null;
+    });
   });
 
   describe('prepend0x', () => {
@@ -505,6 +521,7 @@ describe('Formatters', () => {
       expect(isValidEthereumAddress(address)).to.equal(false);
     });
   });
+
   describe('isHex Function', () => {
     it('should return true for valid lowercase hexadecimal string', () => {
       expect(isHex('0x1a3f')).to.be.true;
@@ -542,6 +559,7 @@ describe('Formatters', () => {
       expect(isHex('0x58')).to.be.true;
     });
   });
+
   describe('ASCIIToHex Function', () => {
     const inputs = ['Lorem Ipsum', 'Foo', 'Bar'];
     const outputs = ['4c6f72656d20497073756d', '466f6f', '426172'];
@@ -562,6 +580,93 @@ describe('Formatters', () => {
       for (let i = 0; i < inputs.length; i++) {
         expect(ASCIIToHex(inputs[i])).to.eq(outputs[i]);
       }
+    });
+  });
+
+  describe('strip0x', () => {
+    it('should strip "0x" from the beginning of a string', () => {
+      const input = '0x123abc';
+      const result = strip0x(input);
+      expect(result).to.equal('123abc');
+    });
+
+    it('should return the same string if it does not start with "0x"', () => {
+      const input = '123abc';
+      const result = strip0x(input);
+      expect(result).to.equal('123abc');
+    });
+
+    it('should return an empty string if input is an empty string', () => {
+      const input = '';
+      const result = strip0x(input);
+      expect(result).to.equal('');
+    });
+
+    it('should handle input that only contains "0x"', () => {
+      const input = '0x';
+      const result = strip0x(input);
+      expect(result).to.equal('');
+    });
+
+    it('should not modify a string that contains "0x" not at the start', () => {
+      const input = '1230xabc';
+      const result = strip0x(input);
+      expect(result).to.equal('1230xabc');
+    });
+
+    describe('decodeErrorMessage', () => {
+      it('should return an empty string if the message is undefined', () => {
+        expect(decodeErrorMessage(undefined)).to.equal('');
+      });
+
+      it('should return an empty string if the message is an empty string', () => {
+        expect(decodeErrorMessage('')).to.equal('');
+      });
+
+      it('should return the message as is if it does not start with 0x', () => {
+        const message = 'Some non-hex error message';
+        expect(decodeErrorMessage(message)).to.equal(message);
+      });
+
+      it('should decode a valid error message', () => {
+        const hexErrorMessage =
+          '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';
+        const decodedMessage = 'Set to revert';
+
+        expect(decodeErrorMessage(hexErrorMessage)).to.equal(decodedMessage);
+      });
+
+      it('should return an empty string for a valid hex message with no content', () => {
+        const hexErrorMessage =
+          '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000';
+        expect(decodeErrorMessage(hexErrorMessage)).to.equal('');
+      });
+    });
+  });
+
+  describe('toHexString', () => {
+    it('should convert a Uint8Array with single byte values to a hex string', () => {
+      const byteArray = new Uint8Array([0x00, 0xff, 0x7f]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('00ff7f');
+    });
+
+    it('should convert a Uint8Array with multiple byte values to a hex string', () => {
+      const byteArray = new Uint8Array([0x12, 0x34, 0x56, 0x78]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('12345678');
+    });
+
+    it('should convert an empty Uint8Array to an empty hex string', () => {
+      const byteArray = new Uint8Array([]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('');
+    });
+
+    it('should convert a Uint8Array with maximum byte value (0xff) to a hex string', () => {
+      const byteArray = new Uint8Array([0xff, 0xff, 0xff]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('ffffff');
     });
   });
 

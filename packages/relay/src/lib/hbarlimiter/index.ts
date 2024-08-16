@@ -19,7 +19,8 @@
  */
 
 import { Logger } from 'pino';
-import { Registry, Counter, Gauge } from 'prom-client';
+import { Counter, Gauge, Registry } from 'prom-client';
+import { formatRequestIdMessage } from '../../formatters';
 
 export default class HbarLimit {
   private enabled: boolean = false;
@@ -43,9 +44,9 @@ export default class HbarLimit {
       this.duration = duration;
     }
     this.remainingBudget = this.total;
-    this.logger.trace(`this.remainingBudget: ${this.remainingBudget}`);
-
     this.reset = currentDateNow + this.duration;
+
+    this.logger.trace(`remainingBudget=${this.remainingBudget} tℏ, resetTimeStamp=${this.reset}`);
 
     const metricCounterName = 'rpc_relay_hbar_rate_limit';
     register.removeSingleMetric(metricCounterName);
@@ -70,22 +71,28 @@ export default class HbarLimit {
   /**
    * Decides whether we should limit expenses, based on remaining budget.
    */
-  shouldLimit(currentDateNow: number, mode: string, methodName: string): boolean {
+  shouldLimit(currentDateNow: number, mode: string, methodName: string, requestId?: string): boolean {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+
     if (!this.enabled) {
       return false;
     }
 
     if (this.shouldResetLimiter(currentDateNow)) {
-      this.resetLimiter(currentDateNow);
+      this.resetLimiter(currentDateNow, requestIdPrefix);
     }
 
     if (this.remainingBudget <= 0) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
-        `Rate limit incoming calls, ${this.remainingBudget} out of ${this.total} tℏ left in relay budget until ${this.reset}`,
+        `${requestIdPrefix} Rate limit incoming call: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp: ${this.reset}`,
       );
       return true;
     }
+
+    this.logger.trace(
+      `${requestIdPrefix} Rate limit not reached. ${this.remainingBudget} out of ${this.total} tℏ left in relay budget until ${this.reset}.`,
+    );
 
     return false;
   }
@@ -95,24 +102,29 @@ export default class HbarLimit {
    * @param {number} transactionFee - The transaction fee to be evaluated.
    * @returns {boolean} A boolean indicating whether the transaction fee should be preemptively limited.
    */
-
   shouldPreemtivelyLimit(transactionFee: number): boolean {
-    return this.remainingBudget - transactionFee <= 0;
+    return this.remainingBudget - transactionFee < 0;
   }
 
   /**
    * Add expense to the remaining budget.
    */
-  addExpense(cost: number, currentDateNow: number) {
+  addExpense(cost: number, currentDateNow: number, requestId?: string) {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+
     if (!this.enabled) {
       return;
     }
 
     if (this.shouldResetLimiter(currentDateNow)) {
-      this.resetLimiter(currentDateNow);
+      this.resetLimiter(currentDateNow, requestIdPrefix);
     }
     this.remainingBudget -= cost;
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
+
+    this.logger.trace(
+      `${requestIdPrefix} HBAR rate limit expense update: cost=${cost}, remainingBudget=${this.remainingBudget}, resetTimeStamp=${this.reset}`,
+    );
   }
 
   /**
@@ -146,8 +158,11 @@ export default class HbarLimit {
   /**
    * Reset budget to the total allowed and reset timer to current time plus duration.
    */
-  private resetLimiter(currentDateNow: number) {
+  private resetLimiter(currentDateNow: number, requestIdPrefix: string) {
     this.reset = currentDateNow + this.duration;
     this.remainingBudget = this.total;
+    this.logger.trace(
+      `${requestIdPrefix} HBAR Rate Limit reset: remainingBudget= ${this.remainingBudget}, newResetTimestamp= ${this.reset}`,
+    );
   }
 }
