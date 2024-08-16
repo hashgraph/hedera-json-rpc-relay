@@ -37,6 +37,7 @@ export class MirrorNodeClientError extends Error {
 
   static messages = {
     INVALID_HEX: 'data field invalid hexadecimal string',
+    INVALID_FROM: 'from field must not be empty',
   };
 
   constructor(error: any, statusCode: number) {

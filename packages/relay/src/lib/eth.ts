@@ -175,6 +175,10 @@ export class EthImpl implements Eth {
   private readonly estimateGasThrows = process.env.ESTIMATE_GAS_THROWS
     ? process.env.ESTIMATE_GAS_THROWS === 'true'
     : true;
+  private readonly estimateGasIgnoredErrors = [
+    MirrorNodeClientError.messages.INVALID_HEX,
+    MirrorNodeClientError.messages.INVALID_FROM,
+  ];
 
   private readonly ethGasPRiceCacheTtlMs = parseNumericEnvVar(
     'ETH_GET_GAS_PRICE_CACHE_TTL_MS',
@@ -613,7 +617,7 @@ export class EthImpl implements Eth {
         this.estimateGasThrows &&
         e instanceof MirrorNodeClientError &&
         e.isContractReverted() &&
-        e.message !== MirrorNodeClientError.messages.INVALID_HEX
+        !this.estimateGasIgnoredErrors.includes(e.message)
       ) {
         return predefined.CONTRACT_REVERT(e.detail ?? e.message, e.data);
       }
