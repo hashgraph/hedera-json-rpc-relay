@@ -175,10 +175,6 @@ export class EthImpl implements Eth {
   private readonly estimateGasThrows = process.env.ESTIMATE_GAS_THROWS
     ? process.env.ESTIMATE_GAS_THROWS === 'true'
     : true;
-  private readonly estimateGasIgnoredErrors = [
-    MirrorNodeClientError.messages.INVALID_HEX,
-    MirrorNodeClientError.messages.INVALID_FROM,
-  ];
 
   private readonly ethGasPRiceCacheTtlMs = parseNumericEnvVar(
     'ETH_GET_GAS_PRICE_CACHE_TTL_MS',
@@ -613,12 +609,7 @@ export class EthImpl implements Eth {
         `${requestIdPrefix} Error raised while fetching estimateGas from mirror-node: ${JSON.stringify(e)}`,
       );
       // in case of contract revert, we don't want to return a predefined gas but the actual error with the reason
-      if (
-        this.estimateGasThrows &&
-        e instanceof MirrorNodeClientError &&
-        e.isContractReverted() &&
-        !this.estimateGasIgnoredErrors.includes(e.message)
-      ) {
+      if (this.estimateGasThrows && e instanceof MirrorNodeClientError && e.isContractRevertOpcodeExecuted()) {
         return predefined.CONTRACT_REVERT(e.detail ?? e.message, e.data);
       }
       return this.predefinedGasForTransaction(transaction, requestIdPrefix, e);
