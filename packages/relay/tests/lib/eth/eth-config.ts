@@ -22,9 +22,9 @@ import {
   defaultLogs1,
   defaultLogs2,
   defaultLogs3,
+  LONG_ZERO_ADDRESS,
   mockData,
   toHex,
-  LONG_ZERO_ADDRESS,
 } from '../../helpers';
 import { numberTo0x } from '../../../dist/formatters';
 import constants from '../../../src/lib/constants';
@@ -572,6 +572,10 @@ export const DEFAULT_LOGS = {
 export const DEFAULT_ETH_GET_BLOCK_BY_LOGS = {
   logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1]],
 };
+
+// This is the computed hash of an empty Trie object
+export const DEFAULT_ROOT_HASH = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
+
 export const BLOCK_BY_HASH_FROM_RELAY = {
   timestamp: '0x652dbbb7',
   difficulty: '0x0',
@@ -590,7 +594,7 @@ export const BLOCK_BY_HASH_FROM_RELAY = {
   stateRoot: '0x0000000000000000000000000000000000000000000000000000000000000000',
   totalDifficulty: '0x0',
   transactions: [],
-  transactionsRoot: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
+  transactionsRoot: DEFAULT_ROOT_HASH,
   uncles: [],
   withdrawals: [],
   withdrawalsRoot: '0x0',

@@ -19,10 +19,12 @@
  */
 
 export type IObjectSchema = {
-  failOnEmpty?: boolean;
+  name: string;
   properties: {
     [key: string]: IObjectParamSchema;
   };
+  failOnEmpty?: boolean;
+  failOnUnexpectedParams?: boolean;
 };
 
 export type IObjectParamSchema = {
@@ -31,7 +33,9 @@ export type IObjectParamSchema = {
   required?: boolean;
 };
 
-export interface IObjectValidation {
+export interface IObjectValidation<T extends object = any> {
+  get object(): T;
   validate(): boolean;
   name(): string;
+  checkForUnexpectedParams(): void;
 }

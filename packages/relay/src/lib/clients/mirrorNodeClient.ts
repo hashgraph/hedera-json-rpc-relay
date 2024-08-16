@@ -18,69 +18,30 @@
  *
  */
 
-import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
-import { Logger } from 'pino';
-import constants from './../constants';
-import { Histogram, Registry } from 'prom-client';
-import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
-import axiosRetry from 'axios-retry';
-import { predefined } from '../errors/JsonRpcError';
-import { SDKClientError } from '../errors/SDKClientError';
-import { install as betterLookupInstall } from 'better-lookup';
-import { CacheService } from '../services/cacheService/cacheService';
-
 import http from 'http';
 import https from 'https';
+import { Logger } from 'pino';
 import { ethers } from 'ethers';
+import axiosRetry from 'axios-retry';
+import constants from './../constants';
+import { Histogram, Registry } from 'prom-client';
+import { predefined } from '../errors/JsonRpcError';
+import { SDKClientError } from '../errors/SDKClientError';
 import { IOpcodesResponse } from './models/IOpcodesResponse';
+import { install as betterLookupInstall } from 'better-lookup';
+import { CacheService } from '../services/cacheService/cacheService';
+import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
+import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
+import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import {
+  IContractCallRequest,
+  IContractCallResponse,
+  IContractLogsResultsParams,
+  IContractResultsParams,
+  ILimitOrderParams,
+} from '../types/IMirrorNode';
 
 type REQUEST_METHODS = 'GET' | 'POST';
-
-export interface ILimitOrderParams {
-  limit?: number;
-  order?: string;
-}
-
-export interface IContractResultsParams {
-  blockHash?: string;
-  blockNumber?: number;
-  from?: string;
-  internal?: boolean;
-  timestamp?: string | string[];
-  transactionIndex?: number;
-}
-
-export interface IContractLogsResultsParams {
-  'transaction.hash': string;
-  index?: number;
-  timestamp?: string | string[];
-  topic0?: string | string[];
-  topic1?: string | string[];
-  topic2?: string | string[];
-  topic3?: string | string[];
-}
-
-export interface IContractCallRequest {
-  block?: string;
-  estimate?: boolean;
-  from?: string;
-  to?: string | null;
-  gas?: number | string;
-  gasPrice?: number | string;
-  value?: number | string | null;
-  data?: string | null;
-  input?: string;
-}
-
-export interface IContractCallResponse {
-  result?: string;
-  errorMessage?: string;
-  statusCode?: number;
-  _status?: {
-    messages: Array<{ message: string; detail: string; data: string }>;
-  };
-}
 
 export class MirrorNodeClient {
   private static GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
@@ -600,7 +561,7 @@ export class MirrorNodeClient {
 
   public async getBlock(hashOrBlockNumber: string | number, requestIdPrefix?: string) {
     const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.${hashOrBlockNumber}`;
-    const cachedResponse: any = this.cacheService.get(
+    const cachedResponse: any = await this.cacheService.getAsync(
       cachedLabel,
       MirrorNodeClient.GET_BLOCK_ENDPOINT,
       requestIdPrefix,
@@ -615,7 +576,7 @@ export class MirrorNodeClient {
       requestIdPrefix,
     );
 
-    this.cacheService.set(cachedLabel, block, MirrorNodeClient.GET_BLOCK_ENDPOINT, undefined, requestIdPrefix);
+    await this.cacheService.set(cachedLabel, block, MirrorNodeClient.GET_BLOCK_ENDPOINT, undefined, requestIdPrefix);
     return block;
   }
 
@@ -650,13 +611,13 @@ export class MirrorNodeClient {
     return `${constants.CACHE_KEY.GET_CONTRACT}.valid.${contractIdOrAddress}`;
   }
 
-  public getIsValidContractCache(contractIdOrAddress, requestIdPrefix?: string): any {
+  public async getIsValidContractCache(contractIdOrAddress, requestIdPrefix?: string): Promise<any> {
     const cachedLabel = this.getIsValidContractCacheLabel(contractIdOrAddress);
-    return this.cacheService.get(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT, requestIdPrefix);
+    return await this.cacheService.getAsync(cachedLabel, MirrorNodeClient.GET_CONTRACT_ENDPOINT, requestIdPrefix);
   }
 
   public async isValidContract(contractIdOrAddress: string, requestIdPrefix?: string, retries?: number) {
-    const cachedResponse: any = this.getIsValidContractCache(contractIdOrAddress, requestIdPrefix);
+    const cachedResponse: any = await this.getIsValidContractCache(contractIdOrAddress, requestIdPrefix);
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
@@ -665,7 +626,7 @@ export class MirrorNodeClient {
     const valid = contract != null;
 
     const cachedLabel = this.getIsValidContractCacheLabel(contractIdOrAddress);
-    this.cacheService.set(
+    await this.cacheService.set(
       cachedLabel,
       valid,
       MirrorNodeClient.GET_CONTRACT_ENDPOINT,
@@ -677,7 +638,7 @@ export class MirrorNodeClient {
 
   public async getContractId(contractIdOrAddress: string, requestIdPrefix?: string, retries?: number) {
     const cachedLabel = `${constants.CACHE_KEY.GET_CONTRACT}.id.${contractIdOrAddress}`;
-    const cachedResponse: any = this.cacheService.get(
+    const cachedResponse: any = await this.cacheService.getAsync(
       cachedLabel,
       MirrorNodeClient.GET_CONTRACT_ENDPOINT,
       requestIdPrefix,
@@ -695,7 +656,7 @@ export class MirrorNodeClient {
 
     if (contract != null) {
       const id = contract.contract_id;
-      this.cacheService.set(
+      await this.cacheService.set(
         cachedLabel,
         id,
         MirrorNodeClient.GET_CONTRACT_ENDPOINT,
@@ -710,7 +671,7 @@ export class MirrorNodeClient {
 
   public async getContractResult(transactionIdOrHash: string, requestIdPrefix?: string) {
     const cacheKey = `${constants.CACHE_KEY.GET_CONTRACT_RESULT}.${transactionIdOrHash}`;
-    const cachedResponse = this.cacheService.get(cacheKey, MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT);
+    const cachedResponse = await this.cacheService.getAsync(cacheKey, MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT);
 
     if (cachedResponse) {
       return cachedResponse;
@@ -728,7 +689,7 @@ export class MirrorNodeClient {
       response.block_number != undefined &&
       response.result === 'SUCCESS'
     ) {
-      this.cacheService.set(
+      await this.cacheService.set(
         cacheKey,
         response,
         MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT,
@@ -898,7 +859,11 @@ export class MirrorNodeClient {
 
   public async getEarliestBlock(requestId?: string) {
     const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.earliest`;
-    const cachedResponse: any = this.cacheService.get(cachedLabel, MirrorNodeClient.GET_BLOCKS_ENDPOINT, requestId);
+    const cachedResponse: any = await this.cacheService.getAsync(
+      cachedLabel,
+      MirrorNodeClient.GET_BLOCKS_ENDPOINT,
+      requestId,
+    );
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
@@ -911,7 +876,7 @@ export class MirrorNodeClient {
     );
     if (blocks && blocks.blocks.length > 0) {
       const block = blocks.blocks[0];
-      this.cacheService.set(
+      await this.cacheService.set(
         cachedLabel,
         block,
         MirrorNodeClient.GET_BLOCKS_ENDPOINT,
@@ -1172,7 +1137,7 @@ export class MirrorNodeClient {
     retries?: number,
   ) {
     const cachedLabel = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${entityIdentifier}`;
-    const cachedResponse: { type: string; entity: any } | undefined = this.cacheService.get(
+    const cachedResponse: { type: string; entity: any } | undefined = await this.cacheService.getAsync(
       cachedLabel,
       callerName,
       requestIdPrefix,
@@ -1198,7 +1163,7 @@ export class MirrorNodeClient {
           type: constants.TYPE_CONTRACT,
           entity: contract,
         };
-        this.cacheService.set(cachedLabel, response, callerName, undefined, requestIdPrefix);
+        await this.cacheService.set(cachedLabel, response, callerName, undefined, requestIdPrefix);
         return response;
       }
     }
@@ -1253,7 +1218,7 @@ export class MirrorNodeClient {
       type,
       entity: data.value,
     };
-    this.cacheService.set(cachedLabel, response, callerName, undefined, requestIdPrefix);
+    await this.cacheService.set(cachedLabel, response, callerName, undefined, requestIdPrefix);
     return response;
   }
 
@@ -1277,7 +1242,22 @@ export class MirrorNodeClient {
   public async repeatedRequest(methodName: string, args: any[], repeatCount: number, requestId?: string) {
     let result;
     for (let i = 0; i < repeatCount; i++) {
-      result = await this[methodName](...args, requestId);
+      try {
+        result = await this[methodName](...args, requestId);
+      } catch (e: any) {
+        // note: for some methods, it will throw 404 not found error as the record is not yet recorded in mirror-node
+        //       if error is 404, `result` would be assigned as null for it to not break out the loop.
+        //       Any other error will be notified in logs
+        if (e.statusCode === 404) {
+          result = null;
+        } else {
+          this.logger.warn(
+            e,
+            `${requestId} Error raised during polling mirror node for updated records: method=${methodName}, args=${args}`,
+          );
+        }
+      }
+
       if (result) {
         break;
       }

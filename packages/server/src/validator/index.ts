@@ -20,7 +20,7 @@
 
 import { validateParam } from './utils';
 
-import { IMethodValidation } from '../types/validator/methods';
+import { IMethodValidation } from '../types/validator';
 
 export function validateParams(params: any[], indexes: IMethodValidation) {
   for (const index of Object.keys(indexes)) {
