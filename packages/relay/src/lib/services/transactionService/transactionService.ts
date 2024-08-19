@@ -97,7 +97,7 @@ export default class TransactionService {
           `${formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
         );
 
-        // retrieve operaotr's balance before the execution
+        // retrieve operator's balance before the execution
         const operatorBalanceBefore = await this.sdkClient.getBalanceInTinyBars(
           operatorAccountId,
           callerName,
