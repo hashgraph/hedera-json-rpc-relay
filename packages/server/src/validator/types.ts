@@ -81,7 +81,7 @@ export const TYPES: { [key: string]: ITypeValidation } = {
     error: `Expected FilterObject`,
   },
   hex: {
-    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX).test(param),
+    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '?$').test(param),
     error: Constants.DEFAULT_HEX_ERROR,
   },
   topicHash: {

@@ -18,7 +18,7 @@
  *
  */
 
-export const BASE_HEX_REGEX = '^0[xX][a-fA-F0-9]?';
+export const BASE_HEX_REGEX = '^0[xX][a-fA-F0-9]';
 export const ERROR_CODE = -32602;
 export const DEFAULT_HEX_ERROR = 'Expected 0x prefixed hexadecimal value';
 export const HASH_ERROR = '0x prefixed string representing the hash (32 bytes)';
