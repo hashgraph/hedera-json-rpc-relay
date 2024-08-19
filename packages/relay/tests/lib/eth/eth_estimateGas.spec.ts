@@ -32,6 +32,7 @@ import { Precheck } from '../../../src/lib/precheck';
 import { createStubInstance, stub, SinonStub, SinonStubbedInstance } from 'sinon';
 import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
 import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS, ONE_TINYBAR_IN_WEI_HEX, RECEIVER_ADDRESS } from './eth-config';
+import { AbiCoder, keccak256 } from 'ethers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -429,6 +430,54 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c496e76616c6964206e756d626572206f6620726563697069656e747300000000',
     );
     expect(result.message).to.equal('execution reverted: Invalid number of recipients');
+  });
+
+  it('should eth_estimateGas with contract revert for contract call and custom contract error', async function () {
+    const decodedMessage = 'Some error message';
+    const customErrorSignature = keccak256(Buffer.from('CustomError(string)')).slice(0, 10); // 0x8d6ea8be
+    const encodedMessage = new AbiCoder().encode(['string'], [decodedMessage]).replace('0x', '');
+    const encodedCustomError = customErrorSignature + encodedMessage;
+
+    web3Mock.onPost('contracts/call', { ...transaction, estimate: true }).reply(400, {
+      _status: {
+        messages: [
+          {
+            message: 'CONTRACT_REVERT_EXECUTED',
+            detail: decodedMessage,
+            data: encodedCustomError,
+          },
+        ],
+      },
+    });
+
+    const result: any = await ethImpl.estimateGas(transaction, id);
+
+    expect(result.data).to.equal(encodedCustomError);
+    expect(result.message).to.equal(`execution reverted: ${decodedMessage}`);
+  });
+
+  it('should eth_estimateGas with contract revert for contract call and generic revert error', async function () {
+    const decodedMessage = 'Some error message';
+    const defaultErrorSignature = keccak256(Buffer.from('Error(string)')).slice(0, 10); // 0x08c379a0
+    const encodedMessage = new AbiCoder().encode(['string'], [decodedMessage]).replace('0x', '');
+    const encodedGenericError = defaultErrorSignature + encodedMessage;
+
+    web3Mock.onPost('contracts/call', { ...transaction, estimate: true }).reply(400, {
+      _status: {
+        messages: [
+          {
+            message: 'CONTRACT_REVERT_EXECUTED',
+            detail: decodedMessage,
+            data: encodedGenericError,
+          },
+        ],
+      },
+    });
+
+    const result: any = await ethImpl.estimateGas(transaction, id);
+
+    expect(result.data).to.equal(encodedGenericError);
+    expect(result.message).to.equal(`execution reverted: ${decodedMessage}`);
   });
 
   it('should eth_estimateGas handles a 501 unimplemented response from the mirror node correctly by returning default gas', async function () {
