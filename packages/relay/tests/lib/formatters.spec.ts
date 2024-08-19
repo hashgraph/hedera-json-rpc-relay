@@ -41,6 +41,7 @@ import {
   formatRequestIdMessage,
   strip0x,
   getFunctionSelector,
+  toHexString,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
