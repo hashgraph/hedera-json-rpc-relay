@@ -87,7 +87,7 @@ export const TYPES: { [key: string]: ITypeValidation } = {
     error: `Expected FilterObject`,
   },
   hex: {
-    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX).test(param),
+    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '*$').test(param),
     error: Constants.DEFAULT_HEX_ERROR,
   },
   topicHash: {
@@ -145,7 +145,7 @@ export const TYPES: { [key: string]: ITypeValidation } = {
     error: 'Expected OpcodeLoggerConfig',
   },
   tracerConfig: {
-    test: (param: any): param is ITracerConfig => {
+    test: (param: Record<string, any>): param is ITracerConfig => {
       if (param && typeof param === 'object') {
         const isEmptyObject = Object.keys(param).length === 0;
         const isValidCallTracerConfig = TYPES.callTracerConfig.test(param);

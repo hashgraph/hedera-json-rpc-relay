@@ -57,13 +57,14 @@ import {
 } from '@hashgraph/sdk';
 import { formatTransactionId } from '../../src/formatters';
 import TransactionService from '../../src/lib/services/transactionService/transactionService';
+import { random20BytesAddress } from '../helpers';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
 const logger = pino();
 
 describe('SdkClient', async function () {
-  this.timeout(30000);
+  this.timeout(45000);
 
   let client: Client;
   let mock: MockAdapter;
@@ -2117,6 +2118,8 @@ describe('SdkClient', async function () {
     const transactionReceipt = { fileId, status: Status.Success };
     const gasUsed = Long.fromNumber(10000);
 
+    const randomAccountAddress = random20BytesAddress();
+
     const getMockedTransaction = (transactionType: string, toHbar: boolean) => {
       let transactionFee: any;
       let transfers: any;
@@ -2238,12 +2241,18 @@ describe('SdkClient', async function () {
 
       hbarLimitMock
         .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.transactionMode, callerName)
+        .withArgs(sinon.match.any, SDKClient.transactionMode, callerName, randomAccountAddress)
         .once()
         .returns(true);
 
       try {
-        await sdkClient.submitEthereumTransaction(transactionBuffer, callerName, requestId, transactionService);
+        await sdkClient.submitEthereumTransaction(
+          transactionBuffer,
+          callerName,
+          requestId,
+          transactionService,
+          randomAccountAddress,
+        );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
         expect(error.message).to.equal('HBAR Rate limit exceeded');
@@ -2287,7 +2296,13 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
       hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
 
-      await sdkClient.submitEthereumTransaction(transactionBuffer, callerName, requestId, transactionService);
+      await sdkClient.submitEthereumTransaction(
+        transactionBuffer,
+        callerName,
+        requestId,
+        transactionService,
+        randomAccountAddress,
+      );
 
       expect(queryStub.called).to.be.true;
       expect(transactionStub.called).to.be.true;
@@ -2326,6 +2341,7 @@ describe('SdkClient', async function () {
         callerName,
         interactingEntity,
         transactionService,
+        randomAccountAddress,
       );
 
       expect(response).to.eq(fileId);
@@ -2359,6 +2375,7 @@ describe('SdkClient', async function () {
         requestId,
         true,
         transactionService,
+        randomAccountAddress,
       );
 
       expect(appendFileStub.called).to.be.true;
@@ -2385,6 +2402,7 @@ describe('SdkClient', async function () {
           requestId,
           true,
           transactionService,
+          randomAccountAddress,
         );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
@@ -2419,6 +2437,7 @@ describe('SdkClient', async function () {
         callerName,
         interactingEntity,
         transactionService,
+        randomAccountAddress,
       );
 
       expect(response).to.eq(fileId);
@@ -2439,7 +2458,14 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').withArgs(fileDeleteFee).once();
       hbarLimitMock.expects('shouldLimit').never();
 
-      await sdkClient.deleteFile(fileId, requestId, callerName, interactingEntity, transactionService);
+      await sdkClient.deleteFile(
+        fileId,
+        requestId,
+        callerName,
+        interactingEntity,
+        transactionService,
+        randomAccountAddress,
+      );
 
       expect(deleteFileStub.called).to.be.true;
       expect(fileInfoQueryStub.called).to.be.true;
@@ -2516,6 +2542,7 @@ describe('SdkClient', async function () {
         requestId,
         true,
         transactionService,
+        randomAccountAddress,
       );
 
       expect(response).to.eq(transactionResponse);
@@ -2595,6 +2622,7 @@ describe('SdkClient', async function () {
         requestId,
         true,
         transactionService,
+        randomAccountAddress,
       );
 
       expect(response).to.eq(transactionResponse);

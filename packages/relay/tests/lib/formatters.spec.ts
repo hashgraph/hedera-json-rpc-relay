@@ -45,6 +45,7 @@ import {
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
+import { AbiCoder, keccak256 } from 'ethers';
 
 describe('Formatters', () => {
   describe('formatRequestIdMessage', () => {
@@ -640,6 +641,17 @@ describe('Formatters', () => {
         const hexErrorMessage =
           '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000';
         expect(decodeErrorMessage(hexErrorMessage)).to.equal('');
+      });
+
+      it('should return empty string for custom error message without parameters', () => {
+        expect(decodeErrorMessage('0x858d70bd')).to.equal('');
+      });
+
+      it('should return the message of custom error with string parameter', () => {
+        const signature = keccak256(Buffer.from('CustomError(string)')).slice(0, 10); // 0x8d6ea8be
+        const message = new AbiCoder().encode(['string'], ['Some error message']).replace('0x', '');
+        const hexErrorMessage = signature + message;
+        expect(decodeErrorMessage(hexErrorMessage)).to.equal('Some error message');
       });
     });
   });

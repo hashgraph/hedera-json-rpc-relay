@@ -18,9 +18,9 @@
  *
  */
 
+import { Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfigWrapper } from '@hashgraph/json-rpc-relay/src/lib/types';
-import { Validator } from '.';
 import { IObjectSchema, IObjectValidation } from '../types/validator';
 
 export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
