@@ -261,7 +261,8 @@ const toNullIfEmptyHex = (value: string): string | null => {
 };
 
 const toHexString = (byteArray: Uint8Array): string => {
-  return Buffer.from(byteArray).toString('hex');
+  const encoded = Buffer.from(byteArray).toString('hex');
+  return encoded;
 };
 
 const isValidEthereumAddress = (address: string | null | undefined): boolean => {
