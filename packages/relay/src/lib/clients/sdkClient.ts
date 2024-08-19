@@ -386,6 +386,7 @@ export class SDKClient {
    * @param {string} callerName - The name of the caller initiating the transaction.
    * @param {string} requestId - The unique identifier for the request.
    * @param {TransactionService} transactionService - The service responsible for handling transaction execution.
+   * @param {string} originalCallerAddress - The address of the original caller making the request.
    * @returns {Promise<{ txResponse: TransactionResponse; fileId: FileId | null }>}
    * @throws {SDKClientError} Throws an error if no file ID is created or if the preemptive fee check fails.
    */
@@ -394,6 +395,7 @@ export class SDKClient {
     callerName: string,
     requestId: string,
     transactionService: TransactionService,
+    originalCallerAddress: string,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
@@ -418,7 +420,11 @@ export class SDKClient {
 
         const totalPreemtiveTransactionFee = numFileCreateTxs * fileCreateFee + numFileAppendTxs * fileAppendFee;
 
-        const shouldPreemtivelyLimit = this.hbarLimiter.shouldPreemtivelyLimit(totalPreemtiveTransactionFee);
+        const shouldPreemtivelyLimit = this.hbarLimiter.shouldPreemtivelyLimit(
+          originalCallerAddress,
+          totalPreemtiveTransactionFee,
+          requestId,
+        );
         if (shouldPreemtivelyLimit) {
           this.logger.trace(
             `${requestIdPrefix} The total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, callDataSize=${ethereumTransactionData.callData.length}`,
@@ -434,6 +440,7 @@ export class SDKClient {
         callerName,
         interactingEntity,
         transactionService,
+        originalCallerAddress,
       );
       if (!fileId) {
         throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
@@ -454,6 +461,7 @@ export class SDKClient {
         requestId,
         true,
         transactionService,
+        originalCallerAddress,
       ),
     };
   }
@@ -670,6 +678,7 @@ export class SDKClient {
    * @param {string} requestId - The ID of the request.
    * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
    * @param {TransactionService} transactionService - The service to handle transaction-related operations.
+   * @param {string} originalCallerAddress - The address of the original caller making the request.
    * @returns {Promise<TransactionResponse>} - A promise that resolves to the transaction response.
    * @throws {SDKClientError} - Throws if an error occurs during transaction execution.
    */
@@ -680,6 +689,7 @@ export class SDKClient {
     requestId: string,
     shouldThrowHbarLimit: boolean,
     transactionService: TransactionService,
+    originalCallerAddress: string,
   ): Promise<TransactionResponse> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
@@ -691,7 +701,13 @@ export class SDKClient {
 
     // check hbar limit before executing transaction
     if (shouldThrowHbarLimit) {
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+      const shouldLimit = this.hbarLimiter.shouldLimit(
+        currentDateNow,
+        SDKClient.transactionMode,
+        callerName,
+        originalCallerAddress,
+        requestId,
+      );
       if (shouldLimit) {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
@@ -812,6 +828,7 @@ export class SDKClient {
    * @param {string} requestId - The ID of the request.
    * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
    * @param {TransactionService} transactionService - The service to handle transaction-related operations.
+   * @param {string} originalCallerAddress - The address of the original caller making the request.
    * @returns {Promise<void>} - A promise that resolves when the batch execution is complete.
    * @throws {SDKClientError} - Throws if an error occurs during batch transaction execution.
    */
@@ -822,6 +839,7 @@ export class SDKClient {
     requestId: string,
     shouldThrowHbarLimit: boolean,
     transactionService: TransactionService,
+    originalCallerAddress: string,
   ): Promise<void> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const transactionType = transaction.constructor.name;
@@ -830,7 +848,13 @@ export class SDKClient {
 
     // check hbar limit before executing transaction
     if (shouldThrowHbarLimit) {
-      const shouldLimit = this.hbarLimiter.shouldLimit(currentDateNow, SDKClient.transactionMode, callerName);
+      const shouldLimit = this.hbarLimiter.shouldLimit(
+        currentDateNow,
+        SDKClient.transactionMode,
+        callerName,
+        originalCallerAddress,
+        requestId,
+      );
       if (shouldLimit) {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
@@ -914,6 +938,7 @@ export class SDKClient {
    * @param {string} callerName - The name of the caller creating the file.
    * @param {string} interactingEntity - The entity interacting with the transaction.
    * @param {TransactionService} transactionService - The service to handle transaction-related operations.
+   * @param {string} originalCallerAddress - The address of the original caller making the request.
    * @returns {Promise<FileId | null>} A promise that resolves to the created file ID or null if the creation failed.
    * @throws Will throw an error if the created file is empty or if any transaction fails during execution.
    */
@@ -924,6 +949,7 @@ export class SDKClient {
     callerName: string,
     interactingEntity: string,
     transactionService: TransactionService,
+    originalCallerAddress: string,
   ): Promise<FileId | null> {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
@@ -941,6 +967,7 @@ export class SDKClient {
       formattedRequestId,
       true,
       transactionService,
+      originalCallerAddress,
     );
 
     const { fileId } = await fileCreateTxResponse.getReceipt(client);
@@ -960,6 +987,7 @@ export class SDKClient {
         formattedRequestId,
         true,
         transactionService,
+        originalCallerAddress,
       );
     }
 
@@ -984,12 +1012,16 @@ export class SDKClient {
   }
 
   /**
-   * @dev Deletes `fileId` file from the Hedera Network utilizing Hashgraph SDK client
-   * @param fileId
-   * @param requestId
-   * @param callerName
-   * @param interactingEntity
-   * @param {TransactionService} transactionService - The service to handle transaction-related operations.
+   * Deletes a file on the Hedera network and verifies its deletion.
+   *
+   * @param {FileId} fileId - The ID of the file to be deleted.
+   * @param {string} requestId - A unique identifier for the request.
+   * @param {string} callerName - The name of the entity initiating the request.
+   * @param {string} interactingEntity - The name of the interacting entity.
+   * @param {TransactionService} transactionService - The service handling the transaction execution.
+   * @param {string} originalCallerAddress - The address of the original caller making the request.
+   * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   * @throws {any} - Throws an error if the file deletion fails.
    */
   async deleteFile(
     fileId: FileId,
@@ -997,6 +1029,7 @@ export class SDKClient {
     callerName: string,
     interactingEntity: string,
     transactionService: TransactionService,
+    originalCallerAddress: string,
   ): Promise<void> {
     // format request ID msg
     const requestIdPrefix = formatRequestIdMessage(requestId);
@@ -1008,7 +1041,15 @@ export class SDKClient {
         .setMaxTransactionFee(new Hbar(2))
         .freezeWith(this.clientMain);
 
-      await this.executeTransaction(fileDeleteTx, callerName, interactingEntity, requestId, false, transactionService);
+      await this.executeTransaction(
+        fileDeleteTx,
+        callerName,
+        interactingEntity,
+        requestId,
+        false,
+        transactionService,
+        originalCallerAddress,
+      );
 
       // ensure the file is deleted
       const fileInfo = await this.executeQuery(
