@@ -28,10 +28,9 @@ import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
 import { AliasAccount } from '../types/AliasAccount';
 import ServicesClient from '../clients/servicesClient';
 import http from 'http';
-import { GCProfiler, setFlagsFromString } from 'v8';
+import { GCProfiler, setFlagsFromString, writeHeapSnapshot } from 'v8';
 import { runInNewContext } from 'vm';
 import { Context } from 'mocha';
-import { writeSnapshot } from 'heapdump';
 import { GitHubClient } from '../clients/githubClient';
 import MirrorClient from '../clients/mirrorClient';
 import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
@@ -386,13 +385,13 @@ export class Utils {
 
   static async writeHeapSnapshotAsync(): Promise<string | undefined> {
     return new Promise((resolve, reject) => {
-      writeSnapshot((error, fileName) => {
-        if (error) {
-          reject(error);
-        }
+      try {
+        const fileName = writeHeapSnapshot();
         console.info(`Heap snapshot written to ${fileName}`);
         resolve(fileName);
-      });
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 

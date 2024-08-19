@@ -96,13 +96,13 @@ export default class Assertions {
       Assertions.zeroHex8Byte,
     );
     expect(relayResponse.receiptsRoot, "Assert block: 'receiptsRoot' should equal zero 32bytes hex").to.be.equal(
-      Assertions.zeroHex32Byte,
+      Assertions.ethEmptyTrie,
     );
     expect(relayResponse.sha3Uncles, "Assert block: 'sha3Uncles' should equal empty array hex").to.be.equal(
       Assertions.emptyArrayHex,
     );
     expect(relayResponse.stateRoot, "Assert block: 'stateRoot' should equal zero 32bytes hex").to.be.equal(
-      Assertions.zeroHex32Byte,
+      Assertions.ethEmptyTrie,
     );
     expect(relayResponse.totalDifficulty, "Assert block: 'totalDifficulty' should equal zero in hex").to.be.equal(
       ethers.toQuantity(0),

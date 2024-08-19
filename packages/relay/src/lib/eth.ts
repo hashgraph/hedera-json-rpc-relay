@@ -22,7 +22,7 @@ import { Eth } from '../index';
 import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Block, Log, Transaction, Transaction1559 } from './model';
-import { IContractCallRequest, IContractCallResponse, MirrorNodeClient } from './clients';
+import { MirrorNodeClient } from './clients';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { SDKClientError } from './errors/SDKClientError';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
@@ -42,6 +42,7 @@ import {
   parseNumericEnvVar,
   prepend0x,
   toHash32,
+  toHexString,
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
   getFunctionSelector,
@@ -57,6 +58,9 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { DebugService } from './services/debugService';
 import { IFeeHistory } from './types/IFeeHistory';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
+import { Trie } from '@ethereumjs/trie';
+import TransactionService from './services/transactionService/transactionService';
+import { IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -92,7 +96,6 @@ export class EthImpl implements Eth {
   static gasTxBaseCost = numberTo0x(constants.TX_BASE_COST);
   static gasTxHollowAccountCreation = numberTo0x(constants.TX_HOLLOW_ACCOUNT_CREATION_GAS);
   static ethTxType = 'EthereumTransaction';
-  static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasUsedRatio = 0.5;
   static feeHistoryZeroBlockCountResponse: IFeeHistory = {
     gasUsedRatio: null,
@@ -251,6 +254,20 @@ export class EthImpl implements Eth {
   private readonly debugServiceImpl: DebugService;
 
   /**
+   * A 32 byte hex hash of an empty trie root
+   * @public
+   */
+  public readonly emptyTrieRoot: string;
+
+  /**
+   * Service for handling transactions.
+   * @type {TransactionService}
+   * @private
+   * @readonly
+   */
+  private readonly transactionService: TransactionService;
+
+  /**
    * Create a new Eth implementation.
    * @param hapiService
    * @param mirrorNodeClient
@@ -279,6 +296,10 @@ export class EthImpl implements Eth {
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
     this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
+    this.transactionService = new TransactionService(logger, this.hapiService.getSDKClient(), mirrorNodeClient);
+
+    const emptyTrie = new Trie();
+    this.emptyTrieRoot = `0x${toHexString(emptyTrie.EMPTY_TRIE_ROOT)}`;
   }
 
   private shouldUseCacheForBalance(tag: string | null): boolean {
@@ -1525,13 +1546,20 @@ export class EthImpl implements Eth {
         .inc();
 
     const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestIdPrefix);
+    const originalCallerAddress = parsedTx.from?.toString() || '';
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     let fileId: FileId | null = null;
     let txSubmitted = false;
     try {
       const sendRawTransactionResult = await this.hapiService
         .getSDKClient()
-        .submitEthereumTransaction(transactionBuffer, EthImpl.ethSendRawTransaction, requestIdPrefix);
+        .submitEthereumTransaction(
+          transactionBuffer,
+          EthImpl.ethSendRawTransaction,
+          requestIdPrefix,
+          this.transactionService,
+          originalCallerAddress,
+        );
 
       txSubmitted = true;
       fileId = sendRawTransactionResult!.fileId;
@@ -1582,7 +1610,14 @@ export class EthImpl implements Eth {
       if (fileId) {
         this.hapiService
           .getSDKClient()
-          .deleteFile(fileId, requestIdPrefix, EthImpl.ethSendRawTransaction, fileId.toString());
+          .deleteFile(
+            fileId,
+            requestIdPrefix,
+            EthImpl.ethSendRawTransaction,
+            fileId.toString(),
+            this.transactionService,
+            originalCallerAddress,
+          );
       }
     }
   }
@@ -2018,7 +2053,7 @@ export class EthImpl implements Eth {
         gasUsed: EthImpl.zeroHex,
         logs: [syntheticLogs[0]],
         logsBloom: LogsBloomUtils.buildLogsBloom(syntheticLogs[0].address, syntheticLogs[0].topics),
-        root: EthImpl.zeroHex32Byte,
+        root: this.emptyTrieRoot,
         status: EthImpl.oneHex,
         to: syntheticLogs[0].address,
         transactionHash: syntheticLogs[0].transactionHash,
@@ -2066,7 +2101,7 @@ export class EthImpl implements Eth {
         transactionHash: toHash32(receiptResponse.hash),
         transactionIndex: nullableNumberTo0x(receiptResponse.transaction_index),
         effectiveGasPrice: effectiveGas,
-        root: receiptResponse.root,
+        root: receiptResponse.root || this.emptyTrieRoot,
         status: receiptResponse.status,
         type: nullableNumberTo0x(receiptResponse.type),
       };
@@ -2271,14 +2306,14 @@ export class EthImpl implements Eth {
       nonce: EthImpl.zeroHex8Byte,
       number: numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
-      receiptsRoot: EthImpl.zeroHex32Byte,
+      receiptsRoot: this.emptyTrieRoot,
       timestamp: numberTo0x(Number(timestamp)),
       sha3Uncles: EthImpl.emptyArrayHex,
       size: numberTo0x(blockResponse.size | 0),
-      stateRoot: EthImpl.zeroHex32Byte,
+      stateRoot: this.emptyTrieRoot,
       totalDifficulty: EthImpl.zeroHex,
       transactions: transactionArray,
-      transactionsRoot: transactionArray.length == 0 ? EthImpl.ethEmptyTrie : blockHash,
+      transactionsRoot: transactionArray.length == 0 ? this.emptyTrieRoot : blockHash,
       uncles: [],
     });
   }
