@@ -64,19 +64,19 @@ export const validateSubscribeEthLogsParams = async (
   requestId: string,
   mirrorNodeClient: MirrorNodeClient,
 ) => {
-  // validate address exists and is correct lengh and type
-  // validate topics if exists and is array and each one is correct lengh and type
-  const paramsObject = new EthSubscribeLogsParamsObject(filters);
-  paramsObject.validate();
+  // validate address exists and is correct length and type
+  // validate topics if exists and is array and each one is correct length and type
+  const ethSubscribeLogsParams = new EthSubscribeLogsParamsObject(filters);
+  ethSubscribeLogsParams.validate();
 
   // validate address or addresses are an existing smart contract
-  if (paramsObject.address) {
-    if (Array.isArray(paramsObject.address)) {
-      for (const address of paramsObject.address) {
+  if (ethSubscribeLogsParams.object.address) {
+    if (Array.isArray(ethSubscribeLogsParams.object.address)) {
+      for (const address of ethSubscribeLogsParams.object.address) {
         await validateIsContractOrTokenAddress(address, requestId, mirrorNodeClient);
       }
     } else {
-      await validateIsContractOrTokenAddress(paramsObject.address, requestId, mirrorNodeClient);
+      await validateIsContractOrTokenAddress(ethSubscribeLogsParams.object.address, requestId, mirrorNodeClient);
     }
   }
 };
