@@ -604,12 +604,17 @@ export class EthImpl implements Eth {
         this.logger.info(`${requestIdPrefix} Returning gas: ${response.result}`);
         return prepend0x(trimPrecedingZeros(response.result));
       } else {
+        this.logger.error(`${requestIdPrefix} No gas estimate returned from mirror-node: ${JSON.stringify(response)}`);
         return this.predefinedGasForTransaction(transaction, requestIdPrefix);
       }
     } catch (e: any) {
       this.logger.error(
         `${requestIdPrefix} Error raised while fetching estimateGas from mirror-node: ${JSON.stringify(e)}`,
       );
+      // in case of contract revert, we don't want to return a predefined gas but the actual error with the reason
+      if (this.estimateGasThrows && e instanceof MirrorNodeClientError && e.isContractRevertOpcodeExecuted()) {
+        return predefined.CONTRACT_REVERT(e.detail ?? e.message, e.data);
+      }
       return this.predefinedGasForTransaction(transaction, requestIdPrefix, e);
     }
   }
