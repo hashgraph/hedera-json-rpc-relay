@@ -18,6 +18,8 @@
  *
  */
 
+import { Status } from '@hashgraph/sdk';
+
 export class MirrorNodeClientError extends Error {
   public statusCode: number;
   public data?: string;
@@ -37,6 +39,7 @@ export class MirrorNodeClientError extends Error {
 
   static messages = {
     INVALID_HEX: 'data field invalid hexadecimal string',
+    CONTRACT_REVERT_EXECUTED: Status.ContractRevertExecuted.toString(),
   };
 
   constructor(error: any, statusCode: number) {
@@ -62,6 +65,10 @@ export class MirrorNodeClientError extends Error {
 
   public isContractReverted(): boolean {
     return this.statusCode === MirrorNodeClientError.ErrorCodes.CONTRACT_REVERT_EXECUTED;
+  }
+
+  public isContractRevertOpcodeExecuted() {
+    return this.message === MirrorNodeClientError.messages.CONTRACT_REVERT_EXECUTED;
   }
 
   public isNotFound(): boolean {
