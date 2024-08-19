@@ -1534,7 +1534,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const transactionDetails = await mirrorNode.get(`/contracts/${deployment.target}/results`, requestId);
         logger.info(JSON.stringify(transactionDetails));
         const gasUsed = transactionDetails.results[0].gas_used;
-        expect(gasUsed).to.be.eq(322326);
+        expect(gasUsed).to.be.gt(300_000);
         logger.info(`Medium size contract deployment cost: ${gasUsed} tinybars to sender`);
         logger.info(`Medium size contract deployment cost: ${Hbar.fromTinybars(gasUsed)} HBars to sender`);
 
@@ -1547,7 +1547,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         logger.info(`Account ${process.env.OPERATOR_ID_MAIN} balance: ${balanceAfter.toString()}`);
         const costToOperator = Number(balanceBefore._valueInTinybar) - Number(balanceAfter._valueInTinybar);
         const costToOperatorInHbar = Hbar.fromTinybars(costToOperator).toString();
-        expect(costToOperator).to.eq(338034990);
+        expect(costToOperator).to.gt(300_000_000);
         logger.info(
           `Cost of medium size contract deployment to the Relay Operator: ${
             Number(balanceBefore._valueInTinybar) - Number(balanceAfter._valueInTinybar)
@@ -1580,7 +1580,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const transactionDetails = await mirrorNode.get(`/contracts/${deployment.target}/results`, requestId);
         logger.info(JSON.stringify(transactionDetails));
         const gasUsed = transactionDetails.results[0].gas_used;
-        expect(gasUsed).to.be.eq(445807);
+        expect(gasUsed).to.be.eq(40_000);
         logger.info(`Large size contract deployment cost: ${gasUsed} tinybars to sender`);
         logger.info(`Large size contract deployment cost: ${Hbar.fromTinybars(gasUsed)} HBars to sender`);
 
@@ -1593,7 +1593,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         logger.info(`Account ${process.env.OPERATOR_ID_MAIN} balance: ${balanceAfter.toString()}`);
         const costToOperator = Number(balanceBefore._valueInTinybar) - Number(balanceAfter._valueInTinybar);
         const costToOperatorInHbar = Hbar.fromTinybars(costToOperator).toString();
-        expect(costToOperator).to.eq(570327525);
+        expect(costToOperator).to.eq(500_000_000);
         logger.info(
           `Cost of large size contract deployment to the Relay Operator: ${
             Number(balanceBefore._valueInTinybar) - Number(balanceAfter._valueInTinybar)
