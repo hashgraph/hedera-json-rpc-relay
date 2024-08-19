@@ -1,7 +1,28 @@
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import * as Constants from './constants';
 import { Validator } from '.';
+import { ITypeValidation } from '../types/validator';
 
-export const TYPES = {
+export const TYPES: { [key: string]: ITypeValidation } = {
   address: {
     test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '{40}$').test(param),
     error: Constants.ADDRESS_ERROR,
@@ -15,7 +36,7 @@ export const TYPES = {
     error: `${Constants.ADDRESS_ERROR} or an array of addresses`,
   },
   array: {
-    test: (name: string, param: any, innerType?: any) => {
+    test: (param: any, innerType?: any) => {
       return Array.isArray(param) ? Validator.validateArray(param, innerType) : false;
     },
     error: 'Expected Array',
@@ -60,7 +81,7 @@ export const TYPES = {
     error: `Expected FilterObject`,
   },
   hex: {
-    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX).test(param),
+    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '*$').test(param),
     error: Constants.DEFAULT_HEX_ERROR,
   },
   topicHash: {
@@ -97,16 +118,20 @@ export const TYPES = {
   },
   tracerConfig: {
     test: (param: Record<string, any>) => {
-      const isValidCallTracerConfig: boolean =
-        typeof param === 'object' && 'onlyTopCall' in param && typeof param.onlyTopCall === 'boolean';
+      if (param && typeof param === 'object') {
+        const isEmptyObject = Object.keys(param).length === 0;
 
-      const isValidOpcodeLoggerConfig: boolean =
-        typeof param === 'object' &&
-        (!('disableMemory' in param) || typeof param.disableMemory === 'boolean') &&
-        (!('disableStack' in param) || typeof param.disableStack === 'boolean') &&
-        (!('disableStorage' in param) || typeof param.disableStorage === 'boolean');
+        const isValidCallTracerConfig: boolean = 'onlyTopCall' in param && typeof param.onlyTopCall === 'boolean';
 
-      return isValidCallTracerConfig || isValidOpcodeLoggerConfig;
+        const isValidOpcodeLoggerConfig: boolean =
+          ('disableMemory' in param && typeof param.disableMemory === 'boolean') ||
+          ('disableStack' in param && typeof param.disableStack === 'boolean') ||
+          ('disableStorage' in param && typeof param.disableStorage === 'boolean');
+
+        return isEmptyObject || isValidCallTracerConfig || isValidOpcodeLoggerConfig;
+      }
+
+      return false;
     },
     error: 'Invalid tracerConfig',
   },
