@@ -29,6 +29,7 @@ import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults 
 import { Block, Transaction } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
+import constants from '../../../src/lib/constants';
 import { hashNumber, numberTo0x } from '../../../dist/formatters';
 import {
   BLOCKS_LIMIT_ORDER_URL,
@@ -315,7 +316,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       veriftAggregatedInfo(result);
       expect(result.gasUsed).equal('0x0');
       expect(result.transactions.length).equal(0);
-      expect(result.transactionsRoot).equal(ethImpl.emptyTrieRoot);
+      expect(result.transactionsRoot).equal(constants.DEFAULT_ROOT_HASH);
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
