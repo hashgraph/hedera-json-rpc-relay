@@ -166,6 +166,30 @@ describe('RedisCache Test Suite', async function () {
         expect(cachedValue).deep.equal(keyValuePairs[key]);
       }
     });
+
+    it('should set multiple key-value pairs in cache with TTL', async function () {
+      const keyValuePairs = {
+        int: 1,
+        string: 'test',
+        boolean: false,
+        array: ['false'],
+        object: { result: true },
+      };
+
+      await redisCache.pipelineSet(keyValuePairs, callingMethod, 500);
+
+      for (const key in keyValuePairs) {
+        const cachedValue = await redisCache.get(key, callingMethod);
+        expect(cachedValue).deep.equal(keyValuePairs[key]);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      for (const key in keyValuePairs) {
+        const expiredValue = await redisCache.get(key, callingMethod);
+        expect(expiredValue).to.be.null;
+      }
+    });
   });
 
   describe('Delete Test Suite', async function () {
