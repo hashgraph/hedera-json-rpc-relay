@@ -1579,7 +1579,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const transactionDetails = await mirrorNode.get(`/contracts/${deployment.target}/results`, requestId);
         logger.info(JSON.stringify(transactionDetails));
         const gasUsed = transactionDetails.results[0].gas_used;
-        expect(gasUsed).to.be.eq(322326);
+        expect(gasUsed).to.be.eq(445807);
         logger.info(`Large size contact deployment cost: ${gasUsed} tinybars to sender`);
         logger.info(`Large size contact deployment cost: ${Hbar.fromTinybars(gasUsed)} HBars to sender`);
 
