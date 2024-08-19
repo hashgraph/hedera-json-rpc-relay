@@ -19,16 +19,18 @@
  */
 
 import fs from 'fs';
-const { bytecode } = require('../contracts/Basic.json');
-const path = require('path');
+import bytecode from '../contracts/Basic.json';
+import path from 'path';
 const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
-const axios = require('axios');
-const openRpcData = require('../../../../docs/openrpc.json');
-require('dotenv').config();
+import axios from 'axios';
+import openRpcData from '../../../../docs/openrpc.json';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { signTransaction } from '../../../relay/tests/helpers';
 import { expect } from 'chai';
+import { config } from 'dotenv';
+config();
+
 let currentBlockHash;
 let legacyTransactionAndBlockHash;
 let transaction2930AndBlockHash;
