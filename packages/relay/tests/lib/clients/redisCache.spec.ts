@@ -130,6 +130,44 @@ describe('RedisCache Test Suite', async function () {
     });
   });
 
+  describe('MultiSet Test Suite', async function () {
+    it('should set multiple key-value pairs in cache', async function () {
+      const keyValuePairs = {
+        int: 1,
+        string: 'test',
+        boolean: false,
+        array: ['false'],
+        object: { result: true },
+      };
+
+      await redisCache.multiSet(keyValuePairs, callingMethod);
+
+      for (const key in keyValuePairs) {
+        const cachedValue = await redisCache.get(key, callingMethod);
+        expect(cachedValue).deep.equal(keyValuePairs[key]);
+      }
+    });
+  });
+
+  describe('PipelineSet Test Suite', async function () {
+    it('should set multiple key-value pairs in cache', async function () {
+      const keyValuePairs = {
+        int: 1,
+        string: 'test',
+        boolean: false,
+        array: ['false'],
+        object: { result: true },
+      };
+
+      await redisCache.pipelineSet(keyValuePairs, callingMethod);
+
+      for (const key in keyValuePairs) {
+        const cachedValue = await redisCache.get(key, callingMethod);
+        expect(cachedValue).deep.equal(keyValuePairs[key]);
+      }
+    });
+  });
+
   describe('Delete Test Suite', async function () {
     it('should delete int cache', async function () {
       const key = 'int';
