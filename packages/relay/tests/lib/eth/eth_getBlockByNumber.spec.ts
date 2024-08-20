@@ -226,7 +226,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       });
     });
 
-    it('eth_getBlockByNumber with match  and duplicated transactions', async function () {
+    it('eth_getBlockByNumber with match and duplicated transactions', async function () {
       restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, {
         results: [...defaultContractResults.results, ...defaultContractResults.results],
       });
