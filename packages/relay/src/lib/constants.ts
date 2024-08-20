@@ -185,4 +185,7 @@ export default {
 
   // computed hash of an empty Trie object
   DEFAULT_ROOT_HASH: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
+
+  // @source: https://docs.hedera.com/hedera/networks/mainnet/fees
+  TX_RECORD_QUERY_COST_IN_CENTS: 0.01,
 };

@@ -74,6 +74,7 @@ describe('Transaction Service', function () {
   const mockedConsensusNodeTransactionRecord = {
     receipt: {
       status: Status.Success,
+      exchangeRate: { exchangeRateInCents: 12 },
     },
     transactionFee: new Hbar(mockedTxFee),
     contractFunctionResult: {
