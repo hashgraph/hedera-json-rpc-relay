@@ -2290,6 +2290,7 @@ export class EthImpl implements Eth {
     }
 
     transactionArray = this.populateSyntheticTransactions(showDetails, logs, transactionArray, requestIdPrefix);
+    transactionArray = showDetails ? _.uniqBy(transactionArray, 'hash') : _.uniq(transactionArray);
 
     const blockHash = toHash32(blockResponse.hash);
     return new Block({
