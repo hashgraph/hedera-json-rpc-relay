@@ -13,7 +13,7 @@ Example of using Wagmi with Hedera covers
 5. Write to contract
 
 ## Generate contract abi, bin
-if you want compile contract at your own there is a known issue with the two latest version of the solc compiler. You need to use version `solc <= 0.8.24` because the recent version of the Hedera JSON RPC Relay doesn't support all opcodes from the latest release.
+if you want compile contract at your own there is a known issue with the two latest version of the solc compiler. You need to use version `solc <= 0.8.24` because the recent version of the Hedera doesn't support all opcodes from the latest release.
 
 Using solc from [NPM](https://www.npmjs.com/package/solc)
 
