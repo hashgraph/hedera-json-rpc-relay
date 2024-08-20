@@ -30,6 +30,8 @@ import { Utils } from './../utils';
 import { LogsBloomUtils } from './../logsBloomUtils';
 import constants from './constants';
 import { Precheck } from './precheck';
+import { EthGetStorageAtService } from './services/ethService/ethGetStorageAtService';
+import { EthGetCodeService } from './services/ethService/ethGetCodeService';
 import {
   ASCIIToHex,
   formatContractResult,
@@ -124,6 +126,7 @@ export class EthImpl implements Eth {
   static ethGetBlockByHash = 'eth_GetBlockByHash';
   static ethGetBlockByNumber = 'eth_GetBlockByNumber';
   static ethGetCode = 'eth_getCode';
+  static ethGetStorageAt = 'eth_getStorageAt';
   static ethGetTransactionByHash = 'eth_GetTransactionByHash';
   static ethGetTransactionCount = 'eth_getTransactionCount';
   static ethGetTransactionCountByHash = 'eth_GetTransactionCountByHash';
@@ -903,6 +906,12 @@ export class EthImpl implements Eth {
 
     const blockEndTimestamp = blockResponse?.timestamp?.to;
 
+    const getStorageAt = new EthGetStorageAtService(this.mirrorNodeClient, this.logger);
+    const override = await getStorageAt.execute(address, slot);
+    if (override) {
+      return override;
+    }
+
     await this.mirrorNodeClient
       .getContractStateByAddressAndSlot(address, slot, blockEndTimestamp, requestIdPrefix)
       .then((response) => {
@@ -1108,7 +1117,10 @@ export class EthImpl implements Eth {
       );
     }
     this.logger.trace(`${requestIdPrefix} getCode(address=${address}, blockNumber=${blockNumber})`);
-
+    const override = await new EthGetCodeService(this.mirrorNodeClient, this.logger).execute(address);
+    if (override) {
+      return override;
+    }
     // check for static precompile cases first before consulting nodes
     // this also account for environments where system entities were not yet exposed to the mirror node
     if (address === EthImpl.iHTSAddress) {

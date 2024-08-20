@@ -969,6 +969,30 @@ export class MirrorNodeClient {
     );
   }
 
+  public async getToken(tokenIdOrEvmAddress: string, requestIdPrefix?: string, retries?: number) {
+    const tokenId = tokenIdOrEvmAddress.startsWith(constants.LONG_ZERO_PREFIX)
+      ? `0.0.${parseInt(tokenIdOrEvmAddress, 16)}`
+      : tokenIdOrEvmAddress;
+    return await this.getTokenById(tokenId, requestIdPrefix, retries);
+  }
+
+  public async isTokenFungible(tokenIdOrEvmAddress: string, requestIdPrefix?: string, retries?: number) {
+    const data = await this.getToken(tokenIdOrEvmAddress, requestIdPrefix, retries);
+    return data.type.startsWith('FUNGIBLE');
+  }
+
+  public async getTokenBalances(tokenIdOrEvmAddress: string, requestIdPrefix?: string, retries?: number) {
+    const tokenId = tokenIdOrEvmAddress.startsWith(constants.LONG_ZERO_PREFIX)
+      ? `0.0.${parseInt(tokenIdOrEvmAddress, 16)}`
+      : tokenIdOrEvmAddress;
+    return this.get(
+      `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}/${MirrorNodeClient.GET_BALANCE_ENDPOINT}`,
+      MirrorNodeClient.GET_TOKENS_ENDPOINT,
+      requestIdPrefix,
+      retries,
+    );
+  }
+
   public async getLatestContractResultsByAddress(
     address: string,
     blockEndTimestamp: string | undefined,
