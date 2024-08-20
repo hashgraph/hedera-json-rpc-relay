@@ -226,6 +226,22 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       });
     });
 
+    it('eth_getBlockByNumber with match  and duplicated transactions', async function () {
+      restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, {
+        results: [...defaultContractResults.results, ...defaultContractResults.results],
+      });
+
+      const res = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER), false);
+      RelayAssertions.assertBlock(res, {
+        transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        hash: BLOCK_HASH_TRIMMED,
+        number: BLOCK_NUMBER_HEX,
+        timestamp: BLOCK_TIMESTAMP_HEX,
+        parentHash: BLOCK_HASH_PREV_TRIMMED,
+        gasUsed: TOTAL_GAS_USED,
+      });
+    });
+
     it('eth_getBlockByNumber with match and valid logsBloom field', async function () {
       restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, {
         ...DEFAULT_BLOCK,
