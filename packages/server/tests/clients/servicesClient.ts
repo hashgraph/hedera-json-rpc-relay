@@ -82,7 +82,7 @@ export default class ServicesClient {
     } else {
       this.client = Client.forNetwork(JSON.parse(network));
     }
-    this.client.setOperator(AccountId.fromString(accountId), opPrivateKey);
+    this.client.setOperator(AccountId.fromString(accountId), opPrivateKey.toString());
   }
 
   getLogger(): Logger {
