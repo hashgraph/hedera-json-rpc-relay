@@ -2339,10 +2339,17 @@ export class EthImpl implements Eth {
       // with HIP 729 ethereum_nonce should always be 0+ and null. Historical contracts may have a null value as the nonce was not tracked, return default EVM compliant 0x1 in this case
       let accountNonce = accountData.ethereum_nonce !== null ? numberTo0x(accountData.ethereum_nonce) : EthImpl.oneHex;
       if (this.previousAccount === address && this.previousAccountNonce === Number(accountNonce)) {
-        while (this.previousAccount === address && this.previousAccountNonce === Number(accountNonce)) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+        let retries = 0;
+        while (
+          this.previousAccount === address &&
+          this.previousAccountNonce === Number(accountNonce) &&
+          retries < (Number(process.env.MIRROR_NODE_RETRIES) || 3)
+        ) {
+          await new Promise((r) => setTimeout(r, this.mirrorNodeClient.getMirrorNodeRetryDelay()));
           accountData = await this.mirrorNodeClient.getAccount(address, requestId);
           accountNonce = accountData.ethereum_nonce !== null ? numberTo0x(accountData.ethereum_nonce) : EthImpl.oneHex;
+          retries++;
+          this.logger.trace(`DEBUG: Retrying getAccountLatestEthereumNonce for ${retries} time`);
         }
         return accountNonce;
       }
