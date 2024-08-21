@@ -723,7 +723,7 @@ export class EthImpl implements Eth {
     if (transaction.gasPrice) {
       transaction.gasPrice = parseInt(transaction.gasPrice.toString());
     } else {
-      transaction.gasPrice = await this.gasPrice(requestIdPrefix);
+      transaction.gasPrice = await this.gasPrice(requestIdPrefix).then((gasPrice) => parseInt(gasPrice));
     }
     if (transaction.gas) {
       transaction.gas = parseInt(transaction.gas.toString());

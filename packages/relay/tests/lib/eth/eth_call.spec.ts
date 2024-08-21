@@ -772,81 +772,107 @@ describe('@ethCall Eth Call spec', async function () {
   });
 
   describe('contractCallFormat', () => {
-    it('should format transaction value to tiny bar integer', () => {
+    it('should format transaction value to tiny bar integer', async () => {
       const transaction = {
         value: '0x2540BE400',
       };
 
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
       expect(transaction.value).to.equal(1);
     });
 
-    it('should parse gasPrice to integer', () => {
+    it('should parse gasPrice to integer', async () => {
       const transaction = {
         gasPrice: '1000000000',
       };
 
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
 
       expect(transaction.gasPrice).to.equal(1000000000);
     });
 
-    it('should parse gas to integer', () => {
+    it('should parse gas to integer', async () => {
       const transaction = {
         gas: '50000',
       };
 
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
 
       expect(transaction.gas).to.equal(50000);
     });
 
-    it('should accepts both input and data fields but copy value of input field to data field', () => {
+    it('should accepts both input and data fields but copy value of input field to data field', async () => {
       const inputValue = 'input value';
       const dataValue = 'data value';
       const transaction = {
         input: inputValue,
         data: dataValue,
       };
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
       expect(transaction.data).to.eq(inputValue);
       expect(transaction.data).to.not.eq(dataValue);
       expect(transaction.input).to.be.undefined;
     });
 
-    it('should not modify transaction if only data field is present', () => {
+    it('should not modify transaction if only data field is present', async () => {
       const dataValue = 'data value';
       const transaction = {
         data: dataValue,
       };
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
       expect(transaction.data).to.eq(dataValue);
     });
 
-    it('should copy input to data if input is provided but data is not', () => {
+    it('should copy input to data if input is provided but data is not', async () => {
       const transaction = {
         input: 'input data',
       };
 
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
 
       // @ts-ignore
       expect(transaction.data).to.equal('input data');
       expect(transaction.input).to.be.undefined;
     });
 
-    it('should not modify transaction if input and data fields are not provided', () => {
+    it('should not modify transaction if input and data fields are not provided', async () => {
       const transaction = {
         value: '0x2540BE400',
         gasPrice: '1000000000',
         gas: '50000',
       };
 
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
 
       expect(transaction.value).to.equal(1);
       expect(transaction.gasPrice).to.equal(1000000000);
       expect(transaction.gas).to.equal(50000);
+    });
+
+    it('should populate gas price if not provided', async () => {
+      const transaction = {
+        value: '0x2540BE400',
+        gasPrice: undefined,
+      };
+
+      await ethImpl.contractCallFormat(transaction);
+
+      const expectedGasPrice = await ethImpl.gasPrice();
+      expect(transaction.gasPrice).to.equal(parseInt(expectedGasPrice));
+    });
+
+    it('should populate the from field if the from field is not provided and value is provided', async () => {
+      const transaction = {
+        value: '0x2540BE400',
+        to: CONTRACT_ADDRESS_2,
+        from: undefined,
+      };
+
+      await ethImpl.contractCallFormat(transaction);
+
+      const operator = hapiServiceInstance.getMainClientInstance().getOperator();
+      expect(operator).to.not.be.null;
+      expect(transaction.from).to.equal(operator!.publicKey.toEvmAddress());
     });
   });
 });
