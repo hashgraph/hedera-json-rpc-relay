@@ -444,7 +444,7 @@ export class MirrorNodeClient {
   }
 
   public async getAccount(idOrAliasOrEvmAddress: string, requestIdPrefix?: string, retries?: number) {
-    return this.get<IAccountInfo>(
+    return this.get(
       `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?transactions=false`,
       MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
       requestIdPrefix,
