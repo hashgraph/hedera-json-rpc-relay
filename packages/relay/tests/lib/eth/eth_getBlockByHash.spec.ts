@@ -125,6 +125,25 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     });
   });
 
+  it('eth_getBlockByHash with match and duplicated transactions', async function () {
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, {
+      results: [...defaultContractResults.results, ...defaultContractResults.results],
+    });
+    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
+
+    const res = await ethImpl.getBlockByHash(BLOCK_HASH, false);
+    RelayAssertions.assertBlock(res, {
+      transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      hash: BLOCK_HASH_TRIMMED,
+      number: BLOCK_NUMBER_HEX,
+      timestamp: BLOCK_TIMESTAMP_HEX,
+      parentHash: BLOCK_HASH_PREV_TRIMMED,
+      gasUsed: TOTAL_GAS_USED,
+    });
+  });
+
   it('eth_getBlockByHash with match and valid logsBloom field', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, {

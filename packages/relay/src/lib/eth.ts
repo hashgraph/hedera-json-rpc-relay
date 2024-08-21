@@ -602,12 +602,17 @@ export class EthImpl implements Eth {
         this.logger.info(`${requestIdPrefix} Returning gas: ${response.result}`);
         return prepend0x(trimPrecedingZeros(response.result));
       } else {
+        this.logger.error(`${requestIdPrefix} No gas estimate returned from mirror-node: ${JSON.stringify(response)}`);
         return this.predefinedGasForTransaction(transaction, requestIdPrefix);
       }
     } catch (e: any) {
       this.logger.error(
         `${requestIdPrefix} Error raised while fetching estimateGas from mirror-node: ${JSON.stringify(e)}`,
       );
+      // in case of contract revert, we don't want to return a predefined gas but the actual error with the reason
+      if (this.estimateGasThrows && e instanceof MirrorNodeClientError && e.isContractRevertOpcodeExecuted()) {
+        return predefined.CONTRACT_REVERT(e.detail ?? e.message, e.data);
+      }
       return this.predefinedGasForTransaction(transaction, requestIdPrefix, e);
     }
   }
@@ -1546,6 +1551,7 @@ export class EthImpl implements Eth {
         .inc();
 
     const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestIdPrefix);
+    const originalCallerAddress = parsedTx.from?.toString() || '';
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     let fileId: FileId | null = null;
     let txSubmitted = false;
@@ -1557,6 +1563,7 @@ export class EthImpl implements Eth {
           EthImpl.ethSendRawTransaction,
           requestIdPrefix,
           this.transactionService,
+          originalCallerAddress,
         );
 
       txSubmitted = true;
@@ -1614,6 +1621,7 @@ export class EthImpl implements Eth {
             EthImpl.ethSendRawTransaction,
             fileId.toString(),
             this.transactionService,
+            originalCallerAddress,
           );
       }
     }
@@ -2280,6 +2288,7 @@ export class EthImpl implements Eth {
     }
 
     transactionArray = this.populateSyntheticTransactions(showDetails, logs, transactionArray, requestIdPrefix);
+    transactionArray = showDetails ? _.uniqBy(transactionArray, 'hash') : _.uniq(transactionArray);
 
     const formattedReceipts: IReceiptRootHash[] = ReceiptsRootUtils.buildReceiptsFromTxHashesContractResultsAndLogs(
       transactionArray.map((tx) => (showDetails ? tx.hash : tx)),
