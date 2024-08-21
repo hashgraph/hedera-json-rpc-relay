@@ -506,13 +506,13 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       gas: '0xd97010',
     };
 
-    ethImpl.contractCallFormat(transaction);
+    await ethImpl.contractCallFormat(transaction);
     expect(transaction.value).to.eq(1110);
     expect(transaction.gasPrice).to.eq(1000000);
     expect(transaction.gas).to.eq(14250000);
   });
 
-  it('should accepts both input and data fields but copy value of input field to data field', () => {
+  it('should accepts both input and data fields but copy value of input field to data field', async () => {
     const inputValue = 'input value';
     const dataValue = 'data value';
     const transaction = {
@@ -524,7 +524,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       gas: '0xd97010',
     };
 
-    ethImpl.contractCallFormat(transaction);
+    await ethImpl.contractCallFormat(transaction);
     expect(transaction.data).to.eq(inputValue);
     expect(transaction.data).to.not.eq(dataValue);
     expect(transaction.input).to.be.undefined;
