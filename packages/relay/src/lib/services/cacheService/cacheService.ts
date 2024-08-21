@@ -156,6 +156,9 @@ export class CacheService {
       this.logger.error(
         `${requestIdPrefix} Error occurred while getting the cache from Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
       );
+
+      // fallback to internal cache in case of Redis error
+      return await this.getFromInternalCache(key, callingMethod, requestIdPrefix);
     }
   }
 
@@ -197,7 +200,6 @@ export class CacheService {
    * @param {string} callingMethod - The name of the method calling the cache.
    * @param {number} ttl - Time to live for the cached value in milliseconds (optional).
    * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
-   * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
    */
   public async set(
     key: string,
@@ -216,10 +218,13 @@ export class CacheService {
         this.logger.error(
           `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
         );
+
+        // fallback to internal cache in case of Redis error
+        this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
+        await this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
       }
     } else {
       this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
-
       await this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
     }
   }
@@ -289,6 +294,10 @@ export class CacheService {
         this.logger.error(
           `${requestIdPrefix} Error occurred while deleting cache from Redis. Error is: ${redisError.fullError}`,
         );
+
+        // fallback to internal cache in case of Redis error
+        this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.DELETE).inc(1);
+        await this.internalCache.delete(key, callingMethod, requestIdPrefix);
       }
     } else {
       this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.DELETE).inc(1);
@@ -312,6 +321,9 @@ export class CacheService {
         this.logger.error(
           `${requestIdPrefix} Error occurred while clearing Redis cache. Error is: ${redisError.fullError}`,
         );
+
+        // fallback to internal cache in case of Redis error
+        await this.internalCache.clear();
       }
     } else {
       await this.internalCache.clear();
