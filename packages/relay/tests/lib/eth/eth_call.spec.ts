@@ -756,6 +756,16 @@ describe('@ethCall Eth Call spec', async function () {
   });
 
   describe('contractCallFormat', () => {
+    const operatorId = hapiServiceInstance.getMainClientInstance().operatorAccountId;
+    const operatorEvmAddress = ACCOUNT_ADDRESS_1;
+
+    beforeEach(() => {
+      restMock.onGet(`accounts/${operatorId!.toString()}?transactions=false`).reply(200, {
+        account: operatorId!.toString(),
+        evm_address: operatorEvmAddress,
+      });
+    });
+
     it('should format transaction value to tiny bar integer', async () => {
       const transaction = {
         value: '0x2540BE400',
@@ -854,9 +864,7 @@ describe('@ethCall Eth Call spec', async function () {
 
       await ethImpl.contractCallFormat(transaction);
 
-      const operator = hapiServiceInstance.getMainClientInstance().getOperator();
-      expect(operator).to.not.be.null;
-      expect(transaction.from).to.equal(operator!.publicKey.toEvmAddress());
+      expect(transaction.from).to.equal(operatorEvmAddress);
     });
   });
 });

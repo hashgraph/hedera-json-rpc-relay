@@ -31,7 +31,13 @@ import { generateEthTestEnv } from './eth-helpers';
 import { Precheck } from '../../../src/lib/precheck';
 import { createStubInstance, stub, SinonStub, SinonStubbedInstance } from 'sinon';
 import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
-import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS, ONE_TINYBAR_IN_WEI_HEX, RECEIVER_ADDRESS } from './eth-config';
+import {
+  ACCOUNT_ADDRESS_1,
+  DEFAULT_NETWORK_FEES,
+  NO_TRANSACTIONS,
+  ONE_TINYBAR_IN_WEI_HEX,
+  RECEIVER_ADDRESS,
+} from './eth-config';
 import { AbiCoder, keccak256 } from 'ethers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -82,6 +88,9 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
     restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
+    mockGetAccount(hapiServiceInstance.getMainClientInstance().operatorAccountId!.toString(), 200, {
+      evm_address: ACCOUNT_ADDRESS_1,
+    });
   });
 
   this.afterEach(() => {
