@@ -1004,13 +1004,13 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(nonceAfter).to.be.equal('0x3');
     });
 
-    it.only('should deploy a contract and get the correct nonce', async function () {
+    it('should deploy a contract and get the correct nonce', async function () {
       const factory = new ethers.ContractFactory(
         CustomErrorContract.abi,
         CustomErrorContract.bytecode,
         accounts[0].wallet,
       );
-      const contract = await factory.deploy({ gasLimit: 3000000 });
+      const contract = await factory.deploy({ gasLimit: 3_000_000 });
       const receipt = await contract.waitForDeployment();
       expect(receipt.target).to.exist;
       expect(receipt.interface.fragments[0].name).to.eq('NativeCurrencyNotAccepted');
