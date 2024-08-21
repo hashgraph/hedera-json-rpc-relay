@@ -103,7 +103,7 @@ export class ReceiptsRootUtils {
       const crPerTx: any[] = contractResults.filter((cr) => cr.hash == txHash);
       receipts.push({
         transactionIndex: crPerTx.length ? intToHex(crPerTx[0].transaction_index) : logsPerTx[0].transactionIndex,
-        type: crPerTx.length ? intToHex(crPerTx[0].type) : null,
+        type: crPerTx.length && crPerTx[0].type ? intToHex(crPerTx[0].type) : null,
         root: crPerTx.length ? crPerTx[0].root : EthImpl.zeroHex32Byte,
         status: crPerTx.length ? crPerTx[0].status : EthImpl.oneHex,
         cumulativeGasUsed: crPerTx.length ? intToHex(crPerTx[0].block_gas_used) : EthImpl.zeroHex,
