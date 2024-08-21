@@ -59,7 +59,7 @@ export interface IContractCallResponse {
   errorMessage?: string;
   statusCode?: number;
   _status?: {
-    messages: Array<{ message: string; detail: string; data: string }>;
+    messages: Array<{ message: string; detail?: string; data?: string }>;
   };
 }
 

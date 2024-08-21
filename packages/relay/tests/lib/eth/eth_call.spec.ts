@@ -54,6 +54,7 @@ import {
   mockData,
 } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
+import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -488,9 +489,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: `0x00` });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
 
       web3Mock.history.post = [];
 
@@ -510,9 +509,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: `0x00` });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
 
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x00');
@@ -525,10 +522,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: `0x00` });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x00');
     });
@@ -541,10 +535,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: `0x00` });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x00');
     });
@@ -560,7 +551,7 @@ describe('@ethCall Eth Call spec', async function () {
         block: 'latest',
       };
 
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
       // Relay is called with value in Weibars
@@ -576,10 +567,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(429, mockData.tooManyRequests);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 429, mockData.tooManyRequests);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(-32605);
@@ -594,9 +582,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(400, mockData.contractReverted);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(3);
@@ -613,9 +599,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(501, mockData.notSuported);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 501, mockData.notSuported);
 
       sdkClientStub.submitContractCallQueryWithRetry.returns({
         asBytes: function () {
@@ -646,9 +630,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(400, mockData.contractReverted);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted);
       sinon.reset();
       const result = await ethImpl.call(callData, 'latest');
       sinon.assert.notCalled(sdkClientStub.submitContractCallQueryWithRetry);
@@ -667,8 +649,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false, block: 'latest' }).reply(400, {
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, {
         _status: {
           messages: [
             {
@@ -718,9 +699,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(400, mockData.invalidTransaction);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.invalidTransaction);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect(result).to.equal('0x');
@@ -735,9 +714,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(400, mockData.failInvalid);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.failInvalid);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect(result).to.equal('0x');
@@ -750,9 +727,7 @@ describe('@ethCall Eth Call spec', async function () {
         from: ACCOUNT_ADDRESS_1,
       };
 
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: EXAMPLE_CONTRACT_BYTECODE });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: EXAMPLE_CONTRACT_BYTECODE });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.eq(EXAMPLE_CONTRACT_BYTECODE);
     });
@@ -763,12 +738,21 @@ describe('@ethCall Eth Call spec', async function () {
         from: ACCOUNT_ADDRESS_1,
       };
 
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: EXAMPLE_CONTRACT_BYTECODE });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: EXAMPLE_CONTRACT_BYTECODE });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.eq(EXAMPLE_CONTRACT_BYTECODE);
     });
+
+    async function mockContractCall(
+      callData: IContractCallRequest,
+      estimate: boolean,
+      statusCode: number,
+      result: IContractCallResponse,
+    ) {
+      const formattedCallData = { ...callData, estimate };
+      await ethImpl.contractCallFormat(formattedCallData);
+      return web3Mock.onPost('contracts/call', formattedCallData).reply(statusCode, result);
+    }
   });
 
   describe('contractCallFormat', () => {
