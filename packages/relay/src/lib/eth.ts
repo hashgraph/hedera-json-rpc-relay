@@ -59,7 +59,7 @@ import { IFeeHistory } from './types/IFeeHistory';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
 import { Trie } from '@ethereumjs/trie';
 import TransactionService from './services/transactionService/transactionService';
-import { IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
+import { IAccountInfo, IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -699,9 +699,9 @@ export class EthImpl implements Eth {
    *
    * @param {string} address the address of the account
    * @param {string} requestIdPrefix the prefix for the request ID
-   * @returns the account (if such exists for the given address)
+   * @returns {Promise<IAccountInfo | null>} the account (if such exists for the given address)
    */
-  private async getAccount(address: string, requestIdPrefix?: string) {
+  private async getAccount(address: string, requestIdPrefix?: string): Promise<IAccountInfo | null> {
     const key = `${constants.CACHE_KEY.ACCOUNT}_${address}`;
     let account = await this.cacheService.getAsync(key, EthImpl.ethEstimateGas, requestIdPrefix);
     if (!account) {
@@ -729,7 +729,13 @@ export class EthImpl implements Eth {
       transaction.gas = parseInt(transaction.gas.toString());
     }
     if (!transaction.from && transaction.value && transaction.value > 0) {
-      transaction.from = this.hapiService.getMainClientInstance().getOperator()?.publicKey.toEvmAddress();
+      if (process.env.OPERATOR_KEY_FORMAT === 'HEX_ECDSA') {
+        transaction.from = this.hapiService.getMainClientInstance().operatorPublicKey?.toEvmAddress();
+      } else {
+        const operatorId = this.hapiService.getMainClientInstance().operatorAccountId!.toString();
+        const operatorAccount = await this.getAccount(operatorId, requestIdPrefix);
+        transaction.from = operatorAccount?.evm_address;
+      }
     }
 
     // Support either data or input. https://ethereum.github.io/execution-apis/api-documentation/ lists input but many EVM tools still use data.

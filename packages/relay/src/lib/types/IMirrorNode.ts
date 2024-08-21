@@ -18,6 +18,28 @@
  *
  */
 
+export interface IAccountInfo {
+  /**
+   * Account ID string in the form `shard.realm.num`
+   */
+  account: string;
+  /**
+   * RFC4648 no-padding base32 encoded string of the account's alias.
+   */
+  alias: string;
+  balance?: IAccountBalance;
+  deleted?: boolean;
+  ethereum_nonce?: number;
+  evm_address?: string;
+  memo?: string;
+}
+
+export interface IAccountBalance {
+  balance: number;
+  timestamp?: string;
+  tokens?: { token_id: string; balance: number }[];
+}
+
 export interface ILimitOrderParams {
   limit?: number;
   order?: string;

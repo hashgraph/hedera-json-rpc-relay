@@ -34,6 +34,7 @@ import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import {
+  IAccountInfo,
   IContractCallRequest,
   IContractCallResponse,
   IContractLogsResultsParams,
@@ -443,7 +444,7 @@ export class MirrorNodeClient {
   }
 
   public async getAccount(idOrAliasOrEvmAddress: string, requestIdPrefix?: string, retries?: number) {
-    return this.get(
+    return this.get<IAccountInfo>(
       `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?transactions=false`,
       MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
       requestIdPrefix,
