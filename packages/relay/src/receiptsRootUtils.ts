@@ -53,12 +53,12 @@ export interface IReceiptRootHash {
 export class ReceiptsRootUtils {
   private static encodeLogs(logs: IReceiptRootHashLog[]): SerializedLog[] {
     const serializedLogs: SerializedLog[] = [];
-    for (let i = 0; i < logs.length; i++) {
+    for (const log of logs) {
       const topics: Uint8Array[] = [];
-      for (let j = 0; j < logs[i].topics.length; j++) {
-        topics.push(hexToBytes(logs[i].topics[j]));
+      for (const topic of log.topics) {
+        topics.push(hexToBytes(topic));
       }
-      serializedLogs.push([hexToBytes(logs[i].address), topics, hexToBytes(logs[i].data)]);
+      serializedLogs.push([hexToBytes(log.address), topics, hexToBytes(log.data)]);
     }
 
     return serializedLogs;
