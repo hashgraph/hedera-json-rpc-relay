@@ -6,18 +6,14 @@ import constants from '../../../constants';
 import { EthImpl } from '../../../eth';
 
 export class EthGetCodeService {
-  constructor(
-    private mirrorNodeClient: MirrorNodeClient,
-    private logger: Logger,
-  ) {}
+  constructor(private logger: Logger) {}
 
   public async execute(address: string): Promise<string> {
     try {
-      if (!(await this.isSupported(address))) {
+      if (!this.isSupported(address)) {
         return '';
       }
-      const type = (await this.mirrorNodeClient.isTokenFungible(address)) ? 'fungible' : 'nonFungible';
-      const filePath = path.join(__dirname, 'config', `${type.toLowerCase()}.bytecode`);
+      const filePath = path.join(__dirname, 'config', `precompile.bytecode`);
       const result = readFileSync(filePath.replace('/dist/', '/src/'), 'utf-8');
       this.logger.trace(`Result for address ${address}: ${result}`);
       return result;
@@ -28,12 +24,7 @@ export class EthGetCodeService {
     }
   }
 
-  private async isSupported(address: string) {
-    const resolved = await this.mirrorNodeClient.resolveEntityType(
-      address,
-      [constants.TYPE_TOKEN],
-      EthImpl.ethGetStorageAt,
-    );
-    return resolved !== null && resolved.type === constants.TYPE_TOKEN;
+  private isSupported(address: string) {
+    return address === EthImpl.iHTSAddress;
   }
 }

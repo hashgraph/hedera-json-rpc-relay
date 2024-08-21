@@ -34,15 +34,15 @@ describe('RPC', function () {
     expect(res).to.be.equal(13);
   });
 
-  it('get name', async function () {
-    const res = await hre.run('show-name', { contractAddress });
-    expect(res).to.be.equal('Very long string, just to make sure that it exceeds 31 bytes and requires more than 1 storage slot.');
-  });
+    it('get name', async function () {
+      const res = await hre.run('show-name', { contractAddress });
+      expect(res).to.be.equal('Very long string, just to make sure that it exceeds 31 bytes and requires more than 1 storage slot.');
+    });
 
-  it('get symbol', async function () {
-    const res = await hre.run('show-symbol', { contractAddress });
-    expect(res).to.be.equal('SHRT');
-  });
+    it('get symbol', async function () {
+      const res = await hre.run('show-symbol', { contractAddress });
+      expect(res).to.be.equal('SHRT');
+    });
 
  it('get balance', async function () {
     const res = await hre.run('show-balance', {

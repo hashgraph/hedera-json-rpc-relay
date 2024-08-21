@@ -1117,7 +1117,7 @@ export class EthImpl implements Eth {
       );
     }
     this.logger.trace(`${requestIdPrefix} getCode(address=${address}, blockNumber=${blockNumber})`);
-    const override = await new EthGetCodeService(this.mirrorNodeClient, this.logger).execute(address);
+    const override = await new EthGetCodeService(this.logger).execute(address);
     if (override) {
       return override;
     }

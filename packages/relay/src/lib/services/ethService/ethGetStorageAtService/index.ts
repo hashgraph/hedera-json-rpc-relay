@@ -10,7 +10,7 @@ import { EthImpl } from '../../../eth';
 export class EthGetStorageAtService {
   private static readonly MAX_ELEMENTS = 1000;
   private static readonly BALANCES_ARRAY = ['holders', 'balances'];
-
+  private static readonly ASSOCIATIONS_ARRAY = ['holders', 'balances'];
   constructor(
     private mirrorNodeClient: MirrorNodeClient,
     private logger: Logger,
@@ -28,7 +28,12 @@ export class EthGetStorageAtService {
       // Slot === keccaked value (long strings, maps, arrays)
       const keccakedSlot = await this.guessSlotAndOffsetFromKeccakedNumber(slotNumber, allSlots);
       if (keccakedSlot) {
-        return `0x${(await this.getComplexElement(keccakedSlot.slot, address, keccakedSlot.offset)).padStart(64, '0')}`;
+        const kecRes = `0x${(await this.getComplexElement(keccakedSlot.slot, address, keccakedSlot.offset)).padStart(
+          64,
+          '0',
+        )}`;
+        this.logger.error(`Get storage ${address} slot: ${slotNumber}, result: ${kecRes}`);
+        return kecRes;
       }
 
       // Slot === decimal number (primitives)
@@ -39,6 +44,8 @@ export class EthGetStorageAtService {
       for (let slotOffsetIndex = 0; slotOffsetIndex < slots.length; slotOffsetIndex++) {
         result = `${result}${await this.get(slots[slotOffsetIndex], address)}`;
       }
+      this.logger.error(`Get storage ${address} slot: ${slotNumber}, result: 0x${result.padStart(64, '0')}`);
+
       return `0x${result.padStart(64, '0')}`;
     } catch (e: any) {
       this.logger.error(`Error occurred when extracting a storage for an address ${address}: ${e.message}`);
