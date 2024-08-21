@@ -628,11 +628,7 @@ export class EthImpl implements Eth {
     requestIdPrefix?: string,
   ): Promise<IContractCallResponse | null> {
     await this.contractCallFormat(transaction, requestIdPrefix);
-    const callData = {
-      ...transaction,
-      from: transaction.from ?? this.hapiService.getMainClientInstance().getOperator()?.publicKey.toEvmAddress(),
-      estimate: true,
-    };
+    const callData = { ...transaction, estimate: true };
     return this.mirrorNodeClient.postContractCall(callData, requestIdPrefix);
   }
 
@@ -731,6 +727,9 @@ export class EthImpl implements Eth {
     }
     if (transaction.gas) {
       transaction.gas = parseInt(transaction.gas.toString());
+    }
+    if (!transaction.from && transaction.value && transaction.value > 0) {
+      transaction.from = this.hapiService.getMainClientInstance().getOperator()?.publicKey.toEvmAddress();
     }
 
     // Support either data or input. https://ethereum.github.io/execution-apis/api-documentation/ lists input but many EVM tools still use data.
