@@ -627,8 +627,12 @@ export class EthImpl implements Eth {
     transaction: IContractCallRequest,
     requestIdPrefix?: string,
   ): Promise<IContractCallResponse | null> {
-    this.contractCallFormat(transaction);
-    const callData = { ...transaction, estimate: true };
+    await this.contractCallFormat(transaction, requestIdPrefix);
+    const callData = {
+      ...transaction,
+      from: transaction.from ?? this.hapiService.getMainClientInstance().getOperator()?.publicKey.toEvmAddress(),
+      estimate: true,
+    };
     return this.mirrorNodeClient.postContractCall(callData, requestIdPrefix);
   }
 
@@ -714,13 +718,16 @@ export class EthImpl implements Eth {
   /**
    * Perform value format precheck before making contract call towards the mirror node
    * @param transaction
+   * @param requestIdPrefix
    */
-  contractCallFormat(transaction: IContractCallRequest): void {
+  async contractCallFormat(transaction: IContractCallRequest, requestIdPrefix?: string): Promise<void> {
     if (transaction.value) {
       transaction.value = weibarHexToTinyBarInt(transaction.value);
     }
     if (transaction.gasPrice) {
       transaction.gasPrice = parseInt(transaction.gasPrice.toString());
+    } else {
+      transaction.gasPrice = await this.gasPrice(requestIdPrefix);
     }
     if (transaction.gas) {
       transaction.gas = parseInt(transaction.gas.toString());
@@ -1659,7 +1666,7 @@ export class EthImpl implements Eth {
     // Get a reasonable value for "gas" if it is not specified.
     const gas = this.getCappedBlockGasLimit(call.gas?.toString(), requestIdPrefix);
 
-    this.contractCallFormat(call);
+    await this.contractCallFormat(call, requestIdPrefix);
 
     let result: string | JsonRpcError = '';
     try {
