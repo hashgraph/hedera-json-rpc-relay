@@ -45,6 +45,7 @@ import callerContractJson from '../contracts/Caller.json';
 import DeployerContractJson from '../contracts/Deployer.json';
 import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
+import CustomErrorContract from '../contracts/CustomErrorContract.json';
 
 // Helper functions/constants from local resources
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
@@ -1001,6 +1002,18 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         requestId,
       );
       expect(nonceAfter).to.be.equal('0x3');
+    });
+
+    it.only('should deploy a contract and get the correct nonce', async function () {
+      const factory = new ethers.ContractFactory(
+        CustomErrorContract.abi,
+        CustomErrorContract.bytecode,
+        accounts[0].wallet,
+      );
+      const contract = await factory.deploy({ gasLimit: 3000000 });
+      const receipt = await contract.waitForDeployment();
+      expect(receipt.target).to.exist;
+      expect(receipt.interface.fragments[0].name).to.eq('NativeCurrencyNotAccepted');
     });
   });
 
