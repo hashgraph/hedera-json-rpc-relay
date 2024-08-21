@@ -2334,31 +2334,50 @@ export class EthImpl implements Eth {
   }
 
   private async getAccountLatestEthereumNonce(address: string, requestId?: string): Promise<string> {
+    const MAX_RETRIES = Number(process.env.MIRROR_NODE_RETRIES) || 3;
     let accountData = await this.mirrorNodeClient.getAccount(address, requestId);
     if (accountData) {
       // with HIP 729 ethereum_nonce should always be 0+ and null. Historical contracts may have a null value as the nonce was not tracked, return default EVM compliant 0x1 in this case
       let accountNonce = accountData.ethereum_nonce !== null ? numberTo0x(accountData.ethereum_nonce) : EthImpl.oneHex;
-      if (this.previousAccount === address && this.previousAccountNonce === Number(accountNonce)) {
+      if (this.shouldRetryNonceFetch(address, Number(accountNonce))) {
         let retries = 0;
-        while (
-          this.previousAccount === address &&
-          this.previousAccountNonce === Number(accountNonce) &&
-          retries < (Number(process.env.MIRROR_NODE_RETRIES) || 3)
-        ) {
-          await new Promise((r) => setTimeout(r, this.mirrorNodeClient.getMirrorNodeRetryDelay()));
+        while (retries < MAX_RETRIES) {
+          await this.delay(this.mirrorNodeClient.getMirrorNodeRetryDelay());
           accountData = await this.mirrorNodeClient.getAccount(address, requestId);
-          accountNonce = accountData.ethereum_nonce !== null ? numberTo0x(accountData.ethereum_nonce) : EthImpl.oneHex;
+          const newNonce =
+            accountData.ethereum_nonce !== null ? numberTo0x(accountData.ethereum_nonce) : EthImpl.oneHex;
+
+          if (this.isNewNonceValid(address, Number(newNonce))) {
+            accountNonce = newNonce;
+            break;
+          }
+
           retries++;
-          this.logger.trace(`DEBUG: Retrying getAccountLatestEthereumNonce for ${retries} time`);
         }
-        return accountNonce;
       }
-      this.previousAccountNonce = Number(accountNonce);
-      this.previousAccount = address;
+
+      this.updatePreviousAccountInfo(address, Number(accountNonce));
       return accountNonce;
     }
 
     return EthImpl.zeroHex;
+  }
+
+  private shouldRetryNonceFetch(address: string, nonce: number): boolean {
+    return this.previousAccount === address && this.previousAccountNonce === nonce;
+  }
+
+  private isNewNonceValid(address: string, nonce: number): boolean {
+    return this.previousAccount !== address || this.previousAccountNonce !== nonce;
+  }
+
+  private updatePreviousAccountInfo(address: string, nonce: number): void {
+    this.previousAccountNonce = nonce;
+    this.previousAccount = address;
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
