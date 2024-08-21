@@ -10,7 +10,6 @@ import { EthImpl } from '../../../eth';
 export class EthGetStorageAtService {
   private static readonly MAX_ELEMENTS = 1000;
   private static readonly BALANCES_ARRAY = ['holders', 'balances'];
-  private static readonly ASSOCIATIONS_ARRAY = ['holders', 'balances'];
   constructor(
     private mirrorNodeClient: MirrorNodeClient,
     private logger: Logger,
