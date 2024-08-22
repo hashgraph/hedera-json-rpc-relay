@@ -21,9 +21,13 @@
 import { pino } from 'pino';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { RedisClientType, createClient } from 'redis';
+import { createClient, RedisClientType } from 'redis';
 import { RedisInMemoryServer } from '../../../redisInMemoryServer';
-import { SubscriptionRepository } from '../../../../src/lib/db/repositories/hbarLimiter/subscriptionRepository';
+import {
+  SubscriptionNotActiveError,
+  SubscriptionNotFoundError,
+  SubscriptionRepository,
+} from '../../../../src/lib/db/repositories/hbarLimiter/subscriptionRepository';
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 
 chai.use(chaiAsPromised);
@@ -62,6 +66,7 @@ describe('SubscriptionRepository', function () {
   describe('getSubscriptionById', () => {
     it('throws an error if subscription not found by ID', async () => {
       await expect(repository.getSubscriptionById('non-existent-id')).to.be.eventually.rejectedWith(
+        SubscriptionNotFoundError,
         `Subscription with ID non-existent-id not found`,
       );
     });
@@ -78,6 +83,7 @@ describe('SubscriptionRepository', function () {
   describe('getDetailedSubscriptionById', () => {
     it('throws an error if subscription not found by ID', async () => {
       await expect(repository.getDetailedSubscriptionById('non-existent-id')).to.be.eventually.rejectedWith(
+        SubscriptionNotFoundError,
         `Subscription with ID non-existent-id not found`,
       );
     });
@@ -94,6 +100,7 @@ describe('SubscriptionRepository', function () {
   describe('getSpendingHistory', () => {
     it('throws an error if subscription not found by ID', async () => {
       await expect(repository.getSpendingHistory('non-existent-id')).to.be.eventually.rejectedWith(
+        SubscriptionNotFoundError,
         `Subscription with ID non-existent-id not found`,
       );
     });
@@ -165,6 +172,7 @@ describe('SubscriptionRepository', function () {
       const amount = 100;
 
       await expect(repository.addAmountToSpendingHistory(id, amount)).to.be.eventually.rejectedWith(
+        SubscriptionNotFoundError,
         `Subscription with ID ${id} not found`,
       );
     });
@@ -243,6 +251,7 @@ describe('SubscriptionRepository', function () {
       const amount = 50;
 
       await expect(repository.addAmountToSpentToday(id, amount)).to.be.eventually.rejectedWith(
+        SubscriptionNotFoundError,
         `Subscription with ID ${id} not found`,
       );
     });
@@ -260,6 +269,7 @@ describe('SubscriptionRepository', function () {
 
       const amount = 50;
       await expect(repository.addAmountToSpentToday(createdSubscription.id, amount)).to.be.eventually.rejectedWith(
+        SubscriptionNotActiveError,
         `Subscription with ID ${createdSubscription.id} is not active`,
       );
     });
@@ -269,6 +279,7 @@ describe('SubscriptionRepository', function () {
     it('throws error if subscription does not exist when checking if exists and active', async () => {
       const id = 'non-existent-id';
       await expect(repository.checkExistsAndActive(id)).to.be.eventually.rejectedWith(
+        SubscriptionNotFoundError,
         `Subscription with ID ${id} not found`,
       );
     });
@@ -285,6 +296,7 @@ describe('SubscriptionRepository', function () {
       );
 
       await expect(repository.checkExistsAndActive(createdSubscription.id)).to.be.eventually.rejectedWith(
+        SubscriptionNotActiveError,
         `Subscription with ID ${createdSubscription.id} is not active`,
       );
     });

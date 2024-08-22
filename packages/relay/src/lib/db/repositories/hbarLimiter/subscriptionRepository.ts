@@ -89,6 +89,20 @@ export interface ISubscriptionRepository {
   addAmountToSpentToday(id: string, amount: number): Promise<void>;
 }
 
+export class SubscriptionNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Subscription with ID ${id} not found`);
+    this.name = 'SubscriptionNotFoundError';
+  }
+}
+
+export class SubscriptionNotActiveError extends Error {
+  constructor(id: string) {
+    super(`Subscription with ID ${id} is not active`);
+    this.name = 'SubscriptionNotActiveError';
+  }
+}
+
 export class SubscriptionRepository implements ISubscriptionRepository {
   private readonly collectionKey = 'hbarLimitSubscription';
   private readonly oneDayInSeconds = 24 * 60 * 60;
@@ -113,7 +127,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
   async getSubscriptionById(id: string): Promise<ISubscription> {
     const subscription = await this.client.hGet(this.collectionKey, id);
     if (!subscription) {
-      throw new Error(`Subscription with ID ${id} not found`);
+      throw new SubscriptionNotFoundError(id);
     }
     this.logger.trace(`Retrieved subscription with ID ${id}`);
     const parsedSubscription = JSON.parse(subscription);
@@ -148,11 +162,8 @@ export class SubscriptionRepository implements ISubscriptionRepository {
 
   async checkExistsAndActive(id: string): Promise<void> {
     const subscription = await this.getSubscriptionById(id);
-    if (!subscription) {
-      throw new Error(`Subscription with ID ${id} not found`);
-    }
     if (!subscription.active) {
-      throw new Error(`Subscription with ID ${id} is not active`);
+      throw new SubscriptionNotActiveError(id);
     }
   }
 
