@@ -112,11 +112,10 @@ export class SubscriptionRepository implements ISubscriptionRepository {
   }
 
   async createSubscription(subscriptionType: SubscriptionType): Promise<HbarLimitSubscription> {
-    const subscription = {
+    const subscription: IDetailedSubscription = {
       id: uuidV4(randomBytes(16)),
       subscriptionType,
       createdAt: new Date(),
-      updatedAt: new Date(),
       active: true,
       spendingHistory: [],
       spentToday: 0,
