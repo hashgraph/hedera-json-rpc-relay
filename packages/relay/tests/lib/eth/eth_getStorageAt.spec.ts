@@ -42,7 +42,7 @@ import {
 } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
-import { defaultDetailedContractResults } from '../../helpers';
+import { defaultDetailedContractResults, mockData } from '../../helpers';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
 
@@ -151,6 +151,15 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
 
       // verify slot value
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
+    });
+
+    it('eth_getStorageAt for HTS-only data', async function () {
+      restMock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+      const mockStorage = '0x546f6b656e206e616d6500000000000000000000000000000000000000000014';
+
+      const result = await ethImpl.getStorageAt(mockData.tokenLongZero, '0x0', 'latest');
+
+      expect(result).equal(mockStorage);
     });
 
     it('eth_getStorageAt with match with latest block', async function () {
