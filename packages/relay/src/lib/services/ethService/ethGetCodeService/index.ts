@@ -1,8 +1,6 @@
-import { MirrorNodeClient } from '../../../clients';
 import path from 'path';
 import { readFileSync } from 'fs';
 import { Logger } from 'pino';
-import constants from '../../../constants';
 import { EthImpl } from '../../../eth';
 
 export class EthGetCodeService {
