@@ -103,4 +103,59 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const cachedData = await otherServiceInstance.getAsync(dataLabel, CALLING_METHOD);
     expect(cachedData).to.deep.eq(DATA, 'cached data is read correctly by other service instance');
   });
+
+  describe('fallback to local cache in case of Redis error', async () => {
+    const dataLabel = `${DATA_LABEL_PREFIX}_redis_error`;
+
+    let currentRedisEnabledEnv;
+    let cacheService;
+
+    beforeEach(async () => {
+      currentRedisEnabledEnv = process.env.REDIS_ENABLED;
+
+      process.env.REDIS_ENABLED = 'true';
+      cacheService = new CacheService(global.logger, registry);
+
+      // disconnect redis client to simulate Redis error
+      await cacheService.disconnectRedisClient();
+      await new Promise((r) => setTimeout(r, 1000));
+    });
+
+    afterEach(async () => {
+      process.env.REDIS_ENABLED = currentRedisEnabledEnv;
+    });
+
+    it('test getAsync operation', async () => {
+      await cacheService.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined);
+      await new Promise((r) => setTimeout(r, 200));
+
+      const dataInLRU = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+      expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
+    });
+
+    it('test getAsync operation', async () => {
+      const pairs = {
+        boolean: true,
+        int: -1,
+        string: '5644',
+      };
+
+      await cacheService.multiSet(pairs, CALLING_METHOD, undefined, undefined);
+      await new Promise((r) => setTimeout(r, 200));
+
+      for (const key in pairs) {
+        const cachedValue = await cacheService.getAsync(key, CALLING_METHOD);
+        expect(cachedValue).deep.equal(pairs[key]);
+      }
+    });
+
+    it('test delete operation', async () => {
+      await cacheService.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined);
+      await new Promise((r) => setTimeout(r, 200));
+
+      await cacheService.delete(dataLabel, CALLING_METHOD);
+      const dataInLRU = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+      expect(dataInLRU).to.be.null;
+    });
+  });
 });
