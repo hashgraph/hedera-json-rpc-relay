@@ -123,12 +123,12 @@ describe('@ethGetCode using MirrorNode', async function () {
       expect(res).to.equal(redirectBytecode);
     });
 
-    it('should return the static bytecode for address(0x167) call', async () => {
+    it('should no longer return the static bytecode for address(0x167) call', async () => {
       restMock.onGet(`contracts/${EthImpl.iHTSAddress}`).reply(200, DEFAULT_CONTRACT);
       restMock.onGet(`accounts/${EthImpl.iHTSAddress}${NO_TRANSACTIONS}`).reply(404, null);
 
       const res = await ethImpl.getCode(EthImpl.iHTSAddress, null);
-      expect(res).to.equal(EthImpl.invalidEVMInstruction);
+      expect(res).to.not.equal(EthImpl.invalidEVMInstruction);
     });
 
     validBlockParam.forEach((blockParam) => {

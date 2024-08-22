@@ -441,6 +441,41 @@ describe('MirrorNodeClient', async function () {
     expect(result).to.be.null;
   });
 
+  it('`getToken` by EVM address', async () => {
+    mock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+
+    const result = await mirrorNodeInstance.getToken(mockData.tokenLongZero);
+    expect(result).to.exist;
+    expect(result.token_id).equal('0.0.13312');
+  });
+
+  it('`getToken` by token id', async () => {
+    mock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+    const result = await mirrorNodeInstance.getToken(mockData.tokenId);
+    expect(result).to.exist;
+    expect(result.token_id).equal('0.0.13312');
+  });
+
+  it('`isTokenFungible`', async () => {
+    mock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+    const result = await mirrorNodeInstance.isTokenFungible(mockData.tokenId);
+    expect(result).to.be.true;
+  });
+
+  it('`getTokenBalances` by EVM address', async () => {
+    mock.onGet(`tokens/${mockData.tokenId}/balances`).reply(200, { balances: [] });
+    const result = await mirrorNodeInstance.getTokenBalances(mockData.tokenLongZero);
+    expect(result).to.exist;
+    expect(result.balances.length).equal(0);
+  });
+
+  it('`getTokenBalances` by token id', async () => {
+    mock.onGet(`tokens/${mockData.tokenId}/balances`).reply(200, { balances: [] });
+    const result = await mirrorNodeInstance.getTokenBalances(mockData.tokenId);
+    expect(result).to.exist;
+    expect(result.balances.length).equal(0);
+  });
+
   const detailedContractResult = {
     access_list: '0x',
     amount: 2000000000,
