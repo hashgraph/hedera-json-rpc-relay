@@ -136,7 +136,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     }
   }
 
-  async getSpendingHistory(id: string): Promise<IHbarSpending[]> {
+  async getSpendingHistory(id: string): Promise<HbarSpending[]> {
     await this.checkExistsAndActive(id);
 
     this.logger.trace(`Retrieving spending history for subscription with ID ${id}...`);

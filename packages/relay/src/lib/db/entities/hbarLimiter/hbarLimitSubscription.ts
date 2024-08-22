@@ -19,13 +19,12 @@
  */
 
 import { SubscriptionType } from '../../types/hbarLimiter/subscriptionType';
-import { IHbarSpending } from '../../types/hbarLimiter/hbarSpending';
+import { HbarSpending, IHbarSpending } from '../../types/hbarLimiter/hbarSpending';
 
 export interface ISubscription {
   id: string;
   subscriptionType: SubscriptionType;
   createdAt: Date;
-  updatedAt: Date;
   active: boolean;
 }
 
@@ -38,18 +37,16 @@ export class HbarLimitSubscription implements IDetailedSubscription {
   id: string;
   subscriptionType: SubscriptionType;
   createdAt: Date;
-  updatedAt: Date;
   active: boolean;
-  spendingHistory: IHbarSpending[];
+  spendingHistory: HbarSpending[];
   spentToday: number;
 
   constructor(data: IDetailedSubscription) {
     this.id = data.id;
     this.subscriptionType = data.subscriptionType;
     this.createdAt = new Date(data.createdAt);
-    this.updatedAt = new Date(data.updatedAt);
     this.active = data.active;
-    this.spendingHistory = data.spendingHistory;
+    this.spendingHistory = data.spendingHistory.map((spending) => new HbarSpending(spending));
     this.spentToday = data.spentToday;
   }
 }
