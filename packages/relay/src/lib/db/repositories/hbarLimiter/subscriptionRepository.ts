@@ -33,7 +33,14 @@ export interface ISubscriptionRepository {
   /**
    * Gets a subscription by ID.
    * @param id - The ID of the subscription to get.
-   * @returns {Promise<ISubscription>} - The subscription object, or null if not found.
+   * @returns {Promise<ISubscription>} - The subscription object.
+   */
+  getSubscriptionById(id: string): Promise<ISubscription>;
+
+  /**
+   * Gets a subscription by ID with detailed information.
+   * @param id - The ID of the subscription to get.
+   * @returns {Promise<IDetailedSubscription>} - The detailed subscription object.
    */
   getDetailedSubscriptionById(id: string): Promise<IDetailedSubscription>;
 
@@ -103,15 +110,25 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     this.logger = logger;
   }
 
-  async getDetailedSubscriptionById(id: string): Promise<HbarLimitSubscription> {
+  async getSubscriptionById(id: string): Promise<ISubscription> {
+    const subscription = await this.client.hGet(this.collectionKey, id);
+    if (!subscription) {
+      throw new Error(`Subscription with ID ${id} not found`);
+    }
+    this.logger.trace(`Retrieved subscription with ID ${id}`);
+    return JSON.parse(subscription);
+  }
+
+  async getDetailedSubscriptionById(id: string): Promise<IDetailedSubscription> {
+    const subscription = await this.getSubscriptionById(id);
     return new HbarLimitSubscription({
-      ...(await this.getSubscriptionById(id)),
+      ...subscription,
       spendingHistory: await this.getSpendingHistory(id),
       spentToday: await this.getSpentToday(id),
     });
   }
 
-  async createSubscription(subscriptionType: SubscriptionType): Promise<HbarLimitSubscription> {
+  async createSubscription(subscriptionType: SubscriptionType): Promise<IDetailedSubscription> {
     const subscription: IDetailedSubscription = {
       id: uuidV4(randomBytes(16)),
       subscriptionType,
@@ -135,7 +152,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     }
   }
 
-  async getSpendingHistory(id: string): Promise<HbarSpending[]> {
+  async getSpendingHistory(id: string): Promise<IHbarSpending[]> {
     await this.checkExistsAndActive(id);
 
     this.logger.trace(`Retrieving spending history for subscription with ID ${id}...`);
@@ -177,14 +194,5 @@ export class SubscriptionRepository implements ISubscriptionRepository {
       this.logger.trace(`Adding ${amount} to spentToday for subscription with ID ${id}...`);
       await this.client.incrBy(key, amount);
     }
-  }
-
-  private async getSubscriptionById(id: string): Promise<ISubscription> {
-    const subscription = await this.client.hGet(this.collectionKey, id);
-    if (!subscription) {
-      throw new Error(`Subscription with ID ${id} not found`);
-    }
-    this.logger.trace(`Retrieved subscription with ID ${id}`);
-    return JSON.parse(subscription);
   }
 }
