@@ -1,4 +1,4 @@
-/*
+/* -
  *
  * Hedera JSON RPC Relay
  *
@@ -18,15 +18,9 @@
  *
  */
 
-import { ITracerConfig } from '../../types';
-import type { TracerType } from '../../constants';
-
-export interface IDebugService {
-  debug_traceTransaction: (
-    transactionIdOrHash: string,
-    tracer: TracerType,
-    tracerConfig: ITracerConfig,
-    requestIdPrefix?: string,
-  ) => Promise<any>;
-  resolveAddress: (address: string, types?: string[], requestIdPrefix?: string) => Promise<string>;
+export interface ITransactionRecordMetric {
+  status: string;
+  gasUsed: number;
+  transactionFee: number;
+  txRecordChargeAmount: number;
 }

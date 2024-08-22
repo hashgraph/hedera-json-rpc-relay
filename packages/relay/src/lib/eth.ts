@@ -18,47 +18,44 @@
  *
  */
 
-import { Eth } from '../index';
-import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
+import crypto from 'crypto';
 import { Logger } from 'pino';
-import { Block, Log, Transaction, Transaction1559 } from './model';
-import { MirrorNodeClient } from './clients';
-import { JsonRpcError, predefined } from './errors/JsonRpcError';
-import { SDKClientError } from './errors/SDKClientError';
-import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
+import { Eth } from '../index';
 import { Utils } from './../utils';
-import { LogsBloomUtils } from './../logsBloomUtils';
 import constants from './constants';
 import { Precheck } from './precheck';
-import {
-  ASCIIToHex,
-  formatContractResult,
-  formatTransactionIdWithoutQueryParams,
-  isHex,
-  isValidEthereumAddress,
-  nanOrNumberTo0x,
-  nullableNumberTo0x,
-  numberTo0x,
-  parseNumericEnvVar,
-  prepend0x,
-  toHash32,
-  trimPrecedingZeros,
-  weibarHexToTinyBarInt,
-} from '../formatters';
-import crypto from 'crypto';
-import HAPIService from './services/hapiService/hapiService';
+import { MirrorNodeClient } from './clients';
 import { Counter, Registry } from 'prom-client';
-import { Transaction as EthersTransaction } from 'ethers';
-import { CommonService, FilterService } from './services/ethService';
-import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
-import { CacheService } from './services/cacheService/cacheService';
-import { IDebugService } from './services/debugService/IDebugService';
+import { LogsBloomUtils } from './../logsBloomUtils';
 import { DebugService } from './services/debugService';
-import { IFeeHistory } from './types/IFeeHistory';
-import { ITransactionReceipt } from './types/ITransactionReceipt';
-import TransactionService from './services/transactionService/transactionService';
-import { IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
+import { SDKClientError } from './errors/SDKClientError';
+import { Transaction as EthersTransaction } from 'ethers';
+import HAPIService from './services/hapiService/hapiService';
+import { JsonRpcError, predefined } from './errors/JsonRpcError';
+import { Block, Log, Transaction, Transaction1559 } from './model';
+import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
+import { CacheService } from './services/cacheService/cacheService';
+import { CommonService, FilterService } from './services/ethService';
+import { IDebugService } from './services/debugService/IDebugService';
+import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
+import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
+import { IFeeHistory, IContractCallRequest, IContractCallResponse, ITransactionReceipt } from './types';
+import {
+  isHex,
+  toHash32,
+  prepend0x,
+  ASCIIToHex,
+  numberTo0x,
+  nanOrNumberTo0x,
+  parseNumericEnvVar,
+  nullableNumberTo0x,
+  trimPrecedingZeros,
+  formatContractResult,
+  weibarHexToTinyBarInt,
+  isValidEthereumAddress,
+  formatTransactionIdWithoutQueryParams,
+} from '../formatters';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -167,10 +164,6 @@ export class EthImpl implements Eth {
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
   );
-  private readonly MirrorNodeGetContractResultRetries = parseNumericEnvVar(
-    'MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES',
-    'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES',
-  );
   private readonly estimateGasThrows = process.env.ESTIMATE_GAS_THROWS
     ? process.env.ESTIMATE_GAS_THROWS === 'true'
     : true;
@@ -252,21 +245,15 @@ export class EthImpl implements Eth {
   private readonly debugServiceImpl: DebugService;
 
   /**
-   * Service for handling transactions.
-   * @type {TransactionService}
-   * @private
-   * @readonly
-   */
-  private readonly transactionService: TransactionService;
-
-  /**
-   * Create a new Eth implementation.
-   * @param hapiService
-   * @param mirrorNodeClient
-   * @param logger
-   * @param chain
-   * @param registry
-   * @param cacheService
+   * Constructs an instance of the service responsible for handling Ethereum JSON-RPC methods
+   * using Hedera Hashgraph as the underlying network.
+   *
+   * @param {HAPIService} hapiService - Service for interacting with Hedera Hashgraph.
+   * @param {MirrorNodeClient} mirrorNodeClient - Client for querying the Hedera mirror node.
+   * @param {Logger} logger - Logger instance for logging system messages.
+   * @param {string} chain - The chain identifier for the current blockchain environment.
+   * @param {Registry} registry - Registry instance for registering metrics.
+   * @param {CacheService} cacheService - Service for managing cached data.
    */
   constructor(
     hapiService: HAPIService,
@@ -276,19 +263,16 @@ export class EthImpl implements Eth {
     registry: Registry,
     cacheService: CacheService,
   ) {
-    this.hapiService = hapiService;
-    this.mirrorNodeClient = mirrorNodeClient;
-    this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient, logger, chain);
+    this.logger = logger;
+    this.hapiService = hapiService;
     this.cacheService = cacheService;
-
+    this.mirrorNodeClient = mirrorNodeClient;
+    this.precheck = new Precheck(mirrorNodeClient, logger, chain);
     this.ethExecutionsCounter = this.initEthExecutionCounter(registry);
-
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
-    this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
-    this.transactionService = new TransactionService(logger, this.hapiService.getSDKClient(), mirrorNodeClient);
+    this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
   }
 
   private shouldUseCacheForBalance(tag: string | null): boolean {
@@ -1482,10 +1466,12 @@ export class EthImpl implements Eth {
     if (e instanceof SDKClientError) {
       this.hapiService.decrementErrorCounter(e.statusCode);
       if (e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
+        const mirrorNodeGetContractResultRetries = this.mirrorNodeClient.getMirrorNodeRequestRetryCount();
+
         // note: because this is a WRONG_NONCE error handler, the nonce of the account is expected to be different from the nonce of the parsedTx
         //       running a polling loop to give mirror node enough time to update account nonce
         let accountNonce: number | null = null;
-        for (let i = 0; i < this.MirrorNodeGetContractResultRetries; i++) {
+        for (let i = 0; i < mirrorNodeGetContractResultRetries; i++) {
           const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestIdPrefix);
           if (accountInfo.ethereum_nonce !== parsedTx.nonce) {
             accountNonce = accountInfo.ethereum_nonce;
@@ -1493,9 +1479,7 @@ export class EthImpl implements Eth {
           }
 
           this.logger.trace(
-            `${requestIdPrefix} Repeating retry to poll for updated account nonce. Count ${i} of ${
-              this.MirrorNodeGetContractResultRetries
-            }. Waiting ${this.mirrorNodeClient.getMirrorNodeRetryDelay()} ms before initiating a new request`,
+            `${requestIdPrefix} Repeating retry to poll for updated account nonce. Count ${i} of ${mirrorNodeGetContractResultRetries}. Waiting ${this.mirrorNodeClient.getMirrorNodeRetryDelay()} ms before initiating a new request`,
           );
           await new Promise((r) => setTimeout(r, this.mirrorNodeClient.getMirrorNodeRetryDelay()));
         }
@@ -1551,7 +1535,6 @@ export class EthImpl implements Eth {
           transactionBuffer,
           EthImpl.ethSendRawTransaction,
           requestIdPrefix,
-          this.transactionService,
           originalCallerAddress,
         );
 
@@ -1570,7 +1553,7 @@ export class EthImpl implements Eth {
       const contractResult = await this.mirrorNodeClient.repeatedRequest(
         this.mirrorNodeClient.getContractResult.name,
         [formattedId],
-        this.MirrorNodeGetContractResultRetries,
+        this.mirrorNodeClient.getMirrorNodeRequestRetryCount(),
         requestIdPrefix,
       );
 
@@ -1604,14 +1587,7 @@ export class EthImpl implements Eth {
       if (fileId) {
         this.hapiService
           .getSDKClient()
-          .deleteFile(
-            fileId,
-            requestIdPrefix,
-            EthImpl.ethSendRawTransaction,
-            fileId.toString(),
-            this.transactionService,
-            originalCallerAddress,
-          );
+          .deleteFile(fileId, requestIdPrefix, EthImpl.ethSendRawTransaction, fileId.toString(), originalCallerAddress);
       }
     }
   }
