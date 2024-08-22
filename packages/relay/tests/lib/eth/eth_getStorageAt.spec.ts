@@ -153,13 +153,59 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       expect(result).equal(defaultDetailedContractResults.state_changes[0].value_written);
     });
 
-    it('eth_getStorageAt for HTS-only data', async function () {
+    it('eth_getStorageAt for HTS-only data short string fetching', async function () {
       restMock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
       const mockStorage = '0x546f6b656e206e616d6500000000000000000000000000000000000000000014';
 
       const result = await ethImpl.getStorageAt(mockData.tokenLongZero, '0x0', 'latest');
 
       expect(result).equal(mockStorage);
+    });
+
+    it('eth_getStorageAt for HTS-only data long string fetching', async function () {
+      const mockDataToken = mockData.token;
+      mockDataToken.name = 'Long string, certainly bigger than 31 bytes!';
+      restMock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+
+      const size = await ethImpl.getStorageAt(mockData.tokenLongZero, EthImpl.zeroHex, 'latest');
+      expect(size.slice(-2)).equal((mockDataToken.name.length * 2 + 1).toString(16));
+      const keccakedSlot = ethers.keccak256(EthImpl.zeroHex32Byte);
+      const start = await ethImpl.getStorageAt(mockData.tokenLongZero, keccakedSlot, 'latest');
+      expect(parseInt(start, 16)).to.not.equal(0);
+    });
+
+    it('eth_getStorageAt for HTS-only data array fetching', async function () {
+      restMock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+      const account = '0.0.1014';
+      restMock.onGet(`accounts/${account}?transactions=false`).reply(200, {
+        evm_address: '0x00000000000000000000000000000000000003f6',
+      });
+      const mockBalances = {
+        balances: [
+          {
+            account,
+            amount: 16,
+          },
+        ],
+      };
+      restMock.onGet(`tokens/${mockData.tokenId}/balances`).reply(200, mockBalances);
+      const size = await ethImpl.getStorageAt(mockData.tokenLongZero, EthImpl.zeroHex.replace(/.$/, '4'), 'latest');
+      expect(parseInt(size, 16)).equal(mockBalances.balances.length);
+      const keccakedSlot = ethers.keccak256(EthImpl.zeroHex32Byte.replace(/.$/, '4'));
+      const start = await ethImpl.getStorageAt(mockData.tokenLongZero, keccakedSlot, 'latest');
+      expect(parseInt(start, 16)).to.not.equal(0);
+    });
+
+    it('eth_getStorageAt for HTS-only data array fetching for incorrect account', async function () {
+      restMock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+      restMock.onGet(`accounts/0.0.1014?transactions=false`).reply(404, 'Not found.');
+      const keccakedSlot = ethers.keccak256(EthImpl.zeroHex32Byte.replace(/.$/, '4'));
+      restMock
+        .onGet(`contracts/${mockData.tokenLongZero}/state?slot=${keccakedSlot}&limit=100&order=desc`)
+        .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
+
+      const start = await ethImpl.getStorageAt(mockData.tokenLongZero, keccakedSlot, 'latest');
+      expect(parseInt(start, 16)).to.not.equal(0);
     });
 
     it('eth_getStorageAt with match with latest block', async function () {
