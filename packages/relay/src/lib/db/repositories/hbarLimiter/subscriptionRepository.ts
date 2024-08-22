@@ -47,9 +47,9 @@ export interface ISubscriptionRepository {
   /**
    * Creates a new subscription.
    * @param subscriptionType - The type of subscription to create.
-   * @returns {Promise<ISubscription>} - The created subscription object.
+   * @returns {Promise<IDetailedSubscription>} - The created subscription object.
    */
-  createSubscription(subscriptionType: SubscriptionType): Promise<ISubscription>;
+  createSubscription(subscriptionType: SubscriptionType): Promise<IDetailedSubscription>;
 
   /**
    * Verify that a subscription exists and is active.
@@ -116,7 +116,11 @@ export class SubscriptionRepository implements ISubscriptionRepository {
       throw new Error(`Subscription with ID ${id} not found`);
     }
     this.logger.trace(`Retrieved subscription with ID ${id}`);
-    return JSON.parse(subscription);
+    const parsedSubscription = JSON.parse(subscription);
+    return {
+      ...parsedSubscription,
+      createdAt: new Date(parsedSubscription.createdAt),
+    };
   }
 
   async getDetailedSubscriptionById(id: string): Promise<IDetailedSubscription> {

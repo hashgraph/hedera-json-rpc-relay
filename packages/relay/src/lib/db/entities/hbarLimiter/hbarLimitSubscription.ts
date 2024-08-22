@@ -46,7 +46,7 @@ export class HbarLimitSubscription implements IDetailedSubscription {
     this.subscriptionType = data.subscriptionType;
     this.createdAt = new Date(data.createdAt);
     this.active = data.active;
-    this.spendingHistory = data.spendingHistory.map((spending) => new HbarSpending(spending));
-    this.spentToday = data.spentToday;
+    this.spendingHistory = data.spendingHistory?.map((spending) => new HbarSpending(spending)) || [];
+    this.spentToday = data.spentToday ?? 0;
   }
 }

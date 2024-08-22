@@ -59,6 +59,22 @@ describe('SubscriptionRepository', function () {
     });
   });
 
+  describe('getSubscriptionById', () => {
+    it('throws an error if subscription not found by ID', async () => {
+      await expect(repository.getSubscriptionById('non-existent-id')).to.be.eventually.rejectedWith(
+        `Subscription with ID non-existent-id not found`,
+      );
+    });
+
+    it('returns a subscription by ID', async () => {
+      const subscriptionType = SubscriptionType.BASIC;
+      const createdSubscription = await repository.createSubscription(subscriptionType);
+      await expect(repository.getSubscriptionById(createdSubscription.id)).to.be.eventually.deep.equal(
+        createdSubscription,
+      );
+    });
+  });
+
   describe('getDetailedSubscriptionById', () => {
     it('throws an error if subscription not found by ID', async () => {
       await expect(repository.getDetailedSubscriptionById('non-existent-id')).to.be.eventually.rejectedWith(
@@ -111,14 +127,17 @@ describe('SubscriptionRepository', function () {
 
       const amount = 100;
       await repository.addAmountToSpendingHistory(createdSubscription.id, amount);
-      await expect(repository.getSpendingHistory(createdSubscription.id)).to.be.eventually.deep.equal([
-        { amount, timestamp: new Date() },
-      ]);
+
+      const spendingHistory = await repository.getSpendingHistory(createdSubscription.id);
+      expect(spendingHistory).to.have.lengthOf(1);
+      expect(spendingHistory[0].amount).to.equal(amount);
+      expect(spendingHistory[0].timestamp).to.be.a('Date');
 
       const subscription = await repository.getDetailedSubscriptionById(createdSubscription.id);
       expect(subscription).to.not.be.null;
       expect(subscription!.spendingHistory).to.have.lengthOf(1);
       expect(subscription!.spendingHistory[0].amount).to.equal(amount);
+      expect(subscription!.spendingHistory[0].timestamp).to.be.a('Date');
     });
 
     it('adds multiple amounts to spending history', async () => {
