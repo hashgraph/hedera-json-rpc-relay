@@ -21,7 +21,7 @@
 import { Logger } from 'pino';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { SDKClientError } from '../../errors/SDKClientError';
-import { Hbar, HbarUnit, Status, TransactionRecordQuery } from '@hashgraph/sdk';
+import { ExchangeRate, Hbar, HbarUnit, Status, TransactionRecordQuery } from '@hashgraph/sdk';
 import { IMirrorNodeTransactionRecord, MirrorNodeTransactionRecord } from '../../types/IMirrorNode';
 import {
   parseNumericEnvVar,
@@ -107,11 +107,7 @@ export default class TransactionService {
         const transactionReceipt = transactionRecord.receipt;
 
         // calculate transactionRecord fee
-        const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
-        const exchangeRateInCents = transactionReceipt.exchangeRate!.exchangeRateInCents;
-        txRecordChargeAmount = Math.round(
-          (Constants.TX_RECORD_QUERY_COST_IN_CENTS / exchangeRateInCents) * hbarToTinybar,
-        );
+        txRecordChargeAmount = this.calculateTxRecordChargeAmount(transactionReceipt.exchangeRate!);
 
         // get transactionStatus, transactionFee, and gasUsed
         transactionStatus = transactionReceipt.status.toString();
@@ -161,5 +157,17 @@ export default class TransactionService {
     }
 
     return { transactionFee, gasUsed, transactionStatus, txRecordChargeAmount };
+  }
+
+  /**
+   * Calculates the transaction record query cost in tinybars based on the given exchange rate in cents.
+   *
+   * @param {number} exchangeRateIncents - The exchange rate in cents used to convert the transaction query cost.
+   * @returns {number} - The transaction record query cost in tinybars.
+   */
+  public calculateTxRecordChargeAmount(exchangeRate: ExchangeRate): number {
+    const exchangeRateInCents = exchangeRate.exchangeRateInCents;
+    const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
+    return Math.round((Constants.TX_RECORD_QUERY_COST_IN_CENTS / exchangeRateInCents) * hbarToTinybar);
   }
 }

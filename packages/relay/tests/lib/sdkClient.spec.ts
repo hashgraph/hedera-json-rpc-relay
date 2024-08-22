@@ -32,10 +32,13 @@ import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
+import { formatTransactionId } from '../../src/formatters';
 import NodeClient from '@hashgraph/sdk/lib/client/NodeClient';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import { calculateTxRecordChargeAmount, random20BytesAddress } from '../helpers';
+import TransactionService from '../../src/lib/services/transactionService/transactionService';
 import {
   Hbar,
   Query,
@@ -53,11 +56,7 @@ import {
   FileCreateTransaction,
   FileDeleteTransaction,
   TransactionRecordQuery,
-  AccountBalanceQuery,
 } from '@hashgraph/sdk';
-import { formatTransactionId } from '../../src/formatters';
-import TransactionService from '../../src/lib/services/transactionService/transactionService';
-import { random20BytesAddress } from '../helpers';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -2110,7 +2109,8 @@ describe('SdkClient', async function () {
     const fileCreateFee = Number(process.env.HOT_FIX_FILE_CREATE_FEE || 100000000); // 1 hbar
     const fileDeleteFee = Number(process.env.HOT_FIX_FILE_DELETE_FEE || 11000000); // 0.11 hbar
     const fileAppendFee = Number(process.env.HOT_FIX_FILE_APPEND_FEE || 120000000); // 1.2 hbar
-    const transactionRecordFee = 83333; // the precalcuated fee for transaction record queries
+    const mockedExchangeRateIncents = 12;
+    const transactionRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateIncents);
     const defaultTransactionFee = 1000;
 
     const accountId = AccountId.fromString('0.0.1234');
