@@ -193,7 +193,6 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     if (!(await this.client.exists(key))) {
       this.logger.trace(`No spending yet for subscription with ID ${id}, setting spentToday to ${amount}...`);
       await this.client.set(key, amount.toString(), { EX: this.oneDayInSeconds });
-      return;
     } else {
       this.logger.trace(`Adding ${amount} to spentToday for subscription with ID ${id}...`);
       await this.client.incrBy(key, amount);
