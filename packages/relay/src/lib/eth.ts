@@ -18,47 +18,47 @@
  *
  */
 
-import { Eth } from '../index';
-import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
+import crypto from 'crypto';
 import { Logger } from 'pino';
-import { Block, Log, Transaction, Transaction1559 } from './model';
-import { MirrorNodeClient } from './clients';
-import { JsonRpcError, predefined } from './errors/JsonRpcError';
-import { SDKClientError } from './errors/SDKClientError';
-import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
+import { Eth } from '../index';
 import { Utils } from './../utils';
-import { LogsBloomUtils } from './../logsBloomUtils';
 import constants from './constants';
 import { Precheck } from './precheck';
-import {
-  ASCIIToHex,
-  formatContractResult,
-  formatTransactionIdWithoutQueryParams,
-  isHex,
-  isValidEthereumAddress,
-  nanOrNumberTo0x,
-  nullableNumberTo0x,
-  numberTo0x,
-  parseNumericEnvVar,
-  prepend0x,
-  toHash32,
-  trimPrecedingZeros,
-  weibarHexToTinyBarInt,
-} from '../formatters';
-import crypto from 'crypto';
-import HAPIService from './services/hapiService/hapiService';
+import { MirrorNodeClient } from './clients';
 import { Counter, Registry } from 'prom-client';
-import { Transaction as EthersTransaction } from 'ethers';
-import { CommonService, FilterService } from './services/ethService';
-import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
-import { CacheService } from './services/cacheService/cacheService';
-import { IDebugService } from './services/debugService/IDebugService';
-import { DebugService } from './services/debugService';
 import { IFeeHistory } from './types/IFeeHistory';
+import { LogsBloomUtils } from './../logsBloomUtils';
+import { DebugService } from './services/debugService';
+import { SDKClientError } from './errors/SDKClientError';
+import { Transaction as EthersTransaction } from 'ethers';
+import HAPIService from './services/hapiService/hapiService';
+import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
-import TransactionService from './services/transactionService/transactionService';
-import { IAccountInfo, IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
+import { Block, Log, Transaction, Transaction1559 } from './model';
+import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
+import MetricService from './services/metricService/metricService';
+import { CacheService } from './services/cacheService/cacheService';
+import { CommonService, FilterService } from './services/ethService';
+import { IDebugService } from './services/debugService/IDebugService';
+import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
+import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
+import { IAccountInfo, IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
+import {
+  isHex,
+  toHash32,
+  prepend0x,
+  ASCIIToHex,
+  numberTo0x,
+  nanOrNumberTo0x,
+  parseNumericEnvVar,
+  nullableNumberTo0x,
+  trimPrecedingZeros,
+  formatContractResult,
+  weibarHexToTinyBarInt,
+  isValidEthereumAddress,
+  formatTransactionIdWithoutQueryParams,
+} from '../formatters';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -253,20 +253,23 @@ export class EthImpl implements Eth {
 
   /**
    * Service for handling transactions.
-   * @type {TransactionService}
+   * @type {MetricService}
    * @private
    * @readonly
    */
-  private readonly transactionService: TransactionService;
+  private readonly metricService: MetricService;
 
   /**
-   * Create a new Eth implementation.
-   * @param hapiService
-   * @param mirrorNodeClient
-   * @param logger
-   * @param chain
-   * @param registry
-   * @param cacheService
+   * Constructs an instance of the service responsible for handling Ethereum JSON-RPC methods
+   * using Hedera Hashgraph as the underlying network.
+   *
+   * @param {HAPIService} hapiService - Service for interacting with Hedera Hashgraph.
+   * @param {MirrorNodeClient} mirrorNodeClient - Client for querying the Hedera mirror node.
+   * @param {Logger} logger - Logger instance for logging system messages.
+   * @param {string} chain - The chain identifier for the current blockchain environment.
+   * @param {Registry} registry - Registry instance for registering metrics.
+   * @param {CacheService} cacheService - Service for managing cached data.
+   * @param {MetricService} metricService - Service for metrics collection and monitoring.
    */
   constructor(
     hapiService: HAPIService,
@@ -275,20 +278,19 @@ export class EthImpl implements Eth {
     chain: string,
     registry: Registry,
     cacheService: CacheService,
+    metricService: MetricService,
   ) {
-    this.hapiService = hapiService;
-    this.mirrorNodeClient = mirrorNodeClient;
-    this.logger = logger;
     this.chain = chain;
-    this.precheck = new Precheck(mirrorNodeClient, logger, chain);
+    this.logger = logger;
+    this.hapiService = hapiService;
     this.cacheService = cacheService;
-
+    this.metricService = metricService;
+    this.mirrorNodeClient = mirrorNodeClient;
+    this.precheck = new Precheck(mirrorNodeClient, logger, chain);
     this.ethExecutionsCounter = this.initEthExecutionCounter(registry);
-
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
-    this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
-    this.transactionService = new TransactionService(logger, this.hapiService.getSDKClient(), mirrorNodeClient);
+    this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
   }
 
   private shouldUseCacheForBalance(tag: string | null): boolean {
@@ -502,7 +504,9 @@ export class EthImpl implements Eth {
       networkFees = {
         fees: [
           {
-            gas: await this.hapiService.getSDKClient().getTinyBarGasFee(callerName, requestIdPrefix),
+            gas: await this.hapiService
+              .getSDKClient()
+              .getTinyBarGasFee(callerName, this.metricService, requestIdPrefix),
             transaction_type: EthImpl.ethTxType,
           },
         ],
@@ -718,7 +722,7 @@ export class EthImpl implements Eth {
     if (transaction.gas) {
       transaction.gas = parseInt(transaction.gas.toString());
     }
-    if (!transaction.from && transaction.value && transaction.value > 0) {
+    if (!transaction.from && transaction.value && (transaction.value as number) > 0) {
       if (process.env.OPERATOR_KEY_FORMAT === 'HEX_ECDSA') {
         transaction.from = this.hapiService.getMainClientInstance().operatorPublicKey?.toEvmAddress();
       } else {
@@ -1163,7 +1167,7 @@ export class EthImpl implements Eth {
 
       const bytecode = await this.hapiService
         .getSDKClient()
-        .getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestIdPrefix);
+        .getContractByteCode(0, 0, address, EthImpl.ethGetCode, this.metricService, requestIdPrefix);
       return prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       if (e instanceof SDKClientError) {
@@ -1563,7 +1567,7 @@ export class EthImpl implements Eth {
           transactionBuffer,
           EthImpl.ethSendRawTransaction,
           requestIdPrefix,
-          this.transactionService,
+          this.metricService,
           originalCallerAddress,
         );
 
@@ -1621,7 +1625,7 @@ export class EthImpl implements Eth {
             requestIdPrefix,
             EthImpl.ethSendRawTransaction,
             fileId.toString(),
-            this.transactionService,
+            this.metricService,
             originalCallerAddress,
           );
       }
@@ -1887,7 +1891,15 @@ export class EthImpl implements Eth {
 
       const contractCallResponse = await this.hapiService
         .getSDKClient()
-        .submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestIdPrefix);
+        .submitContractCallQueryWithRetry(
+          call.to,
+          call.data,
+          gas,
+          call.from,
+          EthImpl.ethCall,
+          this.metricService,
+          requestIdPrefix,
+        );
       if (contractCallResponse) {
         const formattedCallReponse = prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 
