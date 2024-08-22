@@ -133,7 +133,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
       expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
     });
 
-    it('test getAsync operation', async () => {
+    it('test multiSet operation', async () => {
       const pairs = {
         boolean: true,
         int: -1,
