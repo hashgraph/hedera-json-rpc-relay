@@ -66,21 +66,17 @@ export default class HAPIService {
   private hbarLimiter: HbarLimit;
 
   /**
-   * The metrics register used for metrics tracking.
    * @private
    */
   private readonly register: Registry;
   private clientResetCounter: Counter;
-  private consensusNodeClientHistogramCost: Histogram;
-  private consensusNodeClientHistogramGasFee: Histogram;
-  private metrics: any;
   private readonly cacheService: CacheService;
 
   /**
    * @param {Logger} logger
    * @param {Registry} register
    */
-  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit, cacheService) {
+  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit, cacheService: CacheService) {
     dotenv.config({ path: findConfig('.env') || '' });
 
     this.logger = logger;
@@ -89,15 +85,8 @@ export default class HAPIService {
     this.hederaNetwork = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
-    this.consensusNodeClientHistogramCost = this.initCostMetric(register);
-    this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
-
-    this.metrics = {
-      costHistogram: this.consensusNodeClientHistogramCost,
-      gasHistogram: this.consensusNodeClientHistogramGasFee,
-    };
     this.cacheService = cacheService;
-    this.client = this.initSDKClient(logger, this.metrics);
+    this.client = this.initSDKClient(logger);
 
     const currentDateNow = Date.now();
     this.initialTransactionCount = parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!) || 0;
@@ -118,7 +107,7 @@ export default class HAPIService {
 
     this.register = register;
     const metricCounterName = 'rpc_relay_client_service';
-    register.removeSingleMetric(metricCounterName);
+    this.register.removeSingleMetric(metricCounterName);
     this.clientResetCounter = new Counter({
       name: metricCounterName,
       help: 'Relay Client Service',
@@ -173,7 +162,7 @@ export default class HAPIService {
       .inc(1);
 
     this.clientMain = this.initClient(this.logger, this.hederaNetwork);
-    this.client = this.initSDKClient(this.logger, this.metrics);
+    this.client = this.initSDKClient(this.logger);
     this.resetCounters();
   }
 
@@ -192,12 +181,11 @@ export default class HAPIService {
    * @param {Logger} logger
    * @returns SDK Client
    */
-  private initSDKClient(logger: Logger, metrics: any): SDKClient {
+  private initSDKClient(logger: Logger): SDKClient {
     return new SDKClient(
       this.clientMain,
       logger.child({ name: `consensus-node` }),
       this.hbarLimiter,
-      metrics,
       this.cacheService,
     );
   }
@@ -303,37 +291,5 @@ export default class HAPIService {
    */
   public getTimeUntilReset() {
     return this.resetDuration - Date.now();
-  }
-
-  /**
-   * Initialize consensus node cost metrics
-   * @param {Registry} register
-   * @returns {Histogram} Consensus node cost metric
-   */
-  private initCostMetric(register: Registry) {
-    const metricHistogramCost = 'rpc_relay_consensusnode_response';
-    register.removeSingleMetric(metricHistogramCost);
-    return new Histogram({
-      name: metricHistogramCost,
-      help: 'Relay consensusnode mode type status cost histogram',
-      labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-      registers: [register],
-    });
-  }
-
-  /**
-   * Initialize consensus node gas metrics
-   * @param {Registry} register
-   * @returns {Histogram} Consensus node gas metric
-   */
-  private initGasMetric(register: Registry) {
-    const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
-    register.removeSingleMetric(metricHistogramGasFee);
-    return new Histogram({
-      name: metricHistogramGasFee,
-      help: 'Relay consensusnode mode type status gas fee histogram',
-      labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-      registers: [register],
-    });
   }
 }

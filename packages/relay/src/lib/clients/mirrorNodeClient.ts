@@ -31,14 +31,21 @@ import { IOpcodesResponse } from './models/IOpcodesResponse';
 import { install as betterLookupInstall } from 'better-lookup';
 import { CacheService } from '../services/cacheService/cacheService';
 import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
-import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import {
+  parseNumericEnvVar,
+  formatTransactionId,
+  formatRequestIdMessage,
+  getTransferAmountSumForAccount,
+} from '../../formatters';
+import {
+  ILimitOrderParams,
   IContractCallRequest,
   IContractCallResponse,
-  IContractLogsResultsParams,
   IContractResultsParams,
-  ILimitOrderParams,
+  IContractLogsResultsParams,
+  MirrorNodeTransactionRecord,
+  IMirrorNodeTransactionRecord,
 } from '../types/IMirrorNode';
 
 type REQUEST_METHODS = 'GET' | 'POST';
@@ -1272,5 +1279,58 @@ export class MirrorNodeClient {
       await new Promise((r) => setTimeout(r, this.MIRROR_NODE_RETRY_DELAY));
     }
     return result;
+  }
+
+  /**
+   * Retrieves and processes transaction record metrics from the mirror node based on the provided transaction ID.
+   *
+   * @param {string} transactionId - The ID of the transaction for which the record is being retrieved.
+   * @param {string} callerName - The name of the caller requesting the transaction record.
+   * @param {string} requestId - The unique identifier for the request, used for logging and tracking.
+   * @param {string} txConstructorName - The name of the transaction constructor associated with the transaction.
+   * @param {string} operatorAccountId - The account ID of the operator, used to calculate transaction fees.
+   * @returns {Promise<{transactionFee: number;} | undefined>} - An object containing the transaction fee if available, or `undefined` if the transaction record is not found.
+   */
+  public async getTransactionRecordMetrics(
+    transactionId: string,
+    callerName: string,
+    requestId: string,
+    txConstructorName: string,
+    operatorAccountId: string,
+  ): Promise<{ transactionFee: number } | undefined> {
+    const formattedRequestId = formatRequestIdMessage(requestId);
+
+    this.logger.trace(
+      `${formattedRequestId} Get transaction record via mirror node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
+    );
+
+    const mirrorNodeRetries = parseNumericEnvVar(
+      'MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES',
+      'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES',
+    );
+
+    // poll mirror node to get transaction record
+    const transactionRecord = await this.repeatedRequest(
+      this.getTransactionById.name,
+      [transactionId, 0],
+      mirrorNodeRetries,
+      formattedRequestId,
+    );
+
+    if (!transactionRecord) {
+      this.logger.warn(
+        `${formattedRequestId} No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
+      );
+    } else {
+      const transactionReceipt: IMirrorNodeTransactionRecord = transactionRecord.transactions.find(
+        (tx: any) => tx.transaction_id === formatTransactionId(transactionId),
+      );
+
+      const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionReceipt);
+
+      // get transactionFee
+      const transactionFee = getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
+      return { transactionFee };
+    }
   }
 }
