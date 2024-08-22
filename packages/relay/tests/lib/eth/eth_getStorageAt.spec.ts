@@ -208,6 +208,34 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       expect(parseInt(start, 16)).to.not.equal(0);
     });
 
+    it('eth_getStorageAt for HTS-only fetching array value for index bigger than array size', async function () {
+      restMock.onGet(`tokens/${mockData.tokenId}`).reply(200, mockData.token);
+      const account = '0.0.1014';
+      restMock.onGet(`accounts/${account}?transactions=false`).reply(200, {
+        evm_address: '0x00000000000000000000000000000000000003f6',
+      });
+      restMock.onGet(`tokens/${mockData.tokenId}/balances`).reply(200, {
+        balances: [
+          {
+            account,
+            amount: 16,
+          },
+        ],
+      });
+      const keccakedSlot = ethers.keccak256(EthImpl.zeroHex32Byte.replace(/.$/, '4')).replace(/.$/, 'd');
+
+      const start = await ethImpl.getStorageAt(mockData.tokenLongZero, keccakedSlot, 'latest');
+      expect(parseInt(start, 16)).to.equal(0);
+    });
+
+    it('eth_getStorageAt for HTS-only fetching not existing field', async function () {
+      const data = mockData.token;
+      data.name = '';
+      restMock.onGet(`tokens/${mockData.tokenId}`).reply(200, data);
+      const start = await ethImpl.getStorageAt(mockData.tokenLongZero, '0x0', 'latest');
+      expect(parseInt(start, 16)).to.equal(0);
+    });
+
     it('eth_getStorageAt with match with latest block', async function () {
       // mirror node request mocks
       restMock

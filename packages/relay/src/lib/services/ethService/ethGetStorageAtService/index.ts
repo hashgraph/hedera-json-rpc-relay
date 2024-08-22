@@ -67,15 +67,11 @@ export class EthGetStorageAtService {
         continue;
       }
       const baseKeccak = keccak256(`0x${stringToIntHex256(slot.slot)}`);
-      try {
-        const offset = calculateOffset(baseKeccak, input);
-        if (offset === null || offset > EthGetStorageAtService.MAX_ELEMENTS) {
-          continue;
-        }
-        return { slot, offset };
-      } catch (error) {
-        this.logger.trace(`Offset difference could not be calculated for pair ${baseKeccak} and ${input}.`);
+      const offset = calculateOffset(baseKeccak, input);
+      if (offset === null || offset > EthGetStorageAtService.MAX_ELEMENTS) {
+        continue;
       }
+      return { slot, offset };
     }
 
     return null;
@@ -95,11 +91,8 @@ export class EthGetStorageAtService {
       const account: { evm_address: string } = await this.mirrorNodeClient.getAccount(balances[offset].account);
       return account.evm_address.slice(2);
     }
-    if (converter(slot.type, offset)) {
-      const tokenData = await this.mirrorNodeClient.getToken(address);
-      return converter(slot.type, offset)(tokenData[toSnakeCase(slot.label)]);
-    }
-    return '0';
+    const tokenData = await this.mirrorNodeClient.getToken(address);
+    return converter(slot.type, offset)(tokenData[toSnakeCase(slot.label)]);
   }
 
   private async get(slot: StorageSlot, address: string): Promise<string> {
