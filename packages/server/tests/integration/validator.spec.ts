@@ -668,12 +668,18 @@ describe('Validator', async () => {
       );
     });
 
-    it('throws an error if Transaction Object param contains unexpected param', async () => {
+    it('does NOT throw an error if Transaction Object param contains unexpected param', async () => {
       const validation = { 0: { type: 'transaction' } };
 
-      expect(() => Validator.validateParams([{ form: '0x1' }], validation)).to.throw(
-        expectUnknownParam('form', 'TransactionObject', 'Unknown parameter'),
-      );
+      expect(() => Validator.validateParams([{ form: '0x1' }], validation)).to.not.throw;
+    });
+
+    it('deletes unknown properties of Transaction Object param', async () => {
+      const transactionParam = { form: '0x1' };
+      const validation = { 0: { type: 'transaction' } };
+
+      Validator.validateParams([transactionParam], validation);
+      expect(transactionParam).not.to.haveOwnProperty('form');
     });
   });
 
