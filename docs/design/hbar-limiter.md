@@ -57,28 +57,40 @@ The Hbar limiter will be implemented as a separate service, used by other servic
 ### Class Diagram
 ```mermaid
 classDiagram
-    <<interface>> IHBarLimitService
+    class IHBarLimitService {
+        <<interface>>
+    }
+    
     class HbarLimitService {
-        +captureTransactionFees(transaction: Transaction, callerName: string, interactingEntity: string, requestId?: string): void
-        +captureQueryFees~T~(query: Query~T~, callerName: string, interactingEntity: string, requestId?: string): void
-        +shouldLimit(txFrom: string, ip?: string): boolean
+        -mirrorNodeClient: MirrorNodeClient
+        +captureTransactionFees(transaction: Transaction, callerName: string, interactingEntity: string, requestId?: string) void
+        +captureQueryFees~T~(query: Query~T~, callerName: string, interactingEntity: string, requestId?: string) void
+        +shouldLimit(txFrom: string, ip?: string) boolean
+        -getTransactionRecord(transactionld: string) TransactionRecord 
+        + resetLimiter() void
     }
     
     IHBarLimitService <|-- HbarLimitService
 
     class HbarLimit {
-        +getOperatorBalance(): number
-        +getAddressLimit(address: string): number
-        +getAddressSpent(address: string): number
-        +getIpSpent(ip: string): number
-        +checkTotalSpent(): boolean
-        +shouldReset(): boolean
-        +captureMetrics(transactionMode: string, transactionType: string, status: Status, cost: number, gasUsed: number, interactingEntity: string): void
+        -totalLimit: number
+        -totalSpent: number
+        -spendingLimits: ISubscriptionRepository
+        -spendingHistory: ISubscriptionRepository
+        -resetPeriod: number
+        -consensusNodeClientHistogramCost: Historgram
+        -consensusNodeClientHistogramGasFee: Histogram
+        +getOperatorBalance() number
+        +getAddressLimit(address: string) number
+        +getAddressSpent(address: string) number
+        +getIpSpent(ip: string) number
+        +checkTotalSpent() boolean
+        +shouldReset() boolean
+        +captureMetrics(transactionMode: string, transactionType: string, status: Status, cost: number, gasUsed: number, interactingEntity: string) void
     }
 
     HbarLimitService <|-- HbarLimit
 ```
-
 
 ## Additional Considerations
 ### Performance 
