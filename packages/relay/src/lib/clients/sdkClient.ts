@@ -174,21 +174,6 @@ export class SDKClient {
   }
 
   /**
-   * Retrieves the balance of an account in tinybars after a specified delay.
-   *
-   * @param {string} accountId - The ID of the account to retrieve the balance for.
-   * @param {string} callerName - The name of the caller requesting the balance.
-   * @param {string} requestId - The unique request ID for tracking the request.
-   * @param {number} ms - The delay in milliseconds before retrieving the balance.
-   * @returns {Promise<number>} - A promise that resolves to the account balance in tinybars.
-   */
-  async getBalanceInTinyBars(accountId: string, callerName: string, requestId: string, ms: number): Promise<number> {
-    await new Promise((r) => setTimeout(r, ms));
-    const accountBalance = await this.getAccountBalance(accountId, callerName, requestId);
-    return accountBalance.hbars.toTinybars().toNumber();
-  }
-
-  /**
    * Retrieves the balance of an account in tinybars.
    * @param {string} account - The account ID to query.
    * @param {string} callerName - The name of the caller for logging purposes.
