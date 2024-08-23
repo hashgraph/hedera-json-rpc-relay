@@ -57,39 +57,34 @@ The Hbar limiter will be implemented as a separate service, used by other servic
 ### Class Diagram
 ```mermaid
 classDiagram
-    class IHBarLimitService {
-        <<interface>>
+    class sdkClient
+
+    class MetricService {
+      +captureTransactionFees(transaction: Transaction, callerName: string, interactingEntity: string, requestId?: string) void
+      +captureQueryFees~T~(query: Query~T~, callerName: string, interactingEntity: string, requestId?: string) void
     }
-    
+
+    MetricService <|-- sdkClient
+
     class HbarLimitService {
         -mirrorNodeClient: MirrorNodeClient
-        +captureTransactionFees(transaction: Transaction, callerName: string, interactingEntity: string, requestId?: string) void
-        +captureQueryFees~T~(query: Query~T~, callerName: string, interactingEntity: string, requestId?: string) void
         +shouldLimit(txFrom: string, ip?: string) boolean
-        -getTransactionRecord(transactionld: string) TransactionRecord 
-        + resetLimiter() void
+        -getTransactionRecord(transactionld: string) TransactionRecord
+        +resetLimiter() void
+        -getOperatorBalance() number
+        -getAddressLimit(address: string) number
+        -getAddressSpent(address: string) number
+        -getIpSpent(ip: string) number
+        -checkTotalSpent() boolean
+        -shouldReset() boolean
     }
     
-    IHBarLimitService <|-- HbarLimitService
-
-    class HbarLimit {
-        -totalLimit: number
-        -totalSpent: number
-        -spendingLimits: ISubscriptionRepository
-        -spendingHistory: ISubscriptionRepository
-        -resetPeriod: number
-        -consensusNodeClientHistogramCost: Historgram
-        -consensusNodeClientHistogramGasFee: Histogram
-        +getOperatorBalance() number
-        +getAddressLimit(address: string) number
-        +getAddressSpent(address: string) number
-        +getIpSpent(ip: string) number
-        +checkTotalSpent() boolean
-        +shouldReset() boolean
-        +captureMetrics(transactionMode: string, transactionType: string, status: Status, cost: number, gasUsed: number, interactingEntity: string) void
+    class IHBarLimitService {
+      +shouldLimit() boolean
+      +resetLimiter() void
     }
-
-    HbarLimitService <|-- HbarLimit
+    IHBarLimitService <|-- sdkClient
+    IHBarLimitService <|-- HbarLimitService
 ```
 
 ## Additional Considerations
