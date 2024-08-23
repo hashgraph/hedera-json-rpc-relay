@@ -1,4 +1,4 @@
-/*-
+/*
  *
  * Hedera JSON RPC Relay
  *
@@ -18,11 +18,16 @@
  *
  */
 
-import type { ICacheClient } from './ICacheClient';
+export class SubscriptionNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Subscription with ID ${id} not found`);
+    this.name = 'SubscriptionNotFoundError';
+  }
+}
 
-export interface IRedisCacheClient extends ICacheClient {
-  disconnect: () => Promise<void>;
-  incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix?: string): Promise<number>;
-  rPush(key: string, value: any, callingMethod: string, requestIdPrefix?: string): Promise<number>;
-  lRange(key: string, start: number, end: number, callingMethod: string, requestIdPrefix?: string): Promise<any[]>;
+export class SubscriptionNotActiveError extends Error {
+  constructor(id: string) {
+    super(`Subscription with ID ${id} is not active`);
+    this.name = 'SubscriptionNotActiveError';
+  }
 }
