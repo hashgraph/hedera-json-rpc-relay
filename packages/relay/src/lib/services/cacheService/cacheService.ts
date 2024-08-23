@@ -170,7 +170,7 @@ export class CacheService {
    * @returns {Promise<T | null>} A Promise that resolves with the cached value or null if not found.
    * @template T - The type of the cached value.
    */
-  public async getAsync<T = any>(key: string, callingMethod: string, requestIdPrefix?: string): Promise<T | null> {
+  public async getAsync<T = any>(key: string, callingMethod: string, requestIdPrefix?: string): Promise<T> {
     if (this.isSharedCacheEnabled) {
       return await this.getFromSharedCache(key, callingMethod, requestIdPrefix);
     } else {
