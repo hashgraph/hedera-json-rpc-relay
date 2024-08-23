@@ -45,11 +45,7 @@ classDiagram
     }
 
     class EthAddressPlanRepository {
-        -collectionKey: string
-        -threeMonthsInMillis: number
         -cache: CacheService
-        -logger: Logger
-        +constructor(cache: CacheService, logger: Logger)
         +findByAddress(ethAddress: string): Promise<IEthAddressPlan>
         +save(addressPlan: IEthAddressPlan): Promise<void>
         +delete(ethAddress: string): Promise<void>
