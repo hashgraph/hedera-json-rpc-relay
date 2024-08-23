@@ -51,36 +51,35 @@ import {
 type REQUEST_METHODS = 'GET' | 'POST';
 
 export class MirrorNodeClient {
-  private static GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
-  private static GET_BALANCE_ENDPOINT = 'balances';
-  private static GET_BLOCK_ENDPOINT = 'blocks/';
-  private static GET_BLOCKS_ENDPOINT = 'blocks';
-  private static GET_CONTRACT_ENDPOINT = 'contracts/';
-  private static ADDRESS_PLACEHOLDER = '{address}';
-  private static TIMESTAMP_PLACEHOLDER = '{timestamp}';
-  private static CONTRACT_ID_PLACEHOLDER = '{contractId}';
-  private static TRANSACTION_ID_PLACEHOLDER = '{transactionId}';
-  private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
-  private static GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
-  private static GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT = `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
-  private static GET_CONTRACTS_RESULTS_ACTIONS = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/actions`;
-  private static GET_CONTRACTS_RESULTS_OPCODES = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/opcodes`;
-  private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
-  private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
-  private static GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
-  private static CONTRACT_ADDRESS_STATE_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/state`;
-  private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
-  private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
-  private static GET_NETWORK_FEES_ENDPOINT = 'network/fees';
-  private static GET_TOKENS_ENDPOINT = 'tokens';
-  private static GET_TRANSACTIONS_ENDPOINT = 'transactions';
-  private static GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID = `transactions/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}`;
-  private static CONTRACT_CALL_ENDPOINT = 'contracts/call';
-
-  private static ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
-  private static ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
-  private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
-  private readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '2000');
+  private static readonly GET_BLOCK_ENDPOINT = 'blocks/';
+  private static readonly GET_BLOCKS_ENDPOINT = 'blocks';
+  private static readonly GET_TOKENS_ENDPOINT = 'tokens';
+  private static readonly ADDRESS_PLACEHOLDER = '{address}';
+  private static readonly GET_BALANCE_ENDPOINT = 'balances';
+  private static readonly TIMESTAMP_PLACEHOLDER = '{timestamp}';
+  private static readonly GET_CONTRACT_ENDPOINT = 'contracts/';
+  private static readonly CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
+  private static readonly CONTRACT_ID_PLACEHOLDER = '{contractId}';
+  private static readonly ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
+  private static readonly CONTRACT_CALL_ENDPOINT = 'contracts/call';
+  private static readonly GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
+  private static readonly GET_NETWORK_FEES_ENDPOINT = 'network/fees';
+  private static readonly GET_TRANSACTIONS_ENDPOINT = 'transactions';
+  private static readonly TRANSACTION_ID_PLACEHOLDER = '{transactionId}';
+  private static readonly GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
+  private static readonly GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
+  private static readonly ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
+  private static readonly GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
+  private static readonly GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
+  private static readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '2000');
+  private static readonly CONTRACT_ADDRESS_STATE_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/state`;
+  private static readonly GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
+  private static readonly GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID = `transactions/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}`;
+  private static readonly GET_CONTRACTS_RESULTS_ACTIONS = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/actions`;
+  private static readonly GET_CONTRACTS_RESULTS_OPCODES = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/opcodes`;
+  private static readonly GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
+  private static readonly GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT = `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
+  private static readonly GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
 
   static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
     [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [404]],
@@ -104,25 +103,25 @@ export class MirrorNodeClient {
     [MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT, [404]],
   ]);
 
-  private static ETHEREUM_TRANSACTION_TYPE = 'ETHEREUMTRANSACTION';
+  private static readonly ETHEREUM_TRANSACTION_TYPE = 'ETHEREUMTRANSACTION';
 
-  private static ORDER = {
+  private static readonly ORDER = {
     ASC: 'asc',
     DESC: 'desc',
   };
 
-  private static unknownServerErrorHttpStatusCode = 567;
+  private static readonly unknownServerErrorHttpStatusCode = 567;
 
   // The following constants are used in requests objects
-  private static X_API_KEY = 'x-api-key';
-  private static FORWARD_SLASH = '/';
-  private static HTTPS_PREFIX = 'https://';
-  private static API_V1_POST_FIX = 'api/v1/';
-  private static EMPTY_STRING = '';
-  private static REQUEST_PREFIX_SEPARATOR = ': ';
-  private static REQUEST_PREFIX_TRAILING_BRACKET = ']';
-  private static HTTP_GET = 'GET';
-  private static REQUESTID_LABEL = 'requestId';
+  private static readonly X_API_KEY = 'x-api-key';
+  private static readonly FORWARD_SLASH = '/';
+  private static readonly HTTPS_PREFIX = 'https://';
+  private static readonly API_V1_POST_FIX = 'api/v1/';
+  private static readonly EMPTY_STRING = '';
+  private static readonly REQUEST_PREFIX_SEPARATOR = ': ';
+  private static readonly REQUEST_PREFIX_TRAILING_BRACKET = ']';
+  private static readonly HTTP_GET = 'GET';
+  private static readonly REQUESTID_LABEL = 'requestId';
 
   /**
    * The logger used for logging all output from this class.
@@ -1238,7 +1237,7 @@ export class MirrorNodeClient {
     return this.web3Client;
   }
   public getMirrorNodeRetryDelay() {
-    return this.MIRROR_NODE_RETRY_DELAY;
+    return MirrorNodeClient.MIRROR_NODE_RETRY_DELAY;
   }
 
   /**
@@ -1272,11 +1271,13 @@ export class MirrorNodeClient {
       this.logger.trace(
         `${requestId} Repeating request ${methodName} with args ${JSON.stringify(
           args,
-        )} retry count ${i} of ${repeatCount}. Waiting ${this.MIRROR_NODE_RETRY_DELAY} ms before repeating request`,
+        )} retry count ${i} of ${repeatCount}. Waiting ${
+          MirrorNodeClient.MIRROR_NODE_RETRY_DELAY
+        } ms before repeating request`,
       );
 
       // Backoff before repeating request
-      await new Promise((r) => setTimeout(r, this.MIRROR_NODE_RETRY_DELAY));
+      await new Promise((r) => setTimeout(r, MirrorNodeClient.MIRROR_NODE_RETRY_DELAY));
     }
     return result;
   }
