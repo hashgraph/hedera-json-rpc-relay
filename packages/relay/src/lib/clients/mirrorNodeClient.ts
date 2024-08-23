@@ -29,6 +29,7 @@ import { predefined } from '../errors/JsonRpcError';
 import { SDKClientError } from '../errors/SDKClientError';
 import { IOpcodesResponse } from './models/IOpcodesResponse';
 import { install as betterLookupInstall } from 'better-lookup';
+import { ITransactionRecordMetric } from '../types/IMetricService';
 import { CacheService } from '../services/cacheService/cacheService';
 import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
@@ -1298,7 +1299,7 @@ export class MirrorNodeClient {
     requestId: string,
     txConstructorName: string,
     operatorAccountId: string,
-  ): Promise<{ transactionFee: number } | undefined> {
+  ): Promise<ITransactionRecordMetric | undefined> {
     const formattedRequestId = formatRequestIdMessage(requestId);
 
     this.logger.trace(
@@ -1331,7 +1332,7 @@ export class MirrorNodeClient {
 
       // get transactionFee
       const transactionFee = getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
-      return { transactionFee };
+      return { transactionFee, txRecordChargeAmount: 0, gasUsed: 0 };
     }
   }
 }

@@ -26,6 +26,7 @@ import HbarLimit from '../../hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { formatRequestIdMessage } from '../../../formatters';
+import { ITransactionRecordMetric } from '../../types/IMetricService';
 
 export default class MetricService {
   /**
@@ -149,6 +150,7 @@ export default class MetricService {
    * @param {string} requestId - The request ID for logging purposes.
    * @param {string} txConstructorName - The name of the transaction constructor.
    * @param {string} operatorAccountId - The account ID of the operator.
+   * @returns {Promise<void>}
    */
   public async captureTransactionMetrics(
     transactionId: string,
@@ -158,69 +160,44 @@ export default class MetricService {
     operatorAccountId: string,
     transactionType: string,
     interactingEntity: string,
-  ) {
-    let gasUsed: number = 0;
-    let transactionFee: number = 0;
-    let txRecordChargeAmount: number = 0;
-    const formattedRequestId = formatRequestIdMessage(requestId);
-
-    // check if calls are default to consensus node or not
-    const defaultToConsensusNode = process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true';
-
+  ): Promise<void> {
     // retrieve metrics
-    if (defaultToConsensusNode) {
-      const transactionRecordMetrics = await this.sdkClient.getTransactionRecordMetrics(
-        transactionId,
-        callerName,
-        requestId,
-        txConstructorName,
-        operatorAccountId,
-      );
-
-      if (transactionRecordMetrics) {
-        gasUsed = transactionRecordMetrics.gasUsed;
-        transactionFee = transactionRecordMetrics.transactionFee;
-        txRecordChargeAmount = transactionRecordMetrics.txRecordChargeAmount;
-      }
-    } else {
-      const transactionRecordMetrics = await this.mirrorNodeClient.getTransactionRecordMetrics(
-        transactionId,
-        callerName,
-        requestId,
-        txConstructorName,
-        operatorAccountId,
-      );
-
-      if (transactionRecordMetrics) {
-        transactionFee = transactionRecordMetrics.transactionFee;
-      }
-    }
+    const transactionRecordMetrics = await this.getTransactionRecordMetrics(
+      transactionId,
+      callerName,
+      requestId,
+      txConstructorName,
+      operatorAccountId,
+    );
 
     // capture metrics to HBAR rate limiter and metric registry
-    if (transactionFee !== 0) {
-      this.addExpenseAndCaptureMetrics(
-        `TransactionExecution`,
-        transactionId,
-        transactionType,
-        callerName,
-        transactionFee,
-        gasUsed,
-        interactingEntity,
-        formattedRequestId,
-      );
-    }
+    if (transactionRecordMetrics) {
+      const { gasUsed, transactionFee, txRecordChargeAmount } = transactionRecordMetrics;
+      if (transactionFee !== 0) {
+        this.addExpenseAndCaptureMetrics(
+          `TransactionExecution`,
+          transactionId,
+          transactionType,
+          callerName,
+          transactionFee,
+          gasUsed,
+          interactingEntity,
+          requestId,
+        );
+      }
 
-    if (txRecordChargeAmount !== 0) {
-      this.addExpenseAndCaptureMetrics(
-        `TransactionRecordQuery`,
-        transactionId,
-        transactionType,
-        callerName,
-        txRecordChargeAmount,
-        0,
-        interactingEntity,
-        formattedRequestId,
-      );
+      if (txRecordChargeAmount !== 0) {
+        this.addExpenseAndCaptureMetrics(
+          `TransactionRecordQuery`,
+          transactionId,
+          transactionType,
+          callerName,
+          txRecordChargeAmount,
+          0,
+          interactingEntity,
+          requestId,
+        );
+      }
     }
   }
 
@@ -233,7 +210,8 @@ export default class MetricService {
    * @param {number} cost - The cost of the transaction in tinybars.
    * @param {number} gasUsed - The amount of gas used for the transaction.
    * @param {string} interactingEntity - The entity interacting with the transaction.
-   * @param {string} formattedRequestId - The formatted request ID for logging purposes.
+   * @param {string} requestId - The formatted request ID for logging purposes.
+   * @returns {void}
    */
   public addExpenseAndCaptureMetrics = (
     executionType: string,
@@ -243,13 +221,14 @@ export default class MetricService {
     cost: number,
     gasUsed: number,
     interactingEntity: string,
-    formattedRequestId: string,
-  ) => {
-    const currentDateNow = Date.now();
+    requestId: string,
+  ): void => {
+    const formattedRequestId = formatRequestIdMessage(requestId);
     this.logger.trace(
       `${formattedRequestId} Capturing HBAR charged: executionType=${executionType} transactionId=${transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, cost=${cost} tinybars`,
     );
-    this.hbarLimiter.addExpense(cost, currentDateNow, formattedRequestId);
+
+    this.hbarLimiter.addExpense(cost, Date.now(), requestId);
     this.captureMetrics(
       SDKClient.transactionMode,
       transactionType,
@@ -321,6 +300,7 @@ export default class MetricService {
    * @param {any} gas - The gas used by the transaction.
    * @param {string} caller - The name of the caller executing the transaction.
    * @param {string} interactingEntity - The entity interacting with the transaction.
+   * @returns {void}
    */
   private captureMetrics = (
     mode: string,
@@ -330,7 +310,7 @@ export default class MetricService {
     gas: any,
     caller: string,
     interactingEntity: string,
-  ) => {
+  ): void => {
     const resolvedCost = cost ? cost : 0;
     const resolvedGas = gas ? (typeof gas === 'object' ? gas.toInt() : gas) : 0;
 
@@ -341,4 +321,46 @@ export default class MetricService {
       .labels(mode, type, status.toString(), caller, interactingEntity)
       .observe(resolvedGas);
   };
+
+  /**
+   * Retrieves transaction record metrics based on the transaction ID.
+   * Depending on the environment configuration, the metrics are fetched either from the
+   * consensus node via the SDK client or from the mirror node.
+   *
+   * @param {string} transactionId - The ID of the transaction for which metrics are being retrieved.
+   * @param {string} callerName - The name of the caller requesting the metrics.
+   * @param {string} requestId - The request ID for tracing the request flow.
+   * @param {string} txConstructorName - The name of the transaction constructor.
+   * @param {string} operatorAccountId - The account ID of the operator.
+   * @returns {Promise<ITransactionRecordMetric | undefined>} - The transaction record metrics or undefined if retrieval fails.
+   */
+  private async getTransactionRecordMetrics(
+    transactionId: string,
+    callerName: string,
+    requestId: string,
+    txConstructorName: string,
+    operatorAccountId: string,
+  ): Promise<ITransactionRecordMetric | undefined> {
+    // check if calls are default to consensus node or not
+    const defaultToConsensusNode = process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true';
+
+    // retrieve transaction metrics
+    if (defaultToConsensusNode) {
+      return this.sdkClient.getTransactionRecordMetrics(
+        transactionId,
+        callerName,
+        requestId,
+        txConstructorName,
+        operatorAccountId,
+      );
+    } else {
+      return this.mirrorNodeClient.getTransactionRecordMetrics(
+        transactionId,
+        callerName,
+        requestId,
+        txConstructorName,
+        operatorAccountId,
+      );
+    }
+  }
 }

@@ -60,6 +60,7 @@ import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
 import { formatRequestIdMessage, getTransferAmountSumForAccount } from '../../formatters';
+import { ITransactionRecordMetric } from '../types/IMetricService';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -959,7 +960,10 @@ export class SDKClient {
    * @param {ExchangeRates} exchangeRates - The exchange rates to use for the conversion.
    * @returns {number} The converted gas price in tinybars.
    */
-  private convertGasPriceToTinyBars = (feeComponents: FeeComponents | undefined, exchangeRates: ExchangeRates) => {
+  private convertGasPriceToTinyBars = (
+    feeComponents: FeeComponents | undefined,
+    exchangeRates: ExchangeRates,
+  ): number => {
     // gas -> tinCents:  gas / 1000
     // tinCents -> tinyBars: tinCents * exchangeRate (hbarEquiv/ centsEquiv)
     if (feeComponents === undefined || feeComponents.contractTransactionGas === undefined) {
@@ -988,7 +992,7 @@ export class SDKClient {
     requestId: string,
     txConstructorName: string,
     operatorAccountId: string,
-  ): Promise<{ transactionFee: number; txRecordChargeAmount: number; gasUsed: number } | undefined> {
+  ): Promise<ITransactionRecordMetric | undefined> {
     let gasUsed: number = 0;
     let transactionFee: number = 0;
     let txRecordChargeAmount: number = 0;
