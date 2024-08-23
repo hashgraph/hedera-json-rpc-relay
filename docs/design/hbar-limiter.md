@@ -55,7 +55,29 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
 The Hbar limiter will be implemented as a separate service, used by other services/classes that need it. It will have two main purposes - to capture the gas fees for different operation and to check if an operation needs to be paused, due to exceeded Hbar limit
 
 ### Class Diagram
-![UML Diagram](../diagrams/HBarLimitService.jpeg)
+```mermaid
+classDiagram
+    <<interface>> IHBarLimitService
+    class HbarLimitService {
+        +captureTransactionFees(transaction: Transaction, callerName: string, interactingEntity: string, requestId?: string): void
+        +captureQueryFees~T~(query: Query~T~, callerName: string, interactingEntity: string, requestId?: string): void
+        +shouldLimit(txFrom: string, ip?: string): boolean
+    }
+    
+    IHBarLimitService <|-- HbarLimitService
+
+    class HbarLimit {
+        +getOperatorBalance(): number
+        +getAddressLimit(address: string): number
+        +getAddressSpent(address: string): number
+        +getIpSpent(ip: string): number
+        +checkTotalSpent(): boolean
+        +shouldReset(): boolean
+        +captureMetrics(transactionMode: string, transactionType: string, status: Status, cost: number, gasUsed: number, interactingEntity: string): void
+    }
+
+    HbarLimitService <|-- HbarLimit
+```
 
 
 ## Additional Considerations
