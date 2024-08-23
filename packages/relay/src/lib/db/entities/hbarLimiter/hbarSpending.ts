@@ -18,7 +18,14 @@
  *
  */
 
-export interface IHbarSpending {
+import { IHbarSpending } from '../../types/hbarLimiter/hbarSpending';
+
+export class HbarSpending implements IHbarSpending {
   amount: number;
   timestamp: Date;
+
+  constructor(data: IHbarSpending) {
+    this.amount = data.amount;
+    this.timestamp = new Date(data.timestamp);
+  }
 }

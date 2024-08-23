@@ -19,7 +19,18 @@
  */
 
 export enum SubscriptionType {
+  /**
+   * General users (default)
+   */
   BASIC = 'BASIC',
+
+  /**
+   * Supported projects
+   */
   EXTENDED = 'EXTENDED',
+
+  /**
+   * Trusted Partners
+   */
   PRIVILEGED = 'PRIVILEGED',
 }

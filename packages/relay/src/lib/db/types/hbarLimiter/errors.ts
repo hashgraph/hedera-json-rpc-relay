@@ -18,16 +18,16 @@
  *
  */
 
-export class SubscriptionNotFoundError extends Error {
+export class HbarLimitPlanNotFoundError extends Error {
   constructor(id: string) {
-    super(`Subscription with ID ${id} not found`);
-    this.name = 'SubscriptionNotFoundError';
+    super(`HbarLimitPlan with ID ${id} not found`);
+    this.name = 'HbarLimitPlanNotFoundError';
   }
 }
 
-export class SubscriptionNotActiveError extends Error {
+export class HbarLimitPlanNotActiveError extends Error {
   constructor(id: string) {
-    super(`Subscription with ID ${id} is not active`);
-    this.name = 'SubscriptionNotActiveError';
+    super(`HbarLimitPlan with ID ${id} is not active`);
+    this.name = 'HbarLimitPlanNotActiveError';
   }
 }

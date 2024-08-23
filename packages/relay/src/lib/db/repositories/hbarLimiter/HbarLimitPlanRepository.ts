@@ -18,23 +18,21 @@
  *
  */
 
-import { SubscriptionType } from '../../types/hbarLimiter/subscriptionType';
-import {
-  HbarLimitSubscription,
-  IDetailedSubscription,
-  ISubscription,
-} from '../../entities/hbarLimiter/hbarLimitSubscription';
 import { randomBytes, uuidV4 } from 'ethers';
 import { Logger } from 'pino';
-import { HbarSpending, IHbarSpending } from '../../types/hbarLimiter/hbarSpending';
+import { IHbarSpending } from '../../types/hbarLimiter/hbarSpending';
 import { CacheService } from '../../../services/cacheService/cacheService';
-import { ISubscriptionRepository } from './ISubscriptionRepository';
-import { SubscriptionNotActiveError, SubscriptionNotFoundError } from '../../types/hbarLimiter/errors';
+import { IHbarLimitPlanRepository } from './IHbarLimitPlanRepository';
+import { HbarLimitPlanNotActiveError, HbarLimitPlanNotFoundError } from '../../types/hbarLimiter/errors';
+import { IDetailedHbarLimitPlan, IHbarLimitPlan } from '../../types/hbarLimiter/hbarLimitPlan';
+import { HbarSpending } from '../../entities/hbarLimiter/hbarSpending';
+import { SubscriptionType } from '../../types/hbarLimiter/subscriptionType';
+import { HbarLimitPlan } from '../../entities/hbarLimiter/hbarLimitPlan';
 
-export class SubscriptionRepository implements ISubscriptionRepository {
-  private readonly collectionKey = 'hbarLimitSubscription';
+export class HbarLimitPlanRepository implements IHbarLimitPlanRepository {
+  private readonly collectionKey = 'hbarLimitPlan';
   private readonly oneDayInMillis = 24 * 60 * 60 * 1000;
-  private readonly fourMonthsInMillis = this.oneDayInMillis * 120;
+  private readonly threeMonthsInMillis = this.oneDayInMillis * 90;
 
   /**
    * The cache service used for storing data.
@@ -53,30 +51,30 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     this.logger = logger;
   }
 
-  async getSubscriptionById(id: string): Promise<ISubscription> {
-    const key = this.getSubscriptionKey(id);
-    const subscription = await this.cache.getAsync<ISubscription>(key, 'getSubscriptionById');
-    if (!subscription) {
-      throw new SubscriptionNotFoundError(id);
+  async findById(id: string): Promise<IHbarLimitPlan> {
+    const key = this.getKey(id);
+    const plan = await this.cache.getAsync<IHbarLimitPlan>(key, 'findById');
+    if (!plan) {
+      throw new HbarLimitPlanNotFoundError(id);
     }
     this.logger.trace(`Retrieved subscription with ID ${id}`);
     return {
-      ...subscription,
-      createdAt: new Date(subscription.createdAt),
+      ...plan,
+      createdAt: new Date(plan.createdAt),
     };
   }
 
-  async getDetailedSubscriptionById(id: string): Promise<IDetailedSubscription> {
-    const subscription = await this.getSubscriptionById(id);
-    return new HbarLimitSubscription({
-      ...subscription,
+  async findByIdWithDetails(id: string): Promise<IDetailedHbarLimitPlan> {
+    const plan = await this.findById(id);
+    return new HbarLimitPlan({
+      ...plan,
       spendingHistory: await this.getSpendingHistory(id),
       spentToday: await this.getSpentToday(id),
     });
   }
 
-  async createSubscription(subscriptionType: SubscriptionType): Promise<IDetailedSubscription> {
-    const subscription: IDetailedSubscription = {
+  async create(subscriptionType: SubscriptionType): Promise<IDetailedHbarLimitPlan> {
+    const plan: IDetailedHbarLimitPlan = {
       id: uuidV4(randomBytes(16)),
       subscriptionType,
       createdAt: new Date(),
@@ -84,23 +82,23 @@ export class SubscriptionRepository implements ISubscriptionRepository {
       spendingHistory: [],
       spentToday: 0,
     };
-    this.logger.trace(`Creating subscription with ID ${subscription.id}...`);
-    const key = this.getSubscriptionKey(subscription.id);
-    await this.cache.set(key, subscription, 'createSubscription', this.fourMonthsInMillis);
-    return new HbarLimitSubscription(subscription);
+    this.logger.trace(`Creating HbarLimitPlan with ID ${plan.id}...`);
+    const key = this.getKey(plan.id);
+    await this.cache.set(key, plan, 'create', this.threeMonthsInMillis);
+    return new HbarLimitPlan(plan);
   }
 
   async checkExistsAndActive(id: string): Promise<void> {
-    const subscription = await this.getSubscriptionById(id);
-    if (!subscription.active) {
-      throw new SubscriptionNotActiveError(id);
+    const plan = await this.findById(id);
+    if (!plan.active) {
+      throw new HbarLimitPlanNotActiveError(id);
     }
   }
 
   async getSpendingHistory(id: string): Promise<IHbarSpending[]> {
     await this.checkExistsAndActive(id);
 
-    this.logger.trace(`Retrieving spending history for subscription with ID ${id}...`);
+    this.logger.trace(`Retrieving spending history for HbarLimitPlan with ID ${id}...`);
     const key = this.getSpendingHistoryKey(id);
     const spendingHistory = await this.cache.lRange<IHbarSpending>(key, 0, -1, 'getSpendingHistory');
     return spendingHistory.map((entry) => new HbarSpending(entry));
@@ -109,7 +107,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
   async addAmountToSpendingHistory(id: string, amount: number): Promise<number> {
     await this.checkExistsAndActive(id);
 
-    this.logger.trace(`Adding ${amount} to spending history for subscription with ID ${id}...`);
+    this.logger.trace(`Adding ${amount} to spending history for HbarLimitPlan with ID ${id}...`);
     const key = this.getSpendingHistoryKey(id);
     const entry: IHbarSpending = { amount, timestamp: new Date() };
     return this.cache.rPush(key, entry, 'addAmountToSpendingHistory');
@@ -118,7 +116,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
   async getSpentToday(id: string): Promise<number> {
     await this.checkExistsAndActive(id);
 
-    this.logger.trace(`Retrieving spentToday for subscription with ID ${id}...`);
+    this.logger.trace(`Retrieving spentToday for HbarLimitPlan with ID ${id}...`);
     const key = this.getSpentTodayKey(id);
     return this.cache.getAsync(key, 'getSpentToday').then((spentToday) => parseInt(spentToday ?? '0'));
   }
@@ -128,12 +126,16 @@ export class SubscriptionRepository implements ISubscriptionRepository {
 
     const key = this.getSpentTodayKey(id);
     if (!(await this.cache.getAsync(key, 'addAmountToSpentToday'))) {
-      this.logger.trace(`No spending yet for subscription with ID ${id}, setting spentToday to ${amount}...`);
-      await this.cache.set(key, amount, 'addAmmountToSpentToday', this.oneDayInMillis);
+      this.logger.trace(`No spending yet for HbarLimitPlan with ID ${id}, setting spentToday to ${amount}...`);
+      await this.cache.set(key, amount, 'addAmountToSpentToday', this.oneDayInMillis);
     } else {
-      this.logger.trace(`Adding ${amount} to spentToday for subscription with ID ${id}...`);
+      this.logger.trace(`Adding ${amount} to spentToday for HbarLimitPlan with ID ${id}...`);
       await this.cache.incrBy(key, amount, 'addAmountToSpentToday');
     }
+  }
+
+  private getKey(id: string): string {
+    return `${this.collectionKey}:${id}`;
   }
 
   private getSpentTodayKey(id: string): string {
@@ -142,9 +144,5 @@ export class SubscriptionRepository implements ISubscriptionRepository {
 
   private getSpendingHistoryKey(id: string): string {
     return `${this.collectionKey}:${id}:spendingHistory`;
-  }
-
-  private getSubscriptionKey(id: string): string {
-    return `${this.collectionKey}:${id}`;
   }
 }

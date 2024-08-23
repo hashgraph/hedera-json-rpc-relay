@@ -18,22 +18,11 @@
  *
  */
 
+import { IDetailedHbarLimitPlan } from '../../types/hbarLimiter/hbarLimitPlan';
+import { HbarSpending } from './hbarSpending';
 import { SubscriptionType } from '../../types/hbarLimiter/subscriptionType';
-import { HbarSpending, IHbarSpending } from '../../types/hbarLimiter/hbarSpending';
 
-export interface ISubscription {
-  id: string;
-  subscriptionType: SubscriptionType;
-  createdAt: Date;
-  active: boolean;
-}
-
-export interface IDetailedSubscription extends ISubscription {
-  spendingHistory: IHbarSpending[];
-  spentToday: number;
-}
-
-export class HbarLimitSubscription implements IDetailedSubscription {
+export class HbarLimitPlan implements IDetailedHbarLimitPlan {
   id: string;
   subscriptionType: SubscriptionType;
   createdAt: Date;
@@ -41,7 +30,7 @@ export class HbarLimitSubscription implements IDetailedSubscription {
   spendingHistory: HbarSpending[];
   spentToday: number;
 
-  constructor(data: IDetailedSubscription) {
+  constructor(data: IDetailedHbarLimitPlan) {
     this.id = data.id;
     this.subscriptionType = data.subscriptionType;
     this.createdAt = new Date(data.createdAt);
