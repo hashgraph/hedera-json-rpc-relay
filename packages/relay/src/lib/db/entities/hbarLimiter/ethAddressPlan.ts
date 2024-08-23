@@ -18,23 +18,14 @@
  *
  */
 
-export class HbarLimitPlanNotFoundError extends Error {
-  constructor(id: string) {
-    super(`HbarLimitPlan with ID ${id} not found`);
-    this.name = 'HbarLimitPlanNotFoundError';
-  }
-}
+import { IEthAddressPlan } from '../../types/hbarLimiter/ethAddressPlan';
 
-export class HbarLimitPlanNotActiveError extends Error {
-  constructor(id: string) {
-    super(`HbarLimitPlan with ID ${id} is not active`);
-    this.name = 'HbarLimitPlanNotActiveError';
-  }
-}
+export class EthAddressPlan implements IEthAddressPlan {
+  ethAddress: string;
+  planId: string;
 
-export class EthAddressPlanNotFoundError extends Error {
-  constructor(ethAddress: string) {
-    super(`EthAddressPlan with address ${ethAddress} not found`);
-    this.name = 'EthAddressPlanNotFoundError';
+  constructor(data: IEthAddressPlan) {
+    this.ethAddress = data.ethAddress;
+    this.planId = data.planId;
   }
 }

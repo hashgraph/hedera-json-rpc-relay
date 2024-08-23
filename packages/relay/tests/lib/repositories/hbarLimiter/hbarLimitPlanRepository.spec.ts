@@ -36,8 +36,6 @@ import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subsc
 chai.use(chaiAsPromised);
 
 describe('HbarLimitPlanRepository', function () {
-  this.timeout(10000);
-
   const logger = pino();
   const registry = new Registry();
 
