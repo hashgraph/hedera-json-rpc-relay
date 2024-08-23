@@ -66,12 +66,12 @@ describe('SubscriptionRepository', function () {
       });
     }
 
-    beforeEach(async () => {
+    before(async () => {
       cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
       repository = new SubscriptionRepository(cacheService, logger.child({ name: `SubscriptionRepository` }));
     });
 
-    afterEach(async () => {
+    after(async () => {
       await cacheService.clear();
       await cacheService.disconnectRedisClient();
     });
