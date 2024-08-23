@@ -29,6 +29,7 @@ import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults 
 import { Block, Transaction } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
+import constants from '../../../src/lib/constants';
 import { hashNumber, numberTo0x } from '../../../dist/formatters';
 import {
   BLOCKS_LIMIT_ORDER_URL,
@@ -226,6 +227,22 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       });
     });
 
+    it('eth_getBlockByNumber with match and duplicated transactions', async function () {
+      restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, {
+        results: [...defaultContractResults.results, ...defaultContractResults.results],
+      });
+
+      const res = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER), false);
+      RelayAssertions.assertBlock(res, {
+        transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        hash: BLOCK_HASH_TRIMMED,
+        number: BLOCK_NUMBER_HEX,
+        timestamp: BLOCK_TIMESTAMP_HEX,
+        parentHash: BLOCK_HASH_PREV_TRIMMED,
+        gasUsed: TOTAL_GAS_USED,
+      });
+    });
+
     it('eth_getBlockByNumber with match and valid logsBloom field', async function () {
       restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, {
         ...DEFAULT_BLOCK,
@@ -315,7 +332,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       veriftAggregatedInfo(result);
       expect(result.gasUsed).equal('0x0');
       expect(result.transactions.length).equal(0);
-      expect(result.transactionsRoot).equal(ethImpl.emptyTrieRoot);
+      expect(result.transactionsRoot).equal(constants.DEFAULT_ROOT_HASH);
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);

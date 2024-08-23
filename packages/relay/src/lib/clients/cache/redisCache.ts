@@ -150,9 +150,9 @@ export class RedisCache implements IRedisCacheClient {
   ): Promise<void> {
     const client = await this.getConnectedClient();
     const serializedValue = JSON.stringify(value);
-    const resolvedTtl = (ttl ?? this.options.ttl) / 1000; // convert to seconds
+    const resolvedTtl = ttl ?? this.options.ttl; // in milliseconds
 
-    await client.setEx(key, resolvedTtl, serializedValue);
+    await client.set(key, serializedValue, { PX: resolvedTtl });
     this.logger.trace(`${requestIdPrefix} caching ${key}: ${serializedValue} on ${callingMethod} for ${resolvedTtl} s`);
     // TODO: add metrics
   }
@@ -201,13 +201,13 @@ export class RedisCache implements IRedisCacheClient {
     requestIdPrefix?: string,
   ): Promise<void> {
     const client = await this.getConnectedClient();
-    const resolvedTtl = (ttl ?? this.options.ttl) / 1000; // convert to seconds
+    const resolvedTtl = ttl ?? this.options.ttl; // in milliseconds
 
     const pipeline = client.multi();
 
     for (const [key, value] of Object.entries(keyValuePairs)) {
       const serializedValue = JSON.stringify(value);
-      pipeline.setEx(key, resolvedTtl, serializedValue);
+      pipeline.set(key, serializedValue, { PX: resolvedTtl });
     }
 
     // Execute pipeline operation
