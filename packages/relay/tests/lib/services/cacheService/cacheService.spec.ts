@@ -23,7 +23,8 @@ import dotenv from 'dotenv';
 import { pino } from 'pino';
 import { Registry } from 'prom-client';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import { expect } from 'chai';
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -32,6 +33,8 @@ const registry = new Registry();
 let cacheService: CacheService;
 
 const callingMethod = 'CacheServiceTest';
+
+chai.use(chaiAsPromised);
 
 describe('CacheService Test Suite', async function () {
   this.timeout(10000);
@@ -89,6 +92,11 @@ describe('CacheService Test Suite', async function () {
         const valueFromCache = await cacheService.getAsync(key, callingMethod, undefined);
         expect(valueFromCache).eq(value);
       }
+    });
+
+    it('disconnectRedisClient should not throw error if shared cache is not enabled', async function () {
+      cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
+      await expect(cacheService.disconnectRedisClient()).to.not.be.rejected;
     });
   });
 
@@ -198,6 +206,92 @@ describe('CacheService Test Suite', async function () {
         const valueFromCache = cacheService.getAsync(key, callingMethod, undefined);
         expect(valueFromCache).eq(value);
       }
+    });
+
+    it('should disconnect Redis client if shared cache is enabled', async function () {
+      const disconnectSpy = sinon.stub(cacheService['sharedCache'], <any>'disconnect').resolves();
+      await cacheService.disconnectRedisClient();
+      expect(disconnectSpy.calledOnce).to.be.true;
+    });
+  });
+
+  describe('Additional Test Suite', async function () {
+    describe('incrBy', async function () {
+      it('should increment value in internal cache', async function () {
+        process.env.REDIS_ENABLED = 'false';
+        cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
+        const key = 'counter';
+        const amount = 5;
+
+        await cacheService.set(key, 10, callingMethod);
+        const newValue = await cacheService.incrBy(key, amount, callingMethod);
+
+        expect(newValue).to.equal(15);
+      });
+
+      it('should increment value in shared cache', async function () {
+        process.env.REDIS_ENABLED = 'true';
+        cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
+        const key = 'counter';
+        const amount = 5;
+
+        await cacheService.set(key, 10, callingMethod);
+        const newValue = await cacheService.incrBy(key, amount, callingMethod);
+
+        expect(newValue).to.equal(15);
+      });
+    });
+
+    describe('rPush', async function () {
+      it('should push value to internal cache', async function () {
+        process.env.REDIS_ENABLED = 'false';
+        cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
+        const key = 'list';
+        const value = 'item';
+
+        await cacheService.rPush(key, value, callingMethod);
+        const cachedValue = await cacheService.getAsync(key, callingMethod);
+
+        expect(cachedValue).to.deep.equal([value]);
+      });
+
+      it('should push value to shared cache', async function () {
+        process.env.REDIS_ENABLED = 'true';
+        cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
+        const key = 'list';
+        const value = 'item';
+
+        await cacheService.rPush(key, value, callingMethod);
+        const cachedValue = await cacheService.getAsync(key, callingMethod);
+
+        expect(cachedValue).to.deep.equal([value]);
+      });
+    });
+
+    describe('lRange', async function () {
+      it('should retrieve range from internal cache', async function () {
+        process.env.REDIS_ENABLED = 'false';
+        cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
+        const key = 'list';
+        const values = ['item1', 'item2', 'item3'];
+
+        await cacheService.set(key, values, callingMethod);
+        const range = await cacheService.lRange(key, 0, 1, callingMethod);
+
+        expect(range).to.deep.equal(['item1', 'item2']);
+      });
+
+      it('should retrieve range from shared cache', async function () {
+        process.env.REDIS_ENABLED = 'true';
+        cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
+        const key = 'list';
+        const values = ['item1', 'item2', 'item3'];
+
+        await cacheService.set(key, values, callingMethod);
+        const range = await cacheService.lRange(key, 0, 1, callingMethod);
+
+        expect(range).to.deep.equal(['item1', 'item2']);
+      });
     });
   });
 });
