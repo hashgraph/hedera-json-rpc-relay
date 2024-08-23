@@ -175,7 +175,7 @@ describe('CacheService Test Suite', async function () {
       await cacheService.disconnectRedisClient();
     });
 
-    this.afterEach(async () => {
+    this.beforeEach(async () => {
       await cacheService.clear();
     });
 
