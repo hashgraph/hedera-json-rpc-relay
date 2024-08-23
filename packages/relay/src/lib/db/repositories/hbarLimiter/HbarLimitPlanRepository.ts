@@ -22,14 +22,13 @@ import { randomBytes, uuidV4 } from 'ethers';
 import { Logger } from 'pino';
 import { IHbarSpending } from '../../types/hbarLimiter/hbarSpending';
 import { CacheService } from '../../../services/cacheService/cacheService';
-import { IHbarLimitPlanRepository } from './IHbarLimitPlanRepository';
 import { HbarLimitPlanNotActiveError, HbarLimitPlanNotFoundError } from '../../types/hbarLimiter/errors';
 import { IDetailedHbarLimitPlan, IHbarLimitPlan } from '../../types/hbarLimiter/hbarLimitPlan';
 import { HbarSpending } from '../../entities/hbarLimiter/hbarSpending';
 import { SubscriptionType } from '../../types/hbarLimiter/subscriptionType';
 import { HbarLimitPlan } from '../../entities/hbarLimiter/hbarLimitPlan';
 
-export class HbarLimitPlanRepository implements IHbarLimitPlanRepository {
+export class HbarLimitPlanRepository {
   private readonly collectionKey = 'hbarLimitPlan';
   private readonly oneDayInMillis = 24 * 60 * 60 * 1000;
   private readonly threeMonthsInMillis = this.oneDayInMillis * 90;
@@ -51,6 +50,11 @@ export class HbarLimitPlanRepository implements IHbarLimitPlanRepository {
     this.logger = logger;
   }
 
+  /**
+   * Gets a hbar limit plan by ID.
+   * @param id - The ID of the plan to get.
+   * @returns {Promise<IHbarLimitPlan>} - The hbar limit plan object.
+   */
   async findById(id: string): Promise<IHbarLimitPlan> {
     const key = this.getKey(id);
     const plan = await this.cache.getAsync<IHbarLimitPlan>(key, 'findById');
@@ -64,6 +68,11 @@ export class HbarLimitPlanRepository implements IHbarLimitPlanRepository {
     };
   }
 
+  /**
+   * Gets a hbar limit plan by ID with detailed information (spendingHistory and spentToday).
+   * @param id - The ID of the plan.
+   * @returns {Promise<IDetailedHbarLimitPlan>} - The detailed hbar limit plan object.
+   */
   async findByIdWithDetails(id: string): Promise<IDetailedHbarLimitPlan> {
     const plan = await this.findById(id);
     return new HbarLimitPlan({
@@ -73,6 +82,11 @@ export class HbarLimitPlanRepository implements IHbarLimitPlanRepository {
     });
   }
 
+  /**
+   * Creates a new hbar limit plan.
+   * @param subscriptionType - The subscription type of the plan to create.
+   * @returns {Promise<IDetailedHbarLimitPlan>} - The created hbar limit plan object.
+   */
   async create(subscriptionType: SubscriptionType): Promise<IDetailedHbarLimitPlan> {
     const plan: IDetailedHbarLimitPlan = {
       id: uuidV4(randomBytes(16)),
@@ -88,6 +102,11 @@ export class HbarLimitPlanRepository implements IHbarLimitPlanRepository {
     return new HbarLimitPlan(plan);
   }
 
+  /**
+   * Verify that an hbar limit plan exists and is active.
+   * @param id - The ID of the plan.
+   * @returns {Promise<void>} - A promise that resolves if the plan exists and is active, or rejects if not.
+   */
   async checkExistsAndActive(id: string): Promise<void> {
     const plan = await this.findById(id);
     if (!plan.active) {
@@ -95,6 +114,11 @@ export class HbarLimitPlanRepository implements IHbarLimitPlanRepository {
     }
   }
 
+  /**
+   * Gets the spending history for a hbar limit plan.
+   * @param id - The ID of the plan.
+   * @returns {Promise<IHbarSpending[]>} - A promise that resolves with the spending history.
+   */
   async getSpendingHistory(id: string): Promise<IHbarSpending[]> {
     await this.checkExistsAndActive(id);
 
@@ -104,6 +128,12 @@ export class HbarLimitPlanRepository implements IHbarLimitPlanRepository {
     return spendingHistory.map((entry) => new HbarSpending(entry));
   }
 
+  /**
+   * Adds spending to a plan's spending history.
+   * @param id - The ID of the plan.
+   * @param amount - The amount to add to the plan's spending.
+   * @returns {Promise<number>} - A promise that resolves with the new length of the spending history.
+   */
   async addAmountToSpendingHistory(id: string, amount: number): Promise<number> {
     await this.checkExistsAndActive(id);
 
@@ -113,6 +143,11 @@ export class HbarLimitPlanRepository implements IHbarLimitPlanRepository {
     return this.cache.rPush(key, entry, 'addAmountToSpendingHistory');
   }
 
+  /**
+   * Gets the amount spent today for an hbar limit plan.
+   * @param id - The ID of the plan.
+   * @returns {Promise<number>} - A promise that resolves with the amount spent today.
+   */
   async getSpentToday(id: string): Promise<number> {
     await this.checkExistsAndActive(id);
 
@@ -121,6 +156,12 @@ export class HbarLimitPlanRepository implements IHbarLimitPlanRepository {
     return this.cache.getAsync(key, 'getSpentToday').then((spentToday) => parseInt(spentToday ?? '0'));
   }
 
+  /**
+   * Adds an amount to the amount spent today for a plan.
+   * @param id - The ID of the plan.
+   * @param amount - The amount to add.
+   * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   */
   async addAmountToSpentToday(id: string, amount: number): Promise<void> {
     await this.checkExistsAndActive(id);
 
