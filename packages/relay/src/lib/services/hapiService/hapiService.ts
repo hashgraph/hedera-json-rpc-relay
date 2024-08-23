@@ -19,15 +19,16 @@
  */
 
 import dotenv from 'dotenv';
-import findConfig from 'find-config';
-import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Registry, Counter, Histogram } from 'prom-client';
-import { SDKClient } from '../../clients/sdkClient';
+import EventEmitter from 'events';
+import findConfig from 'find-config';
 import constants from '../../constants';
-import HbarLimit from '../../hbarlimiter';
-import { CacheService } from '../cacheService/cacheService';
 import { Utils } from './../../../utils';
+import HbarLimit from '../../hbarlimiter';
+import { Registry, Counter } from 'prom-client';
+import { SDKClient } from '../../clients/sdkClient';
+import { CacheService } from '../cacheService/cacheService';
+import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -66,6 +67,15 @@ export default class HAPIService {
   private hbarLimiter: HbarLimit;
 
   /**
+   * An instance of EventEmitter used for emitting and handling events within the class.
+   *
+   * @private
+   * @readonly
+   * @type {EventEmitter}
+   */
+  private readonly eventEmitter: EventEmitter;
+
+  /**
    * @private
    */
   private readonly register: Registry;
@@ -73,15 +83,27 @@ export default class HAPIService {
   private readonly cacheService: CacheService;
 
   /**
-   * @param {Logger} logger
-   * @param {Registry} register
+   * Constructs an instance of the class, initializes configuration settings, and sets up various services.
+   *
+   * @param {Logger} logger - The logger instance used for logging.
+   * @param {Registry} register - The registry instance for metrics and other services.
+   * @param {HbarLimit} hbarLimiter - The Hbar rate limiter instance.
+   * @param {CacheService} cacheService - The cache service instance.
+   * @param {EventEmitter} eventEmitter - The event emitter instance used for emitting events.
    */
-  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit, cacheService: CacheService) {
+  constructor(
+    logger: Logger,
+    register: Registry,
+    hbarLimiter: HbarLimit,
+    cacheService: CacheService,
+    eventEmitter: EventEmitter,
+  ) {
     dotenv.config({ path: findConfig('.env') || '' });
 
     this.logger = logger;
     this.hbarLimiter = hbarLimiter;
 
+    this.eventEmitter = eventEmitter;
     this.hederaNetwork = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
@@ -187,6 +209,7 @@ export default class HAPIService {
       logger.child({ name: `consensus-node` }),
       this.hbarLimiter,
       this.cacheService,
+      this.eventEmitter,
     );
   }
 

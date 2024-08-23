@@ -190,4 +190,9 @@ export default {
 
   // @source: https://docs.hedera.com/hedera/networks/mainnet/fees
   TX_RECORD_QUERY_COST_IN_CENTS: 0.01,
+
+  EVENTS: {
+    START_CAPTURING_TRANSACTION_METRICS: 'start_capturing_transaction_metrics',
+    START_ADD_EXPENSE_AND_CAPTURE_METRICS: 'start_add_expense_and_capture_metrics',
+  },
 };

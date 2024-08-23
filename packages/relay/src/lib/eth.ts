@@ -36,7 +36,6 @@ import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
 import { Block, Log, Transaction, Transaction1559 } from './model';
 import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
-import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
 import { CommonService, FilterService } from './services/ethService';
 import { IDebugService } from './services/debugService/IDebugService';
@@ -252,14 +251,6 @@ export class EthImpl implements Eth {
   private readonly debugServiceImpl: DebugService;
 
   /**
-   * Service for handling transactions.
-   * @type {MetricService}
-   * @private
-   * @readonly
-   */
-  private readonly metricService: MetricService;
-
-  /**
    * Constructs an instance of the service responsible for handling Ethereum JSON-RPC methods
    * using Hedera Hashgraph as the underlying network.
    *
@@ -269,7 +260,6 @@ export class EthImpl implements Eth {
    * @param {string} chain - The chain identifier for the current blockchain environment.
    * @param {Registry} registry - Registry instance for registering metrics.
    * @param {CacheService} cacheService - Service for managing cached data.
-   * @param {MetricService} metricService - Service for metrics collection and monitoring.
    */
   constructor(
     hapiService: HAPIService,
@@ -278,13 +268,11 @@ export class EthImpl implements Eth {
     chain: string,
     registry: Registry,
     cacheService: CacheService,
-    metricService: MetricService,
   ) {
     this.chain = chain;
     this.logger = logger;
     this.hapiService = hapiService;
     this.cacheService = cacheService;
-    this.metricService = metricService;
     this.mirrorNodeClient = mirrorNodeClient;
     this.precheck = new Precheck(mirrorNodeClient, logger, chain);
     this.ethExecutionsCounter = this.initEthExecutionCounter(registry);
@@ -504,9 +492,7 @@ export class EthImpl implements Eth {
       networkFees = {
         fees: [
           {
-            gas: await this.hapiService
-              .getSDKClient()
-              .getTinyBarGasFee(callerName, this.metricService, requestIdPrefix),
+            gas: await this.hapiService.getSDKClient().getTinyBarGasFee(callerName, requestIdPrefix),
             transaction_type: EthImpl.ethTxType,
           },
         ],
@@ -1167,7 +1153,7 @@ export class EthImpl implements Eth {
 
       const bytecode = await this.hapiService
         .getSDKClient()
-        .getContractByteCode(0, 0, address, EthImpl.ethGetCode, this.metricService, requestIdPrefix);
+        .getContractByteCode(0, 0, address, EthImpl.ethGetCode, requestIdPrefix);
       return prepend0x(Buffer.from(bytecode).toString('hex'));
     } catch (e: any) {
       if (e instanceof SDKClientError) {
@@ -1567,7 +1553,6 @@ export class EthImpl implements Eth {
           transactionBuffer,
           EthImpl.ethSendRawTransaction,
           requestIdPrefix,
-          this.metricService,
           originalCallerAddress,
         );
 
@@ -1620,14 +1605,7 @@ export class EthImpl implements Eth {
       if (fileId) {
         this.hapiService
           .getSDKClient()
-          .deleteFile(
-            fileId,
-            requestIdPrefix,
-            EthImpl.ethSendRawTransaction,
-            fileId.toString(),
-            this.metricService,
-            originalCallerAddress,
-          );
+          .deleteFile(fileId, requestIdPrefix, EthImpl.ethSendRawTransaction, fileId.toString(), originalCallerAddress);
       }
     }
   }
@@ -1891,15 +1869,7 @@ export class EthImpl implements Eth {
 
       const contractCallResponse = await this.hapiService
         .getSDKClient()
-        .submitContractCallQueryWithRetry(
-          call.to,
-          call.data,
-          gas,
-          call.from,
-          EthImpl.ethCall,
-          this.metricService,
-          requestIdPrefix,
-        );
+        .submitContractCallQueryWithRetry(call.to, call.data, gas, call.from, EthImpl.ethCall, requestIdPrefix);
       if (contractCallResponse) {
         const formattedCallReponse = prepend0x(Buffer.from(contractCallResponse.asBytes()).toString('hex'));
 

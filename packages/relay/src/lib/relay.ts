@@ -24,6 +24,7 @@ import { NetImpl } from './net';
 import { EthImpl } from './eth';
 import { Poller } from './poller';
 import { Web3Impl } from './web3';
+import EventEmitter from 'events';
 import constants from './constants';
 import findConfig from 'find-config';
 import HbarLimit from './hbarlimiter';
@@ -96,6 +97,15 @@ export class RelayImpl implements Relay {
   private readonly metricService: MetricService;
 
   /**
+   * An instance of EventEmitter used for emitting and handling events within the class.
+   *
+   * @private
+   * @readonly
+   * @type {EventEmitter}
+   */
+  private readonly eventEmitter: EventEmitter;
+
+  /**
    * Initializes the main components of the relay service, including Hedera network clients,
    * Ethereum-compatible interfaces, caching, metrics, and subscription management.
    *
@@ -113,8 +123,9 @@ export class RelayImpl implements Relay {
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
 
+    this.eventEmitter = new EventEmitter();
     this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);
-    const hapiService = new HAPIService(logger, register, hbarLimiter, this.cacheService);
+    const hapiService = new HAPIService(logger, register, hbarLimiter, this.cacheService, this.eventEmitter);
     this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
@@ -135,6 +146,7 @@ export class RelayImpl implements Relay {
       this.mirrorNodeClient,
       hbarLimiter,
       register,
+      this.eventEmitter,
     );
 
     this.ethImpl = new EthImpl(
@@ -144,7 +156,6 @@ export class RelayImpl implements Relay {
       chainId,
       register,
       this.cacheService,
-      this.metricService,
     );
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {

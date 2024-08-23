@@ -34,6 +34,7 @@ import { calculateTxRecordChargeAmount, getRequestId } from '../../../helpers';
 import MetricService from '../../../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { Hbar, Long, Status, Client, AccountId, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
+import EventEmitter from 'events';
 
 config({ path: resolve(__dirname, '../../../test.env') });
 const registry = new Registry();
@@ -44,6 +45,7 @@ describe('Metric Service', function () {
   let mock: MockAdapter;
   let hbarLimiter: HbarLimit;
   let instance: AxiosInstance;
+  let eventEmitter: EventEmitter;
   let metricService: MetricService;
   let mirrorNodeClient: MirrorNodeClient;
 
@@ -133,15 +135,17 @@ describe('Metric Service', function () {
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
 
     hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+    eventEmitter = new EventEmitter();
 
     const sdkClient = new SDKClient(
       client,
       logger.child({ name: `consensus-node` }),
       hbarLimiter,
       new CacheService(logger.child({ name: `cache` }), registry),
+      eventEmitter,
     );
     // Init new MetricService instance
-    metricService = new MetricService(logger, sdkClient, mirrorNodeClient, hbarLimiter, registry);
+    metricService = new MetricService(logger, sdkClient, mirrorNodeClient, hbarLimiter, registry, eventEmitter);
   });
 
   afterEach(() => {
@@ -233,6 +237,63 @@ describe('Metric Service', function () {
         mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
       );
     });
+
+    it('Should listen to START_CAPTURING_TRANSACTION_METRICS event to kick off captureTransactionMetrics()', async () => {
+      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
+      const mockedExchangeRateInCents = 12;
+      const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
+
+      const transactionRecordStub = sinon
+        .stub(TransactionRecordQuery.prototype, 'execute')
+        .resolves(mockedConsensusNodeTransactionRecord);
+
+      const originalBudget = hbarLimiter.getRemainingBudget();
+
+      // emitting an START_CAPTURING_TRANSACTION_METRICS event to kick off capturing metrics process asynchronously
+      eventEmitter.emit(constants.EVENTS.START_CAPTURING_TRANSACTION_METRICS, {
+        transactionId: mockedTransactionId,
+        callerName: mockedCallerName,
+        requestId: getRequestId(),
+        txConstructorName: mockedConstructorName,
+        operatorAccountId: operatorAcocuntId,
+        transactionType: mockedTransactionType,
+        interactingEntity: mockedInteractingEntity,
+      });
+
+      // small wait for hbar rate limiter to settle
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(transactionRecordStub.called).to.be.true;
+
+      // validate hbarLimiter
+      // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
+      const updatedBudget = hbarLimiter.getRemainingBudget();
+
+      expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
+
+      // validate cost metrics
+      const costMetricObject = (await metricService.getCostMetric().get()).values.find(
+        (metric) => metric.metricName === metricHistogramCostSumTitle,
+      )!;
+      expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
+      expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
+      expect(costMetricObject.labels.type).to.eq(mockedTransactionType);
+      expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(costMetricObject.value).to.eq(mockedTxFee + expectedTxRecordFee);
+
+      // validate gas metric
+      const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
+        (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
+      )!;
+
+      expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
+      expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
+      expect(gasMetricObject.labels.type).to.eq(mockedTransactionType);
+      expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(gasMetricObject.value).to.eq(
+        mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
+      );
+    });
   });
 
   describe('addExpenseAndCaptureMetrics', () => {
@@ -251,6 +312,53 @@ describe('Metric Service', function () {
         mockedInteractingEntity,
         getRequestId(),
       );
+
+      // validate hbarLimiter
+      const updatedBudget = hbarLimiter.getRemainingBudget();
+      expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
+
+      // validate cost metrics
+      const costMetricObject = (await metricService.getCostMetric().get()).values.find(
+        (metric) => metric.metricName === metricHistogramCostSumTitle,
+      )!;
+      expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
+      expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
+      expect(costMetricObject.labels.type).to.eq(mockedTransactionType);
+      expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(costMetricObject.value).to.eq(mockedTxFee);
+
+      // validate gas metric
+      const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
+        (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
+      )!;
+
+      expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
+      expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
+      expect(gasMetricObject.labels.type).to.eq(mockedTransactionType);
+      expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(gasMetricObject.value).to.eq(
+        mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
+      );
+    });
+
+    it('should listen to START_ADD_EXPENSE_AND_CAPTURE_METRICS event and kick off addExpenseAndCaptureMetrics()', async () => {
+      const mockedGasUsed = mockedConsensusNodeTransactionRecord.contractFunctionResult!.gasUsed.toNumber();
+      const originalBudget = hbarLimiter.getRemainingBudget();
+
+      // emitting an START_ADD_EXPENSE_AND_CAPTURE_METRICS event to kick off capturing metrics process
+      eventEmitter.emit(constants.EVENTS.START_ADD_EXPENSE_AND_CAPTURE_METRICS, {
+        executionType: mockedExecutionType,
+        transactionId: mockedTransactionId,
+        transactionType: mockedTransactionType,
+        callerName: mockedCallerName,
+        cost: mockedTxFee,
+        gasUsed: mockedGasUsed,
+        interactingEntity: mockedInteractingEntity,
+        formattedRequestId: getRequestId(),
+      });
+
+      // small wait for hbar rate limiter to settle
+      await new Promise((r) => setTimeout(r, 100));
 
       // validate hbarLimiter
       const updatedBudget = hbarLimiter.getRemainingBudget();

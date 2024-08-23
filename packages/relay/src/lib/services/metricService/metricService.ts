@@ -19,6 +19,8 @@
  */
 
 import { Logger } from 'pino';
+import EventEmitter from 'events';
+import constants from '../../constants';
 import { Status } from '@hashgraph/sdk';
 import HbarLimit from '../../hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
@@ -29,27 +31,31 @@ export default class MetricService {
   /**
    * Logger instance for logging information.
    * @type {Logger}
+   * @readonly
    * @private
    */
-  private logger: Logger;
+  private readonly logger: Logger;
 
   /**
    * Main SDK client for executing queries.
    * @type {SDKClient}
+   * @readonly
    * @private
    */
-  private sdkClient: SDKClient;
+  private readonly sdkClient: SDKClient;
 
   /**
    * Main Mirror Node client for retrieving transaction records.
    * @type {MirrorNodeClient}
+   * @readonly
    * @private
    */
-  private mirrorNodeClient: MirrorNodeClient;
+  private readonly mirrorNodeClient: MirrorNodeClient;
 
   /**
    * This limiter tracks hbar expenses and limits.
    * @type {HbarLimit}
+   * @readonly
    * @private
    */
   private readonly hbarLimiter: HbarLimit;
@@ -57,6 +63,7 @@ export default class MetricService {
   /**
    * Histogram for capturing the cost of transactions and queries.
    * @type {Histogram}
+   * @readonly
    * @private
    */
   private readonly consensusNodeClientHistogramCost: Histogram;
@@ -64,9 +71,19 @@ export default class MetricService {
   /**
    * Histogram for capturing the gas fee of transactions and queries.
    * @type {Histogram}
+   * @readonly
    * @private
    */
   private readonly consensusNodeClientHistogramGasFee: Histogram;
+
+  /**
+   * An instance of EventEmitter used for emitting and handling events within the class.
+   *
+   * @private
+   * @readonly
+   * @type {EventEmitter}
+   */
+  private readonly eventEmitter: EventEmitter;
 
   /**
    * Constructs an instance of the MetricService responsible for tracking and recording various metrics
@@ -77,6 +94,7 @@ export default class MetricService {
    * @param {MirrorNodeClient} mirrorNodeClient - Client for querying the Hedera mirror node.
    * @param {HbarLimit} hbarLimiter - Rate limiter for managing HBAR-related operations.
    * @param {Registry} register - Registry instance for registering metrics.
+   * @param {EventEmitter} eventEmitter - The eventEmitter used for emitting and handling events within the class.
    */
   constructor(
     logger: Logger,
@@ -84,13 +102,42 @@ export default class MetricService {
     mirrorNodeClient: MirrorNodeClient,
     hbarLimiter: HbarLimit,
     register: Registry,
+    eventEmitter: EventEmitter,
   ) {
     this.logger = logger;
     this.sdkClient = sdkClient;
     this.hbarLimiter = hbarLimiter;
+    this.eventEmitter = eventEmitter;
     this.mirrorNodeClient = mirrorNodeClient;
     this.consensusNodeClientHistogramCost = this.initCostMetric(register);
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
+
+    //listen to START_CAPTURING_TRANSACTION_METRICS event to kick off captureTransactionMetrics() process
+    this.eventEmitter.on(constants.EVENTS.START_CAPTURING_TRANSACTION_METRICS, (args) => {
+      this.captureTransactionMetrics(
+        args.transactionId,
+        args.callerName,
+        args.requestId,
+        args.txConstructorName,
+        args.operatorAccountId,
+        args.transactionType,
+        args.interactingEntity,
+      );
+    });
+
+    //listen to START_ADD_EXPENSE_AND_CAPTURE_METRICS event to kick off addExpenseAndCaptureMetrics() process
+    this.eventEmitter.on(constants.EVENTS.START_ADD_EXPENSE_AND_CAPTURE_METRICS, (args) => {
+      this.addExpenseAndCaptureMetrics(
+        args.executionType,
+        args.transactionId,
+        args.transactionType,
+        args.callerName,
+        args.cost,
+        args.gasUsed,
+        args.interactingEntity,
+        args.formattedRequestId,
+      );
+    });
   }
 
   /**
