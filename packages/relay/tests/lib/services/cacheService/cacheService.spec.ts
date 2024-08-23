@@ -199,5 +199,31 @@ describe('CacheService Test Suite', async function () {
         expect(valueFromCache).eq(value);
       }
     });
+
+    it('should be able to getAsync from internal cache in case of Redis error', async function () {
+      const key = 'string';
+      const value = 'value';
+
+      // @ts-ignore
+      mock.stub(cacheService.sharedCache, 'get').throwsException();
+      // @ts-ignore
+      mock.stub(cacheService, 'getFromInternalCache').returns(value);
+
+      const cachedValue = await cacheService.getAsync(key, callingMethod, undefined);
+      expect(cachedValue).eq(value);
+    });
+
+    it('should be able to delete from internal cache in case of Redis error', async function () {
+      const key = 'string';
+
+      // @ts-ignore
+      cacheService.delete.restore();
+      // @ts-ignore
+      mock.stub(cacheService.sharedCache, 'delete').throwsException();
+      // @ts-ignore
+      mock.stub(cacheService.internalCache, 'delete').returns(Promise<void>);
+
+      expect(await cacheService.delete(key, callingMethod, undefined)).not.to.throw;
+    });
   });
 });
