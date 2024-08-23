@@ -47,18 +47,18 @@ describe('SubscriptionRepository', function () {
       let redisUrl: string | undefined;
       let redisInMemoryServer: RedisInMemoryServer;
 
-      before(async () => {
-        redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6379);
+      this.beforeAll(async () => {
+        redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6380);
         await redisInMemoryServer.start();
         test = process.env.TEST;
         redisEnabled = process.env.REDIS_ENABLED;
         redisUrl = process.env.REDIS_URL;
         process.env.TEST = 'false';
         process.env.REDIS_ENABLED = 'true';
-        process.env.REDIS_URL = 'redis://127.0.0.1:6379';
+        process.env.REDIS_URL = 'redis://127.0.0.1:6380';
       });
 
-      after(async () => {
+      this.afterAll(async () => {
         await redisInMemoryServer.stop();
         process.env.TEST = test;
         process.env.REDIS_ENABLED = redisEnabled;
