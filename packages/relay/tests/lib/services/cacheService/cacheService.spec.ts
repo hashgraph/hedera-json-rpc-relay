@@ -213,6 +213,20 @@ describe('CacheService Test Suite', async function () {
       expect(cachedValue).eq(value);
     });
 
+    it('should be able to set from internal cache in case of Redis error', async function () {
+      const key = 'string';
+
+      // @ts-ignore
+      cacheService.set.restore();
+
+      // @ts-ignore
+      mock.stub(cacheService.sharedCache, 'set').throwsException();
+      // @ts-ignore
+      mock.stub(cacheService.internalCache, 'set').returns(Promise<void>);
+
+      expect(await cacheService.set(key, callingMethod, undefined)).not.to.throw;
+    });
+
     it('should be able to delete from internal cache in case of Redis error', async function () {
       const key = 'string';
 
