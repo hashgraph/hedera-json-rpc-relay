@@ -1,228 +1,244 @@
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import { Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
+import { IObjectSchema, IObjectValidation } from '../types/validator';
 
-export const OBJECTS_VALIDATIONS = {
+export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
   blockHashObject: {
-    blockHash: {
-      type: 'blockHash',
-      nullable: false,
+    name: 'BlockHashObject',
+    failOnUnexpectedParams: true,
+    properties: {
+      blockHash: {
+        type: 'blockHash',
+        nullable: false,
+      },
     },
   },
   blockNumberObject: {
-    blockNumber: {
-      type: 'blockNumber',
-      nullable: false,
+    name: 'BlockNumberObject',
+    failOnUnexpectedParams: true,
+    properties: {
+      blockNumber: {
+        type: 'blockNumber',
+        nullable: false,
+      },
     },
   },
   filter: {
-    blockHash: {
-      type: 'blockHash',
-      nullable: false,
-    },
-    fromBlock: {
-      type: 'blockNumber',
-      nullable: false,
-    },
-    toBlock: {
-      type: 'blockNumber',
-      nullable: false,
-    },
-    address: {
-      type: 'addressFilter',
-      nullable: false,
-    },
-    topics: {
-      type: 'topics',
-      nullable: false,
+    name: 'FilterObject',
+    failOnUnexpectedParams: true,
+    properties: {
+      blockHash: {
+        type: 'blockHash',
+        nullable: false,
+      },
+      fromBlock: {
+        type: 'blockNumber',
+        nullable: false,
+      },
+      toBlock: {
+        type: 'blockNumber',
+        nullable: false,
+      },
+      address: {
+        type: 'addressFilter',
+        nullable: false,
+      },
+      topics: {
+        type: 'topics',
+        nullable: false,
+      },
     },
   },
   transaction: {
-    from: {
-      type: 'address',
-      nullable: false,
-    },
-    to: {
-      type: 'address',
-      nullable: true,
-    },
-    gas: {
-      type: 'hex',
-      nullable: false,
-    },
-    gasPrice: {
-      type: 'hex',
-      nullable: false,
-    },
-    maxPriorityFeePerGas: {
-      type: 'hex',
-      nullable: false,
-    },
-    maxFeePerGas: {
-      type: 'hex',
-      nullable: false,
-    },
-    value: {
-      type: 'hex',
-      nullable: false,
-    },
-    data: {
-      type: 'hex',
-      nullable: true,
-    },
-    type: {
-      type: 'hex',
-      nullable: false,
-    },
-    chainId: {
-      type: 'hex',
-      nullable: false,
-    },
-    nonce: {
-      type: 'hex',
-      nullable: false,
-    },
-    input: {
-      type: 'hex',
-      nullable: false,
-    },
-    accessList: {
-      type: 'array',
-      nullable: false,
+    name: 'TransactionObject',
+    failOnUnexpectedParams: false,
+    deleteUnknownProperties: true,
+    properties: {
+      from: {
+        type: 'address',
+        nullable: false,
+      },
+      to: {
+        type: 'address',
+        nullable: true,
+      },
+      gas: {
+        type: 'hex',
+        nullable: false,
+      },
+      gasPrice: {
+        type: 'hex',
+        nullable: false,
+      },
+      maxPriorityFeePerGas: {
+        type: 'hex',
+        nullable: false,
+      },
+      maxFeePerGas: {
+        type: 'hex',
+        nullable: false,
+      },
+      value: {
+        type: 'hex',
+        nullable: false,
+      },
+      data: {
+        type: 'hex',
+        nullable: true,
+      },
+      type: {
+        type: 'hex',
+        nullable: false,
+      },
+      chainId: {
+        type: 'hex',
+        nullable: false,
+      },
+      nonce: {
+        type: 'hex',
+        nullable: false,
+      },
+      input: {
+        type: 'hex',
+        nullable: false,
+      },
+      accessList: {
+        type: 'array',
+        nullable: false,
+      },
     },
   },
   ethSubscribeLogsParams: {
-    address: {
-      type: 'addressFilter',
-      nullable: false,
-      required: false,
-    },
-    topics: {
-      type: 'topics',
-      nullable: false,
+    name: 'EthSubscribeLogsParamsObject',
+    failOnUnexpectedParams: true,
+    properties: {
+      address: {
+        type: 'addressFilter',
+        nullable: false,
+        required: false,
+      },
+      topics: {
+        type: 'topics',
+        nullable: false,
+      },
     },
   },
 };
 
-export class TransactionObject {
-  from?: string;
-  to: string;
-  gas?: string;
-  gasPrice?: string;
-  maxPriorityFeePerGas?: string;
-  maxFeePerGas?: string;
-  value?: string;
-  data?: string;
+export class DefaultValidation<T extends object = any> implements IObjectValidation<T> {
+  private readonly _object: T;
+  protected readonly schema: IObjectSchema;
 
-  constructor(transaction: any) {
-    Validator.hasUnexpectedParams(transaction, OBJECTS_VALIDATIONS.transaction, this.name());
-    this.from = transaction.from;
-    this.to = transaction.to;
-    this.gas = transaction.gas;
-    this.gasPrice = transaction.gasPrice;
-    this.maxPriorityFeePerGas = transaction.maxPriorityFeePerGas;
-    this.maxFeePerGas = transaction.maxFeePerGas;
-    this.value = transaction.value;
-    this.data = transaction.data;
+  constructor(schema: IObjectSchema, object: T) {
+    this.schema = schema;
+    this._object = object;
+  }
+
+  get object(): T {
+    return this._object;
   }
 
   validate() {
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.transaction);
+    if (this.schema.failOnUnexpectedParams) {
+      this.checkForUnexpectedParams();
+    }
+    if (this.schema.deleteUnknownProperties) {
+      this.deleteUnknownProperties();
+    }
+    return Validator.validateObject(this.object, this.schema);
   }
 
   name() {
-    return this.constructor.name;
+    return this.schema.name;
+  }
+
+  checkForUnexpectedParams() {
+    const expectedParams = Object.keys(this.schema.properties);
+    const actualParams = Object.keys(this.object);
+    const unknownParam = actualParams.find((param) => !expectedParams.includes(param));
+    if (unknownParam) {
+      throw predefined.INVALID_PARAMETER(`'${unknownParam}' for ${this.schema.name}`, `Unknown parameter`);
+    }
+  }
+
+  deleteUnknownProperties() {
+    const expectedParams = Object.keys(this.schema.properties);
+    const actualParams = Object.keys(this.object);
+    const unknownParams = actualParams.filter((param) => !expectedParams.includes(param));
+    for (const param of unknownParams) {
+      delete this.object[param];
+    }
   }
 }
 
-export class FilterObject {
-  blockHash: string;
-  fromBlock?: string;
-  toBlock?: string;
-  address?: string | string[];
-  topics?: string[] | string[][];
+export class TransactionObject extends DefaultValidation {
+  constructor(transaction: any) {
+    super(OBJECTS_VALIDATIONS.transaction, transaction);
+  }
+}
 
+export class FilterObject extends DefaultValidation {
   constructor(filter: any) {
-    Validator.hasUnexpectedParams(filter, OBJECTS_VALIDATIONS.filter, this.name());
-    this.blockHash = filter.blockHash;
-    this.fromBlock = filter.fromBlock;
-    this.toBlock = filter.toBlock;
-    this.address = filter.address;
-    this.topics = filter.topics;
+    super(OBJECTS_VALIDATIONS.filter, filter);
   }
 
   validate() {
-    if (this.blockHash && (this.toBlock || this.fromBlock)) {
+    if (this.object.blockHash && (this.object.toBlock || this.object.fromBlock)) {
       throw predefined.INVALID_PARAMETER(0, "Can't use both blockHash and toBlock/fromBlock");
     }
-
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.filter);
-  }
-
-  name() {
-    return this.constructor.name;
+    return super.validate();
   }
 }
 
-export class BlockHashObject {
-  blockHash: string;
-
+export class BlockHashObject extends DefaultValidation {
   constructor(param: any) {
-    Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.blockHashObject, this.name());
-    this.blockHash = param.blockHash;
-  }
-
-  validate() {
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.blockHashObject);
-  }
-
-  name() {
-    return this.constructor.name;
+    super(OBJECTS_VALIDATIONS.blockHashObject, param);
   }
 }
 
-export class BlockNumberObject {
-  blockNumber: string;
-
+export class BlockNumberObject extends DefaultValidation {
   constructor(param: any) {
-    Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.blockNumberObject, this.name());
-    this.blockNumber = param.blockNumber;
-  }
-
-  validate() {
-    return Validator.validateObject(this, OBJECTS_VALIDATIONS.blockNumberObject);
-  }
-
-  name() {
-    return this.constructor.name;
+    super(OBJECTS_VALIDATIONS.blockNumberObject, param);
   }
 }
 
-export class EthSubscribeLogsParamsObject {
-  address?: string | string[];
-  topics?: string[] | string[][];
-
+export class EthSubscribeLogsParamsObject extends DefaultValidation {
   constructor(param: any) {
-    Validator.hasUnexpectedParams(param, OBJECTS_VALIDATIONS.ethSubscribeLogsParams, this.name());
-    this.address = param.address;
-    this.topics = param.topics;
+    super(OBJECTS_VALIDATIONS.ethSubscribeLogsParams, param);
   }
 
   validate() {
-    const valid = Validator.validateObject(this, OBJECTS_VALIDATIONS.ethSubscribeLogsParams);
+    const valid = super.validate();
     // address and is not an empty array
     if (
       valid &&
-      Array.isArray(this.address) &&
-      this.address.length === 0 &&
-      OBJECTS_VALIDATIONS.ethSubscribeLogsParams.address.required
+      Array.isArray(this.object.address) &&
+      this.object.address.length === 0 &&
+      OBJECTS_VALIDATIONS.ethSubscribeLogsParams.properties.address.required
     ) {
-      throw predefined.MISSING_REQUIRED_PARAMETER(`'address' for ${this.name()}`);
+      throw predefined.MISSING_REQUIRED_PARAMETER(`'address' for ${this.schema.name}`);
     }
 
     return valid;
-  }
-
-  name() {
-    return this.constructor.name;
   }
 }

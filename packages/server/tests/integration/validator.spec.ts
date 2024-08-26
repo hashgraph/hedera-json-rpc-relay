@@ -1,3 +1,23 @@
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import { expect } from 'chai';
 import { OBJECTS_VALIDATIONS, TransactionObject, Validator } from '../../src/validator';
 
@@ -64,7 +84,7 @@ describe('Validator', async () => {
   });
 
   describe('validates Array type correctly', async () => {
-    const validation = { 0: { type: ['array'] } };
+    const validation = { 0: { type: 'array' } };
     const error = Validator.TYPES['array'].error;
 
     it('throws an error if the param is not an array', async () => {
@@ -624,11 +644,19 @@ describe('Validator', async () => {
       );
     });
 
-    it('throws an error if validation type is wrong', async () => {
-      const validation = { 0: {} };
+    it('throws an error if validation type is missing', async () => {
+      const validation = { 0: { type: undefined as unknown as string } };
 
       expect(() => Validator.validateParams(['0x4422E9088662'], validation)).to.throw(
         "Error invoking RPC: Missing or unsupported param type 'undefined'",
+      );
+    });
+
+    it('throws an error if validation type is unknown', async () => {
+      const validation = { 0: { type: 'unknownType' } };
+
+      expect(() => Validator.validateParams(['0x4422E9088662'], validation)).to.throw(
+        "Error invoking RPC: Missing or unsupported param type 'unknownType'",
       );
     });
 
@@ -640,12 +668,18 @@ describe('Validator', async () => {
       );
     });
 
-    it('throws an error if Transaction Object param contains unexpected param', async () => {
+    it('does NOT throw an error if Transaction Object param contains unexpected param', async () => {
       const validation = { 0: { type: 'transaction' } };
 
-      expect(() => Validator.validateParams([{ form: '0x1' }], validation)).to.throw(
-        expectUnknownParam('form', 'TransactionObject', 'Unknown parameter'),
-      );
+      expect(() => Validator.validateParams([{ form: '0x1' }], validation)).to.not.throw;
+    });
+
+    it('deletes unknown properties of Transaction Object param', async () => {
+      const transactionParam = { form: '0x1' };
+      const validation = { 0: { type: 'transaction' } };
+
+      Validator.validateParams([transactionParam], validation);
+      expect(transactionParam).not.to.haveOwnProperty('form');
     });
   });
 
@@ -656,25 +690,32 @@ describe('Validator', async () => {
       value: '0x0',
       data: null,
     });
+
     it('returns true when transaction data is null and is nullable is true', async () => {
-      const result = Validator.validateObject(transactionFilterObject, {
+      const result = Validator.validateObject(transactionFilterObject.object, {
         ...OBJECTS_VALIDATIONS.transaction,
-        data: {
-          type: 'hex',
-          nullable: true,
+        properties: {
+          ...OBJECTS_VALIDATIONS.transaction.properties,
+          data: {
+            type: 'hex',
+            nullable: true,
+          },
         },
       });
 
       expect(result).to.be.true;
     });
 
-    it('throws an error if Transaction Object data param is null and isnullable is false', async () => {
+    it('throws an error if Transaction Object data param is null and isNullable is false', async () => {
       expect(() =>
-        Validator.validateObject(transactionFilterObject, {
+        Validator.validateObject(transactionFilterObject.object, {
           ...OBJECTS_VALIDATIONS.transaction,
-          data: {
-            type: 'hex',
-            nullable: false,
+          properties: {
+            ...OBJECTS_VALIDATIONS.transaction.properties,
+            data: {
+              type: 'hex',
+              nullable: false,
+            },
           },
         }),
       ).to.throw(expectInvalidObject('data', 'Expected 0x prefixed hexadecimal value', 'TransactionObject', 'null'));
@@ -834,6 +875,36 @@ describe('Validator', async () => {
       }
 
       expect(errorOccurred).to.be.eq(false);
+    });
+  });
+
+  describe('validates tracerConfig type correctly', () => {
+    it('returns true for an empty object', () => {
+      expect(Validator.TYPES.tracerConfig.test({})).to.be.true;
+    });
+
+    it('returns true for a valid call tracer config', () => {
+      expect(Validator.TYPES.tracerConfig.test({ onlyTopCall: true })).to.be.true;
+      expect(Validator.TYPES.tracerConfig.test({ onlyTopCall: false })).to.be.true;
+    });
+
+    it('returns true for a valid opcode logger config', () => {
+      expect(Validator.TYPES.tracerConfig.test({ disableMemory: true })).to.be.true;
+      expect(Validator.TYPES.tracerConfig.test({ disableStack: true })).to.be.true;
+      expect(Validator.TYPES.tracerConfig.test({ disableStorage: true })).to.be.true;
+    });
+
+    it('returns false for an invalid config', () => {
+      expect(Validator.TYPES.tracerConfig.test({ invalidKey: true })).to.be.false;
+      expect(Validator.TYPES.tracerConfig.test({ onlyTopCall: 'true' })).to.be.false;
+      expect(Validator.TYPES.tracerConfig.test({ disableMemory: 'true' })).to.be.false;
+    });
+
+    it('returns false for non-object values', () => {
+      expect(Validator.TYPES.tracerConfig.test(null)).to.be.false;
+      expect(Validator.TYPES.tracerConfig.test(undefined)).to.be.false;
+      expect(Validator.TYPES.tracerConfig.test(123)).to.be.false;
+      expect(Validator.TYPES.tracerConfig.test('string')).to.be.false;
     });
   });
 });

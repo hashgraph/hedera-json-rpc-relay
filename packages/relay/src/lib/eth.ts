@@ -42,7 +42,6 @@ import {
   parseNumericEnvVar,
   prepend0x,
   toHash32,
-  toHexString,
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
   getFunctionSelector,
@@ -58,7 +57,6 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { DebugService } from './services/debugService';
 import { IFeeHistory } from './types/IFeeHistory';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
-import { Trie } from '@ethereumjs/trie';
 import TransactionService from './services/transactionService/transactionService';
 import { IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
 
@@ -254,12 +252,6 @@ export class EthImpl implements Eth {
   private readonly debugServiceImpl: DebugService;
 
   /**
-   * A 32 byte hex hash of an empty trie root
-   * @public
-   */
-  public readonly emptyTrieRoot: string;
-
-  /**
    * Service for handling transactions.
    * @type {TransactionService}
    * @private
@@ -297,9 +289,6 @@ export class EthImpl implements Eth {
     this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
     this.transactionService = new TransactionService(logger, this.hapiService.getSDKClient(), mirrorNodeClient);
-
-    const emptyTrie = new Trie();
-    this.emptyTrieRoot = `0x${toHexString(emptyTrie.EMPTY_TRIE_ROOT)}`;
   }
 
   private shouldUseCacheForBalance(tag: string | null): boolean {
@@ -602,12 +591,17 @@ export class EthImpl implements Eth {
         this.logger.info(`${requestIdPrefix} Returning gas: ${response.result}`);
         return prepend0x(trimPrecedingZeros(response.result));
       } else {
+        this.logger.error(`${requestIdPrefix} No gas estimate returned from mirror-node: ${JSON.stringify(response)}`);
         return this.predefinedGasForTransaction(transaction, requestIdPrefix);
       }
     } catch (e: any) {
       this.logger.error(
         `${requestIdPrefix} Error raised while fetching estimateGas from mirror-node: ${JSON.stringify(e)}`,
       );
+      // in case of contract revert, we don't want to return a predefined gas but the actual error with the reason
+      if (this.estimateGasThrows && e instanceof MirrorNodeClientError && e.isContractRevertOpcodeExecuted()) {
+        return predefined.CONTRACT_REVERT(e.detail ?? e.message, e.data);
+      }
       return this.predefinedGasForTransaction(transaction, requestIdPrefix, e);
     }
   }
@@ -2053,7 +2047,7 @@ export class EthImpl implements Eth {
         gasUsed: EthImpl.zeroHex,
         logs: [syntheticLogs[0]],
         logsBloom: LogsBloomUtils.buildLogsBloom(syntheticLogs[0].address, syntheticLogs[0].topics),
-        root: this.emptyTrieRoot,
+        root: constants.DEFAULT_ROOT_HASH,
         status: EthImpl.oneHex,
         to: syntheticLogs[0].address,
         transactionHash: syntheticLogs[0].transactionHash,
@@ -2101,7 +2095,7 @@ export class EthImpl implements Eth {
         transactionHash: toHash32(receiptResponse.hash),
         transactionIndex: nullableNumberTo0x(receiptResponse.transaction_index),
         effectiveGasPrice: effectiveGas,
-        root: receiptResponse.root || this.emptyTrieRoot,
+        root: receiptResponse.root || constants.DEFAULT_ROOT_HASH,
         status: receiptResponse.status,
         type: nullableNumberTo0x(receiptResponse.type),
       };
@@ -2291,6 +2285,7 @@ export class EthImpl implements Eth {
     }
 
     transactionArray = this.populateSyntheticTransactions(showDetails, logs, transactionArray, requestIdPrefix);
+    transactionArray = showDetails ? _.uniqBy(transactionArray, 'hash') : _.uniq(transactionArray);
 
     const blockHash = toHash32(blockResponse.hash);
     return new Block({
@@ -2306,14 +2301,14 @@ export class EthImpl implements Eth {
       nonce: EthImpl.zeroHex8Byte,
       number: numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
-      receiptsRoot: this.emptyTrieRoot,
+      receiptsRoot: constants.DEFAULT_ROOT_HASH,
       timestamp: numberTo0x(Number(timestamp)),
       sha3Uncles: EthImpl.emptyArrayHex,
       size: numberTo0x(blockResponse.size | 0),
-      stateRoot: this.emptyTrieRoot,
+      stateRoot: constants.DEFAULT_ROOT_HASH,
       totalDifficulty: EthImpl.zeroHex,
       transactions: transactionArray,
-      transactionsRoot: transactionArray.length == 0 ? this.emptyTrieRoot : blockHash,
+      transactionsRoot: transactionArray.length == 0 ? constants.DEFAULT_ROOT_HASH : blockHash,
       uncles: [],
     });
   }

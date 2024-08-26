@@ -26,14 +26,24 @@ import { config } from 'dotenv';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { Utils } from '../../../../src/utils';
-import { getRequestId } from '../../../helpers';
 import { Histogram, Registry } from 'prom-client';
 import constants from '../../../../src/lib/constants';
 import HbarLimit from '../../../../src/lib/hbarlimiter';
 import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
+import { calculateTxRecordChargeAmount, getRequestId } from '../../../helpers';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import TransactionService from '../../../../src/lib/services/transactionService/transactionService';
-import { AccountId, Client, Hbar, Long, Status, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
+import {
+  Hbar,
+  Long,
+  Status,
+  Client,
+  HbarUnit,
+  AccountId,
+  ExchangeRate,
+  TransactionRecord,
+  TransactionRecordQuery,
+} from '@hashgraph/sdk';
 
 config({ path: resolve(__dirname, '../../../test.env') });
 const registry = new Registry();
@@ -74,6 +84,7 @@ describe('Transaction Service', function () {
   const mockedConsensusNodeTransactionRecord = {
     receipt: {
       status: Status.Success,
+      exchangeRate: { exchangeRateInCents: 12 },
     },
     transactionFee: new Hbar(mockedTxFee),
     contractFunctionResult: {
@@ -206,6 +217,24 @@ describe('Transaction Service', function () {
       expect(getTxResultAndMetricsResult.transactionStatus).to.eq(
         mockedConsensusNodeTransactionRecord.receipt.status.toString(),
       );
+    });
+  });
+
+  describe('calculateTxRecordChargeAmount', () => {
+    it('Should execute calculateTxRecordChargeAmount() to get the charge amount of transaction record', () => {
+      const mockedExchangeRateIncents = 12;
+      const expectedTxRecordAmount = calculateTxRecordChargeAmount(mockedExchangeRateIncents);
+
+      const mockedExchangeRate = {
+        hbars: 30000,
+        cents: 164330,
+        expirationTime: new Date(),
+        exchangeRateInCents: mockedExchangeRateIncents,
+      } as ExchangeRate;
+
+      const txRecordChargedAmount = transactionService.calculateTxRecordChargeAmount(mockedExchangeRate);
+
+      expect(txRecordChargedAmount).to.eq(expectedTxRecordAmount);
     });
   });
 });
