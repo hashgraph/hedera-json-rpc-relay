@@ -1315,23 +1315,23 @@ export class MirrorNodeClient {
     );
 
     // poll mirror node to get transaction record
-    const transactionRecord = await this.repeatedRequest(
+    const transactionRecords = await this.repeatedRequest(
       this.getTransactionById.name,
       [transactionId, 0],
       this.MIRROR_NODE_GET_CONTRACT_RETRIES,
       formattedRequestId,
     );
 
-    if (!transactionRecord) {
+    if (!transactionRecords) {
       this.logger.warn(
         `${formattedRequestId} No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
       );
     } else {
-      const transactionReceipt: IMirrorNodeTransactionRecord = transactionRecord.transactions.find(
+      const transactionRecord: IMirrorNodeTransactionRecord = transactionRecords.transactions.find(
         (tx: any) => tx.transaction_id === formatTransactionId(transactionId),
       );
 
-      const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionReceipt);
+      const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionRecord);
 
       // get transactionFee
       const transactionFee = getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
