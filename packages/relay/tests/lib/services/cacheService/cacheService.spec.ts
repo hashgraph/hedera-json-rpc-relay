@@ -260,7 +260,7 @@ describe('CacheService Test Suite', async function () {
       items['key2'] = 'value2';
 
       // @ts-ignore
-      mock.stub(cacheService.sharedCache, 'multiSet').returns(Promise<void>);
+      mock.stub(cacheService.sharedCache, 'pipelineSet').returns(Promise<void>);
 
       await expect(cacheService.multiSet(items, callingMethod)).to.eventually.not.be.rejected;
     });
