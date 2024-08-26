@@ -2279,7 +2279,7 @@ export class EthImpl implements Eth {
     transactionArray = this.populateSyntheticTransactions(showDetails, logs, transactionArray, requestIdPrefix);
     transactionArray = showDetails ? _.uniqBy(transactionArray, 'hash') : _.uniq(transactionArray);
 
-    const formattedReceipts: IReceiptRootHash[] = ReceiptsRootUtils.buildReceiptsFromTxHashesContractResultsAndLogs(
+    const formattedReceipts: IReceiptRootHash[] = ReceiptsRootUtils.buildReceiptRootHashes(
       transactionArray.map((tx) => (showDetails ? tx.hash : tx)),
       contractResults,
       logs,

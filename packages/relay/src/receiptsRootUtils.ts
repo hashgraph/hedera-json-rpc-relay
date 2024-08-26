@@ -90,11 +90,7 @@ export class ReceiptsRootUtils {
     return concatBytes(intToBytes(txType), encodedReceipt);
   }
 
-  public static buildReceiptsFromTxHashesContractResultsAndLogs(
-    txHashes: string[],
-    contractResults: any[],
-    logs: Log[],
-  ): IReceiptRootHash[] {
+  public static buildReceiptRootHashes(txHashes: string[], contractResults: any[], logs: Log[]): IReceiptRootHash[] {
     const receipts: IReceiptRootHash[] = [];
 
     for (let i in txHashes) {
