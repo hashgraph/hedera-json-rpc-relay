@@ -28,14 +28,18 @@ import SampleContract from '../build/SampleContract.json' assert { type: "json" 
 dotenv.config();
 const { JsonRpcProvider } = providers;
 
-const provider = new JsonRpcProvider(process.env.RELAY_ENDPOINT);
-const wallet = new Wallet(process.env.OPERATOR_PRIVATE_KEY, provider);
-const loadFixture = createFixtureLoader([wallet]);
-const fixture = ([wallet]) => deployContract(wallet, SampleContract);
-
 use(solidity); // use mocha matchers
 
 describe('RPC', () => {
+    let loadFixture;
+    let fixture;
+
+    before(async () => {
+        const provider = new JsonRpcProvider(process.env.RELAY_ENDPOINT);
+        const wallet = new Wallet(process.env.OPERATOR_PRIVATE_KEY, provider);
+        loadFixture = createFixtureLoader([wallet]);
+        fixture = ([wallet]) => deployContract(wallet, SampleContract);
+    });
 
     it('should emit event', async () => {
         const contract = await loadFixture(fixture);
