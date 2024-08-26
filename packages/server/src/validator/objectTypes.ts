@@ -123,7 +123,8 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
   },
   transaction: {
     name: 'TransactionObject',
-    failOnUnexpectedParams: true,
+    failOnUnexpectedParams: false,
+    deleteUnknownProperties: true,
     properties: {
       from: {
         type: 'address',
@@ -213,6 +214,9 @@ export class DefaultValidation<T extends object = any> implements IObjectValidat
     if (this.schema.failOnUnexpectedParams) {
       this.checkForUnexpectedParams();
     }
+    if (this.schema.deleteUnknownProperties) {
+      this.deleteUnknownProperties();
+    }
     return Validator.validateObject(this.object, this.schema);
   }
 
@@ -226,6 +230,15 @@ export class DefaultValidation<T extends object = any> implements IObjectValidat
     const unknownParam = actualParams.find((param) => !expectedParams.includes(param));
     if (unknownParam) {
       throw predefined.INVALID_PARAMETER(`'${unknownParam}' for ${this.schema.name}`, `Unknown parameter`);
+    }
+  }
+
+  deleteUnknownProperties() {
+    const expectedParams = Object.keys(this.schema.properties);
+    const actualParams = Object.keys(this.object);
+    const unknownParams = actualParams.filter((param) => !expectedParams.includes(param));
+    for (const param of unknownParams) {
+      delete this.object[param];
     }
   }
 }

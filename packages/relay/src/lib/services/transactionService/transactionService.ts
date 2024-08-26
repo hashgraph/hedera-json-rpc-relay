@@ -21,7 +21,7 @@
 import { Logger } from 'pino';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { SDKClientError } from '../../errors/SDKClientError';
-import { Status, TransactionRecordQuery } from '@hashgraph/sdk';
+import { ExchangeRate, Hbar, HbarUnit, Status, TransactionRecordQuery } from '@hashgraph/sdk';
 import { IMirrorNodeTransactionRecord, MirrorNodeTransactionRecord } from '../../types/IMirrorNode';
 import {
   formatRequestIdMessage,
@@ -29,6 +29,7 @@ import {
   getTransferAmountSumForAccount,
   parseNumericEnvVar,
 } from '../../../formatters';
+import Constants from '../../constants';
 
 export default class TransactionService {
   /**
@@ -97,14 +98,6 @@ export default class TransactionService {
           `${formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
         );
 
-        // retrieve operaotr's balance before the execution
-        const operatorBalanceBefore = await this.sdkClient.getBalanceInTinyBars(
-          operatorAccountId,
-          callerName,
-          requestId,
-          200,
-        );
-
         // submit query and get transaction receipt
         const transactionRecord = await new TransactionRecordQuery()
           .setTransactionId(transactionId)
@@ -113,21 +106,12 @@ export default class TransactionService {
 
         const transactionReceipt = transactionRecord.receipt;
 
-        // retrieve operaotr's balance after the execution
-        const operatorBalanceAfter = await this.sdkClient.getBalanceInTinyBars(
-          operatorAccountId,
-          callerName,
-          requestId,
-          200,
-        );
-
-        // capture transactionRecord fee by comparing operator balance before and after the execution
-        txRecordChargeAmount = operatorBalanceBefore - operatorBalanceAfter;
+        // calculate transactionRecord fee
+        txRecordChargeAmount = this.calculateTxRecordChargeAmount(transactionReceipt.exchangeRate!);
 
         // get transactionStatus, transactionFee, and gasUsed
         transactionStatus = transactionReceipt.status.toString();
         transactionFee = getTransferAmountSumForAccount(transactionRecord, operatorAccountId);
-
         gasUsed = transactionRecord.contractFunctionResult?.gasUsed.toNumber() ?? 0;
       } catch (e: any) {
         // log error from TransactionRecordQuery
@@ -173,5 +157,17 @@ export default class TransactionService {
     }
 
     return { transactionFee, gasUsed, transactionStatus, txRecordChargeAmount };
+  }
+
+  /**
+   * Calculates the transaction record query cost in tinybars based on the given exchange rate in cents.
+   *
+   * @param {number} exchangeRateIncents - The exchange rate in cents used to convert the transaction query cost.
+   * @returns {number} - The transaction record query cost in tinybars.
+   */
+  public calculateTxRecordChargeAmount(exchangeRate: ExchangeRate): number {
+    const exchangeRateInCents = exchangeRate.exchangeRateInCents;
+    const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
+    return Math.round((Constants.TX_RECORD_QUERY_COST_IN_CENTS / exchangeRateInCents) * hbarToTinybar);
   }
 }

@@ -25,6 +25,7 @@ export type IObjectSchema = {
   };
   failOnEmpty?: boolean;
   failOnUnexpectedParams?: boolean;
+  deleteUnknownProperties?: boolean;
 };
 
 export type IObjectParamSchema = {
@@ -38,4 +39,5 @@ export interface IObjectValidation<T extends object = any> {
   validate(): boolean;
   name(): string;
   checkForUnexpectedParams(): void;
+  deleteUnknownProperties(): void;
 }
