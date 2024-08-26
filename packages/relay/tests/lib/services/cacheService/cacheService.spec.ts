@@ -213,7 +213,7 @@ describe('CacheService Test Suite', async function () {
       expect(cachedValue).eq(value);
     });
 
-    it('should be able to set from internal cache in case of Redis error', async function () {
+    it('should be able to set to internal cache in case of Redis error', async function () {
       const key = 'string';
       const value = 'value';
 
@@ -237,6 +237,41 @@ describe('CacheService Test Suite', async function () {
       mock.stub(cacheService.sharedCache, 'delete').throwsException();
       // @ts-ignore
       mock.stub(cacheService.internalCache, 'delete').returns(Promise<void>);
+
+      await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
+    });
+
+    it('should be able to set to shared cache', async function () {
+      const key = 'string';
+      const value = 'value';
+
+      // @ts-ignore
+      cacheService.set.restore();
+
+      // @ts-ignore
+      mock.stub(cacheService.sharedCache, 'set').returns(Promise<void>);
+
+      await expect(cacheService.set(key, value, callingMethod)).to.eventually.not.be.rejected;
+    });
+
+    it('should be able to multiset to shared cache', async function () {
+      const items: Record<string, any> = {};
+      items['key1'] = 'value1';
+      items['key2'] = 'value2';
+
+      // @ts-ignore
+      mock.stub(cacheService.sharedCache, 'multiSet').returns(Promise<void>);
+
+      await expect(cacheService.multiSet(items, callingMethod)).to.eventually.not.be.rejected;
+    });
+
+    it('should be able to delete from shared cache', async function () {
+      const key = 'string';
+
+      // @ts-ignore
+      cacheService.delete.restore();
+      // @ts-ignore
+      mock.stub(cacheService.sharedCache, 'delete').returns(Promise<void>);
 
       await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
     });
