@@ -969,6 +969,15 @@ export class MirrorNodeClient {
     );
   }
 
+  public async getTokenBalancesById(tokenId: string, requestIdPrefix?: string, retries?: number) {
+    return this.get(
+      `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}/${MirrorNodeClient.GET_BALANCE_ENDPOINT}`,
+      MirrorNodeClient.GET_TOKENS_ENDPOINT,
+      requestIdPrefix,
+      retries,
+    );
+  }
+
   public async getLatestContractResultsByAddress(
     address: string,
     blockEndTimestamp: string | undefined,
