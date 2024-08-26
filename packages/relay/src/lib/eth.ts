@@ -166,10 +166,6 @@ export class EthImpl implements Eth {
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
   );
-  private readonly MirrorNodeGetContractResultRetries = parseNumericEnvVar(
-    'MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES',
-    'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES',
-  );
   private readonly estimateGasThrows = process.env.ESTIMATE_GAS_THROWS
     ? process.env.ESTIMATE_GAS_THROWS === 'true'
     : true;
@@ -1484,10 +1480,12 @@ export class EthImpl implements Eth {
     if (e instanceof SDKClientError) {
       this.hapiService.decrementErrorCounter(e.statusCode);
       if (e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
+        const mirrorNodeGetContractResultRetries = this.mirrorNodeClient.getMirrorNodeGetContractResultRetries();
+
         // note: because this is a WRONG_NONCE error handler, the nonce of the account is expected to be different from the nonce of the parsedTx
         //       running a polling loop to give mirror node enough time to update account nonce
         let accountNonce: number | null = null;
-        for (let i = 0; i < this.MirrorNodeGetContractResultRetries; i++) {
+        for (let i = 0; i < mirrorNodeGetContractResultRetries; i++) {
           const accountInfo = await this.mirrorNodeClient.getAccount(parsedTx.from!, requestIdPrefix);
           if (accountInfo.ethereum_nonce !== parsedTx.nonce) {
             accountNonce = accountInfo.ethereum_nonce;
@@ -1495,9 +1493,7 @@ export class EthImpl implements Eth {
           }
 
           this.logger.trace(
-            `${requestIdPrefix} Repeating retry to poll for updated account nonce. Count ${i} of ${
-              this.MirrorNodeGetContractResultRetries
-            }. Waiting ${this.mirrorNodeClient.getMirrorNodeRetryDelay()} ms before initiating a new request`,
+            `${requestIdPrefix} Repeating retry to poll for updated account nonce. Count ${i} of ${mirrorNodeGetContractResultRetries}. Waiting ${this.mirrorNodeClient.getMirrorNodeRetryDelay()} ms before initiating a new request`,
           );
           await new Promise((r) => setTimeout(r, this.mirrorNodeClient.getMirrorNodeRetryDelay()));
         }
@@ -1571,7 +1567,7 @@ export class EthImpl implements Eth {
       const contractResult = await this.mirrorNodeClient.repeatedRequest(
         this.mirrorNodeClient.getContractResult.name,
         [formattedId],
-        this.MirrorNodeGetContractResultRetries,
+        this.mirrorNodeClient.getMirrorNodeGetContractResultRetries(),
         requestIdPrefix,
       );
 

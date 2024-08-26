@@ -72,7 +72,6 @@ export class MirrorNodeClient {
   private static readonly ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
   private static readonly GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
   private static readonly GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
-  private static readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '2000');
   private static readonly CONTRACT_ADDRESS_STATE_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/state`;
   private static readonly GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
   private static readonly GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID = `transactions/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}`;
@@ -81,6 +80,14 @@ export class MirrorNodeClient {
   private static readonly GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
   private static readonly GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT = `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
   private static readonly GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
+  private readonly MIRROR_NODE_RETRY_DELAY = parseNumericEnvVar(
+    'MIRROR_NODE_RETRY_DELAY',
+    'MIRROR_NODE_RETRY_DELAY_DEFAULT',
+  );
+  private readonly MIRROR_NODE_GET_CONTRACT_RETRIES = parseNumericEnvVar(
+    'MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES',
+    'MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES_DEFAULT',
+  );
 
   static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
     [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [404]],
@@ -171,7 +178,7 @@ export class MirrorNodeClient {
     const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
     const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '0'); // we are in the process of deprecating this feature
     const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE || '5');
-    const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '2000');
+    const mirrorNodeRetryDelay = this.MIRROR_NODE_RETRY_DELAY;
     const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
     const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES
       ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES)
@@ -1237,8 +1244,11 @@ export class MirrorNodeClient {
   public getMirrorNodeWeb3Instance() {
     return this.web3Client;
   }
+  public getMirrorNodeGetContractResultRetries() {
+    return this.MIRROR_NODE_GET_CONTRACT_RETRIES;
+  }
   public getMirrorNodeRetryDelay() {
-    return MirrorNodeClient.MIRROR_NODE_RETRY_DELAY;
+    return this.MIRROR_NODE_RETRY_DELAY;
   }
 
   /**
@@ -1272,13 +1282,11 @@ export class MirrorNodeClient {
       this.logger.trace(
         `${requestId} Repeating request ${methodName} with args ${JSON.stringify(
           args,
-        )} retry count ${i} of ${repeatCount}. Waiting ${
-          MirrorNodeClient.MIRROR_NODE_RETRY_DELAY
-        } ms before repeating request`,
+        )} retry count ${i} of ${repeatCount}. Waiting ${this.MIRROR_NODE_RETRY_DELAY} ms before repeating request`,
       );
 
       // Backoff before repeating request
-      await new Promise((r) => setTimeout(r, MirrorNodeClient.MIRROR_NODE_RETRY_DELAY));
+      await new Promise((r) => setTimeout(r, this.MIRROR_NODE_RETRY_DELAY));
     }
     return result;
   }
@@ -1306,16 +1314,11 @@ export class MirrorNodeClient {
       `${formattedRequestId} Get transaction record via mirror node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
     );
 
-    const mirrorNodeRetries = parseNumericEnvVar(
-      'MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES',
-      'MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES',
-    );
-
     // poll mirror node to get transaction record
     const transactionRecord = await this.repeatedRequest(
       this.getTransactionById.name,
       [transactionId, 0],
-      mirrorNodeRetries,
+      this.MIRROR_NODE_GET_CONTRACT_RETRIES,
       formattedRequestId,
     );
 
