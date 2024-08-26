@@ -230,6 +230,7 @@ describe('CacheService Test Suite', async function () {
 
     it('should be able to delete from internal cache in case of Redis error', async function () {
       const key = 'string';
+      await cacheService.disconnectRedisClient();
 
       // @ts-ignore
       cacheService.delete.restore();
@@ -244,9 +245,6 @@ describe('CacheService Test Suite', async function () {
       // @ts-ignore
       cacheService.set.restore();
 
-      // @ts-ignore
-      mock.stub(cacheService.sharedCache, 'set').returns(Promise<void>);
-
       await expect(cacheService.set(key, value, callingMethod)).to.eventually.not.be.rejected;
     });
 
@@ -254,9 +252,6 @@ describe('CacheService Test Suite', async function () {
       const items: Record<string, any> = {};
       items['key1'] = 'value1';
       items['key2'] = 'value2';
-
-      // @ts-ignore
-      mock.stub(cacheService.sharedCache, 'pipelineSet').returns(Promise<void>);
 
       await expect(cacheService.multiSet(items, callingMethod)).to.eventually.not.be.rejected;
     });
@@ -266,8 +261,6 @@ describe('CacheService Test Suite', async function () {
 
       // @ts-ignore
       cacheService.delete.restore();
-      // @ts-ignore
-      mock.stub(cacheService.sharedCache, 'delete').returns(Promise<void>);
 
       await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
     });
