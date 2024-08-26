@@ -209,12 +209,13 @@ describe('CacheService Test Suite', async function () {
       // @ts-ignore
       mock.stub(cacheService, 'getFromInternalCache').returns(value);
 
-      const cachedValue = await cacheService.getAsync(key, callingMethod, undefined);
+      const cachedValue = await cacheService.getAsync(key, callingMethod);
       expect(cachedValue).eq(value);
     });
 
     it('should be able to set from internal cache in case of Redis error', async function () {
       const key = 'string';
+      const value = 'value';
 
       // @ts-ignore
       cacheService.set.restore();
@@ -224,7 +225,7 @@ describe('CacheService Test Suite', async function () {
       // @ts-ignore
       mock.stub(cacheService.internalCache, 'set').returns(Promise<void>);
 
-      expect(await cacheService.set(key, callingMethod, undefined)).not.to.throw;
+      await expect(cacheService.set(key, value, callingMethod)).to.eventually.not.be.rejected;
     });
 
     it('should be able to delete from internal cache in case of Redis error', async function () {
@@ -237,7 +238,7 @@ describe('CacheService Test Suite', async function () {
       // @ts-ignore
       mock.stub(cacheService.internalCache, 'delete').returns(Promise<void>);
 
-      expect(await cacheService.delete(key, callingMethod, undefined)).not.to.throw;
+      await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
     });
   });
 });

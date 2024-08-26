@@ -213,20 +213,18 @@ export class CacheService {
         this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.SET).inc(1);
 
         await this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
+        return;
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
           `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
         );
-
-        // fallback to internal cache in case of Redis error
-        this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
-        await this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
       }
-    } else {
-      this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
-      await this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
     }
+
+    // fallback to internal cache in case of Redis error
+    this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
+    await this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
   }
 
   /**
@@ -256,20 +254,18 @@ export class CacheService {
         }
 
         this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.REDIS, metricsMethod).inc(1);
+        return;
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
           `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
         );
-        // Fallback to internal cache, but use pipeline, because of it's TTL support
-        await this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
-        this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
       }
-    } else {
-      // Fallback to internal cache, but use pipeline, because of it's TTL support
-      await this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
-      this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
     }
+
+    // fallback to internal cache, but use pipeline, because of it's TTL support
+    await this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
+    this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
   }
 
   /**
@@ -289,44 +285,40 @@ export class CacheService {
           .inc(1);
 
         await this.sharedCache.delete(key, callingMethod, requestIdPrefix);
+        return;
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
           `${requestIdPrefix} Error occurred while deleting cache from Redis. Error is: ${redisError.fullError}`,
         );
-
-        // fallback to internal cache in case of Redis error
-        this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.DELETE).inc(1);
-        await this.internalCache.delete(key, callingMethod, requestIdPrefix);
       }
-    } else {
-      this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.DELETE).inc(1);
-
-      await this.internalCache.delete(key, callingMethod, requestIdPrefix);
     }
+
+    // fallback to internal cache in case of Redis error
+    this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.DELETE).inc(1);
+    await this.internalCache.delete(key, callingMethod, requestIdPrefix);
   }
 
   /**
    * Clears the cache.
    * If the shared cache is enabled and an error occurs while clearing it, just logs the error.
    * Else the internal cache clearing is attempted.
-   * @param {boolean} shared - Whether to clear the shared cache (optional, default: false).
+   * @param requestIdPrefix
    */
   public async clear(requestIdPrefix?: string): Promise<void> {
     if (this.isSharedCacheEnabled) {
       try {
         await this.sharedCache.clear();
+        return;
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
           `${requestIdPrefix} Error occurred while clearing Redis cache. Error is: ${redisError.fullError}`,
         );
-
-        // fallback to internal cache in case of Redis error
-        await this.internalCache.clear();
       }
-    } else {
-      await this.internalCache.clear();
     }
+
+    // fallback to internal cache in case of Redis error
+    await this.internalCache.clear();
   }
 }

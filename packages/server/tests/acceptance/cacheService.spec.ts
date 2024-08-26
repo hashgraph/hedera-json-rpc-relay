@@ -110,7 +110,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     let currentRedisEnabledEnv;
     let cacheService;
 
-    beforeEach(async () => {
+    before(async () => {
       currentRedisEnabledEnv = process.env.REDIS_ENABLED;
 
       process.env.REDIS_ENABLED = 'true';
@@ -121,7 +121,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
       await new Promise((r) => setTimeout(r, 1000));
     });
 
-    afterEach(async () => {
+    after(async () => {
       process.env.REDIS_ENABLED = currentRedisEnabledEnv;
     });
 
