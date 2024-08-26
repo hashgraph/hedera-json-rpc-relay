@@ -53,6 +53,7 @@ import {
   MOCK_ACCOUNT_WITHOUT_TRANSACTIONS,
   NO_SUCH_BLOCK_EXISTS_RES,
   contractByEvmAddress,
+  DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 
@@ -120,6 +121,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       parentHash: BLOCK_HASH_PREV_TRIMMED,
       timestamp: BLOCK_TIMESTAMP_HEX,
       transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
     });
   });
 
@@ -160,6 +162,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       parentHash: BLOCK_HASH_PREV_TRIMMED,
       timestamp: BLOCK_TIMESTAMP_HEX,
       transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
     });
 
     expect(result?.logsBloom).equal(blockLogsBloom);
@@ -181,6 +184,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       parentHash: BLOCK_HASH_PREV_TRIMMED,
       timestamp: BLOCK_TIMESTAMP_HEX,
       transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
     });
   });
 
@@ -217,6 +221,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
         timestamp: BLOCK_TIMESTAMP_HEX,
         parentHash: BLOCK_HASH_PREV_TRIMMED,
         transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
       },
       true,
     );
@@ -239,6 +244,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
         parentHash: BLOCK_HASH_PREV_TRIMMED,
         timestamp: BLOCK_TIMESTAMP_HEX,
         transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
       },
       true,
     );

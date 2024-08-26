@@ -69,6 +69,7 @@ import {
   MOST_RECENT_BLOCK,
   NOT_FOUND_RES,
   NO_SUCH_BLOCK_EXISTS_RES,
+  DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 import { fail } from 'assert';
@@ -224,6 +225,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
         parentHash: BLOCK_HASH_PREV_TRIMMED,
         timestamp: BLOCK_TIMESTAMP_HEX,
         transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
       });
     });
 
@@ -259,6 +261,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
         parentHash: BLOCK_HASH_PREV_TRIMMED,
         timestamp: BLOCK_TIMESTAMP_HEX,
         transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
       });
 
       expect(result?.logsBloom).equal(blockLogsBloom);
@@ -276,6 +279,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
         parentHash: BLOCK_HASH_PREV_TRIMMED,
         timestamp: BLOCK_TIMESTAMP_HEX,
         transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
       });
     });
 
@@ -353,6 +357,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
+      expect(result.receiptsRoot).to.equal(DEFAULT_BLOCK_RECEIPTS_ROOT_HASH);
     }
   });
 
@@ -391,6 +396,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
+      expect(result.receiptsRoot).to.equal(DEFAULT_BLOCK_RECEIPTS_ROOT_HASH);
     }
   });
 
