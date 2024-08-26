@@ -25,6 +25,7 @@ import { Registry } from 'prom-client';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
+import { RedisInMemoryServer } from '../../../redisInMemoryServer';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const logger = pino();
@@ -94,10 +95,14 @@ describe('CacheService Test Suite', async function () {
 
   describe('Shared Cache Test Suite', async function () {
     const mock = sinon.createSandbox();
+    let redisInMemoryServer;
 
-    this.beforeAll(() => {
+    this.beforeAll(async () => {
+      redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6381);
+      await redisInMemoryServer.start();
+
       process.env.REDIS_ENABLED = 'true';
-      process.env.REDIS_URL = 'redis://127.0.0.1:6379';
+      process.env.REDIS_URL = 'redis://127.0.0.1:6381';
       process.env.TEST = 'false';
       process.env.MULTI_SET = 'true';
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
@@ -112,7 +117,8 @@ describe('CacheService Test Suite', async function () {
       mock.restore();
     });
 
-    this.afterAll(() => {
+    this.afterAll(async () => {
+      await redisInMemoryServer.stop();
       process.env.TEST = 'true';
     });
 
@@ -202,15 +208,10 @@ describe('CacheService Test Suite', async function () {
 
     it('should be able to getAsync from internal cache in case of Redis error', async function () {
       const key = 'string';
-      const value = 'value';
-
-      // @ts-ignore
-      mock.stub(cacheService.sharedCache, 'get').throwsException();
-      // @ts-ignore
-      mock.stub(cacheService, 'getFromInternalCache').returns(value);
+      await cacheService.disconnectRedisClient();
 
       const cachedValue = await cacheService.getAsync(key, callingMethod);
-      expect(cachedValue).eq(value);
+      expect(cachedValue).eq(null);
     });
 
     it('should be able to set to internal cache in case of Redis error', async function () {
@@ -219,13 +220,12 @@ describe('CacheService Test Suite', async function () {
 
       // @ts-ignore
       cacheService.set.restore();
-
-      // @ts-ignore
-      mock.stub(cacheService.sharedCache, 'set').throwsException();
-      // @ts-ignore
-      mock.stub(cacheService.internalCache, 'set').returns(Promise<void>);
+      await cacheService.disconnectRedisClient();
 
       await expect(cacheService.set(key, value, callingMethod)).to.eventually.not.be.rejected;
+
+      const internalCacheRes = await cacheService.getAsync(key, callingMethod);
+      expect(internalCacheRes).to.eq(value);
     });
 
     it('should be able to delete from internal cache in case of Redis error', async function () {
@@ -233,10 +233,6 @@ describe('CacheService Test Suite', async function () {
 
       // @ts-ignore
       cacheService.delete.restore();
-      // @ts-ignore
-      mock.stub(cacheService.sharedCache, 'delete').throwsException();
-      // @ts-ignore
-      mock.stub(cacheService.internalCache, 'delete').returns(Promise<void>);
 
       await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
     });
