@@ -155,13 +155,14 @@ describe('CacheService Test Suite', async function () {
       key2: 'value2',
       key3: 'value3',
     };
-
+    const mock = sinon.createSandbox();
     let redisInMemoryServer: RedisInMemoryServer;
     let cacheService: CacheService;
 
     this.beforeAll(async () => {
       redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6378);
       await redisInMemoryServer.start();
+      
       process.env.REDIS_ENABLED = 'true';
       process.env.REDIS_URL = 'redis://127.0.0.1:6378';
       process.env.TEST = 'false';
@@ -170,8 +171,8 @@ describe('CacheService Test Suite', async function () {
     });
 
     this.afterAll(async () => {
-      process.env.TEST = 'true';
       await redisInMemoryServer.stop();
+      process.env.TEST = 'true';
       await cacheService.disconnectRedisClient();
     });
 
@@ -232,7 +233,66 @@ describe('CacheService Test Suite', async function () {
       }
     });
 
-    describe('incrBy', async function () {
+    it('should be able to getAsync from internal cache in case of Redis error', async function () {
+      const key = 'string';
+      await cacheService.disconnectRedisClient();
+
+      const cachedValue = await cacheService.getAsync(key, callingMethod);
+      expect(cachedValue).eq(null);
+    });
+
+    it('should be able to set to internal cache in case of Redis error', async function () {
+      const key = 'string';
+      const value = 'value';
+
+      // @ts-ignore
+      cacheService.set.restore();
+      await cacheService.disconnectRedisClient();
+
+      await expect(cacheService.set(key, value, callingMethod)).to.eventually.not.be.rejected;
+
+      const internalCacheRes = await cacheService.getAsync(key, callingMethod);
+      expect(internalCacheRes).to.eq(value);
+    });
+
+    it('should be able to delete from internal cache in case of Redis error', async function () {
+      const key = 'string';
+      await cacheService.disconnectRedisClient();
+
+      // @ts-ignore
+      cacheService.delete.restore();
+
+      await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
+    });
+
+    it('should be able to set to shared cache', async function () {
+      const key = 'string';
+      const value = 'value';
+
+      // @ts-ignore
+      cacheService.set.restore();
+
+      await expect(cacheService.set(key, value, callingMethod)).to.eventually.not.be.rejected;
+    });
+
+    it('should be able to multiset to shared cache', async function () {
+      const items: Record<string, any> = {};
+      items['key1'] = 'value1';
+      items['key2'] = 'value2';
+
+      await expect(cacheService.multiSet(items, callingMethod)).to.eventually.not.be.rejected;
+    });
+
+    it('should be able to delete from shared cache', async function () {
+      const key = 'string';
+
+      // @ts-ignore
+      cacheService.delete.restore();
+
+      await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
+    });
+    
+        describe('incrBy', async function () {
       it('should increment value in internal cache', async function () {
         const key = 'counter';
         const amount = 5;
