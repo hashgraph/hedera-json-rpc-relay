@@ -87,6 +87,13 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
     failOnEmpty: true,
     failOnUnexpectedParams: false,
     properties: {
+      // Will be ignored in the implementation,
+      // added here only for validation purposes
+      disableMemory: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
       enableMemory: {
         type: 'boolean',
         nullable: false,

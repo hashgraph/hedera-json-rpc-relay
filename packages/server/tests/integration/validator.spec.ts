@@ -288,7 +288,7 @@ describe('Validator', async () => {
         expectInvalidObject('topics', Validator.TYPES.topics.error, object, '{}'),
       );
       expect(() => Validator.validateParams([{ topics: [123] }], validation)).to.throw(
-        expectInvalidObject('topics', Validator.TYPES.topics.error, object, '123'),
+        expectInvalidObject('topics', Validator.TYPES.topics.error, object, '[123]'),
       );
     });
 
@@ -349,7 +349,7 @@ describe('Validator', async () => {
         expectInvalidParam(
           0,
           topicsError,
-          '0xddf252ad1be2c89,0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+          '["0xddf252ad1be2c89","0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]',
         ),
       );
     });
@@ -369,7 +369,7 @@ describe('Validator', async () => {
         expectInvalidParam(
           0,
           topicsError,
-          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef,0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3effffffffffff',
+          '["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3effffffffffff"]',
         ),
       );
     });
@@ -389,7 +389,7 @@ describe('Validator', async () => {
         expectInvalidParam(
           0,
           topicsError,
-          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef,ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+          '["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]',
         ),
       );
     });
@@ -461,7 +461,7 @@ describe('Validator', async () => {
         expectInvalidParam(
           0,
           topicsError,
-          '0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55,0x790673a87ac19773537b2553e1dc7',
+          '[["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"],["0x790673a87ac19773537b2553e1dc7"]]',
         ),
       );
     });
@@ -903,7 +903,7 @@ describe('Validator', async () => {
         });
         validatorObject.validate();
       }).to.throw(
-        `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: NotHEX`,
+        `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: ["NotHEX"]`,
       );
     });
 
@@ -1033,8 +1033,12 @@ describe('Validator', async () => {
 
     it('returns false for an invalid config', () => {
       expect(Validator.TYPES.tracerConfig.test({ invalidKey: true })).to.be.false;
-      expect(Validator.TYPES.tracerConfig.test({ onlyTopCall: 'true' })).to.be.false;
-      expect(Validator.TYPES.tracerConfig.test({ disableMemory: 'true' })).to.be.false;
+      expect(() => Validator.TYPES.tracerConfig.test({ onlyTopCall: 'true' })).to.throw(
+        expectInvalidParam("'onlyTopCall' for CallTracerConfig", Validator.TYPES.boolean.error, 'true'),
+      );
+      expect(() => Validator.TYPES.tracerConfig.test({ disableMemory: 'true' })).to.throw(
+        expectInvalidParam("'disableMemory' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'true'),
+      );
     });
 
     it('returns false for non-object values', () => {
