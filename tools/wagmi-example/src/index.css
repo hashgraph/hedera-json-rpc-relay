@@ -19,3 +19,7 @@
         color: #181818;
     }
 }
+
+.flex {
+    display: flex;
+}
