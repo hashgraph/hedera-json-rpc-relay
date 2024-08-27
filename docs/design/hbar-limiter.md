@@ -78,6 +78,7 @@ classDiagram
         -ipAddressHbarSpendingPlanRepository: IpAddressHbarSpendingPlanRepository
         +shouldLimit(txFrom: string, ip?: string) boolean
         +resetLimiter() void
+        +addExpense(amount: number, txFrom: string, ip?: string) void
         -getSpendingPlanOfEthAddress(address: string): HbarSpendingPlan
         -getSpendingPlanOfIpAddress(ip: string): HbarSpendingPlan
         -checkTotalSpent() boolean
@@ -88,6 +89,7 @@ classDiagram
     <<interface>> IHBarLimitService
     IHBarLimitService : shouldLimit() boolean
     IHBarLimitService : resetLimiter() void
+    IHBarLimitService : addExpense() void
 
     SdkClient --> MetricService : uses
     SdkClient --> IHBarLimitService : uses
