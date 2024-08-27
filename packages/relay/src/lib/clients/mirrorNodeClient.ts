@@ -33,12 +33,7 @@ import { ITransactionRecordMetric } from '../types/IMetricService';
 import { CacheService } from '../services/cacheService/cacheService';
 import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import {
-  parseNumericEnvVar,
-  formatTransactionId,
-  formatRequestIdMessage,
-  getTransferAmountSumForAccount,
-} from '../../formatters';
+import { parseNumericEnvVar, formatTransactionId, formatRequestIdMessage } from '../../formatters';
 import {
   ILimitOrderParams,
   IContractCallRequest,
@@ -1334,8 +1329,24 @@ export class MirrorNodeClient {
       const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionRecord);
 
       // get transactionFee
-      const transactionFee = getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
+      const transactionFee = this.getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
       return { transactionFee, txRecordChargeAmount: 0, gasUsed: 0 };
     }
+  }
+  /**
+   * Calculates the total sum of transfer amounts for a specific account from a transaction record.
+   * This method filters the transfers in the transaction record to match the specified account ID,
+   * then sums up the amounts by subtracting each transfer's amount from the accumulator.
+   *
+   * @param {MirrorNodeTransactionRecord} transactionRecord - The transaction record containing transfer details.
+   * @param {string} accountId - The ID of the account for which the transfer sum is to be calculated.
+   * @returns {number} The total sum of transfer amounts for the specified account.
+   */
+  public getTransferAmountSumForAccount(transactionRecord: MirrorNodeTransactionRecord, accountId: string): number {
+    return transactionRecord.transfers
+      .filter((transfer) => transfer.account === accountId)
+      .reduce((acc, transfer) => {
+        return acc - transfer.amount;
+      }, 0);
   }
 }

@@ -2646,5 +2646,13 @@ describe('SdkClient', async function () {
       expect(transactionRecordMetrics?.transactionFee).to.eq(defaultTransactionFee);
       expect(transactionRecordMetrics?.txRecordChargeAmount).to.eq(mockedTransactionRecordFee);
     });
+
+    it('Should execute getTransferAmountSumForAccount() to calculate transactionFee of the specify accountId', () => {
+      const accountId = process.env.OPERATOR_ID_MAIN || '';
+      const mockedTxRecord = getMockedTransactionRecord();
+
+      const transactionFee = sdkClient.getTransferAmountSumForAccount(mockedTxRecord, accountId);
+      expect(transactionFee).to.eq(defaultTransactionFee);
+    });
   });
 });

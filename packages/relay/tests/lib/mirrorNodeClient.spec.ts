@@ -1204,6 +1204,50 @@ describe('MirrorNodeClient', async function () {
     });
   });
 
+  describe('getTransactionRecordMetrics', () => {
+    it('Should execute getTransferAmountSumForAccount() to calculate transactionFee of the specify accountId', () => {
+      const accountIdA = `0.0.1022`;
+      const accountIdB = `0.0.1023`;
+      const mockedTxFeeA = 300;
+      const mockedTxFeeB = 600;
+
+      const expectedTxFeeForAccountIdA = mockedTxFeeA + mockedTxFeeB;
+
+      const mockedMirrorNodeTransactionRecord = {
+        transactions: [
+          {
+            charged_tx_fee: 3000,
+            result: 'SUCCESS',
+            transaction_id: '0.0.1022-1681130064-409933500',
+            transfers: [
+              {
+                account: accountIdA,
+                amount: -1 * mockedTxFeeA,
+                is_approval: false,
+              },
+              {
+                account: accountIdB,
+                amount: -1 * mockedTxFeeB,
+                is_approval: false,
+              },
+              {
+                account: accountIdA,
+                amount: -1 * mockedTxFeeB,
+                is_approval: false,
+              },
+            ],
+          },
+        ],
+      };
+
+      const transactionFee = mirrorNodeInstance.getTransferAmountSumForAccount(
+        mockedMirrorNodeTransactionRecord.transactions[0],
+        accountIdA,
+      );
+      expect(transactionFee).to.eq(expectedTxFeeForAccountIdA);
+    });
+  });
+
   describe('getAccountLatestEthereumTransactionsByTimestamp', async () => {
     const evmAddress = '0x305a8e76ac38fc088132fb780b2171950ff023f7';
     const timestamp = '1686019921.957394003';

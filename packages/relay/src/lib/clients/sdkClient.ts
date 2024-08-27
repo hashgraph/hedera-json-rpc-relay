@@ -39,6 +39,7 @@ import {
   AccountInfoQuery,
   ContractCallQuery,
   FileContentsQuery,
+  TransactionRecord,
   AccountBalanceQuery,
   EthereumTransaction,
   PrecheckStatusError,
@@ -47,8 +48,8 @@ import {
   FileCreateTransaction,
   FileDeleteTransaction,
   ContractByteCodeQuery,
-  TransactionRecordQuery,
   ContractFunctionResult,
+  TransactionRecordQuery,
   EthereumTransactionData,
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
@@ -56,11 +57,11 @@ import { EventEmitter } from 'events';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { formatRequestIdMessage } from '../../formatters';
 import { SDKClientError } from './../errors/SDKClientError';
+import { ITransactionRecordMetric } from '../types/IMetricService';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
-import { formatRequestIdMessage, getTransferAmountSumForAccount } from '../../formatters';
-import { ITransactionRecordMetric } from '../types/IMetricService';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -1014,7 +1015,7 @@ export class SDKClient {
       txRecordChargeAmount = this.calculateTxRecordChargeAmount(transactionReceipt.exchangeRate!);
 
       // get transactionFee, and gasUsed
-      transactionFee = getTransferAmountSumForAccount(transactionRecord, operatorAccountId);
+      transactionFee = this.getTransferAmountSumForAccount(transactionRecord, operatorAccountId);
       gasUsed = transactionRecord.contractFunctionResult?.gasUsed.toNumber() ?? 0;
 
       return { transactionFee, txRecordChargeAmount, gasUsed };
@@ -1026,6 +1027,23 @@ export class SDKClient {
         `${formattedRequestId} Error raised during TransactionRecordQuery: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
       );
     }
+  }
+
+  /**
+   * Calculates the total sum of transfer amounts for a specific account from a transaction record.
+   * This method filters the transfers in the transaction record to match the specified account ID,
+   * then sums up the amounts by subtracting each transfer's amount (converted to tinybars) from the accumulator.
+   *
+   * @param {TransactionRecord} transactionRecord - The transaction record containing transfer details.
+   * @param {string} accountId - The ID of the account for which the transfer sum is to be calculated.
+   * @returns {number} The total sum of transfer amounts for the specified account, in tinybars.
+   */
+  public getTransferAmountSumForAccount(transactionRecord: TransactionRecord, accountId: string): number {
+    return transactionRecord.transfers
+      .filter((transfer) => transfer.accountId.toString() === accountId)
+      .reduce((acc, transfer) => {
+        return acc - transfer.amount.toTinybars().toNumber();
+      }, 0);
   }
 
   /**
