@@ -243,10 +243,71 @@ export class RedisCache implements IRedisCacheClient {
     await client.flushAll();
   }
 
+  /**
+   * Disconnects the client from the Redis server.
+   *
+   * @returns {Promise<void>} A Promise that resolves when the client is disconnected.
+   */
   async disconnect(): Promise<void> {
     await this.getConnectedClient().then((client) => {
       client.disconnect();
       client.unsubscribe();
     });
+  }
+
+  /**
+   * Increments a value in the cache.
+   *
+   * @param key The key to increment
+   * @param amount The amount to increment by
+   * @param callingMethod The name of the calling method
+   * @param requestIdPrefix The optional request ID prefix
+   * @returns The value of the key after incrementing
+   */
+  async incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix?: string): Promise<number> {
+    const client = await this.getConnectedClient();
+    const result = await client.incrBy(key, amount);
+    this.logger.trace(`${requestIdPrefix} incrementing ${key} by ${amount} on ${callingMethod} call`);
+    return result;
+  }
+
+  /**
+   * Retrieves a range of elements from a list in the cache.
+   *
+   * @param key The key of the list
+   * @param start The start index
+   * @param end The end index
+   * @param callingMethod The name of the calling method
+   * @param requestIdPrefix The optional request ID prefix
+   * @returns The list of elements in the range
+   */
+  async lRange(
+    key: string,
+    start: number,
+    end: number,
+    callingMethod: string,
+    requestIdPrefix?: string,
+  ): Promise<any[]> {
+    const client = await this.getConnectedClient();
+    const result = await client.lRange(key, start, end);
+    this.logger.trace(`${requestIdPrefix} retrieving range [${start}:${end}] from ${key} on ${callingMethod} call`);
+    return result.map((item) => JSON.parse(item));
+  }
+
+  /**
+   * Pushes a value to the end of a list in the cache.
+   *
+   * @param key The key of the list
+   * @param value The value to push
+   * @param callingMethod The name of the calling method
+   * @param requestIdPrefix The optional request ID prefix
+   * @returns The length of the list after pushing
+   */
+  async rPush(key: string, value: any, callingMethod: string, requestIdPrefix?: string): Promise<number> {
+    const client = await this.getConnectedClient();
+    const serializedValue = JSON.stringify(value);
+    const result = await client.rPush(key, serializedValue);
+    this.logger.trace(`${requestIdPrefix} pushing ${serializedValue} to ${key} on ${callingMethod} call`);
+    return result;
   }
 }
