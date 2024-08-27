@@ -156,11 +156,11 @@ describe('CacheService Test Suite', async function () {
       key3: 'value3',
     };
     let redisInMemoryServer: RedisInMemoryServer;
-    let cacheService: CacheService;
 
     this.beforeAll(async () => {
       redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6381);
       await redisInMemoryServer.start();
+
       process.env.REDIS_ENABLED = 'true';
       process.env.REDIS_URL = 'redis://127.0.0.1:6381';
       process.env.TEST = 'false';
