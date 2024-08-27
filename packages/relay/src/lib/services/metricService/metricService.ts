@@ -27,6 +27,7 @@ import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { formatRequestIdMessage } from '../../../formatters';
 import { ITransactionRecordMetric } from '../../types/IMetricService';
+import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types/IEvent';
 
 export default class MetricService {
   /**
@@ -113,54 +114,40 @@ export default class MetricService {
     this.consensusNodeClientHistogramCost = this.initCostMetric(register);
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
 
-    //listen to START_CAPTURING_TRANSACTION_METRICS event to kick off captureTransactionMetrics() process
-    this.eventEmitter.on(constants.EVENTS.START_CAPTURING_TRANSACTION_METRICS, (args) => {
-      this.captureTransactionMetrics(
-        args.transactionId,
-        args.callerName,
-        args.requestId,
-        args.txConstructorName,
-        args.operatorAccountId,
-        args.transactionType,
-        args.interactingEntity,
-      );
+    //listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics() process
+    this.eventEmitter.on(constants.EVENTS.EXECUTE_TRANSACTION, (args: IExecuteTransactionEventPayload) => {
+      this.captureTransactionMetrics(args);
     });
 
-    //listen to START_ADD_EXPENSE_AND_CAPTURE_METRICS event to kick off addExpenseAndCaptureMetrics() process
-    this.eventEmitter.on(constants.EVENTS.START_ADD_EXPENSE_AND_CAPTURE_METRICS, (args) => {
-      this.addExpenseAndCaptureMetrics(
-        args.executionType,
-        args.transactionId,
-        args.transactionType,
-        args.callerName,
-        args.cost,
-        args.gasUsed,
-        args.interactingEntity,
-        args.formattedRequestId,
-      );
+    //listen to EXECUTE_QUERY event to kick off addExpenseAndCaptureMetrics() process
+    this.eventEmitter.on(constants.EVENTS.EXECUTE_QUERY, (args: IExecuteQueryEventPayload) => {
+      this.addExpenseAndCaptureMetrics(args);
     });
   }
 
   /**
-   * Retrieves the transaction metrics for a given transaction ID
-   * by redirecting calls to either consensus node client or mirror node client based on default configuration.
+   * Captures and logs transaction metrics by retrieving transaction records from the appropriate source
+   * and recording the transaction fees, gas usage, and other relevant metrics.
    *
-   * @param {string} transactionId - The ID of the transaction.
-   * @param {string} callerName - The name of the entity calling the transaction.
-   * @param {string} requestId - The request ID for logging purposes.
-   * @param {string} txConstructorName - The name of the transaction constructor.
-   * @param {string} operatorAccountId - The account ID of the operator.
-   * @returns {Promise<void>}
+   * @param {IExecuteTransactionEventPayload} payload - The payload object containing transaction details.
+   * @param {string} payload.requestId - The unique identifier for the request.
+   * @param {string} payload.callerName - The name of the entity calling the transaction.
+   * @param {string} payload.transactionId - The unique identifier for the transaction.
+   * @param {string} payload.transactionType - The type of the transaction being processed.
+   * @param {string} payload.txConstructorName - The name of the transaction constructor.
+   * @param {string} payload.operatorAccountId - The account ID of the operator managing the transaction.
+   * @param {string} payload.interactingEntity - The entity interacting with the transaction.
+   * @returns {Promise<void>} - A promise that resolves when the transaction metrics have been captured.
    */
-  public async captureTransactionMetrics(
-    transactionId: string,
-    callerName: string,
-    requestId: string,
-    txConstructorName: string,
-    operatorAccountId: string,
-    transactionType: string,
-    interactingEntity: string,
-  ): Promise<void> {
+  public async captureTransactionMetrics({
+    requestId,
+    callerName,
+    transactionId,
+    transactionType,
+    txConstructorName,
+    operatorAccountId,
+    interactingEntity,
+  }: IExecuteTransactionEventPayload): Promise<void> {
     // retrieve metrics
     const transactionRecordMetrics = await this.getTransactionRecordMetrics(
       transactionId,
@@ -174,55 +161,57 @@ export default class MetricService {
     if (transactionRecordMetrics) {
       const { gasUsed, transactionFee, txRecordChargeAmount } = transactionRecordMetrics;
       if (transactionFee !== 0) {
-        this.addExpenseAndCaptureMetrics(
-          `TransactionExecution`,
+        this.addExpenseAndCaptureMetrics({
+          executionType: `TransactionExecution`,
           transactionId,
           transactionType,
           callerName,
-          transactionFee,
+          cost: transactionFee,
           gasUsed,
           interactingEntity,
           requestId,
-        );
+        } as IExecuteQueryEventPayload);
       }
 
       if (txRecordChargeAmount !== 0) {
-        this.addExpenseAndCaptureMetrics(
-          `TransactionRecordQuery`,
+        this.addExpenseAndCaptureMetrics({
+          executionType: `TransactionRecordQuery`,
           transactionId,
           transactionType,
           callerName,
-          txRecordChargeAmount,
-          0,
+          cost: txRecordChargeAmount,
+          gasUsed: 0,
           interactingEntity,
           requestId,
-        );
+        } as IExecuteQueryEventPayload);
       }
     }
   }
 
   /**
-   * Adds an expense and captures metrics related to the transaction execution.
-   * @param {string} executionType - The type of execution (e.g., transaction or query).
-   * @param {string} transactionId - The ID of the transaction being executed.
-   * @param {string} transactionType - The type of transaction (e.g., contract call, file create).
-   * @param {string} callerName - The name of the entity calling the transaction.
-   * @param {number} cost - The cost of the transaction in tinybars.
-   * @param {number} gasUsed - The amount of gas used for the transaction.
-   * @param {string} interactingEntity - The entity interacting with the transaction.
-   * @param {string} requestId - The formatted request ID for logging purposes.
-   * @returns {void}
+   * Adds the expense to the HBAR rate limiter and captures the relevant metrics for the executed transaction.
+   *
+   * @param {IExecuteQueryEventPayload} payload - The payload object containing details about the transaction.
+   * @param {string} payload.executionType - The type of execution (e.g., `TransactionExecution`, `TransactionRecordQuery`).
+   * @param {string} payload.transactionId - The unique identifier for the transaction.
+   * @param {string} payload.transactionType - The type of the transaction being processed.
+   * @param {string} payload.callerName - The name of the entity calling the transaction.
+   * @param {number} payload.cost - The cost of the transaction in tinybars.
+   * @param {number} payload.gasUsed - The amount of gas used during the transaction.
+   * @param {string} payload.interactingEntity - The entity interacting with the transaction.
+   * @param {string} payload.requestId - The unique identifier for the request.
+   * @returns {void} - This method does not return a value.
    */
-  public addExpenseAndCaptureMetrics = (
-    executionType: string,
-    transactionId: string,
-    transactionType: string,
-    callerName: string,
-    cost: number,
-    gasUsed: number,
-    interactingEntity: string,
-    requestId: string,
-  ): void => {
+  public addExpenseAndCaptureMetrics = ({
+    executionType,
+    transactionId,
+    transactionType,
+    callerName,
+    cost,
+    gasUsed,
+    interactingEntity,
+    requestId,
+  }: IExecuteQueryEventPayload): void => {
     const formattedRequestId = formatRequestIdMessage(requestId);
     this.logger.trace(
       `${formattedRequestId} Capturing HBAR charged: executionType=${executionType} transactionId=${transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, cost=${cost} tinybars`,

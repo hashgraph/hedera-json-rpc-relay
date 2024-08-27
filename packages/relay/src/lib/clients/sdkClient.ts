@@ -62,6 +62,7 @@ import { SDKClientError } from './../errors/SDKClientError';
 import { ITransactionRecordMetric } from '../types/IMetricService';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
+import { IExecuteTransactionEventPayload } from '../types/IEvent';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -636,9 +637,9 @@ export class SDKClient {
 
       throw sdkClientError;
     } finally {
-      // emitting an START_ADD_EXPENSE_AND_CAPTURE_METRICS event to kick off capturing metrics process asynchronously
+      // emitting an EXECUTE_QUERY event to kick off capturing metrics process asynchronously
       if (queryCost && queryCost !== 0) {
-        this.eventEmitter.emit(constants.EVENTS.START_ADD_EXPENSE_AND_CAPTURE_METRICS, {
+        this.eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, {
           executionType: `TransactionExecution`,
           transactionId: query.paymentTransactionId?.toString()!,
           transactionType: queryType,
@@ -733,8 +734,8 @@ export class SDKClient {
       }
       return transactionResponse;
     } finally {
-      // emitting an START_CAPTURING_TRANSACTION_METRICS event to kick off capturing metrics process asynchronously
-      this.eventEmitter.emit(constants.EVENTS.START_CAPTURING_TRANSACTION_METRICS, {
+      // emitting an EXECUTE_TRANSACTION event to kick off capturing metrics process asynchronously
+      this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
         transactionId,
         callerName,
         requestId,
@@ -742,7 +743,7 @@ export class SDKClient {
         operatorAccountId: this.clientMain.operatorAccountId!.toString(),
         transactionType,
         interactingEntity,
-      });
+      } as IExecuteTransactionEventPayload);
     }
   }
 
@@ -805,8 +806,8 @@ export class SDKClient {
       // Loop through transactionResponses to asynchronously capture metrics from each response
       if (transactionResponses) {
         for (let transactionResponse of transactionResponses) {
-          // emitting an START_CAPTURING_TRANSACTION_METRICS event to kick off capturing metrics process asynchronously
-          this.eventEmitter.emit(constants.EVENTS.START_CAPTURING_TRANSACTION_METRICS, {
+          // emitting an EXECUTE_TRANSACTION event to kick off capturing metrics process asynchronously
+          this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
             transactionId: transactionResponse.transactionId.toString(),
             callerName,
             requestId,

@@ -23,6 +23,7 @@ import { expect } from 'chai';
 import { resolve } from 'path';
 import * as sinon from 'sinon';
 import { config } from 'dotenv';
+import EventEmitter from 'events';
 import { Registry } from 'prom-client';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
@@ -33,8 +34,8 @@ import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import { calculateTxRecordChargeAmount, getRequestId } from '../../../helpers';
 import MetricService from '../../../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
+import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../../../src/lib/types/IEvent';
 import { Hbar, Long, Status, Client, AccountId, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
-import EventEmitter from 'events';
 
 config({ path: resolve(__dirname, '../../../test.env') });
 const registry = new Registry();
@@ -50,7 +51,7 @@ describe('Metric Service', function () {
   let mirrorNodeClient: MirrorNodeClient;
 
   const mockedTxFee = 36900000;
-  const operatorAcocuntId = `0.0.1022`;
+  const operatorAccountId = `0.0.1022`;
   const mockedCallerName = 'caller_name';
   const mockedExecutionType = 'exection_type';
   const mockedConstructorName = 'constructor_name';
@@ -68,7 +69,7 @@ describe('Metric Service', function () {
         transaction_id: '0.0.1022-1681130064-409933500',
         transfers: [
           {
-            account: operatorAcocuntId,
+            account: operatorAccountId,
             amount: -1 * mockedTxFee,
             is_approval: false,
           },
@@ -88,7 +89,7 @@ describe('Metric Service', function () {
     },
     transfers: [
       {
-        accountId: operatorAcocuntId,
+        accountId: operatorAccountId,
         amount: Hbar.fromTinybars(-1 * mockedTxFee),
         is_approval: false,
       },
@@ -154,6 +155,16 @@ describe('Metric Service', function () {
   });
 
   describe('captureTransactionMetrics', () => {
+    const mockedExecuteTransactionEventPayload: IExecuteTransactionEventPayload = {
+      transactionId: mockedTransactionId,
+      callerName: mockedCallerName,
+      requestId: getRequestId(),
+      txConstructorName: mockedConstructorName,
+      operatorAccountId,
+      transactionType: mockedTransactionType,
+      interactingEntity: mockedInteractingEntity,
+    };
+
     it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
       mock.onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`).reply(200, mockedMirrorNodeTransactionRecord);
 
@@ -162,15 +173,7 @@ describe('Metric Service', function () {
       const originalBudget = hbarLimiter.getRemainingBudget();
 
       // capture metrics
-      await metricService.captureTransactionMetrics(
-        mockedTransactionId,
-        mockedCallerName,
-        getRequestId(),
-        mockedConstructorName,
-        operatorAcocuntId,
-        mockedTransactionType,
-        mockedInteractingEntity,
-      );
+      await metricService.captureTransactionMetrics(mockedExecuteTransactionEventPayload);
 
       // validate hbarLimiter
       const updatedBudget = hbarLimiter.getRemainingBudget();
@@ -198,15 +201,7 @@ describe('Metric Service', function () {
 
       const originalBudget = hbarLimiter.getRemainingBudget();
 
-      await metricService.captureTransactionMetrics(
-        mockedTransactionId,
-        mockedCallerName,
-        getRequestId(),
-        mockedConstructorName,
-        operatorAcocuntId,
-        mockedTransactionType,
-        mockedInteractingEntity,
-      );
+      await metricService.captureTransactionMetrics(mockedExecuteTransactionEventPayload);
       expect(transactionRecordStub.called).to.be.true;
 
       // validate hbarLimiter
@@ -238,7 +233,7 @@ describe('Metric Service', function () {
       );
     });
 
-    it('Should listen to START_CAPTURING_TRANSACTION_METRICS event to kick off captureTransactionMetrics()', async () => {
+    it('Should listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics()', async () => {
       process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
       const mockedExchangeRateInCents = 12;
       const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
@@ -249,16 +244,8 @@ describe('Metric Service', function () {
 
       const originalBudget = hbarLimiter.getRemainingBudget();
 
-      // emitting an START_CAPTURING_TRANSACTION_METRICS event to kick off capturing metrics process asynchronously
-      eventEmitter.emit(constants.EVENTS.START_CAPTURING_TRANSACTION_METRICS, {
-        transactionId: mockedTransactionId,
-        callerName: mockedCallerName,
-        requestId: getRequestId(),
-        txConstructorName: mockedConstructorName,
-        operatorAccountId: operatorAcocuntId,
-        transactionType: mockedTransactionType,
-        interactingEntity: mockedInteractingEntity,
-      });
+      // emitting an EXECUTE_TRANSACTION event to kick off capturing metrics process asynchronously
+      eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, mockedExecuteTransactionEventPayload);
 
       // small wait for hbar rate limiter to settle
       await new Promise((r) => setTimeout(r, 100));
@@ -297,21 +284,22 @@ describe('Metric Service', function () {
   });
 
   describe('addExpenseAndCaptureMetrics', () => {
+    const mockedGasUsed = mockedConsensusNodeTransactionRecord.contractFunctionResult!.gasUsed.toNumber();
+    const mockedExecuteQueryEventPayload: IExecuteQueryEventPayload = {
+      executionType: mockedExecutionType,
+      transactionId: mockedTransactionId,
+      transactionType: mockedTransactionType,
+      callerName: mockedCallerName,
+      cost: mockedTxFee,
+      gasUsed: mockedGasUsed,
+      interactingEntity: mockedInteractingEntity,
+      requestId: getRequestId(),
+    };
     it('should execute addExpenseAndCaptureMetrics() to capture metrics in HBAR limiter and metric registry', async () => {
-      const mockedGasUsed = mockedConsensusNodeTransactionRecord.contractFunctionResult!.gasUsed.toNumber();
       const originalBudget = hbarLimiter.getRemainingBudget();
 
       // capture metrics
-      metricService.addExpenseAndCaptureMetrics(
-        mockedExecutionType,
-        mockedTransactionId,
-        mockedTransactionType,
-        mockedCallerName,
-        mockedTxFee,
-        mockedGasUsed,
-        mockedInteractingEntity,
-        getRequestId(),
-      );
+      metricService.addExpenseAndCaptureMetrics(mockedExecuteQueryEventPayload);
 
       // validate hbarLimiter
       const updatedBudget = hbarLimiter.getRemainingBudget();
@@ -341,21 +329,11 @@ describe('Metric Service', function () {
       );
     });
 
-    it('should listen to START_ADD_EXPENSE_AND_CAPTURE_METRICS event and kick off addExpenseAndCaptureMetrics()', async () => {
-      const mockedGasUsed = mockedConsensusNodeTransactionRecord.contractFunctionResult!.gasUsed.toNumber();
+    it('should listen to EXECUTE_QUERY event and kick off addExpenseAndCaptureMetrics()', async () => {
       const originalBudget = hbarLimiter.getRemainingBudget();
 
-      // emitting an START_ADD_EXPENSE_AND_CAPTURE_METRICS event to kick off capturing metrics process
-      eventEmitter.emit(constants.EVENTS.START_ADD_EXPENSE_AND_CAPTURE_METRICS, {
-        executionType: mockedExecutionType,
-        transactionId: mockedTransactionId,
-        transactionType: mockedTransactionType,
-        callerName: mockedCallerName,
-        cost: mockedTxFee,
-        gasUsed: mockedGasUsed,
-        interactingEntity: mockedInteractingEntity,
-        formattedRequestId: getRequestId(),
-      });
+      // emitting an EXECUTE_QUERY event to kick off capturing metrics process
+      eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, mockedExecuteQueryEventPayload);
 
       // small wait for hbar rate limiter to settle
       await new Promise((r) => setTimeout(r, 100));

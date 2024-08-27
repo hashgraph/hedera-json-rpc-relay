@@ -324,4 +324,5 @@ export {
   isValidEthereumAddress,
   isHex,
   ASCIIToHex,
+  mapKeysAndValues,
 };
