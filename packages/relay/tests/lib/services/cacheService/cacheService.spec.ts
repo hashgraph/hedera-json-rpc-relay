@@ -155,14 +155,12 @@ describe('CacheService Test Suite', async function () {
       key2: 'value2',
       key3: 'value3',
     };
-    const mock = sinon.createSandbox();
     let redisInMemoryServer: RedisInMemoryServer;
     let cacheService: CacheService;
 
     this.beforeAll(async () => {
       redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6378);
       await redisInMemoryServer.start();
-      
       process.env.REDIS_ENABLED = 'true';
       process.env.REDIS_URL = 'redis://127.0.0.1:6378';
       process.env.TEST = 'false';
@@ -245,8 +243,6 @@ describe('CacheService Test Suite', async function () {
       const key = 'string';
       const value = 'value';
 
-      // @ts-ignore
-      cacheService.set.restore();
       await cacheService.disconnectRedisClient();
 
       await expect(cacheService.set(key, value, callingMethod)).to.eventually.not.be.rejected;
@@ -259,18 +255,12 @@ describe('CacheService Test Suite', async function () {
       const key = 'string';
       await cacheService.disconnectRedisClient();
 
-      // @ts-ignore
-      cacheService.delete.restore();
-
       await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
     });
 
     it('should be able to set to shared cache', async function () {
       const key = 'string';
       const value = 'value';
-
-      // @ts-ignore
-      cacheService.set.restore();
 
       await expect(cacheService.set(key, value, callingMethod)).to.eventually.not.be.rejected;
     });
@@ -286,13 +276,10 @@ describe('CacheService Test Suite', async function () {
     it('should be able to delete from shared cache', async function () {
       const key = 'string';
 
-      // @ts-ignore
-      cacheService.delete.restore();
-
       await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
     });
-    
-        describe('incrBy', async function () {
+
+    describe('incrBy', async function () {
       it('should increment value in internal cache', async function () {
         const key = 'counter';
         const amount = 5;
