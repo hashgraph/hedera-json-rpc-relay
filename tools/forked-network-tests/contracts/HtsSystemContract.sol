@@ -56,7 +56,7 @@ contract HtsSystemContract {
                     count++;
                 }
             }
-            return 0;
+            return count;
         }
         revert("Token type is not supported");
     }
@@ -213,6 +213,12 @@ contract HtsSystemContract {
         revert ("Not supported");
     }
 
+    function ownerOf(uint256 tokenId) public view returns (address owner) {
+        uint256 tokenIndex = findTokenIndex(tokenId);
+        require(tokenIndex != type(uint256).max, "Token not found");
+        return owners[tokenIndex];
+    }
+
     function __redirectForToken(address token, bytes memory encodedFunctionSelector) internal returns (bytes memory) {
         bytes4 selector = bytes4(msg.data[24:28]);
 
@@ -226,6 +232,9 @@ contract HtsSystemContract {
             return abi.encode(symbol);
         } else if (selector == bytes4(keccak256("tokenType()"))) {
             return abi.encode(tokenType);
+        } else if (selector == bytes4(keccak256("ownerOf(uint256)"))) {
+            uint256 tokenId = abi.decode(msg.data[40:72], (uint256));
+            return abi.encode(ownerOf(tokenId));
         } else if (selector == bytes4(keccak256("balanceOf(address)"))) {
             address account = address(bytes20(msg.data[40:60]));
             return abi.encode(balanceOf(account));
@@ -255,12 +264,6 @@ contract HtsSystemContract {
             //     return abi.encode(transferFrom(from, to));
         }
         return "";
-    }
-
-    function ownerOf(uint256 tokenId) external view returns (address owner) {
-        uint256 tokenIndex = findTokenIndex(tokenId);
-        require(tokenIndex != type(uint256).max, "Token not found");
-        return owners[tokenIndex];
     }
 
     function safeTransferFrom(address from, address to, uint256 tokenId) external {
