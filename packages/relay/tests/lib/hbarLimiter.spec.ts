@@ -22,7 +22,8 @@ import pino from 'pino';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import HbarLimit from '../../src/lib/hbarlimiter';
-import { random20BytesAddress } from '../helpers';
+import { predefined } from '../../src/lib/errors/JsonRpcError';
+import { getRequestId, random20BytesAddress } from '../helpers';
 
 const registry = new Registry();
 const logger = pino();
@@ -31,12 +32,14 @@ describe('HBAR Rate Limiter', async function () {
   this.timeout(20000);
   let rateLimiter: HbarLimit;
   let currentDateNow: number;
-  const invalidDuration: number = 0;
+  const callDataSize = 6000;
   const invalidTotal: number = 0;
+  const invalidDuration: number = 0;
   const validDuration: number = 60000;
   const validTotal: number = 100000000;
   const randomAccountAddress = random20BytesAddress();
   const randomWhiteListedAccountAddress = random20BytesAddress();
+  const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
 
   this.beforeEach(() => {
     currentDateNow = Date.now();
@@ -207,15 +210,37 @@ describe('HBAR Rate Limiter', async function () {
   });
 
   it('Should preemtively limit while expected transactionFee is greater than remaining balance', () => {
-    const validTotalTxFee = validTotal - 100;
-    const invalidTotalTxFee = validTotal + 100;
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
 
-    const shouldNotPreemtivelyLimit = rateLimiter.shouldPreemtivelyLimit(randomAccountAddress, validTotalTxFee);
-    const shouldPreemtivelyLimit = rateLimiter.shouldPreemtivelyLimit(randomAccountAddress, invalidTotalTxFee);
+    const limiterRemainingBudget = rateLimiter.getRemainingBudget();
+    process.env.HOT_FIX_FILE_APPEND_FEE = limiterRemainingBudget.toString();
 
-    expect(shouldPreemtivelyLimit).to.be.true;
-    expect(shouldNotPreemtivelyLimit).to.be.false;
+    const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
+
+    try {
+      rateLimiter.shouldPreemtivelyLimit(randomAccountAddress, callDataSize, fileAppendChunkSize, getRequestId());
+      expect.fail('The rate limiter will throw HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED error');
+    } catch (error) {
+      expect(error).to.eq(expectedError);
+    }
+
+    delete process.env.HOT_FIX_FILE_APPEND_FEE;
+  });
+
+  it('Should NOT preemtively limit while expected transactionFee is less than remaining balance', () => {
+    rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
+
+    process.env.HOT_FIX_FILE_CREATE_FEE = '100';
+    process.env.HOT_FIX_FILE_APPEND_FEE = '100';
+
+    const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
+
+    try {
+      rateLimiter.shouldPreemtivelyLimit(randomAccountAddress, callDataSize, fileAppendChunkSize, getRequestId());
+      expect.fail('The rate limiter did not throw HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED error');
+    } catch (error) {
+      expect(error).to.not.eq(expectedError);
+    }
   });
 
   it('Should verify if an account is whitelisted', () => {
@@ -255,19 +280,39 @@ describe('HBAR Rate Limiter', async function () {
   });
 
   it('Should bypass preemtively limit if original caller is a white listed account', () => {
-    const totalTxFee = validTotal + 100;
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
 
-    // should return true as `randomAccountAddress` is not white listed
-    const shouldNOTByPassPreemtiveRateLimit = rateLimiter.shouldPreemtivelyLimit(randomAccountAddress, totalTxFee);
+    const limiterRemainingBudget = rateLimiter.getRemainingBudget();
+    process.env.HOT_FIX_FILE_APPEND_FEE = limiterRemainingBudget.toString();
 
-    // should return false as `randomWhiteListedAccountAddress` is white listed
-    const shouldByPassPreemtiveRateLimit = rateLimiter.shouldPreemtivelyLimit(
-      randomWhiteListedAccountAddress,
-      totalTxFee,
-    );
+    const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
 
-    expect(shouldNOTByPassPreemtiveRateLimit).to.be.true;
-    expect(shouldByPassPreemtiveRateLimit).to.be.false;
+    try {
+      rateLimiter.shouldPreemtivelyLimit(
+        randomWhiteListedAccountAddress,
+        callDataSize,
+        fileAppendChunkSize,
+        getRequestId(),
+      );
+      expect.fail('The rate limiter did not throw HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED error');
+    } catch (error) {
+      expect(error).to.not.eq(expectedError);
+    }
+  });
+
+  it('Should NOT bypass preemtively limit if original caller is a white listed account', () => {
+    rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
+
+    const limiterRemainingBudget = rateLimiter.getRemainingBudget();
+    process.env.HOT_FIX_FILE_APPEND_FEE = limiterRemainingBudget.toString();
+
+    const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
+
+    try {
+      rateLimiter.shouldPreemtivelyLimit(randomAccountAddress, callDataSize, fileAppendChunkSize, getRequestId());
+      expect.fail('The rate limiter will throw HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED error');
+    } catch (error) {
+      expect(error).to.eq(expectedError);
+    }
   });
 });
