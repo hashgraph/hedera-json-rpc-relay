@@ -1830,7 +1830,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 1: ${Validator.DEFAULT_HEX_ERROR}, value: 1234`,
+            `Invalid parameter 1: ${Validator.HASH_ERROR}, value: 1234`,
           );
         }
       });

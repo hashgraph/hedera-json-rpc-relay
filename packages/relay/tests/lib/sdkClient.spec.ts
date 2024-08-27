@@ -40,7 +40,6 @@ import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { calculateTxRecordChargeAmount, random20BytesAddress } from '../helpers';
 import TransactionService from '../../src/lib/services/transactionService/transactionService';
 import {
-  AccountBalanceQuery,
   AccountId,
   Client,
   ContractCallQuery,

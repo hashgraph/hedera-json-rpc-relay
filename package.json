@@ -77,6 +77,8 @@
     "@types/find-config": "^1.0.4",
     "@types/sinon": "^10.0.20",
     "chai-exclude": "^2.1.1",
+    "ajv": "^8.16.0",
+    "ajv-formats": "^3.0.1",
     "eslint-config-standard-with-typescript": "^43.0.1",
     "eslint-plugin-n": "^15.7.0",
     "keyv-file": "^0.3.1",

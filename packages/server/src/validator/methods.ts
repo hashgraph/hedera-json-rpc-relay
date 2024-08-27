@@ -147,7 +147,7 @@ export const METHODS: { [key: string]: IMethodValidation } = {
     },
     1: {
       required: true,
-      type: 'hex',
+      type: 'hex64',
     },
     2: {
       type: 'blockNumber|blockHash',
