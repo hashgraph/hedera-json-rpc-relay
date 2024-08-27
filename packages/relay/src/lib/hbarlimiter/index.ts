@@ -121,13 +121,16 @@ export default class HbarLimit {
   }
 
   /**
-   * Determines whether a preemptive HBAR rate limit should be applied based on the remaining budget and the transaction fee.
+   * Preemptively limits HBAR transactions based on the estimated total transaction fee and the remaining budget.
+   * This method checks if the caller is whitelisted and bypasses the limit if they are. If not, it calculates the
+   * estimated transaction fees based on the call data size and file append chunk size, and throws an error if the
+   * remaining budget is insufficient to cover the estimated fees.
    *
-   * Bypass if the originalCallerAddress is whitelisted
-   *
-   * @param {string} originalCallerAddress - The address of the original caller making the request.
-   * @param {number} transactionFee - The transaction fee in tinybars to be checked against the remaining budget.
-   * @param {string} [requestId] - An optional unique request ID for tracking the request.
+   * @param {string} originalCallerAddress - The address of the caller initiating the transaction.
+   * @param {number} callDataSize - The size of the call data that will be used in the transaction.
+   * @param {number} fileAppendChunkSize - The chunk size used for file append transactions.
+   * @param {string} requestId - The request ID for tracing the request flow.
+   * @throws {Error} Throws an error if the total estimated transaction fee exceeds the remaining HBAR budget.
    */
   shouldPreemtivelyLimit(
     originalCallerAddress: string,
@@ -145,19 +148,19 @@ export default class HbarLimit {
     } else {
       // estimate total transaction fee
       const numFileCreateTxs = 1;
-      const numFileAppendTxs = Math.ceil(callDataSize / fileAppendChunkSize);
+      const numFileAppendTxs = Math.round(callDataSize / fileAppendChunkSize);
       const fileCreateFee = Number(process.env.HOT_FIX_FILE_CREATE_FEE || 100000000); // 1 hbar
       const fileAppendFee = Number(process.env.HOT_FIX_FILE_APPEND_FEE || 120000000); // 1.2 hbar
-      const totalPreemtiveTransactionFee = numFileCreateTxs * fileCreateFee + numFileAppendTxs * fileAppendFee;
+      const totalEstimatedTransactionFee = numFileCreateTxs * fileCreateFee + numFileAppendTxs * fileAppendFee;
 
-      if (this.remainingBudget - totalPreemtiveTransactionFee < 0) {
+      if (this.remainingBudget - totalEstimatedTransactionFee < 0) {
         this.logger.trace(
-          `${requestIdPrefix} HBAR preemtive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, callDataSize=${callDataSize}.`,
+          `${requestIdPrefix} HBAR preemtive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: totalEstimatedTransactionFee=${totalEstimatedTransactionFee}, remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, callDataSize=${callDataSize}.`,
         );
         throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
       } else {
         this.logger.trace(
-          `${requestIdPrefix} HBAR preemptive rate limit not reached: totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, remainingBudget=${this.remainingBudget}, otal=${this.total}, resetTimestamp=${this.reset}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, callDataSize=${callDataSize}.`,
+          `${requestIdPrefix} HBAR preemptive rate limit not reached: totalEstimatedTransactionFee=${totalEstimatedTransactionFee}, remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, callDataSize=${callDataSize}.`,
         );
       }
     }

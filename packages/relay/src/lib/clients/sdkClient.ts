@@ -397,7 +397,7 @@ export class SDKClient {
       if (isPreemtiveCheckOn) {
         this.hbarLimiter.shouldPreemtivelyLimit(
           originalCallerAddress,
-          ethereumTransactionData.callData.length,
+          ethereumTransactionData.toString().length,
           this.fileAppendChunkSize,
           requestId,
         );
