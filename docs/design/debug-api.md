@@ -49,11 +49,17 @@ This is achieved by utilizing the /api/v1/contracts/results/{transactionIdOrHash
 The relevant fields retrieved from this endpoint are processed and formatted to generate the expected response as outlined below.
 
 #### Parameters
-`transactionHash` - string - This is the hash of the transaction that we want to trace. <br>
-`tracer` - string - to specify the type of tracer. Possible values are `callTracer` or `opcodeLogger`. In the beginning only `callTracer` will be accepted. <br>
-`tracerConfig` - object 
-  * One property for log tracer called `onlyTopCall`, which is a boolean. <br>
-  * For `opcodeLogger` it can have four properties - enableMemory, disableStack, disableStorage, enableReturnData - all booleans
+
+1. `transactionHash` - string - This is the hash of the transaction that we want to trace.
+2. One of the following:
+   * `tracer` - string - to specify the type of tracer. Possible values are `callTracer` or `opcodeLogger`
+   * `tracerConfig` - object - to specify the configuration for the tracer
+     * For `callTracer` it can have one property - `onlyTopCall`, which is a boolean.
+     * For `opcodeLogger` it can have three properties - `enableMemory`, `disableStack`, `disableStorage` - all booleans
+   * `tracerConfigWrapper` - object
+     * `tracer` - string - same as above
+     * `tracerConfig` - object - same as above
+
 #### Returns for callTracer
 `object` - trace object: 
 
@@ -220,18 +226,20 @@ The relevant fields retrieved from this endpoint are processed and formatted to 
 #### Returns for opcodeLogger
 
 `object` - trace object:
-1. `pc`	- int - program counter
-2. `op` -	string - opcode to be executed
-3. `gas`- int -	remaining gas
-4. `gasCost`- int -	cost for executing op
-5. `memory`	- string[] -	EVM memory. Enabled via enableMemory
-6. `memSize`- int	- Size of memory
-7. `stack`- int[]	- EVM stack. Disabled via disableStack
-8. `returnData`	- string[]	- Last call's return data. Enabled via enableReturnData
-9. `storage` - map[hash]hash	- Storage slots of current contract read from and written to. Only emitted for SLOAD and SSTORE. Disabled via disableStorage
-10. `depth` -	int -	Current call depth
-11. `refund`	- int -	Refund counter
-12. `error` -	string -	Error message if any
+1. `gas` - int - the gas used in tinybars
+2. `failed` - boolean - whether the transaction failed to be completely processed
+3. `returnValue` - string - hex-encoded return value
+4. `structLogs` - StructLog[] - the logs produced by the `opcodeLogger` tracer
+   * `depth` - int - Current call depth
+   * `gas`- int - remaining gas
+   * `gasCost`- int - cost for executing op
+   * `memory` - string[] - EVM memory. Enabled via `enableMemory`
+   * `op` - string - opcode to be executed
+   * `pc`    - int - program counter
+   * `reason` - string - Solidity revert reason, if any
+   * `stack`- string[] - EVM stack. Disabled via `disableStack`
+   * `storage` - {[key: string]: string} - Storage slots of current contract read from and written to
+     Only emitted for `SLOAD` and `SSTORE`. Disabled via `disableStorage`
 
 #### Example Request opcodeLogger
 ```JSON
@@ -243,7 +251,12 @@ The relevant fields retrieved from this endpoint are processed and formatted to 
     [
       "0x8fc90a6c3ee3001cdcbbb685b4fbe67b1fa2bec575b15b0395fea5540d0901ae",
       {
-        "tracer": "opcodeLogger"
+        "tracer": "opcodeLogger",
+        "tracerConfig": {
+          "enableMemory": true,
+          "disableStack": false,
+          "disableStorage": false
+        }
       }
     ]
 }
@@ -254,28 +267,29 @@ The relevant fields retrieved from this endpoint are processed and formatted to 
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "gas": 85301,
+    "gas": 85301, 
+    "failed": false,
     "returnValue": "",
     "structLogs": [{
         "depth": 1,
-        "error": "",
         "gas": 162106,
         "gasCost": 3,
-        "memory": null,
+        "memory": [],
         "op": "PUSH1",
         "pc": 0,
+        "reason": null,
         "stack": [],
         "storage": {}
     },
     /* skip */
     {
         "depth": 1,
-        "error": "",
         "gas": 100000,
         "gasCost": 0,
         "memory": ["0000000000000000000000000000000000000000000000000000000000000006", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000060"],
         "op": "STOP",
         "pc": 120,
+        "reason": null,
         "stack": ["00000000000000000000000000000000000000000000000000000000d67cbec9"],
         "storage": {
           "0000000000000000000000000000000000000000000000000000000000000004": "8241fa522772837f0d05511f20caa6da1d5a3209000000000000000400000001",
@@ -289,11 +303,11 @@ The relevant fields retrieved from this endpoint are processed and formatted to 
 
 ## Error Codes
 
-| Error Codes |        Error message        |                              Solution                               |
-| :---------: | :-------------------------: | :-----------------------------------------------------------------: |
-|    32000    |      Transaction not found.      | Occurs when user is trying to trace non-existing transaction. |
-|    32001    | Block hash not found. |          Occurs when user is trying to get modified accounts for non-existing block hash.           |
-|    32002    | Block number not found. |          Occurs when user is trying to get modified accounts for non-existing block number.           |
+| Error Codes |      Error message      |                                      Solution                                      |
+|:-----------:|:-----------------------:|:----------------------------------------------------------------------------------:|
+|    32000    | Transaction not found.  |           Occurs when user is trying to trace non-existing transaction.            |
+|    32001    |  Block hash not found.  |  Occurs when user is trying to get modified accounts for non-existing block hash.  |
+|    32002    | Block number not found. | Occurs when user is trying to get modified accounts for non-existing block number. |
 
 ## Limits
 1. Trying to get modified accounts for more than ex. 100 blocks. Env. variable can be `DEBUG_MODIFIED_ACCOUNTS_LIMIT`

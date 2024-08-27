@@ -59,6 +59,7 @@ import { IFeeHistory } from './types/IFeeHistory';
 import { ITransactionReceipt } from './types/ITransactionReceipt';
 import TransactionService from './services/transactionService/transactionService';
 import { IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
+import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -2287,6 +2288,12 @@ export class EthImpl implements Eth {
     transactionArray = this.populateSyntheticTransactions(showDetails, logs, transactionArray, requestIdPrefix);
     transactionArray = showDetails ? _.uniqBy(transactionArray, 'hash') : _.uniq(transactionArray);
 
+    const formattedReceipts: IReceiptRootHash[] = ReceiptsRootUtils.buildReceiptRootHashes(
+      transactionArray.map((tx) => (showDetails ? tx.hash : tx)),
+      contractResults,
+      logs,
+    );
+
     const blockHash = toHash32(blockResponse.hash);
     return new Block({
       baseFeePerGas: await this.gasPrice(requestIdPrefix),
@@ -2301,7 +2308,7 @@ export class EthImpl implements Eth {
       nonce: EthImpl.zeroHex8Byte,
       number: numberTo0x(blockResponse.number),
       parentHash: blockResponse.previous_hash.substring(0, 66),
-      receiptsRoot: constants.DEFAULT_ROOT_HASH,
+      receiptsRoot: await ReceiptsRootUtils.getRootHash(formattedReceipts),
       timestamp: numberTo0x(Number(timestamp)),
       sha3Uncles: EthImpl.emptyArrayHex,
       size: numberTo0x(blockResponse.size | 0),

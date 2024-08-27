@@ -131,7 +131,6 @@ export default class RelayAssertions {
     expect(block.miner).equal(EthImpl.zeroAddressHex);
     expect(block.mixHash).equal(EthImpl.zeroHex32Byte);
     expect(block.nonce).equal(EthImpl.zeroHex8Byte);
-    expect(block.receiptsRoot).equal(constants.DEFAULT_ROOT_HASH);
     expect(block.sha3Uncles).equal(EthImpl.emptyArrayHex);
     expect(block.stateRoot).equal(constants.DEFAULT_ROOT_HASH);
     expect(block.totalDifficulty).equal(EthImpl.zeroHex);

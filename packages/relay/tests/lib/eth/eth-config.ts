@@ -22,9 +22,9 @@ import {
   defaultLogs1,
   defaultLogs2,
   defaultLogs3,
+  LONG_ZERO_ADDRESS,
   mockData,
   toHex,
-  LONG_ZERO_ADDRESS,
 } from '../../helpers';
 import { numberTo0x } from '../../../dist/formatters';
 import constants from '../../../src/lib/constants';
@@ -789,4 +789,5 @@ export const DETAILD_CONTRACT_RESULT_NOT_FOUND = {
 export const EMPTY_RES = {
   results: [],
 };
+export const DEFAULT_BLOCK_RECEIPTS_ROOT_HASH = '0xc9854d764adf76676b7a2b04f36a865ba50ec6cad6807a31188d65693cdc187d';
 //

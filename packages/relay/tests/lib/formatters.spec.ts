@@ -20,21 +20,26 @@
 
 import { expect } from 'chai';
 import {
-  hexToASCII,
+  ASCIIToHex,
   decodeErrorMessage,
-  formatTransactionId,
-  parseNumericEnvVar,
-  formatTransactionIdWithoutQueryParams,
-  numberTo0x,
   formatContractResult,
-  prepend0x,
-  nullableNumberTo0x,
+  formatRequestIdMessage,
+  formatTransactionId,
+  formatTransactionIdWithoutQueryParams,
+  hexToASCII,
+  isHex,
+  isValidEthereumAddress,
+  mapKeysAndValues,
   nanOrNumberTo0x,
+  nullableNumberTo0x,
+  numberTo0x,
+  parseNumericEnvVar,
+  prepend0x,
+  strip0x,
   toHash32,
+  toHexString,
   toNullableBigNumber,
   toNullIfEmptyHex,
-  weibarHexToTinyBarInt,
-  isValidEthereumAddress,
   trimPrecedingZeros,
   isHex,
   ASCIIToHex,
@@ -42,6 +47,7 @@ import {
   strip0x,
   getFunctionSelector,
   toHexString,
+  weibarHexToTinyBarInt,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -699,6 +705,56 @@ describe('Formatters', () => {
     it('should return the first 8 characters of a valid hex string starting with "0x"', () => {
       const result = getFunctionSelector('0x1234567890abcdef');
       expect(result).to.eq('12345678');
+    });
+   });
+  
+  describe('mapKeysAndValues', () => {
+    it('should map keys and values correctly', () => {
+      const target = { a: '1', b: '2', c: '3' };
+      const result = mapKeysAndValues(target, { key: (key) => key.toUpperCase(), value: parseInt });
+      expect(result).to.deep.equal({ A: 1, B: 2, C: 3 });
+    });
+
+    it('should handle empty object', () => {
+      const target = {};
+      const result = mapKeysAndValues(target, { key: (key) => key, value: parseInt });
+      expect(result).to.deep.equal({});
+    });
+
+    it('should handle keys with special characters', () => {
+      const target = { 'a-b': '1', c_d: '2' };
+      const result = mapKeysAndValues(target, { key: (key) => key.replace('-', '_'), value: parseInt });
+      expect(result).to.deep.equal({ a_b: 1, c_d: 2 });
+    });
+
+    it('should handle values that are not strings', () => {
+      const target = { a: '1', b: true, c: null };
+      const result = mapKeysAndValues(target, { key: (key) => key.toUpperCase(), value: (value) => String(value) });
+      expect(result).to.deep.equal({ A: '1', B: 'true', C: 'null' });
+    });
+
+    it('should handle keys that are numbers', () => {
+      const target = { '1': 'one', '2': 'two' };
+      const result = mapKeysAndValues(target, { key: parseInt, value: (value) => value.toUpperCase() });
+      expect(result).to.deep.equal({ 1: 'ONE', 2: 'TWO' });
+    });
+
+    it('should apply no mapping if mapFn is not provided', () => {
+      const target = { a: '1', b: '2', c: '3' };
+      const result = mapKeysAndValues(target, {});
+      expect(result).to.deep.equal({ a: '1', b: '2', c: '3' });
+    });
+
+    it('should apply no mapping if mapFn.key is not provided', () => {
+      const target = { a: '1', b: '2', c: '3' };
+      const result = mapKeysAndValues(target, { value: (value) => parseInt(value) });
+      expect(result).to.deep.equal({ a: 1, b: 2, c: 3 });
+    });
+
+    it('should apply no mapping if mapFn.value is not provided', () => {
+      const target = { a: '1', b: '2', c: '3' };
+      const result = mapKeysAndValues(target, { key: (key) => key.toUpperCase() });
+      expect(result).to.deep.equal({ A: '1', B: '2', C: '3' });
     });
   });
 });

@@ -147,7 +147,7 @@ export const METHODS: { [key: string]: IMethodValidation } = {
     },
     1: {
       required: true,
-      type: 'hex',
+      type: 'hex64',
     },
     2: {
       type: 'blockNumber|blockHash',
@@ -188,11 +188,11 @@ export const METHODS: { [key: string]: IMethodValidation } = {
   debug_traceTransaction: {
     0: {
       required: true,
-      type: 'hex|transactionId',
+      type: 'transactionHash|transactionId',
     },
     1: {
-      required: true,
-      type: 'tracerType',
+      required: false,
+      type: 'tracerType|tracerConfig|tracerConfigWrapper',
     },
     2: {
       required: false,

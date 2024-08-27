@@ -29,7 +29,7 @@ import { numberTo0x } from '../../../src/formatters';
 import { Eth, JsonRpcError } from '../../../src';
 import { generateEthTestEnv } from './eth-helpers';
 import { Precheck } from '../../../src/lib/precheck';
-import { createStubInstance, stub, SinonStub, SinonStubbedInstance } from 'sinon';
+import { createStubInstance, SinonStub, SinonStubbedInstance, stub } from 'sinon';
 import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
 import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS, ONE_TINYBAR_IN_WEI_HEX, RECEIVER_ADDRESS } from './eth-config';
 import { AbiCoder, keccak256 } from 'ethers';

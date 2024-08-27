@@ -76,19 +76,19 @@ describe('Debug API Test Suite', async function () {
       disableStack: true,
     },
     {
-      disableMemory: true,
+      enableMemory: true,
     },
     {
       disableStorage: true,
     },
     {
+      enableMemory: true,
       disableStack: true,
-      disableMemory: true,
       disableStorage: true,
     },
     {
+      enableMemory: false,
       disableStack: false,
-      disableMemory: false,
       disableStorage: false,
     },
   ];
@@ -297,7 +297,7 @@ describe('Debug API Test Suite', async function () {
       });
       for (const config of opcodeLoggerConfigs) {
         const opcodeLoggerParams = getQueryParams({
-          memory: !config.disableMemory,
+          memory: !!config.enableMemory,
           stack: !config.disableStack,
           storage: !config.disableStorage,
         });
@@ -307,7 +307,7 @@ describe('Debug API Test Suite', async function () {
           opcodes: opcodesResponse.opcodes?.map((opcode) => ({
             ...opcode,
             stack: config.disableStack ? [] : opcode.stack,
-            memory: config.disableMemory ? [] : opcode.memory,
+            memory: config.enableMemory ? opcode.memory : [],
             storage: config.disableStorage ? {} : opcode.storage,
           })),
         });
@@ -439,12 +439,12 @@ describe('Debug API Test Suite', async function () {
 
         describe(`When opcode logger is called with ${opcodeLoggerParams}`, async function () {
           const emptyFields = Object.keys(config)
-            .filter((key) => config[key])
-            .map((key) => key.replace('disable', ''))
+            .filter((key) => (key.startsWith('disable') && config[key]) || (key.startsWith('enable') && !config[key]))
+            .map((key) => (config[key] ? key.replace('disable', '') : key.replace('enable', '')))
             .map((key) => key.toLowerCase());
 
-          it(`Then '${
-            emptyFields.length ? `${emptyFields} should be empty` : 'all should be returned'
+          it(`Then ${
+            emptyFields.length ? `'${emptyFields}' should be empty` : 'all should be returned'
           }`, async function () {
             const expectedResult = {
               gas: opcodesResponse.gas,
@@ -457,7 +457,7 @@ describe('Debug API Test Suite', async function () {
                 gasCost: opcode.gas_cost,
                 depth: opcode.depth,
                 stack: config.disableStack ? null : opcode.stack,
-                memory: config.disableMemory ? null : opcode.memory,
+                memory: config.enableMemory ? opcode.memory : null,
                 storage: config.disableStorage ? null : opcode.storage,
                 reason: opcode.reason ? strip0x(opcode.reason) : null,
               })),

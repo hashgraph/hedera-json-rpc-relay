@@ -19,7 +19,8 @@
  */
 
 import { expect } from 'chai';
-import { OBJECTS_VALIDATIONS, TransactionObject, Validator } from '../../src/validator';
+import { OBJECTS_VALIDATIONS, TracerType, TransactionObject, Validator } from '../../src/validator';
+import * as Constants from '../../src/validator/constants';
 
 describe('Validator', async () => {
   function expectInvalidParam(index: number | string, message: string, paramValue?: string) {
@@ -66,7 +67,7 @@ describe('Validator', async () => {
         expectInvalidParam(0, Validator.ADDRESS_ERROR, ''),
       );
       expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, Validator.ADDRESS_ERROR, '[object Object]'),
+        expectInvalidParam(0, Validator.ADDRESS_ERROR, '{}'),
       );
     });
 
@@ -93,9 +94,7 @@ describe('Validator', async () => {
       );
       expect(() => Validator.validateParams([123], validation)).to.throw(expectInvalidParam(0, error, '123'));
       expect(() => Validator.validateParams([true], validation)).to.throw(expectInvalidParam(0, error, 'true'));
-      expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, error, '[object Object]'),
-      );
+      expect(() => Validator.validateParams([{}], validation)).to.throw(expectInvalidParam(0, error, '{}'));
     });
 
     it('does not throw an error if param is array', async () => {
@@ -150,7 +149,7 @@ describe('Validator', async () => {
         expectInvalidParam(0, Validator.BLOCK_HASH_ERROR, ''),
       );
       expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, Validator.BLOCK_HASH_ERROR, '[object Object]'),
+        expectInvalidParam(0, Validator.BLOCK_HASH_ERROR, '{}'),
       );
     });
 
@@ -211,7 +210,7 @@ describe('Validator', async () => {
         expectInvalidParam(0, Validator.BLOCK_NUMBER_ERROR, ''),
       );
       expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, Validator.BLOCK_NUMBER_ERROR, '[object Object]'),
+        expectInvalidParam(0, Validator.BLOCK_NUMBER_ERROR, '{}'),
       );
     });
 
@@ -248,9 +247,7 @@ describe('Validator', async () => {
       expect(() => Validator.validateParams([123], validation)).to.throw(expectInvalidParam(0, error, '123'));
       expect(() => Validator.validateParams(['0x1'], validation)).to.throw(expectInvalidParam(0, error, '0x1'));
       expect(() => Validator.validateParams([[]], validation)).to.throw(expectInvalidParam(0, error, ''));
-      expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, error, '[object Object]'),
-      );
+      expect(() => Validator.validateParams([{}], validation)).to.throw(expectInvalidParam(0, error, '{}'));
     });
   });
 
@@ -289,10 +286,10 @@ describe('Validator', async () => {
         expectInvalidObject('address', Validator.TYPES.addressFilter.error, object, '0x1'),
       );
       expect(() => Validator.validateParams([{ topics: {} }], validation)).to.throw(
-        expectInvalidObject('topics', Validator.TYPES.topics.error, object, '[object Object]'),
+        expectInvalidObject('topics', Validator.TYPES.topics.error, object, '{}'),
       );
       expect(() => Validator.validateParams([{ topics: [123] }], validation)).to.throw(
-        expectInvalidObject('topics', Validator.TYPES.topics.error, object, '123'),
+        expectInvalidObject('topics', Validator.TYPES.topics.error, object, '[123]'),
       );
     });
 
@@ -353,7 +350,7 @@ describe('Validator', async () => {
         expectInvalidParam(
           0,
           topicsError,
-          '0xddf252ad1be2c89,0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+          '["0xddf252ad1be2c89","0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]',
         ),
       );
     });
@@ -373,7 +370,7 @@ describe('Validator', async () => {
         expectInvalidParam(
           0,
           topicsError,
-          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef,0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3effffffffffff',
+          '["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3effffffffffff"]',
         ),
       );
     });
@@ -393,7 +390,7 @@ describe('Validator', async () => {
         expectInvalidParam(
           0,
           topicsError,
-          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef,ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+          '["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]',
         ),
       );
     });
@@ -401,9 +398,7 @@ describe('Validator', async () => {
     it('throws an error if topics is not array', async () => {
       expect(() => Validator.validateParams([123], validation)).to.throw(expectInvalidParam(0, topicsError, '123'));
       expect(() => Validator.validateParams(['0x1'], validation)).to.throw(expectInvalidParam(0, topicsError, '0x1'));
-      expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, topicsError, '[object Object]'),
-      );
+      expect(() => Validator.validateParams([{}], validation)).to.throw(expectInvalidParam(0, topicsError, '{}'));
     });
 
     it('does not throw an error if topics param is valid', async () => {
@@ -467,7 +462,7 @@ describe('Validator', async () => {
         expectInvalidParam(
           0,
           topicsError,
-          '0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55,0x790673a87ac19773537b2553e1dc7',
+          '[["0x790673a87ac19773537b2553e1dc7c451f659e0f75d1b69a706ad42d25cbdb55"],["0x790673a87ac19773537b2553e1dc7"]]',
         ),
       );
     });
@@ -520,7 +515,7 @@ describe('Validator', async () => {
         expectInvalidParam(0, Validator.TOPIC_HASH_ERROR, ''),
       );
       expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, Validator.TOPIC_HASH_ERROR, '[object Object]'),
+        expectInvalidParam(0, Validator.TOPIC_HASH_ERROR, '{}'),
       );
     });
 
@@ -621,7 +616,7 @@ describe('Validator', async () => {
         expectInvalidParam(0, Validator.TRANSACTION_HASH_ERROR, ''),
       );
       expect(() => Validator.validateParams([{}], validation)).to.throw(
-        expectInvalidParam(0, Validator.TRANSACTION_HASH_ERROR, '[object Object]'),
+        expectInvalidParam(0, Validator.TRANSACTION_HASH_ERROR, '{}'),
       );
     });
 
@@ -633,6 +628,155 @@ describe('Validator', async () => {
 
       expect(result).to.eq(undefined);
     });
+  });
+
+  describeTests('tracerType', {
+    validCases: [TracerType.CallTracer, TracerType.OpcodeLogger],
+    invalidCases: [
+      {
+        input: undefined,
+        error: 'Missing value for required parameter 0',
+      },
+      {
+        input: 'invalidType',
+        error: expectInvalidParam(0, Validator.TYPES.tracerType.error, 'invalidType'),
+      },
+    ],
+  });
+
+  describeTests('callTracerConfig', {
+    validCases: [{ onlyTopCall: true, unknownParam: true }, { onlyTopCall: true }, {}],
+    invalidCases: [
+      {
+        input: { onlyTopCall: 'invalid' },
+        error: expectInvalidParam("'onlyTopCall' for CallTracerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+    ],
+  });
+
+  describeTests('opcodeLoggerConfig', {
+    validCases: [
+      { enableMemory: true, disableStack: false, disableStorage: true, unknownParam: true },
+      { enableMemory: true, disableStack: false, disableStorage: true },
+      { enableMemory: true },
+      { disableStack: false },
+      { disableStorage: true },
+      {},
+    ],
+    invalidCases: [
+      {
+        input: { enableMemory: 'invalid' },
+        error: expectInvalidParam("'enableMemory' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+      {
+        input: { disableStack: 'invalid' },
+        error: expectInvalidParam("'disableStack' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+      {
+        input: { disableStorage: 'invalid' },
+        error: expectInvalidParam("'disableStorage' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+    ],
+  });
+
+  describeTests('tracerConfig', {
+    validCases: [
+      // OpcodeLoggerConfig
+      { enableMemory: true, disableStack: false, disableStorage: true, unknownParam: true },
+      { enableMemory: true, disableStack: false, disableStorage: true },
+      { enableMemory: true },
+      { disableStack: false },
+      { disableStorage: true },
+      // CallTracerConfig
+      { onlyTopCall: true, unknownParam: true },
+      { onlyTopCall: true },
+      // Empty object
+      {},
+    ],
+    invalidCases: [
+      {
+        input: { enableMemory: 'invalid' },
+        error: expectInvalidParam("'enableMemory' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+      {
+        input: { disableStack: 'invalid' },
+        error: expectInvalidParam("'disableStack' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+      {
+        input: { disableStorage: 'invalid' },
+        error: expectInvalidParam("'disableStorage' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+      {
+        input: { onlyTopCall: 'invalid' },
+        error: expectInvalidParam("'onlyTopCall' for CallTracerConfig", Validator.TYPES.boolean.error, 'invalid'),
+      },
+    ],
+  });
+
+  describeTests('tracerConfigWrapper', {
+    validCases: [
+      // CallTracerConfig
+      { tracer: TracerType.CallTracer, tracerConfig: { onlyTopCall: true }, unknownParam: true },
+      { tracer: TracerType.CallTracer, tracerConfig: { onlyTopCall: true } },
+      { tracer: TracerType.CallTracer, tracerConfig: {} },
+      { tracer: TracerType.CallTracer },
+      { tracerConfig: { onlyTopCall: true } },
+      // OpcodeLoggerConfig
+      {
+        tracer: TracerType.OpcodeLogger,
+        tracerConfig: { enableMemory: true, disableStack: false, disableStorage: true, unknownParam: true },
+      },
+      {
+        tracer: TracerType.OpcodeLogger,
+        tracerConfig: { enableMemory: true, disableStack: false, disableStorage: true },
+      },
+      { tracer: TracerType.OpcodeLogger, tracerConfig: { enableMemory: true } },
+      { tracer: TracerType.OpcodeLogger, tracerConfig: { disableStack: false } },
+      { tracer: TracerType.OpcodeLogger, tracerConfig: { disableStorage: true } },
+      { tracer: TracerType.OpcodeLogger, tracerConfig: {} },
+      { tracer: TracerType.OpcodeLogger },
+      { tracerConfig: { enableMemory: true, disableStack: false, disableStorage: true } },
+      // Empty object
+      {},
+    ],
+    invalidCases: [
+      {
+        input: { tracer: 'invalid', tracerConfig: {} },
+        error: expectInvalidParam("'tracer' for TracerConfigWrapper", Validator.TYPES.tracerType.error, 'invalid'),
+      },
+      {
+        input: { tracer: TracerType.CallTracer, tracerConfig: { onlyTopCall: 'invalid' } },
+        error: expectInvalidParam(
+          "'tracerConfig' for TracerConfigWrapper",
+          Validator.TYPES.tracerConfig.error,
+          JSON.stringify({ onlyTopCall: 'invalid' }),
+        ),
+      },
+      {
+        input: { tracer: TracerType.OpcodeLogger, tracerConfig: { enableMemory: 'invalid' } },
+        error: expectInvalidParam(
+          "'tracerConfig' for TracerConfigWrapper",
+          Validator.TYPES.tracerConfig.error,
+          JSON.stringify({ enableMemory: 'invalid' }),
+        ),
+      },
+      {
+        input: { tracer: TracerType.OpcodeLogger, tracerConfig: { disableStack: 'invalid' } },
+        error: expectInvalidParam(
+          "'tracerConfig' for TracerConfigWrapper",
+          Validator.TYPES.tracerConfig.error,
+          JSON.stringify({ disableStack: 'invalid' }),
+        ),
+      },
+      {
+        input: { tracer: TracerType.OpcodeLogger, tracerConfig: { disableStorage: 'invalid' } },
+        error: expectInvalidParam(
+          "'tracerConfig' for TracerConfigWrapper",
+          Validator.TYPES.tracerConfig.error,
+          JSON.stringify({ disableStorage: 'invalid' }),
+        ),
+      },
+    ],
   });
 
   describe('Other error cases', async () => {
@@ -766,7 +910,7 @@ describe('Validator', async () => {
         });
         validatorObject.validate();
       }).to.throw(
-        `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: NotHEX`,
+        `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing ${Constants.HASH_ERROR} of a topic, value: ["NotHEX"]`,
       );
     });
 
@@ -778,7 +922,7 @@ describe('Validator', async () => {
         });
         validatorObject.validate();
       }).to.throw(
-        `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: null`,
+        `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing ${Constants.HASH_ERROR} of a topic, value: null`,
       );
     });
 
@@ -896,8 +1040,12 @@ describe('Validator', async () => {
 
     it('returns false for an invalid config', () => {
       expect(Validator.TYPES.tracerConfig.test({ invalidKey: true })).to.be.false;
-      expect(Validator.TYPES.tracerConfig.test({ onlyTopCall: 'true' })).to.be.false;
-      expect(Validator.TYPES.tracerConfig.test({ disableMemory: 'true' })).to.be.false;
+      expect(() => Validator.TYPES.tracerConfig.test({ onlyTopCall: 'true' })).to.throw(
+        expectInvalidParam("'onlyTopCall' for CallTracerConfig", Validator.TYPES.boolean.error, 'true'),
+      );
+      expect(() => Validator.TYPES.tracerConfig.test({ disableMemory: 'true' })).to.throw(
+        expectInvalidParam("'disableMemory' for OpcodeLoggerConfig", Validator.TYPES.boolean.error, 'true'),
+      );
     });
 
     it('returns false for non-object values', () => {
@@ -907,4 +1055,22 @@ describe('Validator', async () => {
       expect(Validator.TYPES.tracerConfig.test('string')).to.be.false;
     });
   });
+
+  function describeTests(type: string, tests: { validCases: any[]; invalidCases: { input: any; error: any }[] }) {
+    describe(`validates ${type} correctly`, async () => {
+      const validation = { 0: { type, required: true } };
+
+      tests.invalidCases.forEach(({ input, error }) => {
+        it(`throws an error for input: ${JSON.stringify(input)}`, async () => {
+          expect(() => Validator.validateParams([input], validation)).to.throw(error);
+        });
+      });
+
+      tests.validCases.forEach((input) => {
+        it(`does not throw an error for input: ${JSON.stringify(input)}`, async () => {
+          expect(() => Validator.validateParams([input], validation)).to.not.throw;
+        });
+      });
+    });
+  }
 });
