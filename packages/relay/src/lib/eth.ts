@@ -19,6 +19,7 @@
  */
 
 import { Eth } from '../index';
+import { getHtsCode, getHtsStorageAt } from '@hashgraph/hedera-forking';
 import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Block, Log, Transaction, Transaction1559 } from './model';
@@ -174,6 +175,7 @@ export class EthImpl implements Eth {
   private readonly estimateGasThrows = process.env.ESTIMATE_GAS_THROWS
     ? process.env.ESTIMATE_GAS_THROWS === 'true'
     : true;
+  private static readonly ENABLE_FORKING_SUPPORT = process.env['ENABLE_FORKING_SUPPORT'] === 'true';
 
   private readonly ethGasPRiceCacheTtlMs = parseNumericEnvVar(
     'ETH_GET_GAS_PRICE_CACHE_TTL_MS',
@@ -895,9 +897,15 @@ export class EthImpl implements Eth {
 
     await this.mirrorNodeClient
       .getContractStateByAddressAndSlot(address, slot, blockEndTimestamp, requestIdPrefix)
-      .then((response) => {
+      .then(async (response) => {
         if (response !== null && response.state.length > 0) {
           result = response.state[0].value;
+        } else if (EthImpl.ENABLE_FORKING_SUPPORT) {
+          await getHtsStorageAt(address, slot, this.mirrorNodeClient, this.logger, requestIdPrefix).then((value) => {
+            if (value !== null) {
+              result = value;
+            }
+          });
         }
       })
       .catch((error: any) => {
@@ -1102,10 +1110,15 @@ export class EthImpl implements Eth {
     // check for static precompile cases first before consulting nodes
     // this also account for environments where system entities were not yet exposed to the mirror node
     if (address === EthImpl.iHTSAddress) {
-      this.logger.trace(
-        `${requestIdPrefix} HTS precompile case, return ${EthImpl.invalidEVMInstruction} for byte code`,
-      );
-      return EthImpl.invalidEVMInstruction;
+      if (EthImpl.ENABLE_FORKING_SUPPORT) {
+        this.logger.trace(`${requestIdPrefix} HTS precompile case, return HTS forking support for byte code`);
+        return getHtsCode();
+      } else {
+        this.logger.trace(
+          `${requestIdPrefix} HTS precompile case, return ${EthImpl.invalidEVMInstruction} for byte code`,
+        );
+        return EthImpl.invalidEVMInstruction;
+      }
     }
 
     const cachedLabel = `getCode.${address}.${blockNumber}`;

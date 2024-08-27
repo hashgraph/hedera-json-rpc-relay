@@ -46,6 +46,7 @@ type REQUEST_METHODS = 'GET' | 'POST';
 export class MirrorNodeClient {
   private static GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
   private static GET_BALANCE_ENDPOINT = 'balances';
+  private static GET_NFTS_ENDPOINT = 'nfts';
   private static GET_BLOCK_ENDPOINT = 'blocks/';
   private static GET_BLOCKS_ENDPOINT = 'blocks';
   private static GET_CONTRACT_ENDPOINT = 'contracts/';
@@ -963,6 +964,24 @@ export class MirrorNodeClient {
   public async getTokenById(tokenId: string, requestIdPrefix?: string, retries?: number) {
     return this.get(
       `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}`,
+      MirrorNodeClient.GET_TOKENS_ENDPOINT,
+      requestIdPrefix,
+      retries,
+    );
+  }
+
+  public async getTokenBalancesById(tokenId: string, requestIdPrefix?: string, retries?: number) {
+    return this.get(
+      `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}/${MirrorNodeClient.GET_BALANCE_ENDPOINT}`,
+      MirrorNodeClient.GET_TOKENS_ENDPOINT,
+      requestIdPrefix,
+      retries,
+    );
+  }
+
+  public async getTokenNftsById(tokenId: string, requestIdPrefix?: string, retries?: number) {
+    return this.get(
+      `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}/${MirrorNodeClient.GET_NFTS_ENDPOINT}`,
       MirrorNodeClient.GET_TOKENS_ENDPOINT,
       requestIdPrefix,
       retries,

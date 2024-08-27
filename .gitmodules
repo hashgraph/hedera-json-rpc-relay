@@ -1,0 +1,3 @@
+[submodule "hedera-forking"]
+	path = hedera-forking
+	url = git@github.com:hashgraph/hedera-forking.git
