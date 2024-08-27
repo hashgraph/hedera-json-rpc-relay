@@ -55,6 +55,8 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
 The Hbar limiter will be implemented as a separate service, used by other services/classes that need it. It will have two main purposes - to capture the gas fees for different operation and to check if an operation needs to be paused, due to exceeded Hbar limit
 
 ### Class Diagram
+
+#### Service Layer
 ```mermaid
 classDiagram
     class sdkClient
@@ -85,6 +87,88 @@ classDiagram
     }
     IHBarLimitService <|-- sdkClient
     IHBarLimitService <|-- HbarLimitService
+```
+
+#### Database Layer:
+```mermaid
+classDiagram
+    class HbarSpendingPlan {
+        -id: string
+        -subscriptionType: SubscriptionType
+        -createdAt: Date
+        -active: boolean
+        -spendingHistory: HbarSpendingRecord[]
+        -spentToday: number
+    }
+
+    class HbarSpendingRecord {
+        -amount: number
+        -timestamp: Date
+    }
+
+    class EthAddressHbarSpendingPlan {
+        -ethAddress: string
+        -planId: string
+    }
+    
+    class IpAddressHbarSpendingPlan {
+        -ipAddress: string
+        -planId: string
+    }
+
+    class CacheService {
+        -internalCache: ICacheClient
+        -sharedCache: ICacheClient
+        +getAsync<T>(key: string, callingMethod: string, requestIdPrefix?: string): Promise<T>
+        +set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string): Promise<void>
+        +multiSet(entries: Record<string, any>, callingMethod: string, ttl?: number, requestIdPrefix?: string): Promise<void>
+        +delete(key: string, callingMethod: string, requestIdPrefix?: string): Promise<void>
+        +clear(requestIdPrefix?: string): Promise<void>
+        +incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix?: string): Promise<number>
+        +rPush(key: string, value: any, callingMethod: string, requestIdPrefix?: string): Promise<number>
+        +lRange<T>(key: string, start: number, end: number, callingMethod: string, requestIdPrefix?: string): Promise<T[]>
+    }
+
+    class HbarSpendingPlanRepository {
+        -cache: CacheService
+        +findById(id: string): Promise<IHbarSpendingPlan>
+        +findByIdWithDetails(id: string): Promise<IDetailedHbarSpendingPlan>
+        +create(subscriptionType: SubscriptionType): Promise<IDetailedHbarSpendingPlan>
+        +checkExistsAndActive(id: string): Promise<void>
+        +getSpendingHistory(id: string): Promise<HbarSpendingRecord[]>
+        +addAmountToSpendingHistory(id: string, amount: number): Promise<number>
+        +getSpentToday(id: string): Promise<number>
+        +addAmountToSpentToday(id: string, amount: number): Promise<void>
+    }
+
+    class EthAddressHbarSpendingPlanRepository {
+        -cache: CacheService
+        +findByAddress(ethAddress: string): Promise<EthAddressHbarSpendingPlan>
+        +save(ethAddressPlan: EthAddressHbarSpendingPlan): Promise<void>
+        +delete(ethAddress: string): Promise<void>
+    }
+    
+    class IpAddressHbarSpendingPlanRepository {
+        -cache: CacheService
+        +findByIp(ip: string): Promise<IpAddressHbarSpendingPlan>
+        +save(ipAddressPlan: IpAddressHbarSpendingPlan): Promise<void>
+        +delete(ip: string): Promise<void>
+    }
+
+    class SubscriptionType
+    <<Enumeration>> SubscriptionType
+    SubscriptionType : BASIC
+    SubscriptionType : EXTENDED
+    SubscriptionType : PRIVILEGED
+
+    HbarSpendingPlan --> SubscriptionType : could be one of the types
+    HbarSpendingPlan --> HbarSpendingRecord : stores history of
+    EthAddressHbarSpendingPlan --> HbarSpendingPlan : links an ETH address to
+    IpAddressHbarSpendingPlan --> HbarSpendingPlan : links an IP address to
+
+    HbarSpendingPlanRepository --> CacheService : uses
+    EthAddressHbarSpendingPlanRepository --> CacheService : uses
+    IpAddressHbarSpendingPlanRepository --> CacheService : uses
 ```
 
 ## Additional Considerations
