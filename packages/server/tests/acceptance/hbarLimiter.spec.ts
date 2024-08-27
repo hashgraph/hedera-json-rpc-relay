@@ -241,28 +241,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('Rate Limit', () => {
-        it('Should preemtively check the rate limit before submitting EthereumTransaction', async function () {
-          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-
-          process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'true';
-          process.env.HOT_FIX_FILE_APPEND_FEE = (remainingHbarsBefore - 100000000).toString();
-
-          try {
-            const largeContract = await Utils.deployContract(
-              largeContractJson.abi,
-              largeContractJson.bytecode,
-              accounts[0].wallet,
-            );
-            await largeContract.waitForDeployment();
-
-            expect(true).to.be.false;
-          } catch (e) {
-            expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED.message);
-          }
-
-          delete process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
-        });
-
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
           const TOLERANCE = 0.02;
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
@@ -286,6 +264,28 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
           Assertions.expectWithinTolerance(amountPaidByOperator, hbarLimitReducedAmount, TOLERANCE);
           Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
+        });
+
+        it('Should preemtively check the rate limit before submitting EthereumTransaction', async function () {
+          process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'true';
+          try {
+            for (let i = 0; i < 50; i++) {
+              const largeContract = await Utils.deployContract(
+                largeContractJson.abi,
+                largeContractJson.bytecode,
+                accounts[0].wallet,
+              );
+              await largeContract.waitForDeployment();
+            }
+            expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
+          } catch (e) {
+            console.log(`asdaksjdhuqwiyeiqwuyhdkajshdkajhsiduuqywe`);
+            console.log(e);
+
+            expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED.message);
+          }
+
+          delete process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
         });
 
         it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
