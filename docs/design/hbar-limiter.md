@@ -59,34 +59,40 @@ The Hbar limiter will be implemented as a separate service, used by other servic
 #### Service Layer
 ```mermaid
 classDiagram
-    class sdkClient
+    class SdkClient {
+        -hbarLimitService: IHBarLimitService
+        -metricService: MetricService
+        +executeTransaction(transaction: Transaction, callerName: string, interactingEntity: string, requestId?: string): Promise<TransactionId>
+        +executeQuery~T~(query: Query~T~, callerName: string, interactingEntity: string, requestId?: string): Promise<Query~T~>
+    }
 
     class MetricService {
+      -hbarLimitService: IHBarLimitService
       +captureTransactionFees(transaction: Transaction, callerName: string, interactingEntity: string, requestId?: string) void
       +captureQueryFees~T~(query: Query~T~, callerName: string, interactingEntity: string, requestId?: string) void
     }
 
-    MetricService <|-- sdkClient
-
-    class HbarLimitService {
-        -mirrorNodeClient: MirrorNodeClient
+    class HBarLimitService {
+        -hbarSpendingPlanRepository: HbarSpendingPlanRepository
+        -ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository
+        -ipAddressHbarSpendingPlanRepository: IpAddressHbarSpendingPlanRepository
         +shouldLimit(txFrom: string, ip?: string) boolean
-        -getTransactionRecord(transactionld: string) TransactionRecord
         +resetLimiter() void
-        -getOperatorBalance() number
-        -getAddressLimit(address: string) number
-        -getAddressSpent(address: string) number
-        -getIpSpent(ip: string) number
+        -getSpendingPlanOfEthAddress(address: string): HbarSpendingPlan
+        -getSpendingPlanOfIpAddress(ip: string): HbarSpendingPlan
         -checkTotalSpent() boolean
         -shouldReset() boolean
     }
     
-    class IHBarLimitService {
-      +shouldLimit() boolean
-      +resetLimiter() void
-    }
-    IHBarLimitService <|-- sdkClient
-    IHBarLimitService <|-- HbarLimitService
+    class IHBarLimitService
+    <<interface>> IHBarLimitService
+    IHBarLimitService : shouldLimit() boolean
+    IHBarLimitService : resetLimiter() void
+
+    SdkClient --> MetricService : uses
+    SdkClient --> IHBarLimitService : uses
+    MetricService --> IHBarLimitService : uses
+    IHBarLimitService <|-- HBarLimitService: implements
 ```
 
 #### Database Layer:
