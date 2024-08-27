@@ -18,14 +18,7 @@
  *
  */
 
-import { IEthAddressPlan } from '../../types/hbarLimiter/ethAddressPlan';
-
-export class EthAddressPlan implements IEthAddressPlan {
-  ethAddress: string;
-  planId: string;
-
-  constructor(data: IEthAddressPlan) {
-    this.ethAddress = data.ethAddress;
-    this.planId = data.planId;
-  }
+export interface IHbarSpendingRecord {
+  amount: number;
+  timestamp: Date;
 }

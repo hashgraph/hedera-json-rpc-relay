@@ -20,13 +20,13 @@
 
 import { randomBytes, uuidV4 } from 'ethers';
 import { Logger } from 'pino';
-import { IHbarSpending } from '../../types/hbarLimiter/hbarSpending';
+import { IHbarSpendingRecord } from '../../types/hbarLimiter/hbarSpendingRecord';
 import { CacheService } from '../../../services/cacheService/cacheService';
 import { HbarLimitPlanNotActiveError, HbarLimitPlanNotFoundError } from '../../types/hbarLimiter/errors';
-import { IDetailedHbarLimitPlan, IHbarLimitPlan } from '../../types/hbarLimiter/hbarLimitPlan';
-import { HbarSpending } from '../../entities/hbarLimiter/hbarSpending';
+import { IDetailedHbarSpendingPlan, IHbarSpendingPlan } from '../../types/hbarLimiter/hbarSpendingPlan';
+import { HbarSpendingRecord } from '../../entities/hbarLimiter/hbarSpendingRecord';
 import { SubscriptionType } from '../../types/hbarLimiter/subscriptionType';
-import { HbarLimitPlan } from '../../entities/hbarLimiter/hbarLimitPlan';
+import { HbarSpendingPlan } from '../../entities/hbarLimiter/hbarSpendingPlan';
 
 export class HbarLimitPlanRepository {
   private readonly collectionKey = 'hbarLimitPlan';
@@ -53,11 +53,11 @@ export class HbarLimitPlanRepository {
   /**
    * Gets a hbar limit plan by ID.
    * @param id - The ID of the plan to get.
-   * @returns {Promise<IHbarLimitPlan>} - The hbar limit plan object.
+   * @returns {Promise<IHbarSpendingPlan>} - The hbar limit plan object.
    */
-  async findById(id: string): Promise<IHbarLimitPlan> {
+  async findById(id: string): Promise<IHbarSpendingPlan> {
     const key = this.getKey(id);
-    const plan = await this.cache.getAsync<IHbarLimitPlan>(key, 'findById');
+    const plan = await this.cache.getAsync<IHbarSpendingPlan>(key, 'findById');
     if (!plan) {
       throw new HbarLimitPlanNotFoundError(id);
     }
@@ -71,11 +71,11 @@ export class HbarLimitPlanRepository {
   /**
    * Gets a hbar limit plan by ID with detailed information (spendingHistory and spentToday).
    * @param id - The ID of the plan.
-   * @returns {Promise<IDetailedHbarLimitPlan>} - The detailed hbar limit plan object.
+   * @returns {Promise<IDetailedHbarSpendingPlan>} - The detailed hbar limit plan object.
    */
-  async findByIdWithDetails(id: string): Promise<IDetailedHbarLimitPlan> {
+  async findByIdWithDetails(id: string): Promise<IDetailedHbarSpendingPlan> {
     const plan = await this.findById(id);
-    return new HbarLimitPlan({
+    return new HbarSpendingPlan({
       ...plan,
       spendingHistory: await this.getSpendingHistory(id),
       spentToday: await this.getSpentToday(id),
@@ -85,10 +85,10 @@ export class HbarLimitPlanRepository {
   /**
    * Creates a new hbar limit plan.
    * @param subscriptionType - The subscription type of the plan to create.
-   * @returns {Promise<IDetailedHbarLimitPlan>} - The created hbar limit plan object.
+   * @returns {Promise<IDetailedHbarSpendingPlan>} - The created hbar limit plan object.
    */
-  async create(subscriptionType: SubscriptionType): Promise<IDetailedHbarLimitPlan> {
-    const plan: IDetailedHbarLimitPlan = {
+  async create(subscriptionType: SubscriptionType): Promise<IDetailedHbarSpendingPlan> {
+    const plan: IDetailedHbarSpendingPlan = {
       id: uuidV4(randomBytes(16)),
       subscriptionType,
       createdAt: new Date(),
@@ -99,7 +99,7 @@ export class HbarLimitPlanRepository {
     this.logger.trace(`Creating HbarLimitPlan with ID ${plan.id}...`);
     const key = this.getKey(plan.id);
     await this.cache.set(key, plan, 'create', this.threeMonthsInMillis);
-    return new HbarLimitPlan(plan);
+    return new HbarSpendingPlan(plan);
   }
 
   /**
@@ -117,15 +117,15 @@ export class HbarLimitPlanRepository {
   /**
    * Gets the spending history for a hbar limit plan.
    * @param id - The ID of the plan.
-   * @returns {Promise<IHbarSpending[]>} - A promise that resolves with the spending history.
+   * @returns {Promise<IHbarSpendingRecord[]>} - A promise that resolves with the spending history.
    */
-  async getSpendingHistory(id: string): Promise<IHbarSpending[]> {
+  async getSpendingHistory(id: string): Promise<IHbarSpendingRecord[]> {
     await this.checkExistsAndActive(id);
 
     this.logger.trace(`Retrieving spending history for HbarLimitPlan with ID ${id}...`);
     const key = this.getSpendingHistoryKey(id);
-    const spendingHistory = await this.cache.lRange<IHbarSpending>(key, 0, -1, 'getSpendingHistory');
-    return spendingHistory.map((entry) => new HbarSpending(entry));
+    const spendingHistory = await this.cache.lRange<IHbarSpendingRecord>(key, 0, -1, 'getSpendingHistory');
+    return spendingHistory.map((entry) => new HbarSpendingRecord(entry));
   }
 
   /**
@@ -139,7 +139,7 @@ export class HbarLimitPlanRepository {
 
     this.logger.trace(`Adding ${amount} to spending history for HbarLimitPlan with ID ${id}...`);
     const key = this.getSpendingHistoryKey(id);
-    const entry: IHbarSpending = { amount, timestamp: new Date() };
+    const entry: IHbarSpendingRecord = { amount, timestamp: new Date() };
     return this.cache.rPush(key, entry, 'addAmountToSpendingHistory');
   }
 

@@ -23,7 +23,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { EthAddressPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/EthAddressPlanRepository';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import pino from 'pino';
-import { IEthAddressPlan } from '../../../../src/lib/db/types/hbarLimiter/ethAddressPlan';
+import { IEthAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/ethAddressHbarSpendingPlan';
 import { EthAddressPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { randomBytes, uuidV4 } from 'ethers';
 import { Registry } from 'prom-client';
@@ -76,7 +76,7 @@ describe('EthAddressPlanRepository', function () {
     describe('findByAddress', () => {
       it('retrieves an address plan by address', async () => {
         const ethAddress = '0x123';
-        const addressPlan: IEthAddressPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
         await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test');
 
         const result = await repository.findByAddress(ethAddress);
@@ -95,10 +95,10 @@ describe('EthAddressPlanRepository', function () {
     describe('save', () => {
       it('saves an address plan successfully', async () => {
         const ethAddress = '0x123';
-        const addressPlan: IEthAddressPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
 
         await repository.save(addressPlan);
-        const result = await cacheService.getAsync<IEthAddressPlan>(
+        const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
           `${repository['collectionKey']}:${ethAddress}`,
           'test',
         );
@@ -107,13 +107,13 @@ describe('EthAddressPlanRepository', function () {
 
       it('overwrites an existing address plan', async () => {
         const ethAddress = '0x123';
-        const addressPlan: IEthAddressPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
         await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test');
 
         const newPlanId = uuidV4(randomBytes(16));
-        const newAddressPlan: IEthAddressPlan = { ethAddress, planId: newPlanId };
+        const newAddressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: newPlanId };
         await repository.save(newAddressPlan);
-        const result = await cacheService.getAsync<IEthAddressPlan>(
+        const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
           `${repository['collectionKey']}:${ethAddress}`,
           'test',
         );
@@ -124,11 +124,11 @@ describe('EthAddressPlanRepository', function () {
     describe('delete', () => {
       it('deletes an address plan successfully', async () => {
         const ethAddress = '0x123';
-        const addressPlan: IEthAddressPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
         await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test');
 
         await repository.delete(ethAddress);
-        const result = await cacheService.getAsync<IEthAddressPlan>(
+        const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
           `${repository['collectionKey']}:${ethAddress}`,
           'test',
         );

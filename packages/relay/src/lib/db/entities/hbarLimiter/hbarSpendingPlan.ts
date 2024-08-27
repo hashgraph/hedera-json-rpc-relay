@@ -18,24 +18,24 @@
  *
  */
 
-import { IDetailedHbarLimitPlan } from '../../types/hbarLimiter/hbarLimitPlan';
-import { HbarSpending } from './hbarSpending';
+import { IDetailedHbarSpendingPlan } from '../../types/hbarLimiter/hbarSpendingPlan';
+import { HbarSpendingRecord } from './hbarSpendingRecord';
 import { SubscriptionType } from '../../types/hbarLimiter/subscriptionType';
 
-export class HbarLimitPlan implements IDetailedHbarLimitPlan {
+export class HbarSpendingPlan implements IDetailedHbarSpendingPlan {
   id: string;
   subscriptionType: SubscriptionType;
   createdAt: Date;
   active: boolean;
-  spendingHistory: HbarSpending[];
+  spendingHistory: HbarSpendingRecord[];
   spentToday: number;
 
-  constructor(data: IDetailedHbarLimitPlan) {
+  constructor(data: IDetailedHbarSpendingPlan) {
     this.id = data.id;
     this.subscriptionType = data.subscriptionType;
     this.createdAt = new Date(data.createdAt);
     this.active = data.active;
-    this.spendingHistory = data.spendingHistory?.map((spending) => new HbarSpending(spending)) || [];
+    this.spendingHistory = data.spendingHistory?.map((spending) => new HbarSpendingRecord(spending)) || [];
     this.spentToday = data.spentToday ?? 0;
   }
 }

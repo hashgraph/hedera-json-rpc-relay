@@ -18,17 +18,7 @@
  *
  */
 
-import { IHbarSpending } from './hbarSpending';
-import { SubscriptionType } from './subscriptionType';
-
-export interface IHbarLimitPlan {
-  id: string;
-  subscriptionType: SubscriptionType;
-  createdAt: Date;
-  active: boolean;
-}
-
-export interface IDetailedHbarLimitPlan extends IHbarLimitPlan {
-  spendingHistory: IHbarSpending[];
-  spentToday: number;
+export interface IEthAddressHbarSpendingPlan {
+  ethAddress: string;
+  planId: string;
 }

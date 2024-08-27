@@ -18,7 +18,17 @@
  *
  */
 
-export interface IHbarSpending {
-  amount: number;
-  timestamp: Date;
+import { IHbarSpendingRecord } from './hbarSpendingRecord';
+import { SubscriptionType } from './subscriptionType';
+
+export interface IHbarSpendingPlan {
+  id: string;
+  subscriptionType: SubscriptionType;
+  createdAt: Date;
+  active: boolean;
+}
+
+export interface IDetailedHbarSpendingPlan extends IHbarSpendingPlan {
+  spendingHistory: IHbarSpendingRecord[];
+  spentToday: number;
 }

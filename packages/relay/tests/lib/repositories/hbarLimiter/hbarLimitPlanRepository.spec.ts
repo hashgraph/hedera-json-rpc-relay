@@ -29,7 +29,7 @@ import {
   HbarLimitPlanNotActiveError,
   HbarLimitPlanNotFoundError,
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
-import { IHbarSpending } from '../../../../src/lib/db/types/hbarLimiter/hbarSpending';
+import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingRecord';
 
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 
@@ -136,7 +136,7 @@ describe('HbarLimitPlanRepository', function () {
         const createdPlan = await repository.create(subscriptionType);
 
         const key = `${repository['collectionKey']}:${createdPlan.id}:spendingHistory`;
-        const hbarSpending = { amount: 100, timestamp: new Date() } as IHbarSpending;
+        const hbarSpending = { amount: 100, timestamp: new Date() } as IHbarSpendingRecord;
         await cacheService.rPush(key, hbarSpending, 'test');
 
         const spendingHistory = await repository.getSpendingHistory(createdPlan.id);

@@ -18,13 +18,13 @@
  *
  */
 
-import { IHbarSpending } from '../../types/hbarLimiter/hbarSpending';
+import { IHbarSpendingRecord } from '../../types/hbarLimiter/hbarSpendingRecord';
 
-export class HbarSpending implements IHbarSpending {
+export class HbarSpendingRecord implements IHbarSpendingRecord {
   amount: number;
   timestamp: Date;
 
-  constructor(data: IHbarSpending) {
+  constructor(data: IHbarSpendingRecord) {
     this.amount = data.amount;
     this.timestamp = new Date(data.timestamp);
   }

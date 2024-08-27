@@ -20,9 +20,9 @@
 
 import { CacheService } from '../../../services/cacheService/cacheService';
 import { Logger } from 'pino';
-import { IEthAddressPlan } from '../../types/hbarLimiter/ethAddressPlan';
+import { IEthAddressHbarSpendingPlan } from '../../types/hbarLimiter/ethAddressHbarSpendingPlan';
 import { EthAddressPlanNotFoundError } from '../../types/hbarLimiter/errors';
-import { EthAddressPlan } from '../../entities/hbarLimiter/ethAddressPlan';
+import { EthAddressHbarSpendingPlan } from '../../entities/hbarLimiter/ethAddressHbarSpendingPlan';
 
 export class EthAddressPlanRepository {
   private readonly collectionKey = 'ethAddressPlan';
@@ -45,17 +45,17 @@ export class EthAddressPlanRepository {
     this.logger = logger;
   }
 
-  async findByAddress(ethAddress: string): Promise<IEthAddressPlan> {
+  async findByAddress(ethAddress: string): Promise<IEthAddressHbarSpendingPlan> {
     const key = this.getKey(ethAddress);
-    const addressPlan = await this.cache.getAsync<IEthAddressPlan>(key, 'findByAddress');
+    const addressPlan = await this.cache.getAsync<IEthAddressHbarSpendingPlan>(key, 'findByAddress');
     if (!addressPlan) {
       throw new EthAddressPlanNotFoundError(ethAddress);
     }
     this.logger.trace(`Retrieved EthAddressPlan with address ${ethAddress}`);
-    return new EthAddressPlan(addressPlan);
+    return new EthAddressHbarSpendingPlan(addressPlan);
   }
 
-  async save(addressPlan: IEthAddressPlan): Promise<void> {
+  async save(addressPlan: IEthAddressHbarSpendingPlan): Promise<void> {
     const key = this.getKey(addressPlan.ethAddress);
     await this.cache.set(key, addressPlan, 'save', this.threeMonthsInMillis);
     this.logger.trace(`Saved EthAddressPlan with address ${addressPlan.ethAddress}`);
