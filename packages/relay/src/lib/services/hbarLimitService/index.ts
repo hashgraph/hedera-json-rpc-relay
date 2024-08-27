@@ -58,7 +58,7 @@ export class HbarLimitService implements IHbarLimitService {
       try {
         return await this.getSpendingPlanByEthAddress(ethAddress);
       } catch (error) {
-        this.logger.error(error);
+        this.logger.warn(error, `Failed to get spending plan for eth address '${ethAddress}'`);
       }
     }
     if (ipAddress) {
