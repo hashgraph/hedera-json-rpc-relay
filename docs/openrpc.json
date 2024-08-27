@@ -1144,36 +1144,27 @@
         },
         {
           "name": "tracer",
-          "required": true,
+          "required": false,
           "schema": {
-            "type": "string",
-            "enum": ["callTracer", "opcodeLogger"]
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TracerType"
+              },
+              {
+                "$ref": "#/components/schemas/TracerConfig"
+              },
+              {
+                "$ref": "#/components/schemas/TracerConfigWrapper"
+              }
+            ]
           },
-          "description": "Specifies the type of tracer."
+          "description": "Specifies the type of tracer or configuration object for the tracer."
         },
         {
           "name": "tracerConfig",
           "required": false,
           "schema": {
-            "type": "object",
-            "properties": {
-              "onlyTopCall": {
-                "type": "boolean"
-              },
-              "enableMemory": {
-                "type": "boolean"
-              },
-              "disableStack": {
-                "type": "boolean"
-              },
-              "disableStorage": {
-                "type": "boolean"
-              },
-              "enableReturnData": {
-                "type": "boolean"
-              }
-            },
-            "additionalProperties": false
+            "$ref": "#/components/schemas/TracerConfig"
           },
           "description": "Configuration object for the tracer."
         }
@@ -1481,6 +1472,59 @@
             "$ref": "#/components/schemas/hash32"
           }
         ]
+      },
+      "CallTracerConfig": {
+        "title": "CallTracer config",
+        "type": "object",
+        "properties": {
+          "onlyTopCall": {
+            "type": "boolean"
+          }
+        }
+      },
+      "OpcodeLoggerConfig": {
+        "title": "OpcodeLogger config",
+        "type": "object",
+        "properties": {
+          "enableMemory": {
+            "type": "boolean"
+          },
+          "disableStack": {
+            "type": "boolean"
+          },
+          "disableStorage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TracerConfig": {
+        "title": "Tracer config",
+        "type": "object",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CallTracerConfig"
+          },
+          {
+            "$ref": "#/components/schemas/OpcodeLoggerConfig"
+          }
+        ]
+      },
+      "TracerType": {
+        "title": "Tracer type",
+        "type": "string",
+        "enum": ["callTracer", "opcodeLogger"]
+      },
+      "TracerConfigWrapper": {
+        "title": "Tracer config wrapper",
+        "type": "object",
+        "properties": {
+          "tracer": {
+            "$ref": "#/components/schemas/TracerType"
+          },
+          "tracerConfig": {
+            "$ref": "#/components/schemas/TracerConfig"
+          }
+        }
       },
       "TransactionWithSender": {
         "title": "Transaction object with sender",

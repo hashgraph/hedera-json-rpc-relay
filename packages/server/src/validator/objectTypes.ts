@@ -20,6 +20,7 @@
 
 import { Validator } from '.';
 import { predefined } from '@hashgraph/json-rpc-relay';
+import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfigWrapper } from '@hashgraph/json-rpc-relay/src/lib/types';
 import { IObjectSchema, IObjectValidation } from '../types/validator';
 
 export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
@@ -66,6 +67,64 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
       topics: {
         type: 'topics',
         nullable: false,
+      },
+    },
+  },
+  callTracerConfig: {
+    name: 'CallTracerConfig',
+    failOnEmpty: true,
+    failOnUnexpectedParams: false,
+    properties: {
+      onlyTopCall: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+    },
+  },
+  opcodeLoggerConfig: {
+    name: 'OpcodeLoggerConfig',
+    failOnEmpty: true,
+    failOnUnexpectedParams: false,
+    properties: {
+      // Will be ignored in the implementation,
+      // added here only for validation purposes
+      disableMemory: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+      enableMemory: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+      disableStack: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+      disableStorage: {
+        type: 'boolean',
+        nullable: false,
+        required: false,
+      },
+    },
+  },
+  tracerConfigWrapper: {
+    name: 'TracerConfigWrapper',
+    failOnEmpty: true,
+    failOnUnexpectedParams: false,
+    properties: {
+      tracer: {
+        type: 'tracerType',
+        nullable: false,
+        required: false,
+      },
+      tracerConfig: {
+        type: 'tracerConfig',
+        nullable: false,
+        required: false,
       },
     },
   },
@@ -240,5 +299,23 @@ export class EthSubscribeLogsParamsObject extends DefaultValidation {
     }
 
     return valid;
+  }
+}
+
+export class CallTracerConfig extends DefaultValidation<ICallTracerConfig> {
+  constructor(config: any) {
+    super(OBJECTS_VALIDATIONS.callTracerConfig, config);
+  }
+}
+
+export class OpcodeLoggerConfig extends DefaultValidation<IOpcodeLoggerConfig> {
+  constructor(config: any) {
+    super(OBJECTS_VALIDATIONS.opcodeLoggerConfig, config);
+  }
+}
+
+export class TracerConfigWrapper extends DefaultValidation<ITracerConfigWrapper> {
+  constructor(config: any) {
+    super(OBJECTS_VALIDATIONS.tracerConfigWrapper, config);
   }
 }

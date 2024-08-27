@@ -213,6 +213,28 @@ const formatContractResult = (cr: any) => {
   return null;
 };
 
+/**
+ * Maps the keys and values of an object to a new object using the provided functions.
+ *
+ * @param target The object to map
+ * @param mapFn The mapping functions
+ * @param mapFn.key The function to map the keys
+ * @param mapFn.value The function to map the values
+ * @returns A new object with the mapped keys and values
+ */
+const mapKeysAndValues = <OldK extends keyof any, NewK extends keyof any, OldV, NewV>(
+  target: Record<OldK, OldV>,
+  mapFn: { key?: (key: OldK) => NewK; value?: (value: OldV) => NewV },
+): Record<NewK, NewV> => {
+  const result = {} as Record<NewK, NewV>;
+  for (const key in target) {
+    const newKey = mapFn.key ? mapFn.key(key) : (key as unknown as NewK);
+    const newValue = mapFn.value ? mapFn.value(target[key]) : (target[key] as unknown as NewV);
+    result[newKey] = newValue;
+  }
+  return result;
+};
+
 const strip0x = (input: string): string => {
   return input.startsWith(EMPTY_HEX) ? input.substring(2) : input;
 };
@@ -330,4 +352,5 @@ export {
   isHex,
   ASCIIToHex,
   getTransferAmountSumForAccount,
+  mapKeysAndValues,
 };

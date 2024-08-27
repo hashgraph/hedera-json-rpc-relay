@@ -19,7 +19,7 @@
  */
 
 import { Logger } from 'pino';
-import { Registry, Counter, Gauge } from 'prom-client';
+import { Counter, Gauge, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
 
 export default class HbarLimit {
