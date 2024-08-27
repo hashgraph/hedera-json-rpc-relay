@@ -2200,7 +2200,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}, value: 123`,
+            `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}, value: [123]`,
           );
         }
       });
@@ -2219,7 +2219,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}, value: 123`,
+            `Invalid parameter 'topics' for FilterObject: ${Validator.TYPES['topics'].error}, value: [[123]]`,
           );
         }
       });
@@ -2401,12 +2401,12 @@ describe('RPC Server', function () {
         ).to.not.throw;
       });
 
-      it('should execute with valid hash, null TracerType and null TracerConfig', async () => {
+      it('should execute with valid hash, no TracerType and no TracerConfig', async () => {
         expect(
           await testClient.post('/', {
             jsonrpc: '2.0',
             method: 'debug_traceTransaction',
-            params: [contractHash1, null, null],
+            params: [contractHash1],
             id: '2',
           }),
         ).to.not.throw;
