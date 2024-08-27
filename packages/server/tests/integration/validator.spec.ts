@@ -20,6 +20,7 @@
 
 import { expect } from 'chai';
 import { OBJECTS_VALIDATIONS, TracerType, TransactionObject, Validator } from '../../src/validator';
+import * as Constants from '../../src/validator/constants';
 
 describe('Validator', async () => {
   function expectInvalidParam(index: number | string, message: string, paramValue?: string) {
@@ -909,7 +910,7 @@ describe('Validator', async () => {
         });
         validatorObject.validate();
       }).to.throw(
-        `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: ["NotHEX"]`,
+        `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing ${Constants.HASH_ERROR} of a topic, value: ["NotHEX"]`,
       );
     });
 
@@ -921,7 +922,7 @@ describe('Validator', async () => {
         });
         validatorObject.validate();
       }).to.throw(
-        `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: null`,
+        `Invalid parameter 'topics' for EthSubscribeLogsParamsObject: Expected an array or array of arrays containing ${Constants.HASH_ERROR} of a topic, value: null`,
       );
     });
 
