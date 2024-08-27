@@ -392,30 +392,15 @@ export class SDKClient {
     if (ethereumTransactionData.callData.length <= this.fileAppendChunkSize) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
-      // notice: this solution is temporary and subject to change.
-      const isPreemtiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK
-        ? process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK === 'true'
-        : false;
+      const isPreemtiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK === 'true';
 
       if (isPreemtiveCheckOn) {
-        const numFileCreateTxs = 1;
-        const numFileAppendTxs = Math.ceil(ethereumTransactionData.callData.length / this.fileAppendChunkSize);
-        const fileCreateFee = Number(process.env.HOT_FIX_FILE_CREATE_FEE || 100000000); // 1 hbar
-        const fileAppendFee = Number(process.env.HOT_FIX_FILE_APPEND_FEE || 120000000); // 1.2 hbar
-
-        const totalPreemtiveTransactionFee = numFileCreateTxs * fileCreateFee + numFileAppendTxs * fileAppendFee;
-
-        const shouldPreemtivelyLimit = this.hbarLimiter.shouldPreemtivelyLimit(
+        this.hbarLimiter.shouldPreemtivelyLimit(
           originalCallerAddress,
-          totalPreemtiveTransactionFee,
+          ethereumTransactionData.callData.length,
+          this.fileAppendChunkSize,
           requestId,
         );
-        if (shouldPreemtivelyLimit) {
-          this.logger.trace(
-            `${requestIdPrefix} The total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, callDataSize=${ethereumTransactionData.callData.length}`,
-          );
-          throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
-        }
       }
 
       fileId = await this.createFile(

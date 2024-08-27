@@ -19,7 +19,8 @@
  */
 
 import { Logger } from 'pino';
-import { Counter, Gauge, Registry } from 'prom-client';
+import { predefined } from '../errors/JsonRpcError';
+import { Registry, Counter, Gauge } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
 
 export default class HbarLimit {
@@ -108,16 +109,15 @@ export default class HbarLimit {
     if (this.remainingBudget <= 0) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
-        `${requestIdPrefix} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}`,
+        `${requestIdPrefix} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}.`,
       );
       return true;
+    } else {
+      this.logger.trace(
+        `${requestIdPrefix} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}.`,
+      );
+      return false;
     }
-
-    this.logger.trace(
-      `${requestIdPrefix} HBAR rate limit not reached. ${this.remainingBudget} out of ${this.total} tℏ left in relay budget until ${this.reset}.`,
-    );
-
-    return false;
   }
 
   /**
@@ -128,13 +128,13 @@ export default class HbarLimit {
    * @param {string} originalCallerAddress - The address of the original caller making the request.
    * @param {number} transactionFee - The transaction fee in tinybars to be checked against the remaining budget.
    * @param {string} [requestId] - An optional unique request ID for tracking the request.
-   * @returns {boolean} - Returns `true` if the rate limit should be preemptively enforced, otherwise `false`.
    */
-  shouldPreemtivelyLimit(originalCallerAddress: string, transactionFee: number, requestId?: string): boolean {
-    if (!this.enabled) {
-      return false;
-    }
-
+  shouldPreemtivelyLimit(
+    originalCallerAddress: string,
+    callDataSize: number,
+    fileAppendChunkSize: number,
+    requestId: string,
+  ) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
     // check if the caller is a whitelisted caller
@@ -142,10 +142,25 @@ export default class HbarLimit {
       this.logger.trace(
         `${requestIdPrefix} HBAR preemtive rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
       );
-      return false;
-    }
+    } else {
+      // estimate total transaction fee
+      const numFileCreateTxs = 1;
+      const numFileAppendTxs = Math.ceil(callDataSize / fileAppendChunkSize);
+      const fileCreateFee = Number(process.env.HOT_FIX_FILE_CREATE_FEE || 100000000); // 1 hbar
+      const fileAppendFee = Number(process.env.HOT_FIX_FILE_APPEND_FEE || 120000000); // 1.2 hbar
+      const totalPreemtiveTransactionFee = numFileCreateTxs * fileCreateFee + numFileAppendTxs * fileAppendFee;
 
-    return this.remainingBudget - transactionFee < 0;
+      if (this.remainingBudget - totalPreemtiveTransactionFee < 0) {
+        this.logger.trace(
+          `${requestIdPrefix} HBAR preemtive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, callDataSize=${callDataSize}.`,
+        );
+        throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
+      } else {
+        this.logger.trace(
+          `${requestIdPrefix} HBAR preemptive rate limit not reached: totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, remainingBudget=${this.remainingBudget}, otal=${this.total}, resetTimestamp=${this.reset}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, callDataSize=${callDataSize}.`,
+        );
+      }
+    }
   }
 
   /**
