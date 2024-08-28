@@ -37,3 +37,9 @@ export interface IExecuteQueryEventPayload {
   interactingEntity: string;
   requestId: string;
 }
+
+export enum ExecutionType {
+  QUERY = `QueryExecution`,
+  TRANSACTION = `TransactionExecution`,
+  RECORD_QUERY = `RecordQueryExecution`,
+}

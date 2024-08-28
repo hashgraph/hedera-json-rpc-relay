@@ -62,7 +62,7 @@ import { SDKClientError } from './../errors/SDKClientError';
 import { ITransactionRecordMetric } from '../types/IMetricService';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
-import { IExecuteTransactionEventPayload } from '../types/IEvent';
+import { ExecutionType, IExecuteTransactionEventPayload } from '../types/events';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -639,7 +639,7 @@ export class SDKClient {
     } finally {
       if (queryCost && queryCost !== 0) {
         this.eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, {
-          executionType: `QueryExecution`,
+          executionType: ExecutionType.QUERY,
           transactionId: query.paymentTransactionId?.toString()!,
           txConstructorName: queryConstructorName,
           callerName,

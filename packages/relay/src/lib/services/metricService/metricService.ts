@@ -27,7 +27,7 @@ import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { formatRequestIdMessage } from '../../../formatters';
 import { ITransactionRecordMetric } from '../../types/IMetricService';
-import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types/IEvent';
+import { ExecutionType, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types/events';
 
 export default class MetricService {
   /**
@@ -160,7 +160,7 @@ export default class MetricService {
       const { gasUsed, transactionFee, txRecordChargeAmount } = transactionRecordMetrics;
       if (transactionFee !== 0) {
         this.addExpenseAndCaptureMetrics({
-          executionType: `TransactionExecution`,
+          executionType: ExecutionType.TRANSACTION,
           transactionId,
           txConstructorName,
           callerName,
@@ -173,7 +173,7 @@ export default class MetricService {
 
       if (txRecordChargeAmount !== 0) {
         this.addExpenseAndCaptureMetrics({
-          executionType: `TransactionRecordQuery`,
+          executionType: ExecutionType.RECORD_QUERY,
           transactionId,
           txConstructorName,
           callerName,
