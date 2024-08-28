@@ -988,6 +988,18 @@ export class MirrorNodeClient {
     );
   }
 
+  public async getBalanceOfToken(tokenId: string, accountId: string, requestIdPrefix?: string, retries?: number) {
+    const queryParamObject = {};
+    this.setQueryParam(queryParamObject, 'account.id', accountId);
+    const queryParams = this.getQueryParams(queryParamObject);
+    return this.get(
+      `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}/${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
+      MirrorNodeClient.GET_TOKENS_ENDPOINT,
+      requestIdPrefix,
+      retries,
+    );
+  }
+
   public async getLatestContractResultsByAddress(
     address: string,
     blockEndTimestamp: string | undefined,
