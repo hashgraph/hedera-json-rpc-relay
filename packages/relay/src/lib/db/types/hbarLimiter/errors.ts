@@ -1,4 +1,4 @@
-/*-
+/*
  *
  * Hedera JSON RPC Relay
  *
@@ -18,11 +18,23 @@
  *
  */
 
-import type { ICacheClient } from './ICacheClient';
+export class HbarSpendingPlanNotFoundError extends Error {
+  constructor(id: string) {
+    super(`HbarSpendingPlan with ID ${id} not found`);
+    this.name = 'HbarSpendingPlanNotFoundError';
+  }
+}
 
-export interface IRedisCacheClient extends ICacheClient {
-  disconnect: () => Promise<void>;
-  incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix?: string): Promise<number>;
-  rPush(key: string, value: any, callingMethod: string, requestIdPrefix?: string): Promise<number>;
-  lRange(key: string, start: number, end: number, callingMethod: string, requestIdPrefix?: string): Promise<any[]>;
+export class HbarSpendingPlanNotActiveError extends Error {
+  constructor(id: string) {
+    super(`HbarSpendingPlan with ID ${id} is not active`);
+    this.name = 'HbarSpendingPlanNotActiveError';
+  }
+}
+
+export class EthAddressHbarSpendingPlanNotFoundError extends Error {
+  constructor(ethAddress: string) {
+    super(`EthAddressHbarSpendingPlan with address ${ethAddress} not found`);
+    this.name = 'EthAddressHbarSpendingPlanNotFoundError';
+  }
 }

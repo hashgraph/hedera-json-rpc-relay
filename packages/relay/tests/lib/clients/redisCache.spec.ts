@@ -237,4 +237,83 @@ describe('RedisCache Test Suite', async function () {
       expect(cachedValue).to.be.null;
     });
   });
+
+  describe('Increment Test Suite', async function () {
+    it('should increment a non-existing key', async function () {
+      const key = 'non-existing';
+      const amount = 1;
+
+      const newValue = await redisCache.incrBy(key, amount, callingMethod);
+      expect(newValue).equal(amount);
+    });
+
+    it('should increment an existing key', async function () {
+      const key = 'existing';
+      const initialValue = 5;
+      const amount = 3;
+
+      await redisCache.set(key, initialValue, callingMethod);
+      const newValue = await redisCache.incrBy(key, amount, callingMethod);
+      expect(newValue).equal(initialValue + amount);
+    });
+
+    it('should increment with a negative value', async function () {
+      const key = 'negative-increment';
+      const initialValue = 5;
+      const amount = -2;
+
+      await redisCache.set(key, initialValue, callingMethod);
+      const newValue = await redisCache.incrBy(key, amount, callingMethod);
+      expect(newValue).equal(initialValue + amount);
+    });
+  });
+
+  describe('RPUSH Test Suite', async function () {
+    it('should push to a non-existing list', async function () {
+      const key = 'non-existing-list';
+      const value = 'item1';
+
+      const length = await redisCache.rPush(key, value, callingMethod);
+      expect(length).equal(1);
+
+      const list = await redisCache.lRange(key, 0, -1, callingMethod);
+      expect(list).deep.equal([value]);
+    });
+
+    it('should push to an existing list', async function () {
+      const key = 'existing-list';
+      const initialList = ['item1'];
+      const newValue = 'item2';
+
+      await redisCache.rPush(key, initialList[0], callingMethod);
+      const length = await redisCache.rPush(key, newValue, callingMethod);
+      expect(length).equal(2);
+
+      const list = await redisCache.lRange(key, 0, -1, callingMethod);
+      expect(list).deep.equal([...initialList, newValue]);
+    });
+  });
+
+  describe('LRANGE Test Suite', async function () {
+    it('should retrieve a range from a non-existing list', async function () {
+      const key = 'non-existing-range';
+      const start = 0;
+      const end = 1;
+
+      const list = await redisCache.lRange(key, start, end, callingMethod);
+      expect(list).deep.equal([]);
+    });
+
+    it('should retrieve a range from an existing list', async function () {
+      const key = 'existing-range';
+      const list = ['item1', 'item2', 'item3'];
+
+      for (const item of list) {
+        await redisCache.rPush(key, item, callingMethod);
+      }
+
+      const range = await redisCache.lRange(key, 0, 1, callingMethod);
+      expect(range).deep.equal(['item1', 'item2']);
+    });
+  });
 });

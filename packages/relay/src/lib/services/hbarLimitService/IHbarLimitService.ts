@@ -1,4 +1,4 @@
-/*-
+/*
  *
  * Hedera JSON RPC Relay
  *
@@ -18,11 +18,19 @@
  *
  */
 
-import type { ICacheClient } from './ICacheClient';
+export interface IHbarLimitService {
+  /**
+   * Resets the Hbar limiter.
+   */
+  resetLimiter(): Promise<void>;
 
-export interface IRedisCacheClient extends ICacheClient {
-  disconnect: () => Promise<void>;
-  incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix?: string): Promise<number>;
-  rPush(key: string, value: any, callingMethod: string, requestIdPrefix?: string): Promise<number>;
-  lRange(key: string, start: number, end: number, callingMethod: string, requestIdPrefix?: string): Promise<any[]>;
+  /**
+   * Determines if the Hbar limit should be applied based on the provided Ethereum address
+   * and optionally an IP address.
+   *
+   * @param {string} ethAddress - The Ethereum address to check.
+   * @param {string} [ipAddress] - The optional IP address to check.
+   * @returns {Promise<boolean>} - True if the limit should be applied, false otherwise.
+   */
+  shouldLimit(ethAddress: string, ipAddress?: string): Promise<boolean>;
 }
