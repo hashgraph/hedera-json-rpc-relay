@@ -26,7 +26,7 @@ import HbarLimit from '../../hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { formatRequestIdMessage } from '../../../formatters';
-import { ITransactionRecordMetric } from '../../types/IMetricService';
+import { ITransactionRecordMetric } from '../../types/metrics';
 import { ExecutionType, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types/events';
 
 export default class MetricService {
@@ -284,7 +284,7 @@ export default class MetricService {
    * @param {string} type - The type of the transaction.
    * @param {Status} status - The status of the transaction.
    * @param {number} cost - The cost of the transaction in tinybars.
-   * @param {any} gas - The gas used by the transaction.
+   * @param {number} gas - The gas used by the transaction.
    * @param {string} caller - The name of the caller executing the transaction.
    * @param {string} interactingEntity - The entity interacting with the transaction.
    * @returns {void}
@@ -294,19 +294,16 @@ export default class MetricService {
     type: string,
     status: Status,
     cost: number,
-    gas: any,
+    gas: number,
     caller: string,
     interactingEntity: string,
   ): void => {
-    const resolvedCost = cost ? cost : 0;
-    const resolvedGas = gas ? (typeof gas === 'object' ? gas.toInt() : gas) : 0;
-
     this.consensusNodeClientHistogramCost
       .labels(mode, type, status.toString(), caller, interactingEntity)
-      .observe(resolvedCost);
+      .observe(cost);
     this.consensusNodeClientHistogramGasFee
       .labels(mode, type, status.toString(), caller, interactingEntity)
-      .observe(resolvedGas);
+      .observe(gas);
   };
 
   /**

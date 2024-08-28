@@ -29,7 +29,7 @@ import { predefined } from '../errors/JsonRpcError';
 import { SDKClientError } from '../errors/SDKClientError';
 import { IOpcodesResponse } from './models/IOpcodesResponse';
 import { install as betterLookupInstall } from 'better-lookup';
-import { ITransactionRecordMetric } from '../types/IMetricService';
+import { ITransactionRecordMetric } from '../types/metrics';
 import { CacheService } from '../services/cacheService/cacheService';
 import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';

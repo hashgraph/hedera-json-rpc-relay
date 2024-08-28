@@ -59,7 +59,7 @@ import constants from './../constants';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { formatRequestIdMessage } from '../../formatters';
 import { SDKClientError } from './../errors/SDKClientError';
-import { ITransactionRecordMetric } from '../types/IMetricService';
+import { ITransactionRecordMetric } from '../types/metrics';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
 import { ExecutionType, IExecuteTransactionEventPayload } from '../types/events';
