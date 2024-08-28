@@ -74,46 +74,6 @@ describe('HbarLimitService', function () {
   });
 
   describe('shouldLimit', function () {
-    it('should return true if the limit should be applied based on ethAddress', async function () {
-      const spendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: 1000,
-      });
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
-        planId: mockPlanId,
-      });
-      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
-
-      const result = await hbarLimitService.shouldLimit(mockEthAddress);
-
-      expect(result).to.be.true;
-    });
-
-    it('should return false if the limit should not be applied based on ethAddress', async function () {
-      const spendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: 500,
-      });
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
-        planId: mockPlanId,
-      });
-      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
-
-      const result = await hbarLimitService.shouldLimit(mockEthAddress);
-
-      expect(result).to.be.false;
-    });
-
     it('should create a basic spending plan if none exists for the ethAddress', async function () {
       const newSpendingPlan = new HbarSpendingPlan({
         id: mockPlanId,
@@ -153,7 +113,7 @@ describe('HbarLimitService', function () {
         createdAt: new Date(),
         active: true,
         spendingHistory: [],
-        spentToday: 1000,
+        spentToday: HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC],
       });
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
         ethAddress: mockEthAddress,
@@ -173,7 +133,7 @@ describe('HbarLimitService', function () {
         createdAt: new Date(),
         active: true,
         spendingHistory: [],
-        spentToday: 999,
+        spentToday: HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - 1,
       });
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
         ethAddress: mockEthAddress,
@@ -193,7 +153,7 @@ describe('HbarLimitService', function () {
         createdAt: new Date(),
         active: true,
         spendingHistory: [],
-        spentToday: 1001,
+        spentToday: HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] + 1,
       });
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
         ethAddress: mockEthAddress,

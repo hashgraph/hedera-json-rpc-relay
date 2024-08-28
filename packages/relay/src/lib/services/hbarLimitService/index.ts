@@ -28,7 +28,7 @@ import { formatRequestIdMessage } from '../../../formatters';
 
 export class HbarLimitService implements IHbarLimitService {
   // TODO: Replace with actual values
-  private static readonly DAILY_LIMITS: Record<SubscriptionType, number> = {
+  static readonly DAILY_LIMITS: Record<SubscriptionType, number> = {
     BASIC: parseInt(process.env.HBAR_DAILY_LIMIT_BASIC ?? '1000'),
     EXTENDED: parseInt(process.env.HBAR_DAILY_LIMIT_EXTENDED ?? '10000'),
     PRIVILEGED: parseInt(process.env.HBAR_DAILY_LIMIT_PRIVILEGED ?? '100000'),
