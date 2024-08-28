@@ -18,24 +18,36 @@
  *
  */
 
-import { expect } from 'chai';
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
 import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
-import pino from 'pino';
+import pino, { Logger } from 'pino';
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
-import { EthAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
+import {
+  EthAddressHbarSpendingPlanNotFoundError,
+  HbarSpendingPlanNotActiveError,
+  HbarSpendingPlanNotFoundError,
+} from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { HbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/hbarSpendingPlan';
 import { randomBytes, uuidV4 } from 'ethers';
 
+chai.use(chaiAsPromised);
+
 describe('HbarLimitService', function () {
   const logger = pino();
+  const mockEthAddress = '0x123';
+  const mockPlanId = uuidV4(randomBytes(16));
+
   let hbarLimitService: HbarLimitService;
   let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarSpendingPlanRepository>;
   let ethAddressHbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<EthAddressHbarSpendingPlanRepository>;
+  let loggerSpy: sinon.SinonSpiedInstance<Logger>;
 
   beforeEach(function () {
+    loggerSpy = sinon.spy(logger);
     hbarSpendingPlanRepositoryStub = sinon.createStubInstance(HbarSpendingPlanRepository);
     ethAddressHbarSpendingPlanRepositoryStub = sinon.createStubInstance(EthAddressHbarSpendingPlanRepository);
     hbarLimitService = new HbarLimitService(
@@ -45,76 +57,252 @@ describe('HbarLimitService', function () {
     );
   });
 
-  it('should return true if the limit should be applied based on ethAddress', async function () {
-    const ethAddress = '0x123';
-    const spendingPlan = new HbarSpendingPlan({
-      id: uuidV4(randomBytes(16)),
-      subscriptionType: SubscriptionType.BASIC,
-      createdAt: new Date(),
-      active: true,
-      spendingHistory: [],
-      spentToday: 1000,
-    });
-    ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({ ethAddress, planId: spendingPlan.id });
-    hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
-
-    const result = await hbarLimitService.shouldLimit(ethAddress);
-
-    expect(result).to.be.true;
+  afterEach(function () {
+    sinon.restore();
   });
 
-  it('should return false if the limit should not be applied based on ethAddress', async function () {
-    const ethAddress = '0x123';
-    const spendingPlan = new HbarSpendingPlan({
-      id: uuidV4(randomBytes(16)),
-      subscriptionType: SubscriptionType.BASIC,
-      createdAt: new Date(),
-      active: true,
-      spendingHistory: [],
-      spentToday: 500,
+  describe('resetLimiter', function () {
+    // TODO: Add tests here with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2868
+
+    it('should throw an error when resetLimiter is called', async function () {
+      try {
+        await hbarLimitService.resetLimiter();
+      } catch (error: any) {
+        expect(error.message).to.equal('Not implemented');
+      }
     });
-    ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({ ethAddress, planId: spendingPlan.id });
-    hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
-
-    const result = await hbarLimitService.shouldLimit(ethAddress);
-
-    expect(result).to.be.false;
   });
 
-  it('should create a basic spending plan if none exists for the ethAddress', async function () {
-    const newSpendingPlan = new HbarSpendingPlan({
-      id: uuidV4(randomBytes(16)),
-      subscriptionType: SubscriptionType.BASIC,
-      createdAt: new Date(),
-      active: true,
-      spendingHistory: [],
-      spentToday: 0,
+  describe('shouldLimit', function () {
+    it('should return true if the limit should be applied based on ethAddress', async function () {
+      const spendingPlan = new HbarSpendingPlan({
+        id: mockPlanId,
+        subscriptionType: SubscriptionType.BASIC,
+        createdAt: new Date(),
+        active: true,
+        spendingHistory: [],
+        spentToday: 1000,
+      });
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+      const result = await hbarLimitService.shouldLimit(mockEthAddress);
+
+      expect(result).to.be.true;
     });
-    const ethAddress = '0x123';
-    const error = new EthAddressHbarSpendingPlanNotFoundError(ethAddress);
-    ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
-    hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
-    ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
-    const warnSpy = sinon.spy(logger, 'warn');
 
-    const result = await hbarLimitService.shouldLimit(ethAddress);
+    it('should return false if the limit should not be applied based on ethAddress', async function () {
+      const spendingPlan = new HbarSpendingPlan({
+        id: mockPlanId,
+        subscriptionType: SubscriptionType.BASIC,
+        createdAt: new Date(),
+        active: true,
+        spendingHistory: [],
+        spentToday: 500,
+      });
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-    expect(result).to.be.false;
-    expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
-    expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
-    expect(
-      warnSpy.calledWithMatch(
-        sinon.match.instanceOf(EthAddressHbarSpendingPlanNotFoundError),
-        `Failed to get spending plan for eth address '${ethAddress}'`,
-      ),
-    ).to.be.true;
+      const result = await hbarLimitService.shouldLimit(mockEthAddress);
+
+      expect(result).to.be.false;
+    });
+
+    it('should create a basic spending plan if none exists for the ethAddress', async function () {
+      const newSpendingPlan = new HbarSpendingPlan({
+        id: mockPlanId,
+        subscriptionType: SubscriptionType.BASIC,
+        createdAt: new Date(),
+        active: true,
+        spendingHistory: [],
+        spentToday: 0,
+      });
+      const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
+      hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
+      ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
+
+      const result = await hbarLimitService.shouldLimit(mockEthAddress);
+
+      expect(result).to.be.false;
+      expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
+      expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
+      expect(
+        loggerSpy.warn.calledWithMatch(
+          sinon.match.instanceOf(EthAddressHbarSpendingPlanNotFoundError),
+          `Failed to get spending plan for eth address '${mockEthAddress}'`,
+        ),
+      ).to.be.true;
+    });
+
+    it('should return false if ethAddress is null or empty', async function () {
+      const result = await hbarLimitService.shouldLimit('');
+      expect(result).to.be.false;
+    });
+
+    it('should return true if spentToday is exactly at the limit', async function () {
+      const spendingPlan = new HbarSpendingPlan({
+        id: mockPlanId,
+        subscriptionType: SubscriptionType.BASIC,
+        createdAt: new Date(),
+        active: true,
+        spendingHistory: [],
+        spentToday: 1000,
+      });
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+      const result = await hbarLimitService.shouldLimit(mockEthAddress);
+
+      expect(result).to.be.true;
+    });
+
+    it('should return false if spentToday is just below the limit', async function () {
+      const spendingPlan = new HbarSpendingPlan({
+        id: mockPlanId,
+        subscriptionType: SubscriptionType.BASIC,
+        createdAt: new Date(),
+        active: true,
+        spendingHistory: [],
+        spentToday: 999,
+      });
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+      const result = await hbarLimitService.shouldLimit(mockEthAddress);
+
+      expect(result).to.be.false;
+    });
+
+    it('should return true if spentToday is just above the limit', async function () {
+      const spendingPlan = new HbarSpendingPlan({
+        id: mockPlanId,
+        subscriptionType: SubscriptionType.BASIC,
+        createdAt: new Date(),
+        active: true,
+        spendingHistory: [],
+        spentToday: 1001,
+      });
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+      const result = await hbarLimitService.shouldLimit(mockEthAddress);
+
+      expect(result).to.be.true;
+    });
+
+    // TODO: Add test cases for IP address with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
   });
 
-  it('should throw an error when resetLimiter is called', async function () {
-    try {
-      await hbarLimitService.resetLimiter();
-    } catch (error: any) {
-      expect(error.message).to.equal('Not implemented');
+  describe('getSpendingPlan', function () {
+    const ipAddresses = ['127.0.0.1', '', null, undefined];
+    const ethAddresses = ['0x123', '', null, undefined];
+    const testCases = ethAddresses.flatMap((ethAddress) => ipAddresses.map((ipAddress) => ({ ethAddress, ipAddress })));
+
+    for (const { ethAddress, ipAddress } of testCases) {
+      it(`should return null if ethAddress is ${ethAddress} and ipAddress is ${ipAddress}`, async function () {
+        // @ts-ignore
+        const result = await hbarLimitService['getSpendingPlan'](ethAddress, ipAddress);
+        expect(result).to.be.null;
+      });
     }
+  });
+
+  describe('getSpendingPlanByEthAddress', function () {
+    it('should handle error when getSpendingPlanByEthAddress throws an EthAddressHbarSpendingPlanNotFoundError', async function () {
+      const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
+
+      const result = hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress);
+
+      await expect(result).to.be.eventually.rejectedWith(EthAddressHbarSpendingPlanNotFoundError, error.message);
+    });
+
+    it('should handle error when getSpendingPlanByEthAddress throws an HbarSpendingPlanNotFoundError', async function () {
+      const error = new HbarSpendingPlanNotFoundError(mockPlanId);
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.rejects(error);
+
+      const result = hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress);
+
+      await expect(result).to.be.eventually.rejectedWith(HbarSpendingPlanNotFoundError, error.message);
+    });
+
+    it('should handle error when getSpendingPlanByEthAddress throws an HbarSpendingPlanNotActiveError', async function () {
+      const error = new HbarSpendingPlanNotActiveError(mockPlanId);
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.rejects(error);
+
+      const result = hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress);
+
+      await expect(result).to.be.eventually.rejectedWith(HbarSpendingPlanNotActiveError, error.message);
+    });
+  });
+
+  describe('createBasicSpendingPlan', function () {
+    it('should create a basic spending plan for the given ethAddress', async function () {
+      const newSpendingPlan = new HbarSpendingPlan({
+        id: mockPlanId,
+        subscriptionType: SubscriptionType.BASIC,
+        createdAt: new Date(),
+        active: true,
+        spendingHistory: [],
+        spentToday: 0,
+      });
+      hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
+      ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
+
+      const result = await hbarLimitService['createBasicSpendingPlan'](mockEthAddress);
+
+      expect(result).to.deep.equal(newSpendingPlan);
+      expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
+      expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
+    });
+
+    it('should create a basic spending plan and link it to the ETH address if both ethAddress and ipAddress are provided', async function () {
+      const newSpendingPlan = new HbarSpendingPlan({
+        id: mockPlanId,
+        subscriptionType: SubscriptionType.BASIC,
+        createdAt: new Date(),
+        active: true,
+        spendingHistory: [],
+        spentToday: 0,
+      });
+      hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
+      ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
+
+      const result = await hbarLimitService['createBasicSpendingPlan'](mockEthAddress, '127.0.0.1');
+
+      expect(result).to.deep.equal(newSpendingPlan);
+      expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
+      expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
+      // TODO: Uncomment this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
+      // expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.false;
+    });
+
+    it('should create a basic spending plan for the given ipAddress', async function () {
+      // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
+    });
   });
 });

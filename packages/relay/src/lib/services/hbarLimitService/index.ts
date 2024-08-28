@@ -57,13 +57,17 @@ export class HbarLimitService implements IHbarLimitService {
    * @returns {Promise<boolean>} - A promise that resolves with a boolean indicating if the address should be limited.
    */
   async shouldLimit(ethAddress: string, ipAddress?: string, requestId?: string): Promise<boolean> {
+    if (!ethAddress && !ipAddress) {
+      this.logger.warn('No eth address or ip address provided, cannot check if address should be limited');
+      return false;
+    }
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const user = `(ethAddress=${ethAddress}, ipAddress=${ipAddress})`;
     this.logger.trace(`${requestIdPrefix} Checking if ${user} should be limited...`);
     let spendingPlan = await this.getSpendingPlan(ethAddress, ipAddress);
     if (!spendingPlan) {
       // Create a basic spending plan if none exists for the eth address or ip address
-      spendingPlan = await this.createBasicSpendingPlan(ethAddress);
+      spendingPlan = await this.createBasicSpendingPlan(ethAddress, ipAddress);
     }
     const dailyLimit = HbarLimitService.DAILY_LIMITS[spendingPlan.subscriptionType];
     const exceedsLimit = spendingPlan.spentToday >= dailyLimit;
@@ -110,12 +114,23 @@ export class HbarLimitService implements IHbarLimitService {
   /**
    * Creates a basic spending plan for the given eth address.
    * @param {string} ethAddress - The eth address to create the spending plan for.
+   * @param {stirng} [ipAddress] - The ip address to create the spending plan for.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
    * @private
    */
-  private async createBasicSpendingPlan(ethAddress: string): Promise<IDetailedHbarSpendingPlan> {
+  private async createBasicSpendingPlan(ethAddress: string, ipAddress?: string): Promise<IDetailedHbarSpendingPlan> {
+    if (!ethAddress && !ipAddress) {
+      throw new Error('Cannot create a spending plan without an associated eth address or ip address');
+    }
     const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC);
-    await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id });
+    if (ethAddress) {
+      this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`);
+      await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id });
+    } else if (ipAddress) {
+      this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to ip address ${ipAddress}`);
+      // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
+      // await this.ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: spendingPlan.id });
+    }
     return spendingPlan;
   }
 }
