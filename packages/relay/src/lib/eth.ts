@@ -1636,7 +1636,7 @@ export class EthImpl implements Eth {
     );
     // log call data size
     const callDataSize = callData ? callData.length : 0;
-    this.logger.info(`${requestIdPrefix} call data size: ${callDataSize}`);
+    this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}`);
     // metrics for selector
     if (callDataSize >= constants.FUNCTION_SELECTOR_CHAR_LENGTH) {
       this.ethExecutionsCounter
@@ -1659,10 +1659,7 @@ export class EthImpl implements Eth {
       constants.ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS.indexOf(selector) !== -1;
 
     // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-    const shouldDefaultToConsensus = !(
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === undefined ||
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false'
-    );
+    const shouldDefaultToConsensus = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'true';
 
     let result: string | JsonRpcError = '';
     try {
