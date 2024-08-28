@@ -369,8 +369,8 @@ describe('@api-conformity @conformity-batch-1 Ethereum execution apis tests', fu
 describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', async function () {
   this.timeout(240 * 1000);
 
-  let existingBlockFilter;
-  let existingContractFilter;
+  let existingBlockFilter: string;
+  let existingContractFilter: string;
 
   before(async () => {
     existingBlockFilter = (
@@ -486,11 +486,11 @@ describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', as
 
   for (const TEST_NAME in TEST_CASES) {
     it(`${TEST_NAME}`, async () => {
-      const isErrorStatusExpected = !!(TEST_CASES[TEST_NAME]?.status && TEST_CASES[TEST_NAME].status != 200);
+      const isErrorStatusExpected: boolean = !!(TEST_CASES[TEST_NAME]?.status && TEST_CASES[TEST_NAME].status != 200);
       try {
         const req = updateParamIfNeeded(TEST_NAME, JSON.parse(TEST_CASES[TEST_NAME].request));
         const res = await sendRequestToRelay(req, false);
-        const hasMissingKeys = checkResponseFormat(res, JSON.parse(TEST_CASES[TEST_NAME].response));
+        const hasMissingKeys: boolean = checkResponseFormat(res, JSON.parse(TEST_CASES[TEST_NAME].response));
         expect(hasMissingKeys).to.be.false;
         expect(isErrorStatusExpected).to.be.false;
       } catch (e: any) {
