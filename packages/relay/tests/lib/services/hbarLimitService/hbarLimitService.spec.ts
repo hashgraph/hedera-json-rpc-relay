@@ -27,6 +27,7 @@ import pino from 'pino';
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 import { EthAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { HbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/hbarSpendingPlan';
+import { randomBytes, uuidV4 } from 'ethers';
 
 describe('HbarLimitService', function () {
   const logger = pino();
@@ -47,14 +48,14 @@ describe('HbarLimitService', function () {
   it('should return true if the limit should be applied based on ethAddress', async function () {
     const ethAddress = '0x123';
     const spendingPlan = new HbarSpendingPlan({
-      id: 'plan1',
+      id: uuidV4(randomBytes(16)),
       subscriptionType: SubscriptionType.BASIC,
       createdAt: new Date(),
       active: true,
       spendingHistory: [],
       spentToday: 1000,
     });
-    ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({ ethAddress, planId: 'plan1' });
+    ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({ ethAddress, planId: spendingPlan.id });
     hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
     const result = await hbarLimitService.shouldLimit(ethAddress);
@@ -65,14 +66,14 @@ describe('HbarLimitService', function () {
   it('should return false if the limit should not be applied based on ethAddress', async function () {
     const ethAddress = '0x123';
     const spendingPlan = new HbarSpendingPlan({
-      id: 'plan1',
+      id: uuidV4(randomBytes(16)),
       subscriptionType: SubscriptionType.BASIC,
       createdAt: new Date(),
       active: true,
       spendingHistory: [],
       spentToday: 500,
     });
-    ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({ ethAddress, planId: 'plan1' });
+    ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({ ethAddress, planId: spendingPlan.id });
     hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
     const result = await hbarLimitService.shouldLimit(ethAddress);
@@ -82,7 +83,7 @@ describe('HbarLimitService', function () {
 
   it('should create a basic spending plan if none exists for the ethAddress', async function () {
     const newSpendingPlan = new HbarSpendingPlan({
-      id: 'plan1',
+      id: uuidV4(randomBytes(16)),
       subscriptionType: SubscriptionType.BASIC,
       createdAt: new Date(),
       active: true,
