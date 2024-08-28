@@ -1480,7 +1480,7 @@ export class EthImpl implements Eth {
     if (e instanceof SDKClientError) {
       this.hapiService.decrementErrorCounter(e.statusCode);
       if (e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
-        const mirrorNodeGetContractResultRetries = this.mirrorNodeClient.getMirrorNodeGetContractResultRetries();
+        const mirrorNodeGetContractResultRetries = this.mirrorNodeClient.getMirrorNodeRequestRetryCount();
 
         // note: because this is a WRONG_NONCE error handler, the nonce of the account is expected to be different from the nonce of the parsedTx
         //       running a polling loop to give mirror node enough time to update account nonce
@@ -1567,7 +1567,7 @@ export class EthImpl implements Eth {
       const contractResult = await this.mirrorNodeClient.repeatedRequest(
         this.mirrorNodeClient.getContractResult.name,
         [formattedId],
-        this.mirrorNodeClient.getMirrorNodeGetContractResultRetries(),
+        this.mirrorNodeClient.getMirrorNodeRequestRetryCount(),
         requestIdPrefix,
       );
 

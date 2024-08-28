@@ -79,9 +79,9 @@ export class MirrorNodeClient {
     'MIRROR_NODE_RETRY_DELAY',
     'MIRROR_NODE_RETRY_DELAY_DEFAULT',
   );
-  private readonly MIRROR_NODE_GET_CONTRACT_RETRIES = parseNumericEnvVar(
-    'MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES',
-    'MIRROR_NODE_GET_CONTRACT_RESULTS_RETRIES_DEFAULT',
+  private readonly MIRROR_NODE_REQUEST_RETRY_COUNT = parseNumericEnvVar(
+    'MIRROR_NODE_REQUEST_RETRY_COUNT',
+    'MIRROR_NODE_REQUEST_RETRY_COUNT_DEFAULT',
   );
 
   static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
@@ -1239,8 +1239,8 @@ export class MirrorNodeClient {
   public getMirrorNodeWeb3Instance() {
     return this.web3Client;
   }
-  public getMirrorNodeGetContractResultRetries() {
-    return this.MIRROR_NODE_GET_CONTRACT_RETRIES;
+  public getMirrorNodeRequestRetryCount() {
+    return this.MIRROR_NODE_REQUEST_RETRY_COUNT;
   }
   public getMirrorNodeRetryDelay() {
     return this.MIRROR_NODE_RETRY_DELAY;
@@ -1314,7 +1314,7 @@ export class MirrorNodeClient {
     const transactionRecords = await this.repeatedRequest(
       this.getTransactionById.name,
       [transactionId, 0],
-      this.MIRROR_NODE_GET_CONTRACT_RETRIES,
+      this.MIRROR_NODE_REQUEST_RETRY_COUNT,
       formattedRequestId,
     );
 
