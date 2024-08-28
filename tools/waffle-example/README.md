@@ -61,4 +61,4 @@ The mock Waffle provider allows users to imitate basic ENS operations, such as r
 
 ### Known issues
 
-Waffle fixtures are not supported, more information: https://github.com/hashgraph/hedera-smart-contracts/issues/702
+Waffle fixtures are not fully supported, more information: https://github.com/hashgraph/hedera-smart-contracts/issues/702
