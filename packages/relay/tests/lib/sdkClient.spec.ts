@@ -2647,6 +2647,25 @@ describe('SdkClient', async function () {
       expect(transactionRecordMetrics?.txRecordChargeAmount).to.eq(mockedTransactionRecordFee);
     });
 
+    it('should throw an SDKCLientError if transaction record is not found when execute getTransactionRecordMetrics', async () => {
+      const expectedError = { status: { _code: 404 }, message: 'Transaction Record Not Found' };
+      sinon.stub(TransactionRecordQuery.prototype, 'execute').throws(expectedError);
+
+      try {
+        await sdkClient.getTransactionRecordMetrics(
+          transactionId.toString(),
+          mockedCallerName,
+          requestId,
+          mockedConstructorName,
+          accountId.toString(),
+        );
+        expect.fail('should have thrown an error');
+      } catch (error) {
+        expect(error.status).to.eq(expectedError.status);
+        expect(error.message).to.eq(expectedError.message);
+      }
+    });
+
     it('Should execute getTransferAmountSumForAccount() to calculate transactionFee of the specify accountId', () => {
       const accountId = process.env.OPERATOR_ID_MAIN || '';
       const mockedTxRecord = getMockedTransactionRecord();

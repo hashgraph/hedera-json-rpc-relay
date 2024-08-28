@@ -330,26 +330,30 @@ export default class MetricService {
     txConstructorName: string,
     operatorAccountId: string,
   ): Promise<ITransactionRecordMetric | undefined> {
-    // check if calls are default to consensus node or not
+    const formattedRequestId = formatRequestIdMessage(requestId);
     const defaultToConsensusNode = process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true';
 
     // retrieve transaction metrics
-    if (defaultToConsensusNode) {
-      return this.sdkClient.getTransactionRecordMetrics(
-        transactionId,
-        callerName,
-        requestId,
-        txConstructorName,
-        operatorAccountId,
-      );
-    } else {
-      return this.mirrorNodeClient.getTransactionRecordMetrics(
-        transactionId,
-        callerName,
-        requestId,
-        txConstructorName,
-        operatorAccountId,
-      );
+    try {
+      if (defaultToConsensusNode) {
+        return await this.sdkClient.getTransactionRecordMetrics(
+          transactionId,
+          callerName,
+          requestId,
+          txConstructorName,
+          operatorAccountId,
+        );
+      } else {
+        return await this.mirrorNodeClient.getTransactionRecordMetrics(
+          transactionId,
+          callerName,
+          requestId,
+          txConstructorName,
+          operatorAccountId,
+        );
+      }
+    } catch (error: any) {
+      this.logger.warn(error, `${formattedRequestId} ${error.message}`);
     }
   }
 }

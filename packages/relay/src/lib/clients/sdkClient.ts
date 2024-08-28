@@ -987,6 +987,7 @@ export class SDKClient {
    * @param {string} txConstructorName - The name of the transaction constructor.
    * @param {string} operatorAccountId - The account ID of the operator.
    * @returns {Promise<{transactionFee: number; txRecordChargeAmount: number; gasUsed: number;} | undefined>} - A promise that resolves to an object containing transaction metrics.
+   * @throws {SDKClientError} - Throws an error if an issue occurs during the transaction record query.
    */
   public async getTransactionRecordMetrics(
     transactionId: string,
@@ -994,7 +995,7 @@ export class SDKClient {
     requestId: string,
     txConstructorName: string,
     operatorAccountId: string,
-  ): Promise<ITransactionRecordMetric | undefined> {
+  ): Promise<ITransactionRecordMetric> {
     let gasUsed: number = 0;
     let transactionFee: number = 0;
     let txRecordChargeAmount: number = 0;
@@ -1027,6 +1028,7 @@ export class SDKClient {
         e,
         `${formattedRequestId} Error raised during TransactionRecordQuery: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
       );
+      throw sdkClientError;
     }
   }
 

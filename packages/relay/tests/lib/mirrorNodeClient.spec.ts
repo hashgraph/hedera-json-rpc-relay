@@ -35,6 +35,7 @@ import { ethers } from 'ethers';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import { MirrorNodeClientError } from '../../src/lib/errors/MirrorNodeClientError';
 const logger = pino();
 const noTransactions = '?transactions=false';
 
@@ -1201,6 +1202,30 @@ describe('MirrorNodeClient', async function () {
       );
 
       expect(transactionRecordMetrics.transactionFee).to.eq(mockedTxFee);
+    });
+
+    it('should throw a MirrorNodeClientError if transaction record is not found when execute getTransactionRecordMetrics', async () => {
+      mock.onGet(mockedUrl).reply(404, null);
+
+      try {
+        await mirrorNodeInstance.getTransactionRecordMetrics(
+          mockedTransactionId,
+          mockedCallerName,
+          getRequestId(),
+          mockedConstructorName,
+          operatorAcocuntId,
+        );
+
+        expect.fail('should have thrown an error');
+      } catch (error) {
+        const notFoundMessage = `No transaction record retrieved: transactionId=${mockedTransactionId}, txConstructorName=${mockedConstructorName}, callerName=${mockedCallerName}.`;
+        const expectedError = new MirrorNodeClientError(
+          { message: notFoundMessage },
+          MirrorNodeClientError.statusCodes.NOT_FOUND,
+        );
+
+        expect(error).to.deep.eq(expectedError);
+      }
     });
   });
 

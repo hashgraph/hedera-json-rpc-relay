@@ -1294,7 +1294,8 @@ export class MirrorNodeClient {
    * @param {string} requestId - The unique identifier for the request, used for logging and tracking.
    * @param {string} txConstructorName - The name of the transaction constructor associated with the transaction.
    * @param {string} operatorAccountId - The account ID of the operator, used to calculate transaction fees.
-   * @returns {Promise<{transactionFee: number;} | undefined>} - An object containing the transaction fee if available, or `undefined` if the transaction record is not found.
+   * @returns {Promise<{ITransactionRecordMetric}>} - An object containing the transaction fee if available, or `undefined` if the transaction record is not found.
+   * @throws {MirrorNodeClientError} - Throws an error if no transaction record is retrieved.
    */
   public async getTransactionRecordMetrics(
     transactionId: string,
@@ -1302,7 +1303,7 @@ export class MirrorNodeClient {
     requestId: string,
     txConstructorName: string,
     operatorAccountId: string,
-  ): Promise<ITransactionRecordMetric | undefined> {
+  ): Promise<ITransactionRecordMetric> {
     const formattedRequestId = formatRequestIdMessage(requestId);
 
     this.logger.trace(
@@ -1318,21 +1319,21 @@ export class MirrorNodeClient {
     );
 
     if (!transactionRecords) {
-      this.logger.warn(
-        `${formattedRequestId} No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
-      );
-    } else {
-      const transactionRecord: IMirrorNodeTransactionRecord = transactionRecords.transactions.find(
-        (tx: any) => tx.transaction_id === formatTransactionId(transactionId),
-      );
-
-      const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionRecord);
-
-      // get transactionFee
-      const transactionFee = this.getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
-      return { transactionFee, txRecordChargeAmount: 0, gasUsed: 0 };
+      const notFoundMessage = `No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}.`;
+      throw new MirrorNodeClientError({ message: notFoundMessage }, MirrorNodeClientError.statusCodes.NOT_FOUND);
     }
+
+    const transactionRecord: IMirrorNodeTransactionRecord = transactionRecords.transactions.find(
+      (tx: any) => tx.transaction_id === formatTransactionId(transactionId),
+    );
+
+    const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionRecord);
+
+    // get transactionFee
+    const transactionFee = this.getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
+    return { transactionFee, txRecordChargeAmount: 0, gasUsed: 0 };
   }
+
   /**
    * Calculates the total sum of transfer amounts for a specific account from a transaction record.
    * This method filters the transfers in the transaction record to match the specified account ID,
