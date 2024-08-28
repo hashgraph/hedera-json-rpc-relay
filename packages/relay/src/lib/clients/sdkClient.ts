@@ -637,7 +637,6 @@ export class SDKClient {
 
       throw sdkClientError;
     } finally {
-      // emitting an EXECUTE_QUERY event to kick off capturing metrics process asynchronously
       if (queryCost && queryCost !== 0) {
         this.eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, {
           executionType: `QueryExecution`,
@@ -678,7 +677,6 @@ export class SDKClient {
     let transactionId: string = '';
     let transactionResponse: TransactionResponse | null = null;
 
-    // check hbar limit before executing transaction
     if (shouldThrowHbarLimit) {
       const shouldLimit = this.hbarLimiter.shouldLimit(
         Date.now(),
@@ -693,11 +691,9 @@ export class SDKClient {
     }
 
     try {
-      // execute transaction
       this.logger.info(`${formattedRequestId} Execute ${txConstructorName} transaction`);
       transactionResponse = await transaction.execute(this.clientMain);
 
-      // get transactionID
       transactionId = transactionResponse.transactionId.toString();
 
       // .getReceipt() will throw an error if, in any case, the status !== 22 (SUCCESS).
@@ -708,12 +704,10 @@ export class SDKClient {
       );
       return transactionResponse;
     } catch (e: any) {
-      // throw if JsonRpcError
       if (e instanceof JsonRpcError) {
         throw e;
       }
 
-      // declare error as SDKClientError
       const sdkClientError = new SDKClientError(e, e.message);
 
       // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler().
@@ -721,7 +715,6 @@ export class SDKClient {
         throw sdkClientError;
       }
 
-      // log and throw
       this.logger.warn(
         sdkClientError,
         `${formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
@@ -771,7 +764,6 @@ export class SDKClient {
     const txConstructorName = transaction.constructor.name;
     let transactionResponses: TransactionResponse[] | null = null;
 
-    // check hbar limit before executing transaction
     if (shouldThrowHbarLimit) {
       const shouldLimit = this.hbarLimiter.shouldLimit(
         Date.now(),
@@ -786,7 +778,6 @@ export class SDKClient {
     }
 
     try {
-      // execute transaction
       this.logger.info(`${formattedRequestId} Execute ${txConstructorName} transaction`);
       transactionResponses = await transaction.executeAll(this.clientMain);
 
@@ -794,19 +785,15 @@ export class SDKClient {
         `${formattedRequestId} Successfully execute all ${transactionResponses.length} ${txConstructorName} transactions: callerName=${callerName}, txConstructorName=${txConstructorName}, status=${Status.Success}(${Status.Success._code})`,
       );
     } catch (e: any) {
-      // declare main error as SDKClientError
       const sdkClientError = new SDKClientError(e, e.message);
 
-      // log and throw
       this.logger.warn(
         `${formattedRequestId} Fail to executeAll for ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${txConstructorName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
       );
       throw sdkClientError;
     } finally {
-      // Loop through transactionResponses to asynchronously capture metrics from each response
       if (transactionResponses) {
         for (let transactionResponse of transactionResponses) {
-          // emitting an EXECUTE_TRANSACTION event to kick off capturing metrics process asynchronously
           if (transactionResponse.transactionId) {
             this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
               transactionId: transactionResponse.transactionId.toString(),
@@ -844,12 +831,10 @@ export class SDKClient {
     const formattedRequestId = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
 
-    // prepare fileCreateTx
     const fileCreateTx = new FileCreateTransaction()
       .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
       .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
 
-    // use executeTransaction() to execute fileCreateTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
     const fileCreateTxResponse = await this.executeTransaction(
       fileCreateTx,
       callerName,
@@ -868,7 +853,6 @@ export class SDKClient {
         .setChunkSize(this.fileAppendChunkSize)
         .setMaxChunks(this.maxChunks);
 
-      // use executeAllTransaction() to executeAll fileAppendTx -> handle errors -> capture HBAR burned in metrics and hbar rate limit class
       await this.executeAllTransaction(
         fileAppendTx,
         callerName,
@@ -879,7 +863,6 @@ export class SDKClient {
       );
     }
 
-    // Ensure that the calldata file is not empty
     if (fileId) {
       const fileInfo = await this.executeQuery(
         new FileInfoQuery().setFileId(fileId),
@@ -917,11 +900,9 @@ export class SDKClient {
     interactingEntity: string,
     originalCallerAddress: string,
   ): Promise<void> {
-    // format request ID msg
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
     try {
-      // Create fileDeleteTx
       const fileDeleteTx = new FileDeleteTransaction()
         .setFileId(fileId)
         .setMaxTransactionFee(new Hbar(2))
@@ -936,7 +917,6 @@ export class SDKClient {
         originalCallerAddress,
       );
 
-      // ensure the file is deleted
       const fileInfo = await this.executeQuery(
         new FileInfoQuery().setFileId(fileId),
         this.clientMain,
@@ -1006,7 +986,6 @@ export class SDKClient {
         `${formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
       );
 
-      // submit query and get transaction record
       const transactionRecord = await new TransactionRecordQuery()
         .setTransactionId(transactionId)
         .setValidateReceiptStatus(false)
@@ -1014,16 +993,13 @@ export class SDKClient {
 
       const transactionReceipt = transactionRecord.receipt;
 
-      // calculate transactionRecord fee
       txRecordChargeAmount = this.calculateTxRecordChargeAmount(transactionReceipt.exchangeRate!);
 
-      // get transactionFee, and gasUsed
       transactionFee = this.getTransferAmountSumForAccount(transactionRecord, operatorAccountId);
       gasUsed = transactionRecord.contractFunctionResult?.gasUsed.toNumber() ?? 0;
 
       return { transactionFee, txRecordChargeAmount, gasUsed };
     } catch (e: any) {
-      // log error from TransactionRecordQuery
       const sdkClientError = new SDKClientError(e, e.message);
       this.logger.warn(
         e,
