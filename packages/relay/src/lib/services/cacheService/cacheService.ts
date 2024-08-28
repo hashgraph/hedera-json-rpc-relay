@@ -238,9 +238,8 @@ export class CacheService {
    * the internal cache is used as a fallback.
    * @param {Record<string, any>} entries - An object containing key-value pairs to cache.
    * @param {string} callingMethod - The name of the method calling the cache.
-   * @param {number} ttl - Time to live for the cached value in milliseconds (optional).
-   * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
-   * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
+   * @param {number} [ttl] - Time to live for the cached value in milliseconds (optional).
+   * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
    */
   public async multiSet(
     entries: Record<string, any>,
@@ -278,8 +277,7 @@ export class CacheService {
    * Else the internal cache deletion is attempted.
    * @param {string} key - The key associated with the cached value to delete.
    * @param {string} callingMethod - The name of the method calling the cache.
-   * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
-   * @param {boolean} shared - Whether to use the shared cache (optional, default: false).
+   * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
    */
   public async delete(key: string, callingMethod: string, requestIdPrefix?: string): Promise<void> {
     if (this.isSharedCacheEnabled) {
@@ -307,7 +305,7 @@ export class CacheService {
    * Clears the cache.
    * If the shared cache is enabled and an error occurs while clearing it, just logs the error.
    * Else the internal cache clearing is attempted.
-   * @param requestIdPrefix
+   * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
    */
   public async clear(requestIdPrefix?: string): Promise<void> {
     if (this.isSharedCacheEnabled) {
@@ -328,10 +326,10 @@ export class CacheService {
 
   /**
    * Increments the value of a key in the cache by the specified amount.
-   * @param key - The key to increment.
-   * @param amount - The amount to increment by.
-   * @param callingMethod - The name of the calling method.
-   * @param requestIdPrefix - The optional request ID prefix.
+   * @param {string} key - The key to increment.
+   * @param {number} amount - The amount to increment by.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
    * @returns {Promise<number>} A Promise that resolves with the new value of the key after incrementing.
    */
   public async incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix?: string): Promise<number> {
@@ -364,6 +362,14 @@ export class CacheService {
     return newValue;
   }
 
+  /**
+   * Pushes a value to the end of a list in the cache.
+   * @param {string} key - The key of the list.
+   * @param {*} value - The value to push.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
+   * @returns {Promise<number>} A Promise that resolves with the new length of the list after pushing.
+   */
   public async rPush(key: string, value: any, callingMethod: string, requestIdPrefix?: string): Promise<number> {
     if (this.isSharedCacheEnabled && this.sharedCache instanceof RedisCache) {
       try {
@@ -397,6 +403,16 @@ export class CacheService {
     return values.length;
   }
 
+  /**
+   * Retrieves a range of values from a list in the cache.
+   * @param {string} key - The key of the list.
+   * @param {number} start - The start index of the range.
+   * @param {number} end - The end index of the range.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
+   * @returns {Promise<T[]>} A Promise that resolves with the values in the range.
+   * @template T - The type of the values in the list.
+   */
   public async lRange<T = any>(
     key: string,
     start: number,

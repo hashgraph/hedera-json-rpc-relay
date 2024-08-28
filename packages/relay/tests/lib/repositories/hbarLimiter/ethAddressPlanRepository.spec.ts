@@ -20,24 +20,24 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { EthAddressPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/EthAddressPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import pino from 'pino';
 import { IEthAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/ethAddressHbarSpendingPlan';
-import { EthAddressPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
+import { EthAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { randomBytes, uuidV4 } from 'ethers';
 import { Registry } from 'prom-client';
 import { RedisInMemoryServer } from '../../../redisInMemoryServer';
 
 chai.use(chaiAsPromised);
 
-describe('EthAddressPlanRepository', function () {
+describe('EthAddressHbarSpendingPlanRepository', function () {
   const logger = pino();
   const registry = new Registry();
 
   const tests = (isSharedCacheEnabled: boolean) => {
     let cacheService: CacheService;
-    let repository: EthAddressPlanRepository;
+    let repository: EthAddressHbarSpendingPlanRepository;
 
     if (isSharedCacheEnabled) {
       let test: string | undefined;
@@ -55,7 +55,10 @@ describe('EthAddressPlanRepository', function () {
         process.env.REDIS_ENABLED = 'true';
         process.env.REDIS_URL = 'redis://127.0.0.1:6382';
         cacheService = new CacheService(logger.child({ name: 'CacheService' }), new Registry());
-        repository = new EthAddressPlanRepository(cacheService, logger.child({ name: 'EthAddressPlanRepository' }));
+        repository = new EthAddressHbarSpendingPlanRepository(
+          cacheService,
+          logger.child({ name: 'EthAddressHbarSpendingPlanRepository' }),
+        );
       });
 
       this.afterAll(async () => {
@@ -69,7 +72,10 @@ describe('EthAddressPlanRepository', function () {
         process.env.TEST = 'true';
         process.env.REDIS_ENABLED = 'false';
         cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
-        repository = new EthAddressPlanRepository(cacheService, logger.child({ name: 'EthAddressPlanRepository' }));
+        repository = new EthAddressHbarSpendingPlanRepository(
+          cacheService,
+          logger.child({ name: 'EthAddressHbarSpendingPlanRepository' }),
+        );
       });
     }
 
@@ -86,8 +92,8 @@ describe('EthAddressPlanRepository', function () {
       it('throws an error if address plan is not found', async () => {
         const ethAddress = '0xnonexistent';
         await expect(repository.findByAddress(ethAddress)).to.be.eventually.rejectedWith(
-          EthAddressPlanNotFoundError,
-          `EthAddressPlan with address ${ethAddress} not found`,
+          EthAddressHbarSpendingPlanNotFoundError,
+          `EthAddressHbarSpendingPlan with address ${ethAddress} not found`,
         );
       });
     });

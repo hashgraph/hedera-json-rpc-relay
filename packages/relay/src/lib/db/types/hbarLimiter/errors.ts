@@ -18,23 +18,23 @@
  *
  */
 
-export class HbarLimitPlanNotFoundError extends Error {
+export class HbarSpendingPlanNotFoundError extends Error {
   constructor(id: string) {
-    super(`HbarLimitPlan with ID ${id} not found`);
-    this.name = 'HbarLimitPlanNotFoundError';
+    super(`HbarSpendingPlan with ID ${id} not found`);
+    this.name = 'HbarSpendingPlanNotFoundError';
   }
 }
 
-export class HbarLimitPlanNotActiveError extends Error {
+export class HbarSpendingPlanNotActiveError extends Error {
   constructor(id: string) {
-    super(`HbarLimitPlan with ID ${id} is not active`);
-    this.name = 'HbarLimitPlanNotActiveError';
+    super(`HbarSpendingPlan with ID ${id} is not active`);
+    this.name = 'HbarSpendingPlanNotActiveError';
   }
 }
 
-export class EthAddressPlanNotFoundError extends Error {
+export class EthAddressHbarSpendingPlanNotFoundError extends Error {
   constructor(ethAddress: string) {
-    super(`EthAddressPlan with address ${ethAddress} not found`);
-    this.name = 'EthAddressPlanNotFoundError';
+    super(`EthAddressHbarSpendingPlan with address ${ethAddress} not found`);
+    this.name = 'EthAddressHbarSpendingPlanNotFoundError';
   }
 }

@@ -22,12 +22,12 @@ import { pino } from 'pino';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { RedisInMemoryServer } from '../../../redisInMemoryServer';
-import { HbarLimitPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/HbarLimitPlanRepository';
+import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
 import {
-  HbarLimitPlanNotActiveError,
-  HbarLimitPlanNotFoundError,
+  HbarSpendingPlanNotActiveError,
+  HbarSpendingPlanNotFoundError,
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingRecord';
 
@@ -35,13 +35,13 @@ import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subsc
 
 chai.use(chaiAsPromised);
 
-describe('HbarLimitPlanRepository', function () {
+describe('HbarSpendingPlanRepository', function () {
   const logger = pino();
   const registry = new Registry();
 
   const tests = (isSharedCacheEnabled: boolean) => {
     let cacheService: CacheService;
-    let repository: HbarLimitPlanRepository;
+    let repository: HbarSpendingPlanRepository;
 
     if (isSharedCacheEnabled) {
       let test: string | undefined;
@@ -59,7 +59,7 @@ describe('HbarLimitPlanRepository', function () {
         process.env.REDIS_ENABLED = 'true';
         process.env.REDIS_URL = 'redis://127.0.0.1:6380';
         cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
-        repository = new HbarLimitPlanRepository(cacheService, logger.child({ name: `HbarLimitPlanRepository` }));
+        repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
       });
 
       this.afterAll(async () => {
@@ -74,7 +74,7 @@ describe('HbarLimitPlanRepository', function () {
         process.env.TEST = 'true';
         process.env.REDIS_ENABLED = 'false';
         cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
-        repository = new HbarLimitPlanRepository(cacheService, logger.child({ name: `HbarLimitPlanRepository` }));
+        repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
       });
     }
 
@@ -89,8 +89,8 @@ describe('HbarLimitPlanRepository', function () {
     describe('findById', () => {
       it('throws an error if plan is not found by ID', async () => {
         await expect(repository.findById('non-existent-id')).to.be.eventually.rejectedWith(
-          HbarLimitPlanNotFoundError,
-          `HbarLimitPlan with ID non-existent-id not found`,
+          HbarSpendingPlanNotFoundError,
+          `HbarSpendingPlan with ID non-existent-id not found`,
         );
       });
 
@@ -104,8 +104,8 @@ describe('HbarLimitPlanRepository', function () {
     describe('findByIdWithDetails', () => {
       it('throws an error if plan is not found by ID', async () => {
         await expect(repository.findByIdWithDetails('non-existent-id')).to.be.eventually.rejectedWith(
-          HbarLimitPlanNotFoundError,
-          `HbarLimitPlan with ID non-existent-id not found`,
+          HbarSpendingPlanNotFoundError,
+          `HbarSpendingPlan with ID non-existent-id not found`,
         );
       });
 
@@ -119,8 +119,8 @@ describe('HbarLimitPlanRepository', function () {
     describe('getSpendingHistory', () => {
       it('throws an error if plan not found by ID', async () => {
         await expect(repository.getSpendingHistory('non-existent-id')).to.be.eventually.rejectedWith(
-          HbarLimitPlanNotFoundError,
-          `HbarLimitPlan with ID non-existent-id not found`,
+          HbarSpendingPlanNotFoundError,
+          `HbarSpendingPlan with ID non-existent-id not found`,
         );
       });
 
@@ -192,8 +192,8 @@ describe('HbarLimitPlanRepository', function () {
         const amount = 100;
 
         await expect(repository.addAmountToSpendingHistory(id, amount)).to.be.eventually.rejectedWith(
-          HbarLimitPlanNotFoundError,
-          `HbarLimitPlan with ID ${id} not found`,
+          HbarSpendingPlanNotFoundError,
+          `HbarSpendingPlan with ID ${id} not found`,
         );
       });
     });
@@ -274,8 +274,8 @@ describe('HbarLimitPlanRepository', function () {
         const amount = 50;
 
         await expect(repository.addAmountToSpentToday(id, amount)).to.be.eventually.rejectedWith(
-          HbarLimitPlanNotFoundError,
-          `HbarLimitPlan with ID ${id} not found`,
+          HbarSpendingPlanNotFoundError,
+          `HbarSpendingPlan with ID ${id} not found`,
         );
       });
 
@@ -289,8 +289,8 @@ describe('HbarLimitPlanRepository', function () {
 
         const amount = 50;
         await expect(repository.addAmountToSpentToday(createdPlan.id, amount)).to.be.eventually.rejectedWith(
-          HbarLimitPlanNotActiveError,
-          `HbarLimitPlan with ID ${createdPlan.id} is not active`,
+          HbarSpendingPlanNotActiveError,
+          `HbarSpendingPlan with ID ${createdPlan.id} is not active`,
         );
       });
     });
@@ -299,8 +299,8 @@ describe('HbarLimitPlanRepository', function () {
       it('throws error if plan does not exist when checking if exists and active', async () => {
         const id = 'non-existent-id';
         await expect(repository.checkExistsAndActive(id)).to.be.eventually.rejectedWith(
-          HbarLimitPlanNotFoundError,
-          `HbarLimitPlan with ID ${id} not found`,
+          HbarSpendingPlanNotFoundError,
+          `HbarSpendingPlan with ID ${id} not found`,
         );
       });
 
@@ -313,8 +313,8 @@ describe('HbarLimitPlanRepository', function () {
         await cacheService.set(key, { ...createdPlan, active: false }, 'test');
 
         await expect(repository.checkExistsAndActive(createdPlan.id)).to.be.eventually.rejectedWith(
-          HbarLimitPlanNotActiveError,
-          `HbarLimitPlan with ID ${createdPlan.id} is not active`,
+          HbarSpendingPlanNotActiveError,
+          `HbarSpendingPlan with ID ${createdPlan.id} is not active`,
         );
       });
     });

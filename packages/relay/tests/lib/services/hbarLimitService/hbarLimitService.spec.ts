@@ -21,22 +21,22 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
-import { HbarLimitPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/HbarLimitPlanRepository';
-import { EthAddressPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/EthAddressPlanRepository';
+import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import pino from 'pino';
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
-import { EthAddressPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
+import { EthAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { HbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/hbarSpendingPlan';
 
 describe('HbarLimitService', function () {
   const logger = pino();
   let hbarLimitService: HbarLimitService;
-  let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarLimitPlanRepository>;
-  let ethAddressHbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<EthAddressPlanRepository>;
+  let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarSpendingPlanRepository>;
+  let ethAddressHbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<EthAddressHbarSpendingPlanRepository>;
 
   beforeEach(function () {
-    hbarSpendingPlanRepositoryStub = sinon.createStubInstance(HbarLimitPlanRepository);
-    ethAddressHbarSpendingPlanRepositoryStub = sinon.createStubInstance(EthAddressPlanRepository);
+    hbarSpendingPlanRepositoryStub = sinon.createStubInstance(HbarSpendingPlanRepository);
+    ethAddressHbarSpendingPlanRepositoryStub = sinon.createStubInstance(EthAddressHbarSpendingPlanRepository);
     hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepositoryStub,
       ethAddressHbarSpendingPlanRepositoryStub,
@@ -90,7 +90,7 @@ describe('HbarLimitService', function () {
       spentToday: 0,
     });
     const ethAddress = '0x123';
-    const error = new EthAddressPlanNotFoundError(ethAddress);
+    const error = new EthAddressHbarSpendingPlanNotFoundError(ethAddress);
     ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
     hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
     ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
@@ -103,7 +103,7 @@ describe('HbarLimitService', function () {
     expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
     expect(
       warnSpy.calledWithMatch(
-        sinon.match.instanceOf(EthAddressPlanNotFoundError),
+        sinon.match.instanceOf(EthAddressHbarSpendingPlanNotFoundError),
         `Failed to get spending plan for eth address '${ethAddress}'`,
       ),
     ).to.be.true;

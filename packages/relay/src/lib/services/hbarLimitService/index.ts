@@ -19,11 +19,12 @@
  */
 
 import { IHbarLimitService } from './IHbarLimitService';
-import { HbarLimitPlanRepository } from '../../db/repositories/hbarLimiter/HbarLimitPlanRepository';
-import { EthAddressPlanRepository } from '../../db/repositories/hbarLimiter/EthAddressPlanRepository';
+import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendingPlan';
 import { SubscriptionType } from '../../db/types/hbarLimiter/subscriptionType';
 import { Logger } from 'pino';
+import { formatRequestIdMessage } from '../../../formatters';
 
 export class HbarLimitService implements IHbarLimitService {
   // TODO: Replace with actual values
@@ -34,25 +35,53 @@ export class HbarLimitService implements IHbarLimitService {
   };
 
   constructor(
-    private readonly hbarSpendingPlanRepository: HbarLimitPlanRepository,
-    private readonly ethAddressHbarSpendingPlanRepository: EthAddressPlanRepository,
+    private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository,
+    private readonly ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
     private readonly logger: Logger,
   ) {}
 
+  /**
+   * Resets the {@link HbarSpendingPlan#spentToday} field for all existing plans.
+   * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   */
   async resetLimiter(): Promise<void> {
-    // TODO: Implement this
+    // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2868
     throw new Error('Not implemented');
   }
 
-  async shouldLimit(ethAddress: string, ipAddress?: string): Promise<boolean> {
+  /**
+   * Checks if the given eth address or ip address should be limited.
+   * @param {string} ethAddress - The eth address to check.
+   * @param {string} [ipAddress] - The ip address to check.
+   * @param {string} [requestId] - A prefix to include in log messages (optional).
+   * @returns {Promise<boolean>} - A promise that resolves with a boolean indicating if the address should be limited.
+   */
+  async shouldLimit(ethAddress: string, ipAddress?: string, requestId?: string): Promise<boolean> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const user = `(ethAddress=${ethAddress}, ipAddress=${ipAddress})`;
+    this.logger.trace(`${requestIdPrefix} Checking if ${user} should be limited...`);
     let spendingPlan = await this.getSpendingPlan(ethAddress, ipAddress);
     if (!spendingPlan) {
       // Create a basic spending plan if none exists for the eth address or ip address
       spendingPlan = await this.createBasicSpendingPlan(ethAddress);
     }
-    return spendingPlan.spentToday >= HbarLimitService.DAILY_LIMITS[spendingPlan.subscriptionType];
+    const dailyLimit = HbarLimitService.DAILY_LIMITS[spendingPlan.subscriptionType];
+    const exceedsLimit = spendingPlan.spentToday >= dailyLimit;
+    this.logger.trace(
+      `${requestIdPrefix} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited, spentToday=${
+        spendingPlan.spentToday
+      }, limit=${dailyLimit}`,
+    );
+    return exceedsLimit;
   }
 
+  /**
+   * Gets the spending plan for the given eth address or ip address.
+   * @param {string} ethAddress - The eth address to get the spending plan for.
+   * @param {string} [ipAddress] - The ip address to get the spending plan for.
+   * @returns {Promise<IDetailedHbarSpendingPlan | null>} - A promise that resolves with the spending plan or null if none exists.
+   * @private
+   */
   private async getSpendingPlan(ethAddress: string, ipAddress?: string): Promise<IDetailedHbarSpendingPlan | null> {
     if (ethAddress) {
       try {
@@ -62,16 +91,28 @@ export class HbarLimitService implements IHbarLimitService {
       }
     }
     if (ipAddress) {
-      // TODO: Implement this
+      // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
     }
     return null;
   }
 
+  /**
+   * Gets the spending plan for the given eth address.
+   * @param {string} ethAddress - The eth address to get the spending plan for.
+   * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the spending plan.
+   * @private
+   */
   private async getSpendingPlanByEthAddress(ethAddress: string): Promise<IDetailedHbarSpendingPlan> {
-    const ethAddressPlan = await this.ethAddressHbarSpendingPlanRepository.findByAddress(ethAddress);
-    return this.hbarSpendingPlanRepository.findByIdWithDetails(ethAddressPlan.planId);
+    const ethAddressHbarSpendingPlan = await this.ethAddressHbarSpendingPlanRepository.findByAddress(ethAddress);
+    return this.hbarSpendingPlanRepository.findByIdWithDetails(ethAddressHbarSpendingPlan.planId);
   }
 
+  /**
+   * Creates a basic spending plan for the given eth address.
+   * @param {string} ethAddress - The eth address to create the spending plan for.
+   * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
+   * @private
+   */
   private async createBasicSpendingPlan(ethAddress: string): Promise<IDetailedHbarSpendingPlan> {
     const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC);
     await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id });
