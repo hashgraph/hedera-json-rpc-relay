@@ -640,7 +640,7 @@ export class SDKClient {
       // emitting an EXECUTE_QUERY event to kick off capturing metrics process asynchronously
       if (queryCost && queryCost !== 0) {
         this.eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, {
-          executionType: `TransactionExecution`,
+          executionType: `QueryExecution`,
           transactionId: query.paymentTransactionId?.toString()!,
           txConstructorName: queryConstructorName,
           callerName,
