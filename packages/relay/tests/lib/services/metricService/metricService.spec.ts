@@ -34,7 +34,7 @@ import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import { calculateTxRecordChargeAmount, getRequestId } from '../../../helpers';
 import MetricService from '../../../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../../../src/lib/types/IEvent';
+import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../../../src/lib/types/events';
 import { Hbar, Long, Status, Client, AccountId, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
 
 config({ path: resolve(__dirname, '../../../test.env') });
@@ -55,7 +55,6 @@ describe('Metric Service', function () {
   const mockedCallerName = 'caller_name';
   const mockedExecutionType = 'exection_type';
   const mockedConstructorName = 'constructor_name';
-  const mockedTransactionType = 'transaction_type';
   const mockedInteractingEntity = 'interacting_entity';
   const mockedTransactionId = '0.0.1022@1681130064.409933500';
   const mockedTransactionIdFormatted = '0.0.1022-1681130064-409933500';
@@ -161,7 +160,6 @@ describe('Metric Service', function () {
       requestId: getRequestId(),
       txConstructorName: mockedConstructorName,
       operatorAccountId,
-      transactionType: mockedTransactionType,
       interactingEntity: mockedInteractingEntity,
     };
 
@@ -185,7 +183,6 @@ describe('Metric Service', function () {
       )!;
       expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
       expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(costMetricObject.labels.type).to.eq(mockedTransactionType);
       expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
       expect(costMetricObject.value).to.eq(mockedTxFee);
     });
@@ -215,7 +212,6 @@ describe('Metric Service', function () {
       )!;
       expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
       expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(costMetricObject.labels.type).to.eq(mockedTransactionType);
       expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
       expect(costMetricObject.value).to.eq(mockedTxFee + expectedTxRecordFee);
 
@@ -226,7 +222,6 @@ describe('Metric Service', function () {
 
       expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
       expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(gasMetricObject.labels.type).to.eq(mockedTransactionType);
       expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
       expect(gasMetricObject.value).to.eq(
         mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
@@ -264,7 +259,6 @@ describe('Metric Service', function () {
       )!;
       expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
       expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(costMetricObject.labels.type).to.eq(mockedTransactionType);
       expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
       expect(costMetricObject.value).to.eq(mockedTxFee + expectedTxRecordFee);
 
@@ -275,7 +269,6 @@ describe('Metric Service', function () {
 
       expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
       expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(gasMetricObject.labels.type).to.eq(mockedTransactionType);
       expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
       expect(gasMetricObject.value).to.eq(
         mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
@@ -288,7 +281,7 @@ describe('Metric Service', function () {
     const mockedExecuteQueryEventPayload: IExecuteQueryEventPayload = {
       executionType: mockedExecutionType,
       transactionId: mockedTransactionId,
-      transactionType: mockedTransactionType,
+      txConstructorName: mockedConstructorName,
       callerName: mockedCallerName,
       cost: mockedTxFee,
       gasUsed: mockedGasUsed,
@@ -311,7 +304,6 @@ describe('Metric Service', function () {
       )!;
       expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
       expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(costMetricObject.labels.type).to.eq(mockedTransactionType);
       expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
       expect(costMetricObject.value).to.eq(mockedTxFee);
 
@@ -322,7 +314,6 @@ describe('Metric Service', function () {
 
       expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
       expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(gasMetricObject.labels.type).to.eq(mockedTransactionType);
       expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
       expect(gasMetricObject.value).to.eq(
         mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
@@ -348,7 +339,6 @@ describe('Metric Service', function () {
       )!;
       expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
       expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(costMetricObject.labels.type).to.eq(mockedTransactionType);
       expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
       expect(costMetricObject.value).to.eq(mockedTxFee);
 
@@ -359,7 +349,6 @@ describe('Metric Service', function () {
 
       expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
       expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(gasMetricObject.labels.type).to.eq(mockedTransactionType);
       expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
       expect(gasMetricObject.value).to.eq(
         mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),

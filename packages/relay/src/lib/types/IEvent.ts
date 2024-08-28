@@ -24,14 +24,13 @@ export interface IExecuteTransactionEventPayload {
   requestId: string;
   txConstructorName: string;
   operatorAccountId: string;
-  transactionType: string;
   interactingEntity: string;
 }
 
 export interface IExecuteQueryEventPayload {
   executionType: string;
   transactionId: string;
-  transactionType: string;
+  txConstructorName: string;
   callerName: string;
   cost: number;
   gasUsed: number;

@@ -133,7 +133,6 @@ export default class MetricService {
    * @param {string} payload.requestId - The unique identifier for the request.
    * @param {string} payload.callerName - The name of the entity calling the transaction.
    * @param {string} payload.transactionId - The unique identifier for the transaction.
-   * @param {string} payload.transactionType - The type of the transaction being processed.
    * @param {string} payload.txConstructorName - The name of the transaction constructor.
    * @param {string} payload.operatorAccountId - The account ID of the operator managing the transaction.
    * @param {string} payload.interactingEntity - The entity interacting with the transaction.
@@ -143,7 +142,6 @@ export default class MetricService {
     requestId,
     callerName,
     transactionId,
-    transactionType,
     txConstructorName,
     operatorAccountId,
     interactingEntity,
@@ -164,7 +162,7 @@ export default class MetricService {
         this.addExpenseAndCaptureMetrics({
           executionType: `TransactionExecution`,
           transactionId,
-          transactionType,
+          txConstructorName,
           callerName,
           cost: transactionFee,
           gasUsed,
@@ -177,7 +175,7 @@ export default class MetricService {
         this.addExpenseAndCaptureMetrics({
           executionType: `TransactionRecordQuery`,
           transactionId,
-          transactionType,
+          txConstructorName,
           callerName,
           cost: txRecordChargeAmount,
           gasUsed: 0,
@@ -194,7 +192,7 @@ export default class MetricService {
    * @param {IExecuteQueryEventPayload} payload - The payload object containing details about the transaction.
    * @param {string} payload.executionType - The type of execution (e.g., `TransactionExecution`, `TransactionRecordQuery`).
    * @param {string} payload.transactionId - The unique identifier for the transaction.
-   * @param {string} payload.transactionType - The type of the transaction being processed.
+   * @param {string} payload.txConstructorName - The name of the transaction constructor.
    * @param {string} payload.callerName - The name of the entity calling the transaction.
    * @param {number} payload.cost - The cost of the transaction in tinybars.
    * @param {number} payload.gasUsed - The amount of gas used during the transaction.
@@ -205,7 +203,7 @@ export default class MetricService {
   public addExpenseAndCaptureMetrics = ({
     executionType,
     transactionId,
-    transactionType,
+    txConstructorName,
     callerName,
     cost,
     gasUsed,
@@ -214,13 +212,13 @@ export default class MetricService {
   }: IExecuteQueryEventPayload): void => {
     const formattedRequestId = formatRequestIdMessage(requestId);
     this.logger.trace(
-      `${formattedRequestId} Capturing HBAR charged: executionType=${executionType} transactionId=${transactionId}, txConstructorName=${transactionType}, callerName=${callerName}, cost=${cost} tinybars`,
+      `${formattedRequestId} Capturing HBAR charged: executionType=${executionType} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
     );
 
     this.hbarLimiter.addExpense(cost, Date.now(), requestId);
     this.captureMetrics(
       SDKClient.transactionMode,
-      transactionType,
+      txConstructorName,
       Status.Success,
       cost,
       gasUsed,

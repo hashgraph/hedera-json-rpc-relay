@@ -599,11 +599,11 @@ export class SDKClient {
     requestId?: string,
   ): Promise<T> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const queryType = query.constructor.name;
+    const queryConstructorName = query.constructor.name;
     let queryResponse: any = null;
     let queryCost: number | undefined = undefined;
 
-    this.logger.info(`${requestIdPrefix} Execute ${queryType} query.`);
+    this.logger.info(`${requestIdPrefix} Execute ${queryConstructorName} query.`);
 
     try {
       if (query.paymentTransactionId) {
@@ -616,7 +616,7 @@ export class SDKClient {
         queryCost = query._queryPayment?.toTinybars().toNumber();
       }
       this.logger.info(
-        `${requestIdPrefix} Successfully execute ${queryType} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, transactionType=${queryType}, cost=${queryCost} tinybars`,
+        `${requestIdPrefix} Successfully execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, queryConstructorName=${queryConstructorName}, cost=${queryCost} tinybars`,
       );
       return queryResponse;
     } catch (e: any) {
@@ -632,7 +632,7 @@ export class SDKClient {
       }
 
       this.logger.debug(
-        `${requestIdPrefix} Fail to execute ${queryType} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, queryType=${queryType}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${queryCost} tinybars`,
+        `${requestIdPrefix} Fail to execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, queryConstructorName=${queryConstructorName}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${queryCost} tinybars`,
       );
 
       throw sdkClientError;
@@ -642,12 +642,12 @@ export class SDKClient {
         this.eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, {
           executionType: `TransactionExecution`,
           transactionId: query.paymentTransactionId?.toString()!,
-          transactionType: queryType,
+          txConstructorName: queryConstructorName,
           callerName,
           cost: queryCost,
           gasUsed: 0,
           interactingEntity,
-          formattedRequestId: requestIdPrefix,
+          requestId: requestIdPrefix,
         });
       }
     }
@@ -674,7 +674,7 @@ export class SDKClient {
     originalCallerAddress: string,
   ): Promise<TransactionResponse> {
     const formattedRequestId = formatRequestIdMessage(requestId);
-    const transactionType = transaction.constructor.name;
+    const txConstructorName = transaction.constructor.name;
     let transactionId: string = '';
     let transactionResponse: TransactionResponse | null = null;
 
@@ -694,7 +694,7 @@ export class SDKClient {
 
     try {
       // execute transaction
-      this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
+      this.logger.info(`${formattedRequestId} Execute ${txConstructorName} transaction`);
       transactionResponse = await transaction.execute(this.clientMain);
 
       // get transactionID
@@ -704,7 +704,7 @@ export class SDKClient {
       const transactionRceipt = await transactionResponse.getReceipt(this.clientMain);
 
       this.logger.info(
-        `${formattedRequestId} Successfully execute ${transactionType} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${transactionRceipt.status}(${transactionRceipt.status._code})`,
+        `${formattedRequestId} Successfully execute ${txConstructorName} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}, status=${transactionRceipt.status}(${transactionRceipt.status._code})`,
       );
       return transactionResponse;
     } catch (e: any) {
@@ -724,26 +724,26 @@ export class SDKClient {
       // log and throw
       this.logger.warn(
         sdkClientError,
-        `${formattedRequestId} Fail to execute ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
+        `${formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
       );
 
       if (!transactionResponse) {
         throw predefined.INTERNAL_ERROR(
-          `${formattedRequestId} Transaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}`,
+          `${formattedRequestId} Transaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
         );
       }
       return transactionResponse;
     } finally {
-      // emitting an EXECUTE_TRANSACTION event to kick off capturing metrics process asynchronously
-      this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
-        transactionId,
-        callerName,
-        requestId,
-        txConstructorName: transaction.constructor.name,
-        operatorAccountId: this.clientMain.operatorAccountId!.toString(),
-        transactionType,
-        interactingEntity,
-      } as IExecuteTransactionEventPayload);
+      if (transactionId !== '') {
+        this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
+          transactionId,
+          callerName,
+          requestId,
+          txConstructorName,
+          operatorAccountId: this.clientMain.operatorAccountId!.toString(),
+          interactingEntity,
+        } as IExecuteTransactionEventPayload);
+      }
     }
   }
 
@@ -768,7 +768,7 @@ export class SDKClient {
     originalCallerAddress: string,
   ): Promise<void> {
     const formattedRequestId = formatRequestIdMessage(requestId);
-    const transactionType = transaction.constructor.name;
+    const txConstructorName = transaction.constructor.name;
     let transactionResponses: TransactionResponse[] | null = null;
 
     // check hbar limit before executing transaction
@@ -787,11 +787,11 @@ export class SDKClient {
 
     try {
       // execute transaction
-      this.logger.info(`${formattedRequestId} Execute ${transactionType} transaction`);
+      this.logger.info(`${formattedRequestId} Execute ${txConstructorName} transaction`);
       transactionResponses = await transaction.executeAll(this.clientMain);
 
       this.logger.info(
-        `${formattedRequestId} Successfully execute all ${transactionResponses.length} ${transactionType} transactions: callerName=${callerName}, transactionType=${transactionType}, status=${Status.Success}(${Status.Success._code})`,
+        `${formattedRequestId} Successfully execute all ${transactionResponses.length} ${txConstructorName} transactions: callerName=${callerName}, txConstructorName=${txConstructorName}, status=${Status.Success}(${Status.Success._code})`,
       );
     } catch (e: any) {
       // declare main error as SDKClientError
@@ -799,7 +799,7 @@ export class SDKClient {
 
       // log and throw
       this.logger.warn(
-        `${formattedRequestId} Fail to executeAll for ${transactionType} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${transactionType}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
+        `${formattedRequestId} Fail to executeAll for ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${txConstructorName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
       );
       throw sdkClientError;
     } finally {
@@ -807,15 +807,16 @@ export class SDKClient {
       if (transactionResponses) {
         for (let transactionResponse of transactionResponses) {
           // emitting an EXECUTE_TRANSACTION event to kick off capturing metrics process asynchronously
-          this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
-            transactionId: transactionResponse.transactionId.toString(),
-            callerName,
-            requestId,
-            txConstructorName: transaction.constructor.name,
-            operatorAccountId: this.clientMain.operatorAccountId!.toString(),
-            transactionType,
-            interactingEntity,
-          });
+          if (transactionResponse.transactionId) {
+            this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
+              transactionId: transactionResponse.transactionId.toString(),
+              callerName,
+              requestId,
+              txConstructorName,
+              operatorAccountId: this.clientMain.operatorAccountId!.toString(),
+              interactingEntity,
+            });
+          }
         }
       }
     }
