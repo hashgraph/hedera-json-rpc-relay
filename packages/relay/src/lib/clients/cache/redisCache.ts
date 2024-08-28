@@ -160,9 +160,9 @@ export class RedisCache implements IRedisCacheClient {
   /**
    * Stores multiple key-value pairs in the cache.
    *
-   * @param keyValuePairs - An object where each property is a key and its value is the value to be cached.
-   * @param callingMethod - The name of the calling method.
-   * @param requestIdPrefix - Optional request ID prefix for logging.
+   * @param {Record<string, any>} keyValuePairs - An object where each property is a key and its value is the value to be cached.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} requestIdPrefix - Optional request ID prefix for logging.
    * @returns {Promise<void>} A Promise that resolves when the values are cached.
    */
   async multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): Promise<void> {
@@ -188,10 +188,10 @@ export class RedisCache implements IRedisCacheClient {
   /**
    * Stores multiple key-value pairs in the cache using pipelining.
    *
-   * @param keyValuePairs - An object where each property is a key and its value is the value to be cached.
-   * @param callingMethod - The name of the calling method.
+   * @param {Record<string, any>} keyValuePairs - An object where each property is a key and its value is the value to be cached.
+   * @param {string} callingMethod - The name of the calling method.
    * @param {number} [ttl] - The time-to-live (expiration) of the cache item in milliseconds.
-   * @param requestIdPrefix - Optional request ID prefix for logging.
+   * @param {string} requestIdPrefix - Optional request ID prefix for logging.
    * @returns {Promise<void>} A Promise that resolves when the values are cached.
    */
   async pipelineSet(
@@ -258,11 +258,11 @@ export class RedisCache implements IRedisCacheClient {
   /**
    * Increments a value in the cache.
    *
-   * @param key The key to increment
-   * @param amount The amount to increment by
-   * @param callingMethod The name of the calling method
-   * @param requestIdPrefix The optional request ID prefix
-   * @returns The value of the key after incrementing
+   * @param {string} key The key to increment
+   * @param {number} amount The amount to increment by
+   * @param {string} callingMethod The name of the calling method
+   * @param {string} [requestIdPrefix] The optional request ID prefix
+   * @returns {Promise<number>} The value of the key after incrementing
    */
   async incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix?: string): Promise<number> {
     const client = await this.getConnectedClient();
@@ -274,12 +274,12 @@ export class RedisCache implements IRedisCacheClient {
   /**
    * Retrieves a range of elements from a list in the cache.
    *
-   * @param key The key of the list
-   * @param start The start index
-   * @param end The end index
-   * @param callingMethod The name of the calling method
-   * @param requestIdPrefix The optional request ID prefix
-   * @returns The list of elements in the range
+   * @param {string} key The key of the list
+   * @param {number} start The start index
+   * @param {number} end The end index
+   * @param {string} callingMethod The name of the calling method
+   * @param {string} [requestIdPrefix] The optional request ID prefix
+   * @returns {Promise<any[]>} The list of elements in the range
    */
   async lRange(
     key: string,
@@ -297,11 +297,11 @@ export class RedisCache implements IRedisCacheClient {
   /**
    * Pushes a value to the end of a list in the cache.
    *
-   * @param key The key of the list
-   * @param value The value to push
-   * @param callingMethod The name of the calling method
-   * @param requestIdPrefix The optional request ID prefix
-   * @returns The length of the list after pushing
+   * @param {string} key The key of the list
+   * @param {*} value The value to push
+   * @param {string} callingMethod The name of the calling method
+   * @param {string} [requestIdPrefix] The optional request ID prefix
+   * @returns {Promise<number>} The length of the list after pushing
    */
   async rPush(key: string, value: any, callingMethod: string, requestIdPrefix?: string): Promise<number> {
     const client = await this.getConnectedClient();
