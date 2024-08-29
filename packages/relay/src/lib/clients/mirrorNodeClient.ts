@@ -984,8 +984,8 @@ export class MirrorNodeClient {
   }
 
   public async getAllowanceForToken(
-    tokenId: string,
     accountId: string,
+    tokenId: string,
     spenderId: string,
     requestIdPrefix?: string,
     retries?: number,
