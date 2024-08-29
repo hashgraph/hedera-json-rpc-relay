@@ -81,6 +81,8 @@ describe('HbarLimitService', function () {
   }
 
   describe('resetLimiter', function () {
+    // TODO: Add tests here with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2868
+
     it('should throw an error when resetLimiter is called', async function () {
       try {
         await hbarLimitService.resetLimiter();
@@ -284,7 +286,6 @@ describe('HbarLimitService', function () {
     });
 
     it('should create a basic spending plan for the given ipAddress', async function () {
-      // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
       await testCreateBasicSpendingPlan('', '127.0.0.1');
     });
   });
@@ -298,7 +299,9 @@ describe('HbarLimitService', function () {
           planId: mockPlanId,
         });
       } else if (ipAddress) {
-        // TODO: Remove & update to use ipAddressRepository with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
+        // TODO: Uncomment with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
+        // ipAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves(existingSpendingPlan);
+        // TODO: Remove this line after uncommenting the line above
         hbarSpendingPlanRepositoryStub.create.resolves(existingSpendingPlan);
       }
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(existingSpendingPlan);
