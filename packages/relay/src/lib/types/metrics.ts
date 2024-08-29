@@ -19,7 +19,8 @@
  */
 
 export interface ITransactionRecordMetric {
+  status: string;
+  gasUsed: number;
   transactionFee: number;
   txRecordChargeAmount: number;
-  gasUsed: number;
 }

@@ -35,6 +35,7 @@ export interface IExecuteQueryEventPayload {
   cost: number;
   gasUsed: number;
   interactingEntity: string;
+  status: string;
   requestId: string;
 }
 

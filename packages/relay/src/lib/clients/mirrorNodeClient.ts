@@ -1329,7 +1329,7 @@ export class MirrorNodeClient {
     const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionRecord);
 
     const transactionFee = this.getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
-    return { transactionFee, txRecordChargeAmount: 0, gasUsed: 0 };
+    return { transactionFee, txRecordChargeAmount: 0, gasUsed: 0, status: mirrorNodeTxRecord.result };
   }
 
   /**

@@ -21,7 +21,6 @@
 import { Logger } from 'pino';
 import EventEmitter from 'events';
 import constants from '../../constants';
-import { Status } from '@hashgraph/sdk';
 import HbarLimit from '../../hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
@@ -153,7 +152,7 @@ export default class MetricService {
     );
 
     if (transactionRecordMetrics) {
-      const { gasUsed, transactionFee, txRecordChargeAmount } = transactionRecordMetrics;
+      const { gasUsed, transactionFee, txRecordChargeAmount, status } = transactionRecordMetrics;
       if (transactionFee !== 0) {
         this.addExpenseAndCaptureMetrics({
           executionType: ExecutionType.TRANSACTION,
@@ -163,6 +162,7 @@ export default class MetricService {
           cost: transactionFee,
           gasUsed,
           interactingEntity,
+          status,
           requestId,
         } as IExecuteQueryEventPayload);
       }
@@ -176,6 +176,7 @@ export default class MetricService {
           cost: txRecordChargeAmount,
           gasUsed: 0,
           interactingEntity,
+          status,
           requestId,
         } as IExecuteQueryEventPayload);
       }
@@ -193,6 +194,7 @@ export default class MetricService {
    * @param {number} payload.cost - The cost of the transaction in tinybars.
    * @param {number} payload.gasUsed - The amount of gas used during the transaction.
    * @param {string} payload.interactingEntity - The entity interacting with the transaction.
+   * @param {string} payload.status - The entity interacting with the transaction.
    * @param {string} payload.requestId - The unique identifier for the request.
    * @returns {void} - This method does not return a value.
    */
@@ -204,6 +206,7 @@ export default class MetricService {
     cost,
     gasUsed,
     interactingEntity,
+    status,
     requestId,
   }: IExecuteQueryEventPayload): void => {
     const formattedRequestId = formatRequestIdMessage(requestId);
@@ -215,7 +218,7 @@ export default class MetricService {
     this.captureMetrics(
       SDKClient.transactionMode,
       txConstructorName,
-      Status.Success,
+      status,
       cost,
       gasUsed,
       callerName,
@@ -278,7 +281,7 @@ export default class MetricService {
    * @private
    * @param {string} mode - The mode of the transaction (e.g., consensus mode).
    * @param {string} type - The type of the transaction.
-   * @param {Status} status - The status of the transaction.
+   * @param {string} status - The status of the transaction.
    * @param {number} cost - The cost of the transaction in tinybars.
    * @param {number} gas - The gas used by the transaction.
    * @param {string} caller - The name of the caller executing the transaction.
@@ -288,18 +291,14 @@ export default class MetricService {
   private captureMetrics = (
     mode: string,
     type: string,
-    status: Status,
+    status: string,
     cost: number,
     gas: number,
     caller: string,
     interactingEntity: string,
   ): void => {
-    this.consensusNodeClientHistogramCost
-      .labels(mode, type, status.toString(), caller, interactingEntity)
-      .observe(cost);
-    this.consensusNodeClientHistogramGasFee
-      .labels(mode, type, status.toString(), caller, interactingEntity)
-      .observe(gas);
+    this.consensusNodeClientHistogramCost.labels(mode, type, status, caller, interactingEntity).observe(cost);
+    this.consensusNodeClientHistogramGasFee.labels(mode, type, status, caller, interactingEntity).observe(gas);
   };
 
   /**

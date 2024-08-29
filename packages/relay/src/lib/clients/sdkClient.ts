@@ -62,7 +62,7 @@ import { SDKClientError } from './../errors/SDKClientError';
 import { ITransactionRecordMetric } from '../types/metrics';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
-import { ExecutionType, IExecuteTransactionEventPayload } from '../types/events';
+import { ExecutionType, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../types/events';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -602,6 +602,7 @@ export class SDKClient {
     const queryConstructorName = query.constructor.name;
     let queryResponse: any = null;
     let queryCost: number | undefined = undefined;
+    let status: string = '';
 
     this.logger.info(`${requestIdPrefix} Execute ${queryConstructorName} query.`);
 
@@ -614,16 +615,18 @@ export class SDKClient {
       } else {
         queryResponse = await query.execute(client);
         queryCost = query._queryPayment?.toTinybars().toNumber();
+        status = Status.Success.toString();
       }
       this.logger.info(
         `${requestIdPrefix} Successfully execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, queryConstructorName=${queryConstructorName}, cost=${queryCost} tinybars`,
       );
       return queryResponse;
     } catch (e: any) {
-      // in case a query execution throw an error, get query cost from the executed query
-      queryCost = query._queryPayment?.toTinybars().toNumber();
-
       const sdkClientError = new SDKClientError(e, e.message);
+
+      queryCost = query._queryPayment?.toTinybars().toNumber();
+      status = sdkClientError.status.toString();
+
       if (e instanceof PrecheckStatusError && e.contractFunctionResult?.errorMessage) {
         throw predefined.CONTRACT_REVERT(e.contractFunctionResult.errorMessage);
       }
@@ -646,8 +649,9 @@ export class SDKClient {
           cost: queryCost,
           gasUsed: 0,
           interactingEntity,
+          status,
           requestId: requestIdPrefix,
-        });
+        } as IExecuteQueryEventPayload);
       }
     }
   }
@@ -802,7 +806,7 @@ export class SDKClient {
               txConstructorName,
               operatorAccountId: this.clientMain.operatorAccountId!.toString(),
               interactingEntity,
-            });
+            } as IExecuteTransactionEventPayload);
           }
         }
       }
@@ -992,13 +996,14 @@ export class SDKClient {
         .execute(this.clientMain);
 
       const transactionReceipt = transactionRecord.receipt;
+      const status = transactionReceipt.status.toString();
 
       txRecordChargeAmount = this.calculateTxRecordChargeAmount(transactionReceipt.exchangeRate!);
 
       transactionFee = this.getTransferAmountSumForAccount(transactionRecord, operatorAccountId);
       gasUsed = transactionRecord.contractFunctionResult?.gasUsed.toNumber() ?? 0;
 
-      return { transactionFee, txRecordChargeAmount, gasUsed };
+      return { transactionFee, txRecordChargeAmount, gasUsed, status };
     } catch (e: any) {
       const sdkClientError = new SDKClientError(e, e.message);
       this.logger.warn(

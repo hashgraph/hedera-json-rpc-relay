@@ -286,6 +286,7 @@ describe('Metric Service', function () {
       cost: mockedTxFee,
       gasUsed: mockedGasUsed,
       interactingEntity: mockedInteractingEntity,
+      status: 'SUCCESS',
       requestId: getRequestId(),
     };
     it('should execute addExpenseAndCaptureMetrics() to capture metrics in HBAR limiter and metric registry', async () => {
