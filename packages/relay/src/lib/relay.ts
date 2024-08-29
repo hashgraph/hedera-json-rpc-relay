@@ -19,6 +19,9 @@
  */
 
 import dotenv from 'dotenv';
+import findConfig from 'find-config';
+dotenv.config({ path: findConfig('.env') || '' });
+
 import { Logger } from 'pino';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
@@ -26,13 +29,11 @@ import { Poller } from './poller';
 import { Web3Impl } from './web3';
 import EventEmitter from 'events';
 import constants from './constants';
-import findConfig from 'find-config';
 import HbarLimit from './hbarlimiter';
 import { Client } from '@hashgraph/sdk';
 import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';
 import { Gauge, Registry } from 'prom-client';
-dotenv.config({ path: findConfig('.env') || '' });
 import { Relay, Eth, Net, Web3, Subs } from '../index';
 import HAPIService from './services/hapiService/hapiService';
 import { SubscriptionController } from './subscriptionController';
