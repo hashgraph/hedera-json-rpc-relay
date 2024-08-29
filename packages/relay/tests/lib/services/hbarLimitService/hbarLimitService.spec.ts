@@ -69,9 +69,18 @@ describe('HbarLimitService', function () {
     sinon.restore();
   });
 
-  describe('resetLimiter', function () {
-    // TODO: Add tests here with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2868
+  function createSpendingPlan(spentToday: number) {
+    return new HbarSpendingPlan({
+      id: mockPlanId,
+      subscriptionType: SubscriptionType.BASIC,
+      createdAt: new Date(),
+      active: true,
+      spendingHistory: [],
+      spentToday,
+    });
+  }
 
+  describe('resetLimiter', function () {
     it('should throw an error when resetLimiter is called', async function () {
       try {
         await hbarLimitService.resetLimiter();
@@ -90,14 +99,7 @@ describe('HbarLimitService', function () {
     });
 
     it('should create a basic spending plan if none exists for the ethAddress', async function () {
-      const newSpendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: 0,
-      });
+      const newSpendingPlan = createSpendingPlan(0);
       const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
@@ -122,14 +124,7 @@ describe('HbarLimitService', function () {
     });
 
     it('should return true if spentToday is exactly at the limit', async function () {
-      const spendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC],
-      });
+      const spendingPlan = createSpendingPlan(HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC]);
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
         ethAddress: mockEthAddress,
         planId: mockPlanId,
@@ -142,14 +137,7 @@ describe('HbarLimitService', function () {
     });
 
     it('should return false if spentToday is just below the limit', async function () {
-      const spendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - 1,
-      });
+      const spendingPlan = createSpendingPlan(HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - 1);
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
         ethAddress: mockEthAddress,
         planId: mockPlanId,
@@ -162,14 +150,7 @@ describe('HbarLimitService', function () {
     });
 
     it('should return true if spentToday is just above the limit', async function () {
-      const spendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] + 1,
-      });
+      const spendingPlan = createSpendingPlan(HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] + 1);
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
         ethAddress: mockEthAddress,
         planId: mockPlanId,
@@ -180,8 +161,6 @@ describe('HbarLimitService', function () {
 
       expect(result).to.be.true;
     });
-
-    // TODO: Add test cases for IP address with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
   });
 
   describe('getSpendingPlan', function () {
@@ -199,14 +178,7 @@ describe('HbarLimitService', function () {
     });
 
     it('should return spending plan for ethAddress if ethAddress is provided', async function () {
-      const spendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: 0,
-      });
+      const spendingPlan = createSpendingPlan(0);
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
         ethAddress: mockEthAddress,
         planId: mockPlanId,
@@ -237,50 +209,45 @@ describe('HbarLimitService', function () {
   });
 
   describe('getSpendingPlanByEthAddress', function () {
-    it('should handle error when getSpendingPlanByEthAddress throws an EthAddressHbarSpendingPlanNotFoundError', async function () {
-      const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
+    const testGetSpendingPlanByEthAddressError = async (error: Error, errorClass: any) => {
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
 
       const result = hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress);
 
-      await expect(result).to.be.eventually.rejectedWith(EthAddressHbarSpendingPlanNotFoundError, error.message);
+      await expect(result).to.be.eventually.rejectedWith(errorClass, error.message);
+    };
+
+    it('should handle error when getSpendingPlanByEthAddress throws an EthAddressHbarSpendingPlanNotFoundError', async function () {
+      await testGetSpendingPlanByEthAddressError(
+        new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress),
+        EthAddressHbarSpendingPlanNotFoundError,
+      );
     });
 
     it('should handle error when getSpendingPlanByEthAddress throws an HbarSpendingPlanNotFoundError', async function () {
-      const error = new HbarSpendingPlanNotFoundError(mockPlanId);
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
         ethAddress: mockEthAddress,
         planId: mockPlanId,
       });
-      hbarSpendingPlanRepositoryStub.findByIdWithDetails.rejects(error);
-
-      const result = hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress);
-
-      await expect(result).to.be.eventually.rejectedWith(HbarSpendingPlanNotFoundError, error.message);
+      await testGetSpendingPlanByEthAddressError(
+        new HbarSpendingPlanNotFoundError(mockPlanId),
+        HbarSpendingPlanNotFoundError,
+      );
     });
 
     it('should handle error when getSpendingPlanByEthAddress throws an HbarSpendingPlanNotActiveError', async function () {
-      const error = new HbarSpendingPlanNotActiveError(mockPlanId);
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
         ethAddress: mockEthAddress,
         planId: mockPlanId,
       });
-      hbarSpendingPlanRepositoryStub.findByIdWithDetails.rejects(error);
-
-      const result = hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress);
-
-      await expect(result).to.be.eventually.rejectedWith(HbarSpendingPlanNotActiveError, error.message);
+      await testGetSpendingPlanByEthAddressError(
+        new HbarSpendingPlanNotActiveError(mockPlanId),
+        HbarSpendingPlanNotActiveError,
+      );
     });
 
     it('should return the spending plan for the given ethAddress', async function () {
-      const spendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: 0,
-      });
+      const spendingPlan = createSpendingPlan(0);
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
         ethAddress: mockEthAddress,
         planId: mockPlanId,
@@ -294,42 +261,24 @@ describe('HbarLimitService', function () {
   });
 
   describe('createBasicSpendingPlan', function () {
-    it('should create a basic spending plan for the given ethAddress', async function () {
-      const newSpendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: 0,
-      });
+    const testCreateBasicSpendingPlan = async (ethAddress: string, ipAddress?: string) => {
+      const newSpendingPlan = createSpendingPlan(0);
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
       ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
-      const result = await hbarLimitService['createBasicSpendingPlan'](mockEthAddress);
+      const result = await hbarLimitService['createBasicSpendingPlan'](ethAddress, ipAddress);
 
       expect(result).to.deep.equal(newSpendingPlan);
       expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
       expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
+    };
+
+    it('should create a basic spending plan for the given ethAddress', async function () {
+      await testCreateBasicSpendingPlan(mockEthAddress);
     });
 
     it('should create a basic spending plan and link it to the ETH address if both ethAddress and ipAddress are provided', async function () {
-      const newSpendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: 0,
-      });
-      hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
-      ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
-
-      const result = await hbarLimitService['createBasicSpendingPlan'](mockEthAddress, '127.0.0.1');
-
-      expect(result).to.deep.equal(newSpendingPlan);
-      expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
-      expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
+      await testCreateBasicSpendingPlan(mockEthAddress, '127.0.0.1');
       // TODO: Uncomment this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
       // expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.false;
     });
@@ -340,6 +289,29 @@ describe('HbarLimitService', function () {
   });
 
   describe('addExpense', function () {
+    const testAddExpense = async (ethAddress: string, ipAddress?: string) => {
+      const existingSpendingPlan = createSpendingPlan(0);
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(existingSpendingPlan);
+      hbarSpendingPlanRepositoryStub.addAmountToSpentToday.resolves();
+      hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.resolves();
+
+      await hbarLimitService.addExpense(100, ethAddress, ipAddress);
+
+      expect(hbarSpendingPlanRepositoryStub.addAmountToSpentToday.calledOnceWith(mockPlanId, 100)).to.be.true;
+      expect(hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.calledOnceWith(mockPlanId, 100)).to.be.true;
+      // @ts-ignore
+      expect(hbarLimitService.remainingBudget).to.equal(hbarLimitService.totalBudget - 100);
+      // @ts-ignore
+      expect((await hbarLimitService.hbarLimitRemainingGauge.get()).values[0].value).to.equal(
+        // @ts-ignore
+        hbarLimitService.totalBudget - 100,
+      );
+    };
+
     it('should throw an error if neither ethAddress nor ipAddress is provided', async function () {
       const ipAddresses = ['', null, undefined];
       const ethAddresses = ['', null, undefined];
@@ -355,14 +327,7 @@ describe('HbarLimitService', function () {
     });
 
     it('should create a basic spending plan if none exists', async function () {
-      const newSpendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: 0,
-      });
+      const newSpendingPlan = createSpendingPlan(0);
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
       ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
@@ -373,61 +338,11 @@ describe('HbarLimitService', function () {
     });
 
     it('should add the expense to the spending plan and update the remaining budget when both ethAddress and ipAddress are provided', async function () {
-      const existingSpendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: 0,
-      });
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
-        planId: mockPlanId,
-      });
-      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(existingSpendingPlan);
-      hbarSpendingPlanRepositoryStub.addAmountToSpentToday.resolves();
-      hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.resolves();
-
-      await hbarLimitService.addExpense(100, mockEthAddress, '127.0.0.1');
-
-      expect(hbarSpendingPlanRepositoryStub.addAmountToSpentToday.calledOnceWith(mockPlanId, 100)).to.be.true;
-      expect(hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.calledOnceWith(mockPlanId, 100)).to.be.true;
-      // @ts-ignore
-      expect(hbarLimitService.remainingBudget).to.equal(hbarLimitService.totalBudget - 100);
-      // @ts-ignore
-      expect((await hbarLimitService.hbarLimitRemainingGauge.get()).values[0].value).to.equal(
-        hbarLimitService.totalBudget - 100,
-      );
+      await testAddExpense(mockEthAddress, '127.0.0.1');
     });
 
     it('should add the expense to the spending plan and update the remaining budget when ethAddress is provided but ipAddress is not', async function () {
-      const existingSpendingPlan = new HbarSpendingPlan({
-        id: mockPlanId,
-        subscriptionType: SubscriptionType.BASIC,
-        createdAt: new Date(),
-        active: true,
-        spendingHistory: [],
-        spentToday: 0,
-      });
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
-        planId: mockPlanId,
-      });
-      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(existingSpendingPlan);
-      hbarSpendingPlanRepositoryStub.addAmountToSpentToday.resolves();
-      hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.resolves();
-
-      await hbarLimitService.addExpense(100, mockEthAddress);
-
-      expect(hbarSpendingPlanRepositoryStub.addAmountToSpentToday.calledOnceWith(mockPlanId, 100)).to.be.true;
-      expect(hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.calledOnceWith(mockPlanId, 100)).to.be.true;
-      // @ts-ignore
-      expect(hbarLimitService.remainingBudget).to.equal(hbarLimitService.totalBudget - 100);
-      // @ts-ignore
-      expect((await hbarLimitService.hbarLimitRemainingGauge.get()).values[0].value).to.equal(
-        hbarLimitService.totalBudget - 100,
-      );
+      await testAddExpense(mockEthAddress);
     });
 
     it('should add the expense to the spending plan and update the remaining budget when ipAddress is provided but ethAddress is not', async function () {
@@ -439,16 +354,7 @@ describe('HbarLimitService', function () {
         ethAddress: mockEthAddress,
         planId: mockPlanId,
       });
-      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(
-        new HbarSpendingPlan({
-          id: mockPlanId,
-          subscriptionType: SubscriptionType.BASIC,
-          createdAt: new Date(),
-          active: true,
-          spendingHistory: [],
-          spentToday: 0,
-        }),
-      );
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(createSpendingPlan(0));
       hbarSpendingPlanRepositoryStub.addAmountToSpentToday.rejects(new Error('Failed to add expense'));
 
       await expect(hbarLimitService.addExpense(100, mockEthAddress)).to.be.eventually.rejectedWith(
@@ -458,22 +364,22 @@ describe('HbarLimitService', function () {
   });
 
   describe('isDailyBudgetExceeded', function () {
-    it('should return true when the remaining budget is zero', function () {
+    const testIsDailyBudgetExceeded = (remainingBudget: number, expected: boolean) => {
       // @ts-ignore
-      hbarLimitService.remainingBudget = 0;
-      expect(hbarLimitService['isDailyBudgetExceeded'](mode, methodName)).to.be.true;
+      hbarLimitService.remainingBudget = remainingBudget;
+      expect(hbarLimitService['isDailyBudgetExceeded'](mode, methodName)).to.equal(expected);
+    };
+
+    it('should return true when the remaining budget is zero', function () {
+      testIsDailyBudgetExceeded(0, true);
     });
 
     it('should return true when the remaining budget is negative', function () {
-      // @ts-ignore
-      hbarLimitService.remainingBudget = -1;
-      expect(hbarLimitService['isDailyBudgetExceeded'](mode, methodName)).to.be.true;
+      testIsDailyBudgetExceeded(-1, true);
     });
 
     it('should return false when the remaining budget is greater than zero', function () {
-      // @ts-ignore
-      hbarLimitService.remainingBudget = 100;
-      expect(hbarLimitService['isDailyBudgetExceeded'](mode, methodName)).to.be.false;
+      testIsDailyBudgetExceeded(100, false);
     });
 
     it('should update the hbar limit counter when a method is called and the daily budget is exceeded', async function () {
