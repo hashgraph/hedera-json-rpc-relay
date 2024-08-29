@@ -1310,7 +1310,6 @@ export class MirrorNodeClient {
       `${formattedRequestId} Get transaction record via mirror node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
     );
 
-    // poll mirror node to get transaction record
     const transactionRecords = await this.repeatedRequest(
       this.getTransactionById.name,
       [transactionId, 0],
@@ -1329,7 +1328,6 @@ export class MirrorNodeClient {
 
     const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionRecord);
 
-    // get transactionFee
     const transactionFee = this.getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
     return { transactionFee, txRecordChargeAmount: 0, gasUsed: 0 };
   }

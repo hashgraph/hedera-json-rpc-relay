@@ -114,12 +114,10 @@ export default class MetricService {
     this.consensusNodeClientHistogramCost = this.initCostMetric(register);
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
 
-    //listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics() process
     this.eventEmitter.on(constants.EVENTS.EXECUTE_TRANSACTION, (args: IExecuteTransactionEventPayload) => {
       this.captureTransactionMetrics(args);
     });
 
-    //listen to EXECUTE_QUERY event to kick off addExpenseAndCaptureMetrics() process
     this.eventEmitter.on(constants.EVENTS.EXECUTE_QUERY, (args: IExecuteQueryEventPayload) => {
       this.addExpenseAndCaptureMetrics(args);
     });
@@ -146,7 +144,6 @@ export default class MetricService {
     operatorAccountId,
     interactingEntity,
   }: IExecuteTransactionEventPayload): Promise<void> {
-    // retrieve metrics
     const transactionRecordMetrics = await this.getTransactionRecordMetrics(
       transactionId,
       callerName,
@@ -155,7 +152,6 @@ export default class MetricService {
       operatorAccountId,
     );
 
-    // capture metrics to HBAR rate limiter and metric registry
     if (transactionRecordMetrics) {
       const { gasUsed, transactionFee, txRecordChargeAmount } = transactionRecordMetrics;
       if (transactionFee !== 0) {
