@@ -646,7 +646,7 @@ export class SDKClient {
     } finally {
       if (queryCost && queryCost !== 0) {
         this.eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, {
-          executionType: ExecutionType.QUERY,
+          executionType: ExecutionType.QUERY_EXECUTTION,
           transactionId: query.paymentTransactionId?.toString(),
           txConstructorName: queryConstructorName,
           callerName,

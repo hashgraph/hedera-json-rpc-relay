@@ -159,7 +159,7 @@ export default class MetricService {
       const { gasUsed, transactionFee, txRecordChargeAmount, status } = transactionRecordMetrics;
       if (transactionFee !== 0) {
         this.addExpenseAndCaptureMetrics({
-          executionType: ExecutionType.TRANSACTION,
+          executionType: ExecutionType.TRANSACTION_EXECUTION,
           transactionId,
           txConstructorName,
           callerName,
@@ -173,7 +173,7 @@ export default class MetricService {
 
       if (txRecordChargeAmount !== 0) {
         this.addExpenseAndCaptureMetrics({
-          executionType: ExecutionType.RECORD_QUERY,
+          executionType: ExecutionType.RECORD_QUERY_EXECUTION,
           transactionId,
           txConstructorName,
           callerName,

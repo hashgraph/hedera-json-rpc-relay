@@ -40,7 +40,7 @@ export interface IExecuteQueryEventPayload {
 }
 
 export enum ExecutionType {
-  QUERY = `QueryExecution`,
-  TRANSACTION = `TransactionExecution`,
-  RECORD_QUERY = `RecordQueryExecution`,
+  QUERY_EXECUTTION = `QUERY_EXECUTTION`,
+  TRANSACTION_EXECUTION = `TRANSACTION_EXECUTION`,
+  RECORD_QUERY_EXECUTION = `RECORD_QUERY_EXECUTION`,
 }
