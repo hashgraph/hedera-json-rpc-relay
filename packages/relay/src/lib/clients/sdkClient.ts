@@ -727,7 +727,7 @@ export class SDKClient {
       }
       return transactionResponse;
     } finally {
-      if (transactionId !== '') {
+      if (transactionId?.length) {
         this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
           transactionId,
           callerName,
