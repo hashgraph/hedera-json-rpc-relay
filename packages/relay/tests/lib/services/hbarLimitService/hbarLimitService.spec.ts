@@ -216,19 +216,19 @@ describe.only('HbarLimitService', function () {
 
     describe('based on ipAddress', async function () {
       beforeEach(async function () {
-        const spendingPlan = new HbarSpendingPlan({
-          id: mockPlanId,
-          subscriptionType: SubscriptionType.BASIC,
-          createdAt: new Date(),
-          active: true,
-          spendingHistory: [],
-          spentToday: 5,
-        });
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-          ethAddress: mockEthAddress,
-          planId: mockPlanId,
-        });
-        hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+        // const spendingPlan = new HbarSpendingPlan({
+        //   id: mockPlanId,
+        //   subscriptionType: SubscriptionType.BASIC,
+        //   createdAt: new Date(),
+        //   active: true,
+        //   spendingHistory: [],
+        //   spentToday: 5,
+        // });
+        // ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        //   ethAddress: mockEthAddress,
+        //   planId: mockPlanId,
+        // });
+        // hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
       });
 
       it('should return true if the limit should be applied', async function () {
@@ -285,7 +285,7 @@ describe.only('HbarLimitService', function () {
         hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
         ipAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
-        const result = await hbarLimitService.shouldLimit(mockEthAddress, mockIPAddress);
+        const result = await hbarLimitService.shouldLimit('', mockIPAddress);
 
         expect(result).to.be.false;
         expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
@@ -293,14 +293,14 @@ describe.only('HbarLimitService', function () {
         expect(
           loggerSpy.warn.calledWithMatch(
             sinon.match.instanceOf(IPAddressHbarSpendingPlanNotFoundError),
-            `Failed to get spending plan for ip address '${mockIPAddress}'`,
+            `Failed to get spending plan for IP address '${mockIPAddress}'`,
           ),
         ).to.be.true;
       });
 
-      it('should not return false if ipAddress is null or empty', async function () {
-        const result = await hbarLimitService.shouldLimit(mockEthAddress);
-        expect(result).to.be.true;
+      it('should return false if ipAddress is null or empty', async function () {
+        const result = await hbarLimitService.shouldLimit('', '');
+        expect(result).to.be.false;
       });
 
       it('should return true if spentToday is exactly at the limit', async function () {
@@ -453,12 +453,27 @@ describe.only('HbarLimitService', function () {
       expect(result).to.deep.equal(newSpendingPlan);
       expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
       expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
-      // TODO: Uncomment this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
-      // expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.false;
+      expect(ipAddressHbarSpendingPlanRepositoryStub.save.called).to.be.false;
     });
 
     it('should create a basic spending plan for the given ipAddress', async function () {
-      // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
+      const newSpendingPlan = new HbarSpendingPlan({
+        id: mockPlanId,
+        subscriptionType: SubscriptionType.BASIC,
+        createdAt: new Date(),
+        active: true,
+        spendingHistory: [],
+        spentToday: 0,
+      });
+      hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
+      ipAddressHbarSpendingPlanRepositoryStub.save.resolves();
+
+      const result = await hbarLimitService['createBasicSpendingPlan']('', mockIPAddress);
+
+      expect(result).to.deep.equal(newSpendingPlan);
+      expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
+      expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
+      expect(ethAddressHbarSpendingPlanRepositoryStub.save.called).to.be.false;
     });
   });
 });
