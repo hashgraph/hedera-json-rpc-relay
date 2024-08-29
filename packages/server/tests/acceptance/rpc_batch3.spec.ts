@@ -49,6 +49,7 @@ import EstimateGasContract from '../contracts/EstimateGasContract.json';
 // Helper functions/constants from local resources
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import { predefined } from '@hashgraph/json-rpc-relay';
+import { TYPES } from '../../src/validator';
 
 chai.use(chaiExclude);
 
@@ -1912,8 +1913,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
 
         const expectedError = predefined.INVALID_PARAMETER(
-          2,
-          'Invalid tracerConfig, value: { onlyTopCall: "invalid" }',
+          "'tracerConfig' for TracerConfigWrapper",
+          `${TYPES.tracerConfig.error}, value: ${JSON.stringify(tracerConfigInvalid)}`,
         );
         const args = [
           RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1936,10 +1937,13 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
 
-        const expectedError = predefined.MISSING_REQUIRED_PARAMETER(1);
+        const expectedError = predefined.INVALID_PARAMETER(
+          "'tracer' for TracerConfigWrapper",
+          `${TYPES.tracerType.error}, value: invalidTracer`,
+        );
         const args = [
           RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
-          [transactionHash, { invalidTracer: 'invalidTracer', tracerConfig: tracerConfigTrue }],
+          [transactionHash, { tracer: 'invalidTracer', tracerConfig: tracerConfigTrue }],
           requestId,
         ];
 

@@ -22,9 +22,9 @@ import {
   defaultLogs1,
   defaultLogs2,
   defaultLogs3,
+  LONG_ZERO_ADDRESS,
   mockData,
   toHex,
-  LONG_ZERO_ADDRESS,
 } from '../../helpers';
 import { numberTo0x } from '../../../dist/formatters';
 import constants from '../../../src/lib/constants';
