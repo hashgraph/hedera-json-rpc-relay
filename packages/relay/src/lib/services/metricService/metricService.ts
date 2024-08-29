@@ -219,15 +219,7 @@ export default class MetricService {
     );
 
     this.hbarLimiter.addExpense(cost, Date.now(), requestId);
-    this.captureMetrics(
-      SDKClient.transactionMode,
-      txConstructorName,
-      status,
-      cost,
-      gasUsed,
-      callerName,
-      interactingEntity,
-    );
+    this.captureMetrics(executionType, txConstructorName, status, cost, gasUsed, callerName, interactingEntity);
   };
 
   /**

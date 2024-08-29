@@ -72,9 +72,6 @@ const _ = require('lodash');
 const LRU = require('lru-cache');
 
 export class SDKClient {
-  static transactionMode = 'TRANSACTION';
-  static queryMode = 'QUERY';
-  static recordMode = 'RECORD';
   /**
    * The client to use for connecting to the main consensus network. The account
    * associated with this client will pay for all operations on the main network.
@@ -688,7 +685,7 @@ export class SDKClient {
     if (shouldThrowHbarLimit) {
       const shouldLimit = this.hbarLimiter.shouldLimit(
         Date.now(),
-        SDKClient.transactionMode,
+        ExecutionType.TRANSACTION_EXECUTION,
         callerName,
         originalCallerAddress,
         requestId,
@@ -775,7 +772,7 @@ export class SDKClient {
     if (shouldThrowHbarLimit) {
       const shouldLimit = this.hbarLimiter.shouldLimit(
         Date.now(),
-        SDKClient.transactionMode,
+        ExecutionType.TRANSACTION_EXECUTION,
         callerName,
         originalCallerAddress,
         requestId,

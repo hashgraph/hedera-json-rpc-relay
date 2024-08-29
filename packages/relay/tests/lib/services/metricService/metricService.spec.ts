@@ -34,7 +34,11 @@ import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import { calculateTxRecordChargeAmount, getRequestId } from '../../../helpers';
 import MetricService from '../../../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../../../src/lib/types/events';
+import {
+  ExecutionType,
+  IExecuteQueryEventPayload,
+  IExecuteTransactionEventPayload,
+} from '../../../../src/lib/types/events';
 import { Hbar, Long, Status, Client, AccountId, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
 
 config({ path: resolve(__dirname, '../../../test.env') });
@@ -206,14 +210,30 @@ describe('Metric Service', function () {
       const updatedBudget = hbarLimiter.getRemainingBudget();
       expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
 
-      // validate cost metrics
-      const costMetricObject = (await metricService.getCostMetric().get()).values.find(
-        (metric) => metric.metricName === metricHistogramCostSumTitle,
-      )!;
-      expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
-      expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(costMetricObject.value).to.eq(mockedTxFee + expectedTxRecordFee);
+      // validate cost metric
+      const metricObjects = await metricService.getCostMetric().get();
+      const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
+        return (
+          metric.labels.mode === ExecutionType.RECORD_QUERY_EXECUTION &&
+          metric.metricName === metricHistogramCostSumTitle
+        );
+      });
+      const transactionFeeMetricObject = metricObjects.values.find((metric) => {
+        return (
+          metric.labels.mode === ExecutionType.TRANSACTION_EXECUTION &&
+          metric.metricName === metricHistogramCostSumTitle
+        );
+      });
+
+      expect(txRecordFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+      expect(txRecordFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+      expect(txRecordFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(txRecordFeeMetricObject?.value).to.eq(expectedTxRecordFee);
+
+      expect(transactionFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+      expect(transactionFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+      expect(transactionFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
 
       // validate gas metric
       const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
@@ -253,14 +273,30 @@ describe('Metric Service', function () {
 
       expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
 
-      // validate cost metrics
-      const costMetricObject = (await metricService.getCostMetric().get()).values.find(
-        (metric) => metric.metricName === metricHistogramCostSumTitle,
-      )!;
-      expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
-      expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(costMetricObject.value).to.eq(mockedTxFee + expectedTxRecordFee);
+      // validate cost metric
+      const metricObjects = await metricService.getCostMetric().get();
+      const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
+        return (
+          metric.labels.mode === ExecutionType.RECORD_QUERY_EXECUTION &&
+          metric.metricName === metricHistogramCostSumTitle
+        );
+      });
+      const transactionFeeMetricObject = metricObjects.values.find((metric) => {
+        return (
+          metric.labels.mode === ExecutionType.TRANSACTION_EXECUTION &&
+          metric.metricName === metricHistogramCostSumTitle
+        );
+      });
+
+      expect(txRecordFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+      expect(txRecordFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+      expect(txRecordFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(txRecordFeeMetricObject?.value).to.eq(expectedTxRecordFee);
+
+      expect(transactionFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+      expect(transactionFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+      expect(transactionFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
 
       // validate gas metric
       const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(

@@ -59,6 +59,7 @@ import {
   TransactionRecordQuery,
 } from '@hashgraph/sdk';
 import EventEmitter from 'events';
+import { ExecutionType } from '../../src/lib/types';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -2266,7 +2267,7 @@ describe('SdkClient', async function () {
 
       hbarLimitMock
         .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.transactionMode, mockedCallerName, randomAccountAddress)
+        .withArgs(sinon.match.any, ExecutionType.TRANSACTION_EXECUTION, mockedCallerName, randomAccountAddress)
         .once()
         .returns(true);
 
@@ -2454,7 +2455,7 @@ describe('SdkClient', async function () {
 
       hbarLimitMock
         .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.transactionMode, mockedCallerName)
+        .withArgs(sinon.match.any, ExecutionType.TRANSACTION_EXECUTION, mockedCallerName)
         .once()
         .returns(false);
 
@@ -2543,7 +2544,7 @@ describe('SdkClient', async function () {
 
       hbarLimitMock
         .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.transactionMode, mockedCallerName)
+        .withArgs(sinon.match.any, ExecutionType.TRANSACTION_EXECUTION, mockedCallerName)
         .once()
         .returns(false);
 
@@ -2596,7 +2597,7 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
       hbarLimitMock
         .expects('shouldLimit')
-        .withArgs(sinon.match.any, SDKClient.transactionMode, mockedCallerName)
+        .withArgs(sinon.match.any, ExecutionType.TRANSACTION_EXECUTION, mockedCallerName)
         .once()
         .returns(false);
 
