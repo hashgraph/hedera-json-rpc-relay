@@ -19,15 +19,47 @@
  */
 
 import { IFeeHistory } from './IFeeHistory';
-import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from './ITracerConfig';
-import { ITracerConfigWrapper } from './ITracerConfigWrapper';
+import { ITransactionRecordMetric } from './metrics';
 import { ITransactionReceipt } from './ITransactionReceipt';
+import { ITracerConfigWrapper } from './ITracerConfigWrapper';
+import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from './ITracerConfig';
+import { IExecuteTransactionEventPayload, IExecuteQueryEventPayload, ExecutionType } from './events';
+import {
+  ITransfer,
+  INftTransfer,
+  ITokenTransfer,
+  ILimitOrderParams,
+  IAssessedCustomFee,
+  IContractCallRequest,
+  IContractCallResponse,
+  IStakingRewardTransfer,
+  IContractResultsParams,
+  IContractLogsResultsParams,
+  MirrorNodeTransactionRecord,
+  IMirrorNodeTransactionRecord,
+} from './mirrorNode';
 
 export {
+  ITransfer,
   IFeeHistory,
-  ICallTracerConfig,
-  IOpcodeLoggerConfig,
+  INftTransfer,
+  ExecutionType,
   ITracerConfig,
-  ITracerConfigWrapper,
+  ITokenTransfer,
+  ILimitOrderParams,
+  ICallTracerConfig,
+  IAssessedCustomFee,
+  IOpcodeLoggerConfig,
   ITransactionReceipt,
+  IContractCallRequest,
+  ITracerConfigWrapper,
+  IContractCallResponse,
+  IStakingRewardTransfer,
+  IContractResultsParams,
+  ITransactionRecordMetric,
+  IExecuteQueryEventPayload,
+  IContractLogsResultsParams,
+  MirrorNodeTransactionRecord,
+  IMirrorNodeTransactionRecord,
+  IExecuteTransactionEventPayload,
 };

@@ -18,8 +18,8 @@
  *
  */
 
+import { ITracerConfig } from '../../types';
 import type { TracerType } from '../../constants';
-import { ITracerConfig } from '../../types/ITracerConfig';
 
 export interface IDebugService {
   debug_traceTransaction: (

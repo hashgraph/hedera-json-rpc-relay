@@ -26,14 +26,13 @@ import constants from './constants';
 import { Precheck } from './precheck';
 import { MirrorNodeClient } from './clients';
 import { Counter, Registry } from 'prom-client';
-import { IFeeHistory } from './types/IFeeHistory';
+import { IAccountInfo } from './types/mirrorNode';
 import { LogsBloomUtils } from './../logsBloomUtils';
 import { DebugService } from './services/debugService';
 import { SDKClientError } from './errors/SDKClientError';
 import { Transaction as EthersTransaction } from 'ethers';
 import HAPIService from './services/hapiService/hapiService';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
-import { ITransactionReceipt } from './types/ITransactionReceipt';
 import { Block, Log, Transaction, Transaction1559 } from './model';
 import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { CacheService } from './services/cacheService/cacheService';
@@ -42,7 +41,7 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
 import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
-import { IAccountInfo, IContractCallRequest, IContractCallResponse } from './types/IMirrorNode';
+import { IFeeHistory, IContractCallRequest, IContractCallResponse, ITransactionReceipt } from './types';
 import {
   isHex,
   toHash32,

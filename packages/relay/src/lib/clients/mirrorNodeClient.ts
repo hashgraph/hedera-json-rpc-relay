@@ -29,7 +29,6 @@ import { predefined } from '../errors/JsonRpcError';
 import { SDKClientError } from '../errors/SDKClientError';
 import { IOpcodesResponse } from './models/IOpcodesResponse';
 import { install as betterLookupInstall } from 'better-lookup';
-import { ITransactionRecordMetric } from '../types/metrics';
 import { CacheService } from '../services/cacheService/cacheService';
 import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
@@ -39,10 +38,11 @@ import {
   IContractCallRequest,
   IContractCallResponse,
   IContractResultsParams,
+  ITransactionRecordMetric,
   IContractLogsResultsParams,
   MirrorNodeTransactionRecord,
   IMirrorNodeTransactionRecord,
-} from '../types/IMirrorNode';
+} from '../types';
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
