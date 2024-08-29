@@ -44,7 +44,9 @@ import {
 type REQUEST_METHODS = 'GET' | 'POST';
 
 export class MirrorNodeClient {
+  private static ACCOUNT_ID_PLACEHOLDER = '{accountId}';
   private static GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
+  private static GET_TOKEN_ALLOWANCES_BY_OWNER_AND_SPENDER_ENDPOINT = `/accounts/${MirrorNodeClient.ACCOUNT_ID_PLACEHOLDER}/allowances/tokens`;
   private static GET_BALANCE_ENDPOINT = 'balances';
   private static GET_BLOCK_ENDPOINT = 'blocks/';
   private static GET_BLOCKS_ENDPOINT = 'blocks';
@@ -976,6 +978,28 @@ export class MirrorNodeClient {
     return this.get(
       `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}/${MirrorNodeClient.GET_BALANCE_ENDPOINT}${queryParams}`,
       MirrorNodeClient.GET_TOKENS_ENDPOINT,
+      requestIdPrefix,
+      retries,
+    );
+  }
+
+  public async getAllowanceForToken(
+    tokenId: string,
+    accountId: string,
+    spenderId: string,
+    requestIdPrefix?: string,
+    retries?: number,
+  ) {
+    const queryParamObject = {};
+    this.setQueryParam(queryParamObject, 'spender.id', spenderId);
+    this.setQueryParam(queryParamObject, 'token.id', tokenId);
+    const queryParams = this.getQueryParams(queryParamObject);
+    return this.get(
+      `${MirrorNodeClient.GET_TOKEN_ALLOWANCES_BY_OWNER_AND_SPENDER_ENDPOINT.replace(
+        MirrorNodeClient.ACCOUNT_ID_PLACEHOLDER,
+        accountId,
+      )}${queryParams}`,
+      MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
       requestIdPrefix,
       retries,
     );
