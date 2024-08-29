@@ -40,7 +40,7 @@ describe('HAPI Service', async function () {
   let hbarLimiter: HbarLimit;
   let cacheService: CacheService;
   let eventEmitter: EventEmitter;
-  let hapiService: HAPIService | null;
+  let hapiService: HAPIService;
 
   const errorStatus = 50;
 
@@ -56,10 +56,6 @@ describe('HAPI Service', async function () {
     process.env.HAPI_CLIENT_TRANSACTION_RESET = '0';
     process.env.HAPI_CLIENT_DURATION_RESET = '0';
     process.env.HAPI_CLIENT_ERROR_RESET = '[50]';
-  });
-
-  this.afterEach(() => {
-    hapiService = null;
   });
 
   it('should be able to initialize SDK instance', async function () {
