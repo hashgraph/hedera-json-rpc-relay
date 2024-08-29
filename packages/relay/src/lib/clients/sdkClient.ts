@@ -622,7 +622,7 @@ export class SDKClient {
         status = Status.Success.toString();
       }
       this.logger.info(
-        `${requestIdPrefix} Successfully execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, queryConstructorName=${queryConstructorName}, cost=${queryCost} tinybars`,
+        `${requestIdPrefix} Successfully execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, cost=${queryCost} tinybars`,
       );
       return queryResponse;
     } catch (e: any) {
@@ -639,7 +639,7 @@ export class SDKClient {
       }
 
       this.logger.debug(
-        `${requestIdPrefix} Fail to execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, queryConstructorName=${queryConstructorName}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${queryCost} tinybars`,
+        `${requestIdPrefix} Fail to execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${queryCost} tinybars`,
       );
 
       throw sdkClientError;
@@ -708,7 +708,7 @@ export class SDKClient {
       const transactionRceipt = await transactionResponse.getReceipt(this.clientMain);
 
       this.logger.info(
-        `${formattedRequestId} Successfully execute ${txConstructorName} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}, status=${transactionRceipt.status}(${transactionRceipt.status._code})`,
+        `${formattedRequestId} Successfully execute ${txConstructorName} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, status=${transactionRceipt.status}(${transactionRceipt.status._code})`,
       );
       return transactionResponse;
     } catch (e: any) {
@@ -725,7 +725,7 @@ export class SDKClient {
 
       this.logger.warn(
         sdkClientError,
-        `${formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
+        `${formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
       );
 
       if (!transactionResponse) {
@@ -790,7 +790,7 @@ export class SDKClient {
       transactionResponses = await transaction.executeAll(this.clientMain);
 
       this.logger.info(
-        `${formattedRequestId} Successfully execute all ${transactionResponses.length} ${txConstructorName} transactions: callerName=${callerName}, txConstructorName=${txConstructorName}, status=${Status.Success}(${Status.Success._code})`,
+        `${formattedRequestId} Successfully execute all ${transactionResponses.length} ${txConstructorName} transactions: callerName=${callerName}, status=${Status.Success}(${Status.Success._code})`,
       );
     } catch (e: any) {
       const sdkClientError = new SDKClientError(e, e.message);
