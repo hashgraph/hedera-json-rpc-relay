@@ -118,7 +118,7 @@ export class HbarLimitService implements IHbarLimitService {
     requestId?: string,
   ): Promise<boolean> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    if (this.isDailyBudgetExceeded(mode, methodName, requestIdPrefix)) {
+    if (await this.isDailyBudgetExceeded(mode, methodName, requestIdPrefix)) {
       return true;
     }
     if (!ethAddress && !ipAddress) {
@@ -183,10 +183,13 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
    * @param {string} [requestIdPrefix] - An optional prefix to include in log messages.
-   * @returns {boolean} - Returns `true` if the daily budget has been exceeded, otherwise `false`.
+   * @returns {Promise<boolean>} - Resolves `true` if the daily budget has been exceeded, otherwise `false`.
    * @private
    */
-  private isDailyBudgetExceeded(mode: string, methodName: string, requestIdPrefix?: string): boolean {
+  private async isDailyBudgetExceeded(mode: string, methodName: string, requestIdPrefix?: string): Promise<boolean> {
+    if (this.shouldResetLimiter()) {
+      await this.resetLimiter();
+    }
     if (this.remainingBudget <= 0) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
@@ -199,6 +202,15 @@ export class HbarLimitService implements IHbarLimitService {
       `${requestIdPrefix} HBAR rate limit not reached. ${this.remainingBudget} out of ${this.totalBudget} tℏ left in relay budget until ${this.reset}.`,
     );
     return false;
+  }
+
+  /**
+   * Checks if the rate limiter should be reset.
+   * @returns {boolean} - `true` if the rate limiter should be reset, otherwise `false`.
+   * @private
+   */
+  private shouldResetLimiter(): boolean {
+    return Date.now() >= this.reset.getTime();
   }
 
   /**

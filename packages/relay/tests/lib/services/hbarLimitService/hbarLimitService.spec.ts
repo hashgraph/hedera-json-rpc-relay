@@ -379,29 +379,38 @@ describe('HbarLimitService', function () {
   });
 
   describe('isDailyBudgetExceeded', function () {
-    const testIsDailyBudgetExceeded = (remainingBudget: number, expected: boolean) => {
+    const testIsDailyBudgetExceeded = async (remainingBudget: number, expected: boolean) => {
       // @ts-ignore
       hbarLimitService.remainingBudget = remainingBudget;
-      expect(hbarLimitService['isDailyBudgetExceeded'](mode, methodName)).to.equal(expected);
+      await expect(hbarLimitService['isDailyBudgetExceeded'](mode, methodName)).to.eventually.equal(expected);
     };
 
-    it('should return true when the remaining budget is zero', function () {
-      testIsDailyBudgetExceeded(0, true);
+    it('should return true when the remaining budget is zero', async function () {
+      await testIsDailyBudgetExceeded(0, true);
     });
 
-    it('should return true when the remaining budget is negative', function () {
-      testIsDailyBudgetExceeded(-1, true);
+    it('should return true when the remaining budget is negative', async function () {
+      await testIsDailyBudgetExceeded(-1, true);
     });
 
-    it('should return false when the remaining budget is greater than zero', function () {
-      testIsDailyBudgetExceeded(100, false);
+    it('should return false when the remaining budget is greater than zero', async function () {
+      await testIsDailyBudgetExceeded(100, false);
     });
 
     it('should update the hbar limit counter when a method is called and the daily budget is exceeded', async function () {
       // @ts-ignore
       const hbarLimitCounterSpy = sinon.spy(hbarLimitService.hbarLimitCounter, <any>'inc');
-      testIsDailyBudgetExceeded(0, true);
+      await testIsDailyBudgetExceeded(0, true);
       expect(hbarLimitCounterSpy.calledWithMatch({ mode, methodName }, 1)).to.be.true;
+    });
+
+    it('should reset the limiter when the reset date is reached', async function () {
+      // @ts-ignore
+      hbarLimitService.reset = new Date();
+      // @ts-ignore
+      const resetLimiterSpy = sinon.spy(hbarLimitService, 'resetLimiter');
+      await expect(testIsDailyBudgetExceeded(0, true)).to.be.eventually.rejectedWith('Not implemented');
+      expect(resetLimiterSpy.calledOnce).to.be.true;
     });
   });
 });
