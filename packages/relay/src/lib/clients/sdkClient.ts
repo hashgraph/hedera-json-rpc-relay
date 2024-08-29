@@ -793,7 +793,7 @@ export class SDKClient {
       throw sdkClientError;
     } finally {
       if (transactionResponses) {
-        for (let transactionResponse of transactionResponses) {
+        for (const transactionResponse of transactionResponses) {
           if (transactionResponse.transactionId) {
             this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
               transactionId: transactionResponse.transactionId.toString(),
