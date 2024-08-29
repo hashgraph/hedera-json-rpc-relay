@@ -347,7 +347,7 @@ export default class MetricService {
         );
       }
     } catch (error: any) {
-      this.logger.warn(error, `${formattedRequestId} ${error.message}`);
+      this.logger.warn(error, `${formattedRequestId} Could not fetch transaction record: error=${error.message}`);
     }
   }
 }
