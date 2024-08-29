@@ -303,6 +303,8 @@ describe('HbarLimitService', function () {
         // ipAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves(existingSpendingPlan);
         // TODO: Remove this line after uncommenting the line above
         hbarSpendingPlanRepositoryStub.create.resolves(existingSpendingPlan);
+      } else {
+        hbarSpendingPlanRepositoryStub.create.resolves(existingSpendingPlan);
       }
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(existingSpendingPlan);
       hbarSpendingPlanRepositoryStub.addAmountToSpentToday.resolves();
@@ -338,6 +340,9 @@ describe('HbarLimitService', function () {
     it('should create a basic spending plan if none exists', async function () {
       const newSpendingPlan = createSpendingPlan(0);
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(
+        new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress),
+      );
       ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
       await hbarLimitService.addExpense(100, mockEthAddress);
@@ -394,10 +399,8 @@ describe('HbarLimitService', function () {
 
     it('should update the hbar limit counter when a method is called and the daily budget is exceeded', async function () {
       // @ts-ignore
-      hbarLimitService.remainingBudget = 0;
-      // @ts-ignore
       const hbarLimitCounterSpy = sinon.spy(hbarLimitService.hbarLimitCounter, <any>'inc');
-      expect(hbarLimitService['isDailyBudgetExceeded'](mode, methodName)).to.be.true;
+      testIsDailyBudgetExceeded(0, true);
       expect(hbarLimitCounterSpy.calledWithMatch({ mode, methodName }, 1)).to.be.true;
     });
   });
