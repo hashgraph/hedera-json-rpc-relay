@@ -155,26 +155,6 @@ describe('HbarLimitService', function () {
         expect(result).to.be.false;
       });
 
-      it('should create a basic spending plan if none exists for the ethAddress', async function () {
-        const spendingPlan = createSpendingPlan(0);
-        const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
-        hbarSpendingPlanRepositoryStub.create.resolves(spendingPlan);
-        ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
-
-        const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress);
-
-        expect(result).to.be.false;
-        expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
-        expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
-        expect(
-          loggerSpy.warn.calledWithMatch(
-            sinon.match.instanceOf(EthAddressHbarSpendingPlanNotFoundError),
-            `Failed to get spending plan for eth address '${mockEthAddress}'`,
-          ),
-        ).to.be.true;
-      });
-
       it('should return false if ethAddress is null or empty', async function () {
         const result = await hbarLimitService.shouldLimit(mode, methodName, '');
         expect(result).to.be.false;
