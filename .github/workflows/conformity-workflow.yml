@@ -92,5 +92,8 @@ jobs:
       - name: Rename file
         run: mv openrpc.json openrpc_exec_apis.json
 
+      - name: Run ws server
+        run: npm run start:ws
+
       - name: Run conformity tests
         run: npm run acceptancetest:rpc_api_schema_conformity
