@@ -277,7 +277,8 @@ export class HbarLimitService implements IHbarLimitService {
     if (ethAddress) {
       this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`);
       await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id });
-    } else if (ipAddress) {
+    }
+    if (ipAddress) {
       this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to ip address ${ipAddress}`);
       await this.ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: spendingPlan.id });
     }
