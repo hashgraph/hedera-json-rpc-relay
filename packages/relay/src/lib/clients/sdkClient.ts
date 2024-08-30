@@ -704,10 +704,10 @@ export class SDKClient {
       transactionId = transactionResponse.transactionId.toString();
 
       // .getReceipt() will throw an error if, in any case, the status !== 22 (SUCCESS).
-      const transactionRceipt = await transactionResponse.getReceipt(this.clientMain);
+      const transactionReceipt = await transactionResponse.getReceipt(this.clientMain);
 
       this.logger.info(
-        `${formattedRequestId} Successfully execute ${txConstructorName} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, status=${transactionRceipt.status}(${transactionRceipt.status._code})`,
+        `${formattedRequestId} Successfully execute ${txConstructorName} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, status=${transactionReceipt.status}(${transactionReceipt.status._code})`,
       );
       return transactionResponse;
     } catch (e: any) {
