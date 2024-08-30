@@ -21,16 +21,17 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { expect, use } from 'chai';
 import { v4 as uuid } from 'uuid';
+import { AbiCoder, keccak256 } from 'ethers';
 import chaiAsPromised from 'chai-as-promised';
 import { EthImpl } from '../../../src/lib/eth';
-import constants from '../../../src/lib/constants';
-import { SDKClient } from '../../../src/lib/clients';
-import { numberTo0x } from '../../../src/formatters';
 import { Eth, JsonRpcError } from '../../../src';
 import { generateEthTestEnv } from './eth-helpers';
+import constants from '../../../src/lib/constants';
 import { Precheck } from '../../../src/lib/precheck';
+import { SDKClient } from '../../../src/lib/clients';
+import { numberTo0x } from '../../../src/formatters';
 import { createStubInstance, SinonStub, SinonStubbedInstance, stub } from 'sinon';
-import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
+import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types';
 import {
   ACCOUNT_ADDRESS_1,
   DEFAULT_NETWORK_FEES,
@@ -38,7 +39,6 @@ import {
   ONE_TINYBAR_IN_WEI_HEX,
   RECEIVER_ADDRESS,
 } from './eth-config';
-import { AbiCoder, keccak256 } from 'ethers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

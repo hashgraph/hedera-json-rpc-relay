@@ -24,14 +24,11 @@ import sinon, { createSandbox } from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 
 import { EthImpl } from '../../../src/lib/eth';
-import { Log } from '../../../src/lib/model';
 import constants from '../../../src/lib/constants';
 import RelayAssertions from '../../assertions';
-import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../../../src/formatters';
-import { BLOCK_BY_HASH_FROM_RELAY, DEFAULT_BLOCK, EMPTY_LOGS_RESPONSE } from './eth-config';
-import { defaultErrorMessageHex, defaultLogs1 } from '../../helpers';
+import { DEFAULT_BLOCK, EMPTY_LOGS_RESPONSE } from './eth-config';
+import { defaultErrorMessageHex } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
-import { ITransactionReceipt } from '../../../src/lib/types/ITransactionReceipt';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

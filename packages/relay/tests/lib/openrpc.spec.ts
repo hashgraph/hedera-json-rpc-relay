@@ -119,7 +119,7 @@ describe('Open RPC Specification', function () {
     const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL,
+      process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

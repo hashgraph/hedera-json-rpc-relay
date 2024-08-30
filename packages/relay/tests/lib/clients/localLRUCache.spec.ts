@@ -146,7 +146,6 @@ describe('LocalLRUCache Test Suite', async function () {
       await customLocalLRUCache.set(key, 'value', callingMethod, 100); // set ttl to 1 ms
       await new Promise((r) => setTimeout(r, 500)); // wait for ttl to expire
       const cacheValue = await customLocalLRUCache.get(key, callingMethod);
-      console.log(cacheValue);
       expect(cacheValue).to.be.null;
     });
   });
