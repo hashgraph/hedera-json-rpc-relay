@@ -189,8 +189,13 @@ export default {
   // computed hash of an empty Trie object
   DEFAULT_ROOT_HASH: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 
-  // @source: https://docs.hedera.com/hedera/networks/mainnet/fees
-  TX_RECORD_QUERY_COST_IN_CENTS: 0.01,
+  // note: The maximum fileAppendChunkSize is currently set to 5KB by default; therefore, the estimated fees for FileCreate and FileAppend below are based on a file size of 5KB.
+  // The fee is calculated via the fee calculator: https://docs.hedera.com/hedera/networks/mainnet/fees
+  NETWORK_FEES_IN_CENTS: {
+    TRANSACTION_GET_RECORD: 0.01,
+    FILE_CREATE_PER_5_KB: 9.51,
+    FILE_APPEND_PER_5_KB: 9.55,
+  },
 
   EVENTS: {
     EXECUTE_TRANSACTION: 'execute_transaction',

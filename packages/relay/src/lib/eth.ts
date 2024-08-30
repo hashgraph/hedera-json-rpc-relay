@@ -54,6 +54,7 @@ import {
   formatContractResult,
   weibarHexToTinyBarInt,
   isValidEthereumAddress,
+  formatRequestIdMessage,
   formatTransactionIdWithoutQueryParams,
 } from '../formatters';
 
@@ -1486,7 +1487,7 @@ export class EthImpl implements Eth {
 
         if (!accountNonce) {
           this.logger.warn(`${requestIdPrefix} Cannot find updated account nonce.`);
-          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONT_NONCE error.`);
+          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONG_NONCE error.`);
         }
 
         if (parsedTx.nonce > accountNonce) {
@@ -1515,9 +1516,10 @@ export class EthImpl implements Eth {
    * Submits a transaction to the network for execution.
    *
    * @param transaction
-   * @param requestIdPrefix
+   * @param requestId
    */
-  async sendRawTransaction(transaction: string, requestIdPrefix: string): Promise<string | JsonRpcError> {
+  async sendRawTransaction(transaction: string, requestId: string): Promise<string | JsonRpcError> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     if (transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter
         .labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
@@ -1536,6 +1538,7 @@ export class EthImpl implements Eth {
           EthImpl.ethSendRawTransaction,
           requestIdPrefix,
           originalCallerAddress,
+          await this.getCurrentNetworkExchangeRateInCents(requestIdPrefix),
         );
 
       txSubmitted = true;
@@ -2478,5 +2481,17 @@ export class EthImpl implements Eth {
       .reduce((total, amount) => {
         return total + amount;
       }, 0);
+  }
+
+  /**
+   * Retrieves the current network exchange rate of HBAR to USD in cents.
+   *
+   * @param {string} requestId - The unique identifier for the request.
+   * @returns {Promise<number>} - A promise that resolves to the current exchange rate in cents.
+   */
+  private async getCurrentNetworkExchangeRateInCents(requestId: string): Promise<number> {
+    const currentNetworkExchangeRate = (await this.mirrorNodeClient.getNetworkExchangeRate(requestId)).current_rate;
+    const exchangeRateInCents = currentNetworkExchangeRate.cent_equivalent / currentNetworkExchangeRate.hbar_equivalent;
+    return exchangeRateInCents;
   }
 }

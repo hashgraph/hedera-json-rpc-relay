@@ -75,6 +75,7 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 import constants from '../../src/lib/constants';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import EventEmitter from 'events';
 
 process.env.npm_package_version = 'relay/0.0.1-SNAPSHOT';
 
@@ -128,8 +129,17 @@ describe('Open RPC Specification', function () {
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+    const eventEmitter = new EventEmitter();
 
-    clientServiceInstance = new ClientService(logger, registry, hbarLimiter, cacheService);
+    const mockedExchangeRate = {
+      current_rate: {
+        cent_equivalent: 12,
+        expiration_time: 4102444800,
+        hbar_equivalent: 1,
+      },
+    };
+
+    clientServiceInstance = new ClientService(logger, registry, hbarLimiter, cacheService, eventEmitter);
     sdkClientStub = sinon.createStubInstance(SDKClient);
     sinon.stub(clientServiceInstance, 'getSDKClient').returns(sdkClientStub);
     // @ts-ignore
@@ -188,6 +198,8 @@ describe('Open RPC Specification', function () {
     mock
       .onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`)
       .reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
+
+    mock.onGet(`network/exchangerate`).reply(200, mockedExchangeRate);
 
     mock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
       from: `${defaultEvmAddress}`,
@@ -339,7 +351,7 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_getLogs" with no filters', async function () {
-    const response = await ethImpl.getLogs(null, null, null, null, null);
+    const response = await ethImpl.getLogs(null, 'latest', 'latest', null, null);
 
     validateResponseSchema(methodsResponseSchema.eth_getLogs, response);
   });
@@ -364,7 +376,7 @@ describe('Open RPC Specification', function () {
       mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
     }
 
-    const response = await ethImpl.getLogs(null, null, null, null, defaultLogTopics);
+    const response = await ethImpl.getLogs(null, 'latest', 'latest', null, defaultLogTopics);
 
     validateResponseSchema(methodsResponseSchema.eth_getLogs, response);
   });
@@ -464,8 +476,7 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_sendRawTransaction"', async function () {
-    const response = await ethImpl.sendRawTransaction(signedTransactionHash);
-
+    const response = await ethImpl.sendRawTransaction(signedTransactionHash, getRequestId());
     validateResponseSchema(methodsResponseSchema.eth_sendRawTransaction, response);
   });
 

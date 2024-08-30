@@ -911,14 +911,15 @@ export class MirrorNodeClient {
     return { limit: limit, order: order };
   }
 
-  public async getNetworkExchangeRate(timestamp?: string, requestIdPrefix?: string) {
+  public async getNetworkExchangeRate(requestId: string, timestamp?: string) {
+    const formattedRequestId = formatRequestIdMessage(requestId);
     const queryParamObject = {};
     this.setQueryParam(queryParamObject, 'timestamp', timestamp);
     const queryParams = this.getQueryParams(queryParamObject);
     return this.get(
       `${MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT}${queryParams}`,
       MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT,
-      requestIdPrefix,
+      formattedRequestId,
     );
   }
 

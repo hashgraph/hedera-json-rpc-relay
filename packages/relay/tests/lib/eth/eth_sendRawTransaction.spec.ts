@@ -70,6 +70,13 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     const value = '0x511617DE831B9E173';
     const contractResultEndpoint = `contracts/results/${transactionId}`;
     const ethereumHash = '0x6d20b034eecc8d455c4c040fb3763082d499353a8b7d318b1085ad8d7de15f7e';
+    const mockedExchangeRate = {
+      current_rate: {
+        cent_equivalent: 12,
+        expiration_time: 4102444800,
+        hbar_equivalent: 1,
+      },
+    };
     const transaction = {
       chainId: 0x12a,
       to: ACCOUNT_ADDRESS_1,
@@ -105,7 +112,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         ethImpl.sendRawTransaction,
         false,
         ethImpl,
-        [txHash],
+        [txHash, getRequestId()],
       );
     });
 
@@ -113,6 +120,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       const signed = await signTransaction(transaction);
 
       restMock.onGet(`transactions/${transactionId}`).reply(200, null);
+      restMock.onGet(`network/exchangerate`).reply(200, mockedExchangeRate);
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, getRequestId());
       expect(resultingHash).to.equal(ethereumHash);
@@ -157,6 +165,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
     it('should return hash from ContractResult mirror node api', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+      restMock.onGet(`network/exchangerate`).reply(200, mockedExchangeRate);
 
       sdkClientStub.submitEthereumTransaction.returns({
         txResponse: {
@@ -172,6 +181,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
     it('should not send second transaction upon succession', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+      restMock.onGet(`network/exchangerate`).reply(200, mockedExchangeRate);
 
       sdkClientStub.submitEthereumTransaction.returns({
         txResponse: {
@@ -191,6 +201,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sdkClientStub.submitEthereumTransaction
         .onCall(0)
         .throws(new SDKClientError({ status: 50 }, 'wrong transaction body'));
+      restMock.onGet(`network/exchangerate`).reply(200, mockedExchangeRate);
 
       const signed = await signTransaction(transaction);
 
