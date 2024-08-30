@@ -41,7 +41,7 @@ chai.use(chaiAsPromised);
 describe('HbarLimitService', function () {
   const logger = pino();
   const mockEthAddress = '0x123';
-  const mockIPAddress = '192.168.0.1';
+  const mockIPAddress = '555.555.555.555';
   const mockPlanId = uuidV4(randomBytes(16));
 
   let hbarLimitService: HbarLimitService;
