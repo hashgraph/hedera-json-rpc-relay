@@ -198,7 +198,7 @@ export default {
   },
 
   EXECUTION_MODE: {
-    QEURY: `QEURY`,
+    QUERY: `QUERY`,
     RECORD: `RECORD`,
     TRANSACTION: `TRANSACTION`,
   },

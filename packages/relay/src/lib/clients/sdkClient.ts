@@ -640,7 +640,7 @@ export class SDKClient {
     } finally {
       if (queryCost && queryCost !== 0) {
         this.eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, {
-          executionMode: constants.EXECUTION_MODE.QEURY,
+          executionMode: constants.EXECUTION_MODE.QUERY,
           transactionId: query.paymentTransactionId?.toString(),
           txConstructorName: queryConstructorName,
           callerName,
