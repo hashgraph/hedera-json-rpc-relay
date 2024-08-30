@@ -554,13 +554,12 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
       response:
         '{"result":{"type":"CALL","from":"0xc37f417fa09933335240fca72dd257bfbde9c275","to":"0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69","value":"0x14","gas":"0x3d090","gasUsed":"0x30d40","input":"0x","output":"0x"},"jsonrpc":"2.0","id":1}',
     },
-    // TODO: fix the test once https://github.com/hashgraph/hedera-json-rpc-relay/issues/2897 is resolved
-    // 'debug_traceTransaction - no existing tx': {
-    //   'status': 500, // TBD, possible bug
-    //   'request':
-    //     '{"jsonrpc":"2.0","method":"debug_traceTransaction","params":["0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8",{"tracer":"callTracer","tracerConfig":{"onlyTopCall":true}}],"id":1}',
-    //   'response': '{"jsonrpc":"2.0","id":1,"error":{"code":-32603}}'
-    // }
+    'debug_traceTransaction - no existing tx': {
+      status: 400,
+      request:
+        '{"jsonrpc":"2.0","method":"debug_traceTransaction","params":["0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8",{"tracer":"callTracer","tracerConfig":{"onlyTopCall":true}}],"id":1}',
+      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32001}}',
+    },
   };
 
   const updateParamIfNeeded = (testName, request) => {
