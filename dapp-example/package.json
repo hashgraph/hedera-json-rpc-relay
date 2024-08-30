@@ -31,7 +31,7 @@
     "http-server": "^14.1.1",
     "mocha-junit-reporter": "^2.2.1",
     "start-server-and-test": "^1.14.0",
-    "webpack": "^5.92.1"
+    "webpack": "^5.94.0"
   },
   "scripts": {
     "start": "react-scripts start --openssl-legacy-provider",
