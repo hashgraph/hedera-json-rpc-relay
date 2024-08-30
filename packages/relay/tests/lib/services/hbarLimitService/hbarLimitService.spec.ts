@@ -346,7 +346,7 @@ describe('HbarLimitService', function () {
       const error = new IPAddressHbarSpendingPlanNotFoundError(mockIPAddress);
       ipAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
 
-      const result = await hbarLimitService['getSpendingPlan'](mockIPAddress);
+      const result = await hbarLimitService['getSpendingPlan']('', mockIPAddress);
 
       expect(result).to.be.null;
     });
@@ -422,16 +422,7 @@ describe('HbarLimitService', function () {
     });
 
     it('should create a basic spending plan for the given ipAddress', async function () {
-      const newSpendingPlan = createSpendingPlan(0);
-      hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
-      ipAddressHbarSpendingPlanRepositoryStub.save.resolves();
-
-      const result = await hbarLimitService['createBasicSpendingPlan']('', mockIPAddress);
-
-      expect(result).to.deep.equal(newSpendingPlan);
-      expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
-      expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
-      expect(ethAddressHbarSpendingPlanRepositoryStub.save.called).to.be.false;
+      await testCreateBasicSpendingPlan('', mockIPAddress);
     });
 
     it('should create a basic spending plan and link it to the ETH address if both ethAddress and ipAddress are provided', async function () {
