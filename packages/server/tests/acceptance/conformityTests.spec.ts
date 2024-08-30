@@ -29,6 +29,9 @@ import addFormats from 'ajv-formats';
 import { signTransaction } from '../../../relay/tests/helpers';
 import { expect } from 'chai';
 import { config } from 'dotenv';
+import WebSocket from 'ws';
+import LogsContract from '../contracts/Logs.json';
+import CallerContract from '../contracts/Caller.json';
 config();
 
 let currentBlockHash;
@@ -39,6 +42,7 @@ let createContractLegacyTransactionAndBlockHash;
 const sendAccountAddress = '0xc37f417fA09933335240FCA72DD257BFBdE9C275';
 const receiveAccountAddress = '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69';
 const relayUrl = 'http://127.0.0.1:7546';
+const wsRelayUrl = 'ws://127.0.0.1:8546';
 const gasPrice = '0x2C68AF0BB14000';
 const gasLimit = '0x3D090';
 const value = '0x2E90EDD000';
@@ -366,6 +370,24 @@ describe('@api-conformity @conformity-batch-1 Ethereum execution apis tests', fu
   }
 });
 
+const synthesizeTestCases = (testCases, updateParamIfNeeded) => {
+  for (const testName in testCases) {
+    it(`${testName}`, async () => {
+      const isErrorStatusExpected: boolean = !!(testCases[testName]?.status && testCases[testName].status != 200);
+      try {
+        const req = updateParamIfNeeded(testName, JSON.parse(testCases[testName].request));
+        const res = await sendRequestToRelay(req, false);
+        const hasMissingKeys: boolean = checkResponseFormat(res, JSON.parse(testCases[testName].response));
+        expect(hasMissingKeys).to.be.false;
+        expect(isErrorStatusExpected).to.be.false;
+      } catch (e: any) {
+        expect(isErrorStatusExpected).to.be.true;
+        expect(e?.response?.status).to.equal(testCases[testName].status);
+      }
+    });
+  }
+};
+
 describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', async function () {
   this.timeout(240 * 1000);
 
@@ -393,8 +415,7 @@ describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', as
       maxFeePerGas: gasPrice,
       gasLimit: gasLimit,
       type: 2,
-      // Logs.sol bytecode
-      data: '0x608060405234801561000f575f80fd5b506102668061001d5f395ff3fe608060405234801561000f575f80fd5b5060043610610055575f3560e01c80632a4c08961461005957806378b9a1f31461006e578063c670f86414610081578063c683d6a314610094578063d05285d4146100a7575b5f80fd5b61006c6100673660046101a1565b6100ba565b005b61006c61007c3660046101ca565b6100ee565b61006c61008f3660046101ea565b61011e565b61006c6100a2366004610201565b61014b565b61006c6100b53660046101ea565b61018d565b8082847fa8fb2f9a49afc2ea148319326c7208965555151db2ce137c05174098730aedc360405160405180910390a4505050565b604051819083907f513dad7582fd8b11c8f4d05e6e7ac8caaa5eb690e9173dd2bed96b5ae0e0d024905f90a35050565b60405181907f46692c0e59ca9cd1ad8f984a9d11715ec83424398b7eed4e05c8ce84662415a8905f90a250565b8183857f75e7d95cd72588af49ce2e4b7f004bce916d422999adf262a640e4239aab00c78460405161017f91815260200190565b60405180910390a450505050565b60405181815260200160405180910390a050565b5f805f606084860312156101b3575f80fd5b505081359360208301359350604090920135919050565b5f80604083850312156101db575f80fd5b50508035926020909101359150565b5f602082840312156101fa575f80fd5b5035919050565b5f805f8060808587031215610214575f80fd5b505082359460208401359450604084013593606001359250905056fea2646970667358221220b05dc9ca2bdac3ef22d07be796918cdf20a8ed1cdbba3e2d335b1487e0e5221f64736f6c63430008180033',
+      data: LogsContract.bytecode,
     });
 
     existingContractFilter = (
@@ -484,22 +505,6 @@ describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', as
     },
   };
 
-  for (const TEST_NAME in TEST_CASES) {
-    it(`${TEST_NAME}`, async () => {
-      const isErrorStatusExpected: boolean = !!(TEST_CASES[TEST_NAME]?.status && TEST_CASES[TEST_NAME].status != 200);
-      try {
-        const req = updateParamIfNeeded(TEST_NAME, JSON.parse(TEST_CASES[TEST_NAME].request));
-        const res = await sendRequestToRelay(req, false);
-        const hasMissingKeys: boolean = checkResponseFormat(res, JSON.parse(TEST_CASES[TEST_NAME].response));
-        expect(hasMissingKeys).to.be.false;
-        expect(isErrorStatusExpected).to.be.false;
-      } catch (e: any) {
-        expect(isErrorStatusExpected).to.be.true;
-        expect(e?.response?.status).to.equal(TEST_CASES[TEST_NAME].status);
-      }
-    });
-  }
-
   const updateParamIfNeeded = (testName, request) => {
     switch (testName) {
       case 'eth_getFilterChanges - existing filter':
@@ -512,4 +517,155 @@ describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', as
 
     return request;
   };
+
+  synthesizeTestCases(TEST_CASES, updateParamIfNeeded);
+});
+
+describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', async function () {
+  this.timeout(240 * 1000);
+
+  let txHash;
+
+  before(async () => {
+    txHash = (await signAndSendRawTransaction(transaction1559)).transactionHash;
+  });
+
+  const TEST_CASES = {
+    eth_submitWork: {
+      request:
+        '{"jsonrpc":"2.0", "method":"eth_submitWork","params":["0x0000000000000001","0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef","0xD1FE5700000000000000000000000000D1FE5700000000000000000000000000"],"id":1}',
+      response: '{"jsonrpc":"2.0","id":1,"result":false}',
+    },
+    net_listening: {
+      request: '{"jsonrpc":"2.0","id":1,"method":"net_listening","params":[]}',
+      response: '{"jsonrpc":"2.0","id":1,"result":"false"}',
+    },
+    net_version: {
+      request: '{"jsonrpc":"2.0","id":1,"method":"net_version","params":[]}',
+      response: '{"jsonrpc":"2.0","id":1,"result":"298"}',
+    },
+    web3_clientVersion: {
+      request: '{"jsonrpc":"2.0","id":1,"method":"web3_clientVersion","params":[]}',
+      response: '{"jsonrpc":"2.0","id":1,"result":"relay/0.55.0-SNAPSHOT"}',
+    },
+    'debug_traceTransaction - existing tx': {
+      request:
+        '{"jsonrpc":"2.0","method":"debug_traceTransaction","params":["0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8",{"tracer":"callTracer","tracerConfig":{"onlyTopCall":true}}],"id":1}',
+      response:
+        '{"result":{"type":"CALL","from":"0xc37f417fa09933335240fca72dd257bfbde9c275","to":"0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69","value":"0x14","gas":"0x3d090","gasUsed":"0x30d40","input":"0x","output":"0x"},"jsonrpc":"2.0","id":1}',
+    },
+    // TODO: fix the test once https://github.com/hashgraph/hedera-json-rpc-relay/issues/2897 is resolved
+    // 'debug_traceTransaction - no existing tx': {
+    //   'status': 500, // TBD, possible bug
+    //   'request':
+    //     '{"jsonrpc":"2.0","method":"debug_traceTransaction","params":["0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8",{"tracer":"callTracer","tracerConfig":{"onlyTopCall":true}}],"id":1}',
+    //   'response': '{"jsonrpc":"2.0","id":1,"error":{"code":-32603}}'
+    // }
+  };
+
+  const updateParamIfNeeded = (testName, request) => {
+    switch (testName) {
+      case 'debug_traceTransaction - existing tx':
+        request.params = [
+          txHash,
+          {
+            tracer: 'callTracer',
+            tracerConfig: {
+              onlyTopCall: true,
+            },
+          },
+        ];
+        break;
+    }
+
+    return request;
+  };
+
+  synthesizeTestCases(TEST_CASES, updateParamIfNeeded);
+
+  describe('ws related rpc methods', async function () {
+    let webSocket: WebSocket;
+    let contractAddress: string;
+
+    before(async () => {
+      contractAddress = (
+        await signAndSendRawTransaction({
+          chainId: 0x12a,
+          to: null,
+          from: sendAccountAddress,
+          maxPriorityFeePerGas: gasPrice,
+          maxFeePerGas: gasPrice,
+          gasLimit: gasLimit,
+          type: 2,
+          data: CallerContract.bytecode,
+        })
+      ).contractAddress;
+    });
+
+    beforeEach(() => {
+      webSocket = new WebSocket(wsRelayUrl);
+    });
+
+    afterEach(() => {
+      webSocket.close();
+    });
+
+    const TEST_CASES = {
+      'eth_subscribe - newPendingTransactions': {
+        request: '{"jsonrpc":"2.0","method":"eth_subscribe","params":["newPendingTransactions"],"id":1}',
+        response: '{"error":{"code":-32601,"message":"Unsupported JSON-RPC method"},"jsonrpc":"2.0","id":1}',
+      },
+      'eth_subscribe - non existing contract': {
+        request:
+          '{"jsonrpc":"2.0","id":1,"method":"eth_subscribe","params":["logs",{"address":"0x678d3e4c7b6b8e9617e9b3487352ec63c54dbf81"}]}',
+        response: '{"error":{"code":-32602},"jsonrpc":"2.0","id":1}',
+      },
+      'eth_subscribe - existing contract': {
+        request:
+          '{"jsonrpc":"2.0","id":1,"method":"eth_subscribe","params":["logs",{"address":"0x12833e4c7a6b1e9512e9a32873321c13cb4dbfef"}]}',
+        response: '{"result":"0xa4e1803ab025341ed7668eb13ca71f3c","jsonrpc":"2.0","id":1}',
+      },
+      eth_unsubscribe: {
+        request: '{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x2c9c38d1200d30208fcdad52ed71fbff"],"id":1}',
+        response: '{"result":false,"jsonrpc":"2.0","id":1}',
+      },
+    };
+
+    const updateParamIfNeeded = (testName, request) => {
+      switch (testName) {
+        case 'eth_subscribe - existing contract':
+          request.params = [
+            'logs',
+            {
+              address: contractAddress,
+            },
+          ];
+          break;
+      }
+
+      return request;
+    };
+
+    const synthesizeWsTestCases = (testCases, updateParamIfNeeded) => {
+      for (const testName in testCases) {
+        it(`${testName}`, async () => {
+          const req = updateParamIfNeeded(testName, JSON.parse(testCases[testName].request));
+
+          let response: any = {};
+          webSocket.on('message', function incoming(data) {
+            response = JSON.parse(data);
+          });
+          webSocket.on('open', function open() {
+            webSocket.send(JSON.stringify(req));
+          });
+          await new Promise((r) => setTimeout(r, 500));
+
+          const hasMissingKeys: boolean = checkResponseFormat(response, JSON.parse(testCases[testName].response));
+          expect(hasMissingKeys).to.be.false;
+        });
+      }
+    };
+
+    synthesizeWsTestCases(TEST_CASES, updateParamIfNeeded);
+  });
 });
