@@ -89,9 +89,6 @@ jobs:
           echo "SUBSCRIPTIONS_ENABLED=true" >> .env
           echo "TEST_WS_SERVER=true" >> .env
 
-      - name: Run ws server
-        run: npm run start:ws &
-
       - name: Download openrpc.json artifact
         uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
         with:
