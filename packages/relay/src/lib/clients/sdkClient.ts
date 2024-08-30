@@ -616,8 +616,10 @@ export class SDKClient {
       } else {
         queryResponse = await query.execute(client);
         queryCost = query._queryPayment?.toTinybars().toNumber();
-        status = Status.Success.toString();
       }
+
+      status = Status.Success.toString();
+
       this.logger.info(
         `${requestIdPrefix} Successfully execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, cost=${queryCost} tinybars`,
       );
