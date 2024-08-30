@@ -40,7 +40,7 @@ import { SDKClient } from '../../../../src/lib/clients';
 
 chai.use(chaiAsPromised);
 
-describe.only('HbarLimitService', function () {
+describe('HbarLimitService', function () {
   const logger = pino();
   const register = new Registry();
   const totalBudget = 100_000;
