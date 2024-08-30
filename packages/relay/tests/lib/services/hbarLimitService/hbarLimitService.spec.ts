@@ -50,7 +50,7 @@ describe('HbarLimitService', function () {
   let ipAddressHbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<IPAddressHbarSpendingPlanRepository>;
   let loggerSpy: sinon.SinonSpiedInstance<Logger>;
 
-  let mockBasicHbarSpendingPlan = (spentToday: Number) => {
+  const mockBasicHbarSpendingPlan = (spentToday: number) => {
     return new HbarSpendingPlan({
       id: mockPlanId,
       subscriptionType: SubscriptionType.BASIC,
