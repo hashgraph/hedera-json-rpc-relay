@@ -63,11 +63,6 @@ jobs:
       - name: Create .env file
         run: cp ./packages/server/tests/localAcceptance.env .env
 
-      - name: Add ws specific env variables
-        run: |
-          echo "SUBSCRIPTIONS_ENABLED=true" >> .env
-          echo "TEST_WS_SERVER=true" >> .env
-
       - name: Install pnpm
         run: npm install -g pnpm
 
@@ -88,6 +83,11 @@ jobs:
 
       - name: Stop  relay
         run: docker stop json-rpc-relay json-rpc-relay-ws
+
+      - name: Add ws specific env variables
+        run: |
+          echo "SUBSCRIPTIONS_ENABLED=true" >> .env
+          echo "TEST_WS_SERVER=true" >> .env
 
       - name: Run ws server
         run: npm run start:ws &
