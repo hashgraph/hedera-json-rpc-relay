@@ -26,6 +26,7 @@ import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
 import { MirrorNodeClient } from './lib/clients';
 import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
 import { IDebugService } from './lib/services/debugService/IDebugService';
+import { IRequestDetails } from '../src/lib/types/IRequestDetails';
 
 export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError };
 
@@ -62,9 +63,9 @@ export interface Net {
 }
 
 export interface Eth {
-  blockNumber(requestId?: string): Promise<string>;
+  blockNumber(requestIdPrefix: string): Promise<string>;
 
-  call(call: any, blockParam: string | object | null, requestId?: string): Promise<string | JsonRpcError>;
+  call(call: any, blockParam: string | object | null, requestDetails: IRequestDetails): Promise<string | JsonRpcError>;
 
   coinbase(requestId?: string): JsonRpcError;
 
@@ -74,19 +75,19 @@ export interface Eth {
     requestId?: string,
   ): Promise<string | JsonRpcError>;
 
-  gasPrice(requestId?: string): Promise<string>;
+  gasPrice(requestDetails: IRequestDetails): Promise<string>;
 
-  getBalance(account: string, blockNumber: string | null, requestId?: string): Promise<string>;
+  getBalance(account: string, blockNumber: string | null, requestIdPrefix: string): Promise<string>;
 
-  getBlockByHash(hash: string, showDetails: boolean, requestId?: string): Promise<Block | null>;
+  getBlockByHash(hash: string, showDetails: boolean, requestDetails: IRequestDetails): Promise<Block | null>;
 
-  getBlockByNumber(blockNum: string, showDetails: boolean, requestId?: string): Promise<Block | null>;
+  getBlockByNumber(blockNum: string, showDetails: boolean, requestDetails: IRequestDetails): Promise<Block | null>;
 
-  getBlockTransactionCountByHash(hash: string, requestId?: string): Promise<string | null>;
+  getBlockTransactionCountByHash(hash: string, requestIdPrefix: string): Promise<string | null>;
 
-  getBlockTransactionCountByNumber(blockNum: string, requestId?: string): Promise<string | null>;
+  getBlockTransactionCountByNumber(blockNum: string, requestIdPrefix: string): Promise<string | null>;
 
-  getCode(address: string, blockNumber: string | null, requestId?: string): Promise<string>;
+  getCode(address: string, blockNumber: string | null, requestDetails: IRequestDetails): Promise<string>;
 
   chainId(requestId?: string): string;
 
@@ -99,17 +100,21 @@ export interface Eth {
     requestId?: string,
   ): Promise<Log[]>;
 
-  getStorageAt(address: string, slot: string, blockNumber: string | null, requestId?: string): Promise<string>;
+  getStorageAt(requestIdPrefix: string, address: string, slot: string, blockNumber: string | null): Promise<string>;
 
   getTransactionByBlockHashAndIndex(hash: string, index: string, requestId?: string): Promise<Transaction | null>;
 
-  getTransactionByBlockNumberAndIndex(blockNum: string, index: string, requestId?: string): Promise<Transaction | null>;
+  getTransactionByBlockNumberAndIndex(
+    blockNum: string,
+    index: string,
+    requestIdPrefix: string,
+  ): Promise<Transaction | null>;
 
-  getTransactionByHash(hash: string, requestId?: string): Promise<Transaction | null>;
+  getTransactionByHash(hash: string, requestIdPrefix: string): Promise<Transaction | null>;
 
-  getTransactionCount(address: string, blockNum: string, requestId?: string): Promise<string | JsonRpcError>;
+  getTransactionCount(address: string, blockNum: string, requestIdPrefix: string): Promise<string | JsonRpcError>;
 
-  getTransactionReceipt(hash: string, requestId?: string): Promise<Receipt | null>;
+  getTransactionReceipt(hash: string, requestDetails: IRequestDetails): Promise<Receipt | null>;
 
   getUncleByBlockHashAndIndex(requestId?: string): Promise<any>;
 
@@ -125,7 +130,7 @@ export interface Eth {
     blockCount: number,
     newestBlock: string,
     rewardPercentiles: Array<number> | null,
-    requestId?: string,
+    requestDetails: IRequestDetails,
   ): Promise<any>;
 
   hashrate(requestId?: string): Promise<string>;
@@ -136,7 +141,7 @@ export interface Eth {
 
   protocolVersion(requestId?: string): JsonRpcError;
 
-  sendRawTransaction(transaction: string, requestId: string): Promise<string | JsonRpcError>;
+  sendRawTransaction(transaction: string, requestDetails: IRequestDetails): Promise<string | JsonRpcError>;
 
   sendTransaction(requestId?: string): JsonRpcError;
 

@@ -31,9 +31,9 @@ export interface ICommonService {
   ): Promise<boolean>;
 
   getHistoricalBlockResponse(
+    requestIdPrefix: string,
     blockNumberOrTag?: string | null,
     returnLatest?: boolean,
-    requestIdPrefix?: string | undefined,
   ): Promise<any>;
 
   getLatestBlockNumber(requestIdPrefix?: string): Promise<string>;
@@ -46,7 +46,7 @@ export interface ICommonService {
 
   getLogsByAddress(address: string | [string], params: any, requestIdPrefix): Promise<any>;
 
-  getLogsWithParams(address: string | [string] | null, params, requestIdPrefix?: string): Promise<Log[]>;
+  getLogsWithParams(address: string | [string] | null, param, requestIdPrefix: string): Promise<Log[]>;
 
   getLogs(
     blockHash: string | null,

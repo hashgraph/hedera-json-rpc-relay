@@ -591,10 +591,10 @@ export class MirrorNodeClient {
   }
 
   public async getBlocks(
+    requestIdPrefix: string,
     blockNumber?: number | string[],
     timestamp?: string,
     limitOrderParams?: ILimitOrderParams,
-    requestIdPrefix?: string,
   ) {
     const queryParamObject = {};
     this.setQueryParam(queryParamObject, 'block.number', blockNumber);
@@ -825,9 +825,9 @@ export class MirrorNodeClient {
   }
 
   public async getContractResultsLogs(
+    requestIdPrefix: string,
     contractLogsResultsParams?: IContractLogsResultsParams,
     limitOrderParams?: ILimitOrderParams,
-    requestIdPrefix?: string,
   ) {
     const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
 
@@ -867,22 +867,22 @@ export class MirrorNodeClient {
     );
   }
 
-  public async getEarliestBlock(requestId?: string) {
+  public async getEarliestBlock(requestIdPrefix: string) {
     const cachedLabel = `${constants.CACHE_KEY.GET_BLOCK}.earliest`;
     const cachedResponse: any = await this.cacheService.getAsync(
       cachedLabel,
       MirrorNodeClient.GET_BLOCKS_ENDPOINT,
-      requestId,
+      requestIdPrefix,
     );
     if (cachedResponse != undefined) {
       return cachedResponse;
     }
 
     const blocks = await this.getBlocks(
+      requestIdPrefix,
       undefined,
       undefined,
       this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.ASC),
-      requestId,
     );
     if (blocks && blocks.blocks.length > 0) {
       const block = blocks.blocks[0];
@@ -891,7 +891,7 @@ export class MirrorNodeClient {
         block,
         MirrorNodeClient.GET_BLOCKS_ENDPOINT,
         constants.CACHE_TTL.ONE_DAY,
-        requestId,
+        requestIdPrefix,
       );
       return block;
     }
@@ -899,12 +899,12 @@ export class MirrorNodeClient {
     return null;
   }
 
-  public async getLatestBlock(requestIdPrefix?: string) {
+  public async getLatestBlock(requestIdPrefix: string) {
     return this.getBlocks(
+      requestIdPrefix,
       undefined,
       undefined,
       this.getLimitOrderQueryParam(1, MirrorNodeClient.ORDER.DESC),
-      requestIdPrefix,
     );
   }
 
@@ -924,7 +924,7 @@ export class MirrorNodeClient {
     );
   }
 
-  public async getNetworkFees(timestamp?: string, order?: string, requestIdPrefix?: string) {
+  public async getNetworkFees(requestIdPrefix: string, timestamp?: string, order?: string) {
     const queryParamObject = {};
     this.setQueryParam(queryParamObject, 'timestamp', timestamp);
     this.setQueryParam(queryParamObject, 'order', order);

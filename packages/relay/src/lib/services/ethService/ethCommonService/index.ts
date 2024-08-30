@@ -102,7 +102,7 @@ export class CommonService implements ICommonService {
     params: any,
     fromBlock: string,
     toBlock: string,
-    requestIdPrefix?: string,
+    requestIdPrefix: string,
     address?: string | string[] | null,
   ) {
     if (this.blockTagIsLatestOrPending(toBlock)) {
@@ -124,7 +124,7 @@ export class CommonService implements ICommonService {
     let toBlockNum;
     params.timestamp = [];
 
-    const fromBlockResponse = await this.getHistoricalBlockResponse(fromBlock, true, requestIdPrefix);
+    const fromBlockResponse = await this.getHistoricalBlockResponse(requestIdPrefix, fromBlock, true);
     if (!fromBlockResponse) {
       return false;
     }
@@ -135,7 +135,7 @@ export class CommonService implements ICommonService {
       params.timestamp.push(`lte:${fromBlockResponse.timestamp.to}`);
     } else {
       fromBlockNum = parseInt(fromBlockResponse.number);
-      const toBlockResponse = await this.getHistoricalBlockResponse(toBlock, true, requestIdPrefix);
+      const toBlockResponse = await this.getHistoricalBlockResponse(requestIdPrefix, toBlock, true);
       if (toBlockResponse != null) {
         params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
         toBlockNum = parseInt(toBlockResponse.number);
@@ -167,9 +167,9 @@ export class CommonService implements ICommonService {
    * @param returnLatest
    */
   public async getHistoricalBlockResponse(
+    requestIdPrefix: string,
     blockNumberOrTagOrHash?: string | null,
     returnLatest?: boolean,
-    requestIdPrefix?: string | undefined,
   ): Promise<any> {
     if (!returnLatest && this.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
       return null;
@@ -203,7 +203,7 @@ export class CommonService implements ICommonService {
   /**
    * Gets the most recent block number.
    */
-  public async getLatestBlockNumber(requestIdPrefix?: string): Promise<string> {
+  public async getLatestBlockNumber(requestIdPrefix: string): Promise<string> {
     // check for cached value
     const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
     const blockNumberCached = await this.cacheService.getAsync(
@@ -297,14 +297,14 @@ export class CommonService implements ICommonService {
     return logs;
   }
 
-  public async getLogsWithParams(address: string | string[] | null, params, requestIdPrefix?: string): Promise<Log[]> {
+  public async getLogsWithParams(address: string | string[] | null, params, requestIdPrefix: string): Promise<Log[]> {
     const EMPTY_RESPONSE = [];
 
     let logResults;
     if (address) {
       logResults = await this.getLogsByAddress(address, params, requestIdPrefix);
     } else {
-      logResults = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestIdPrefix);
+      logResults = await this.mirrorNodeClient.getContractResultsLogs(requestIdPrefix, params, undefined);
     }
 
     if (!logResults) {
@@ -337,7 +337,7 @@ export class CommonService implements ICommonService {
     toBlock: string | 'latest',
     address: string | string[] | null,
     topics: any[] | null,
-    requestIdPrefix?: string,
+    requestIdPrefix: string,
   ): Promise<Log[]> {
     const EMPTY_RESPONSE = [];
     const params: any = {};
