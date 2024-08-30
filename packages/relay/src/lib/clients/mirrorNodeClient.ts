@@ -34,6 +34,7 @@ import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import {
+  IAccountInfo,
   IContractCallRequest,
   IContractCallResponse,
   IContractLogsResultsParams,
