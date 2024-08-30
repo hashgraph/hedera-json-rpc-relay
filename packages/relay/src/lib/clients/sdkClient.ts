@@ -972,7 +972,7 @@ export class SDKClient {
    * @param {string} requestId - The request ID for tracking the request.
    * @param {string} txConstructorName - The name of the transaction constructor.
    * @param {string} operatorAccountId - The account ID of the operator.
-   * @returns {Promise<{transactionFee: number; txRecordChargeAmount: number; gasUsed: number;} | undefined>} - A promise that resolves to an object containing transaction metrics.
+   * @returns {Promise<ITransactionMetric>} - A promise that resolves to an object containing transaction metrics.
    * @throws {SDKClientError} - Throws an error if an issue occurs during the transaction record query.
    */
   public async getTransactionRecordMetrics(
