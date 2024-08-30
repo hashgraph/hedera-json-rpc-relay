@@ -25,12 +25,7 @@ import HbarLimit from '../../hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { formatRequestIdMessage } from '../../../formatters';
-import {
-  ExecutionType,
-  ITransactionRecordMetric,
-  IExecuteQueryEventPayload,
-  IExecuteTransactionEventPayload,
-} from '../../types';
+import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types';
 
 export default class MetricService {
   /**
@@ -159,7 +154,7 @@ export default class MetricService {
       const { gasUsed, transactionFee, txRecordChargeAmount, status } = transactionRecordMetrics;
       if (transactionFee !== 0) {
         this.addExpenseAndCaptureMetrics({
-          executionType: ExecutionType.TRANSACTION_EXECUTION,
+          executionMode: constants.EXECUTION_MODE.TRANSACTION,
           transactionId,
           txConstructorName,
           callerName,
@@ -173,7 +168,7 @@ export default class MetricService {
 
       if (txRecordChargeAmount !== 0) {
         this.addExpenseAndCaptureMetrics({
-          executionType: ExecutionType.RECORD_QUERY_EXECUTION,
+          executionMode: constants.EXECUTION_MODE.RECORD,
           transactionId,
           txConstructorName,
           callerName,
@@ -191,7 +186,7 @@ export default class MetricService {
    * Adds the expense to the HBAR rate limiter and captures the relevant metrics for the executed transaction.
    *
    * @param {IExecuteQueryEventPayload} payload - The payload object containing details about the transaction.
-   * @param {string} payload.executionType - The type of execution (e.g., `TransactionExecution`, `TransactionRecordQuery`).
+   * @param {string} payload.executionMode - The mode of the execution (TRANSACTION, QUERY, RECORD).
    * @param {string} payload.transactionId - The unique identifier for the transaction.
    * @param {string} payload.txConstructorName - The name of the transaction constructor.
    * @param {string} payload.callerName - The name of the entity calling the transaction.
@@ -203,7 +198,7 @@ export default class MetricService {
    * @returns {void} - This method does not return a value.
    */
   public addExpenseAndCaptureMetrics = ({
-    executionType,
+    executionMode,
     transactionId,
     txConstructorName,
     callerName,
@@ -215,11 +210,11 @@ export default class MetricService {
   }: IExecuteQueryEventPayload): void => {
     const formattedRequestId = formatRequestIdMessage(requestId);
     this.logger.trace(
-      `${formattedRequestId} Capturing HBAR charged: executionType=${executionType} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
+      `${formattedRequestId} Capturing HBAR charged: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
     );
 
     this.hbarLimiter.addExpense(cost, Date.now(), requestId);
-    this.captureMetrics(executionType, txConstructorName, status, cost, gasUsed, callerName, interactingEntity);
+    this.captureMetrics(executionMode, txConstructorName, status, cost, gasUsed, callerName, interactingEntity);
   };
 
   /**

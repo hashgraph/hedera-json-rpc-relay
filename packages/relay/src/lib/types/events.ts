@@ -28,7 +28,7 @@ export interface IExecuteTransactionEventPayload {
 }
 
 export interface IExecuteQueryEventPayload {
-  executionType: string;
+  executionMode: string;
   transactionId: string;
   txConstructorName: string;
   callerName: string;
@@ -37,10 +37,4 @@ export interface IExecuteQueryEventPayload {
   interactingEntity: string;
   status: string;
   requestId: string;
-}
-
-export enum ExecutionType {
-  QUERY_EXECUTTION = `QUERY_EXECUTTION`,
-  TRANSACTION_EXECUTION = `TRANSACTION_EXECUTION`,
-  RECORD_QUERY_EXECUTION = `RECORD_QUERY_EXECUTION`,
 }

@@ -196,4 +196,10 @@ export default {
     EXECUTE_TRANSACTION: 'execute_transaction',
     EXECUTE_QUERY: 'execute_query',
   },
+
+  EXECUTION_MODE: {
+    QEURY: `QEURY`,
+    RECORD: `RECORD`,
+    TRANSACTION: `TRANSACTION`,
+  },
 };

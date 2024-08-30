@@ -22,8 +22,8 @@ import { IFeeHistory } from './IFeeHistory';
 import { ITransactionRecordMetric } from './metrics';
 import { ITransactionReceipt } from './ITransactionReceipt';
 import { ITracerConfigWrapper } from './ITracerConfigWrapper';
+import { IExecuteTransactionEventPayload, IExecuteQueryEventPayload } from './events';
 import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from './ITracerConfig';
-import { IExecuteTransactionEventPayload, IExecuteQueryEventPayload, ExecutionType } from './events';
 import {
   ITransfer,
   INftTransfer,
@@ -43,7 +43,6 @@ export {
   ITransfer,
   IFeeHistory,
   INftTransfer,
-  ExecutionType,
   ITracerConfig,
   ITokenTransfer,
   ILimitOrderParams,

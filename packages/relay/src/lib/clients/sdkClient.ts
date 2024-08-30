@@ -61,12 +61,7 @@ import { formatRequestIdMessage } from '../../formatters';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
-import {
-  ExecutionType,
-  ITransactionRecordMetric,
-  IExecuteQueryEventPayload,
-  IExecuteTransactionEventPayload,
-} from '../types';
+import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../types';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -645,7 +640,7 @@ export class SDKClient {
     } finally {
       if (queryCost && queryCost !== 0) {
         this.eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, {
-          executionType: ExecutionType.QUERY_EXECUTTION,
+          executionMode: constants.EXECUTION_MODE.QEURY,
           transactionId: query.paymentTransactionId?.toString(),
           txConstructorName: queryConstructorName,
           callerName,
@@ -687,7 +682,7 @@ export class SDKClient {
     if (shouldThrowHbarLimit) {
       const shouldLimit = this.hbarLimiter.shouldLimit(
         Date.now(),
-        ExecutionType.TRANSACTION_EXECUTION,
+        constants.EXECUTION_MODE.TRANSACTION,
         callerName,
         originalCallerAddress,
         requestId,
@@ -774,7 +769,7 @@ export class SDKClient {
     if (shouldThrowHbarLimit) {
       const shouldLimit = this.hbarLimiter.shouldLimit(
         Date.now(),
-        ExecutionType.TRANSACTION_EXECUTION,
+        constants.EXECUTION_MODE.TRANSACTION,
         callerName,
         originalCallerAddress,
         requestId,

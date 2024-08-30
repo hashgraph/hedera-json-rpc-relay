@@ -34,11 +34,7 @@ import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import { calculateTxRecordChargeAmount, getRequestId } from '../../../helpers';
 import MetricService from '../../../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import {
-  ExecutionType,
-  IExecuteQueryEventPayload,
-  IExecuteTransactionEventPayload,
-} from '../../../../src/lib/types/events';
+import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../../../src/lib/types/events';
 import { Hbar, Long, Status, Client, AccountId, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
 
 config({ path: resolve(__dirname, '../../../test.env') });
@@ -57,7 +53,7 @@ describe('Metric Service', function () {
   const mockedTxFee = 36900000;
   const operatorAccountId = `0.0.1022`;
   const mockedCallerName = 'caller_name';
-  const mockedExecutionType = 'exection_type';
+  const mockedExecutionMode = 'exection_mode';
   const mockedConstructorName = 'constructor_name';
   const mockedInteractingEntity = 'interacting_entity';
   const mockedTransactionId = '0.0.1022@1681130064.409933500';
@@ -216,13 +212,12 @@ describe('Metric Service', function () {
       const metricObjects = await metricService.getCostMetric().get();
       const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
         return (
-          metric.labels.mode === ExecutionType.RECORD_QUERY_EXECUTION &&
-          metric.metricName === metricHistogramCostSumTitle
+          metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
         );
       });
       const transactionFeeMetricObject = metricObjects.values.find((metric) => {
         return (
-          metric.labels.mode === ExecutionType.TRANSACTION_EXECUTION &&
+          metric.labels.mode === constants.EXECUTION_MODE.TRANSACTION &&
           metric.metricName === metricHistogramCostSumTitle
         );
       });
@@ -281,13 +276,12 @@ describe('Metric Service', function () {
       const metricObjects = await metricService.getCostMetric().get();
       const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
         return (
-          metric.labels.mode === ExecutionType.RECORD_QUERY_EXECUTION &&
-          metric.metricName === metricHistogramCostSumTitle
+          metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
         );
       });
       const transactionFeeMetricObject = metricObjects.values.find((metric) => {
         return (
-          metric.labels.mode === ExecutionType.TRANSACTION_EXECUTION &&
+          metric.labels.mode === constants.EXECUTION_MODE.TRANSACTION &&
           metric.metricName === metricHistogramCostSumTitle
         );
       });
@@ -320,7 +314,7 @@ describe('Metric Service', function () {
   describe('addExpenseAndCaptureMetrics', () => {
     const mockedGasUsed = mockedConsensusNodeTransactionRecord.contractFunctionResult!.gasUsed.toNumber();
     const mockedExecuteQueryEventPayload: IExecuteQueryEventPayload = {
-      executionType: mockedExecutionType,
+      executionMode: mockedExecutionMode,
       transactionId: mockedTransactionId,
       txConstructorName: mockedConstructorName,
       callerName: mockedCallerName,
