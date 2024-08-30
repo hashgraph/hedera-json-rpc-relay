@@ -19,6 +19,8 @@
  */
 
 import { Logger } from 'pino';
+import constants from '../constants';
+import { Hbar, HbarUnit } from '@hashgraph/sdk';
 import { predefined } from '../errors/JsonRpcError';
 import { Registry, Counter, Gauge } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
@@ -121,46 +123,48 @@ export default class HbarLimit {
   }
 
   /**
-   * Preemptively limits HBAR transactions based on the estimated total transaction fee and the remaining budget.
+   * Preemptively limits HBAR transactions based on the estimated total fee for file transactions and the remaining budget.
    * This method checks if the caller is whitelisted and bypasses the limit if they are. If not, it calculates the
    * estimated transaction fees based on the call data size and file append chunk size, and throws an error if the
    * remaining budget is insufficient to cover the estimated fees.
    *
    * @param {string} originalCallerAddress - The address of the caller initiating the transaction.
    * @param {number} callDataSize - The size of the call data that will be used in the transaction.
-   * @param {number} fileAppendChunkSize - The chunk size used for file append transactions.
+   * @param {number} fileChunkSize - The chunk size used for file append transactions.
    * @param {string} requestId - The request ID for tracing the request flow.
    * @throws {Error} Throws an error if the total estimated transaction fee exceeds the remaining HBAR budget.
    */
-  shouldPreemtivelyLimit(
+  shouldPreemtivelyLimitFileTransactions(
     originalCallerAddress: string,
     callDataSize: number,
-    fileAppendChunkSize: number,
+    fileChunkSize: number,
+    currentNetworkExchangeRateInCents: number,
     requestId: string,
   ) {
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
-    // check if the caller is a whitelisted caller
     if (this.isAccountWhiteListed(originalCallerAddress)) {
       this.logger.trace(
         `${requestIdPrefix} HBAR preemtive rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
       );
     } else {
-      // estimate total transaction fee
-      const numFileCreateTxs = 1;
-      const numFileAppendTxs = Math.round(callDataSize / fileAppendChunkSize);
-      const fileCreateFee = Number(process.env.HOT_FIX_FILE_CREATE_FEE || 100000000); // 1 hbar
-      const fileAppendFee = Number(process.env.HOT_FIX_FILE_APPEND_FEE || 120000000); // 1.2 hbar
-      const totalEstimatedTransactionFee = numFileCreateTxs * fileCreateFee + numFileAppendTxs * fileAppendFee;
+      const { numFileCreateTxs, numFileAppendTxs, totalFeeInTinyBar } = this.estimateFileTransactionFee(
+        callDataSize,
+        fileChunkSize,
+        currentNetworkExchangeRateInCents,
+      );
 
-      if (this.remainingBudget - totalEstimatedTransactionFee < 0) {
+      console.log(`remainingBudget: ${this.remainingBudget}`);
+      console.log(`totalFeeInTinyBar: ${totalFeeInTinyBar}`);
+
+      if (this.remainingBudget - totalFeeInTinyBar < 0) {
         this.logger.trace(
-          `${requestIdPrefix} HBAR preemtive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: totalEstimatedTransactionFee=${totalEstimatedTransactionFee}, remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, callDataSize=${callDataSize}.`,
+          `${requestIdPrefix} HBAR preemtive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalFeeInTinyBar=${totalFeeInTinyBar}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
         );
         throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
       } else {
         this.logger.trace(
-          `${requestIdPrefix} HBAR preemptive rate limit not reached: totalEstimatedTransactionFee=${totalEstimatedTransactionFee}, remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, callDataSize=${callDataSize}.`,
+          `${requestIdPrefix} HBAR preemptive rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalFeeInTinyBar=${totalFeeInTinyBar}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
         );
       }
     }
@@ -217,6 +221,43 @@ export default class HbarLimit {
    */
   getResetTime() {
     return this.reset;
+  }
+
+  /**
+   * Estimates the total transaction fee in tinybars based on the call data size, file chunk size, and the current network exchange rate in cents.
+   *
+   * @param {number} callDataSize - The size of the call data in bytes.
+   * @param {number} fileChunkSize - The size of each file chunk in bytes.
+   * @param {number} currentNetworkExchangeRateInCents - The current exchange rate of HBAR to USD cents.
+   * @returns An object containing:
+   *   - `numFileCreateTxs` (number): The number of file creation transactions.
+   *   - `numFileAppendTxs` (number): The number of file append transactions.
+   *   - `totalFeeInTinyBar` (number): The estimated total transaction fee in tinybars.
+   */
+  estimateFileTransactionFee(
+    callDataSize: number,
+    fileChunkSize: number,
+    currentNetworkExchangeRateInCents: number,
+  ): {
+    numFileCreateTxs: number;
+    numFileAppendTxs: number;
+    totalFeeInTinyBar: number;
+  } {
+    const numFileCreateTxs = 1;
+    const numFileAppendTxs = Math.floor(callDataSize / fileChunkSize);
+    const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
+    const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
+
+    const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
+    const totalRequestFeeInCents = numFileCreateTxs * fileCreateFeeInCents + numFileAppendTxs * fileAppendFeeInCents;
+
+    const totalFeeInTinyBar = Math.round((totalRequestFeeInCents / currentNetworkExchangeRateInCents) * hbarToTinybar);
+
+    return {
+      numFileCreateTxs,
+      numFileAppendTxs,
+      totalFeeInTinyBar,
+    };
   }
 
   /**

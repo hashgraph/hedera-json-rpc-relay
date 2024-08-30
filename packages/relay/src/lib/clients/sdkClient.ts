@@ -385,6 +385,7 @@ export class SDKClient {
     callerName: string,
     originalCallerAddress: string,
     networkGasPriceInWeiBars: number,
+    currentNetworkExchangeRateInCents: number,
     requestId: string,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
@@ -400,10 +401,11 @@ export class SDKClient {
       const isPreemtiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK === 'true';
 
       if (isPreemtiveCheckOn) {
-        this.hbarLimiter.shouldPreemtivelyLimit(
+        this.hbarLimiter.shouldPreemtivelyLimitFileTransactions(
           originalCallerAddress,
           ethereumTransactionData.toString().length,
           this.fileAppendChunkSize,
+          currentNetworkExchangeRateInCents,
           requestId,
         );
       }
@@ -1030,7 +1032,7 @@ export class SDKClient {
   public calculateTxRecordChargeAmount(exchangeRate: ExchangeRate): number {
     const exchangeRateInCents = exchangeRate.exchangeRateInCents;
     const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
-    return Math.round((constants.TX_RECORD_QUERY_COST_IN_CENTS / exchangeRateInCents) * hbarToTinybar);
+    return Math.round((constants.NETWORK_FEES_IN_CENTS.TRANSACTION_GET_RECORD / exchangeRateInCents) * hbarToTinybar);
   }
 
   /**

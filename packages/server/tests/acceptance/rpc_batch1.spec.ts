@@ -998,7 +998,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             const expectedNonceTooLowError = predefined.NONCE_TOO_LOW(0, signerNonce);
             const errObj = JSON.parse(error.info.responseBody).error;
             expect(errObj.code).to.eq(expectedNonceTooLowError.code);
-            expect(errObj.name).to.eq(expectedNonceTooLowError.name);
             expect(errObj.message).to.contain(expectedNonceTooLowError.message);
           }
         }

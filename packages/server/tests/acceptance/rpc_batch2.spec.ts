@@ -82,7 +82,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
   const signSendAndConfirmTransaction = async (transaction, accounts, requestId) => {
     const signedTx = await accounts.wallet.signTransaction(transaction);
-    const txHash = await relay.sendRawTransaction(signedTx);
+    const txHash = await relay.sendRawTransaction(signedTx, requestId);
     await mirrorNode.get(`/contracts/results/${txHash}`, requestId);
     await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash]);
     await new Promise((r) => setTimeout(r, 2000));
