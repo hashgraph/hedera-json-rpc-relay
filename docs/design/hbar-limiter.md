@@ -11,6 +11,12 @@
   - [Architecture](#architecture)
     - [High-Level Design](#high-level-design)
     - [Class Diagram](#class-diagram)
+      - [Service Layer](#service-layer)
+      - [Database Layer:](#database-layer)
+    - [Support flexible alerting mechanisms for spending thresholds](#support-flexible-alerting-mechanisms-for-spending-thresholds)
+      - [HBar Allocation Strategy](#hbar-allocation-strategy)
+        - [Metrics to Track](#metrics-to-track)
+        - [Allocation Algorithm](#allocation-algorithm)
   - [Additional Considerations](#additional-considerations)
     - [Performance](#performance)
     - [Monitoring and logging](#monitoring-and-logging)
@@ -178,6 +184,52 @@ classDiagram
     EthAddressHbarSpendingPlanRepository --> CacheService : uses
     IpAddressHbarSpendingPlanRepository --> CacheService : uses
 ```
+### Support flexible alerting mechanisms for spending thresholds
+The initial spending threshold of the Tier 3 General users will be a rough
+estimate based on the current daily spending of the Relay Operator.  In order
+to refine this over time a prometheus metric called the `basicSpendingPlanCounter`
+will be used to track the number of unique spending plans.  
+
+The metrics listed below will be added to help determine the best Tier 3 General users
+over time:
+
+1. Daily Unique Users Counter
+2. Average Daily Users
+3. Dynamic Per-User Limit - Daily budget for the Relay Operator (10K) divided by the average number of users
+4. Time-based Allocation - Allocating the Relay Operator's budget throughout the day to prevent early users from consuming all resources
+5. User History - Track individual user usage over time to identify and manage heavy users
+6. Flexible Limits - Implement a system that can adjust limits based on current usage and time of day
+   
+#### HBar Allocation Strategy
+##### Metrics to Track
+1. Daily Unique Users
+2. Total HBar Spent per Day
+3. Average HBar Spent per User per Day
+4. Rolling Average of Daily Unique Users (e.g., over 7 or 30 days)
+5. Individual User Daily and Monthly Usage
+   
+##### Allocation Algorithm
+1. Base Allocation:
+   - Daily Budget / Rolling Average of Daily Unique Users = Base User Limit
+  
+2. Time-Based Adjustment:
+   - Divide the day into time slots (e.g., 6 4-hour slots)
+   - Allocate a portion of the daily budget to each slot
+   - Adjust user limits based on remaining budget in the current slot
+
+3. Dynamic User Limit:
+   - Start with the Base User Limit
+   - Adjust based on:
+a. User's historical usage (lower limit for consistently heavy users)
+b. Time of day (higher limits when usage is typically lower)
+c. Current day's usage (increase limits if overall usage is low)
+
+4. Flexible Ceiling:
+   - Implement a hard cap (e.g., 2x Base User Limit) to prevent single user from consuming too much
+
+5. Reserve Pool:
+   - Keep a small portion of the daily budget (e.g., 10%) as a reserve
+   - Use this to accommodate unexpected spikes or high-priority users
 
 ## Additional Considerations
 ### Performance 
