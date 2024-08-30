@@ -248,7 +248,7 @@ export class HbarLimitService implements IHbarLimitService {
   /**
    * Creates a basic spending plan for the given eth address.
    * @param {string} ethAddress - The eth address to create the spending plan for.
-   * @param {stirng} [ipAddress] - The ip address to create the spending plan for.
+   * @param {string} [ipAddress] - The ip address to create the spending plan for.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
    * @private
    */
