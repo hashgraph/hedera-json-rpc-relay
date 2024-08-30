@@ -356,11 +356,10 @@ describe('HbarLimitService', function () {
     });
 
     it('should add the expense to the spending plan and update the remaining budget when ethAddress is provided but ipAddress is not', async function () {
-      await testAddExpense(mockEthAddress);
+      await testAddExpense(mockEthAddress, '');
     });
 
     it('should add the expense to the spending plan and update the remaining budget when ipAddress is provided but ethAddress is not', async function () {
-      // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
       await testAddExpense('', '127.0.0.1');
     });
 

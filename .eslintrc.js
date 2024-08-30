@@ -46,7 +46,8 @@ module.exports = {
         "sourceType": "module"
     },
     "rules": {
+        "@typescript-eslint/ban-ts-comment": "off",
         "comma-dangle": [2, "only-multiline"],
-        "semi": [2, "always"]
+        "semi": [2, "always"],
     }
 };
