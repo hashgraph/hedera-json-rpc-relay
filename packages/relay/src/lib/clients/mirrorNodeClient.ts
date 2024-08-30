@@ -31,49 +31,58 @@ import { IOpcodesResponse } from './models/IOpcodesResponse';
 import { install as betterLookupInstall } from 'better-lookup';
 import { CacheService } from '../services/cacheService/cacheService';
 import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
-import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { parseNumericEnvVar, formatTransactionId, formatRequestIdMessage } from '../../formatters';
 import {
+  ILimitOrderParams,
   IContractCallRequest,
   IContractCallResponse,
-  IContractLogsResultsParams,
   IContractResultsParams,
-  ILimitOrderParams,
-} from '../types/IMirrorNode';
+  ITransactionRecordMetric,
+  IContractLogsResultsParams,
+  MirrorNodeTransactionRecord,
+  IMirrorNodeTransactionRecord,
+} from '../types';
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
 export class MirrorNodeClient {
-  private static GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
-  private static GET_BALANCE_ENDPOINT = 'balances';
-  private static GET_BLOCK_ENDPOINT = 'blocks/';
-  private static GET_BLOCKS_ENDPOINT = 'blocks';
-  private static GET_CONTRACT_ENDPOINT = 'contracts/';
-  private static ADDRESS_PLACEHOLDER = '{address}';
-  private static TIMESTAMP_PLACEHOLDER = '{timestamp}';
-  private static CONTRACT_ID_PLACEHOLDER = '{contractId}';
-  private static TRANSACTION_ID_PLACEHOLDER = '{transactionId}';
-  private static GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
-  private static GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
-  private static GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT = `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
-  private static GET_CONTRACTS_RESULTS_ACTIONS = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/actions`;
-  private static GET_CONTRACTS_RESULTS_OPCODES = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/opcodes`;
-  private static GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
-  private static GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
-  private static GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
-  private static CONTRACT_ADDRESS_STATE_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/state`;
-  private static GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
-  private static GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
-  private static GET_NETWORK_FEES_ENDPOINT = 'network/fees';
-  private static GET_TOKENS_ENDPOINT = 'tokens';
-  private static GET_TRANSACTIONS_ENDPOINT = 'transactions';
-  private static GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID = `transactions/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}`;
-  private static CONTRACT_CALL_ENDPOINT = 'contracts/call';
-
-  private static ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
-  private static ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
-  private static CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
-  private readonly MIRROR_NODE_RETRY_DELAY = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '2000');
+  private static readonly GET_BLOCK_ENDPOINT = 'blocks/';
+  private static readonly GET_BLOCKS_ENDPOINT = 'blocks';
+  private static readonly GET_TOKENS_ENDPOINT = 'tokens';
+  private static readonly ADDRESS_PLACEHOLDER = '{address}';
+  private static readonly GET_BALANCE_ENDPOINT = 'balances';
+  private static readonly TIMESTAMP_PLACEHOLDER = '{timestamp}';
+  private static readonly GET_CONTRACT_ENDPOINT = 'contracts/';
+  private static readonly CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
+  private static readonly CONTRACT_ID_PLACEHOLDER = '{contractId}';
+  private static readonly ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
+  private static readonly CONTRACT_CALL_ENDPOINT = 'contracts/call';
+  private static readonly GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
+  private static readonly GET_NETWORK_FEES_ENDPOINT = 'network/fees';
+  private static readonly GET_TRANSACTIONS_ENDPOINT = 'transactions';
+  private static readonly TRANSACTION_ID_PLACEHOLDER = '{transactionId}';
+  private static readonly GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
+  private static readonly GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
+  private static readonly ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
+  private static readonly GET_NETWORK_EXCHANGERATE_ENDPOINT = 'network/exchangerate';
+  private static readonly GET_CONTRACT_RESULT_LOGS_ENDPOINT = 'contracts/results/logs';
+  private static readonly CONTRACT_ADDRESS_STATE_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/state`;
+  private static readonly GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
+  private static readonly GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID = `transactions/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}`;
+  private static readonly GET_CONTRACTS_RESULTS_ACTIONS = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/actions`;
+  private static readonly GET_CONTRACTS_RESULTS_OPCODES = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/opcodes`;
+  private static readonly GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
+  private static readonly GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT = `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
+  private static readonly GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
+  private readonly MIRROR_NODE_RETRY_DELAY = parseNumericEnvVar(
+    'MIRROR_NODE_RETRY_DELAY',
+    'MIRROR_NODE_RETRY_DELAY_DEFAULT',
+  );
+  private readonly MIRROR_NODE_REQUEST_RETRY_COUNT = parseNumericEnvVar(
+    'MIRROR_NODE_REQUEST_RETRY_COUNT',
+    'MIRROR_NODE_REQUEST_RETRY_COUNT_DEFAULT',
+  );
 
   static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
     [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [404]],
@@ -97,25 +106,25 @@ export class MirrorNodeClient {
     [MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT, [404]],
   ]);
 
-  private static ETHEREUM_TRANSACTION_TYPE = 'ETHEREUMTRANSACTION';
+  private static readonly ETHEREUM_TRANSACTION_TYPE = 'ETHEREUMTRANSACTION';
 
-  private static ORDER = {
+  private static readonly ORDER = {
     ASC: 'asc',
     DESC: 'desc',
   };
 
-  private static unknownServerErrorHttpStatusCode = 567;
+  private static readonly unknownServerErrorHttpStatusCode = 567;
 
   // The following constants are used in requests objects
-  private static X_API_KEY = 'x-api-key';
-  private static FORWARD_SLASH = '/';
-  private static HTTPS_PREFIX = 'https://';
-  private static API_V1_POST_FIX = 'api/v1/';
-  private static EMPTY_STRING = '';
-  private static REQUEST_PREFIX_SEPARATOR = ': ';
-  private static REQUEST_PREFIX_TRAILING_BRACKET = ']';
-  private static HTTP_GET = 'GET';
-  private static REQUESTID_LABEL = 'requestId';
+  private static readonly X_API_KEY = 'x-api-key';
+  private static readonly FORWARD_SLASH = '/';
+  private static readonly HTTPS_PREFIX = 'https://';
+  private static readonly API_V1_POST_FIX = 'api/v1/';
+  private static readonly EMPTY_STRING = '';
+  private static readonly REQUEST_PREFIX_SEPARATOR = ': ';
+  private static readonly REQUEST_PREFIX_TRAILING_BRACKET = ']';
+  private static readonly HTTP_GET = 'GET';
+  private static readonly REQUESTID_LABEL = 'requestId';
 
   /**
    * The logger used for logging all output from this class.
@@ -164,7 +173,7 @@ export class MirrorNodeClient {
     const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
     const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '0'); // we are in the process of deprecating this feature
     const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE || '5');
-    const mirrorNodeRetryDelay = parseInt(process.env.MIRROR_NODE_RETRY_DELAY || '2000');
+    const mirrorNodeRetryDelay = this.MIRROR_NODE_RETRY_DELAY;
     const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
     const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES
       ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES)
@@ -1230,6 +1239,9 @@ export class MirrorNodeClient {
   public getMirrorNodeWeb3Instance() {
     return this.web3Client;
   }
+  public getMirrorNodeRequestRetryCount() {
+    return this.MIRROR_NODE_REQUEST_RETRY_COUNT;
+  }
   public getMirrorNodeRetryDelay() {
     return this.MIRROR_NODE_RETRY_DELAY;
   }
@@ -1272,5 +1284,68 @@ export class MirrorNodeClient {
       await new Promise((r) => setTimeout(r, this.MIRROR_NODE_RETRY_DELAY));
     }
     return result;
+  }
+
+  /**
+   * Retrieves and processes transaction record metrics from the mirror node based on the provided transaction ID.
+   *
+   * @param {string} transactionId - The ID of the transaction for which the record is being retrieved.
+   * @param {string} callerName - The name of the caller requesting the transaction record.
+   * @param {string} requestId - The unique identifier for the request, used for logging and tracking.
+   * @param {string} txConstructorName - The name of the transaction constructor associated with the transaction.
+   * @param {string} operatorAccountId - The account ID of the operator, used to calculate transaction fees.
+   * @returns {Promise<{ITransactionRecordMetric}>} - An object containing the transaction fee if available, or `undefined` if the transaction record is not found.
+   * @throws {MirrorNodeClientError} - Throws an error if no transaction record is retrieved.
+   */
+  public async getTransactionRecordMetrics(
+    transactionId: string,
+    callerName: string,
+    requestId: string,
+    txConstructorName: string,
+    operatorAccountId: string,
+  ): Promise<ITransactionRecordMetric> {
+    const formattedRequestId = formatRequestIdMessage(requestId);
+
+    this.logger.trace(
+      `${formattedRequestId} Get transaction record via mirror node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
+    );
+
+    const transactionRecords = await this.repeatedRequest(
+      this.getTransactionById.name,
+      [transactionId, 0],
+      this.MIRROR_NODE_REQUEST_RETRY_COUNT,
+      formattedRequestId,
+    );
+
+    if (!transactionRecords) {
+      const notFoundMessage = `No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}.`;
+      throw new MirrorNodeClientError({ message: notFoundMessage }, MirrorNodeClientError.statusCodes.NOT_FOUND);
+    }
+
+    const transactionRecord: IMirrorNodeTransactionRecord = transactionRecords.transactions.find(
+      (tx: any) => tx.transaction_id === formatTransactionId(transactionId),
+    );
+
+    const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionRecord);
+
+    const transactionFee = this.getTransferAmountSumForAccount(mirrorNodeTxRecord, operatorAccountId);
+    return { transactionFee, txRecordChargeAmount: 0, gasUsed: 0, status: mirrorNodeTxRecord.result };
+  }
+
+  /**
+   * Calculates the total sum of transfer amounts for a specific account from a transaction record.
+   * This method filters the transfers in the transaction record to match the specified account ID,
+   * then sums up the amounts by subtracting each transfer's amount from the accumulator.
+   *
+   * @param {MirrorNodeTransactionRecord} transactionRecord - The transaction record containing transfer details.
+   * @param {string} accountId - The ID of the account for which the transfer sum is to be calculated.
+   * @returns {number} The total sum of transfer amounts for the specified account.
+   */
+  public getTransferAmountSumForAccount(transactionRecord: MirrorNodeTransactionRecord, accountId: string): number {
+    return transactionRecord.transfers
+      .filter((transfer) => transfer.account === accountId)
+      .reduce((acc, transfer) => {
+        return acc - transfer.amount;
+      }, 0);
   }
 }

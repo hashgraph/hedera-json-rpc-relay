@@ -19,15 +19,16 @@
  */
 
 import dotenv from 'dotenv';
-import findConfig from 'find-config';
-import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { Registry, Counter, Histogram } from 'prom-client';
-import { SDKClient } from '../../clients/sdkClient';
+import EventEmitter from 'events';
+import findConfig from 'find-config';
 import constants from '../../constants';
-import HbarLimit from '../../hbarlimiter';
-import { CacheService } from '../cacheService/cacheService';
 import { Utils } from './../../../utils';
+import HbarLimit from '../../hbarlimiter';
+import { Registry, Counter } from 'prom-client';
+import { SDKClient } from '../../clients/sdkClient';
+import { CacheService } from '../cacheService/cacheService';
+import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -66,38 +67,48 @@ export default class HAPIService {
   private hbarLimiter: HbarLimit;
 
   /**
-   * The metrics register used for metrics tracking.
+   * An instance of EventEmitter used for emitting and handling events within the class.
+   *
+   * @private
+   * @readonly
+   * @type {EventEmitter}
+   */
+  private readonly eventEmitter: EventEmitter;
+
+  /**
    * @private
    */
   private readonly register: Registry;
   private clientResetCounter: Counter;
-  private consensusNodeClientHistogramCost: Histogram;
-  private consensusNodeClientHistogramGasFee: Histogram;
-  private metrics: any;
   private readonly cacheService: CacheService;
 
   /**
-   * @param {Logger} logger
-   * @param {Registry} register
+   * Constructs an instance of the class, initializes configuration settings, and sets up various services.
+   *
+   * @param {Logger} logger - The logger instance used for logging.
+   * @param {Registry} register - The registry instance for metrics and other services.
+   * @param {HbarLimit} hbarLimiter - The Hbar rate limiter instance.
+   * @param {CacheService} cacheService - The cache service instance.
+   * @param {EventEmitter} eventEmitter - The event emitter instance used for emitting events.
    */
-  constructor(logger: Logger, register: Registry, hbarLimiter: HbarLimit, cacheService) {
+  constructor(
+    logger: Logger,
+    register: Registry,
+    hbarLimiter: HbarLimit,
+    cacheService: CacheService,
+    eventEmitter: EventEmitter,
+  ) {
     dotenv.config({ path: findConfig('.env') || '' });
 
     this.logger = logger;
     this.hbarLimiter = hbarLimiter;
 
+    this.eventEmitter = eventEmitter;
     this.hederaNetwork = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
-    this.consensusNodeClientHistogramCost = this.initCostMetric(register);
-    this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
-
-    this.metrics = {
-      costHistogram: this.consensusNodeClientHistogramCost,
-      gasHistogram: this.consensusNodeClientHistogramGasFee,
-    };
     this.cacheService = cacheService;
-    this.client = this.initSDKClient(logger, this.metrics);
+    this.client = this.initSDKClient(logger);
 
     const currentDateNow = Date.now();
     this.initialTransactionCount = parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!) || 0;
@@ -118,7 +129,7 @@ export default class HAPIService {
 
     this.register = register;
     const metricCounterName = 'rpc_relay_client_service';
-    register.removeSingleMetric(metricCounterName);
+    this.register.removeSingleMetric(metricCounterName);
     this.clientResetCounter = new Counter({
       name: metricCounterName,
       help: 'Relay Client Service',
@@ -173,7 +184,7 @@ export default class HAPIService {
       .inc(1);
 
     this.clientMain = this.initClient(this.logger, this.hederaNetwork);
-    this.client = this.initSDKClient(this.logger, this.metrics);
+    this.client = this.initSDKClient(this.logger);
     this.resetCounters();
   }
 
@@ -192,13 +203,13 @@ export default class HAPIService {
    * @param {Logger} logger
    * @returns SDK Client
    */
-  private initSDKClient(logger: Logger, metrics: any): SDKClient {
+  private initSDKClient(logger: Logger): SDKClient {
     return new SDKClient(
       this.clientMain,
       logger.child({ name: `consensus-node` }),
       this.hbarLimiter,
-      metrics,
       this.cacheService,
+      this.eventEmitter,
     );
   }
 
@@ -303,37 +314,5 @@ export default class HAPIService {
    */
   public getTimeUntilReset() {
     return this.resetDuration - Date.now();
-  }
-
-  /**
-   * Initialize consensus node cost metrics
-   * @param {Registry} register
-   * @returns {Histogram} Consensus node cost metric
-   */
-  private initCostMetric(register: Registry) {
-    const metricHistogramCost = 'rpc_relay_consensusnode_response';
-    register.removeSingleMetric(metricHistogramCost);
-    return new Histogram({
-      name: metricHistogramCost,
-      help: 'Relay consensusnode mode type status cost histogram',
-      labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-      registers: [register],
-    });
-  }
-
-  /**
-   * Initialize consensus node gas metrics
-   * @param {Registry} register
-   * @returns {Histogram} Consensus node gas metric
-   */
-  private initGasMetric(register: Registry) {
-    const metricHistogramGasFee = 'rpc_relay_consensusnode_gasfee';
-    register.removeSingleMetric(metricHistogramGasFee);
-    return new Histogram({
-      name: metricHistogramGasFee,
-      help: 'Relay consensusnode mode type status gas fee histogram',
-      labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
-      registers: [register],
-    });
   }
 }

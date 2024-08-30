@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@emotion/react": "^11.11.4",
+    "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
     "@hashgraph/sdk": "^2.50.0",
     "@mui/material": "^5.16.6",
@@ -31,7 +31,7 @@
     "http-server": "^14.1.1",
     "mocha-junit-reporter": "^2.2.1",
     "start-server-and-test": "^1.14.0",
-    "webpack": "^5.92.1"
+    "webpack": "^5.94.0"
   },
   "scripts": {
     "start": "react-scripts start --openssl-legacy-provider",
