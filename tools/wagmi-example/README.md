@@ -1,8 +1,8 @@
 # Wagmi Hedera Example
 
 ## How to run example?
-1. Install dependencies `pnpm install`
-2. Run project `pnpm dev`
+1. Install dependencies `npm install`
+2. Run project `npm dev`
 
 ## Example
 Example of using Wagmi with Hedera covers
@@ -17,5 +17,5 @@ If you want to compile the contract on your own, be aware of a known issue with 
 
 Using solc from [NPM](https://www.npmjs.com/package/solc)
 
-1. `solcjs contract/Greeter.sol --optimize --abi --bin -o contract/`
+1. `solcjs contract/Greeter.sol --optimize --abi --bin -o contract/` or `npm run compile`
 2. Change file extension in one of generated files from `.abi` to `.json`
