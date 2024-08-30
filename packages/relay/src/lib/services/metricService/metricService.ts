@@ -227,7 +227,7 @@ export default class MetricService {
    *
    * @returns {Histogram} - The histogram metric tracking the cost of consensus node client operations.
    */
-  public getCostMetric(): Histogram {
+  private getCostMetric(): Histogram {
     return this.consensusNodeClientHistogramCost;
   }
 
@@ -236,7 +236,7 @@ export default class MetricService {
    *
    * @returns {Histogram} - The histogram metric tracking the gas fees of consensus node client operations.
    */
-  public getGasFeeMetric(): Histogram {
+  private getGasFeeMetric(): Histogram {
     return this.consensusNodeClientHistogramGasFee;
   }
 

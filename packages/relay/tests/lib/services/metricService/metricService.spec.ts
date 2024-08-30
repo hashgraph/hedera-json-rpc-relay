@@ -182,6 +182,7 @@ describe('Metric Service', function () {
       expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
 
       // validate cost metrics
+      // @ts-ignore
       const costMetricObject = (await metricService.getCostMetric().get()).values.find(
         (metric) => metric.metricName === metricHistogramCostSumTitle,
       )!;
@@ -211,6 +212,7 @@ describe('Metric Service', function () {
       expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
 
       // validate cost metric
+      // @ts-ignore
       const metricObjects = await metricService.getCostMetric().get();
       const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
         return (
@@ -236,6 +238,7 @@ describe('Metric Service', function () {
       expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
 
       // validate gas metric
+      // @ts-ignore
       const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
         (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
       )!;
@@ -274,6 +277,7 @@ describe('Metric Service', function () {
       expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
 
       // validate cost metric
+      // @ts-ignore
       const metricObjects = await metricService.getCostMetric().get();
       const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
         return (
@@ -299,6 +303,7 @@ describe('Metric Service', function () {
       expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
 
       // validate gas metric
+      // @ts-ignore
       const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
         (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
       )!;
@@ -336,6 +341,7 @@ describe('Metric Service', function () {
       expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
 
       // validate cost metrics
+      // @ts-ignore
       const costMetricObject = (await metricService.getCostMetric().get()).values.find(
         (metric) => metric.metricName === metricHistogramCostSumTitle,
       )!;
@@ -345,6 +351,7 @@ describe('Metric Service', function () {
       expect(costMetricObject.value).to.eq(mockedTxFee);
 
       // validate gas metric
+      // @ts-ignore
       const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
         (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
       )!;
@@ -371,6 +378,7 @@ describe('Metric Service', function () {
       expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
 
       // validate cost metrics
+      // @ts-ignore
       const costMetricObject = (await metricService.getCostMetric().get()).values.find(
         (metric) => metric.metricName === metricHistogramCostSumTitle,
       )!;
@@ -380,6 +388,7 @@ describe('Metric Service', function () {
       expect(costMetricObject.value).to.eq(mockedTxFee);
 
       // validate gas metric
+      // @ts-ignore
       const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
         (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
       )!;
