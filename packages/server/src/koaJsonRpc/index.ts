@@ -72,10 +72,12 @@ export default class KoaJsonRpc {
   private readonly methodResponseHistogram: Histogram;
 
   private requestId: string;
+  private ipRequest: string;
 
   constructor(logger: Logger, register: Registry, opts?: { limit: string | null }) {
     this.koaApp = new Koa();
     this.requestId = '';
+    this.ipRequest = '';
     this.registry = Object.create(null);
     this.registryTotal = Object.create(null);
     this.methodConfig = methodConfiguration;
@@ -106,6 +108,7 @@ export default class KoaJsonRpc {
   rpcApp(): (ctx: Koa.Context, _next: Koa.Next) => Promise<void> {
     return async (ctx: Koa.Context, _next: Koa.Next) => {
       this.requestId = ctx.state.reqId;
+      this.ipRequest = ctx.request.ip;
       ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
 
       if (ctx.request.method !== 'POST') {
@@ -255,6 +258,10 @@ export default class KoaJsonRpc {
 
   getRequestId(): string {
     return this.requestId;
+  }
+
+  getIpRequest(): string {
+    return this.ipRequest;
   }
 
   hasInvalidRequestId(body: IJsonRpcRequest): boolean {

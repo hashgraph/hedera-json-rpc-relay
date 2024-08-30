@@ -78,7 +78,7 @@ export class FilterService implements IFilterService {
    * @param params
    * @param requestIdPrefix
    */
-  async createFilter(type: string, params: any, requestIdPrefix?: string): Promise<string> {
+  async createFilter(type: string, params: any, requestIdPrefix: string): Promise<string> {
     const filterId = generateRandomHex();
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
     await this.cacheService.set(
@@ -116,9 +116,9 @@ export class FilterService implements IFilterService {
   async newFilter(
     fromBlock: string = 'latest',
     toBlock: string = 'latest',
+    requestIdPrefix: string,
     address?: string,
     topics?: any[],
-    requestIdPrefix?: string,
   ): Promise<string | JsonRpcError> {
     this.logger.trace(
       `${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`,
@@ -147,7 +147,7 @@ export class FilterService implements IFilterService {
     }
   }
 
-  async newBlockFilter(requestIdPrefix?: string): Promise<string | JsonRpcError> {
+  async newBlockFilter(requestIdPrefix: string): Promise<string | JsonRpcError> {
     this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
     try {
       FilterService.requireFiltersEnabled();
@@ -178,12 +178,12 @@ export class FilterService implements IFilterService {
     return false;
   }
 
-  public newPendingTransactionFilter(requestIdPrefix?: string | undefined): JsonRpcError {
+  public newPendingTransactionFilter(requestIdPrefix: string): JsonRpcError {
     this.logger.trace(`${requestIdPrefix} newPendingTransactionFilter()`);
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  public async getFilterLogs(filterId: string, requestIdPrefix?: string | undefined): Promise<any> {
+  public async getFilterLogs(filterId: string, requestIdPrefix: string): Promise<any> {
     this.logger.trace(`${requestIdPrefix} getFilterLogs(${filterId})`);
     FilterService.requireFiltersEnabled();
 
@@ -203,7 +203,7 @@ export class FilterService implements IFilterService {
     );
   }
 
-  public async getFilterChanges(filterId: string, requestIdPrefix?: string): Promise<string[] | Log[] | JsonRpcError> {
+  public async getFilterChanges(filterId: string, requestIdPrefix: string): Promise<string[] | Log[] | JsonRpcError> {
     this.logger.trace(`${requestIdPrefix} getFilterChanges(${filterId})`);
     FilterService.requireFiltersEnabled();
 
@@ -235,6 +235,7 @@ export class FilterService implements IFilterService {
         ) + 1;
     } else if (filter.type === constants.FILTER.TYPE.NEW_BLOCK) {
       result = await this.mirrorNodeClient.getBlocks(
+        requestIdPrefix,
         [`gt:${filter.lastQueried || filter.params.blockAtCreation}`],
         undefined,
         {

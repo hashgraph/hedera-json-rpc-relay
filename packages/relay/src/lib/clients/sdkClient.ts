@@ -57,11 +57,11 @@ import { EventEmitter } from 'events';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { formatRequestIdMessage } from '../../formatters';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../types';
+import { IRequestDetails } from '../types/IRequestDetails';
 
 const _ = require('lodash');
 const LRU = require('lru-cache');
@@ -162,13 +162,17 @@ export class SDKClient {
    * @param {string} [requestId] - Optional request ID for tracking the request.
    * @returns {Promise<AccountBalance>} - A promise that resolves to the account balance.
    */
-  async getAccountBalance(account: string, callerName: string, requestId?: string): Promise<AccountBalance> {
+  async getAccountBalance(
+    account: string,
+    callerName: string,
+    requestDetails: IRequestDetails,
+  ): Promise<AccountBalance> {
     return this.executeQuery(
       new AccountBalanceQuery().setAccountId(AccountId.fromString(account)),
       this.clientMain,
       callerName,
       account,
-      requestId,
+      requestDetails,
     );
   }
 
@@ -179,8 +183,12 @@ export class SDKClient {
    * @returns {Promise<BigNumber>} The balance of the account in tinybars.
    * @throws {SDKClientError} Throws an SDK client error if the balance retrieval fails.
    */
-  async getAccountBalanceInTinyBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
-    const balance = await this.getAccountBalance(account, callerName, requestId);
+  async getAccountBalanceInTinyBar(
+    account: string,
+    callerName: string,
+    requestDetails: IRequestDetails,
+  ): Promise<BigNumber> {
+    const balance = await this.getAccountBalance(account, callerName, requestDetails);
     return balance.hbars.to(HbarUnit.Tinybar);
   }
 
@@ -192,8 +200,12 @@ export class SDKClient {
    * @returns {Promise<BigNumber>} The balance of the account in weiBars.
    * @throws {SDKClientError} Throws an SDK client error if the balance retrieval fails.
    */
-  async getAccountBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
-    const balance = await this.getAccountBalance(account, callerName, requestId);
+  async getAccountBalanceInWeiBar(
+    account: string,
+    callerName: string,
+    requestDetails: IRequestDetails,
+  ): Promise<BigNumber> {
+    const balance = await this.getAccountBalance(account, callerName, requestDetails);
     return SDKClient.HbarToWeiBar(balance);
   }
 
@@ -205,13 +217,13 @@ export class SDKClient {
    * @returns {Promise<AccountInfo>} The information about the account.
    * @throws {SDKClientError} Throws an SDK client error if the account info retrieval fails.
    */
-  async getAccountInfo(address: string, callerName: string, requestId?: string): Promise<AccountInfo> {
+  async getAccountInfo(address: string, callerName: string, requestDetails: IRequestDetails): Promise<AccountInfo> {
     return this.executeQuery(
       new AccountInfoQuery().setAccountId(AccountId.fromString(address)),
       this.clientMain,
       callerName,
       address,
-      requestId,
+      requestDetails,
     );
   }
 
@@ -230,7 +242,7 @@ export class SDKClient {
     realm: number | Long,
     address: string,
     callerName: string,
-    requestId?: string,
+    requestDetails: IRequestDetails,
   ): Promise<Uint8Array> {
     const contractByteCodeQuery = new ContractByteCodeQuery().setContractId(
       ContractId.fromEvmAddress(shard, realm, address),
@@ -242,7 +254,7 @@ export class SDKClient {
       this.clientMain,
       callerName,
       address,
-      requestId,
+      requestDetails,
     );
   }
 
@@ -254,13 +266,17 @@ export class SDKClient {
    * @returns {Promise<AccountBalance>} The balance of the contract.
    * @throws {SDKClientError} Throws an SDK client error if the balance retrieval fails.
    */
-  async getContractBalance(contract: string, callerName: string, requestId?: string): Promise<AccountBalance> {
+  async getContractBalance(
+    contract: string,
+    callerName: string,
+    requestDetails: IRequestDetails,
+  ): Promise<AccountBalance> {
     return this.executeQuery(
       new AccountBalanceQuery().setContractId(ContractId.fromString(contract)),
       this.clientMain,
       callerName,
       contract,
-      requestId,
+      requestDetails,
     );
   }
 
@@ -273,8 +289,12 @@ export class SDKClient {
    * @returns {Promise<BigNumber>} The contract balance in weiBars.
    * @throws {SDKClientError} Throws an SDK client error if the balance retrieval fails.
    */
-  async getContractBalanceInWeiBar(account: string, callerName: string, requestId?: string): Promise<BigNumber> {
-    const balance = await this.getContractBalance(account, callerName, requestId);
+  async getContractBalanceInWeiBar(
+    account: string,
+    callerName: string,
+    requestDetails: IRequestDetails,
+  ): Promise<BigNumber> {
+    const balance = await this.getContractBalance(account, callerName, requestDetails);
     return SDKClient.HbarToWeiBar(balance);
   }
 
@@ -285,8 +305,8 @@ export class SDKClient {
    * @returns {Promise<ExchangeRates>} The exchange rates.
    * @throws {SDKClientError} Throws an SDK client error if the exchange rates file retrieval or parsing fails.
    */
-  async getExchangeRate(callerName: string, requestId?: string): Promise<ExchangeRates> {
-    const exchangeFileBytes = await this.getFileIdBytes(constants.EXCHANGE_RATE_FILE_ID, callerName, requestId);
+  async getExchangeRate(callerName: string, requestDetails: IRequestDetails): Promise<ExchangeRates> {
+    const exchangeFileBytes = await this.getFileIdBytes(constants.EXCHANGE_RATE_FILE_ID, callerName, requestDetails);
 
     return ExchangeRates.fromBytes(exchangeFileBytes);
   }
@@ -298,8 +318,8 @@ export class SDKClient {
    * @returns {Promise<FeeSchedules>} The fee schedules.
    * @throws {SDKClientError} Throws an SDK client error if the fee schedule file retrieval or parsing fails.
    */
-  async getFeeSchedule(callerName: string, requestId?: string): Promise<FeeSchedules> {
-    const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID, callerName, requestId);
+  async getFeeSchedule(callerName: string, requestDetails: IRequestDetails): Promise<FeeSchedules> {
+    const feeSchedulesFileBytes = await this.getFileIdBytes(constants.FEE_SCHEDULE_FILE_ID, callerName, requestDetails);
     return FeeSchedules.fromBytes(feeSchedulesFileBytes);
   }
 
@@ -311,17 +331,17 @@ export class SDKClient {
    * @returns {Promise<number>} The gas fee in tinybars.
    * @throws {SDKClientError} Throws an SDK client error if the fee schedules or exchange rates are invalid.
    */
-  async getTinyBarGasFee(callerName: string, requestId?: string): Promise<number> {
+  async getTinyBarGasFee(callerName: string, requestDetails: IRequestDetails): Promise<number> {
     const cachedResponse: number | undefined = await this.cacheService.getAsync(
       constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
       callerName,
-      requestId,
+      requestDetails.requestIdPrefix,
     );
     if (cachedResponse) {
       return cachedResponse;
     }
 
-    const feeSchedules = await this.getFeeSchedule(callerName, requestId);
+    const feeSchedules = await this.getFeeSchedule(callerName, requestDetails);
     if (_.isNil(feeSchedules.current) || feeSchedules.current?.transactionFeeSchedule === undefined) {
       throw new SDKClientError({}, 'Invalid FeeSchedules proto format');
     }
@@ -329,7 +349,7 @@ export class SDKClient {
     for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
       if (schedule.hederaFunctionality?._code === constants.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
         // get exchange rate & convert to tiny bar
-        const exchangeRates = await this.getExchangeRate(callerName, requestId);
+        const exchangeRates = await this.getExchangeRate(callerName, requestDetails);
         const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
         await this.cacheService.set(
@@ -337,7 +357,7 @@ export class SDKClient {
           tinyBars,
           callerName,
           undefined,
-          requestId,
+          requestDetails.requestIdPrefix,
         );
         return tinyBars;
       }
@@ -354,13 +374,13 @@ export class SDKClient {
    * @returns {Promise<Uint8Array>} The contents of the file as a byte array.
    * @throws {SDKClientError} Throws an SDK client error if the file query fails.
    */
-  async getFileIdBytes(address: string, callerName: string, requestId?: string): Promise<Uint8Array> {
+  async getFileIdBytes(address: string, callerName: string, requestDetails: IRequestDetails): Promise<Uint8Array> {
     return this.executeQuery(
       new FileContentsQuery().setFileId(address),
       this.clientMain,
       callerName,
       address,
-      requestId,
+      requestDetails,
     );
   }
 
@@ -379,14 +399,13 @@ export class SDKClient {
   async submitEthereumTransaction(
     transactionBuffer: Uint8Array,
     callerName: string,
-    requestId: string,
+    requestDetails: IRequestDetails,
     originalCallerAddress: string,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
     const interactingEntity = ethereumTransactionData.toJSON()['to'].toString();
     let fileId: FileId | null = null;
-    const requestIdPrefix = formatRequestIdMessage(requestId);
 
     // if callData's size is greater than `fileAppendChunkSize` => employ HFS to create new file to carry the rest of the contents of callData
     if (ethereumTransactionData.callData.length <= this.fileAppendChunkSize) {
@@ -408,11 +427,11 @@ export class SDKClient {
         const shouldPreemtivelyLimit = this.hbarLimiter.shouldPreemtivelyLimit(
           originalCallerAddress,
           totalPreemtiveTransactionFee,
-          requestId,
+          requestDetails.requestIdPrefix,
         );
         if (shouldPreemtivelyLimit) {
           this.logger.trace(
-            `${requestIdPrefix} The total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, callDataSize=${ethereumTransactionData.callData.length}`,
+            `${requestDetails.requestIdPrefix} The total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, callDataSize=${ethereumTransactionData.callData.length}`,
           );
           throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
         }
@@ -421,19 +440,19 @@ export class SDKClient {
       fileId = await this.createFile(
         ethereumTransactionData.callData,
         this.clientMain,
-        requestId,
+        requestDetails,
         callerName,
         interactingEntity,
         originalCallerAddress,
       );
       if (!fileId) {
-        throw new SDKClientError({}, `${requestIdPrefix} No fileId created for transaction. `);
+        throw new SDKClientError({}, `${requestDetails.requestIdPrefix} No fileId created for transaction. `);
       }
       ethereumTransactionData.callData = new Uint8Array();
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId);
     }
 
-    const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction', requestId);
+    const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction', requestDetails);
     ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.BLOCK_GAS_LIMIT)));
 
     return {
@@ -442,7 +461,7 @@ export class SDKClient {
         ethereumTransaction,
         callerName,
         interactingEntity,
-        requestId,
+        requestDetails,
         true,
         originalCallerAddress,
       ),
@@ -466,7 +485,7 @@ export class SDKClient {
     gas: number,
     from: string,
     callerName: string,
-    requestId?: string,
+    requestDetails: IRequestDetails,
   ): Promise<ContractFunctionResult> {
     const contract = SDKClient.prune0x(to);
     const contractId = contract.startsWith('00000000000')
@@ -488,7 +507,7 @@ export class SDKClient {
       contractCallQuery.setPaymentTransactionId(TransactionId.generate(this.clientMain.operatorAccountId));
     }
 
-    return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestId);
+    return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestDetails);
   }
 
   /**
@@ -509,21 +528,20 @@ export class SDKClient {
     gas: number,
     from: string,
     callerName: string,
-    requestId?: string,
+    requestDetails: IRequestDetails,
   ): Promise<ContractFunctionResult> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
     let retries = 0;
     let resp;
     while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || '1') > retries) {
       try {
-        resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestId);
+        resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestDetails);
         return resp;
       } catch (e: any) {
         const sdkClientError = new SDKClientError(e, e.message);
         if (sdkClientError.isTimeoutExceeded()) {
           const delay = retries * 1000;
           this.logger.trace(
-            `${requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`,
+            `${requestDetails.requestIdPrefix} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`,
           );
           retries++;
           await new Promise((r) => setTimeout(r, delay));
@@ -555,7 +573,7 @@ export class SDKClient {
     client: Client,
     maxRetries: number,
     currentRetry: number,
-    requestId?: string,
+    requestIdPrefix?: string,
   ): Promise<{ resp: any; cost: Hbar }> {
     const baseMultiplier = constants.QUERY_COST_INCREMENTATION_STEP;
     const multiplier = Math.pow(baseMultiplier, currentRetry);
@@ -569,8 +587,8 @@ export class SDKClient {
       const sdkClientError = new SDKClientError(e, e.message);
       if (maxRetries > currentRetry && sdkClientError.isInsufficientTxFee()) {
         const newRetry = currentRetry + 1;
-        this.logger.info(`${requestId} Retrying query execution with increased cost, retry number: ${newRetry}`);
-        return await this.increaseCostAndRetryExecution(query, baseCost, client, maxRetries, newRetry, requestId);
+        this.logger.info(`${requestIdPrefix} Retrying query execution with increased cost, retry number: ${newRetry}`);
+        return await this.increaseCostAndRetryExecution(query, baseCost, client, maxRetries, newRetry, requestIdPrefix);
       }
 
       throw e;
@@ -592,10 +610,11 @@ export class SDKClient {
     client: Client,
     callerName: string,
     interactingEntity: string,
-    requestId?: string,
+    requestDetails: IRequestDetails,
   ): Promise<T> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
     const queryConstructorName = query.constructor.name;
+    const requestIdPrefix = requestDetails?.requestIdPrefix;
+    const queryType = query.constructor.name;
     let queryResponse: any = null;
     let queryCost: number | undefined = undefined;
     let status: string = '';
@@ -605,7 +624,7 @@ export class SDKClient {
     try {
       if (query.paymentTransactionId) {
         const baseCost = await query.getCost(this.clientMain);
-        const res = await this.increaseCostAndRetryExecution(query, baseCost, client, 3, 0, requestId);
+        const res = await this.increaseCostAndRetryExecution(query, baseCost, client, 3, 0, requestIdPrefix);
         queryResponse = res.resp;
         queryCost = res.cost.toTinybars().toNumber();
       } else {
@@ -670,11 +689,10 @@ export class SDKClient {
     transaction: Transaction,
     callerName: string,
     interactingEntity: string,
-    requestId: string,
+    requestDetails: IRequestDetails,
     shouldThrowHbarLimit: boolean,
     originalCallerAddress: string,
   ): Promise<TransactionResponse> {
-    const formattedRequestId = formatRequestIdMessage(requestId);
     const txConstructorName = transaction.constructor.name;
     let transactionId: string = '';
     let transactionResponse: TransactionResponse | null = null;
@@ -685,7 +703,7 @@ export class SDKClient {
         constants.EXECUTION_MODE.TRANSACTION,
         callerName,
         originalCallerAddress,
-        requestId,
+        requestDetails.requestIdPrefix,
       );
       if (shouldLimit) {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
@@ -693,7 +711,7 @@ export class SDKClient {
     }
 
     try {
-      this.logger.info(`${formattedRequestId} Execute ${txConstructorName} transaction`);
+      this.logger.info(`${requestDetails.requestIdPrefix} Execute ${txConstructorName} transaction`);
       transactionResponse = await transaction.execute(this.clientMain);
 
       transactionId = transactionResponse.transactionId.toString();
@@ -702,7 +720,7 @@ export class SDKClient {
       const transactionReceipt = await transactionResponse.getReceipt(this.clientMain);
 
       this.logger.info(
-        `${formattedRequestId} Successfully execute ${txConstructorName} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, status=${transactionReceipt.status}(${transactionReceipt.status._code})`,
+        `${requestDetails.requestIdPrefix} Successfully execute ${txConstructorName} transaction: transactionId=${transactionResponse.transactionId}, callerName=${callerName}, status=${transactionReceipt.status}(${transactionReceipt.status._code})`,
       );
       return transactionResponse;
     } catch (e: any) {
@@ -719,12 +737,12 @@ export class SDKClient {
 
       this.logger.warn(
         sdkClientError,
-        `${formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
+        `${requestDetails.requestIdPrefix} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
       );
 
       if (!transactionResponse) {
         throw predefined.INTERNAL_ERROR(
-          `${formattedRequestId} Transaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
+          `${requestDetails.requestIdPrefix} Transaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
         );
       }
       return transactionResponse;
@@ -733,7 +751,7 @@ export class SDKClient {
         this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
           transactionId,
           callerName,
-          requestId,
+          requestId: requestDetails.requestIdPrefix,
           txConstructorName,
           operatorAccountId: this.clientMain.operatorAccountId!.toString(),
           interactingEntity,
@@ -758,11 +776,10 @@ export class SDKClient {
     transaction: FileAppendTransaction,
     callerName: string,
     interactingEntity: string,
-    requestId: string,
+    requestDetails: IRequestDetails,
     shouldThrowHbarLimit: boolean,
     originalCallerAddress: string,
   ): Promise<void> {
-    const formattedRequestId = formatRequestIdMessage(requestId);
     const txConstructorName = transaction.constructor.name;
     let transactionResponses: TransactionResponse[] | null = null;
 
@@ -772,7 +789,7 @@ export class SDKClient {
         constants.EXECUTION_MODE.TRANSACTION,
         callerName,
         originalCallerAddress,
-        requestId,
+        requestDetails.requestIdPrefix,
       );
       if (shouldLimit) {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
@@ -780,17 +797,17 @@ export class SDKClient {
     }
 
     try {
-      this.logger.info(`${formattedRequestId} Execute ${txConstructorName} transaction`);
+      this.logger.info(`${requestDetails.requestIdPrefix} Execute ${txConstructorName} transaction`);
       transactionResponses = await transaction.executeAll(this.clientMain);
 
       this.logger.info(
-        `${formattedRequestId} Successfully execute all ${transactionResponses.length} ${txConstructorName} transactions: callerName=${callerName}, status=${Status.Success}(${Status.Success._code})`,
+        `${requestDetails.requestIdPrefix} Successfully execute all ${transactionResponses.length} ${txConstructorName} transactions: callerName=${callerName}, status=${Status.Success}(${Status.Success._code})`,
       );
     } catch (e: any) {
       const sdkClientError = new SDKClientError(e, e.message);
 
       this.logger.warn(
-        `${formattedRequestId} Fail to executeAll for ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${txConstructorName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
+        `${requestDetails.requestIdPrefix} Fail to executeAll for ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${txConstructorName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
       );
       throw sdkClientError;
     } finally {
@@ -800,7 +817,7 @@ export class SDKClient {
             this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
               transactionId: transactionResponse.transactionId.toString(),
               callerName,
-              requestId,
+              requestId: requestDetails.requestIdPrefix,
               txConstructorName,
               operatorAccountId: this.clientMain.operatorAccountId!.toString(),
               interactingEntity,
@@ -825,12 +842,11 @@ export class SDKClient {
   async createFile(
     callData: Uint8Array,
     client: Client,
-    requestId: string,
+    requestDetails: IRequestDetails,
     callerName: string,
     interactingEntity: string,
     originalCallerAddress: string,
   ): Promise<FileId | null> {
-    const formattedRequestId = formatRequestIdMessage(requestId);
     const hexedCallData = Buffer.from(callData).toString('hex');
 
     const fileCreateTx = new FileCreateTransaction()
@@ -841,7 +857,7 @@ export class SDKClient {
       fileCreateTx,
       callerName,
       interactingEntity,
-      formattedRequestId,
+      requestDetails,
       true,
       originalCallerAddress,
     );
@@ -859,7 +875,7 @@ export class SDKClient {
         fileAppendTx,
         callerName,
         interactingEntity,
-        formattedRequestId,
+        requestDetails,
         true,
         originalCallerAddress,
       );
@@ -871,14 +887,16 @@ export class SDKClient {
         this.clientMain,
         callerName,
         interactingEntity,
-        requestId,
+        requestDetails,
       );
 
       if (fileInfo.size.isZero()) {
-        this.logger.warn(`${requestId} File ${fileId} is empty.`);
-        throw new SDKClientError({}, `${requestId} Created file is empty. `);
+        this.logger.warn(`${requestDetails.requestIdPrefix} File ${fileId} is empty.`);
+        throw new SDKClientError({}, `${requestDetails.requestIdPrefix} Created file is empty. `);
       }
-      this.logger.trace(`${formattedRequestId} Created file with fileId: ${fileId} and file size ${fileInfo.size}`);
+      this.logger.trace(
+        `${requestDetails.requestIdPrefix} Created file with fileId: ${fileId} and file size ${fileInfo.size}`,
+      );
     }
 
     return fileId;
@@ -897,13 +915,11 @@ export class SDKClient {
    */
   async deleteFile(
     fileId: FileId,
-    requestId: string,
+    requestDetails: IRequestDetails,
     callerName: string,
     interactingEntity: string,
     originalCallerAddress: string,
   ): Promise<void> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-
     try {
       const fileDeleteTx = new FileDeleteTransaction()
         .setFileId(fileId)
@@ -914,7 +930,7 @@ export class SDKClient {
         fileDeleteTx,
         callerName,
         interactingEntity,
-        requestId,
+        requestDetails,
         false,
         originalCallerAddress,
       );
@@ -924,16 +940,16 @@ export class SDKClient {
         this.clientMain,
         callerName,
         interactingEntity,
-        requestId,
+        requestDetails,
       );
 
       if (fileInfo.isDeleted) {
-        this.logger.trace(`${requestIdPrefix} Deleted file with fileId: ${fileId}`);
+        this.logger.trace(`${requestDetails.requestIdPrefix} Deleted file with fileId: ${fileId}`);
       } else {
-        this.logger.warn(`${requestIdPrefix} Fail to delete file with fileId: ${fileId} `);
+        this.logger.warn(`${requestDetails.requestIdPrefix} Fail to delete file with fileId: ${fileId} `);
       }
     } catch (error: any) {
-      this.logger.warn(`${requestIdPrefix} ${error['message']} `);
+      this.logger.warn(`${requestDetails.requestIdPrefix} ${error['message']} `);
     }
   }
 
@@ -982,7 +998,6 @@ export class SDKClient {
     let gasUsed: number = 0;
     let transactionFee: number = 0;
     let txRecordChargeAmount: number = 0;
-    const formattedRequestId = formatRequestIdMessage(requestId);
     try {
       this.logger.trace(
         `${formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,

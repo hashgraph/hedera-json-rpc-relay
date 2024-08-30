@@ -25,18 +25,18 @@ export interface IFilterService {
   newFilter(
     fromBlock: string,
     toBlock: string,
+    requestIdPrefix: string,
     address?: string,
     topics?: any[],
-    requestIdPrefix?: string,
   ): Promise<string | JsonRpcError>;
 
-  newBlockFilter(requestIdPrefix?: string): Promise<string | JsonRpcError>;
+  newBlockFilter(requestIdPrefix: string): Promise<string | JsonRpcError>;
 
-  uninstallFilter(filterId: string, requestId?: string): Promise<boolean>;
+  uninstallFilter(filterId: string, requestIdPrefix: string): Promise<boolean>;
 
-  newPendingTransactionFilter(requestIdPrefix?: string): JsonRpcError;
+  newPendingTransactionFilter(requestIdPrefix: string): JsonRpcError;
 
-  getFilterLogs(filterId: string, requestId?: string): Promise<any>;
+  getFilterLogs(filterId: string, requestIdPrefix: string): Promise<any>;
 
-  getFilterChanges(filterId: string, requestIdPrefix?: string): Promise<string[] | Log[] | JsonRpcError>;
+  getFilterChanges(filterId: string, requestIdPrefix: string): Promise<string[] | Log[] | JsonRpcError>;
 }
