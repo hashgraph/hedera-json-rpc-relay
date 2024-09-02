@@ -14,7 +14,7 @@ concurrency:
 jobs:
   setup-local-hedera:
     name: Postman Endpoint Tests
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
     permissions:
       contents: write
     steps:

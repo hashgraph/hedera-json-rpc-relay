@@ -14,7 +14,7 @@ concurrency:
 jobs:
   setup-local-hedera:
     name: Dapp Tests
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
     timeout-minutes: 45 # Set to 45 minutes for now
     permissions:
       contents: write

@@ -11,7 +11,7 @@ env:
 
 jobs:
   docker-image-publish:
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
 
     steps:
       - name: Harden Runner
@@ -50,7 +50,7 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ github.repository }}:${{env.TAG}}
 
   npm-package-artifact:
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
 
     steps:
       - name: Harden Runner
@@ -86,7 +86,7 @@ jobs:
           if-no-files-found: error
 
   helm-chart-release:
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
     permissions:
       contents: write
     steps:
