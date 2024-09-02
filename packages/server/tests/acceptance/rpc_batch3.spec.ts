@@ -1900,6 +1900,20 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     });
 
     describe('Negative scenarios', async function () {
+      it('should return 400 error for non-existing transaction hash', async function () {
+        const nonExistentTransactionHash = '0xb8a433b014684558d4154c73de3ed360bd5867725239938c2143acb7a76bca82';
+        const expectedError = predefined.RESOURCE_NOT_FOUND(
+          `Failed to retrieve contract results for transaction ${nonExistentTransactionHash}`,
+        );
+        const args = [
+          RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
+          [nonExistentTransactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
+          requestId,
+        ];
+
+        await Assertions.assertPredefinedRpcError(expectedError, relay.call, false, relay, args);
+      });
+
       it('should fail to debug a transaction with invalid onlyTopCall value type', async function () {
         const transaction = {
           ...transactionTypeLegacy,
