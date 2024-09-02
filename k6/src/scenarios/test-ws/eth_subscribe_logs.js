@@ -18,12 +18,10 @@
  *
  */
 
-import ws from 'k6/ws';
-
-import { TestScenarioBuilder } from '../../lib/common.js';
-import { connectToWebSocket, isNonErrorResponse } from './common.js';
 import { setupTestParameters } from '../../lib/bootstrapEnvParameters.js';
+import { TestScenarioBuilder } from '../../lib/common.js';
 import { subscribeEvents } from '../../lib/constants.js';
+import { connectToWebSocket, isNonErrorResponse } from './common.js';
 
 const url = __ENV.WS_RELAY_BASE_URL;
 const methodName = 'eth_subscribe';
@@ -31,12 +29,13 @@ const methodName = 'eth_subscribe';
 const { options, run } = new TestScenarioBuilder()
   .name(methodName + '_logs') // use unique scenario name among all tests
   .request((testParameters) => {
-    return connectToWebSocket(url, methodName, [
-      subscribeEvents.logs,
-      { address: testParameters.contractsAddresses[0] },
-    ]);
+    return connectToWebSocket(
+      url,
+      methodName,
+      [subscribeEvents.logs, { address: testParameters.contractsAddresses[0] }],
+      { methodName: (r) => isNonErrorResponse(r) }
+    );
   })
-  .check(methodName, (r) => isNonErrorResponse(r))
   .build();
 
 export { options, run };

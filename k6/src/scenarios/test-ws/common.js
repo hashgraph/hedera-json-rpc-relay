@@ -19,6 +19,7 @@
  */
 
 import ws from 'k6/ws';
+import { check } from 'k6';
 
 const errorField = 'error';
 const resultField = 'result';
@@ -36,7 +37,7 @@ function getPayLoad(methodName, paramInput = []) {
   });
 }
 
-function connectToWebSocket(url, methodName, params = []) {
+function connectToWebSocket(url, methodName, params = [], responseChecks = {}) {
   return ws.connect(url, {}, (socket) => {
     socket.on('open', () => {
       const message = getPayLoad(methodName, params);
@@ -46,9 +47,7 @@ function connectToWebSocket(url, methodName, params = []) {
       socket.send(message);
 
       socket.on('message', (message) => {
-        if (isDebugMode) {
-          console.log('Received response: ' + message);
-        }
+        check(message, responseChecks);
         socket.close();
       });
     });
@@ -67,25 +66,27 @@ function connectToWebSocket(url, methodName, params = []) {
   });
 }
 
-function isNonErrorResponse(response) {
+function isNonErrorResponse(message) {
   try {
-    if (response.status !== 200) {
-      return false;
+    const response = JSON.parse(message);
+    const success = response.hasOwnProperty(resultField) && !response.hasOwnProperty(errorField);
+    if (isDebugMode) {
+      console.log(`isNonErrorResponse: message=${message}, result=${success}`);
     }
-    const body = JSON.parse(response.body);
-    return body.hasOwnProperty(resultField) && !body.hasOwnProperty(errorField);
+    return success;
   } catch (e) {
     return false;
   }
 }
 
-function isErrorResponse(response) {
+function isErrorResponse(message) {
   try {
-    if (response.status === 200) {
-      return false;
+    const response = JSON.parse(message);
+    const success = response.hasOwnProperty(errorField) && !response.hasOwnProperty(resultField);
+    if (isDebugMode) {
+      console.log(`isErrorResponse: message=${message}, result=${success}`);
     }
-    const body = JSON.parse(response.body);
-    return body.hasOwnProperty(errorField) && !body.hasOwnProperty(resultField);
+    return success;
   } catch (e) {
     return false;
   }

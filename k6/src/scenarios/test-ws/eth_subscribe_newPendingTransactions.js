@@ -27,8 +27,12 @@ const methodName = 'eth_subscribe';
 
 const { options, run } = new TestScenarioBuilder()
   .name(methodName + '_newPendingTransactions') // use unique scenario name among all tests
-  .request(() => connectToWebSocket(url, methodName, [subscribeEvents.newPendingTransactions]))
-  .check(methodName, (r) => isErrorResponse(r))
+  .request(() => connectToWebSocket(
+    url,
+    methodName,
+    [subscribeEvents.newPendingTransactions],
+    { methodName: (r) => isErrorResponse(r) }
+  ))
   .build();
 
 export { options, run };

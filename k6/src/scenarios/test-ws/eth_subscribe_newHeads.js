@@ -20,15 +20,19 @@
 
 import { TestScenarioBuilder } from '../../lib/common.js';
 import { subscribeEvents } from '../../lib/constants.js';
-import { connectToWebSocket, isErrorResponse } from './common.js';
+import { connectToWebSocket, isNonErrorResponse } from './common.js';
 
 const url = __ENV.WS_RELAY_BASE_URL;
 const methodName = 'eth_subscribe';
 
 const { options, run } = new TestScenarioBuilder()
   .name(methodName + '_newHeads') // use unique scenario name among all tests
-  .request(() => connectToWebSocket(url, methodName, [subscribeEvents.newHeads]))
-  .check(methodName, (r) => isErrorResponse(r))
+  .request(() => connectToWebSocket(
+    url,
+    methodName,
+    [subscribeEvents.newHeads],
+    { methodName: (r) => isNonErrorResponse(r) }
+  ))
   .build();
 
 export { options, run };

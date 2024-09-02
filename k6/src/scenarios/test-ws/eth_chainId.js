@@ -26,8 +26,12 @@ const methodName = 'eth_chainId';
 
 const { options, run } = new TestScenarioBuilder()
   .name(methodName) // use unique scenario name among all tests
-  .request(() => connectToWebSocket(url, methodName))
-  .check(methodName, (r) => isNonErrorResponse(r))
+  .request(() => connectToWebSocket(
+    url,
+    methodName,
+    [],
+    { methodName: (r) => isNonErrorResponse(r) }
+  ))
   .build();
 
 export { options, run };
