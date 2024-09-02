@@ -21,9 +21,7 @@
 import crypto from 'crypto';
 import constants from './lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
-import { TransactionRecord } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { MirrorNodeTransactionRecord } from './lib/types/IMirrorNode';
 import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 
 const EMPTY_HEX = '0x';
@@ -299,33 +297,6 @@ const isHex = (value: string): boolean => {
   return hexRegex.test(value);
 };
 
-/**
- * Returns the sum of all transfer amounts for the specified account. The amount is negative if the account is charged,
- * it is positive if the account is receiving it, thus the amount is first negated and then added to the sum.
- *
- * @param {TransactionRecord | MirrorNodeTransactionRecord} transactionRecord - The transaction record containing transfer information.
- * @param {string} accountId - The account ID to filter transfers.
- * @returns {number} - The sum of transfer amounts for the specified account.
- */
-const getTransferAmountSumForAccount = (
-  transactionRecord: TransactionRecord | MirrorNodeTransactionRecord,
-  accountId: string,
-): number => {
-  if (transactionRecord instanceof MirrorNodeTransactionRecord) {
-    return transactionRecord.transfers
-      .filter((transfer) => transfer.account === accountId)
-      .reduce((acc, transfer) => {
-        return acc - transfer.amount;
-      }, 0);
-  } else {
-    return transactionRecord.transfers
-      .filter((transfer) => transfer.accountId.toString() === accountId)
-      .reduce((acc, transfer) => {
-        return acc - transfer.amount.toTinybars().toNumber();
-      }, 0);
-  }
-};
-
 export {
   hashNumber,
   formatRequestIdMessage,
@@ -351,6 +322,5 @@ export {
   isValidEthereumAddress,
   isHex,
   ASCIIToHex,
-  getTransferAmountSumForAccount,
   mapKeysAndValues,
 };

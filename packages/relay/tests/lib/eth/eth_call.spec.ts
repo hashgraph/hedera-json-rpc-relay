@@ -54,6 +54,7 @@ import {
   mockData,
 } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
+import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -488,9 +489,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: `0x00` });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
 
       web3Mock.history.post = [];
 
@@ -510,9 +509,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: `0x00` });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
 
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x00');
@@ -525,10 +522,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: `0x00` });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x00');
     });
@@ -541,10 +535,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: `0x00` });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x00');
     });
@@ -560,7 +551,7 @@ describe('@ethCall Eth Call spec', async function () {
         block: 'latest',
       };
 
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false }).reply(200, { result: `0x00` });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
       // Relay is called with value in Weibars
@@ -576,10 +567,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(429, mockData.tooManyRequests);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 429, mockData.tooManyRequests);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(-32605);
@@ -594,9 +582,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(400, mockData.contractReverted);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(3);
@@ -613,9 +599,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(501, mockData.notSuported);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 501, mockData.notSuported);
 
       sdkClientStub.submitContractCallQueryWithRetry.returns({
         asBytes: function () {
@@ -646,9 +630,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(400, mockData.contractReverted);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted);
       sinon.reset();
       const result = await ethImpl.call(callData, 'latest');
       sinon.assert.notCalled(sdkClientStub.submitContractCallQueryWithRetry);
@@ -667,8 +649,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-
-      web3Mock.onPost('contracts/call', { ...callData, estimate: false, block: 'latest' }).reply(400, {
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, {
         _status: {
           messages: [
             {
@@ -718,9 +699,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(400, mockData.invalidTransaction);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.invalidTransaction);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect(result).to.equal('0x');
@@ -735,9 +714,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(400, mockData.failInvalid);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.failInvalid);
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.be.not.null;
       expect(result).to.equal('0x');
@@ -750,9 +727,7 @@ describe('@ethCall Eth Call spec', async function () {
         from: ACCOUNT_ADDRESS_1,
       };
 
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: EXAMPLE_CONTRACT_BYTECODE });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: EXAMPLE_CONTRACT_BYTECODE });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.eq(EXAMPLE_CONTRACT_BYTECODE);
     });
@@ -763,90 +738,133 @@ describe('@ethCall Eth Call spec', async function () {
         from: ACCOUNT_ADDRESS_1,
       };
 
-      web3Mock
-        .onPost('contracts/call', { ...callData, estimate: false, block: 'latest' })
-        .reply(200, { result: EXAMPLE_CONTRACT_BYTECODE });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: EXAMPLE_CONTRACT_BYTECODE });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.eq(EXAMPLE_CONTRACT_BYTECODE);
     });
+
+    async function mockContractCall(
+      callData: IContractCallRequest,
+      estimate: boolean,
+      statusCode: number,
+      result: IContractCallResponse,
+    ) {
+      const formattedCallData = { ...callData, estimate };
+      await ethImpl.contractCallFormat(formattedCallData);
+      return web3Mock.onPost('contracts/call', formattedCallData).reply(statusCode, result);
+    }
   });
 
   describe('contractCallFormat', () => {
-    it('should format transaction value to tiny bar integer', () => {
+    const operatorId = hapiServiceInstance.getMainClientInstance().operatorAccountId;
+    const operatorEvmAddress = ACCOUNT_ADDRESS_1;
+
+    beforeEach(() => {
+      restMock.onGet(`accounts/${operatorId!.toString()}?transactions=false`).reply(200, {
+        account: operatorId!.toString(),
+        evm_address: operatorEvmAddress,
+      });
+    });
+
+    it('should format transaction value to tiny bar integer', async () => {
       const transaction = {
         value: '0x2540BE400',
       };
 
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
       expect(transaction.value).to.equal(1);
     });
 
-    it('should parse gasPrice to integer', () => {
+    it('should parse gasPrice to integer', async () => {
       const transaction = {
         gasPrice: '1000000000',
       };
 
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
 
       expect(transaction.gasPrice).to.equal(1000000000);
     });
 
-    it('should parse gas to integer', () => {
+    it('should parse gas to integer', async () => {
       const transaction = {
         gas: '50000',
       };
 
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
 
       expect(transaction.gas).to.equal(50000);
     });
 
-    it('should accepts both input and data fields but copy value of input field to data field', () => {
+    it('should accepts both input and data fields but copy value of input field to data field', async () => {
       const inputValue = 'input value';
       const dataValue = 'data value';
       const transaction = {
         input: inputValue,
         data: dataValue,
       };
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
       expect(transaction.data).to.eq(inputValue);
       expect(transaction.data).to.not.eq(dataValue);
       expect(transaction.input).to.be.undefined;
     });
 
-    it('should not modify transaction if only data field is present', () => {
+    it('should not modify transaction if only data field is present', async () => {
       const dataValue = 'data value';
       const transaction = {
         data: dataValue,
       };
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
       expect(transaction.data).to.eq(dataValue);
     });
 
-    it('should copy input to data if input is provided but data is not', () => {
+    it('should copy input to data if input is provided but data is not', async () => {
       const transaction = {
         input: 'input data',
       };
 
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
 
       // @ts-ignore
       expect(transaction.data).to.equal('input data');
       expect(transaction.input).to.be.undefined;
     });
 
-    it('should not modify transaction if input and data fields are not provided', () => {
+    it('should not modify transaction if input and data fields are not provided', async () => {
       const transaction = {
         value: '0x2540BE400',
         gasPrice: '1000000000',
         gas: '50000',
       };
 
-      ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction);
 
       expect(transaction.value).to.equal(1);
       expect(transaction.gasPrice).to.equal(1000000000);
       expect(transaction.gas).to.equal(50000);
+    });
+
+    it('should populate gas price if not provided', async () => {
+      const transaction = {
+        value: '0x2540BE400',
+        gasPrice: undefined,
+      };
+
+      await ethImpl.contractCallFormat(transaction);
+
+      const expectedGasPrice = await ethImpl.gasPrice();
+      expect(transaction.gasPrice).to.equal(parseInt(expectedGasPrice));
+    });
+
+    it('should populate the from field if the from field is not provided and value is provided', async () => {
+      const transaction = {
+        value: '0x2540BE400',
+        to: CONTRACT_ADDRESS_2,
+        from: undefined,
+      };
+
+      await ethImpl.contractCallFormat(transaction);
+
+      expect(transaction.from).to.equal(operatorEvmAddress);
     });
   });
 });
