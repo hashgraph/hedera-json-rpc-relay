@@ -1,3 +1,23 @@
+/*
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import Greeter from './contracts/Greeter.json' assert { type: 'json' };
 import { ethers, formatEther, parseEther } from 'ethers';
 import * as fs from 'fs';
@@ -10,7 +30,7 @@ const __dirname = path.dirname(__filename);
 const logPayloads = process.env.DEBUG_MODE === 'true';
 
 class LoggingProvider extends ethers.JsonRpcProvider {
-  send(method, params) {
+  async send(method, params) {
     if (logPayloads) {
       const request = {
         method: method,
@@ -59,9 +79,9 @@ async function getSignedTxs(wallet, greeterContracts, gasPrice, gasLimit, chainI
 }
 
 (async () => {
-  const provider = new ethers.JsonRpcProvider(process.env.RELAY_BASE_URL);
+  const provider = new LoggingProvider(process.env.RELAY_BASE_URL);
   const mainPrivateKeyString = process.env.PRIVATE_KEY;
-  const mainWallet = new ethers.Wallet(mainPrivateKeyString, new LoggingProvider(process.env.RELAY_BASE_URL));
+  const mainWallet = new ethers.Wallet(mainPrivateKeyString, provider);
   console.log('RPC Server:  ' + process.env.RELAY_BASE_URL);
   console.log('Main Wallet Address: ' + mainWallet.address);
   console.log(
@@ -82,11 +102,11 @@ async function getSignedTxs(wallet, greeterContracts, gasPrice, gasLimit, chainI
 
   const wallets = [];
 
-  const chainId = (await mainWallet.provider.getNetwork()).chainId;
+  const chainId = (await provider.getNetwork()).chainId;
   const msgForEstimate = `Greetings from Automated Test Number i, Hello!`;
   const contractForEstimate = new ethers.Contract(smartContracts[0], Greeter.abi, mainWallet);
   const gasLimit = await contractForEstimate['setGreeting'].estimateGas(msgForEstimate);
-  const gasPrice = (await mainWallet.provider.getFeeData()).gasPrice;
+  const gasPrice = (await provider.getFeeData()).gasPrice;
 
   for (let i = 0; i < usersCount; i++) {
     const wallet = ethers.Wallet.createRandom();
@@ -120,7 +140,7 @@ async function getSignedTxs(wallet, greeterContracts, gasPrice, gasLimit, chainI
     walletData['address'] = wallet.address;
     walletData['privateKey'] = wallet.privateKey;
     walletData['latestBalance'] = formatEther(balance);
-    walletData['latestNonce'] = await walletProvider.provider.getTransactionCount(wallet.address);
+    walletData['latestNonce'] = await walletProvider.getNonce();
     walletData['signedTxs'] = signedTxCollection;
     wallets.push(walletData);
   }
