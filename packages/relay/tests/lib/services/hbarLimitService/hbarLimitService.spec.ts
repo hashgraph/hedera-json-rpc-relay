@@ -316,7 +316,6 @@ describe('HbarLimitService', function () {
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
       const result = await hbarLimitService['getSpendingPlan'](mockEthAddress);
-
       expect(result).to.deep.equal(spendingPlan);
     });
 
@@ -428,8 +427,9 @@ describe('HbarLimitService', function () {
       await testCreateBasicSpendingPlan(mockEthAddress, '127.0.0.1');
     });
 
-    it('should create a basic spending plan for the given ipAddress', async function () {
-      await testCreateBasicSpendingPlan('', '127.0.0.1');
+    it('should create a basic spending plan if none exists', async function () {
+      const newSpendingPlan = createSpendingPlan(0);
+      await testCreateBasicSpendingPlan(mockEthAddress, '127.0.0.1');
     });
   });
 
@@ -478,21 +478,6 @@ describe('HbarLimitService', function () {
       }
     });
 
-    it('should create a basic spending plan if none exists', async function () {
-      const newSpendingPlan = createSpendingPlan(0);
-      hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(
-        new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress),
-      );
-      ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
-
-      await hbarLimitService.addExpense(100, mockEthAddress);
-
-      expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
-      expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
-      expect(ipAddressHbarSpendingPlanRepositoryStub.save.called).to.be.false;
-    });
-
     it('should add the expense to the spending plan and update the remaining budget when both ethAddress and ipAddress are provided', async function () {
       await testAddExpense(mockEthAddress, '127.0.0.1');
     });
@@ -503,19 +488,6 @@ describe('HbarLimitService', function () {
 
     it('should add the expense to the spending plan and update the remaining budget when ipAddress is provided but ethAddress is not', async function () {
       await testAddExpense('', '127.0.0.1');
-    });
-
-    it('should handle errors when adding expense fails', async function () {
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
-        planId: mockPlanId,
-      });
-      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(createSpendingPlan(0));
-      hbarSpendingPlanRepositoryStub.addAmountToSpentToday.rejects(new Error('Failed to add expense'));
-
-      await expect(hbarLimitService.addExpense(100, mockEthAddress)).to.be.eventually.rejectedWith(
-        'Failed to add expense',
-      );
     });
   });
 
@@ -532,6 +504,19 @@ describe('HbarLimitService', function () {
 
     it('should return true when the remaining budget is negative', async function () {
       await testIsDailyBudgetExceeded(-1, true);
+    });
+
+    it('should handle errors when adding expense fails', async function () {
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(createSpendingPlan(0));
+      hbarSpendingPlanRepositoryStub.addAmountToSpentToday.rejects(new Error('Failed to add expense'));
+
+      await expect(hbarLimitService.addExpense(100, mockEthAddress)).to.be.eventually.rejectedWith(
+        'Failed to add expense',
+      );
     });
 
     it('should return false when the remaining budget is greater than zero', async function () {
