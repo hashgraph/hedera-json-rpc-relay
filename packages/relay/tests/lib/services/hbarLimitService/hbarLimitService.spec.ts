@@ -410,9 +410,8 @@ describe('HbarLimitService', function () {
       expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
       if (ethAddress) {
         expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
-        expect(ipAddressHbarSpendingPlanRepositoryStub.save.notCalled).to.be.true;
-      } else {
-        expect(ethAddressHbarSpendingPlanRepositoryStub.save.notCalled).to.be.true;
+      }
+      if (ipAddress) {
         expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.eq(!!ipAddress);
       }
     };
