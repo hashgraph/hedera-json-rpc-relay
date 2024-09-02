@@ -115,6 +115,19 @@ export class LocalLRUCache implements ICacheClient {
   }
 
   /**
+   * The remaining TTL of the specified key in the cache.
+   * @param {string} key - The key to check the remaining TTL for.
+   * @param {string} callingMethod - The name of the method calling the cache.
+   * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
+   * @returns {Promise<number>} The remaining TTL in milliseconds.
+   */
+  public async getRemainingTtl(key: string, callingMethod: string, requestIdPrefix?: string): Promise<number> {
+    const remainingTtl = this.cache.getRemainingTTL(key); // in milliseconds
+    this.logger.trace(`${requestIdPrefix} returning remaining TTL ${key}:${remainingTtl} on ${callingMethod} call`);
+    return remainingTtl;
+  }
+
+  /**
    * Sets a value in the cache associated with the given key.
    * Updates metrics, logs the caching, and associates a TTL if provided.
    * @param {string} key - The key to associate with the value.

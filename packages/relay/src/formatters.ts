@@ -18,11 +18,11 @@
  *
  */
 
-import constants from './lib/constants';
 import crypto from 'crypto';
-import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import constants from './lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
+import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 
 const EMPTY_HEX = '0x';
 
@@ -211,6 +211,28 @@ const formatContractResult = (cr: any) => {
   return null;
 };
 
+/**
+ * Maps the keys and values of an object to a new object using the provided functions.
+ *
+ * @param target The object to map
+ * @param mapFn The mapping functions
+ * @param mapFn.key The function to map the keys
+ * @param mapFn.value The function to map the values
+ * @returns A new object with the mapped keys and values
+ */
+const mapKeysAndValues = <OldK extends keyof any, NewK extends keyof any, OldV, NewV>(
+  target: Record<OldK, OldV>,
+  mapFn: { key?: (key: OldK) => NewK; value?: (value: OldV) => NewV },
+): Record<NewK, NewV> => {
+  const result = {} as Record<NewK, NewV>;
+  for (const key in target) {
+    const newKey = mapFn.key ? mapFn.key(key) : (key as unknown as NewK);
+    const newValue = mapFn.value ? mapFn.value(target[key]) : (target[key] as unknown as NewV);
+    result[newKey] = newValue;
+  }
+  return result;
+};
+
 const strip0x = (input: string): string => {
   return input.startsWith(EMPTY_HEX) ? input.substring(2) : input;
 };
@@ -258,6 +280,11 @@ const toNullIfEmptyHex = (value: string): string | null => {
   return value === EMPTY_HEX ? null : value;
 };
 
+const toHexString = (byteArray: Uint8Array): string => {
+  const encoded = Buffer.from(byteArray).toString('hex');
+  return encoded;
+};
+
 const isValidEthereumAddress = (address: string | null | undefined): boolean => {
   if (!address) {
     return false;
@@ -268,16 +295,6 @@ const isValidEthereumAddress = (address: string | null | undefined): boolean => 
 const isHex = (value: string): boolean => {
   const hexRegex = /^0x[0-9a-fA-F]+$/;
   return hexRegex.test(value);
-};
-
-// Returns the sum of all transfer amounts for the specified account. The amount is negative if the account is charged,
-// it is positive if the account is receiving it, thus the amount is first negated and then added to the sum.
-const getTransferAmountSumForAccount = (transactionRecord, accountId: string): number => {
-  return transactionRecord.transfers
-    .filter((transfer) => transfer.accountId.toString() === accountId)
-    .reduce((acc, transfer) => {
-      return BN.sum(acc, transfer.amount.toTinybars().negate()).toNumber();
-    }, 0);
 };
 
 export {
@@ -300,9 +317,10 @@ export {
   trimPrecedingZeros,
   stripLeadingZeroForSignatures,
   weibarHexToTinyBarInt,
+  toHexString,
   strip0x,
   isValidEthereumAddress,
   isHex,
   ASCIIToHex,
-  getTransferAmountSumForAccount,
+  mapKeysAndValues,
 };

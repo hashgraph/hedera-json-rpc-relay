@@ -55,6 +55,7 @@ describe('Debug API Test Suite', async function () {
   const nonExistentTransactionHash = '0xb8a433b014684558d4154c73de3ed360bd5867725239938c2143acb7a76bca82';
   const contractAddress = '0x0000000000000000000000000000000000000409';
   const senderAddress = '0x00000000000000000000000000000000000003f8';
+  const accountAddress = '0x00000000000000000000000000000000000003f7';
   const contractAddress2 = '0x000000000000000000000000000000000000040a';
   const tracerConfigTrue = { onlyTopCall: true };
   const tracerConfigFalse = { onlyTopCall: false };
@@ -65,6 +66,7 @@ describe('Debug API Test Suite', async function () {
   const CONTRACTS_RESULTS_BY_HASH = `contracts/results/${transactionHash}`;
   const CONTRACT_BY_ADDRESS = `contracts/${contractAddress}`;
   const SENDER_BY_ADDRESS = `accounts/${senderAddress}?transactions=false`;
+  const ACCOUNT_BY_ADDRESS = `accounts/${accountAddress}?transactions=false`;
   const CONTRACT_BY_ADDRESS2 = `contracts/${contractAddress2}`;
   const CONTRACTS_RESULTS_BY_NON_EXISTENT_HASH = `contracts/results/${nonExistentTransactionHash}`;
   const CONTRACT_RESULTS_BY_ACTIONS_NON_EXISTENT_HASH = `contracts/results/${nonExistentTransactionHash}/actions`;
@@ -74,19 +76,19 @@ describe('Debug API Test Suite', async function () {
       disableStack: true,
     },
     {
-      disableMemory: true,
+      enableMemory: true,
     },
     {
       disableStorage: true,
     },
     {
+      enableMemory: true,
       disableStack: true,
-      disableMemory: true,
       disableStorage: true,
     },
     {
+      enableMemory: false,
       disableStack: false,
-      disableMemory: false,
       disableStorage: false,
     },
   ];
@@ -295,7 +297,7 @@ describe('Debug API Test Suite', async function () {
       });
       for (const config of opcodeLoggerConfigs) {
         const opcodeLoggerParams = getQueryParams({
-          memory: !config.disableMemory,
+          memory: !!config.enableMemory,
           stack: !config.disableStack,
           storage: !config.disableStorage,
         });
@@ -305,7 +307,7 @@ describe('Debug API Test Suite', async function () {
           opcodes: opcodesResponse.opcodes?.map((opcode) => ({
             ...opcode,
             stack: config.disableStack ? [] : opcode.stack,
-            memory: config.disableMemory ? [] : opcode.memory,
+            memory: config.enableMemory ? opcode.memory : [],
             storage: config.disableStorage ? {} : opcode.storage,
           })),
         });
@@ -437,12 +439,12 @@ describe('Debug API Test Suite', async function () {
 
         describe(`When opcode logger is called with ${opcodeLoggerParams}`, async function () {
           const emptyFields = Object.keys(config)
-            .filter((key) => config[key])
-            .map((key) => key.replace('disable', ''))
+            .filter((key) => (key.startsWith('disable') && config[key]) || (key.startsWith('enable') && !config[key]))
+            .map((key) => (config[key] ? key.replace('disable', '') : key.replace('enable', '')))
             .map((key) => key.toLowerCase());
 
-          it(`Then '${
-            emptyFields.length ? `${emptyFields} should be empty` : 'all should be returned'
+          it(`Then ${
+            emptyFields.length ? `'${emptyFields}' should be empty` : 'all should be returned'
           }`, async function () {
             const expectedResult = {
               gas: opcodesResponse.gas,
@@ -455,7 +457,7 @@ describe('Debug API Test Suite', async function () {
                 gasCost: opcode.gas_cost,
                 depth: opcode.depth,
                 stack: config.disableStack ? null : opcode.stack,
-                memory: config.disableMemory ? null : opcode.memory,
+                memory: config.enableMemory ? opcode.memory : null,
                 storage: config.disableStorage ? null : opcode.storage,
                 reason: opcode.reason ? strip0x(opcode.reason) : null,
               })),
@@ -475,12 +477,13 @@ describe('Debug API Test Suite', async function () {
     });
 
     describe('Invalid scenarios', async function () {
+      let notFound;
       before(() => {
         process.env.DEBUG_API_ENABLED = 'true';
       });
 
       beforeEach(() => {
-        const notFound = {
+        notFound = {
           _status: {
             messages: [
               {
@@ -506,6 +509,31 @@ describe('Debug API Test Suite', async function () {
           tracerConfigTrue,
           getRequestId(),
         ]);
+      });
+
+      it('should return empty result with invalid parameters in formatOpcodeResult', async function () {
+        const opcodeResult = await debugService.formatOpcodesResult(null, {});
+        // @ts-ignore
+        expect(opcodeResult.gas).to.eq(0);
+        // @ts-ignore
+        expect(opcodeResult.failed).to.eq(true);
+        // @ts-ignore
+        expect(opcodeResult.returnValue).to.eq('');
+        // @ts-ignore
+        expect(opcodeResult.structLogs).to.be.an('array').that.is.empty;
+      });
+
+      describe('resolveAddress', async function () {
+        it('should return null address with invalid parameters in resolveAddress', async function () {
+          const address = await debugService.resolveAddress(null!);
+          expect(address).to.be.null;
+        });
+
+        it('should return passed address on notFound entity from the mirror node', async function () {
+          restMock.onGet(ACCOUNT_BY_ADDRESS).reply(404, notFound);
+          const address = await debugService.resolveAddress(accountAddress);
+          expect(address).to.eq(accountAddress);
+        });
       });
     });
   });

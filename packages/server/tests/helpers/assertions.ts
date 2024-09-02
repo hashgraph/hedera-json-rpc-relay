@@ -23,6 +23,7 @@ import { ethers } from 'ethers';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import RelayAssertions from '@hashgraph/json-rpc-relay/tests/assertions';
+import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
 
 chai.use(chaiExclude);
 
@@ -33,7 +34,6 @@ export default class Assertions {
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static emptyBloom =
     '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-  static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasPrice = 710_000_000_000;
   static datedGasPrice = 570_000_000_000;
   static updatedGasPrice = 640_000_000_000;
@@ -95,14 +95,11 @@ export default class Assertions {
     expect(relayResponse.nonce, "Assert block: 'nonce' should equal zero 8byte hex").to.be.equal(
       Assertions.zeroHex8Byte,
     );
-    expect(relayResponse.receiptsRoot, "Assert block: 'receiptsRoot' should equal zero 32bytes hex").to.be.equal(
-      Assertions.zeroHex32Byte,
-    );
     expect(relayResponse.sha3Uncles, "Assert block: 'sha3Uncles' should equal empty array hex").to.be.equal(
       Assertions.emptyArrayHex,
     );
     expect(relayResponse.stateRoot, "Assert block: 'stateRoot' should equal zero 32bytes hex").to.be.equal(
-      Assertions.zeroHex32Byte,
+      constants.DEFAULT_ROOT_HASH,
     );
     expect(relayResponse.totalDifficulty, "Assert block: 'totalDifficulty' should equal zero in hex").to.be.equal(
       ethers.toQuantity(0),
@@ -146,7 +143,7 @@ export default class Assertions {
       ).to.equal(mirrorNodeResponse.hash.slice(0, 66));
     } else {
       expect(relayResponse.transactionsRoot, "Assert block: 'transactionsRoot' should equal 'ethEmptyTrie'").to.equal(
-        Assertions.ethEmptyTrie,
+        constants.DEFAULT_ROOT_HASH,
       );
     }
 

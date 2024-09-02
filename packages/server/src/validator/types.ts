@@ -1,7 +1,34 @@
-import * as Constants from './constants';
-import { Validator } from '.';
+/*-
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 
-export const TYPES = {
+import * as Constants from './constants';
+import { CallTracerConfig, OpcodeLoggerConfig, TracerConfigWrapper, Validator } from '.';
+import { ITypeValidation } from '../types/validator';
+import {
+  ICallTracerConfig,
+  IOpcodeLoggerConfig,
+  ITracerConfig,
+  ITracerConfigWrapper,
+} from '@hashgraph/json-rpc-relay/src/lib/types';
+
+export const TYPES: { [key: string]: ITypeValidation } = {
   address: {
     test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '{40}$').test(param),
     error: Constants.ADDRESS_ERROR,
@@ -15,7 +42,7 @@ export const TYPES = {
     error: `${Constants.ADDRESS_ERROR} or an array of addresses`,
   },
   array: {
-    test: (name: string, param: any, innerType?: any) => {
+    test: (param: any, innerType?: any) => {
       return Array.isArray(param) ? Validator.validateArray(param, innerType) : false;
     },
     error: 'Expected Array',
@@ -60,8 +87,12 @@ export const TYPES = {
     error: `Expected FilterObject`,
   },
   hex: {
-    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX).test(param),
+    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '*$').test(param),
     error: Constants.DEFAULT_HEX_ERROR,
+  },
+  hex64: {
+    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '{1,64}$').test(param),
+    error: Constants.HASH_ERROR,
   },
   topicHash: {
     test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '{64}$').test(param) || param === null,
@@ -92,22 +123,50 @@ export const TYPES = {
     error: Constants.TRANSACTION_ID_ERROR,
   },
   tracerType: {
-    test: (param: Constants.TracerType) => Object.values(Constants.TracerType).includes(param),
-    error: 'Invalid tracer type',
+    test: (param: any): param is Constants.TracerType =>
+      typeof param === 'string' &&
+      Object.values(Constants.TracerType)
+        .map((tracerType) => tracerType.toString())
+        .includes(param),
+    error: 'Expected TracerType',
+  },
+  callTracerConfig: {
+    test: (param: any): param is ICallTracerConfig => {
+      if (param && typeof param === 'object') {
+        return new CallTracerConfig(param).validate();
+      }
+      return false;
+    },
+    error: 'Expected CallTracerConfig',
+  },
+  opcodeLoggerConfig: {
+    test: (param: any): param is IOpcodeLoggerConfig => {
+      if (param && typeof param === 'object') {
+        return new OpcodeLoggerConfig(param).validate();
+      }
+      return false;
+    },
+    error: 'Expected OpcodeLoggerConfig',
   },
   tracerConfig: {
-    test: (param: Record<string, any>) => {
-      const isValidCallTracerConfig: boolean =
-        typeof param === 'object' && 'onlyTopCall' in param && typeof param.onlyTopCall === 'boolean';
-
-      const isValidOpcodeLoggerConfig: boolean =
-        typeof param === 'object' &&
-        (!('disableMemory' in param) || typeof param.disableMemory === 'boolean') &&
-        (!('disableStack' in param) || typeof param.disableStack === 'boolean') &&
-        (!('disableStorage' in param) || typeof param.disableStorage === 'boolean');
-
-      return isValidCallTracerConfig || isValidOpcodeLoggerConfig;
+    test: (param: Record<string, any>): param is ITracerConfig => {
+      if (param && typeof param === 'object') {
+        const isEmptyObject = Object.keys(param).length === 0;
+        const isValidCallTracerConfig = TYPES.callTracerConfig.test(param);
+        const isValidOpcodeLoggerConfig = TYPES.opcodeLoggerConfig.test(param);
+        return isEmptyObject || isValidCallTracerConfig || isValidOpcodeLoggerConfig;
+      }
+      return false;
     },
-    error: 'Invalid tracerConfig',
+    error: 'Expected TracerConfig',
+  },
+  tracerConfigWrapper: {
+    test: (param: any): param is ITracerConfigWrapper => {
+      if (param && typeof param === 'object') {
+        return new TracerConfigWrapper(param).validate();
+      }
+      return false;
+    },
+    error: 'Expected TracerConfigWrapper which contains a valid TracerType and/or TracerConfig',
   },
 };

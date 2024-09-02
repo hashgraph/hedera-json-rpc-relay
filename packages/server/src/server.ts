@@ -19,9 +19,10 @@
  */
 
 import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
-import { TracerType, Validator } from './validator';
+import { TracerType, TYPES, Validator } from './validator';
 import pino from 'pino';
 import path from 'path';
 import fs from 'fs';
@@ -203,6 +204,9 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
   try {
     const methodValidations = Validator.METHODS[methodName];
     if (methodValidations) {
+      logger.debug(
+        `${requestIdPrefix} Validating method parameters for ${methodName}, params: ${JSON.stringify(methodParams)}`,
+      );
       Validator.validateParams(methodParams, methodValidations);
     }
 
@@ -233,6 +237,8 @@ const logAndHandleResponse = async (methodName: any, methodParams: any, methodFu
       }
     } else if (e instanceof JsonRpcError) {
       error = e;
+    } else {
+      logger.error(`${requestIdPrefix} ${e.message}`);
     }
 
     logger.error(`${requestIdPrefix} ${error.message}`);
@@ -661,19 +667,30 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
  */
 
 app.useRpc('debug_traceTransaction', async (params: any) => {
-  const transactionIdOrHash = params[0];
-  const { tracer, ...otherParams } = params[1];
+  return logAndHandleResponse('debug_traceTransaction', params, (requestId: string) => {
+    const transactionIdOrHash = params[0];
+    let tracer: TracerType = TracerType.OpcodeLogger;
+    let tracerConfig: ITracerConfig = {};
 
-  let tracerConfig: object;
-  if (tracer === TracerType.CallTracer) {
-    tracerConfig = otherParams?.tracerConfig ?? { onlyTopCall: false };
-  } else {
-    tracerConfig = otherParams ?? { disableMemory: false, disableStack: false, disableStorage: false };
-  }
+    // Second param can be either a TracerType string, or an object for TracerConfig or TracerConfigWrapper
+    if (TYPES.tracerType.test(params[1])) {
+      tracer = params[1];
+      if (TYPES.tracerConfig.test(params[2])) {
+        tracerConfig = params[2];
+      }
+    } else if (TYPES.tracerConfig.test(params[1])) {
+      tracerConfig = params[1];
+    } else if (TYPES.tracerConfigWrapper.test(params[1])) {
+      if (TYPES.tracerType.test(params[1].tracer)) {
+        tracer = params[1].tracer;
+      }
+      if (TYPES.tracerConfig.test(params[1].tracerConfig)) {
+        tracerConfig = params[1].tracerConfig;
+      }
+    }
 
-  return logAndHandleResponse('debug_traceTransaction', [transactionIdOrHash, tracer, tracerConfig], (requestId) =>
-    relay.eth().debugService().debug_traceTransaction(transactionIdOrHash, tracer, tracerConfig, requestId),
-  );
+    return relay.eth().debugService().debug_traceTransaction(transactionIdOrHash, tracer, tracerConfig, requestId);
+  });
 });
 
 /**

@@ -33,12 +33,20 @@ export class JsonRpcError {
 }
 
 export const predefined = {
-  CONTRACT_REVERT: (errorMessage?: string, data: string = '') =>
-    new JsonRpcError({
+  CONTRACT_REVERT: (errorMessage?: string, data: string = '') => {
+    let message: string;
+    if (errorMessage?.length) {
+      message = `execution reverted: ${decodeErrorMessage(errorMessage)}`;
+    } else {
+      const decodedData = decodeErrorMessage(data);
+      message = decodedData.length ? `execution reverted: ${decodedData}` : 'execution reverted';
+    }
+    return new JsonRpcError({
       code: 3,
-      message: `execution reverted: ${decodeErrorMessage(errorMessage)}`,
-      data: data,
-    }),
+      message,
+      data,
+    });
+  },
   GAS_LIMIT_TOO_HIGH: (gasLimit, maxGas) =>
     new JsonRpcError({
       code: -32005,

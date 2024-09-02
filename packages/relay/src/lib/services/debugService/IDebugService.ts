@@ -18,13 +18,14 @@
  *
  */
 
+import { ITracerConfig } from '../../types';
 import type { TracerType } from '../../constants';
 
 export interface IDebugService {
   debug_traceTransaction: (
     transactionIdOrHash: string,
     tracer: TracerType,
-    tracerConfig: object,
+    tracerConfig: ITracerConfig,
     requestIdPrefix?: string,
   ) => Promise<any>;
   resolveAddress: (address: string, types?: string[], requestIdPrefix?: string) => Promise<string>;

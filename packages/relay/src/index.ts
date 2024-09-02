@@ -19,10 +19,11 @@
  */
 
 import { Block, Log, Receipt, Transaction } from './lib/model';
+import { IContractCallRequest } from './lib/types';
 import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
 import WebSocketError from './lib/errors/WebSocketError';
 import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
-import { IContractCallRequest, MirrorNodeClient } from './lib/clients';
+import { MirrorNodeClient } from './lib/clients';
 import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
 import { IDebugService } from './lib/services/debugService/IDebugService';
 
