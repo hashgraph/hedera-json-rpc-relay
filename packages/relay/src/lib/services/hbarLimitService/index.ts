@@ -223,7 +223,7 @@ export class HbarLimitService implements IHbarLimitService {
     this.remainingBudget -= cost;
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
 
-    // Calculate and set the average daily spending plan usages per subscription type for the last 30 days
+    // Calculate and set the average daily spending plan usages per subscription type
     const averageUsage = await this.calculateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType);
     this.averageDailySpendingPlanUsagesGauge[spendingPlan.subscriptionType].set(averageUsage);
 
