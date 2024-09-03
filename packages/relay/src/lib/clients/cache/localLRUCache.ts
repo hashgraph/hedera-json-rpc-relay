@@ -22,9 +22,7 @@ import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
 import { ICacheClient } from './ICacheClient';
 import constants from '../../constants';
-import LRUCache from 'lru-cache';
-
-const LRU = require('lru-cache');
+import LRUCache, { LimitedByCount, LimitedByTTL } from 'lru-cache';
 
 /**
  * Represents a LocalLRUCache instance that uses an LRU (Least Recently Used) caching strategy
@@ -37,7 +35,7 @@ export class LocalLRUCache implements ICacheClient {
    *
    * @private
    */
-  private readonly options = {
+  private readonly options: LimitedByCount & LimitedByTTL = {
     // The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
     max: Number.parseInt(process.env.CACHE_MAX ?? constants.CACHE_MAX.toString()),
     // Max time to live in ms, for items before they are considered stale.
@@ -74,7 +72,7 @@ export class LocalLRUCache implements ICacheClient {
    * @param {Registry} register - The registry instance used for metrics tracking.
    */
   public constructor(logger: Logger, register: Registry) {
-    this.cache = new LRU(this.options);
+    this.cache = new LRUCache(this.options);
     this.logger = logger;
     this.register = register;
 
