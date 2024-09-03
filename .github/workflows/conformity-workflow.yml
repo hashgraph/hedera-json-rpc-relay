@@ -9,7 +9,7 @@ on:
 
 jobs:
   clone-and-build-execution-apis:
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
 
     steps:
       - name: Checkout execution-apis repo
@@ -39,7 +39,7 @@ jobs:
           path: ./execution-apis/openrpc.json
 
   build-and-test:
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
     needs: clone-and-build-execution-apis
 
     steps:
