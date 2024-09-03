@@ -585,6 +585,7 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
   describe('ws related rpc methods', async function () {
     let webSocket: WebSocket;
     let contractAddress: string;
+    let existingFilter: string;
 
     before(async () => {
       contractAddress = (
@@ -599,6 +600,24 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
           data: CallerContract.bytecode,
         })
       ).contractAddress;
+
+      existingFilter = (
+        await sendRequestToRelay(
+          {
+            jsonrpc: '2.0',
+            method: 'eth_newFilter',
+            params: [
+              {
+                fromBlock: '0x3',
+                toBlock: '0x56ac',
+                address: contractAddress,
+              },
+            ],
+            id: 1,
+          },
+          false,
+        )
+      ).result;
     });
 
     beforeEach(() => {
@@ -610,6 +629,11 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
     });
 
     const TEST_CASES = {
+      eth_newFilter: {
+        request:
+          '{"jsonrpc":"2.0","id":1,"method":"eth_newFilter","params":[{"fromBlock": "0x2","toBlock": "0x5644","address": "0x68c281b97b214deae198043c15a92e7096ca2546"}]}',
+        response: '{"result":"0x5cd8adcbc637551d4b5959c732d0ad67","jsonrpc":"2.0","id":1}',
+      },
       'eth_subscribe - newPendingTransactions': {
         request: '{"jsonrpc":"2.0","method":"eth_subscribe","params":["newPendingTransactions"],"id":1}',
         response: '{"error":{"code":-32601,"message":"Unsupported JSON-RPC method"},"jsonrpc":"2.0","id":1}',
@@ -624,9 +648,13 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
           '{"jsonrpc":"2.0","id":1,"method":"eth_subscribe","params":["logs",{"address":"0x12833e4c7a6b1e9512e9a32873321c13cb4dbfef"}]}',
         response: '{"result":"0xa4e1803ab025341ed7668eb13ca71f3c","jsonrpc":"2.0","id":1}',
       },
-      eth_unsubscribe: {
+      'eth_unsubscribe - non existing filter': {
         request: '{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x2c9c38d1200d30208fcdad52ed71fbff"],"id":1}',
         response: '{"result":false,"jsonrpc":"2.0","id":1}',
+      },
+      'eth_unsubscribe - existing filter': {
+        request: '{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x2c9c38d1200d30208fcdad52ed71fbff"],"id":1}',
+        response: '{"result":true,"jsonrpc":"2.0","id":1}',
       },
     };
 
@@ -639,6 +667,9 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
               address: contractAddress,
             },
           ];
+          break;
+        case 'eth_unsubscribe - existing filter':
+          request.params = [existingFilter];
           break;
       }
 

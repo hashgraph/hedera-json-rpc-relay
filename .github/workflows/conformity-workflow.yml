@@ -84,11 +84,6 @@ jobs:
       - name: Stop  relay
         run: docker stop json-rpc-relay json-rpc-relay-ws
 
-      - name: Add ws specific env variables
-        run: |
-          echo "SUBSCRIPTIONS_ENABLED=true" >> .env
-          echo "TEST_WS_SERVER=true" >> .env
-
       - name: Download openrpc.json artifact
         uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
         with:
@@ -96,6 +91,11 @@ jobs:
       
       - name: Rename file
         run: mv openrpc.json openrpc_exec_apis.json
+
+      - name: Add ws specific env variables
+        run: |
+          echo "SUBSCRIPTIONS_ENABLED=true" >> .env
+          echo "TEST_WS_SERVER=true" >> .env
 
       - name: Run conformity tests
         run: npm run acceptancetest:rpc_api_schema_conformity
