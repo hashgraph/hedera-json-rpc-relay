@@ -2127,9 +2127,9 @@ describe('SdkClient', async function () {
       124, 18, 190, 114, 79, 189, 99, 27, 157, 117, 227, 107, 74, 255, 111, 74, 166, 7, 78, 25, 35, 131, 85, 47, 52,
       120, 20,
     ]);
-    const fileCreateFee = Number(process.env.HOT_FIX_FILE_CREATE_FEE || 100000000); // 1 hbar
-    const fileDeleteFee = Number(process.env.HOT_FIX_FILE_DELETE_FEE || 11000000); // 0.11 hbar
-    const fileAppendFee = Number(process.env.HOT_FIX_FILE_APPEND_FEE || 120000000); // 1.2 hbar
+    const fileCreateFee = 100000000; // 1 hbar
+    const fileDeleteFee = 11000000; // 0.11 hbar
+    const fileAppendFee = 120000000; // 1.2 hbar
     const mockedExchangeRateIncents = 12;
     const mockedTransactionRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateIncents);
     const defaultTransactionFee = 1000;
@@ -2139,7 +2139,7 @@ describe('SdkClient', async function () {
     const fileId = FileId.fromString('0.0.1234');
     const transactionReceipt = { fileId, status: Status.Success };
     const gasUsed = Long.fromNumber(10000);
-    const mockedNetworkGasPrice = '0xa54f4c3c00';
+    const mockedNetworkGasPrice = 710000;
 
     const randomAccountAddress = random20BytesAddress();
 
@@ -2277,6 +2277,7 @@ describe('SdkClient', async function () {
           mockedCallerName,
           randomAccountAddress,
           mockedNetworkGasPrice,
+          mockedExchangeRateIncents,
           requestId,
         );
         expect.fail(`Expected an error but nothing was thrown`);
@@ -2335,6 +2336,7 @@ describe('SdkClient', async function () {
         mockedCallerName,
         randomAccountAddress,
         mockedNetworkGasPrice,
+        mockedExchangeRateIncents,
         requestId,
       );
 

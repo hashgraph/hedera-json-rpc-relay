@@ -154,9 +154,6 @@ export default class HbarLimit {
         currentNetworkExchangeRateInCents,
       );
 
-      console.log(`remainingBudget: ${this.remainingBudget}`);
-      console.log(`totalFeeInTinyBar: ${totalFeeInTinyBar}`);
-
       if (this.remainingBudget - totalFeeInTinyBar < 0) {
         this.logger.trace(
           `${requestIdPrefix} HBAR preemtive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalFeeInTinyBar=${totalFeeInTinyBar}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,

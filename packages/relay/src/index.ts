@@ -136,7 +136,7 @@ export interface Eth {
 
   protocolVersion(requestId?: string): JsonRpcError;
 
-  sendRawTransaction(transaction: string, requestId?: string): Promise<string | JsonRpcError>;
+  sendRawTransaction(transaction: string, requestId: string): Promise<string | JsonRpcError>;
 
   sendTransaction(requestId?: string): JsonRpcError;
 
