@@ -99,53 +99,25 @@ export class HbarLimitService implements IHbarLimitService {
     this.hbarLimitRemainingGauge.set(this.totalBudget);
     this.remainingBudget = this.totalBudget;
 
-    const dailyUniqueBasicSpendingPlansCounterName = 'daily_unique_spending_plans_counter_basic';
-    const dailyUniqueExtendedSpendingPlansCounterName = 'daily_unique_spending_plans_counter_extended';
-    const dailyUniquePrivilegedSpendingPlansCounterName = 'daily_unique_spending_plans_counter_privileged';
-    this.register.removeSingleMetric(dailyUniqueBasicSpendingPlansCounterName);
-    this.register.removeSingleMetric(dailyUniqueExtendedSpendingPlansCounterName);
-    this.register.removeSingleMetric(dailyUniquePrivilegedSpendingPlansCounterName);
-    this.dailyUniqueSpendingPlansCounter = {
-      BASIC: new Counter({
-        name: dailyUniqueBasicSpendingPlansCounterName,
-        help: 'Tracks the number of unique spending plans used daily for BASIC subscription type',
+    this.dailyUniqueSpendingPlansCounter = {} as Record<SubscriptionType, Counter>;
+    this.averageDailySpendingPlanUsagesGauge = {} as Record<SubscriptionType, Gauge>;
+    Object.values(SubscriptionType).forEach((type) => {
+      const dailyUniqueSpendingPlansCounterName = `daily_unique_spending_plans_counter_${type.toLowerCase()}`;
+      this.register.removeSingleMetric(dailyUniqueSpendingPlansCounterName);
+      this.dailyUniqueSpendingPlansCounter[type] = new Counter({
+        name: dailyUniqueSpendingPlansCounterName,
+        help: `Tracks the number of unique spending plans used daily for ${type} subscription type`,
         registers: [register],
-      }),
-      EXTENDED: new Counter({
-        name: dailyUniqueExtendedSpendingPlansCounterName,
-        help: 'Tracks the number of unique spending plans used daily for EXTENDED subscription type',
-        registers: [register],
-      }),
-      PRIVILEGED: new Counter({
-        name: dailyUniquePrivilegedSpendingPlansCounterName,
-        help: 'Tracks the number of unique spending plans used daily for PRIVILEGED subscription type',
-        registers: [register],
-      }),
-    };
+      });
 
-    const averageUsageBasicSpendingPlanGaugeName = 'average_daily_spending_plan_usages_gauge_basic';
-    const averageUsageExtendedSpendingPlanGaugeName = 'average_daily_spending_plan_usages_gauge_extended';
-    const averageUsagePrivilegedSpendingPlanGaugeName = 'average_daily_spending_plan_usages_gauge_privileged';
-    this.register.removeSingleMetric(averageUsageBasicSpendingPlanGaugeName);
-    this.register.removeSingleMetric(averageUsageExtendedSpendingPlanGaugeName);
-    this.register.removeSingleMetric(averageUsagePrivilegedSpendingPlanGaugeName);
-    this.averageDailySpendingPlanUsagesGauge = {
-      BASIC: new Gauge({
-        name: averageUsageBasicSpendingPlanGaugeName,
-        help: 'Tracks the average daily spending plan usages for BASIC subscription type',
+      const averageDailySpendingGaugeName = `average_daily_spending_plan_usages_gauge_${type.toLowerCase()}`;
+      this.register.removeSingleMetric(averageDailySpendingGaugeName);
+      this.averageDailySpendingPlanUsagesGauge[type] = new Gauge({
+        name: averageDailySpendingGaugeName,
+        help: `Tracks the average daily spending plan usages for ${type} subscription type`,
         registers: [register],
-      }),
-      EXTENDED: new Gauge({
-        name: averageUsageExtendedSpendingPlanGaugeName,
-        help: 'Tracks the average daily spending plan usages for EXTENDED subscription type',
-        registers: [register],
-      }),
-      PRIVILEGED: new Gauge({
-        name: averageUsagePrivilegedSpendingPlanGaugeName,
-        help: 'Tracks the average daily spending plan usages for PRIVILEGED subscription type',
-        registers: [register],
-      }),
-    };
+      });
+    });
 
     // Reset the rate limiter at the start of the next day
     const now = Date.now();
