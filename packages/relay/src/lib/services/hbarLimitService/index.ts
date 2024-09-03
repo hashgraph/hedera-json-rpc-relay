@@ -49,6 +49,18 @@ export class HbarLimitService implements IHbarLimitService {
   private readonly hbarLimitRemainingGauge: Gauge;
 
   /**
+   * Tracks the number of unique spending plans used daily.
+   * @private
+   */
+  private readonly dailyUniqueSpendingPlansCounter: Counter;
+
+  /**
+   * Tracks the average daily spending plan usages.
+   * @private
+   */
+  private readonly averageDailySpendingPlanUsagesGauge: Record<SubscriptionType, Gauge>;
+
+  /**
    * The remaining budget for the rate limiter.
    * @private
    */
@@ -86,6 +98,39 @@ export class HbarLimitService implements IHbarLimitService {
     });
     this.hbarLimitRemainingGauge.set(this.totalBudget);
     this.remainingBudget = this.totalBudget;
+
+    const dailyUniqueSpendingPlansCounterName = 'daily_unique_spending_plans_counter';
+    this.register.removeSingleMetric(dailyUniqueSpendingPlansCounterName);
+    this.dailyUniqueSpendingPlansCounter = new Counter({
+      name: dailyUniqueSpendingPlansCounterName,
+      help: 'Tracks the number of unique spending plans used daily',
+      registers: [register],
+    });
+
+    const averageUsageBasicSpendingPlanGaugeName = 'average_daily_spending_plan_usages_gauge_basic';
+    const averageUsageExtendedSpendingPlanGaugeName = 'average_daily_spending_plan_usages_gauge_extended';
+    const averageUsagePrivilegedSpendingPlanGaugeName = 'average_daily_spending_plan_usages_gauge_privileged';
+    this.register.removeSingleMetric(averageUsageBasicSpendingPlanGaugeName);
+    this.register.removeSingleMetric(averageUsageExtendedSpendingPlanGaugeName);
+    this.register.removeSingleMetric(averageUsagePrivilegedSpendingPlanGaugeName);
+    this.averageDailySpendingPlanUsagesGauge = {
+      BASIC: new Gauge({
+        name: averageUsageBasicSpendingPlanGaugeName,
+        help: 'Tracks the average daily spending plan usages for BASIC subscription type',
+        registers: [register],
+      }),
+      EXTENDED: new Gauge({
+        name: averageUsageExtendedSpendingPlanGaugeName,
+        help: 'Tracks the average daily spending plan usages for EXTENDED subscription type',
+        registers: [register],
+      }),
+      PRIVILEGED: new Gauge({
+        name: averageUsagePrivilegedSpendingPlanGaugeName,
+        help: 'Tracks the average daily spending plan usages for PRIVILEGED subscription type',
+        registers: [register],
+      }),
+    };
+
     // Reset the rate limiter at the start of the next day
     const now = Date.now();
     const tomorrow = new Date(now + HbarLimitService.ONE_DAY_IN_MILLIS);
@@ -168,10 +213,19 @@ export class HbarLimitService implements IHbarLimitService {
       }`,
     );
 
+    // Check if the spending plan is being used for the first time today
+    if (spendingPlan.spentToday === 0) {
+      this.dailyUniqueSpendingPlansCounter.inc(1);
+    }
+
     await this.hbarSpendingPlanRepository.addAmountToSpentToday(spendingPlan.id, cost);
     await this.hbarSpendingPlanRepository.addAmountToSpendingHistory(spendingPlan.id, cost);
     this.remainingBudget -= cost;
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
+
+    // Calculate and set the average daily spending plan usages per subscription type for the last 30 days
+    const averageUsage = await this.calculateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType);
+    this.averageDailySpendingPlanUsagesGauge[spendingPlan.subscriptionType].set(averageUsage);
 
     this.logger.trace(
       `${requestIdPrefix} HBAR rate limit expense update: cost=${cost}, remainingBudget=${this.remainingBudget}`,
@@ -202,6 +256,18 @@ export class HbarLimitService implements IHbarLimitService {
       `${requestIdPrefix} HBAR rate limit not reached. ${this.remainingBudget} out of ${this.totalBudget} tℏ left in relay budget until ${this.reset}.`,
     );
     return false;
+  }
+
+  /**
+   * Calculates the average daily usage per subscription type.
+   * @param {SubscriptionType} subscriptionType - The subscription type to calculate the average daily usage for.
+   * @private {Promise<number>} - A promise that resolves with the average daily usage.
+   */
+  private async calculateAverageDailyUsagePerSubscriptionType(subscriptionType: SubscriptionType): Promise<number> {
+    const plans = await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionType(subscriptionType);
+    const planSpending = await Promise.all(plans.map((plan) => this.hbarSpendingPlanRepository.getSpentToday(plan.id)));
+    const totalUsage = planSpending.reduce((total, spentTodayByPlan) => total + spentTodayByPlan, 0);
+    return Math.round(totalUsage / plans.length);
   }
 
   /**
