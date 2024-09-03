@@ -123,6 +123,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `WS_CACHE_TTL`                  | "20000"  | The time to live for cached entries.                                                                                          |
 | `WS_NEW_HEADS_ENABLED`.         | "true"   | Enables subscriptions for the latest blocks, `newHeads`.                                                                      |
 | `WS_PING_INTERVAL`              | "100000" | Interval between ping messages. Set to `0` to disable pinger.                                                                 |
+| `WS_SAME_SUB_FOR_SAME_EVENT`    | "true"   | The relay will return the same subscription ID when a client subscribes to the same event multiple times using a single connection. When set to false, the relay will always create a new subscription ID for each `eth_subscribe' request. |
 
 ## Sample for connecting to Hedera Environments
 
