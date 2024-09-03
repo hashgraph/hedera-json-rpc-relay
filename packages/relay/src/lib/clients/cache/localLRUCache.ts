@@ -22,6 +22,7 @@ import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
 import { ICacheClient } from './ICacheClient';
 import constants from '../../constants';
+import LRUCache from 'lru-cache';
 
 const LRU = require('lru-cache');
 
@@ -48,7 +49,7 @@ export class LocalLRUCache implements ICacheClient {
    *
    * @private
    */
-  private readonly cache;
+  private readonly cache: LRUCache<string, any>;
 
   /**
    * The logger used for logging all output from this class.
@@ -214,5 +215,19 @@ export class LocalLRUCache implements ICacheClient {
    */
   public async clear(): Promise<void> {
     this.cache.clear();
+  }
+
+  /**
+   * Retrieves all keys in the cache that match the given pattern.
+   * @param {string} pattern - The pattern to match keys against.
+   * @param {string} callingMethod - The name of the method calling the cache.
+   * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
+   * @returns {Promise<string[]>} An array of keys that match the pattern.
+   */
+  public async keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]> {
+    const keys = Array.from(this.cache.keys());
+    const matchingKeys = keys.filter((key) => key.match(pattern) !== null);
+    this.logger.trace(`${requestIdPrefix} returning keys ${matchingKeys} on ${callingMethod} call`);
+    return matchingKeys;
   }
 }

@@ -445,4 +445,27 @@ export class CacheService {
     }
     return values.slice(start, end + 1);
   }
+
+  /**
+   * Retrieves all keys matching the given pattern.
+   * @param {string} pattern - The pattern to match keys against.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
+   * @returns {Promise<string[]>} A Promise that resolves with an array of keys that match the pattern.
+   */
+  async keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]> {
+    if (this.isSharedCacheEnabled && this.sharedCache instanceof RedisCache) {
+      try {
+        return await this.sharedCache.keys(pattern, callingMethod, requestIdPrefix);
+      } catch (error) {
+        const redisError = new RedisCacheError(error);
+        this.logger.error(
+          `${requestIdPrefix} Error occurred while getting keys from Redis. Error is: ${redisError.fullError}`,
+        );
+      }
+    }
+
+    // Fallback to internal cache
+    return this.internalCache.keys(pattern, callingMethod, requestIdPrefix);
+  }
 }
