@@ -1,4 +1,4 @@
-/*
+/* -
  *
  * Hedera JSON RPC Relay
  *
@@ -18,8 +18,23 @@
  *
  */
 
-export interface IHbarLimitService {
-  resetLimiter(): Promise<void>;
-  shouldLimit(mode: string, methodName: string, ethAddress: string, ipAddress?: string): Promise<boolean>;
-  addExpense(cost: number, ethAddress: string, ipAddress?: string): Promise<void>;
+export interface IExecuteTransactionEventPayload {
+  transactionId: string;
+  callerName: string;
+  requestId: string;
+  txConstructorName: string;
+  operatorAccountId: string;
+  interactingEntity: string;
+}
+
+export interface IExecuteQueryEventPayload {
+  executionMode: string;
+  transactionId: string;
+  txConstructorName: string;
+  callerName: string;
+  cost: number;
+  gasUsed: number;
+  interactingEntity: string;
+  status: string;
+  requestId: string;
 }
