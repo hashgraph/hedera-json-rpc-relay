@@ -550,7 +550,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           ['latest', false],
           requestId,
         );
-        await new Promise((r) => setTimeout(r, 1000));
+        await Utils.wait(1000);
 
         const blockResult2 = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
@@ -566,7 +566,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           ['finalized', false],
           requestId,
         );
-        await new Promise((r) => setTimeout(r, 1000));
+        await Utils.wait(1000);
 
         const blockResult2 = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
@@ -582,7 +582,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           ['safe', false],
           requestId,
         );
-        await new Promise((r) => setTimeout(r, 1000));
+        await Utils.wait(1000);
 
         const blockResult2 = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
@@ -598,7 +598,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           ['pending', false],
           requestId,
         );
-        await new Promise((r) => setTimeout(r, 1000));
+        await Utils.wait(1000);
 
         const blockResult2 = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
