@@ -61,7 +61,7 @@ jobs:
         run: npm run start &
 
       - name: Build, Bootstrap & Test the dapp in Docker
-        run: docker-compose up --exit-code-from synpress
+        run: docker compose up --exit-code-from synpress
         working-directory: ./dapp-example/
 
       - name: Dump relay logs
