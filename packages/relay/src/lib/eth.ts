@@ -2525,7 +2525,18 @@ export class EthImpl implements Eth {
    * @returns {Promise<number>} - A promise that resolves to the current exchange rate in cents.
    */
   private async getCurrentNetworkExchangeRateInCents(requestId: string): Promise<number> {
-    const currentNetworkExchangeRate = (await this.mirrorNodeClient.getNetworkExchangeRate(requestId)).current_rate;
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const cacheKey = constants.CACHE_KEY.CURRENT_NETWORK_EXCHANGE_RATE;
+    const callingMethod = this.mirrorNodeClient.getNetworkExchangeRate.name;
+    const cacheTTL = 15 * 60 * 1000; // 15 minutes
+
+    let currentNetworkExchangeRate = await this.cacheService.getAsync(cacheKey, callingMethod, requestIdPrefix);
+
+    if (!currentNetworkExchangeRate) {
+      currentNetworkExchangeRate = (await this.mirrorNodeClient.getNetworkExchangeRate(requestId)).current_rate;
+      this.cacheService.set(cacheKey, currentNetworkExchangeRate, callingMethod, cacheTTL, requestIdPrefix);
+    }
+
     const exchangeRateInCents = currentNetworkExchangeRate.cent_equivalent / currentNetworkExchangeRate.hbar_equivalent;
     return exchangeRateInCents;
   }

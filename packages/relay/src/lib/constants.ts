@@ -40,6 +40,7 @@ enum CACHE_KEY {
   RESOLVE_ENTITY_TYPE = 'resolveEntityType',
   SYNTHETIC_LOG_TRANSACTION_HASH = 'syntheticLogTransactionHash',
   FILTERID = 'filterId',
+  CURRENT_NETWORK_EXCHANGE_RATE = 'currentNetworkExchangeRate',
 }
 
 enum CACHE_TTL {
