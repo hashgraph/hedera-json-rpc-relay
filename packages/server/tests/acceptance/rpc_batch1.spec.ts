@@ -544,6 +544,70 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         Assertions.block(blockResult, mirrorBlock, mirrorTransactions, expectedGasPrice, false);
       });
 
+      it('should not cache "latest" block in "eth_getBlockByNumber" ', async function () {
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['latest', false],
+          requestId,
+        );
+        await new Promise((r) => setTimeout(r, 1000));
+
+        const blockResult2 = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['latest', false],
+          requestId,
+        );
+        expect(blockResult).to.not.deep.equal(blockResult2);
+      });
+
+      it('should not cache "finalized" block in "eth_getBlockByNumber" ', async function () {
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['finalized', false],
+          requestId,
+        );
+        await new Promise((r) => setTimeout(r, 1000));
+
+        const blockResult2 = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['finalized', false],
+          requestId,
+        );
+        expect(blockResult).to.not.deep.equal(blockResult2);
+      });
+
+      it('should not cache "safe" block in "eth_getBlockByNumber" ', async function () {
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['safe', false],
+          requestId,
+        );
+        await new Promise((r) => setTimeout(r, 1000));
+
+        const blockResult2 = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['safe', false],
+          requestId,
+        );
+        expect(blockResult).to.not.deep.equal(blockResult2);
+      });
+
+      it('should not cache "pending" block in "eth_getBlockByNumber" ', async function () {
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['pending', false],
+          requestId,
+        );
+        await new Promise((r) => setTimeout(r, 1000));
+
+        const blockResult2 = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['pending', false],
+          requestId,
+        );
+        expect(blockResult).to.not.deep.equal(blockResult2);
+      });
+
       it('@release should execute "eth_getBlockByNumber", hydrated transactions = true', async function () {
         const blockResult = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
