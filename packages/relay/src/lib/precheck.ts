@@ -118,8 +118,7 @@ export class Precheck {
       `${requestIdPrefix} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`,
     );
 
-    // @ts-ignore
-    if (accountInfoNonce > tx.nonce + constants.NONCE_PRECHECK_BUFFER) {
+    if (accountInfoNonce > tx.nonce) {
       throw predefined.NONCE_TOO_LOW(tx.nonce, accountInfoNonce);
     }
   }
