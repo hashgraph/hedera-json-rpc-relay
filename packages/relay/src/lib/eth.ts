@@ -573,8 +573,9 @@ export class EthImpl implements Eth {
   async estimateGas(
     transaction: IContractCallRequest,
     _blockParam: string | null,
-    requestIdPrefix: string,
+    requestDetails: IRequestDetails,
   ): Promise<string | JsonRpcError> {
+    const requestIdPrefix = requestDetails.requestIdPrefix;
     const callData = transaction.data ? transaction.data : transaction.input;
     const callDataSize = callData ? callData.length : 0;
 
@@ -589,7 +590,7 @@ export class EthImpl implements Eth {
     );
 
     try {
-      const response = await this.estimateGasFromMirrorNode(transaction, requestIdPrefix);
+      const response = await this.estimateGasFromMirrorNode(transaction, requestDetails);
       if (response?.result) {
         this.logger.info(`${requestIdPrefix} Returning gas: ${response.result}`);
         return prepend0x(trimPrecedingZeros(response.result));
@@ -618,11 +619,11 @@ export class EthImpl implements Eth {
    */
   private async estimateGasFromMirrorNode(
     transaction: IContractCallRequest,
-    requestIdPrefix?: string,
+    requestDetails: IRequestDetails,
   ): Promise<IContractCallResponse | null> {
-    await this.contractCallFormat(transaction, requestIdPrefix);
+    await this.contractCallFormat(transaction, requestDetails);
     const callData = { ...transaction, estimate: true };
-    return this.mirrorNodeClient.postContractCall(callData, requestIdPrefix);
+    return this.mirrorNodeClient.postContractCall(callData, requestDetails.requestIdPrefix);
   }
 
   /**
@@ -709,14 +710,14 @@ export class EthImpl implements Eth {
    * @param transaction
    * @param requestIdPrefix
    */
-  async contractCallFormat(transaction: IContractCallRequest, requestIdPrefix?: string): Promise<void> {
+  async contractCallFormat(transaction: IContractCallRequest, requestDetails: IRequestDetails): Promise<void> {
     if (transaction.value) {
       transaction.value = weibarHexToTinyBarInt(transaction.value);
     }
     if (transaction.gasPrice) {
       transaction.gasPrice = parseInt(transaction.gasPrice.toString());
     } else {
-      transaction.gasPrice = await this.gasPrice(requestIdPrefix).then((gasPrice) => parseInt(gasPrice));
+      transaction.gasPrice = await this.gasPrice(requestDetails).then((gasPrice) => parseInt(gasPrice));
     }
     if (transaction.gas) {
       transaction.gas = parseInt(transaction.gas.toString());
@@ -726,7 +727,7 @@ export class EthImpl implements Eth {
         transaction.from = this.hapiService.getMainClientInstance().operatorPublicKey?.toEvmAddress();
       } else {
         const operatorId = this.hapiService.getMainClientInstance().operatorAccountId!.toString();
-        const operatorAccount = await this.getAccount(operatorId, requestIdPrefix);
+        const operatorAccount = await this.getAccount(operatorId, requestDetails.requestIdPrefix);
         transaction.from = operatorAccount?.evm_address;
       }
     }
@@ -1266,7 +1267,13 @@ export class EthImpl implements Eth {
       });
 
       if (!this.common.blockTagIsLatestOrPending(blockNumOrTag)) {
-        await this.cacheService.set(cacheKey, block, EthImpl.ethGetBlockByNumber, undefined, requestDetails.requestIdPrefix);
+        await this.cacheService.set(
+          cacheKey,
+          block,
+          EthImpl.ethGetBlockByNumber,
+          undefined,
+          requestDetails.requestIdPrefix,
+        );
       }
     }
 
@@ -1674,7 +1681,7 @@ export class EthImpl implements Eth {
     // Get a reasonable value for "gas" if it is not specified.
     const gas = this.getCappedBlockGasLimit(call.gas?.toString(), requestIdPrefix);
 
-    await this.contractCallFormat(call, requestIdPrefix);
+    await this.contractCallFormat(call, requestDetails);
 
     let result: string | JsonRpcError = '';
     try {

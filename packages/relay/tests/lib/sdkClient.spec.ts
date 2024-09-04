@@ -2275,7 +2275,12 @@ describe('SdkClient', async function () {
         .returns(true);
 
       try {
-        await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestDetails, randomAccountAddress);
+        await sdkClient.submitEthereumTransaction(
+          transactionBuffer,
+          mockedCallerName,
+          requestDetails,
+          randomAccountAddress,
+        );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
         expect(error.message).to.equal('HBAR Rate limit exceeded');
@@ -2328,7 +2333,12 @@ describe('SdkClient', async function () {
         .withArgs(mockedTransactionRecordFee)
         .exactly(fileAppendChunks + 2);
 
-      await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestDetails, randomAccountAddress);
+      await sdkClient.submitEthereumTransaction(
+        transactionBuffer,
+        mockedCallerName,
+        requestDetails,
+        randomAccountAddress,
+      );
 
       expect(queryStub.called).to.be.true;
       expect(transactionStub.called).to.be.true;
@@ -2493,7 +2503,13 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
       hbarLimitMock.expects('shouldLimit').never();
 
-      await sdkClient.deleteFile(fileId, requestDetails, mockedCallerName, mockedInteractingEntity, randomAccountAddress);
+      await sdkClient.deleteFile(
+        fileId,
+        requestDetails,
+        mockedCallerName,
+        mockedInteractingEntity,
+        randomAccountAddress,
+      );
 
       expect(deleteFileStub.called).to.be.true;
       expect(fileInfoQueryStub.called).to.be.true;
@@ -2556,15 +2572,9 @@ describe('SdkClient', async function () {
 
       const response = await sdkClient.executeTransaction(
         new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
-<<<<<<< HEAD
         mockedCallerName,
         mockedInteractingEntity,
-        requestId,
-=======
-        callerName,
-        interactingEntity,
         requestDetails,
->>>>>>> b81e1674 (Fixes failing unit tests)
         true,
         randomAccountAddress,
       );
@@ -2612,15 +2622,9 @@ describe('SdkClient', async function () {
 
       const response = await sdkClient.executeTransaction(
         new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
-<<<<<<< HEAD
         mockedCallerName,
         mockedInteractingEntity,
-        requestId,
-=======
-        callerName,
-        interactingEntity,
         requestDetails,
->>>>>>> b81e1674 (Fixes failing unit tests)
         true,
         randomAccountAddress,
       );
