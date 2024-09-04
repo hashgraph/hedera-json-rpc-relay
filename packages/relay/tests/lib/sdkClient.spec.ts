@@ -34,7 +34,7 @@ import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { formatTransactionId } from '../../src/formatters';
-import NodeClient from '@hashgraph/sdk/lib/client/NodeClient';
+import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import MetricService from '../../src/lib/services/metricService/metricService';
@@ -2142,6 +2142,7 @@ describe('SdkClient', async function () {
     const mockedNetworkGasPrice = 710000;
 
     const randomAccountAddress = random20BytesAddress();
+    let hbarRateLimitPreemptiveCheck: string | undefined;
 
     const getMockedTransaction = (transactionType: string, toHbar: boolean) => {
       let transactionFee: any;
@@ -2206,8 +2207,8 @@ describe('SdkClient', async function () {
         nodeId: accountId,
         transactionHash: Uint8Array.from([1, 2, 3, 4]),
         transactionId,
-        getReceipt: (_client: NodeClient) => Promise.resolve(transactionReceipt),
-        getRecord: (_client: NodeClient) => {
+        getReceipt: (_client: Client) => Promise.resolve(transactionReceipt),
+        getRecord: (_client: Client) => {
           const transactionFee = getMockedTransaction(transactionType, false).transactionFee;
           const transfers = getMockedTransaction(transactionType, false).transfers;
           return Promise.resolve({
@@ -2251,6 +2252,8 @@ describe('SdkClient', async function () {
       hbarLimitMock = sinon.mock(hbarLimiter);
       sdkClientMock = sinon.mock(sdkClient);
       mock = new MockAdapter(instance);
+      hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
+      process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'true';
     });
 
     afterEach(() => {
@@ -2258,6 +2261,7 @@ describe('SdkClient', async function () {
       sinon.restore();
       sdkClientMock.restore();
       hbarLimitMock.restore();
+      process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = hbarRateLimitPreemptiveCheck;
     });
 
     it('should rate limit before creating file', async () => {
@@ -2453,6 +2457,24 @@ describe('SdkClient', async function () {
       }
 
       expect(appendFileStub.called).to.be.false;
+    });
+
+    it('should preemtively rate limit before executing file transactions', async () => {
+      const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
+      hbarLimitMock.expects('shouldPreemtivelyLimitFileTransactions').once().throws(expectedError);
+
+      try {
+        await sdkClient.submitEthereumTransaction(
+          transactionBuffer,
+          mockedCallerName,
+          requestId,
+          randomAccountAddress,
+          mockedExchangeRateIncents,
+        );
+        expect.fail(`Expected an error but nothing was thrown`);
+      } catch (error: any) {
+        expect(error).to.deep.equal(expectedError);
+      }
     });
 
     it('should execute FileCreateTransaction with callData.length <= fileAppendChunkSize and add expenses to limiter', async () => {
