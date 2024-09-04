@@ -515,7 +515,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' }, requestDetails);
 
       web3Mock.history.post = [];
 
@@ -535,7 +535,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' }, requestDetails);
 
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.equal('0x00');
@@ -548,7 +548,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' }, requestDetails);
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.equal('0x00');
     });
@@ -561,7 +561,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' }, requestDetails);
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.equal('0x00');
     });
@@ -577,7 +577,7 @@ describe('@ethCall Eth Call spec', async function () {
         block: 'latest',
       };
 
-      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' }, requestDetails);
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
       // Relay is called with value in Weibars
@@ -593,7 +593,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      await mockContractCall({ ...callData, block: 'latest' }, false, 429, mockData.tooManyRequests);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 429, mockData.tooManyRequests, requestDetails);
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(-32605);
@@ -608,7 +608,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted, requestDetails);
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.be.not.null;
       expect((result as JsonRpcError).code).to.eq(3);
@@ -625,7 +625,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      await mockContractCall({ ...callData, block: 'latest' }, false, 501, mockData.notSuported);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 501, mockData.notSuported, requestDetails);
 
       sdkClientStub.submitContractCallQueryWithRetry.returns({
         asBytes: function () {
@@ -656,7 +656,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted, requestDetails);
       sinon.reset();
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       sinon.assert.notCalled(sdkClientStub.submitContractCallQueryWithRetry);
@@ -675,17 +675,23 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      await mockContractCall({ ...callData, block: 'latest' }, false, 400, {
-        _status: {
-          messages: [
-            {
-              message: '',
-              detail: defaultErrorMessageText,
-              data: defaultErrorMessageHex,
-            },
-          ],
+      await mockContractCall(
+        { ...callData, block: 'latest' },
+        false,
+        400,
+        {
+          _status: {
+            messages: [
+              {
+                message: '',
+                detail: defaultErrorMessageText,
+                data: defaultErrorMessageHex,
+              },
+            ],
+          },
         },
-      });
+        requestDetails,
+      );
 
       const result = await ethImpl.call(callData, 'latest', requestDetails);
 
@@ -726,7 +732,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.invalidTransaction);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.invalidTransaction, requestDetails);
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.be.not.null;
       expect(result).to.equal('0x');
@@ -741,7 +747,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.failInvalid);
+      await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.failInvalid, requestDetails);
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.be.not.null;
       expect(result).to.equal('0x');
@@ -754,7 +760,13 @@ describe('@ethCall Eth Call spec', async function () {
         from: ACCOUNT_ADDRESS_1,
       };
 
-      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: EXAMPLE_CONTRACT_BYTECODE });
+      await mockContractCall(
+        { ...callData, block: 'latest' },
+        false,
+        200,
+        { result: EXAMPLE_CONTRACT_BYTECODE },
+        requestDetails,
+      );
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.eq(EXAMPLE_CONTRACT_BYTECODE);
     });
@@ -765,7 +777,13 @@ describe('@ethCall Eth Call spec', async function () {
         from: ACCOUNT_ADDRESS_1,
       };
 
-      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: EXAMPLE_CONTRACT_BYTECODE });
+      await mockContractCall(
+        { ...callData, block: 'latest' },
+        false,
+        200,
+        { result: EXAMPLE_CONTRACT_BYTECODE },
+        requestDetails,
+      );
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.eq(EXAMPLE_CONTRACT_BYTECODE);
     });
@@ -775,9 +793,10 @@ describe('@ethCall Eth Call spec', async function () {
       estimate: boolean,
       statusCode: number,
       result: IContractCallResponse,
+      requestDetails: IRequestDetails,
     ) {
       const formattedCallData = { ...callData, estimate };
-      await ethImpl.contractCallFormat(formattedCallData);
+      await ethImpl.contractCallFormat(formattedCallData, requestDetails);
       return web3Mock.onPost('contracts/call', formattedCallData).reply(statusCode, result);
     }
   });
@@ -798,7 +817,7 @@ describe('@ethCall Eth Call spec', async function () {
         value: '0x2540BE400',
       };
 
-      await ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction, requestDetails);
       expect(transaction.value).to.equal(1);
     });
 
@@ -807,7 +826,7 @@ describe('@ethCall Eth Call spec', async function () {
         gasPrice: '1000000000',
       };
 
-      await ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction, requestDetails);
 
       expect(transaction.gasPrice).to.equal(1000000000);
     });
@@ -817,7 +836,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: '50000',
       };
 
-      await ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction, requestDetails);
 
       expect(transaction.gas).to.equal(50000);
     });
@@ -829,7 +848,7 @@ describe('@ethCall Eth Call spec', async function () {
         input: inputValue,
         data: dataValue,
       };
-      await ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction, requestDetails);
       expect(transaction.data).to.eq(inputValue);
       expect(transaction.data).to.not.eq(dataValue);
       expect(transaction.input).to.be.undefined;
@@ -840,7 +859,7 @@ describe('@ethCall Eth Call spec', async function () {
       const transaction = {
         data: dataValue,
       };
-      await ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction, requestDetails);
       expect(transaction.data).to.eq(dataValue);
     });
 
@@ -849,7 +868,7 @@ describe('@ethCall Eth Call spec', async function () {
         input: 'input data',
       };
 
-      await ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction, requestDetails);
 
       // @ts-ignore
       expect(transaction.data).to.equal('input data');
@@ -863,7 +882,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: '50000',
       };
 
-      await ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction, requestDetails);
 
       expect(transaction.value).to.equal(1);
       expect(transaction.gasPrice).to.equal(1000000000);
@@ -876,7 +895,7 @@ describe('@ethCall Eth Call spec', async function () {
         gasPrice: undefined,
       };
 
-      await ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction, requestDetails);
 
       const expectedGasPrice = await ethImpl.gasPrice(requestDetails);
       expect(transaction.gasPrice).to.equal(parseInt(expectedGasPrice));
@@ -889,7 +908,7 @@ describe('@ethCall Eth Call spec', async function () {
         from: undefined,
       };
 
-      await ethImpl.contractCallFormat(transaction);
+      await ethImpl.contractCallFormat(transaction, requestDetails);
 
       expect(transaction.from).to.equal(operatorEvmAddress);
     });
