@@ -223,7 +223,7 @@ export class LocalLRUCache implements ICacheClient {
    * @returns {Promise<string[]>} An array of keys that match the pattern.
    */
   public async keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]> {
-    const keys = Array.from(this.cache.keys());
+    const keys = Array.from(this.cache.rkeys());
 
     // Replace escaped special characters with placeholders
     let regexPattern = pattern
