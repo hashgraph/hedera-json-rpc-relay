@@ -139,7 +139,7 @@ jobs:
           merge-multiple: true
 
       - name: Publish Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: step-security/publish-unit-test-result-action@4519d7c9f71dd765f8bbb98626268780f23bab28 # v2.17.0
         with:
           check_name: Acceptance Tests
           check_run_disabled: true
