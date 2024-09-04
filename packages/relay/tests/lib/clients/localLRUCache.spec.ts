@@ -152,31 +152,19 @@ describe('LocalLRUCache Test Suite', async function () {
 
   describe('KEYS Test Suite', async function () {
     it('should retrieve keys matching a glob-style pattern with *', async function () {
-      const key1 = 'hello';
-      const key2 = 'hallo';
-      const key3 = 'hxllo';
-      const pattern = 'h*llo';
-
-      await localLRUCache.set(key1, 'value1', callingMethod);
-      await localLRUCache.set(key2, 'value2', callingMethod);
-      await localLRUCache.set(key3, 'value3', callingMethod);
-
-      const keys = await localLRUCache.keys(pattern, callingMethod);
-      expect(keys).to.include.members([key1, key2, key3]);
+      const keys = ['hello', 'hallo', 'hxllo'];
+      for (let i = 0; i < keys.length; i++) {
+        await localLRUCache.set(keys[i], `value${i}`, callingMethod);
+      }
+      await expect(localLRUCache.keys('h*llo', callingMethod)).to.eventually.have.members(keys);
     });
 
     it('should retrieve keys matching a glob-style pattern with ?', async function () {
-      const key1 = 'hello';
-      const key2 = 'hallo';
-      const key3 = 'hxllo';
-      const pattern = 'h?llo';
-
-      await localLRUCache.set(key1, 'value1', callingMethod);
-      await localLRUCache.set(key2, 'value2', callingMethod);
-      await localLRUCache.set(key3, 'value3', callingMethod);
-
-      const keys = await localLRUCache.keys(pattern, callingMethod);
-      expect(keys).to.include.members([key1, key2, key3]);
+      const keys = ['hello', 'hallo', 'hxllo'];
+      for (let i = 0; i < keys.length; i++) {
+        await localLRUCache.set(keys[i], `value${i}`, callingMethod);
+      }
+      await expect(localLRUCache.keys('h?llo', callingMethod)).to.eventually.have.members(keys);
     });
 
     it('should retrieve keys matching a glob-style pattern with []', async function () {

@@ -19,8 +19,8 @@
  */
 
 import { pino } from 'pino';
-import { expect } from 'chai';
-import * as sinon from 'sinon';
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import { RedisCache } from '../../../src/lib/clients';
 import { Registry } from 'prom-client';
 import { RedisInMemoryServer } from '../../redisInMemoryServer';
@@ -32,9 +32,10 @@ let redisInMemoryServer: RedisInMemoryServer;
 
 const callingMethod = 'RedisCacheTest';
 
+chai.use(chaiAsPromised);
+
 describe('RedisCache Test Suite', async function () {
   this.timeout(10000);
-  const mock = sinon.createSandbox();
 
   this.beforeAll(async () => {
     redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6379);
@@ -42,8 +43,8 @@ describe('RedisCache Test Suite', async function () {
     redisCache = new RedisCache(logger.child({ name: `cache` }), registry);
   });
 
-  this.afterEach(() => {
-    mock.restore();
+  this.afterEach(async () => {
+    await redisCache.clear();
   });
 
   this.afterAll(async () => {
@@ -319,31 +320,19 @@ describe('RedisCache Test Suite', async function () {
 
   describe('KEYS Test Suite', async function () {
     it('should retrieve keys matching a glob-style pattern with *', async function () {
-      const key1 = 'hello';
-      const key2 = 'hallo';
-      const key3 = 'hxllo';
-      const pattern = 'h*llo';
-
-      await redisCache.set(key1, 'value1', callingMethod);
-      await redisCache.set(key2, 'value2', callingMethod);
-      await redisCache.set(key3, 'value3', callingMethod);
-
-      const keys = await redisCache.keys(pattern, callingMethod);
-      expect(keys).to.include.members([key1, key2, key3]);
+      const keys = ['hello', 'hallo', 'hxllo'];
+      for (let i = 0; i < keys.length; i++) {
+        await redisCache.set(keys[i], `value${i}`, callingMethod);
+      }
+      await expect(redisCache.keys('h*llo', callingMethod)).to.eventually.have.members(keys);
     });
 
     it('should retrieve keys matching a glob-style pattern with ?', async function () {
-      const key1 = 'hello';
-      const key2 = 'hallo';
-      const key3 = 'hxllo';
-      const pattern = 'h?llo';
-
-      await redisCache.set(key1, 'value1', callingMethod);
-      await redisCache.set(key2, 'value2', callingMethod);
-      await redisCache.set(key3, 'value3', callingMethod);
-
-      const keys = await redisCache.keys(pattern, callingMethod);
-      expect(keys).to.include.members([key1, key2, key3]);
+      const keys = ['hello', 'hallo', 'hxllo'];
+      for (let i = 0; i < keys.length; i++) {
+        await redisCache.set(keys[i], `value${i}`, callingMethod);
+      }
+      await expect(redisCache.keys('h?llo', callingMethod)).to.eventually.have.members(keys);
     });
 
     it('should retrieve keys matching a glob-style pattern with []', async function () {
