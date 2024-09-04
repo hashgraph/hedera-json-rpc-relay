@@ -2534,7 +2534,7 @@ export class EthImpl implements Eth {
 
     if (!currentNetworkExchangeRate) {
       currentNetworkExchangeRate = (await this.mirrorNodeClient.getNetworkExchangeRate(requestId)).current_rate;
-      this.cacheService.set(cacheKey, currentNetworkExchangeRate, callingMethod, cacheTTL, requestIdPrefix);
+      await this.cacheService.set(cacheKey, currentNetworkExchangeRate, callingMethod, cacheTTL, requestIdPrefix);
     }
 
     const exchangeRateInCents = currentNetworkExchangeRate.cent_equivalent / currentNetworkExchangeRate.hbar_equivalent;
