@@ -45,6 +45,7 @@ import {
 } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
+import constants from '../../../src/lib/constants';
 import {
   defaultCallData,
   defaultContractResults,
@@ -538,6 +539,18 @@ describe('@ethCall Eth Call spec', async function () {
       await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' });
       const result = await ethImpl.call(callData, 'latest');
       expect(result).to.equal('0x00');
+    });
+
+    it('eth_call with gas capping', async function () {
+      const callData = {
+        ...defaultCallData,
+        gas: 25_000_000,
+      };
+      await mockContractCall({ ...callData, gas: constants.MAX_GAS_PER_SEC, block: 'latest' }, false, 200, {
+        result: '0x00',
+      });
+      const res = await ethImpl.call(callData, 'latest');
+      expect(res).to.equal('0x00');
     });
 
     it('eth_call with all fields and value', async function () {
