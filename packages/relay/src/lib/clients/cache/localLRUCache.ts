@@ -235,7 +235,7 @@ export class LocalLRUCache implements ICacheClient {
     // Replace unescaped special characters with regex equivalents
     regexPattern = regexPattern
       .replace(/\\([*?[\]])/g, (_, char) => `__ESCAPED_${char}__`)
-      .replace(/\[([^\]\\]+)]/g, '[$1]') // Match [...] without lookbehind
+      .replace(/\[([^\]\\]+)]/g, '[$1]')
       .replace(/(?<!\\)\*/g, '.*')
       .replace(/(?<!\\)\?/g, '.')
       .replace(/(?<!\\)\[!]/g, '[^]');
