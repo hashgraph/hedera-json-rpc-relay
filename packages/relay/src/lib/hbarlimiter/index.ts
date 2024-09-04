@@ -132,7 +132,7 @@ export default class HbarLimit {
    * @param {number} callDataSize - The size of the call data that will be used in the transaction.
    * @param {number} fileChunkSize - The chunk size used for file append transactions.
    * @param {string} requestId - The request ID for tracing the request flow.
-   * @throws {Error} Throws an error if the total estimated transaction fee exceeds the remaining HBAR budget.
+   * @throws {JsonRpcError} Throws an error if the total estimated transaction fee exceeds the remaining HBAR budget.
    */
   shouldPreemtivelyLimitFileTransactions(
     originalCallerAddress: string,
