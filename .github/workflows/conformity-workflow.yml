@@ -92,5 +92,10 @@ jobs:
       - name: Rename file
         run: mv openrpc.json openrpc_exec_apis.json
 
+      - name: Add ws specific env variables
+        run: |
+          echo "SUBSCRIPTIONS_ENABLED=true" >> .env
+          echo "TEST_WS_SERVER=true" >> .env
+
       - name: Run conformity tests
         run: npm run acceptancetest:rpc_api_schema_conformity
