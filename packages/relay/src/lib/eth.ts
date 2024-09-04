@@ -2173,11 +2173,11 @@ export class EthImpl implements Eth {
     // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
     // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
     const gas = Number.parseInt(gasString);
-    if (gas > constants.BLOCK_GAS_LIMIT) {
+    if (gas > constants.MAX_GAS_PER_SEC) {
       this.logger.trace(
-        `${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`,
+        `${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.MAX_GAS_PER_SEC}`,
       );
-      return constants.BLOCK_GAS_LIMIT;
+      return constants.MAX_GAS_PER_SEC;
     }
 
     return gas;
@@ -2235,7 +2235,6 @@ export class EthImpl implements Eth {
       undefined,
       requestIdPrefix,
     );
-    const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
     const params = { timestamp: timestampRangeParams };
 
@@ -2279,7 +2278,7 @@ export class EthImpl implements Eth {
       baseFeePerGas: await this.gasPrice(requestIdPrefix),
       difficulty: EthImpl.zeroHex,
       extraData: EthImpl.emptyHex,
-      gasLimit: numberTo0x(maxGasLimit),
+      gasLimit: numberTo0x(constants.BLOCK_GAS_LIMIT),
       gasUsed: numberTo0x(gasUsed),
       hash: blockHash,
       logsBloom: blockResponse.logs_bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : blockResponse.logs_bloom,
