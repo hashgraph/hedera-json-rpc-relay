@@ -35,6 +35,7 @@ import { Registry } from 'prom-client';
 import { EthImpl } from '../../src/lib/eth';
 import { SDKClient } from '../../src/lib/clients';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
+import type { IRequestDetails } from '../../src/lib/types/IRequestDetails';
 
 import openRpcSchema from '../../../../docs/openrpc.json';
 import {
@@ -93,8 +94,12 @@ describe('Open RPC Specification', function () {
   let rpcDocument: any;
   let methodsResponseSchema: { [method: string]: any };
   let ethImpl: EthImpl;
+  let requestDetails: IRequestDetails;
+  let requestIdPrefix: string;
 
   this.beforeAll(async () => {
+    requestIdPrefix = `[Request ID: testId]`;
+    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
     rpcDocument = await parseOpenRPCDocument(JSON.stringify(openRpcSchema));
     methodsResponseSchema = rpcDocument.methods.reduce(
       (res: { [method: string]: any }, method: any) => ({
@@ -240,7 +245,7 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_blockNumber"', async function () {
-    const response = await ethImpl.blockNumber();
+    const response = await ethImpl.blockNumber(requestIdPrefix);
 
     validateResponseSchema(methodsResponseSchema.eth_blockNumber, response);
   });
@@ -259,19 +264,19 @@ describe('Open RPC Specification', function () {
 
   it('should execute "eth_estimateGas"', async function () {
     mock.onGet(`accounts/undefined${noTransactions}`).reply(404);
-    const response = await ethImpl.estimateGas({}, null);
+    const response = await ethImpl.estimateGas({}, null, requestIdPrefix);
 
     validateResponseSchema(methodsResponseSchema.eth_estimateGas, response);
   });
 
   it('should execute "eth_feeHistory"', async function () {
-    const response = await ethImpl.feeHistory(1, 'latest', [0]);
+    const response = await ethImpl.feeHistory(1, 'latest', [0], requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_feeHistory, response);
   });
 
   it('should execute "eth_gasPrice"', async function () {
-    const response = await ethImpl.gasPrice();
+    const response = await ethImpl.gasPrice(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_gasPrice, response);
   });
@@ -283,25 +288,25 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_getBlockByHash" with hydrated = true', async function () {
-    const response = await ethImpl.getBlockByHash(blockHash, true);
+    const response = await ethImpl.getBlockByHash(blockHash, true, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockByHash, response);
   });
 
   it('should execute "eth_getBlockByHash" with hydrated = false', async function () {
-    const response = await ethImpl.getBlockByHash(blockHash, true);
+    const response = await ethImpl.getBlockByHash(blockHash, true, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockByHash, response);
   });
 
   it('should execute "eth_getBlockByNumber" with hydrated = true', async function () {
-    const response = await ethImpl.getBlockByNumber(numberTo0x(blockNumber), true);
+    const response = await ethImpl.getBlockByNumber(numberTo0x(blockNumber), true, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockByNumber, response);
   });
 
   it('should execute "eth_getBlockByNumber" with hydrated = false', async function () {
-    const response = await ethImpl.getBlockByNumber(numberTo0x(blockNumber), false);
+    const response = await ethImpl.getBlockByNumber(numberTo0x(blockNumber), false, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockByNumber, response);
   });
@@ -313,33 +318,33 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_getBlockTransactionCountByNumber" with block tag', async function () {
-    const response = await ethImpl.getBlockTransactionCountByNumber('latest');
+    const response = await ethImpl.getBlockTransactionCountByNumber('latest', requestIdPrefix);
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockTransactionCountByNumber, response);
   });
 
   it('should execute "eth_getBlockTransactionCountByNumber" with block number', async function () {
-    const response = await ethImpl.getBlockTransactionCountByNumber('0x3');
+    const response = await ethImpl.getBlockTransactionCountByNumber('0x3', requestIdPrefix);
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockTransactionCountByNumber, response);
   });
 
   it('should execute "eth_getCode" with block tag', async function () {
     mock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(404);
-    const response = await ethImpl.getCode(contractAddress1, 'latest');
+    const response = await ethImpl.getCode(contractAddress1, 'latest', requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getCode, response);
   });
 
   it('should execute "eth_getCode" with block number', async function () {
     mock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(404);
-    const response = await ethImpl.getCode(contractAddress1, '0x3');
+    const response = await ethImpl.getCode(contractAddress1, '0x3', requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getCode, response);
   });
 
   it('should execute "eth_getLogs" with no filters', async function () {
-    const response = await ethImpl.getLogs(null, null, null, null, null);
+    const response = await ethImpl.getLogs(null, null, null, null, null, requestIdPrefix);
 
     validateResponseSchema(methodsResponseSchema.eth_getLogs, response);
   });
@@ -364,13 +369,17 @@ describe('Open RPC Specification', function () {
       mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
     }
 
-    const response = await ethImpl.getLogs(null, null, null, null, defaultLogTopics);
+    const response = await ethImpl.getLogs(null, null, null, null, defaultLogTopics, requestIdPrefix);
 
     validateResponseSchema(methodsResponseSchema.eth_getLogs, response);
   });
 
   it('should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
-    const response = await ethImpl.getTransactionByBlockHashAndIndex(defaultBlock.hash, numberTo0x(defaultBlock.count));
+    const response = await ethImpl.getTransactionByBlockHashAndIndex(
+      defaultBlock.hash,
+      numberTo0x(defaultBlock.count),
+      requestIdPrefix,
+    );
 
     validateResponseSchema(methodsResponseSchema.eth_getTransactionByBlockHashAndIndex, response);
   });
@@ -379,13 +388,14 @@ describe('Open RPC Specification', function () {
     const response = await ethImpl.getTransactionByBlockNumberAndIndex(
       numberTo0x(defaultBlock.number),
       numberTo0x(defaultBlock.count),
+      requestIdPrefix,
     );
 
     validateResponseSchema(methodsResponseSchema.eth_getTransactionByBlockNumberAndIndex, response);
   });
 
   it('should execute "eth_getTransactionByHash"', async function () {
-    const response = await ethImpl.getTransactionByHash(defaultTxHash);
+    const response = await ethImpl.getTransactionByHash(defaultTxHash, requestIdPrefix);
 
     validateResponseSchema(methodsResponseSchema.eth_getTransactionByHash, response);
   });
@@ -395,7 +405,7 @@ describe('Open RPC Specification', function () {
       .onGet(`accounts/${contractAddress1}${noTransactions}`)
       .reply(200, { account: contractAddress1, ethereum_nonce: 5 });
     mock.onGet(`contracts/${contractAddress1}${noTransactions}`).reply(404);
-    const response = await ethImpl.getTransactionCount(contractAddress1, 'latest');
+    const response = await ethImpl.getTransactionCount(contractAddress1, 'latest', requestIdPrefix);
 
     validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);
   });
@@ -404,7 +414,7 @@ describe('Open RPC Specification', function () {
     mock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
 
     sinon.stub(ethImpl, <any>'getCurrentGasPriceForBlock').resolves('0xad78ebc5ac620000');
-    const response = await ethImpl.getTransactionReceipt(defaultTxHash);
+    const response = await ethImpl.getTransactionReceipt(defaultTxHash, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getTransactionReceipt, response);
   });
@@ -464,7 +474,7 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_sendRawTransaction"', async function () {
-    const response = await ethImpl.sendRawTransaction(signedTransactionHash);
+    const response = await ethImpl.sendRawTransaction(signedTransactionHash, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_sendRawTransaction, response);
   });

@@ -59,6 +59,7 @@ import {
   FileDeleteTransaction,
   TransactionRecordQuery,
 } from '@hashgraph/sdk';
+import { IRequestDetails } from '../../src/lib/types/IRequestDetails';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -75,6 +76,8 @@ describe('SdkClient', async function () {
   let eventEmitter: EventEmitter;
   let metricService: MetricService;
   let mirrorNodeClient: MirrorNodeClient;
+  let transactionService: TransactionService;
+  let requestDetails: IRequestDetails;
 
   const feeSchedules = {
     current: {
@@ -94,6 +97,7 @@ describe('SdkClient', async function () {
   } as unknown as FeeSchedules;
 
   before(() => {
+    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
     const hederaNetwork = process.env.HEDERA_NETWORK!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
@@ -219,7 +223,7 @@ describe('SdkClient', async function () {
       const convertGasPriceToTinyBarsStub = sinon.stub(sdkClient, 'convertGasPriceToTinyBars').callsFake(() => 0x160c);
 
       for (let i = 0; i < 5; i++) {
-        await sdkClient.getTinyBarGasFee('');
+        await sdkClient.getTinyBarGasFee('', requestDetails);
       }
 
       sinon.assert.calledOnce(getFeeScheduleStub);
@@ -2271,7 +2275,7 @@ describe('SdkClient', async function () {
         .returns(true);
 
       try {
-        await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestId, randomAccountAddress);
+        await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestDetails, randomAccountAddress);
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
         expect(error.message).to.equal('HBAR Rate limit exceeded');
@@ -2324,7 +2328,7 @@ describe('SdkClient', async function () {
         .withArgs(mockedTransactionRecordFee)
         .exactly(fileAppendChunks + 2);
 
-      await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestId, randomAccountAddress);
+      await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestDetails, randomAccountAddress);
 
       expect(queryStub.called).to.be.true;
       expect(transactionStub.called).to.be.true;
@@ -2366,7 +2370,7 @@ describe('SdkClient', async function () {
       const response = await sdkClient.createFile(
         callData,
         client,
-        requestId,
+        requestDetails,
         mockedCallerName,
         mockedInteractingEntity,
         randomAccountAddress,
@@ -2403,7 +2407,7 @@ describe('SdkClient', async function () {
         new FileAppendTransaction(),
         mockedCallerName,
         mockedInteractingEntity,
-        requestId,
+        requestDetails,
         true,
         randomAccountAddress,
       );
@@ -2429,7 +2433,7 @@ describe('SdkClient', async function () {
           new FileAppendTransaction(),
           mockedCallerName,
           mockedInteractingEntity,
-          requestId,
+          requestDetails,
           true,
           randomAccountAddress,
         );
@@ -2464,7 +2468,7 @@ describe('SdkClient', async function () {
       const response = await sdkClient.createFile(
         callData,
         client,
-        requestId,
+        requestDetails,
         mockedCallerName,
         mockedInteractingEntity,
         randomAccountAddress,
@@ -2489,7 +2493,7 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
       hbarLimitMock.expects('shouldLimit').never();
 
-      await sdkClient.deleteFile(fileId, requestId, mockedCallerName, mockedInteractingEntity, randomAccountAddress);
+      await sdkClient.deleteFile(fileId, requestDetails, mockedCallerName, mockedInteractingEntity, randomAccountAddress);
 
       expect(deleteFileStub.called).to.be.true;
       expect(fileInfoQueryStub.called).to.be.true;
@@ -2507,7 +2511,7 @@ describe('SdkClient', async function () {
         client,
         mockedCallerName,
         mockedInteractingEntity,
-        requestId,
+        requestDetails,
       );
 
       expect(result).to.equal(fileInfo);
@@ -2526,7 +2530,7 @@ describe('SdkClient', async function () {
         client,
         mockedCallerName,
         mockedInteractingEntity,
-        requestId,
+        requestDetails,
       );
 
       expect(result).to.equal(fileInfo);
@@ -2552,9 +2556,15 @@ describe('SdkClient', async function () {
 
       const response = await sdkClient.executeTransaction(
         new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
+<<<<<<< HEAD
         mockedCallerName,
         mockedInteractingEntity,
         requestId,
+=======
+        callerName,
+        interactingEntity,
+        requestDetails,
+>>>>>>> b81e1674 (Fixes failing unit tests)
         true,
         randomAccountAddress,
       );
@@ -2602,9 +2612,15 @@ describe('SdkClient', async function () {
 
       const response = await sdkClient.executeTransaction(
         new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
+<<<<<<< HEAD
         mockedCallerName,
         mockedInteractingEntity,
         requestId,
+=======
+        callerName,
+        interactingEntity,
+        requestDetails,
+>>>>>>> b81e1674 (Fixes failing unit tests)
         true,
         randomAccountAddress,
       );

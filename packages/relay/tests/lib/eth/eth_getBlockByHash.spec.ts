@@ -56,6 +56,7 @@ import {
   DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
+import { IRequestDetails } from '../../../src/lib/types/IRequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -64,6 +65,7 @@ let sdkClientStub;
 let getSdkClientStub;
 let currentMaxBlockRange: number;
 let ethImplLowTransactionCount: EthImpl;
+let requestDetails: IRequestDetails;
 
 describe('@ethGetBlockByHash using MirrorNode', async function () {
   this.timeout(10000);
@@ -77,6 +79,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     cacheService.clear();
     restMock.reset();
 
+    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -113,7 +116,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
 
-    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false);
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false, requestDetails);
     RelayAssertions.assertBlock(result, {
       hash: BLOCK_HASH_TRIMMED,
       gasUsed: TOTAL_GAS_USED,
@@ -133,7 +136,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
 
-    const res = await ethImpl.getBlockByHash(BLOCK_HASH, false);
+    const res = await ethImpl.getBlockByHash(BLOCK_HASH, false, requestDetails);
     RelayAssertions.assertBlock(res, {
       transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
       hash: BLOCK_HASH_TRIMMED,
@@ -154,7 +157,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
 
-    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false);
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false, requestDetails);
     RelayAssertions.assertBlock(result, {
       hash: BLOCK_HASH_TRIMMED,
       gasUsed: TOTAL_GAS_USED,
@@ -176,7 +179,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
 
-    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false);
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false, requestDetails);
     RelayAssertions.assertBlock(result, {
       hash: BLOCK_HASH_TRIMMED,
       gasUsed: TOTAL_GAS_USED,
@@ -194,7 +197,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
 
     for (let i = 0; i < 3; i++) {
-      const result = await ethImpl.getBlockByHash(BLOCK_HASH, false);
+      const result = await ethImpl.getBlockByHash(BLOCK_HASH, false, requestDetails);
       expect(result).to.exist;
       expect(result).to.not.be.null;
       if (result) {
@@ -211,7 +214,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
 
-    const result = await ethImpl.getBlockByHash(BLOCK_HASH, true);
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, true, requestDetails);
     RelayAssertions.assertBlock(
       result,
       {
@@ -234,7 +237,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     restMock.onGet(CONTRACTS_RESULTS_NEXT_URL).reply(200, defaultContractResults);
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
 
-    const result = await ethImpl.getBlockByHash(BLOCK_HASH, true);
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, true, requestDetails);
     RelayAssertions.assertBlock(
       result,
       {
@@ -268,7 +271,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       )
       .reply(200, { logs: [] });
 
-    const result = await ethImpl.getBlockByHash(BLOCK_HASH, true);
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, true, requestDetails);
     RelayAssertions.assertBlock(result, {
       hash: BLOCK_HASH_TRIMMED,
       gasUsed: numberTo0x(randomBlock.gas_used),
@@ -284,7 +287,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_HASH}`).reply(404, NO_SUCH_BLOCK_EXISTS_RES);
 
-    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false);
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false, requestDetails);
     expect(result).to.equal(null);
   });
 
@@ -305,6 +308,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(), ethImpl.getBlockByHash, false, ethImpl, [
       BLOCK_HASH,
       false,
+      requestDetails,
     ]);
   });
 
@@ -320,7 +324,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       .reply(200, defaultDetailedContractResults);
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
 
-    const args = [BLOCK_HASH, true];
+    const args = [BLOCK_HASH, true, requestDetails];
 
     await RelayAssertions.assertRejection(
       predefined.MAX_BLOCK_SIZE(77),
