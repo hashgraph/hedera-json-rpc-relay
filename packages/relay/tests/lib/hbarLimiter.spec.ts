@@ -323,8 +323,6 @@ describe('HBAR Rate Limiter', async function () {
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
     const result = rateLimiter.estimateFileTransactionFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
     const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
-    expect(result.numFileCreateTxs).to.eq(expectedResult.numFileCreateTxs);
-    expect(result.numFileAppendTxs).to.eq(expectedResult.numFileAppendTxs);
-    expect(result.totalFeeInTinyBar).to.eq(expectedResult.totalFeeInTinyBar);
+    expect(result).to.deep.eq(expectedResult);
   });
 });
