@@ -185,13 +185,17 @@ classDiagram
     IpAddressHbarSpendingPlanRepository --> CacheService : uses
 ```
 ### Support flexible alerting mechanisms for spending thresholds
+The existing technical infrastructure, prometheus and grafana will be used to trigger alerts.  At the time of this writing 10K HBar is the maximum the relay operator can spend in one day, on HashIO.
+
+The rest of this section describes addtional metrics that will be added, with alerts later, to track critical balances, and how new values for those tiers in HashIO will
+be determined.
+
 The initial spending threshold of the Tier 3 General users will be a rough
 estimate based on the current daily spending of the Relay Operator.  In order
 to refine this over time a prometheus metric called the `basicSpendingPlanCounter`
 will be used to track the number of unique spending plans.  
 
-The metrics listed below will be added to help determine the best Tier 3 General users
-over time:
+The metrics listed below will be added to help determine the best Tier 3 General users over time:
 
 1. Daily Unique Users Counter
 2. Average Daily Users
