@@ -230,14 +230,15 @@ export class LocalLRUCache implements ICacheClient {
       .replace(/\\\*/g, '__ESCAPED_STAR__')
       .replace(/\\\?/g, '__ESCAPED_QUESTION__')
       .replace(/\\\[/g, '__ESCAPED_OPEN_BRACKET__')
-      .replace(/\\\]/g, '__ESCAPED_CLOSE_BRACKET__');
+      .replace(/\\]/g, '__ESCAPED_CLOSE_BRACKET__');
 
     // Replace unescaped special characters with regex equivalents
     regexPattern = regexPattern
-      .replace(/(?<!\\)\*/g, '.*') // Match * only if not preceded by a backslash
-      .replace(/(?<!\\)\?/g, '.') // Match ? only if not preceded by a backslash
-      .replace(/(?<!\\)\[!\]/g, '[^]') // Match [!] only if not preceded by a backslash
-      .replace(/(?<!\\)\[([^\]]+)\]/g, '[$1]'); // Match [...] only if not preceded by a backslash
+      .replace(/\\([*?[\]])/g, (_, char) => `__ESCAPED_${char}__`)
+      .replace(/\[([^\]\\]+)]/g, '[$1]') // Match [...] without lookbehind
+      .replace(/(?<!\\)\*/g, '.*')
+      .replace(/(?<!\\)\?/g, '.')
+      .replace(/(?<!\\)\[!]/g, '[^]');
 
     // Replace placeholders with the original special characters
     regexPattern = regexPattern
