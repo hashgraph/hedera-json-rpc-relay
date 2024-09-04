@@ -371,14 +371,14 @@ describe('RedisCache Test Suite', async function () {
       expect(keys).to.include.members([key1, key2]);
     });
 
-    it('should escape special characters in the pattern', async function () {
-      const key = 'h*llo';
-      const pattern = 'h\\*llo';
-
-      await redisCache.set(key, 'value', callingMethod);
-
-      const keys = await redisCache.keys(pattern, callingMethod);
-      expect(keys).to.include(key);
+    it('should retrieve keys matching a pattern with escaped special characters', async function () {
+      const keys = ['h*llo', 'h?llo', 'h[llo', 'h]llo'];
+      for (let i = 0; i < keys.length; i++) {
+        await redisCache.set(keys[i], `value${i}`, callingMethod);
+      }
+      for (const key of keys) {
+        await expect(redisCache.keys(key.replace(/([*?[\]])/g, '\\$1'), callingMethod)).eventually.has.members([key]);
+      }
     });
 
     it('should retrieve all keys with * pattern', async function () {

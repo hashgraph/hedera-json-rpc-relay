@@ -18,7 +18,8 @@
  *
  */
 
-import { expect } from 'chai';
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
 import pino from 'pino';
 import { LocalLRUCache } from '../../../src/lib/clients';
@@ -29,6 +30,8 @@ const registry = new Registry();
 let localLRUCache: LocalLRUCache;
 
 const callingMethod = 'localLRUCacheTest';
+
+chai.use(chaiAsPromised);
 
 describe('LocalLRUCache Test Suite', async function () {
   this.timeout(10000);
@@ -203,14 +206,16 @@ describe('LocalLRUCache Test Suite', async function () {
       expect(keys).to.include.members([key1, key2]);
     });
 
-    it('should escape special characters in the pattern', async function () {
-      const key = 'h*llo';
-      const pattern = 'h\\*llo';
-
-      await localLRUCache.set(key, 'value', callingMethod);
-
-      const keys = await localLRUCache.keys(pattern, callingMethod);
-      expect(keys).to.include(key);
+    it('should retrieve keys matching a pattern with escaped special characters', async function () {
+      const keys = ['h*llo', 'h?llo', 'h[llo', 'h]llo'];
+      for (let i = 0; i < keys.length; i++) {
+        await localLRUCache.set(keys[i], `value${i}`, callingMethod);
+      }
+      for (const key of keys) {
+        await expect(localLRUCache.keys(key.replace(/([*?[\]])/g, '\\$1'), callingMethod)).eventually.has.members([
+          key,
+        ]);
+      }
     });
 
     it('should retrieve all keys with * pattern', async function () {
