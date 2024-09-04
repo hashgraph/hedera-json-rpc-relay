@@ -2527,7 +2527,7 @@ export class EthImpl implements Eth {
   private async getCurrentNetworkExchangeRateInCents(requestId: string): Promise<number> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const cacheKey = constants.CACHE_KEY.CURRENT_NETWORK_EXCHANGE_RATE;
-    const callingMethod = this.mirrorNodeClient.getNetworkExchangeRate.name;
+    const callingMethod = this.getCurrentNetworkExchangeRateInCents.name;
     const cacheTTL = 15 * 60 * 1000; // 15 minutes
 
     let currentNetworkExchangeRate = await this.cacheService.getAsync(cacheKey, callingMethod, requestIdPrefix);
