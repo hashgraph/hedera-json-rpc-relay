@@ -9,7 +9,7 @@ on:
 
 jobs:
   clone-and-build-execution-apis:
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
 
     steps:
       - name: Checkout execution-apis repo
@@ -39,7 +39,7 @@ jobs:
           path: ./execution-apis/openrpc.json
 
   build-and-test:
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
     needs: clone-and-build-execution-apis
 
     steps:
@@ -91,6 +91,11 @@ jobs:
       
       - name: Rename file
         run: mv openrpc.json openrpc_exec_apis.json
+
+      - name: Add ws specific env variables
+        run: |
+          echo "SUBSCRIPTIONS_ENABLED=true" >> .env
+          echo "TEST_WS_SERVER=true" >> .env
 
       - name: Run conformity tests
         run: npm run acceptancetest:rpc_api_schema_conformity
