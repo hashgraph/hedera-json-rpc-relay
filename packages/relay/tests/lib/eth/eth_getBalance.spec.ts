@@ -92,7 +92,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
     // next call should use cache
     restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, {});
 
-    const resBalanceCached = await ethImpl.getBalance(CONTRACT_ADDRESS_1, null);
+    const resBalanceCached = await ethImpl.getBalance(CONTRACT_ADDRESS_1, null, `[Request ID: testId]`);
     expect(resBalanceCached).to.equal(resBalance);
 
     // Third call should return new number using mirror node

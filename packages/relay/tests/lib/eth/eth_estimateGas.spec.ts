@@ -52,6 +52,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   this.timeout(10000);
   let { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
     generateEthTestEnv();
+  let requestIdPrefix;
 
   async function mockContractCall(
     callData: IContractCallRequest,
@@ -81,6 +82,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     cacheService.clear();
     restMock.reset();
 
+    requestIdPrefix = `[Request ID: testId]`;
     sdkClientStub = createStubInstance(SDKClient);
     getSdkClientStub = stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     ethImplOverridden = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
@@ -110,7 +112,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 });
 
-    const gas = await ethImpl.estimateGas(callData, null);
+    const gas = await ethImpl.estimateGas(callData, null, requestIdPrefix);
     expect(gas).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
 
@@ -122,7 +124,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 });
 
-    const gas = await ethImpl.estimateGas(callData, null);
+    const gas = await ethImpl.estimateGas(callData, null, requestIdPrefix);
     expect(gas).to.equal(numberTo0x(constants.TX_CONTRACT_CALL_AVERAGE_GAS));
   });
 
@@ -133,7 +135,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     };
     await mockContractCall(callData, true, 200, { result: `0x61A80` });
 
-    const gas = await ethImpl.estimateGas(callData, null);
+    const gas = await ethImpl.estimateGas(callData, null, requestIdPrefix);
     expect((gas as string).toLowerCase()).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT).toLowerCase());
   });
 
@@ -145,7 +147,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     };
     await mockContractCall(callData, true, 200, { result: `0x61A80` });
 
-    const gas = await ethImpl.estimateGas({ ...callData, value: ONE_TINYBAR_IN_WEI_HEX }, null);
+    const gas = await ethImpl.estimateGas({ ...callData, value: ONE_TINYBAR_IN_WEI_HEX }, null, requestIdPrefix);
     expect((gas as string).toLowerCase()).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT).toLowerCase());
   });
 
@@ -155,7 +157,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 });
 
-    const gas = await ethImpl.estimateGas({ data: '0x01' }, null);
+    const gas = await ethImpl.estimateGas({ data: '0x01' }, null, requestIdPrefix);
     expect(gas).to.equal(numberTo0x(Precheck.transactionIntrinsicGasCost(callData.data!)));
   });
 
@@ -169,7 +171,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 });
     restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, { address: RECEIVER_ADDRESS });
 
-    const gas = await ethImpl.estimateGas(callData, null);
+    const gas = await ethImpl.estimateGas(callData, null, requestIdPrefix);
     expect(gas).to.equal(numberTo0x(constants.TX_BASE_COST));
   });
 
@@ -182,7 +184,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 });
     restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, { address: RECEIVER_ADDRESS });
 
-    const result = await ethImpl.estimateGas(callData, null);
+    const result = await ethImpl.estimateGas(callData, null, requestIdPrefix);
     expect(result).to.not.be.null;
     expect((result as JsonRpcError).code).to.eq(-32602);
   });
@@ -201,6 +203,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
         value: 100_000_000_000,
       },
       null,
+      requestIdPrefix,
     );
     expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
@@ -219,6 +222,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
         value: 100_000_000_000,
       },
       null,
+      requestIdPrefix,
     );
 
     restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(404);
@@ -228,6 +232,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
         value: 100_000_000_000,
       },
       null,
+      requestIdPrefix,
     );
 
     expect(gasBeforeCache).to.equal(EthImpl.gasTxBaseCost);
@@ -248,6 +253,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
         value: 100_000_000_000,
       },
       null,
+      requestIdPrefix,
     );
 
     expect(Number(hollowAccountGasCreation)).to.be.greaterThanOrEqual(Number(EthImpl.minGasTxHollowAccountCreation));
@@ -265,6 +271,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
         value: 0,
       },
       null,
+      requestIdPrefix,
     );
 
     expect(result).to.exist;
@@ -286,7 +293,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     };
     await mockContractCall(callData, true, 200, { result: `0x14b662` });
 
-    const gas = await ethImpl.estimateGas(callData, null);
+    const gas = await ethImpl.estimateGas(callData, null, requestIdPrefix);
 
     expect((gas as string).toLowerCase()).to.equal(numberTo0x(gasEstimation).toLowerCase());
   });
@@ -303,6 +310,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
         value: null,
       },
       null,
+      requestIdPrefix,
     );
 
     expect(result).to.exist;
@@ -316,7 +324,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     const callData: IContractCallRequest = {};
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 });
 
-    const gas = await ethImpl.estimateGas({}, null);
+    const gas = await ethImpl.estimateGas({}, null, requestIdPrefix);
     expect(gas).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
 
@@ -324,7 +332,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     const callData: IContractCallRequest = {};
     await mockContractCall(callData, true, 200, { result: numberTo0x(defaultGasOverride) });
 
-    const gas = await ethImplOverridden.estimateGas({}, null);
+    const gas = await ethImplOverridden.estimateGas({}, null, requestIdPrefix);
     expect(gas).to.equal(numberTo0x(defaultGasOverride));
   });
 
@@ -337,7 +345,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
 
     await mockContractCall(callData, true, 501, contractsCallResponse);
 
-    const gas = await ethImpl.estimateGas({ data: '' }, null);
+    const gas = await ethImpl.estimateGas({ data: '' }, null, requestIdPrefix);
     expect(gas).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
 
@@ -347,7 +355,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 });
 
-    const gas = await ethImplOverridden.estimateGas({ data: '' }, null);
+    const gas = await ethImplOverridden.estimateGas({ data: '' }, null, requestIdPrefix);
     expect(gas).to.equal(numberTo0x(defaultGasOverride));
   });
 
@@ -360,7 +368,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 });
     mockGetAccount(RECEIVER_ADDRESS, 200, { account: '0.0.1234', evm_address: RECEIVER_ADDRESS });
 
-    const gas = await ethImpl.estimateGas(callData, null);
+    const gas = await ethImpl.estimateGas(callData, null, requestIdPrefix);
     expect(gas).to.equal(numberTo0x(constants.TX_BASE_COST));
   });
 
@@ -370,7 +378,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 });
 
-    const gas = await ethImplOverridden.estimateGas({ data: '0x' }, null);
+    const gas = await ethImplOverridden.estimateGas({ data: '0x' }, null, requestIdPrefix);
     expect(gas).to.equal(numberTo0x(defaultGasOverride));
   });
 
@@ -388,7 +396,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     };
     await mockContractCall(transaction, true, 400, contractCallResult);
 
-    const estimatedGas = await ethImpl.estimateGas(transaction, id);
+    const estimatedGas = await ethImpl.estimateGas(transaction, id, requestIdPrefix);
 
     expect(estimatedGas).to.equal(numberTo0x(Precheck.transactionIntrinsicGasCost(transaction.data!)));
   });
@@ -408,7 +416,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       },
     });
 
-    const result: any = await ethImpl.estimateGas(transaction, id);
+    const result: any = await ethImpl.estimateGas(transaction, id, requestIdPrefix);
 
     expect(result).to.equal(numberTo0x(Precheck.transactionIntrinsicGasCost(transaction.data!)));
     process.env.ESTIMATE_GAS_THROWS = estimateGasThrows;
@@ -427,7 +435,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       },
     });
 
-    const result: any = await ethImpl.estimateGas(transaction, id);
+    const result: any = await ethImpl.estimateGas(transaction, id, requestIdPrefix);
 
     expect(result.data).to.equal(
       '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001c496e76616c6964206e756d626572206f6620726563697069656e747300000000',
@@ -453,7 +461,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       },
     });
 
-    const result: any = await ethImpl.estimateGas(transaction, id);
+    const result: any = await ethImpl.estimateGas(transaction, id, requestIdPrefix);
 
     expect(result.data).to.equal(encodedCustomError);
     expect(result.message).to.equal(`execution reverted: ${decodedMessage}`);
@@ -477,7 +485,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       },
     });
 
-    const result: any = await ethImpl.estimateGas(transaction, id);
+    const result: any = await ethImpl.estimateGas(transaction, id, requestIdPrefix);
 
     expect(result.data).to.equal(encodedGenericError);
     expect(result.message).to.equal(`execution reverted: ${decodedMessage}`);
@@ -496,7 +504,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       },
     });
 
-    const result: any = await ethImpl.estimateGas({ ...transaction, data: '0x', value: '0x1' }, id);
+    const result: any = await ethImpl.estimateGas({ ...transaction, data: '0x', value: '0x1' }, id, requestIdPrefix);
     expect(result).to.equal(numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT));
   });
 

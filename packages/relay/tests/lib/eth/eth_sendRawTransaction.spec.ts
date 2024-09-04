@@ -31,6 +31,7 @@ import RelayAssertions from '../../assertions';
 import { getRequestId, mockData, signTransaction } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
+import { IRequestDetails } from '../../../src/lib/types/IRequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -42,12 +43,14 @@ let currentMaxBlockRange: number;
 describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  let requestDetails: IRequestDetails;
 
   this.beforeEach(() => {
     // reset cache and restMock
     cacheService.clear();
     restMock.reset();
 
+    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -114,7 +117,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         ethImpl.sendRawTransaction,
         false,
         ethImpl,
-        [txHash, getRequestId()],
+        [txHash, requestDetails],
       );
     });
 
@@ -123,7 +126,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
       restMock.onGet(`transactions/${transactionId}`).reply(200, null);
 
-      const resultingHash = await ethImpl.sendRawTransaction(signed, getRequestId());
+      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
       expect(resultingHash).to.equal(ethereumHash);
     });
 
@@ -140,7 +143,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         fileId: null,
       });
 
-      const response = (await ethImpl.sendRawTransaction(signed, getRequestId())) as JsonRpcError;
+      const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
 
       expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
       expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
@@ -158,7 +161,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         fileId: null,
       });
 
-      const response = (await ethImpl.sendRawTransaction(signed, getRequestId())) as JsonRpcError;
+      const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
 
       expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
       expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
@@ -175,7 +178,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       });
       const signed = await signTransaction(transaction);
 
-      const resultingHash = await ethImpl.sendRawTransaction(signed, getRequestId());
+      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
       expect(resultingHash).to.equal(ethereumHash);
     });
 
@@ -191,7 +194,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
       const signed = await signTransaction(transaction);
 
-      const resultingHash = await ethImpl.sendRawTransaction(signed, getRequestId());
+      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
       expect(resultingHash).to.equal(ethereumHash);
       sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
     });
@@ -203,7 +206,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
       const signed = await signTransaction(transaction);
 
-      const response = (await ethImpl.sendRawTransaction(signed, getRequestId())) as JsonRpcError;
+      const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
       expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
       expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
       sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);

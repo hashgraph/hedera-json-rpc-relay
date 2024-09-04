@@ -347,7 +347,7 @@ describe('MirrorNodeClient', async function () {
       .onGet(`blocks?block.number=${number}&limit=100&order=asc`)
       .reply(200, { blocks: [block], links: { next: null } });
 
-    const result = await mirrorNodeInstance.getBlocks(number);
+    const result = await mirrorNodeInstance.getBlocks(`[Request ID: testId]`, number);
     expect(result).to.exist;
     expect(result.links).to.exist;
     expect(result.links.next).to.equal(null);
@@ -363,7 +363,7 @@ describe('MirrorNodeClient', async function () {
       .onGet(`blocks?timestamp=${timestamp}&limit=100&order=asc`)
       .reply(200, { blocks: [block], links: { next: null } });
 
-    const result = await mirrorNodeInstance.getBlocks(undefined, timestamp);
+    const result = await mirrorNodeInstance.getBlocks(`[Request ID: testId]`, undefined, timestamp);
     expect(result).to.exist;
     expect(result.links).to.exist;
     expect(result.links.next).to.equal(null);
