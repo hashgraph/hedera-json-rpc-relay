@@ -616,7 +616,6 @@ export class SDKClient {
   ): Promise<T> {
     const queryConstructorName = query.constructor.name;
     const requestIdPrefix = requestDetails?.requestIdPrefix;
-    const queryType = query.constructor.name;
     let queryResponse: any = null;
     let queryCost: number | undefined = undefined;
     let status: string = '';
@@ -1002,7 +1001,7 @@ export class SDKClient {
     let txRecordChargeAmount: number = 0;
     try {
       this.logger.trace(
-        `${formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
+        `${requestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
       );
 
       const transactionRecord = await new TransactionRecordQuery()
@@ -1023,7 +1022,7 @@ export class SDKClient {
       const sdkClientError = new SDKClientError(e, e.message);
       this.logger.warn(
         e,
-        `${formattedRequestId} Error raised during TransactionRecordQuery: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
+        `${requestId} Error raised during TransactionRecordQuery: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, recordStatus=${sdkClientError.status} (${sdkClientError.status._code}), cost=${transactionFee}, gasUsed=${gasUsed}`,
       );
       throw sdkClientError;
     }
