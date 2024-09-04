@@ -98,6 +98,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sdkClientStub = sinon.createStubInstance(SDKClient);
       sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
       restMock.onGet(accountEndpoint).reply(200, ACCOUNT_RES);
+      restMock.onGet(networkExchangeRateEndpoint).reply(200, mockedExchangeRate);
     });
 
     this.afterEach(() => {
@@ -121,7 +122,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       const signed = await signTransaction(transaction);
 
       restMock.onGet(`transactions/${transactionId}`).reply(200, null);
-      restMock.onGet(networkExchangeRateEndpoint).reply(200, mockedExchangeRate);
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, getRequestId());
       expect(resultingHash).to.equal(ethereumHash);
@@ -166,7 +166,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
     it('should return hash from ContractResult mirror node api', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
-      restMock.onGet(networkExchangeRateEndpoint).reply(200, mockedExchangeRate);
 
       sdkClientStub.submitEthereumTransaction.returns({
         txResponse: {
@@ -182,7 +181,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
     it('should not send second transaction upon succession', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
-      restMock.onGet(networkExchangeRateEndpoint).reply(200, mockedExchangeRate);
 
       sdkClientStub.submitEthereumTransaction.returns({
         txResponse: {
@@ -202,7 +200,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sdkClientStub.submitEthereumTransaction
         .onCall(0)
         .throws(new SDKClientError({ status: 50 }, 'wrong transaction body'));
-      restMock.onGet(networkExchangeRateEndpoint).reply(200, mockedExchangeRate);
 
       const signed = await signTransaction(transaction);
 
