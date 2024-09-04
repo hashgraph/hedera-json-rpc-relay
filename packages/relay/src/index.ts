@@ -72,7 +72,7 @@ export interface Eth {
   estimateGas(
     transaction: IContractCallRequest,
     blockParam: string | null,
-    requestId?: string,
+    requestDetails: IRequestDetails,
   ): Promise<string | JsonRpcError>;
 
   gasPrice(requestDetails: IRequestDetails): Promise<string>;

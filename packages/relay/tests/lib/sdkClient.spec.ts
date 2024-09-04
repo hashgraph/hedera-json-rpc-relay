@@ -2531,7 +2531,13 @@ describe('SdkClient', async function () {
       hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
       hbarLimitMock.expects('shouldLimit').never();
 
-      await sdkClient.deleteFile(fileId, requestDetails, mockedCallerName, mockedInteractingEntity, randomAccountAddress);
+      await sdkClient.deleteFile(
+        fileId,
+        requestDetails,
+        mockedCallerName,
+        mockedInteractingEntity,
+        randomAccountAddress,
+      );
 
       expect(deleteFileStub.called).to.be.true;
       expect(fileInfoQueryStub.called).to.be.true;
