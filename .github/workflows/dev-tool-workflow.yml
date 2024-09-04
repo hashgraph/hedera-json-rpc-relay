@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: Install go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
         with:
           go-version: '1.22.3'
 
@@ -64,7 +64,7 @@ jobs:
         run: cd ${{ inputs.directory }}/ && npm ci
 
       - name: Run the tests
-        uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
+        uses: step-security/retry@2ab886c0de89f68f146c9b43f53e61abc59c46dc # v3.0.1
         with:
           max_attempts: 10
           timeout_minutes: 10
