@@ -223,7 +223,7 @@ describe('HBAR Rate Limiter', async function () {
         mockedExchangeRateInCents,
         getRequestId(),
       );
-      expect.fail('The rate limiter will throw HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED error');
+      expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
     } catch (error) {
       expect(error).to.eq(expectedError);
     }
@@ -241,7 +241,7 @@ describe('HBAR Rate Limiter', async function () {
         mockedExchangeRateInCents,
         getRequestId(),
       );
-      expect.fail('The rate limiter did not throw HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED error');
+      expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
     } catch (error) {
       expect(error).to.not.eq(expectedError);
     }
@@ -295,7 +295,7 @@ describe('HBAR Rate Limiter', async function () {
         mockedExchangeRateInCents,
         getRequestId(),
       );
-      expect.fail('The rate limiter did not throw HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED error');
+      expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
     } catch (error) {
       expect(error).to.not.eq(expectedError);
     }
@@ -313,7 +313,7 @@ describe('HBAR Rate Limiter', async function () {
         mockedExchangeRateInCents,
         getRequestId(),
       );
-      expect.fail('The rate limiter will throw HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED error');
+      expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
     } catch (error) {
       expect(error).to.eq(expectedError);
     }

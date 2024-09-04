@@ -277,7 +277,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               );
               await largeContract.waitForDeployment();
             }
-            expect.fail('The rate limiter will throw HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED error');
+            expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
           } catch (e) {
             console.log(`asdaksjdhuqwiyeiqwuyhdkajshdkajhsiduuqywe`);
             console.log(e);
