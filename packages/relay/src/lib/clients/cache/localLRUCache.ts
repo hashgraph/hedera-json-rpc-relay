@@ -250,7 +250,7 @@ export class LocalLRUCache implements ICacheClient {
 
     const matchingKeys = keys.filter((key) => regex.test(key));
 
-    this.logger.trace(`${requestIdPrefix} returning keys ${matchingKeys} on ${callingMethod} call`);
+    this.logger.trace(`${requestIdPrefix} retrieving keys matching ${pattern} on ${callingMethod} call`);
     return matchingKeys;
   }
 }
