@@ -320,13 +320,14 @@ describe('HbarLimitService', function () {
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(existingSpendingPlan);
       hbarSpendingPlanRepositoryStub.addAmountToSpentToday.resolves();
       hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.resolves();
-      hbarSpendingPlanRepositoryStub.findAllActiveBySubscriptionType.resolves(allPlans);
-      hbarSpendingPlanRepositoryStub.getSpentToday.callsFake(async (id: string) => {
-        if (id === mockPlanId) {
-          return expense;
-        }
-        return otherPlanUsedToday.spentToday;
-      });
+      hbarSpendingPlanRepositoryStub.findAllActiveBySubscriptionType.resolves([
+        otherPlanUsedToday,
+        {
+          ...existingSpendingPlan,
+          spentToday: expense,
+          spendingHistory: [{ amount: expense, timestamp: new Date() }],
+        },
+      ]);
       const incDailyUniqueSpendingPlansCounterSpy = sinon.spy(
         hbarLimitService['dailyUniqueSpendingPlansCounter'][SubscriptionType.BASIC],
         'inc',

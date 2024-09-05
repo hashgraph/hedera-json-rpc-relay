@@ -260,8 +260,7 @@ export class HbarLimitService implements IHbarLimitService {
    */
   private async updateAverageDailyUsagePerSubscriptionType(subscriptionType: SubscriptionType): Promise<void> {
     const plans = await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionType(subscriptionType);
-    const planSpending = await Promise.all(plans.map((plan) => this.hbarSpendingPlanRepository.getSpentToday(plan.id)));
-    const totalUsage = planSpending.reduce((total, spentTodayByPlan) => total + spentTodayByPlan, 0);
+    const totalUsage = plans.reduce((total, plan) => total + plan.spentToday, 0);
     const averageUsage = Math.round(totalUsage / plans.length);
     this.averageDailySpendingPlanUsagesGauge[subscriptionType].set(averageUsage);
   }
