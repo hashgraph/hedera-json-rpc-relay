@@ -22,10 +22,9 @@
  * Represents an error that can occur when interacting with the Redis cache.
  * @class
  */
-export class RedisCacheError {
+export class RedisCacheError extends Error {
   public type: string;
   public fullError?: string;
-  public message?: string;
   public stack?: string;
 
   static ErrorMessages = {
@@ -38,8 +37,9 @@ export class RedisCacheError {
    * @param {any} error - The error object representing the Redis cache error.
    */
   constructor(error: any) {
+    super(error.message);
+    this.name = RedisCacheError.name;
     this.type = error.type;
-    this.message = error.message;
     this.stack = error.stack;
     this.fullError = error;
   }
