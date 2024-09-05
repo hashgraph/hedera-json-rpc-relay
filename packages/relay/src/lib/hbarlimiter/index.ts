@@ -20,7 +20,6 @@
 
 import { Logger } from 'pino';
 import constants from '../constants';
-import { Hbar, HbarUnit } from '@hashgraph/sdk';
 import { predefined } from '../errors/JsonRpcError';
 import { Registry, Counter, Gauge } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
@@ -145,7 +144,7 @@ export default class HbarLimit {
 
     if (this.isAccountWhiteListed(originalCallerAddress)) {
       this.logger.trace(
-        `${requestIdPrefix} HBAR preemtive rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
+        `${requestIdPrefix} HBAR preemptive rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
       );
     } else {
       const { numFileCreateTxs, numFileAppendTxs, totalFeeInTinyBar } = this.estimateFileTransactionFee(
@@ -155,8 +154,8 @@ export default class HbarLimit {
       );
 
       if (this.remainingBudget - totalFeeInTinyBar < 0) {
-        this.logger.trace(
-          `${requestIdPrefix} HBAR preemtive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalFeeInTinyBar=${totalFeeInTinyBar}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+        this.logger.warn(
+          `${requestIdPrefix} HBAR preemptive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalFeeInTinyBar=${totalFeeInTinyBar}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
         );
         throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
       } else {
@@ -245,10 +244,11 @@ export default class HbarLimit {
     const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
     const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
 
-    const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
     const totalRequestFeeInCents = numFileCreateTxs * fileCreateFeeInCents + numFileAppendTxs * fileAppendFeeInCents;
 
-    const totalFeeInTinyBar = Math.round((totalRequestFeeInCents / currentNetworkExchangeRateInCents) * hbarToTinybar);
+    const totalFeeInTinyBar = Math.round(
+      (totalRequestFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
+    );
 
     return {
       numFileCreateTxs,
