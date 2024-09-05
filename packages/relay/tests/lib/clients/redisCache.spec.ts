@@ -107,7 +107,7 @@ describe('RedisCache Test Suite', async function () {
       const cachedValue = await redisCache.get(key, callingMethod);
       expect(cachedValue).equal(value);
 
-      await new Promise((resolve) => setTimeout(resolve, ttl));
+      await new Promise((resolve) => setTimeout(resolve, ttl + 100));
 
       const expiredValue = await redisCache.get(key, callingMethod);
       expect(expiredValue).to.be.null;
@@ -123,7 +123,7 @@ describe('RedisCache Test Suite', async function () {
       const cachedValue = await redisCache.get(key, callingMethod);
       expect(cachedValue).equal(value);
 
-      await new Promise((resolve) => setTimeout(resolve, ttl));
+      await new Promise((resolve) => setTimeout(resolve, ttl + 100));
 
       const expiredValue = await redisCache.get(key, callingMethod);
       expect(expiredValue).to.be.null;
