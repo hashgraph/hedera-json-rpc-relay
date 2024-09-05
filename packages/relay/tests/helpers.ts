@@ -895,10 +895,10 @@ export const estimateFileTransactionsFee = (
   const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
   const totalRequestFeeInCents = numFileCreateTxs * fileCreateFeeInCents + numFileAppendTxs * fileAppendFeeInCents;
 
-  const totalFeeInTinyBar = Math.round((totalRequestFeeInCents / exchangeRateInCents) * hbarToTinybar);
+  const totalEstimatedFeeInTinyBar = Math.round((totalRequestFeeInCents / exchangeRateInCents) * hbarToTinybar);
   return {
     numFileCreateTxs,
     numFileAppendTxs,
-    totalFeeInTinyBar,
+    totalEstimatedFeeInTinyBar,
   };
 };

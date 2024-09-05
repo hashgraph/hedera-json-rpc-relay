@@ -22,4 +22,10 @@ export interface IHbarLimitService {
   resetLimiter(): Promise<void>;
   shouldLimit(mode: string, methodName: string, ethAddress: string, ipAddress?: string): Promise<boolean>;
   addExpense(cost: number, ethAddress: string, ipAddress?: string): Promise<void>;
+  shouldPreemptivelyLimitFileTransactions(
+    callDataSize: number,
+    fileChunkSize: number,
+    currentNetworkExchangeRateInCents: number,
+    requestId: string,
+  ): Promise<boolean>;
 }
