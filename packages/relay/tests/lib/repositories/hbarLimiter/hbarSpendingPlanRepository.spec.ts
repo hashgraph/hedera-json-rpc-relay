@@ -355,15 +355,20 @@ describe('HbarSpendingPlanRepository', function () {
 
       it('returns only active plans for the specified subscription type', async () => {
         const basicPlan = await repository.create(SubscriptionType.BASIC);
-        const premiumPlan = await repository.create(SubscriptionType.PRIVILEGED);
+        const extendedPlan = await repository.create(SubscriptionType.EXTENDED);
+        const privilegedPlan = await repository.create(SubscriptionType.PRIVILEGED);
 
         const activeBasicPlans = await repository.findAllActiveBySubscriptionType(SubscriptionType.BASIC);
         expect(activeBasicPlans).to.have.lengthOf(1);
         expect(activeBasicPlans[0].id).to.equal(basicPlan.id);
 
-        const activePremiumPlans = await repository.findAllActiveBySubscriptionType(SubscriptionType.PRIVILEGED);
-        expect(activePremiumPlans).to.have.lengthOf(1);
-        expect(activePremiumPlans[0].id).to.equal(premiumPlan.id);
+        const activeExtendedPlans = await repository.findAllActiveBySubscriptionType(SubscriptionType.EXTENDED);
+        expect(activeExtendedPlans).to.have.lengthOf(1);
+        expect(activeExtendedPlans[0].id).to.equal(extendedPlan.id);
+
+        const activePrivilegedPlans = await repository.findAllActiveBySubscriptionType(SubscriptionType.PRIVILEGED);
+        expect(activePrivilegedPlans).to.have.lengthOf(1);
+        expect(activePrivilegedPlans[0].id).to.equal(privilegedPlan.id);
       });
     });
   };
