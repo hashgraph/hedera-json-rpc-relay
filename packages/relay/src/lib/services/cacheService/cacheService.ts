@@ -95,8 +95,8 @@ export class CacheService {
 
     this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     this.sharedCache = this.internalCache;
-    this.isSharedCacheEnabled = process.env.TEST === 'true' ? false : this.isRedisEnabled();
-    this.shouldMultiSet = process.env.MULTI_SET && process.env.MULTI_SET === 'true' ? true : false;
+    this.isSharedCacheEnabled = process.env.TEST !== 'true' && this.isRedisEnabled();
+    this.shouldMultiSet = process.env.MULTI_SET === 'true';
 
     if (this.isSharedCacheEnabled) {
       this.sharedCache = new RedisCache(logger.child({ name: 'redisCache' }), register);
@@ -130,13 +130,7 @@ export class CacheService {
    * @returns {boolean} Returns true if Redis caching is enabled, otherwise false.
    */
   public isRedisEnabled(): boolean {
-    const redisEnabled = process.env.REDIS_ENABLED && process.env.REDIS_ENABLED === 'true';
-    const redisUrlValid = process.env.REDIS_URL && process.env.REDIS_URL !== '';
-
-    if (redisEnabled && redisUrlValid) {
-      return true;
-    }
-    return false;
+    return process.env.REDIS_ENABLED === 'true' && !!process.env.REDIS_URL;
   }
 
   /**
@@ -157,7 +151,8 @@ export class CacheService {
     } catch (error) {
       const redisError = new RedisCacheError(error);
       this.logger.error(
-        `${requestIdPrefix} Error occurred while getting the cache from Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
+        redisError,
+        `${requestIdPrefix} Error occurred while getting the cache from Redis. Fallback to internal cache.`,
       );
 
       // fallback to internal cache in case of Redis error
@@ -221,7 +216,8 @@ export class CacheService {
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
-          `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
+          redisError,
+          `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache.`,
         );
       }
     }
@@ -261,7 +257,8 @@ export class CacheService {
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
-          `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. Error is: ${redisError.fullError}`,
+          redisError,
+          `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache.`,
         );
       }
     }
@@ -290,9 +287,7 @@ export class CacheService {
         return;
       } catch (error) {
         const redisError = new RedisCacheError(error);
-        this.logger.error(
-          `${requestIdPrefix} Error occurred while deleting cache from Redis. Error is: ${redisError.fullError}`,
-        );
+        this.logger.error(redisError, `${requestIdPrefix} Error occurred while deleting cache from Redis.`);
       }
     }
 
@@ -314,9 +309,7 @@ export class CacheService {
         return;
       } catch (error) {
         const redisError = new RedisCacheError(error);
-        this.logger.error(
-          `${requestIdPrefix} Error occurred while clearing Redis cache. Error is: ${redisError.fullError}`,
-        );
+        this.logger.error(redisError, `${requestIdPrefix} Error occurred while clearing Redis cache.`);
       }
     }
 
@@ -342,9 +335,7 @@ export class CacheService {
         return await this.sharedCache.incrBy(key, amount, callingMethod, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
-        this.logger.error(
-          `${requestIdPrefix} Error occurred while incrementing cache in Redis. Error is: ${redisError.fullError}`,
-        );
+        this.logger.error(redisError, `${requestIdPrefix} Error occurred while incrementing cache in Redis.`);
       }
     }
 
@@ -380,9 +371,7 @@ export class CacheService {
         return await this.sharedCache.rPush(key, value, callingMethod, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
-        this.logger.error(
-          `${requestIdPrefix} Error occurred while pushing cache in Redis. Error is: ${redisError.fullError}`,
-        );
+        this.logger.error(redisError, `${requestIdPrefix} Error occurred while pushing cache in Redis.`);
       }
     }
 
@@ -429,9 +418,7 @@ export class CacheService {
         return await this.sharedCache.lRange(key, start, end, callingMethod, requestIdPrefix);
       } catch (error) {
         const redisError = new RedisCacheError(error);
-        this.logger.error(
-          `${requestIdPrefix} Error occurred while getting cache in Redis. Error is: ${redisError.fullError}`,
-        );
+        this.logger.error(redisError, `${requestIdPrefix} Error occurred while getting cache in Redis.`);
       }
     }
 
@@ -444,5 +431,26 @@ export class CacheService {
       end = values.length + end;
     }
     return values.slice(start, end + 1);
+  }
+
+  /**
+   * Retrieves all keys matching the given pattern.
+   * @param {string} pattern - The pattern to match keys against.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
+   * @returns {Promise<string[]>} A Promise that resolves with an array of keys that match the pattern.
+   */
+  async keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]> {
+    if (this.isSharedCacheEnabled && this.sharedCache instanceof RedisCache) {
+      try {
+        return await this.sharedCache.keys(pattern, callingMethod, requestIdPrefix);
+      } catch (error) {
+        const redisError = new RedisCacheError(error);
+        this.logger.error(redisError, `${requestIdPrefix} Error occurred while getting keys from Redis.`);
+      }
+    }
+
+    // Fallback to internal cache
+    return this.internalCache.keys(pattern, callingMethod, requestIdPrefix);
   }
 }
