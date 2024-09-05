@@ -62,7 +62,7 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
       });
 
       this.afterAll(async () => {
-        await redisInMemoryServer.stop();
+        // await redisInMemoryServer.stop();
         process.env.TEST = test;
         process.env.REDIS_ENABLED = redisEnabled;
         process.env.REDIS_URL = redisUrl;
