@@ -199,8 +199,11 @@ app.getKoaApp().use(async (ctx, next) => {
 });
 
 const logAndHandleResponse = async (methodName: string, methodParams: any[], methodFunction: any) => {
+  logger.debug('Method name: ' + methodName);
   const requestId = app.getRequestId();
+  logger.debug('Request id' + requestId);
   const requestIp = app.getIpRequest();
+  logger.debug('Request ip' + requestIp);
   const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
   const requestDetails: IRequestDetails = { requestIdPrefix, requestIp };
   const methodsToPassRequestDetails = [
@@ -209,6 +212,10 @@ const logAndHandleResponse = async (methodName: string, methodParams: any[], met
     'eth_sendRawTransaction',
     'eth_feeHistory',
     'eth_getTransactionReceipt',
+    'eth_getBlockByNumber',
+    'eth_estimateGas',
+    'eth_getBlockByHash',
+    'eth_gasPrice',
   ];
 
   try {
@@ -221,7 +228,7 @@ const logAndHandleResponse = async (methodName: string, methodParams: any[], met
     }
 
     const passRequestDetails = methodsToPassRequestDetails.includes(methodName);
-    const response = await methodFunction(passRequestDetails ? requestDetails : requestId);
+    const response = await methodFunction(passRequestDetails ? requestDetails : requestIdPrefix);
     if (response instanceof JsonRpcError) {
       // log error only if it is not a contract revert, otherwise log it as debug
       if (response.code === predefined.CONTRACT_REVERT().code) {
@@ -347,8 +354,8 @@ app.useRpc('eth_chainId', async () => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByNumber', async (params: any) => {
-  return logAndHandleResponse('eth_getBlockByNumber', params, (requestId) =>
-    relay.eth().getBlockByNumber(params?.[0], Boolean(params?.[1]), requestId),
+  return logAndHandleResponse('eth_getBlockByNumber', params, (requestDetails) =>
+    relay.eth().getBlockByNumber(params?.[0], Boolean(params?.[1]), requestDetails),
   );
 });
 
@@ -360,8 +367,8 @@ app.useRpc('eth_getBlockByNumber', async (params: any) => {
  * returns: Block object
  */
 app.useRpc('eth_getBlockByHash', async (params: any) => {
-  return logAndHandleResponse('eth_getBlockByHash', params, (requestId) =>
-    relay.eth().getBlockByHash(params?.[0], Boolean(params?.[1]), requestId),
+  return logAndHandleResponse('eth_getBlockByHash', params, (requestDetails) =>
+    relay.eth().getBlockByHash(params?.[0], Boolean(params?.[1]), requestDetails),
   );
 });
 
@@ -371,7 +378,7 @@ app.useRpc('eth_getBlockByHash', async (params: any) => {
  * returns: Gas price - hex encoded integer
  */
 app.useRpc('eth_gasPrice', async () => {
-  return logAndHandleResponse('eth_gasPrice', [], (requestId) => relay.eth().gasPrice(requestId));
+  return logAndHandleResponse('eth_gasPrice', [], (requestDetails) => relay.eth().gasPrice(requestDetails));
 });
 
 /**
