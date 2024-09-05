@@ -32,7 +32,7 @@ on:
 
 jobs:
   acceptance-workflow:
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: smart-contracts-linux-large
     timeout-minutes: 50
     permissions:
       contents: write

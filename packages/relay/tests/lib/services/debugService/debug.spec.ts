@@ -501,7 +501,9 @@ describe('Debug API Test Suite', async function () {
       });
 
       it('test case for non-existing transaction hash', async function () {
-        const expectedError = predefined.INTERNAL_ERROR('Not found');
+        const expectedError = predefined.RESOURCE_NOT_FOUND(
+          `Failed to retrieve contract results for transaction ${nonExistentTransactionHash}`,
+        );
 
         await RelayAssertions.assertRejection(expectedError, debugService.debug_traceTransaction, true, debugService, [
           nonExistentTransactionHash,

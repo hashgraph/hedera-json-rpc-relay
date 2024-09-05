@@ -97,6 +97,7 @@ export class MirrorNodeClient {
     [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT, [404]],
     [MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT, [404]],
     [MirrorNodeClient.GET_CONTRACT_RESULTS_ENDPOINT, [404]],
+    [MirrorNodeClient.GET_CONTRACTS_RESULTS_ACTIONS, [404]],
     [MirrorNodeClient.GET_CONTRACTS_RESULTS_OPCODES, [404]],
     [MirrorNodeClient.GET_NETWORK_EXCHANGERATE_ENDPOINT, [404]],
     [MirrorNodeClient.GET_NETWORK_FEES_ENDPOINT, [404]],
