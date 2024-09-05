@@ -99,25 +99,33 @@ export class HbarLimitService implements IHbarLimitService {
     this.hbarLimitRemainingGauge.set(this.totalBudget);
     this.remainingBudget = this.totalBudget;
 
-    this.dailyUniqueSpendingPlansCounter = {} as Record<SubscriptionType, Counter>;
-    this.averageDailySpendingPlanUsagesGauge = {} as Record<SubscriptionType, Gauge>;
-    Object.values(SubscriptionType).forEach((type) => {
-      const dailyUniqueSpendingPlansCounterName = `daily_unique_spending_plans_counter_${type.toLowerCase()}`;
-      this.register.removeSingleMetric(dailyUniqueSpendingPlansCounterName);
-      this.dailyUniqueSpendingPlansCounter[type] = new Counter({
-        name: dailyUniqueSpendingPlansCounterName,
-        help: `Tracks the number of unique spending plans used daily for ${type} subscription type`,
-        registers: [register],
-      });
+    this.dailyUniqueSpendingPlansCounter = Object.values(SubscriptionType).reduce(
+      (acc, type) => {
+        const dailyUniqueSpendingPlansCounterName = `daily_unique_spending_plans_counter_${type.toLowerCase()}`;
+        this.register.removeSingleMetric(dailyUniqueSpendingPlansCounterName);
+        acc[type] = new Counter({
+          name: dailyUniqueSpendingPlansCounterName,
+          help: `Tracks the number of unique spending plans used daily for ${type} subscription type`,
+          registers: [register],
+        });
+        return acc;
+      },
+      {} as Record<SubscriptionType, Counter>,
+    );
 
-      const averageDailySpendingGaugeName = `average_daily_spending_plan_usages_gauge_${type.toLowerCase()}`;
-      this.register.removeSingleMetric(averageDailySpendingGaugeName);
-      this.averageDailySpendingPlanUsagesGauge[type] = new Gauge({
-        name: averageDailySpendingGaugeName,
-        help: `Tracks the average daily spending plan usages for ${type} subscription type`,
-        registers: [register],
-      });
-    });
+    this.averageDailySpendingPlanUsagesGauge = Object.values(SubscriptionType).reduce(
+      (acc, type) => {
+        const averageDailySpendingGaugeName = `average_daily_spending_plan_usages_gauge_${type.toLowerCase()}`;
+        this.register.removeSingleMetric(averageDailySpendingGaugeName);
+        acc[type] = new Gauge({
+          name: averageDailySpendingGaugeName,
+          help: `Tracks the average daily spending plan usages for ${type} subscription type`,
+          registers: [register],
+        });
+        return acc;
+      },
+      {} as Record<SubscriptionType, Gauge>,
+    );
 
     // Reset the rate limiter at the start of the next day
     const now = Date.now();
@@ -211,9 +219,8 @@ export class HbarLimitService implements IHbarLimitService {
     this.remainingBudget -= cost;
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
 
-    // Calculate and set the average daily spending plan usages per subscription type
-    const averageUsage = await this.calculateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType);
-    this.averageDailySpendingPlanUsagesGauge[spendingPlan.subscriptionType].set(averageUsage);
+    // Done asynchronously in the background
+    this.updateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType).then();
 
     this.logger.trace(
       `${requestIdPrefix} HBAR rate limit expense update: cost=${cost}, remainingBudget=${this.remainingBudget}`,
@@ -247,15 +254,16 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Calculates the average daily usage per subscription type.
-   * @param {SubscriptionType} subscriptionType - The subscription type to calculate the average daily usage for.
-   * @private {Promise<number>} - A promise that resolves with the average daily usage.
+   * Updates the average daily usage per subscription type.
+   * @param {SubscriptionType} subscriptionType - The subscription type to update the average daily usage for.
+   * @private {Promise<void>} - A promise that resolves when the average daily usage has been updated.
    */
-  private async calculateAverageDailyUsagePerSubscriptionType(subscriptionType: SubscriptionType): Promise<number> {
+  private async updateAverageDailyUsagePerSubscriptionType(subscriptionType: SubscriptionType): Promise<void> {
     const plans = await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionType(subscriptionType);
     const planSpending = await Promise.all(plans.map((plan) => this.hbarSpendingPlanRepository.getSpentToday(plan.id)));
     const totalUsage = planSpending.reduce((total, spentTodayByPlan) => total + spentTodayByPlan, 0);
-    return Math.round(totalUsage / plans.length);
+    const averageUsage = Math.round(totalUsage / plans.length);
+    this.averageDailySpendingPlanUsagesGauge[subscriptionType].set(averageUsage);
   }
 
   /**
