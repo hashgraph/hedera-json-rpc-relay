@@ -203,6 +203,7 @@ describe('HbarSpendingPlanRepository', function () {
     });
 
     describe('getSpentToday', () => {
+      const mockedOneDayInMillis: number = 200;
       let oneDayInMillis: number;
 
       beforeEach(() => {
@@ -210,7 +211,7 @@ describe('HbarSpendingPlanRepository', function () {
         oneDayInMillis = repository['oneDayInMillis'];
         // set oneDayInMillis to 1 second for testing
         // @ts-ignore
-        repository['oneDayInMillis'] = 1000;
+        repository['oneDayInMillis'] = mockedOneDayInMillis;
       });
 
       afterEach(() => {
@@ -246,7 +247,7 @@ describe('HbarSpendingPlanRepository', function () {
         await repository.addAmountToSpentToday(createdPlan.id, amount);
         await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(amount);
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, mockedOneDayInMillis + 100));
 
         await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(0);
       });
