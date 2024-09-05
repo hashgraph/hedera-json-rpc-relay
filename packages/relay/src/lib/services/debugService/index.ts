@@ -299,6 +299,9 @@ export class DebugService implements IDebugService {
         this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestIdPrefix),
         this.mirrorNodeClient.getContractResultWithRetry(transactionHash),
       ]);
+      if (!actionsResponse || !transactionsResponse) {
+        throw predefined.RESOURCE_NOT_FOUND(`Failed to retrieve contract results for transaction ${transactionHash}`);
+      }
 
       const { call_type: type } = actionsResponse.actions[0];
       const formattedActions = await this.formatActionsResult(actionsResponse.actions, requestIdPrefix);

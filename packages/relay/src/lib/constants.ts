@@ -141,14 +141,13 @@ export default {
   RELAY_PORT: process.env.SERVER_PORT || 7546,
 
   FUNCTION_SELECTOR_CHAR_LENGTH: 10,
-  MIRROR_NODE_GET_CONTRACT_RESULTS_DEFAULT_RETRIES: 10,
+  MIRROR_NODE_RETRY_DELAY_DEFAULT: 2000,
+  MIRROR_NODE_REQUEST_RETRY_COUNT_DEFAULT: 10,
   BASE_HEX_REGEX: '^0[xX][a-fA-F0-9]',
 
   TRANSACTION_RESULT_STATUS: {
     WRONG_NONCE: 'WRONG_NONCE',
   },
-
-  NONCE_PRECHECK_BUFFER: parseInt(process.env.NONCE_PRECHECK_BUFFER || '1'),
 
   PRECHECK_STATUS_ERROR_STATUS_CODES: {
     INVALID_CONTRACT_ID: 16,
@@ -190,4 +189,15 @@ export default {
 
   // @source: https://docs.hedera.com/hedera/networks/mainnet/fees
   TX_RECORD_QUERY_COST_IN_CENTS: 0.01,
+
+  EVENTS: {
+    EXECUTE_TRANSACTION: 'execute_transaction',
+    EXECUTE_QUERY: 'execute_query',
+  },
+
+  EXECUTION_MODE: {
+    QUERY: `QUERY`,
+    RECORD: `RECORD`,
+    TRANSACTION: `TRANSACTION`,
+  },
 };

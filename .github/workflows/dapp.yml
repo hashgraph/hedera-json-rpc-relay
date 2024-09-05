@@ -14,7 +14,7 @@ concurrency:
 jobs:
   setup-local-hedera:
     name: Dapp Tests
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
     timeout-minutes: 45 # Set to 45 minutes for now
     permissions:
       contents: write
@@ -61,7 +61,7 @@ jobs:
         run: npm run start &
 
       - name: Build, Bootstrap & Test the dapp in Docker
-        run: docker-compose up --exit-code-from synpress
+        run: docker compose up --exit-code-from synpress
         working-directory: ./dapp-example/
 
       - name: Dump relay logs

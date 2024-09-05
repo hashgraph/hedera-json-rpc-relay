@@ -15,7 +15,7 @@ on:
 
 jobs:
   release-acceptance-test:
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -93,4 +93,3 @@ jobs:
           comment_mode: off
           json_thousands_separator: ','
           junit_files: 'test-*.xml'
-                     

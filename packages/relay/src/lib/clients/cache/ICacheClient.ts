@@ -19,6 +19,7 @@
  */
 
 export interface ICacheClient {
+  keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]>;
   get(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any>;
   set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string): Promise<void>;
   multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): Promise<void>;
