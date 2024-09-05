@@ -263,4 +263,39 @@ describe('subscriptionController', async function () {
     subscriptionController.unsubscribe(wsConnection, subId);
     subscriptionController.unsubscribe(wsConnection, subId2);
   });
+
+  describe('With WS_SAME_SUB_FOR_SAME_EVENT == `false`', async function () {
+    let originalEnv;
+    let originalSubscriptionController;
+
+    before(() => {
+      originalEnv = process.env.WS_SAME_SUB_FOR_SAME_EVENT;
+      originalSubscriptionController = subscriptionController;
+
+      process.env.WS_SAME_SUB_FOR_SAME_EVENT = 'false';
+      const registry = new Registry();
+      poller = new Poller(ethImpl, logger, registry);
+      subscriptionController = new SubscriptionController(poller, logger, registry);
+    });
+
+    after(() => {
+      process.env.WS_SAME_SUB_FOR_SAME_EVENT = originalEnv;
+      subscriptionController = originalSubscriptionController;
+    });
+
+    it('Subscribing to the same event and filters should return different subscription id', async function () {
+      const connectionId = '7';
+      const wsConnection = new MockWsConnection(connectionId);
+      const tag1 = {
+        event: 'logs',
+        filters: { topics: ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'] },
+      };
+      const subId = subscriptionController.subscribe(wsConnection, tag1.event);
+      const subId2 = subscriptionController.subscribe(wsConnection, tag1.event);
+
+      expect(subId).to.be.not.eq(subId2);
+      subscriptionController.unsubscribe(wsConnection, subId);
+      subscriptionController.unsubscribe(wsConnection, subId2);
+    });
+  });
 });
