@@ -19,8 +19,8 @@
  */
 
 import { pino } from 'pino';
-import { expect } from 'chai';
-import * as sinon from 'sinon';
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import { RedisCache } from '../../../src/lib/clients';
 import { Registry } from 'prom-client';
 import { RedisInMemoryServer } from '../../redisInMemoryServer';
@@ -32,9 +32,10 @@ let redisInMemoryServer: RedisInMemoryServer;
 
 const callingMethod = 'RedisCacheTest';
 
+chai.use(chaiAsPromised);
+
 describe('RedisCache Test Suite', async function () {
   this.timeout(10000);
-  const mock = sinon.createSandbox();
 
   this.beforeAll(async () => {
     redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6379);
@@ -42,8 +43,8 @@ describe('RedisCache Test Suite', async function () {
     redisCache = new RedisCache(logger.child({ name: `cache` }), registry);
   });
 
-  this.afterEach(() => {
-    mock.restore();
+  this.afterEach(async () => {
+    await redisCache.clear();
   });
 
   this.afterAll(async () => {
@@ -314,6 +315,84 @@ describe('RedisCache Test Suite', async function () {
 
       const range = await redisCache.lRange(key, 0, 1, callingMethod);
       expect(range).deep.equal(['item1', 'item2']);
+    });
+  });
+
+  describe('KEYS Test Suite', async function () {
+    it('should retrieve keys matching a glob-style pattern with *', async function () {
+      const keys = ['hello', 'hallo', 'hxllo'];
+      for (let i = 0; i < keys.length; i++) {
+        await redisCache.set(keys[i], `value${i}`, callingMethod);
+      }
+      await expect(redisCache.keys('h*llo', callingMethod)).to.eventually.have.members(keys);
+    });
+
+    it('should retrieve keys matching a glob-style pattern with ?', async function () {
+      const keys = ['hello', 'hallo', 'hxllo'];
+      for (let i = 0; i < keys.length; i++) {
+        await redisCache.set(keys[i], `value${i}`, callingMethod);
+      }
+      await expect(redisCache.keys('h?llo', callingMethod)).to.eventually.have.members(keys);
+    });
+
+    it('should retrieve keys matching a glob-style pattern with []', async function () {
+      const key1 = 'hello';
+      const key2 = 'hallo';
+      const pattern = 'h[ae]llo';
+
+      await redisCache.set(key1, 'value1', callingMethod);
+      await redisCache.set(key2, 'value2', callingMethod);
+
+      const keys = await redisCache.keys(pattern, callingMethod);
+      expect(keys).to.include.members([key1, key2]);
+    });
+
+    it('should retrieve keys matching a glob-style pattern with [^]', async function () {
+      const key1 = 'hallo';
+      const key2 = 'hbllo';
+      const pattern = 'h[^e]llo';
+
+      await redisCache.set(key1, 'value1', callingMethod);
+      await redisCache.set(key2, 'value2', callingMethod);
+
+      const keys = await redisCache.keys(pattern, callingMethod);
+      expect(keys).to.include.members([key1, key2]);
+    });
+
+    it('should retrieve keys matching a glob-style pattern with [a-b]', async function () {
+      const key1 = 'hallo';
+      const key2 = 'hbllo';
+      const pattern = 'h[a-b]llo';
+
+      await redisCache.set(key1, 'value1', callingMethod);
+      await redisCache.set(key2, 'value2', callingMethod);
+
+      const keys = await redisCache.keys(pattern, callingMethod);
+      expect(keys).to.include.members([key1, key2]);
+    });
+
+    it('should retrieve keys matching a pattern with escaped special characters', async function () {
+      const keys = ['h*llo', 'h?llo', 'h[llo', 'h]llo'];
+      for (let i = 0; i < keys.length; i++) {
+        await redisCache.set(keys[i], `value${i}`, callingMethod);
+      }
+      for (const key of keys) {
+        await expect(redisCache.keys(key.replace(/([*?[\]])/g, '\\$1'), callingMethod)).eventually.has.members([key]);
+      }
+    });
+
+    it('should retrieve all keys with * pattern', async function () {
+      const key1 = 'firstname';
+      const key2 = 'lastname';
+      const key3 = 'age';
+      const pattern = '*';
+
+      await redisCache.set(key1, 'Jack', callingMethod);
+      await redisCache.set(key2, 'Stuntman', callingMethod);
+      await redisCache.set(key3, '35', callingMethod);
+
+      const keys = await redisCache.keys(pattern, callingMethod);
+      expect(keys).to.include.members([key1, key2, key3]);
     });
   });
 });

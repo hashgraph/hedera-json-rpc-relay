@@ -223,9 +223,35 @@ export class LocalLRUCache implements ICacheClient {
    * @returns {Promise<string[]>} An array of keys that match the pattern.
    */
   public async keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]> {
-    const keys = Array.from(this.cache.keys());
-    const matchingKeys = keys.filter((key) => key.match(pattern) !== null);
-    this.logger.trace(`${requestIdPrefix} returning keys ${matchingKeys} on ${callingMethod} call`);
+    const keys = Array.from(this.cache.rkeys());
+
+    // Replace escaped special characters with placeholders
+    let regexPattern = pattern
+      .replace(/\\\*/g, '__ESCAPED_STAR__')
+      .replace(/\\\?/g, '__ESCAPED_QUESTION__')
+      .replace(/\\\[/g, '__ESCAPED_OPEN_BRACKET__')
+      .replace(/\\]/g, '__ESCAPED_CLOSE_BRACKET__');
+
+    // Replace unescaped special characters with regex equivalents
+    regexPattern = regexPattern
+      .replace(/\\([*?[\]])/g, (_, char) => `__ESCAPED_${char}__`)
+      .replace(/\[([^\]\\]+)]/g, '[$1]')
+      .replace(/(?<!\\)\*/g, '.*')
+      .replace(/(?<!\\)\?/g, '.')
+      .replace(/(?<!\\)\[!]/g, '[^]');
+
+    // Replace placeholders with the original special characters
+    regexPattern = regexPattern
+      .replace(/__ESCAPED_STAR__/g, '\\*')
+      .replace(/__ESCAPED_QUESTION__/g, '\\?')
+      .replace(/__ESCAPED_OPEN_BRACKET__/g, '\\[')
+      .replace(/__ESCAPED_CLOSE_BRACKET__/g, '\\]');
+
+    const regex = new RegExp(regexPattern);
+
+    const matchingKeys = keys.filter((key) => regex.test(key));
+
+    this.logger.trace(`${requestIdPrefix} retrieving keys matching ${pattern} on ${callingMethod} call`);
     return matchingKeys;
   }
 }
