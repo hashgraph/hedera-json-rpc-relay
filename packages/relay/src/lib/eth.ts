@@ -1230,7 +1230,7 @@ export class EthImpl implements Eth {
         );
       });
 
-      if (blockNumOrTag != EthImpl.blockLatest && blockNumOrTag != EthImpl.blockPending) {
+      if (!this.common.blockTagIsLatestOrPending(blockNumOrTag)) {
         await this.cacheService.set(cacheKey, block, EthImpl.ethGetBlockByNumber, undefined, requestIdPrefix);
       }
     }

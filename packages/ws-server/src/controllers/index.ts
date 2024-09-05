@@ -21,9 +21,9 @@
 import { WS_CONSTANTS } from '../utils/constants';
 import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
-import { predefined, Relay } from '@hashgraph/json-rpc-relay';
 import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import { handleEthSubsribe, handleEthUnsubscribe } from './eth_subscribe';
+import { JsonRpcError, predefined, Relay } from '@hashgraph/json-rpc-relay';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { resolveParams, validateJsonRpcRequest, verifySupportedMethod } from '../utils/utils';
@@ -84,7 +84,11 @@ const handleSendingRequestsToRelay = async ({
 
     return jsonResp(request.id, null, txRes);
   } catch (error: any) {
-    throw predefined.INTERNAL_ERROR(JSON.stringify(error.message || error));
+    if (error instanceof JsonRpcError) {
+      throw error;
+    } else {
+      throw predefined.INTERNAL_ERROR(JSON.stringify(error.message || error));
+    }
   }
 };
 
