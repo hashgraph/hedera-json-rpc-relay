@@ -18,14 +18,15 @@
  *
  */
 
+import { Logger } from 'pino';
+import constants from '../../constants';
+import { Counter, Gauge, Registry } from 'prom-client';
 import { IHbarLimitService } from './IHbarLimitService';
+import { formatRequestIdMessage } from '../../../formatters';
+import { SubscriptionType } from '../../db/types/hbarLimiter/subscriptionType';
+import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendingPlan';
 import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
-import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendingPlan';
-import { SubscriptionType } from '../../db/types/hbarLimiter/subscriptionType';
-import { Logger } from 'pino';
-import { formatRequestIdMessage } from '../../../formatters';
-import { Counter, Gauge, Registry } from 'prom-client';
 
 export class HbarLimitService implements IHbarLimitService {
   static readonly ONE_DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
@@ -189,6 +190,41 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
+   * Determines whether the file transactions should be preemptively limited based on the estimated fees and remaining budget.
+   *
+   * @param {number} callDataSize - The size of the call data in bytes.
+   * @param {number} fileChunkSize - The size of each file chunk in bytes.
+   * @param {number} currentNetworkExchangeRateInCents - The current network exchange rate of HBAR to USD in cents.
+   * @param {string} requestId - The unique identifier for the request.
+   * @returns {Promise<boolean>} - A promise that resolves to `true` if the transactions should be limited, otherwise `false`.
+   */
+  async shouldPreemptivelyLimitFileTransactions(
+    callDataSize: number,
+    fileChunkSize: number,
+    currentNetworkExchangeRateInCents: number,
+    requestId: string,
+  ): Promise<boolean> {
+    // TODO: Implement logic for whitelisted accounts
+
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const { numFileCreateTxs, numFileAppendTxs, totalEstimatedFeeInTinyBar } = this.estimateFileTransactionFee(
+      callDataSize,
+      fileChunkSize,
+      currentNetworkExchangeRateInCents,
+    );
+
+    const sharedLogMessage = `totalEstimatedFeeInTinyBar=${totalEstimatedFeeInTinyBar}, remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`;
+
+    if (this.remainingBudget - totalEstimatedFeeInTinyBar < 0) {
+      this.logger.warn(`${requestIdPrefix} HBAR preemptive rate limit incoming call: ${sharedLogMessage}`);
+      return true;
+    } else {
+      this.logger.trace(`${requestIdPrefix} HBAR preemptive rate limit not reached: ${sharedLogMessage}`);
+      return false;
+    }
+  }
+
+  /**
    * Add expense to the remaining budget.
    * @param {number} cost - The cost of the expense.
    * @param {string} ethAddress - The Ethereum address to add the expense to.
@@ -250,12 +286,12 @@ export class HbarLimitService implements IHbarLimitService {
         `${requestIdPrefix} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, resetTimestamp=${this.reset}`,
       );
       return true;
+    } else {
+      this.logger.trace(
+        `${requestIdPrefix} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, resetTimestamp=${this.reset}.`,
+      );
+      return false;
     }
-
-    this.logger.trace(
-      `${requestIdPrefix} HBAR rate limit not reached. ${this.remainingBudget} out of ${this.totalBudget} tℏ left in relay budget until ${this.reset}.`,
-    );
-    return false;
   }
 
   /**
@@ -332,5 +368,43 @@ export class HbarLimitService implements IHbarLimitService {
       // await this.ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: spendingPlan.id });
     }
     return spendingPlan;
+  }
+
+  /**
+   * Estimates the total transaction fee in tinybars based on the call data size, file chunk size, and the current network exchange rate in cents.
+   *
+   * @param {number} callDataSize - The size of the call data in bytes.
+   * @param {number} fileChunkSize - The size of each file chunk in bytes.
+   * @param {number} currentNetworkExchangeRateInCents - The current exchange rate of HBAR to USD cents.
+   * @returns An object containing:
+   *   - `numFileCreateTxs` (number): The number of file creation transactions.
+   *   - `numFileAppendTxs` (number): The number of file append transactions.
+   *   - `totalEstimatedFeeInTinyBar` (number): The estimated total transaction fee in tinybars.
+   */
+  private estimateFileTransactionFee(
+    callDataSize: number,
+    fileChunkSize: number,
+    currentNetworkExchangeRateInCents: number,
+  ): {
+    numFileCreateTxs: number;
+    numFileAppendTxs: number;
+    totalEstimatedFeeInTinyBar: number;
+  } {
+    const numFileCreateTxs = 1;
+    const numFileAppendTxs = Math.floor(callDataSize / fileChunkSize);
+    const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
+    const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
+
+    const totalRequestFeeInCents = numFileCreateTxs * fileCreateFeeInCents + numFileAppendTxs * fileAppendFeeInCents;
+
+    const totalEstimatedFeeInTinyBar = Math.round(
+      (totalRequestFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
+    );
+
+    return {
+      numFileCreateTxs,
+      numFileAppendTxs,
+      totalEstimatedFeeInTinyBar,
+    };
   }
 }

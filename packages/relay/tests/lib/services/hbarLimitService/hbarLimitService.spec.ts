@@ -18,34 +18,39 @@
  *
  */
 
-import chai, { expect } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import pino, { Logger } from 'pino';
+import chai, { expect } from 'chai';
+import { Registry } from 'prom-client';
+import { randomBytes, uuidV4 } from 'ethers';
+import chaiAsPromised from 'chai-as-promised';
+import constants from '../../../../src/lib/constants';
+import { estimateFileTransactionsFee, getRequestId } from '../../../helpers';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
+import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
+import { HbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/hbarSpendingPlan';
 import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
-import pino, { Logger } from 'pino';
-import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 import {
-  EthAddressHbarSpendingPlanNotFoundError,
-  HbarSpendingPlanNotActiveError,
   HbarSpendingPlanNotFoundError,
+  HbarSpendingPlanNotActiveError,
+  EthAddressHbarSpendingPlanNotFoundError,
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
-import { HbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/hbarSpendingPlan';
-import { randomBytes, uuidV4 } from 'ethers';
-import { Counter, Gauge, Registry } from 'prom-client';
-import constants from '../../../../src/lib/constants';
 
 chai.use(chaiAsPromised);
 
 describe('HbarLimitService', function () {
   const logger = pino();
-  const register = new Registry();
+  const callDataSize = 6000;
   const totalBudget = 100_000;
-  const mode = constants.EXECUTION_MODE.TRANSACTION;
   const methodName = 'testMethod';
   const mockEthAddress = '0x123';
+  const register = new Registry();
+  const mockRequestId = getRequestId();
   const mockPlanId = uuidV4(randomBytes(16));
+  const mockedExchangeRateInCents: number = 12;
+  const mode = constants.EXECUTION_MODE.TRANSACTION;
+  const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
 
   let hbarLimitService: HbarLimitService;
   let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarSpendingPlanRepository>;
@@ -171,6 +176,67 @@ describe('HbarLimitService', function () {
       const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress);
 
       expect(result).to.be.true;
+    });
+  });
+
+  describe('estimateFileTransactionFee', function () {
+    it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
+      // @ts-ignore
+      const result = hbarLimitService.estimateFileTransactionFee(
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+      );
+      const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
+      expect(result).to.deep.eq(expectedResult);
+    });
+  });
+
+  describe('shouldPreemptivelyLimitFileTransactions', function () {
+    it('Should execute shouldPreemtivelyLimitFileTransactions() and return TRUE if estimated transactionFee is greater than remaining balance', async () => {
+      const { totalEstimatedFeeInTinyBar } = estimateFileTransactionsFee(
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+      );
+
+      // mock remaining budget to be smaller than the total estimated fee
+      const mockRemainingBudget = totalEstimatedFeeInTinyBar - 1;
+
+      // @ts-ignore
+      hbarLimitService.remainingBudget = mockRemainingBudget;
+
+      const result = await hbarLimitService.shouldPreemptivelyLimitFileTransactions(
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+        mockRequestId,
+      );
+
+      expect(result).to.be.true;
+    });
+
+    it('Should execute shouldPreemtivelyLimitFileTransactions() and return FALSE if estimated transactionFee is smaller than remaining balance', async () => {
+      const { totalEstimatedFeeInTinyBar } = estimateFileTransactionsFee(
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+      );
+
+      // mock remaining budget to be larger than the total estimated fee
+      const mockRemainingBudget = totalEstimatedFeeInTinyBar + 1;
+
+      // @ts-ignore
+      hbarLimitService.remainingBudget = mockRemainingBudget;
+
+      const result = await hbarLimitService.shouldPreemptivelyLimitFileTransactions(
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+        mockRequestId,
+      );
+
+      expect(result).to.be.false;
     });
   });
 

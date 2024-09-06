@@ -65,6 +65,7 @@ export enum CallType {
 }
 
 export default {
+  HBAR_TO_TINYBAR_COEF: 100_000_000,
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
   // 131072 bytes are 128kbytes
   SEND_RAW_TRANSACTION_SIZE_LIMIT: process.env.SEND_RAW_TRANSACTION_SIZE_LIMIT
@@ -198,6 +199,14 @@ export default {
 
   // @source: https://docs.hedera.com/hedera/networks/mainnet/fees
   TX_RECORD_QUERY_COST_IN_CENTS: 0.01,
+
+  // note: The maximum fileAppendChunkSize is currently set to 5KB by default; therefore, the estimated fees for FileCreate and FileAppend below are based on a file size of 5KB.
+  // The fee is calculated via the fee calculator: https://docs.hedera.com/hedera/networks/mainnet/fees
+  NETWORK_FEES_IN_CENTS: {
+    TRANSACTION_GET_RECORD: 0.01,
+    FILE_CREATE_PER_5_KB: 9.51,
+    FILE_APPEND_PER_5_KB: 9.55,
+  },
 
   EVENTS: {
     EXECUTE_TRANSACTION: 'execute_transaction',
