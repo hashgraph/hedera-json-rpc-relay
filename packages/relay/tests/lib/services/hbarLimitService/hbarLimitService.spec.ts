@@ -53,6 +53,7 @@ describe('HbarLimitService', function () {
   const mockRequestId = getRequestId();
   const mockPlanId = uuidV4(randomBytes(16));
 
+  const requestIdPrefix = `[Request ID: testId]`;
   let hbarLimitService: HbarLimitService;
   let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarSpendingPlanRepository>;
   let ethAddressHbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<EthAddressHbarSpendingPlanRepository>;
@@ -151,7 +152,7 @@ describe('HbarLimitService', function () {
       it('should return true if the total daily budget is exceeded', async function () {
         // @ts-ignore
         hbarLimitService.remainingBudget = 0;
-        const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress);
+        const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, requestIdPrefix);
         expect(result).to.be.true;
       });
 
@@ -454,7 +455,7 @@ describe('HbarLimitService', function () {
       });
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-      const result = await hbarLimitService['getSpendingPlan'](mockEthAddress);
+      const result = await hbarLimitService['getSpendingPlan'](mockEthAddress, requestIdPrefix);
 
       expect(result).to.deep.equal(spendingPlan);
     });
@@ -476,7 +477,7 @@ describe('HbarLimitService', function () {
       const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
 
-      const result = await hbarLimitService['getSpendingPlan'](mockEthAddress);
+      const result = await hbarLimitService['getSpendingPlan'](mockEthAddress, requestIdPrefix);
 
       expect(result).to.be.null;
     });
@@ -493,7 +494,7 @@ describe('HbarLimitService', function () {
 
   describe('getSpendingPlanByEthAddress', function () {
     const testGetSpendingPlanByEthAddressError = async (error: Error, errorClass: any) => {
-      const result = hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress);
+      const result = hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress, requestIdPrefix);
       await expect(result).to.be.eventually.rejectedWith(errorClass, error.message);
     };
 
@@ -531,7 +532,7 @@ describe('HbarLimitService', function () {
       });
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-      const result = await hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress);
+      const result = await hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress, requestIdPrefix);
 
       expect(result).to.deep.equal(spendingPlan);
     });
@@ -612,7 +613,7 @@ describe('HbarLimitService', function () {
         <any>'updateAverageDailyUsagePerSubscriptionType',
       );
 
-      await hbarLimitService.addExpense(expense, ethAddress, ipAddress);
+      await hbarLimitService.addExpense(expense, ethAddress, requestIdPrefix, ipAddress);
 
       expect(hbarSpendingPlanRepositoryStub.addAmountToSpentToday.calledOnceWith(mockPlanId, expense)).to.be.true;
       // @ts-ignore
@@ -636,9 +637,9 @@ describe('HbarLimitService', function () {
       );
       for (const { ethAddress, ipAddress } of testCases) {
         // @ts-ignore
-        await expect(hbarLimitService.addExpense(100, ethAddress, ipAddress)).to.be.eventually.rejectedWith(
-          'Cannot add expense without an eth address or ip address',
-        );
+        await expect(
+          hbarLimitService.addExpense(100, ethAddress, requestIdPrefix, ipAddress),
+        ).to.be.eventually.rejectedWith('Cannot add expense without an eth address or ip address');
       }
     });
 
@@ -650,7 +651,7 @@ describe('HbarLimitService', function () {
       );
       ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
-      await hbarLimitService.addExpense(100, mockEthAddress);
+      await hbarLimitService.addExpense(100, mockEthAddress, requestIdPrefix);
 
       expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
       expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
@@ -676,7 +677,7 @@ describe('HbarLimitService', function () {
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(createSpendingPlan(mockPlanId));
       hbarSpendingPlanRepositoryStub.addAmountToSpentToday.rejects(new Error('Failed to add expense'));
 
-      await expect(hbarLimitService.addExpense(100, mockEthAddress)).to.be.eventually.rejectedWith(
+      await expect(hbarLimitService.addExpense(100, mockEthAddress, requestIdPrefix)).to.be.eventually.rejectedWith(
         'Failed to add expense',
       );
     });

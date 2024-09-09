@@ -526,14 +526,15 @@ describe('Debug API Test Suite', async function () {
       });
 
       describe('resolveAddress', async function () {
+        const requestIdPrefix = `[Request ID: testId]`;
         it('should return null address with invalid parameters in resolveAddress', async function () {
-          const address = await debugService.resolveAddress(null!);
+          const address = await debugService.resolveAddress(null!, requestIdPrefix);
           expect(address).to.be.null;
         });
 
         it('should return passed address on notFound entity from the mirror node', async function () {
           restMock.onGet(ACCOUNT_BY_ADDRESS).reply(404, notFound);
-          const address = await debugService.resolveAddress(accountAddress);
+          const address = await debugService.resolveAddress(accountAddress, requestIdPrefix);
           expect(address).to.eq(accountAddress);
         });
       });

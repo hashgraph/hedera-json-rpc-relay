@@ -572,10 +572,16 @@ describe('@ethCall Eth Call spec', async function () {
         ...defaultCallData,
         gas: 25_000_000,
       };
-      await mockContractCall({ ...callData, gas: constants.MAX_GAS_PER_SEC, block: 'latest' }, false, 200, {
-        result: '0x00',
-      });
-      const res = await ethImpl.call(callData, 'latest');
+      await mockContractCall(
+        { ...callData, gas: constants.MAX_GAS_PER_SEC, block: 'latest' },
+        false,
+        200,
+        {
+          result: '0x00',
+        },
+        requestDetails,
+      );
+      const res = await ethImpl.call(callData, 'latest', requestDetails);
       expect(res).to.equal('0x00');
     });
 
@@ -965,6 +971,7 @@ describe('@ethCall Eth Call spec', async function () {
           data: REDIRECTED_SELECTOR,
         },
         'latest',
+        requestDetails,
       );
 
       assert(callConsensusNodeSpy.calledOnce);
@@ -978,6 +985,7 @@ describe('@ethCall Eth Call spec', async function () {
           data: NON_REDIRECTED_SELECTOR,
         },
         'latest',
+        requestDetails,
       );
 
       assert(callConsensusNodeSpy.notCalled);

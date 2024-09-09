@@ -326,7 +326,6 @@ export class MirrorNodeClient {
         ?.split(MirrorNodeClient.REQUEST_PREFIX_SEPARATOR)[1]
         .replace(MirrorNodeClient.REQUEST_PREFIX_TRAILING_BRACKET, MirrorNodeClient.EMPTY_STRING) ||
       MirrorNodeClient.EMPTY_STRING;
-    console.log('Request id', requestId);
     const controller = new AbortController();
     try {
       const axiosRequestConfig: AxiosRequestConfig = {
@@ -374,8 +373,6 @@ export class MirrorNodeClient {
   }
 
   async get<T = any>(path: string, pathLabel: string, requestIdPrefix: string, retries?: number): Promise<T | null> {
-    console.log('Mirron node getting data');
-    console.log(requestIdPrefix);
     return this.request<T>(path, pathLabel, 'GET', requestIdPrefix, null, retries);
   }
 

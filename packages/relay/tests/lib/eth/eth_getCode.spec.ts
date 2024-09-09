@@ -51,6 +51,8 @@ describe('@ethGetCode using MirrorNode', async function () {
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
   let validBlockParam = [null, 'earliest', 'latest', 'pending', 'finalized', 'safe', '0x0', '0x369ABF'];
   let invalidBlockParam = ['hedera', 'ethereum', '0xhbar', '0x369ABF369ABF369ABF369ABF'];
+  const requestIdPrefix = `[Request ID: testId]`;
+  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -86,20 +88,20 @@ describe('@ethGetCode using MirrorNode', async function () {
         }),
       );
 
-      const resNoCache = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
-      const resCached = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
+      const resNoCache = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
+      const resCached = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
       expect(resNoCache).to.equal(EthImpl.emptyHex);
       expect(resCached).to.equal(EthImpl.emptyHex);
     });
 
     it('should return the runtime_bytecode from the mirror node', async () => {
-      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
+      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
       expect(res).to.equal(MIRROR_NODE_DEPLOYED_BYTECODE);
     });
 
     it('should return the bytecode from SDK if Mirror Node returns 404', async () => {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(404, DEFAULT_CONTRACT);
-      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
+      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
       expect(res).to.equal(DEPLOYED_BYTECODE);
     });
 
@@ -108,7 +110,7 @@ describe('@ethGetCode using MirrorNode', async function () {
         ...DEFAULT_CONTRACT,
         runtime_bytecode: EthImpl.emptyHex,
       });
-      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
+      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
       expect(res).to.equal(DEPLOYED_BYTECODE);
     });
 
@@ -119,7 +121,7 @@ describe('@ethGetCode using MirrorNode', async function () {
       const redirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${HTS_TOKEN_ADDRESS.slice(
         2,
       )}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`;
-      const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, null);
+      const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, null, requestDetails);
       expect(res).to.equal(redirectBytecode);
     });
 
@@ -127,13 +129,13 @@ describe('@ethGetCode using MirrorNode', async function () {
       restMock.onGet(`contracts/${EthImpl.iHTSAddress}`).reply(200, DEFAULT_CONTRACT);
       restMock.onGet(`accounts/${EthImpl.iHTSAddress}${NO_TRANSACTIONS}`).reply(404, null);
 
-      const res = await ethImpl.getCode(EthImpl.iHTSAddress, null);
+      const res = await ethImpl.getCode(EthImpl.iHTSAddress, null, requestDetails);
       expect(res).to.equal(EthImpl.invalidEVMInstruction);
     });
 
     validBlockParam.forEach((blockParam) => {
       it(`should pass the validate param check with blockParam=${blockParam} and return the bytecode`, async () => {
-        const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, blockParam);
+        const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, blockParam, requestDetails);
         expect(res).to.equal(MIRROR_NODE_DEPLOYED_BYTECODE);
       });
     });
@@ -141,7 +143,7 @@ describe('@ethGetCode using MirrorNode', async function () {
     invalidBlockParam.forEach((blockParam) => {
       it(`should throw INVALID_PARAMETER JsonRpcError with invalid blockParam=${blockParam}`, async () => {
         try {
-          await ethImpl.getCode(EthImpl.iHTSAddress, blockParam);
+          await ethImpl.getCode(EthImpl.iHTSAddress, blockParam, requestDetails);
           expect(true).to.eq(false);
         } catch (error: any) {
           const expectedError = predefined.UNKNOWN_BLOCK(

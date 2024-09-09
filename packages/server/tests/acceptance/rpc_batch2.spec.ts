@@ -881,7 +881,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         maxFeePerGas: gasPrice,
         type: 2,
       };
-      console.log('sign transaction');
+
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
       const txReceipt = await relay.call(

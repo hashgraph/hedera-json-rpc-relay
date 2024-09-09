@@ -39,6 +39,7 @@ chai.use(chaiAsPromised);
 describe('HbarSpendingPlanRepository', function () {
   const logger = pino();
   const registry = new Registry();
+  const requestIdPrefix = `[Request ID: testId]`;
 
   const tests = (isSharedCacheEnabled: boolean) => {
     let cacheService: CacheService;
@@ -72,13 +73,15 @@ describe('HbarSpendingPlanRepository', function () {
       it('creates a plan successfully', async () => {
         const subscriptionType = SubscriptionType.BASIC;
         const createdPlan = await repository.create(subscriptionType);
-        await expect(repository.findByIdWithDetails(createdPlan.id)).to.be.eventually.deep.equal(createdPlan);
+        await expect(repository.findByIdWithDetails(createdPlan.id, requestIdPrefix)).to.be.eventually.deep.equal(
+          createdPlan,
+        );
       });
     });
 
     describe('findById', () => {
       it('throws an error if plan is not found by ID', async () => {
-        await expect(repository.findById('non-existent-id')).to.be.eventually.rejectedWith(
+        await expect(repository.findById('non-existent-id', requestIdPrefix)).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotFoundError,
           `HbarSpendingPlan with ID non-existent-id not found`,
         );
@@ -87,13 +90,13 @@ describe('HbarSpendingPlanRepository', function () {
       it('returns a plan by ID', async () => {
         const subscriptionType = SubscriptionType.BASIC;
         const createdPlan = await repository.create(subscriptionType);
-        await expect(repository.findById(createdPlan.id)).to.be.eventually.deep.equal(createdPlan);
+        await expect(repository.findById(createdPlan.id, requestIdPrefix)).to.be.eventually.deep.equal(createdPlan);
       });
     });
 
     describe('findByIdWithDetails', () => {
       it('throws an error if plan is not found by ID', async () => {
-        await expect(repository.findByIdWithDetails('non-existent-id')).to.be.eventually.rejectedWith(
+        await expect(repository.findByIdWithDetails('non-existent-id', requestIdPrefix)).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotFoundError,
           `HbarSpendingPlan with ID non-existent-id not found`,
         );
@@ -102,13 +105,15 @@ describe('HbarSpendingPlanRepository', function () {
       it('returns a plan by ID', async () => {
         const subscriptionType = SubscriptionType.BASIC;
         const createdPlan = await repository.create(subscriptionType);
-        await expect(repository.findByIdWithDetails(createdPlan.id)).to.be.eventually.deep.equal(createdPlan);
+        await expect(repository.findByIdWithDetails(createdPlan.id, requestIdPrefix)).to.be.eventually.deep.equal(
+          createdPlan,
+        );
       });
     });
 
     describe('getSpendingHistory', () => {
       it('throws an error if plan not found by ID', async () => {
-        await expect(repository.getSpendingHistory('non-existent-id')).to.be.eventually.rejectedWith(
+        await expect(repository.getSpendingHistory('non-existent-id', requestIdPrefix)).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotFoundError,
           `HbarSpendingPlan with ID non-existent-id not found`,
         );
@@ -117,7 +122,7 @@ describe('HbarSpendingPlanRepository', function () {
       it('returns an empty array if spending history is empty', async () => {
         const subscriptionType = SubscriptionType.BASIC;
         const createdPlan = await repository.create(subscriptionType);
-        const spendingHistory = await repository.getSpendingHistory(createdPlan.id);
+        const spendingHistory = await repository.getSpendingHistory(createdPlan.id, requestIdPrefix);
         expect(spendingHistory).to.deep.equal([]);
       });
 
@@ -129,7 +134,7 @@ describe('HbarSpendingPlanRepository', function () {
         const hbarSpending = { amount: 100, timestamp: new Date() } as IHbarSpendingRecord;
         await cacheService.rPush(key, hbarSpending, 'test');
 
-        const spendingHistory = await repository.getSpendingHistory(createdPlan.id);
+        const spendingHistory = await repository.getSpendingHistory(createdPlan.id, requestIdPrefix);
         expect(spendingHistory).to.have.lengthOf(1);
         expect(spendingHistory[0].amount).to.equal(hbarSpending.amount);
         expect(spendingHistory[0].timestamp).to.be.a('Date');
@@ -140,12 +145,12 @@ describe('HbarSpendingPlanRepository', function () {
       it('adds amount to spending history', async () => {
         const subscriptionType = SubscriptionType.BASIC;
         const createdPlan = await repository.create(subscriptionType);
-        await expect(repository.getSpendingHistory(createdPlan.id)).to.be.eventually.deep.equal([]);
+        await expect(repository.getSpendingHistory(createdPlan.id, requestIdPrefix)).to.be.eventually.deep.equal([]);
 
         const amount = 100;
-        await repository.addAmountToSpendingHistory(createdPlan.id, amount);
+        await repository.addAmountToSpendingHistory(createdPlan.id, amount, requestIdPrefix);
 
-        const spendingHistory = await repository.getSpendingHistory(createdPlan.id);
+        const spendingHistory = await repository.getSpendingHistory(createdPlan.id, requestIdPrefix);
         expect(spendingHistory).to.have.lengthOf(1);
         expect(spendingHistory[0].amount).to.equal(amount);
         expect(spendingHistory[0].timestamp).to.be.a('Date');
@@ -154,14 +159,14 @@ describe('HbarSpendingPlanRepository', function () {
       it('adds multiple amounts to spending history', async () => {
         const subscriptionType = SubscriptionType.BASIC;
         const createdPlan = await repository.create(subscriptionType);
-        await expect(repository.getSpendingHistory(createdPlan.id)).to.be.eventually.deep.equal([]);
+        await expect(repository.getSpendingHistory(createdPlan.id, requestIdPrefix)).to.be.eventually.deep.equal([]);
 
         const amounts = [100, 200, 300];
         for (const amount of amounts) {
-          await repository.addAmountToSpendingHistory(createdPlan.id, amount);
+          await repository.addAmountToSpendingHistory(createdPlan.id, amount, requestIdPrefix);
         }
 
-        const spendingHistory = await repository.getSpendingHistory(createdPlan.id);
+        const spendingHistory = await repository.getSpendingHistory(createdPlan.id, requestIdPrefix);
         expect(spendingHistory).to.have.lengthOf(3);
         expect(spendingHistory.map((entry) => entry.amount)).to.deep.equal(amounts);
       });
@@ -170,7 +175,7 @@ describe('HbarSpendingPlanRepository', function () {
         const id = 'non-existent-id';
         const amount = 100;
 
-        await expect(repository.addAmountToSpendingHistory(id, amount)).to.be.eventually.rejectedWith(
+        await expect(repository.addAmountToSpendingHistory(id, amount, requestIdPrefix)).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotFoundError,
           `HbarSpendingPlan with ID ${id} not found`,
         );
@@ -200,9 +205,9 @@ describe('HbarSpendingPlanRepository', function () {
         const createdPlan = await repository.create(subscriptionType);
         const amount = 50;
 
-        await repository.addAmountToSpentToday(createdPlan.id, amount);
+        await repository.addAmountToSpentToday(createdPlan.id, amount, requestIdPrefix);
 
-        const spentToday = await repository.getSpentToday(createdPlan.id);
+        const spentToday = await repository.getSpentToday(createdPlan.id, requestIdPrefix);
         expect(spentToday).to.equal(amount);
       });
 
@@ -210,21 +215,22 @@ describe('HbarSpendingPlanRepository', function () {
         const subscriptionType = SubscriptionType.BASIC;
         const createdPlan = await repository.create(subscriptionType);
 
-        const spentToday = await repository.getSpentToday(createdPlan.id);
+        const spentToday = await repository.getSpentToday(createdPlan.id, requestIdPrefix);
         expect(spentToday).to.equal(0);
       });
 
       it('should expire spent today key at the end of the day', async () => {
+        const requestIdPrefix = `[Request ID: testId]`;
         const subscriptionType = SubscriptionType.BASIC;
         const createdPlan = await repository.create(subscriptionType);
         const amount = 50;
 
-        await repository.addAmountToSpentToday(createdPlan.id, amount);
-        await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(amount);
+        await repository.addAmountToSpentToday(createdPlan.id, amount, requestIdPrefix);
+        await expect(repository.getSpentToday(createdPlan.id, requestIdPrefix)).to.eventually.equal(amount);
 
         await new Promise((resolve) => setTimeout(resolve, mockedOneDayInMillis + 100));
 
-        await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(0);
+        await expect(repository.getSpentToday(createdPlan.id, requestIdPrefix)).to.eventually.equal(0);
       });
     });
 
@@ -257,17 +263,17 @@ describe('HbarSpendingPlanRepository', function () {
         const createdPlan = await repository.create(subscriptionType);
         const amount = 50;
 
-        await repository.addAmountToSpentToday(createdPlan.id, amount);
+        await repository.addAmountToSpentToday(createdPlan.id, amount, requestIdPrefix);
 
-        const plan = await repository.findByIdWithDetails(createdPlan.id);
+        const plan = await repository.findByIdWithDetails(createdPlan.id, requestIdPrefix);
         expect(plan).to.not.be.null;
         expect(plan!.spentToday).to.equal(amount);
 
         // Add more to spent today
         const newAmount = 100;
-        await repository.addAmountToSpentToday(createdPlan.id, newAmount);
+        await repository.addAmountToSpentToday(createdPlan.id, newAmount, requestIdPrefix);
 
-        const updatedPlan = await repository.findByIdWithDetails(createdPlan.id);
+        const updatedPlan = await repository.findByIdWithDetails(createdPlan.id, requestIdPrefix);
         expect(updatedPlan).to.not.be.null;
         expect(updatedPlan!.spentToday).to.equal(amount + newAmount);
       });
@@ -276,7 +282,7 @@ describe('HbarSpendingPlanRepository', function () {
         const id = 'non-existent-id';
         const amount = 50;
 
-        await expect(repository.addAmountToSpentToday(id, amount)).to.be.eventually.rejectedWith(
+        await expect(repository.addAmountToSpentToday(id, amount, requestIdPrefix)).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotFoundError,
           `HbarSpendingPlan with ID ${id} not found`,
         );
@@ -291,7 +297,9 @@ describe('HbarSpendingPlanRepository', function () {
         await cacheService.set(key, { ...createdPlan, active: false }, 'test');
 
         const amount = 50;
-        await expect(repository.addAmountToSpentToday(createdPlan.id, amount)).to.be.eventually.rejectedWith(
+        await expect(
+          repository.addAmountToSpentToday(createdPlan.id, amount, requestIdPrefix),
+        ).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotActiveError,
           `HbarSpendingPlan with ID ${createdPlan.id} is not active`,
         );
@@ -301,7 +309,7 @@ describe('HbarSpendingPlanRepository', function () {
     describe('checkExistsAndActive', () => {
       it('throws error if plan does not exist when checking if exists and active', async () => {
         const id = 'non-existent-id';
-        await expect(repository.checkExistsAndActive(id)).to.be.eventually.rejectedWith(
+        await expect(repository.checkExistsAndActive(id, requestIdPrefix)).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotFoundError,
           `HbarSpendingPlan with ID ${id} not found`,
         );
@@ -315,7 +323,7 @@ describe('HbarSpendingPlanRepository', function () {
         const key = `${repository['collectionKey']}:${createdPlan.id}`;
         await cacheService.set(key, { ...createdPlan, active: false }, 'test');
 
-        await expect(repository.checkExistsAndActive(createdPlan.id)).to.be.eventually.rejectedWith(
+        await expect(repository.checkExistsAndActive(createdPlan.id, requestIdPrefix)).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotActiveError,
           `HbarSpendingPlan with ID ${createdPlan.id} is not active`,
         );

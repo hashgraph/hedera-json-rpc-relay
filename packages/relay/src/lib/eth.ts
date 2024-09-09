@@ -625,7 +625,6 @@ export class EthImpl implements Eth {
   ): Promise<IContractCallResponse | null> {
     await this.contractCallFormat(transaction, requestDetails);
     const callData = { ...transaction, estimate: true };
-    console.log('Before post contract call');
     return this.mirrorNodeClient.postContractCall(callData, requestDetails.requestIdPrefix);
   }
 
