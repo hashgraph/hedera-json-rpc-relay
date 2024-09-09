@@ -148,25 +148,25 @@ export default class HbarLimit {
         `${requestIdPrefix} HBAR preemptive rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
       );
       return false;
-    } else {
-      const { fileCreateTransactions, fileAppendTransactions, transactionFee } = this.estimateFileTransactionFee(
-        callDataSize,
-        fileChunkSize,
-        currentNetworkExchangeRateInCents,
-      );
-
-      if (this.remainingBudget - transactionFee < 0) {
-        this.logger.warn(
-          `${requestIdPrefix} HBAR preemptive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, fileCreateTransactions=${fileCreateTransactions}, fileAppendTransactions=${fileAppendTransactions}, transactionFee=${transactionFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
-        );
-        return true;
-      } else {
-        this.logger.trace(
-          `${requestIdPrefix} HBAR preemptive rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, fileCreateTransactions=${fileCreateTransactions}, fileAppendTransactions=${fileAppendTransactions}, transactionFee=${transactionFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
-        );
-        return false;
-      }
     }
+
+    const { fileCreateTransactions, fileAppendTransactions, transactionFee } = this.estimateFileTransactionFee(
+      callDataSize,
+      fileChunkSize,
+      currentNetworkExchangeRateInCents,
+    );
+
+    if (this.remainingBudget - transactionFee < 0) {
+      this.logger.warn(
+        `${requestIdPrefix} HBAR preemptive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, fileCreateTransactions=${fileCreateTransactions}, fileAppendTransactions=${fileAppendTransactions}, transactionFee=${transactionFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+      );
+      return true;
+    }
+
+    this.logger.trace(
+      `${requestIdPrefix} HBAR preemptive rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, fileCreateTransactions=${fileCreateTransactions}, fileAppendTransactions=${fileAppendTransactions}, transactionFee=${transactionFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+    );
+    return false;
   }
 
   /**
