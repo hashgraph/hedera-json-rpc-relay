@@ -926,18 +926,19 @@ export const estimateFileTransactionsFee = (
   fileChunkSize: number,
   exchangeRateInCents: number,
 ) => {
-  const numFileCreateTxs = 1;
-  const numFileAppendTxs = Math.floor(callDataSize / fileChunkSize);
+  const fileCreateTransactions = 1;
+  const fileAppendTransactions = Math.floor(callDataSize / fileChunkSize);
   const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
   const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
 
   const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
-  const totalRequestFeeInCents = numFileCreateTxs * fileCreateFeeInCents + numFileAppendTxs * fileAppendFeeInCents;
+  const totalRequestFeeInCents =
+    fileCreateTransactions * fileCreateFeeInCents + fileAppendTransactions * fileAppendFeeInCents;
 
-  const totalFeeInTinyBar = Math.round((totalRequestFeeInCents / exchangeRateInCents) * hbarToTinybar);
+  const transactionFee = Math.round((totalRequestFeeInCents / exchangeRateInCents) * hbarToTinybar);
   return {
-    numFileCreateTxs,
-    numFileAppendTxs,
-    totalFeeInTinyBar,
+    fileCreateTransactions,
+    fileAppendTransactions,
+    transactionFee,
   };
 };

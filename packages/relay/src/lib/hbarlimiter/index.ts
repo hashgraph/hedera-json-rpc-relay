@@ -149,20 +149,20 @@ export default class HbarLimit {
       );
       return false;
     } else {
-      const { numFileCreateTxs, numFileAppendTxs, totalFeeInTinyBar } = this.estimateFileTransactionFee(
+      const { fileCreateTransactions, fileAppendTransactions, transactionFee } = this.estimateFileTransactionFee(
         callDataSize,
         fileChunkSize,
         currentNetworkExchangeRateInCents,
       );
 
-      if (this.remainingBudget - totalFeeInTinyBar < 0) {
+      if (this.remainingBudget - transactionFee < 0) {
         this.logger.warn(
-          `${requestIdPrefix} HBAR preemptive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalFeeInTinyBar=${totalFeeInTinyBar}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+          `${requestIdPrefix} HBAR preemptive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, fileCreateTransactions=${fileCreateTransactions}, fileAppendTransactions=${fileAppendTransactions}, transactionFee=${transactionFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
         );
         return true;
       } else {
         this.logger.trace(
-          `${requestIdPrefix} HBAR preemptive rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalFeeInTinyBar=${totalFeeInTinyBar}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+          `${requestIdPrefix} HBAR preemptive rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, fileCreateTransactions=${fileCreateTransactions}, fileAppendTransactions=${fileAppendTransactions}, transactionFee=${transactionFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
         );
         return false;
       }
@@ -229,34 +229,35 @@ export default class HbarLimit {
    * @param {number} fileChunkSize - The size of each file chunk in bytes.
    * @param {number} currentNetworkExchangeRateInCents - The current exchange rate of HBAR to USD cents.
    * @returns An object containing:
-   *   - `numFileCreateTxs` (number): The number of file creation transactions.
-   *   - `numFileAppendTxs` (number): The number of file append transactions.
-   *   - `totalFeeInTinyBar` (number): The estimated total transaction fee in tinybars.
+   *   - `fileCreateTransactions` (number): The number of file creation transactions.
+   *   - `fileAppendTransactions` (number): The number of file append transactions.
+   *   - `transactionFee` (number): The estimated total transaction fee in tinybars.
    */
   estimateFileTransactionFee(
     callDataSize: number,
     fileChunkSize: number,
     currentNetworkExchangeRateInCents: number,
   ): {
-    numFileCreateTxs: number;
-    numFileAppendTxs: number;
-    totalFeeInTinyBar: number;
+    fileCreateTransactions: number;
+    fileAppendTransactions: number;
+    transactionFee: number;
   } {
-    const numFileCreateTxs = 1;
-    const numFileAppendTxs = Math.floor(callDataSize / fileChunkSize);
+    const fileCreateTransactions = 1;
+    const fileAppendTransactions = Math.floor(callDataSize / fileChunkSize);
     const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
     const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
 
-    const totalRequestFeeInCents = numFileCreateTxs * fileCreateFeeInCents + numFileAppendTxs * fileAppendFeeInCents;
+    const totalRequestFeeInCents =
+      fileCreateTransactions * fileCreateFeeInCents + fileAppendTransactions * fileAppendFeeInCents;
 
-    const totalFeeInTinyBar = Math.round(
+    const transactionFee = Math.round(
       (totalRequestFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
     );
 
     return {
-      numFileCreateTxs,
-      numFileAppendTxs,
-      totalFeeInTinyBar,
+      fileCreateTransactions,
+      fileAppendTransactions,
+      transactionFee,
     };
   }
 
