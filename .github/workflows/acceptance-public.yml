@@ -178,8 +178,10 @@ jobs:
   publish_results:
     name: Publish Results
     runs-on: ubuntu-latest
+    if: always()
     needs:
-      - ${{ env.RUN_FULL_SUITE && 'get_full_results' || 'get_partial_results' }}
+      - get_full_results
+      - get_partial_results
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
