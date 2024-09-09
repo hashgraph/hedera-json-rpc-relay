@@ -26,7 +26,7 @@ import { CacheService } from '../../../../src/lib/services/cacheService/cacheSer
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
-import { RedisInMemoryServer } from '../../../redisInMemoryServer';
+import { useInMemoryRedisServer } from '../../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const logger = pino();
@@ -42,7 +42,7 @@ describe('CacheService Test Suite', async function () {
 
   const describeKeysTestSuite = () => {
     describe('keys', async function () {
-      it('should retrieve all keys from internal cache', async function () {
+      it('should retrieve all keys', async function () {
         const entries: Record<string, any> = {};
         entries['key1'] = 'value1';
         entries['key2'] = 'value2';
@@ -51,10 +51,10 @@ describe('CacheService Test Suite', async function () {
         await cacheService.multiSet(entries, callingMethod);
 
         const keys = await cacheService.keys('*', callingMethod);
-        expect(keys).to.deep.equal(Object.keys(entries));
+        expect(keys).to.have.members(Object.keys(entries));
       });
 
-      it('should retrieve keys matching pattern from internal cache', async function () {
+      it('should retrieve keys matching pattern', async function () {
         const entries: Record<string, any> = {};
         entries['key1'] = 'value1';
         entries['key2'] = 'value2';
@@ -63,10 +63,10 @@ describe('CacheService Test Suite', async function () {
         await cacheService.multiSet(entries, callingMethod);
 
         const keys = await cacheService.keys('key*', callingMethod);
-        expect(keys).to.deep.equal(Object.keys(entries));
+        expect(keys).to.have.members(Object.keys(entries));
       });
 
-      it('should retrieve keys matching pattern with ? from internal cache', async function () {
+      it('should retrieve keys matching pattern with ?', async function () {
         const entries: Record<string, any> = {};
         entries['key1'] = 'value1';
         entries['key2'] = 'value2';
@@ -75,10 +75,10 @@ describe('CacheService Test Suite', async function () {
         await cacheService.multiSet(entries, callingMethod);
 
         const keys = await cacheService.keys('key?', callingMethod);
-        expect(keys).to.deep.equal(Object.keys(entries));
+        expect(keys).to.have.members(Object.keys(entries));
       });
 
-      it('should retrieve keys matching pattern with [] from internal cache', async function () {
+      it('should retrieve keys matching pattern with []', async function () {
         const entries: Record<string, any> = {};
         entries['key1'] = 'value1';
         entries['key2'] = 'value2';
@@ -87,10 +87,10 @@ describe('CacheService Test Suite', async function () {
         await cacheService.multiSet(entries, callingMethod);
 
         const keys = await cacheService.keys('key[1-2]', callingMethod);
-        expect(keys).to.deep.equal(['key1', 'key2']);
+        expect(keys).to.have.members(['key1', 'key2']);
       });
 
-      it('should retrieve keys matching pattern with [^] from internal cache', async function () {
+      it('should retrieve keys matching pattern with [^]', async function () {
         const entries: Record<string, any> = {};
         entries['key1'] = 'value1';
         entries['key2'] = 'value2';
@@ -100,10 +100,10 @@ describe('CacheService Test Suite', async function () {
 
         // [^3] should match all keys except key3
         const keys = await cacheService.keys('key[^3]', callingMethod);
-        expect(keys).to.deep.equal(['key1', 'key2']);
+        expect(keys).to.have.members(['key1', 'key2']);
       });
 
-      it('should retrieve keys matching pattern with [a-b] from internal cache', async function () {
+      it('should retrieve keys matching pattern with [a-b]', async function () {
         const entries: Record<string, any> = {};
         entries['keya'] = 'value1';
         entries['keyb'] = 'value2';
@@ -112,7 +112,7 @@ describe('CacheService Test Suite', async function () {
         await cacheService.multiSet(entries, callingMethod);
 
         const keys = await cacheService.keys('key[a-c]', callingMethod);
-        expect(keys).to.deep.equal(Object.keys(entries));
+        expect(keys).to.have.members(Object.keys(entries));
       });
 
       it('should escape special characters in the pattern', async function () {
@@ -122,7 +122,7 @@ describe('CacheService Test Suite', async function () {
         await cacheService.set(key, value, callingMethod);
 
         const keys = await cacheService.keys('h*llo', callingMethod);
-        expect(keys).to.deep.equal([key]);
+        expect(keys).to.have.members([key]);
       });
     });
   };
@@ -133,7 +133,7 @@ describe('CacheService Test Suite', async function () {
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
-    this.beforeEach(() => {
+    this.afterEach(() => {
       cacheService.clear();
     });
 
@@ -244,27 +244,30 @@ describe('CacheService Test Suite', async function () {
       key2: 'value2',
       key3: 'value3',
     };
-    let redisInMemoryServer: RedisInMemoryServer;
 
-    this.beforeAll(async () => {
-      redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6381);
-      await redisInMemoryServer.start();
+    useInMemoryRedisServer(logger, 6381);
 
-      process.env.REDIS_ENABLED = 'true';
-      process.env.REDIS_URL = 'redis://127.0.0.1:6381';
-      process.env.TEST = 'false';
-      process.env.MULTI_SET = 'true';
-      cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
-    });
+    let multiSet: string | undefined;
+    let disconnected: boolean;
 
-    this.afterAll(async () => {
-      await redisInMemoryServer.stop();
-      process.env.TEST = 'true';
+    const disconnectRedisClient = async () => {
       await cacheService.disconnectRedisClient();
-    });
+      disconnected = true;
+    };
 
     this.beforeEach(async () => {
-      await cacheService.clear();
+      multiSet = process.env.MULTI_SET;
+      process.env.MULTI_SET = 'true';
+      cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
+      disconnected = false;
+    });
+
+    this.afterEach(async () => {
+      if (!disconnected) {
+        await cacheService.clear();
+        await disconnectRedisClient();
+      }
+      process.env.MULTI_SET = multiSet;
     });
 
     it('should be able to set and get from shared cache', async function () {
@@ -322,7 +325,7 @@ describe('CacheService Test Suite', async function () {
 
     it('should be able to getAsync from internal cache in case of Redis error', async function () {
       const key = 'string';
-      await cacheService.disconnectRedisClient();
+      await disconnectRedisClient();
 
       const cachedValue = await cacheService.getAsync(key, callingMethod);
       expect(cachedValue).eq(null);
@@ -332,7 +335,7 @@ describe('CacheService Test Suite', async function () {
       const key = 'string';
       const value = 'value';
 
-      await cacheService.disconnectRedisClient();
+      await disconnectRedisClient();
 
       await expect(cacheService.set(key, value, callingMethod)).to.eventually.not.be.rejected;
 
@@ -342,7 +345,7 @@ describe('CacheService Test Suite', async function () {
 
     it('should be able to delete from internal cache in case of Redis error', async function () {
       const key = 'string';
-      await cacheService.disconnectRedisClient();
+      await disconnectRedisClient();
 
       await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
     });
@@ -433,7 +436,7 @@ describe('CacheService Test Suite', async function () {
     describe('disconnectRedisClient', async function () {
       it('should disconnect Redis client if shared cache is enabled', async function () {
         const disconnectSpy = sinon.spy(cacheService['sharedCache'], <any>'disconnect');
-        await cacheService.disconnectRedisClient();
+        await disconnectRedisClient();
         expect(disconnectSpy.calledOnce).to.be.true;
       });
     });

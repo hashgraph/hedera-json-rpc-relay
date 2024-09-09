@@ -120,7 +120,12 @@ export class CacheService {
 
   async disconnectRedisClient(): Promise<void> {
     if (this.sharedCache instanceof RedisCache) {
-      await this.sharedCache.disconnect();
+      try {
+        await this.sharedCache.disconnect();
+      } catch (e) {
+        const redisError = new RedisCacheError(e);
+        this.logger.error(redisError, `Error occurred when disconnecting from Redis.`);
+      }
     }
   }
 

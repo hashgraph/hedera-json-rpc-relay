@@ -23,23 +23,22 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { RedisCache } from '../../../src/lib/clients';
 import { Registry } from 'prom-client';
-import { RedisInMemoryServer } from '../../redisInMemoryServer';
-
-const logger = pino();
-const registry = new Registry();
-let redisCache: RedisCache;
-let redisInMemoryServer: RedisInMemoryServer;
-
-const callingMethod = 'RedisCacheTest';
+import { useInMemoryRedisServer } from '../../helpers';
 
 chai.use(chaiAsPromised);
 
 describe('RedisCache Test Suite', async function () {
   this.timeout(10000);
 
+  const logger = pino();
+  const registry = new Registry();
+  const callingMethod = 'RedisCacheTest';
+
+  let redisCache: RedisCache;
+
+  useInMemoryRedisServer(logger, 6379);
+
   this.beforeAll(async () => {
-    redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6379);
-    await redisInMemoryServer.start();
     redisCache = new RedisCache(logger.child({ name: `cache` }), registry);
   });
 
@@ -49,7 +48,6 @@ describe('RedisCache Test Suite', async function () {
 
   this.afterAll(async () => {
     await redisCache.disconnect();
-    await redisInMemoryServer.stop();
   });
 
   describe('Get and Set Test Suite', async function () {

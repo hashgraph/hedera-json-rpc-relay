@@ -249,10 +249,10 @@ export class RedisCache implements IRedisCacheClient {
    * @returns {Promise<void>} A Promise that resolves when the client is disconnected.
    */
   async disconnect(): Promise<void> {
-    await this.getConnectedClient().then((client) => {
-      client.disconnect();
-      client.unsubscribe();
-    });
+    if (await this.connected) {
+      const client = await this.getConnectedClient();
+      await client.disconnect();
+    }
   }
 
   /**
