@@ -43,6 +43,7 @@ describe('HbarLimitService', function () {
   const logger = pino();
   const callDataSize = 6000;
   const totalBudget = 100_000;
+  const mockEstimatedTxFee = 300;
   const methodName = 'testMethod';
   const mockEthAddress = '0x123';
   const register = new Registry();
@@ -114,6 +115,13 @@ describe('HbarLimitService', function () {
       expect(result).to.be.true;
     });
 
+    it('should return true when remainingBudget < estimatedTxFee ', async function () {
+      // @ts-ignore
+      hbarLimitService.remainingBudget = mockEstimatedTxFee - 1;
+      const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, mockEstimatedTxFee);
+      expect(result).to.be.true;
+    });
+
     it('should create a basic spending plan if none exists for the ethAddress', async function () {
       const newSpendingPlan = createSpendingPlan(mockPlanId);
       const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
@@ -177,6 +185,51 @@ describe('HbarLimitService', function () {
 
       expect(result).to.be.true;
     });
+
+    it('should return true if spentToday + estimatedTxFee is above the limit', async function () {
+      const spendingPlan = createSpendingPlan(
+        HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - mockEstimatedTxFee + 1,
+      );
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+      const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, mockEstimatedTxFee);
+
+      expect(result).to.be.true;
+    });
+
+    it('should return false if spentToday + estimatedTxFee is below the limit', async function () {
+      const spendingPlan = createSpendingPlan(
+        HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - mockEstimatedTxFee - 1,
+      );
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+      const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress);
+
+      expect(result).to.be.false;
+    });
+
+    it('should return false if spentToday + estimatedTxFee is at the limit', async function () {
+      const spendingPlan = createSpendingPlan(
+        HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - mockEstimatedTxFee,
+      );
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+      const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress);
+
+      expect(result).to.be.false;
+    });
   });
 
   describe('estimateFileTransactionFee', function () {
@@ -189,54 +242,6 @@ describe('HbarLimitService', function () {
       );
       const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
       expect(result).to.deep.eq(expectedResult);
-    });
-  });
-
-  describe('shouldPreemptivelyLimitFileTransactions', function () {
-    it('Should execute shouldPreemtivelyLimitFileTransactions() and return TRUE if estimated transactionFee is greater than remaining balance', async () => {
-      const { totalEstimatedFeeInTinyBar } = estimateFileTransactionsFee(
-        callDataSize,
-        fileChunkSize,
-        mockedExchangeRateInCents,
-      );
-
-      // mock remaining budget to be smaller than the total estimated fee
-      const mockRemainingBudget = totalEstimatedFeeInTinyBar - 1;
-
-      // @ts-ignore
-      hbarLimitService.remainingBudget = mockRemainingBudget;
-
-      const result = await hbarLimitService.shouldPreemptivelyLimitFileTransactions(
-        callDataSize,
-        fileChunkSize,
-        mockedExchangeRateInCents,
-        mockRequestId,
-      );
-
-      expect(result).to.be.true;
-    });
-
-    it('Should execute shouldPreemtivelyLimitFileTransactions() and return FALSE if estimated transactionFee is smaller than remaining balance', async () => {
-      const { totalEstimatedFeeInTinyBar } = estimateFileTransactionsFee(
-        callDataSize,
-        fileChunkSize,
-        mockedExchangeRateInCents,
-      );
-
-      // mock remaining budget to be larger than the total estimated fee
-      const mockRemainingBudget = totalEstimatedFeeInTinyBar + 1;
-
-      // @ts-ignore
-      hbarLimitService.remainingBudget = mockRemainingBudget;
-
-      const result = await hbarLimitService.shouldPreemptivelyLimitFileTransactions(
-        callDataSize,
-        fileChunkSize,
-        mockedExchangeRateInCents,
-        mockRequestId,
-      );
-
-      expect(result).to.be.false;
     });
   });
 

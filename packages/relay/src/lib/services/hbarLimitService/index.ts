@@ -153,6 +153,7 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
    * @param {string} ethAddress - The eth address to check.
+   * @param {number} estimatedTxFee - The total estimated transaction fee, default to 0.
    * @param {string} [ipAddress] - The ip address to check.
    * @param {string} [requestId] - A prefix to include in log messages (optional).
    * @returns {Promise<boolean>} - A promise that resolves with a boolean indicating if the address should be limited.
@@ -161,11 +162,12 @@ export class HbarLimitService implements IHbarLimitService {
     mode: string,
     methodName: string,
     ethAddress: string,
+    estimatedTxFee: number = 0,
     ipAddress?: string,
     requestId?: string,
   ): Promise<boolean> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    if (await this.isDailyBudgetExceeded(mode, methodName, requestIdPrefix)) {
+    if (await this.isDailyBudgetExceeded(mode, methodName, estimatedTxFee, requestIdPrefix)) {
       return true;
     }
     if (!ethAddress && !ipAddress) {
@@ -179,49 +181,16 @@ export class HbarLimitService implements IHbarLimitService {
       // Create a basic spending plan if none exists for the eth address or ip address
       spendingPlan = await this.createBasicSpendingPlan(ethAddress, ipAddress);
     }
+
     const dailyLimit = HbarLimitService.DAILY_LIMITS[spendingPlan.subscriptionType];
-    const exceedsLimit = spendingPlan.spentToday >= dailyLimit;
+
+    const exceedsLimit = spendingPlan.spentToday >= dailyLimit || spendingPlan.spentToday + estimatedTxFee > dailyLimit;
     this.logger.trace(
-      `${requestIdPrefix} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited, spentToday=${
+      `${requestIdPrefix} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited: spentToday=${
         spendingPlan.spentToday
-      }, limit=${dailyLimit}`,
+      }, estimatedTxFee=${estimatedTxFee}, dailyLimit=${dailyLimit}`,
     );
     return exceedsLimit;
-  }
-
-  /**
-   * Determines whether the file transactions should be preemptively limited based on the estimated fees and remaining budget.
-   *
-   * @param {number} callDataSize - The size of the call data in bytes.
-   * @param {number} fileChunkSize - The size of each file chunk in bytes.
-   * @param {number} currentNetworkExchangeRateInCents - The current network exchange rate of HBAR to USD in cents.
-   * @param {string} requestId - The unique identifier for the request.
-   * @returns {Promise<boolean>} - A promise that resolves to `true` if the transactions should be limited, otherwise `false`.
-   */
-  async shouldPreemptivelyLimitFileTransactions(
-    callDataSize: number,
-    fileChunkSize: number,
-    currentNetworkExchangeRateInCents: number,
-    requestId: string,
-  ): Promise<boolean> {
-    // TODO: Implement logic for whitelisted accounts
-
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    const { numFileCreateTxs, numFileAppendTxs, totalEstimatedFeeInTinyBar } = this.estimateFileTransactionFee(
-      callDataSize,
-      fileChunkSize,
-      currentNetworkExchangeRateInCents,
-    );
-
-    const sharedLogMessage = `totalEstimatedFeeInTinyBar=${totalEstimatedFeeInTinyBar}, remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`;
-
-    if (this.remainingBudget - totalEstimatedFeeInTinyBar < 0) {
-      this.logger.warn(`${requestIdPrefix} HBAR preemptive rate limit incoming call: ${sharedLogMessage}`);
-      return true;
-    } else {
-      this.logger.trace(`${requestIdPrefix} HBAR preemptive rate limit not reached: ${sharedLogMessage}`);
-      return false;
-    }
   }
 
   /**
@@ -272,23 +241,29 @@ export class HbarLimitService implements IHbarLimitService {
    * Checks if the total daily budget has been exceeded.
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
+   * @param {number} estimatedTxFee - The total estimated transaction fee, default to 0.
    * @param {string} [requestIdPrefix] - An optional prefix to include in log messages.
    * @returns {Promise<boolean>} - Resolves `true` if the daily budget has been exceeded, otherwise `false`.
    * @private
    */
-  private async isDailyBudgetExceeded(mode: string, methodName: string, requestIdPrefix?: string): Promise<boolean> {
+  private async isDailyBudgetExceeded(
+    mode: string,
+    methodName: string,
+    estimatedTxFee: number = 0,
+    requestIdPrefix?: string,
+  ): Promise<boolean> {
     if (this.shouldResetLimiter()) {
       await this.resetLimiter();
     }
-    if (this.remainingBudget <= 0) {
+    if (this.remainingBudget <= 0 || this.remainingBudget - estimatedTxFee < 0) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
-        `${requestIdPrefix} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, resetTimestamp=${this.reset}`,
+        `${requestIdPrefix} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset}`,
       );
       return true;
     } else {
       this.logger.trace(
-        `${requestIdPrefix} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, resetTimestamp=${this.reset}.`,
+        `${requestIdPrefix} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee} resetTimestamp=${this.reset}.`,
       );
       return false;
     }
@@ -359,6 +334,7 @@ export class HbarLimitService implements IHbarLimitService {
       throw new Error('Cannot create a spending plan without an associated eth address or ip address');
     }
     const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC);
+
     if (ethAddress) {
       this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`);
       await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id });
@@ -377,34 +353,35 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {number} fileChunkSize - The size of each file chunk in bytes.
    * @param {number} currentNetworkExchangeRateInCents - The current exchange rate of HBAR to USD cents.
    * @returns An object containing:
-   *   - `numFileCreateTxs` (number): The number of file creation transactions.
-   *   - `numFileAppendTxs` (number): The number of file append transactions.
-   *   - `totalEstimatedFeeInTinyBar` (number): The estimated total transaction fee in tinybars.
+   *   - `fileCreateTransactions` (number): The number of file creation transactions.
+   *   - `fileAppendTransactions` (number): The number of file append transactions.
+   *   - `estimatedTransactionFee` (number): The estimated total transaction fee in tinybars.
    */
   private estimateFileTransactionFee(
     callDataSize: number,
     fileChunkSize: number,
     currentNetworkExchangeRateInCents: number,
   ): {
-    numFileCreateTxs: number;
-    numFileAppendTxs: number;
-    totalEstimatedFeeInTinyBar: number;
+    fileCreateTransactions: number;
+    fileAppendTransactions: number;
+    estimatedTransactionFee: number;
   } {
-    const numFileCreateTxs = 1;
-    const numFileAppendTxs = Math.floor(callDataSize / fileChunkSize);
+    const fileCreateTransactions = 1;
+    const fileAppendTransactions = Math.floor(callDataSize / fileChunkSize);
     const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
     const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
 
-    const totalRequestFeeInCents = numFileCreateTxs * fileCreateFeeInCents + numFileAppendTxs * fileAppendFeeInCents;
+    const totalRequestFeeInCents =
+      fileCreateTransactions * fileCreateFeeInCents + fileAppendTransactions * fileAppendFeeInCents;
 
-    const totalEstimatedFeeInTinyBar = Math.round(
+    const estimatedTransactionFee = Math.round(
       (totalRequestFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
     );
 
     return {
-      numFileCreateTxs,
-      numFileAppendTxs,
-      totalEstimatedFeeInTinyBar,
+      fileCreateTransactions,
+      fileAppendTransactions,
+      estimatedTransactionFee,
     };
   }
 }
