@@ -725,7 +725,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       assertions.expectLogArgs(eventsReceived[0], contracts[1], [BigInt(1)]);
     });
 
-    it('Subscribing for contract logs for a speciffic contract address and a wrong topic.', async function () {
+    it('Subscribing for contract logs for a specific contract address and a wrong topic.', async function () {
       let eventsReceived = eventsReceivedGlobal[6];
 
       // Only the logs from logContractSigner.target are captured
