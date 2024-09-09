@@ -881,26 +881,3 @@ export const calculateTxRecordChargeAmount = (exchangeRateIncents: number) => {
   const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
   return Math.round((txQueryCostInCents / exchangeRateIncents) * hbarToTinybar);
 };
-
-export const estimateFileTransactionsFee = (
-  callDataSize: number,
-  fileChunkSize: number,
-  exchangeRateInCents: number,
-) => {
-  const fileCreateTransactions = 1;
-  const fileAppendTransactions = Math.floor(callDataSize / fileChunkSize);
-  const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
-  const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
-
-  const totalRequestFeeInCents =
-    fileCreateTransactions * fileCreateFeeInCents + fileAppendTransactions * fileAppendFeeInCents;
-
-  const estimatedTransactionFee = Math.round(
-    (totalRequestFeeInCents / exchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
-  );
-  return {
-    fileCreateTransactions,
-    fileAppendTransactions,
-    estimatedTransactionFee,
-  };
-};

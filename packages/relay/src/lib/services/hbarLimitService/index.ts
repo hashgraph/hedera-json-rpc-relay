@@ -345,43 +345,4 @@ export class HbarLimitService implements IHbarLimitService {
     }
     return spendingPlan;
   }
-
-  /**
-   * Estimates the total transaction fee in tinybars based on the call data size, file chunk size, and the current network exchange rate in cents.
-   *
-   * @param {number} callDataSize - The size of the call data in bytes.
-   * @param {number} fileChunkSize - The size of each file chunk in bytes.
-   * @param {number} currentNetworkExchangeRateInCents - The current exchange rate of HBAR to USD cents.
-   * @returns An object containing:
-   *   - `fileCreateTransactions` (number): The number of file creation transactions.
-   *   - `fileAppendTransactions` (number): The number of file append transactions.
-   *   - `estimatedTransactionFee` (number): The estimated total transaction fee in tinybars.
-   */
-  private estimateFileTransactionFee(
-    callDataSize: number,
-    fileChunkSize: number,
-    currentNetworkExchangeRateInCents: number,
-  ): {
-    fileCreateTransactions: number;
-    fileAppendTransactions: number;
-    estimatedTransactionFee: number;
-  } {
-    const fileCreateTransactions = 1;
-    const fileAppendTransactions = Math.floor(callDataSize / fileChunkSize);
-    const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
-    const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
-
-    const totalRequestFeeInCents =
-      fileCreateTransactions * fileCreateFeeInCents + fileAppendTransactions * fileAppendFeeInCents;
-
-    const estimatedTransactionFee = Math.round(
-      (totalRequestFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
-    );
-
-    return {
-      fileCreateTransactions,
-      fileAppendTransactions,
-      estimatedTransactionFee,
-    };
-  }
 }
