@@ -163,7 +163,7 @@ export class FilterService implements IFilterService {
     }
   }
 
-  public async uninstallFilter(filterId: string, requestIdPrefix?: string | undefined): Promise<boolean> {
+  public async uninstallFilter(filterId: string, requestIdPrefix: string): Promise<boolean> {
     this.logger.trace(`${requestIdPrefix} uninstallFilter(${filterId})`);
     FilterService.requireFiltersEnabled();
 

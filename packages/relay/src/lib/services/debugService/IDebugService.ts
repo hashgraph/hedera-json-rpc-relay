@@ -26,7 +26,7 @@ export interface IDebugService {
     transactionIdOrHash: string,
     tracer: TracerType,
     tracerConfig: ITracerConfig,
-    requestIdPrefix?: string,
+    requestIdPrefix: string,
   ) => Promise<any>;
-  resolveAddress: (address: string, types?: string[], requestIdPrefix?: string) => Promise<string>;
+  resolveAddress: (address: string, requestIdPrefix: string, types?: string[]) => Promise<string>;
 }

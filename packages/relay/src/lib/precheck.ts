@@ -71,7 +71,7 @@ export class Precheck {
    * @param {number} gasPrice - The gas price.
    * @param {string} [requestId] - The request ID.
    */
-  async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId?: string): Promise<void> {
+  async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId: string): Promise<void> {
     this.transactionType(parsedTx, requestId);
     this.gasLimit(parsedTx, requestId);
     const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
@@ -88,7 +88,7 @@ export class Precheck {
    * @param {string} [requestId] - The request ID.
    * @returns {Promise<any>} A Promise.
    */
-  async verifyAccount(tx: Transaction, requestId?: string): Promise<any> {
+  async verifyAccount(tx: Transaction, requestId: string): Promise<any> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     // verify account
     const accountInfo = await this.mirrorNodeClient.getAccount(tx.from!, requestId);

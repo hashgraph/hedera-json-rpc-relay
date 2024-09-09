@@ -20,6 +20,12 @@
 
 export interface IHbarLimitService {
   resetLimiter(): Promise<void>;
-  shouldLimit(mode: string, methodName: string, ethAddress: string, ipAddress?: string): Promise<boolean>;
-  addExpense(cost: number, ethAddress: string, ipAddress?: string): Promise<void>;
+  shouldLimit(
+    mode: string,
+    methodName: string,
+    ethAddress: string,
+    requestIdPrefix: string,
+    ipAddress?: string,
+  ): Promise<boolean>;
+  addExpense(cost: number, ethAddress: string, requestIdPrefix: string, ipAddress?: string): Promise<void>;
 }

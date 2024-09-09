@@ -51,9 +51,9 @@ export class EthAddressHbarSpendingPlanRepository {
    * @param {string} ethAddress - The ETH address to search for.
    * @returns {Promise<EthAddressHbarSpendingPlan>} - The associated plan for the ETH address.
    */
-  async findByAddress(ethAddress: string): Promise<EthAddressHbarSpendingPlan> {
+  async findByAddress(ethAddress: string, requestIdPrefix: string): Promise<EthAddressHbarSpendingPlan> {
     const key = this.getKey(ethAddress);
-    const addressPlan = await this.cache.getAsync<IEthAddressHbarSpendingPlan>(key, 'findByAddress');
+    const addressPlan = await this.cache.getAsync<IEthAddressHbarSpendingPlan>(key, 'findByAddress', requestIdPrefix);
     if (!addressPlan) {
       throw new EthAddressHbarSpendingPlanNotFoundError(ethAddress);
     }
