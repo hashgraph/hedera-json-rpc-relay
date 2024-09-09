@@ -56,6 +56,7 @@ import {
   weibarHexToTinyBarInt,
   isValidEthereumAddress,
   formatTransactionIdWithoutQueryParams,
+  getFunctionSelector,
 } from '../formatters';
 
 const _ = require('lodash');
@@ -1619,7 +1620,7 @@ export class EthImpl implements Eth {
   ): Promise<string | JsonRpcError> {
     const callData = call.data ? call.data : call.input;
     // log request
-    this.logger.trace(
+    this.logger.info(
       `${requestIdPrefix} call({to=${call.to}, from=${call.from}, data=${callData}, gas=${call.gas}, gasPrice=${call.gasPrice} blockParam=${blockParam}, estimate=${call.estimate})`,
     );
     // log call data size
@@ -1640,18 +1641,23 @@ export class EthImpl implements Eth {
 
     await this.contractCallFormat(call, requestIdPrefix);
 
+    const selector = getFunctionSelector(call.data!);
+
+    const shouldForceToConsensus =
+      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR == 'true' &&
+      constants.ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS.indexOf(selector) !== -1;
+
+    // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
+    const shouldDefaultToConsensus = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'true';
+
     let result: string | JsonRpcError = '';
     try {
-      // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-      if (
-        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === undefined ||
-        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false'
-      ) {
+      if (shouldForceToConsensus || shouldDefaultToConsensus) {
+        result = await this.callConsensusNode(call, gas, requestIdPrefix);
+      } else {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
         result = await this.callMirrorNode(call, gas, call.value, blockNumberOrTag, requestIdPrefix);
-      } else {
-        result = await this.callConsensusNode(call, gas, requestIdPrefix);
       }
 
       this.logger.debug(`${requestIdPrefix} eth_call response: ${JSON.stringify(result)}`);
@@ -2173,11 +2179,11 @@ export class EthImpl implements Eth {
     // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
     // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
     const gas = Number.parseInt(gasString);
-    if (gas > constants.BLOCK_GAS_LIMIT) {
+    if (gas > constants.MAX_GAS_PER_SEC) {
       this.logger.trace(
-        `${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`,
+        `${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.MAX_GAS_PER_SEC}`,
       );
-      return constants.BLOCK_GAS_LIMIT;
+      return constants.MAX_GAS_PER_SEC;
     }
 
     return gas;
@@ -2235,7 +2241,6 @@ export class EthImpl implements Eth {
       undefined,
       requestIdPrefix,
     );
-    const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
     const params = { timestamp: timestampRangeParams };
 
@@ -2279,7 +2284,7 @@ export class EthImpl implements Eth {
       baseFeePerGas: await this.gasPrice(requestIdPrefix),
       difficulty: EthImpl.zeroHex,
       extraData: EthImpl.emptyHex,
-      gasLimit: numberTo0x(maxGasLimit),
+      gasLimit: numberTo0x(constants.BLOCK_GAS_LIMIT),
       gasUsed: numberTo0x(gasUsed),
       hash: blockHash,
       logsBloom: blockResponse.logs_bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : blockResponse.logs_bloom,
