@@ -241,6 +241,15 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('Rate Limit', () => {
+        let hbarRateLimitPreemptiveCheck: string | undefined;
+
+        beforeEach(() => {
+          hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
+        });
+        afterEach(() => {
+          process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = hbarRateLimitPreemptiveCheck;
+        });
+
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
           const TOLERANCE = 0.02;
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
@@ -268,6 +277,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         it('Should preemtively check the rate limit before submitting EthereumTransaction', async function () {
           process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'true';
+
           try {
             for (let i = 0; i < 50; i++) {
               const largeContract = await Utils.deployContract(
@@ -279,16 +289,13 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             }
             expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
           } catch (e) {
-            console.log(`asdaksjdhuqwiyeiqwuyhdkajshdkajhsiduuqywe`);
-            console.log(e);
-
             expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED.message);
           }
-
-          delete process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
         });
 
         it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
+          process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'false';
+
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           let lastRemainingHbars = remainingHbarsBefore;
           expect(remainingHbarsBefore).to.be.gt(0);
