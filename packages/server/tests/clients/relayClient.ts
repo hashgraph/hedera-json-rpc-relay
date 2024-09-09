@@ -40,9 +40,7 @@ export default class RelayClient {
    * @param params
    * @param requestId
    */
-  async call(methodName: string, params: any[], requestId?: string) {
-    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-
+  async call(methodName: string, params: any[], requestIdPrefix: string) {
     const result = await this.provider.send(methodName, params);
     this.logger.trace(
       `${requestIdPrefix} [POST] to relay '${methodName}' with params [${JSON.stringify(
@@ -81,11 +79,11 @@ export default class RelayClient {
     methodName: string,
     params: any[],
     expectedRpcError = predefined.INTERNAL_ERROR(),
-    requestId?: string,
+    requestId: string,
   ) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     try {
-      const res = await this.call(methodName, params, requestId);
+      const res = await this.call(methodName, params, requestIdPrefix);
       this.logger.trace(
         `${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`,
       );
@@ -111,9 +109,10 @@ export default class RelayClient {
    * @param params
    * @param requestId
    */
-  async callUnsupported(methodName: string, params: any[], requestId?: string) {
+  async callUnsupported(methodName: string, params: any[], requestId: string) {
     try {
-      await this.call(methodName, params, requestId);
+      const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+      await this.call(methodName, params, requestIdPrefix);
       Assertions.expectedError();
     } catch (e: any) {
       Assertions.unsupportedResponse(e?.response?.bodyJson);
@@ -151,7 +150,7 @@ export default class RelayClient {
    * @param signedTx
    * @param requestId
    */
-  async sendRawTransaction(signedTx, requestId?: string): Promise<string> {
+  async sendRawTransaction(signedTx, requestId: string): Promise<string> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_sendRawTransaction`);
     return this.provider.send('eth_sendRawTransaction', [signedTx]);
@@ -162,7 +161,8 @@ export default class RelayClient {
    *
    * Returns the result of eth_gasPrice as a Number.
    */
-  async gasPrice(requestId?: string): Promise<number> {
-    return Number(await this.call('eth_gasPrice', [], requestId));
+  async gasPrice(requestId: string): Promise<number> {
+    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+    return Number(await this.call('eth_gasPrice', [], requestIdPrefix));
   }
 }
