@@ -131,6 +131,7 @@ export default class HbarLimit {
    * @param {number} callDataSize - The size of the call data that will be used in the transaction.
    * @param {number} fileChunkSize - The chunk size used for file append transactions.
    * @param {string} requestId - The request ID for tracing the request flow.
+   * @returns {boolean} - Return true if the transaction should be preemptively rate limited, otherwise return false.
    * @throws {JsonRpcError} Throws an error if the total estimated transaction fee exceeds the remaining HBAR budget.
    */
   shouldPreemtivelyLimitFileTransactions(
@@ -139,13 +140,14 @@ export default class HbarLimit {
     fileChunkSize: number,
     currentNetworkExchangeRateInCents: number,
     requestId: string,
-  ) {
+  ): boolean {
     const requestIdPrefix = formatRequestIdMessage(requestId);
 
     if (this.isAccountWhiteListed(originalCallerAddress)) {
       this.logger.trace(
         `${requestIdPrefix} HBAR preemptive rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
       );
+      return false;
     } else {
       const { numFileCreateTxs, numFileAppendTxs, totalFeeInTinyBar } = this.estimateFileTransactionFee(
         callDataSize,
@@ -157,11 +159,12 @@ export default class HbarLimit {
         this.logger.warn(
           `${requestIdPrefix} HBAR preemptive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalFeeInTinyBar=${totalFeeInTinyBar}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
         );
-        throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
+        return true;
       } else {
         this.logger.trace(
           `${requestIdPrefix} HBAR preemptive rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalFeeInTinyBar=${totalFeeInTinyBar}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
         );
+        return false;
       }
     }
   }

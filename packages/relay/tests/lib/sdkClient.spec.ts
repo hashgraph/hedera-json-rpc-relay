@@ -2461,7 +2461,7 @@ describe('SdkClient', async function () {
 
     it('should preemtively rate limit before executing file transactions', async () => {
       const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
-      hbarLimitMock.expects('shouldPreemtivelyLimitFileTransactions').once().throws(expectedError);
+      hbarLimitMock.expects('shouldPreemptivelyLimitFileTransactions').once().returns(true);
 
       try {
         await sdkClient.submitEthereumTransaction(

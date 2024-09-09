@@ -402,13 +402,17 @@ export class SDKClient {
       const isPreemtiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK === 'true';
 
       if (isPreemtiveCheckOn) {
-        this.hbarLimiter.shouldPreemtivelyLimitFileTransactions(
+        const shouldPreemptivelyLimit = this.hbarLimiter.shouldPreemptivelyLimitFileTransactions(
           originalCallerAddress,
           ethereumTransactionData.toString().length,
           this.fileAppendChunkSize,
           currentNetworkExchangeRateInCents,
           requestId,
         );
+
+        if (shouldPreemptivelyLimit) {
+          throw predefined.HBAR_RATE_LIMIT_PREEMPTIVE_EXCEEDED;
+        }
       }
 
       fileId = await this.createFile(

@@ -22,7 +22,6 @@ import pino from 'pino';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import HbarLimit from '../../src/lib/hbarlimiter';
-import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { estimateFileTransactionsFee, getRequestId, random20BytesAddress } from '../helpers';
 
 const registry = new Registry();
@@ -214,38 +213,26 @@ describe('HBAR Rate Limiter', async function () {
     expect(limiterRemainingBudget).to.equal(validTotal - 100);
   });
 
-  it('Should preemtively limit while expected transactionFee is greater than remaining balance', () => {
-    const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
-
-    try {
-      rateLimiterWithInvalidTotal.shouldPreemtivelyLimitFileTransactions(
-        randomAccountAddress,
-        callDataSize,
-        fileChunkSize,
-        mockedExchangeRateInCents,
-        getRequestId(),
-      );
-      expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
-    } catch (error) {
-      expect(error).to.eq(expectedError);
-    }
+  it('Should execute shouldPreemptivelyLimitFileTransactions() and return TRUE if expected transactionFee is greater than remaining balance', () => {
+    const result = rateLimiterWithInvalidTotal.shouldPreemptivelyLimitFileTransactions(
+      randomAccountAddress,
+      callDataSize,
+      fileChunkSize,
+      mockedExchangeRateInCents,
+      getRequestId(),
+    );
+    expect(result).to.be.true;
   });
 
-  it('Should NOT preemtively limit while expected transactionFee is less than remaining balance', () => {
-    const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
-
-    try {
-      rateLimiter.shouldPreemtivelyLimitFileTransactions(
-        randomAccountAddress,
-        callDataSize,
-        fileChunkSize,
-        mockedExchangeRateInCents,
-        getRequestId(),
-      );
-      expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
-    } catch (error) {
-      expect(error).to.not.eq(expectedError);
-    }
+  it('Shouldexecute shouldPreemptivelyLimitFileTransactions() and return FALSE if expected transactionFee is less than remaining balance', () => {
+    const result = rateLimiter.shouldPreemptivelyLimitFileTransactions(
+      randomAccountAddress,
+      callDataSize,
+      fileChunkSize,
+      mockedExchangeRateInCents,
+      getRequestId(),
+    );
+    expect(result).to.be.false;
   });
 
   it('Should verify if an account is whitelisted', () => {
@@ -280,38 +267,26 @@ describe('HBAR Rate Limiter', async function () {
     expect(shouldNOTByPassRateLimit).to.equal(true);
   });
 
-  it('Should bypass preemtively limit if original caller is a white listed account', () => {
-    const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
-
-    try {
-      rateLimiterWithInvalidTotal.shouldPreemtivelyLimitFileTransactions(
-        randomWhiteListedAccountAddress,
-        callDataSize,
-        fileChunkSize,
-        mockedExchangeRateInCents,
-        getRequestId(),
-      );
-      expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
-    } catch (error) {
-      expect(error).to.not.eq(expectedError);
-    }
+  it('Should execute shouldPreemptivelyLimitFileTransactions() and return FALSE if the original caller is a white listed account', () => {
+    const result = rateLimiterWithInvalidTotal.shouldPreemptivelyLimitFileTransactions(
+      randomWhiteListedAccountAddress,
+      callDataSize,
+      fileChunkSize,
+      mockedExchangeRateInCents,
+      getRequestId(),
+    );
+    expect(result).to.be.false;
   });
 
-  it('Should NOT bypass preemtively limit if original caller is a white listed account', () => {
-    const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
-
-    try {
-      rateLimiterWithInvalidTotal.shouldPreemtivelyLimitFileTransactions(
-        randomAccountAddress,
-        callDataSize,
-        fileChunkSize,
-        mockedExchangeRateInCents,
-        getRequestId(),
-      );
-      expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
-    } catch (error) {
-      expect(error).to.eq(expectedError);
-    }
+  it('Should execute shouldPreemptivelyLimitFileTransactions() and return TRUE if the original caller is NOT a white listed account', () => {
+    const result = rateLimiterWithInvalidTotal.shouldPreemptivelyLimitFileTransactions(
+      randomAccountAddress,
+      callDataSize,
+      fileChunkSize,
+      mockedExchangeRateInCents,
+      getRequestId(),
+    );
+    expect(result).to.be.true;
   });
 
   it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
