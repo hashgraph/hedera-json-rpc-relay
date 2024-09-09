@@ -41,6 +41,7 @@ import RelayCalls from '../../tests/helpers/constants';
 // Other imports
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
 import constants from '../../../relay/src/lib/constants';
+import { IRequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/IRequestDetails';
 const Address = RelayCalls;
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {
@@ -55,8 +56,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let parentContractAddress: string;
   let mirrorContractDetails;
   let requestId: string;
+  let requestIdPrefix: string;
   let account2Address: string;
   let expectedGasPrice: string;
+  let requestDetails: IRequestDetails;
 
   const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const INCORRECT_CHAIN_ID = 999;
@@ -84,7 +87,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
     this.beforeAll(async () => {
       requestId = Utils.generateRequestId();
-      const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+      requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+      requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
+
       expectedGasPrice = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestId);
 
       const initialAccount: AliasAccount = global.accounts[0];
@@ -175,7 +180,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
               address: [contractAddress, contractAddress2],
             },
           ],
-          requestId,
+          requestIdPrefix,
         );
 
         expect(logs.length).to.be.greaterThan(0);

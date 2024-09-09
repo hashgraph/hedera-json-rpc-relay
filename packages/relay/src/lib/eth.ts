@@ -1715,7 +1715,7 @@ export class EthImpl implements Eth {
     let result: string | JsonRpcError = '';
     try {
       if (shouldForceToConsensus || shouldDefaultToConsensus) {
-        result = await this.callConsensusNode(call, gas, requestIdPrefix);
+        result = await this.callConsensusNode(call, gas, requestDetails);
       } else {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response

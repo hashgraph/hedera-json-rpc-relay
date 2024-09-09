@@ -91,7 +91,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-    expectedGasPrice = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestId);
+    expectedGasPrice = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestIdPrefix);
 
     const initialAccount: AliasAccount = global.accounts[0];
 
@@ -868,7 +868,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         requestId,
       );
 
-      const gasPrice = await relay.gasPrice();
+      const gasPrice = await relay.gasPrice(requestId);
       const transaction = {
         value: 0,
         gasLimit: 50000,
@@ -881,7 +881,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         maxFeePerGas: gasPrice,
         type: 2,
       };
-
+      console.log('sign transaction');
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
       const txReceipt = await relay.call(
