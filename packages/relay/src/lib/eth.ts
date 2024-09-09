@@ -56,6 +56,7 @@ import {
   weibarHexToTinyBarInt,
   isValidEthereumAddress,
   formatTransactionIdWithoutQueryParams,
+  getFunctionSelector,
 } from '../formatters';
 
 const _ = require('lodash');
@@ -1619,7 +1620,7 @@ export class EthImpl implements Eth {
   ): Promise<string | JsonRpcError> {
     const callData = call.data ? call.data : call.input;
     // log request
-    this.logger.trace(
+    this.logger.info(
       `${requestIdPrefix} call({to=${call.to}, from=${call.from}, data=${callData}, gas=${call.gas}, gasPrice=${call.gasPrice} blockParam=${blockParam}, estimate=${call.estimate})`,
     );
     // log call data size
@@ -1640,18 +1641,23 @@ export class EthImpl implements Eth {
 
     await this.contractCallFormat(call, requestIdPrefix);
 
+    const selector = getFunctionSelector(call.data!);
+
+    const shouldForceToConsensus =
+      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR == 'true' &&
+      constants.ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS.indexOf(selector) !== -1;
+
+    // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
+    const shouldDefaultToConsensus = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'true';
+
     let result: string | JsonRpcError = '';
     try {
-      // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-      if (
-        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === undefined ||
-        process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE == 'false'
-      ) {
+      if (shouldForceToConsensus || shouldDefaultToConsensus) {
+        result = await this.callConsensusNode(call, gas, requestIdPrefix);
+      } else {
         //temporary workaround until precompiles are implemented in Mirror node evm module
         // Execute the call and get the response
         result = await this.callMirrorNode(call, gas, call.value, blockNumberOrTag, requestIdPrefix);
-      } else {
-        result = await this.callConsensusNode(call, gas, requestIdPrefix);
       }
 
       this.logger.debug(`${requestIdPrefix} eth_call response: ${JSON.stringify(result)}`);
