@@ -23,6 +23,7 @@ import { Gauge, Registry } from 'prom-client';
 import { ICacheClient } from './ICacheClient';
 import constants from '../../constants';
 import LRUCache, { LimitedByCount, LimitedByTTL } from 'lru-cache';
+import { formatRequestIdMessage } from '../../../formatters';
 
 /**
  * Represents a LocalLRUCache instance that uses an LRU (Least Recently Used) caching strategy
@@ -98,10 +99,11 @@ export class LocalLRUCache implements ICacheClient {
    * If the value exists in the cache, updates metrics and logs the retrieval.
    * @param {string} key - The key associated with the cached value.
    * @param {string} callingMethod - The name of the method calling the cache.
-   * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
+   * @param {string} requestId - A unique request ID for tracking the request.
    * @returns {*} The cached value if found, otherwise null.
    */
-  public async get(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
+  public async get(key: string, callingMethod: string, requestId: string): Promise<any> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     const value = this.cache.get(key);
     if (value !== undefined) {
       this.logger.trace(
@@ -117,10 +119,11 @@ export class LocalLRUCache implements ICacheClient {
    * The remaining TTL of the specified key in the cache.
    * @param {string} key - The key to check the remaining TTL for.
    * @param {string} callingMethod - The name of the method calling the cache.
-   * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
+   * @param {string} requestId - A unique request ID for tracking the request.
    * @returns {Promise<number>} The remaining TTL in milliseconds.
    */
-  public async getRemainingTtl(key: string, callingMethod: string, requestIdPrefix?: string): Promise<number> {
+  public async getRemainingTtl(key: string, callingMethod: string, requestId: string): Promise<number> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     const remainingTtl = this.cache.getRemainingTTL(key); // in milliseconds
     this.logger.trace(`${requestIdPrefix} returning remaining TTL ${key}:${remainingTtl} on ${callingMethod} call`);
     return remainingTtl;
@@ -132,37 +135,31 @@ export class LocalLRUCache implements ICacheClient {
    * @param {string} key - The key to associate with the value.
    * @param {*} value - The value to cache.
    * @param {string} callingMethod - The name of the method calling the cache.
+   * @param {string} requestId - A unique request ID for tracking the request.
    * @param {number} ttl - Time to live for the cached value in milliseconds (optional).
-   * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
    */
-  public async set(
-    key: string,
-    value: any,
-    callingMethod: string,
-    ttl?: number,
-    requestIdPrefix?: string,
-  ): Promise<void> {
+  public async set(key: string, value: any, callingMethod: string, requestId: string, ttl?: number): Promise<void> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     const resolvedTtl = ttl ?? this.options.ttl;
-    this.logger.trace(`${requestIdPrefix} caching ${key}:${JSON.stringify(value)} for ${resolvedTtl} ms`);
+    this.logger.trace(
+      `${requestIdPrefix} caching ${key}:${JSON.stringify(value)} on ${callingMethod} for ${resolvedTtl} ms`,
+    );
     this.cache.set(key, value, { ttl: resolvedTtl });
   }
 
   /**
    * Stores multiple key-value pairs in the cache.
    *
-   * @param keyValuePairs - An object where each property is a key and its value is the value to be cached.
-   * @param callingMethod - The name of the calling method.
-   * @param requestIdPrefix - Optional request ID prefix for logging.
+   * @param {Record<string, any>} keyValuePairs - An object where each property is a key and its value is the value to be cached.
+   * @param {string} callingMethod - The name of the calling method.
+   * @param {string} requestId - A unique request ID for tracking the request.
    * @returns {Promise<void>} A Promise that resolves when the values are cached.
    */
-  public async multiSet(
-    keyValuePairs: Record<string, any>,
-    callingMethod: string,
-    requestIdPrefix?: string,
-  ): Promise<void> {
+  public async multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestId: string): Promise<void> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     // Iterate over each entry in the keyValuePairs object
     for (const [key, value] of Object.entries(keyValuePairs)) {
-      await this.set(key, value, callingMethod, undefined, requestIdPrefix);
+      await this.set(key, value, callingMethod, requestIdPrefix, undefined);
     }
   }
 
@@ -171,19 +168,20 @@ export class LocalLRUCache implements ICacheClient {
    *
    * @param keyValuePairs - An object where each property is a key and its value is the value to be cached.
    * @param callingMethod - The name of the calling method.
+   * @param {string} requestId - A unique request ID for tracking the request.
    * @param ttl - Time to live on the set values
-   * @param requestIdPrefix - Optional request ID prefix for logging.
    * @returns {void} A Promise that resolves when the values are cached.
    */
   public async pipelineSet(
     keyValuePairs: Record<string, any>,
     callingMethod: string,
+    requestId: string,
     ttl?: number,
-    requestIdPrefix?: string,
   ): Promise<void> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     // Iterate over each entry in the keyValuePairs object
     for (const [key, value] of Object.entries(keyValuePairs)) {
-      await this.set(key, value, callingMethod, ttl, requestIdPrefix);
+      await this.set(key, value, callingMethod, requestIdPrefix, ttl);
     }
   }
 
@@ -192,10 +190,11 @@ export class LocalLRUCache implements ICacheClient {
    * Logs the deletion of the cache entry.
    * @param {string} key - The key associated with the cached value to delete.
    * @param {string} callingMethod - The name of the method calling the cache.
-   * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
+   * @param {string} requestId - A unique request ID for tracking the request.
    */
-  public async delete(key: string, callingMethod: string, requestIdPrefix?: string): Promise<void> {
-    this.logger.trace(`${requestIdPrefix} delete cache for ${key}`);
+  public async delete(key: string, callingMethod: string, requestId: string): Promise<void> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.trace(`${requestIdPrefix} delete cache for ${key} on ${callingMethod} call`);
     this.cache.delete(key);
   }
 
@@ -219,10 +218,11 @@ export class LocalLRUCache implements ICacheClient {
    * Retrieves all keys in the cache that match the given pattern.
    * @param {string} pattern - The pattern to match keys against.
    * @param {string} callingMethod - The name of the method calling the cache.
-   * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
+   * @param {string} requestId - A unique request ID for tracking the request.
    * @returns {Promise<string[]>} An array of keys that match the pattern.
    */
-  public async keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]> {
+  public async keys(pattern: string, callingMethod: string, requestId: string): Promise<string[]> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     const keys = Array.from(this.cache.rkeys());
 
     // Replace escaped special characters with placeholders

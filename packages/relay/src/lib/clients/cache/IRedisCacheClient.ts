@@ -22,7 +22,7 @@ import type { ICacheClient } from './ICacheClient';
 
 export interface IRedisCacheClient extends ICacheClient {
   disconnect: () => Promise<void>;
-  incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix?: string): Promise<number>;
-  rPush(key: string, value: any, callingMethod: string, requestIdPrefix?: string): Promise<number>;
-  lRange(key: string, start: number, end: number, callingMethod: string, requestIdPrefix?: string): Promise<any[]>;
+  incrBy(key: string, amount: number, callingMethod: string, requestId: string): Promise<number>;
+  rPush(key: string, value: any, callingMethod: string, requestId: string): Promise<number>;
+  lRange(key: string, start: number, end: number, callingMethod: string, requestId: string): Promise<any[]>;
 }
