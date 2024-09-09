@@ -2252,8 +2252,8 @@ describe('SdkClient', async function () {
       hbarLimitMock = sinon.mock(hbarLimiter);
       sdkClientMock = sinon.mock(sdkClient);
       mock = new MockAdapter(instance);
-      hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
-      process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'true';
+      hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK;
+      process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = 'true';
     });
 
     afterEach(() => {
@@ -2261,7 +2261,7 @@ describe('SdkClient', async function () {
       sinon.restore();
       sdkClientMock.restore();
       hbarLimitMock.restore();
-      process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = hbarRateLimitPreemptiveCheck;
+      process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = hbarRateLimitPreemptiveCheck;
     });
 
     it('should rate limit before creating file', async () => {
@@ -2459,8 +2459,8 @@ describe('SdkClient', async function () {
       expect(appendFileStub.called).to.be.false;
     });
 
-    it('should preemtively rate limit before executing file transactions', async () => {
-      const expectedError = predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
+    it('should preemptively rate limit before executing file transactions', async () => {
+      const expectedError = predefined.HBAR_RATE_LIMIT_PREEMPTIVE_EXCEEDED;
       hbarLimitMock.expects('shouldPreemptivelyLimitFileTransactions').once().returns(true);
 
       try {

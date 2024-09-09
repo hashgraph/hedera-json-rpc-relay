@@ -244,10 +244,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         let hbarRateLimitPreemptiveCheck: string | undefined;
 
         beforeEach(() => {
-          hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
+          hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK;
         });
         afterEach(() => {
-          process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = hbarRateLimitPreemptiveCheck;
+          process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = hbarRateLimitPreemptiveCheck;
         });
 
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
@@ -275,8 +275,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
         });
 
-        it('Should preemtively check the rate limit before submitting EthereumTransaction', async function () {
-          process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'true';
+        it('Should preemptively check the rate limit before submitting EthereumTransaction', async function () {
+          process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = 'true';
 
           try {
             for (let i = 0; i < 50; i++) {
@@ -289,12 +289,12 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             }
             expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
           } catch (e) {
-            expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED.message);
+            expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMPTIVE_EXCEEDED.message);
           }
         });
 
         it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
-          process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'false';
+          process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = 'false';
 
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           let lastRemainingHbars = remainingHbarsBefore;

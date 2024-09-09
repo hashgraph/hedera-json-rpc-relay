@@ -134,7 +134,7 @@ export default class HbarLimit {
    * @returns {boolean} - Return true if the transaction should be preemptively rate limited, otherwise return false.
    * @throws {JsonRpcError} Throws an error if the total estimated transaction fee exceeds the remaining HBAR budget.
    */
-  shouldPreemtivelyLimitFileTransactions(
+  shouldPreemptivelyLimitFileTransactions(
     originalCallerAddress: string,
     callDataSize: number,
     fileChunkSize: number,
