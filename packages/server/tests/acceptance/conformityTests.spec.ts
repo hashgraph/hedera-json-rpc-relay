@@ -699,3 +699,294 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
     synthesizeWsTestCases(TEST_CASES, updateParamIfNeeded);
   });
 });
+
+describe('@api-conformity @conformity-batch-4 Ethereum execution apis tests', async function () {
+  this.timeout(240 * 1000);
+
+  let existingCallerContractAddress: string;
+  let existingLogsContractAddress: string;
+  let fromBlockForLogs: string;
+
+  before(async () => {
+    const deployCallerContractTx = await signAndSendRawTransaction({
+      chainId: 0x12a,
+      to: null,
+      from: sendAccountAddress,
+      maxPriorityFeePerGas: gasPrice,
+      maxFeePerGas: gasPrice,
+      gasLimit: gasLimit,
+      type: 2,
+      data: CallerContract.bytecode,
+    });
+
+    const deployLogsContractTx = await signAndSendRawTransaction({
+      chainId: 0x12a,
+      to: null,
+      from: sendAccountAddress,
+      maxPriorityFeePerGas: gasPrice,
+      maxFeePerGas: gasPrice,
+      gasLimit: gasLimit,
+      type: 2,
+      data: LogsContract.bytecode,
+    });
+
+    existingCallerContractAddress = deployCallerContractTx.contractAddress;
+    existingLogsContractAddress = deployLogsContractTx.contractAddress;
+
+    const log0ContractCall = await signAndSendRawTransaction({
+      chainId: 0x12a,
+      to: existingLogsContractAddress,
+      from: sendAccountAddress,
+      maxPriorityFeePerGas: gasPrice,
+      maxFeePerGas: gasPrice,
+      gasLimit: gasLimit,
+      type: 2,
+      data: '0xd05285d4000000000000000000000000000000000000000000000000000000000000160c',
+    });
+
+    fromBlockForLogs = log0ContractCall.blockNumber;
+  });
+
+  const TEST_CASES = {
+    'eth_call - non existing contract': {
+      request:
+        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response: '{"result":"0x","jsonrpc":"2.0","id":1}',
+    },
+    'eth_call - existing contract view function and existing from': {
+      request:
+        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response:
+        '{"result":"0x0000000000000000000000000000000000000000000000000000000000000004","jsonrpc":"2.0","id":1}',
+    },
+    'eth_call - existing contract tx and existing from': {
+      request:
+        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response:
+        '{"result":"0x0000000000000000000000000000000000000000000000000000000000000000","jsonrpc":"2.0","id":1}',
+    },
+    'eth_call - existing contract tx, existing from and positive value': {
+      request:
+        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE","value":"0x2540be400"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response:
+        '{"result":"0x0000000000000000000000000000000000000000000000000000000000000001","jsonrpc":"2.0","id":1}',
+    },
+    'eth_call - existing contract view function and non-existing from': {
+      request:
+        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response:
+        '{"result":"0x0000000000000000000000000000000000000000000000000000000000000004","jsonrpc":"2.0","id":1}',
+    },
+    'eth_call - existing contract tx and non-existing from': {
+      request:
+        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response:
+        '{"result":"0x0000000000000000000000000000000000000000000000000000000000000000","jsonrpc":"2.0","id":1}',
+    },
+    'eth_call - existing contract tx, non-existing from and positive value': {
+      request:
+        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE","value":"0x2540be400"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response: '{"jsonrpc":"2.0","id":1,"result":[]}', // insufficient balance error expected, blocked until https://github.com/hashgraph/hedera-mirror-node/issues/9301 is resolved
+    },
+    'eth_estimateGas - non existing contract': {
+      request:
+        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response: '{"result":"0x5adc","jsonrpc":"2.0","id":1}',
+    },
+    'eth_estimateGas - existing contract view function and existing from': {
+      request:
+        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response: '{"result":"0x5aa7","jsonrpc":"2.0","id":1}',
+    },
+    'eth_estimateGas - existing contract tx and existing from': {
+      request:
+        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response: '{"result":"0x5ad0","jsonrpc":"2.0","id":1}',
+    },
+    'eth_estimateGas - existing contract tx, existing from and positive value': {
+      request:
+        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE","value":"0x2540be400"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response: '{"result":"0x5ad0","jsonrpc":"2.0","id":1}',
+    },
+    'eth_estimateGas - existing contract view function and non-existing from': {
+      request:
+        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response: '{"result":"0x5ad0","jsonrpc":"2.0","id":1}',
+    },
+    'eth_estimateGas - existing contract tx and non-existing from': {
+      request:
+        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response: '{"jsonrpc":"2.0","id":1,"result":[]}',
+    },
+    'eth_estimateGas - existing contract tx, non-existing from and positive value': {
+      request:
+        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE","value":"0x2540be400"},"latest"],"id":1,"jsonrpc":"2.0"}',
+      response: '{"result":"0x7a120","jsonrpc":"2.0","id":1}', // returns predefined 500_000, blocked until https://github.com/hashgraph/hedera-mirror-node/issues/9301 is resolved
+    },
+    'eth_getLogs - non-existing contract': {
+      request:
+        '{"method":"eth_getLogs","params":[{"address":"0x6b175474e89094c44da98b954eedeac495271d0f"}],"id":1,"jsonrpc":"2.0"}',
+      response: '{"result":[],"jsonrpc":"2.0","id":1}',
+    },
+    'eth_getLogs - existing contract': {
+      request:
+        '{"method":"eth_getLogs","params":[{"address":"0x6b175474e89094c44da98b954eedeac495271d0f"}],"id":1,"jsonrpc":"2.0"}',
+      response: '{"result":[],"jsonrpc":"2.0","id":1}',
+    },
+    'eth_getLogs - existing contract and from/to block': {
+      request:
+        '{"method":"eth_getLogs","params":[{"fromBlock":"0x1","toBlock":"latest","address":"0x6b175474e89094c44da98b954eedeac495271d0f"}],"id":1,"jsonrpc":"2.0"}',
+      response:
+        '{"result":[{"address":"0x7402f907cb2f494acdf7080cffa4f70c939486a1","blockHash":"0xd0c2b09c0c60f1e70cbbd7b09df931286b332db705725d2f073e0e46530d5b4d","blockNumber":"0x39c","data":"0x000000000000000000000000000000000000000000000000000000000000160c","logIndex":"0x0","removed":false,"topics":[],"transactionHash":"0xab2529089e736c8c3b6bf69bb2fd32d52bc3497412566d874cc692c5fe08c91d","transactionIndex":"0x7"}],"jsonrpc":"2.0","id":1}',
+    },
+  };
+
+  const updateParamIfNeeded = (testName, request) => {
+    switch (testName) {
+      case 'eth_call - existing contract view function and existing from':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0x0ec1551d',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_call - existing contract tx and existing from':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_call - existing contract tx, existing from and positive value':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+            value: '0x2540be400',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_call - existing contract view function and non-existing from':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0x0ec1551d',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_call - existing contract tx and non-existing from':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_call - existing contract tx, non-existing from and positive value':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+            value: '0x2540be400',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract view function and existing from':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0x0ec1551d',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract tx and existing from':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract tx, existing from and positive value':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+            value: '0x2540be400',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract view function and non-existing from':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0x0ec1551d',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract tx and non-existing from':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract tx, non-existing from and positive value':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+            value: '0x2540be400',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_getLogs - existing contract':
+        request.params = [
+          {
+            address: existingLogsContractAddress,
+          },
+        ];
+        break;
+      case 'eth_getLogs - existing contract and from/to block':
+        request.params = [
+          {
+            fromBlock: fromBlockForLogs,
+            toBlock: 'latest',
+            address: existingLogsContractAddress,
+          },
+        ];
+        break;
+    }
+
+    return request;
+  };
+
+  synthesizeTestCases(TEST_CASES, updateParamIfNeeded);
+});
