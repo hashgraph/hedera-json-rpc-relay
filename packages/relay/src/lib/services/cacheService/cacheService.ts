@@ -202,7 +202,7 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
-  private async getFromSharedCache(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
+  private async getFromSharedCache(key: string, callingMethod: string, requestIdPrefix: string): Promise<any> {
     try {
       this.cacheMethodsCounter
         .labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.GET_ASYNC)
@@ -228,7 +228,7 @@ export class CacheService {
    * @returns {Promise<T | null>} A Promise that resolves with the cached value or null if not found.
    * @template T - The type of the cached value.
    */
-  public async getAsync<T = any>(key: string, callingMethod: string, requestIdPrefix?: string): Promise<T> {
+  public async getAsync<T = any>(key: string, callingMethod: string, requestIdPrefix: string): Promise<T> {
     if (this.isSharedCacheEnabled) {
       return await this.getFromSharedCache(key, callingMethod, requestIdPrefix);
     } else {

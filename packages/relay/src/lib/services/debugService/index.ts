@@ -99,7 +99,7 @@ export class DebugService implements IDebugService {
     transactionIdOrHash: string,
     tracer: TracerType,
     tracerConfig: ITracerConfig,
-    requestIdPrefix?: string,
+    requestIdPrefix: string,
   ): Promise<any> {
     this.logger.trace(`${requestIdPrefix} debug_traceTransaction(${transactionIdOrHash})`);
     try {
@@ -122,7 +122,7 @@ export class DebugService implements IDebugService {
    * @param {string} requestIdPrefix - The request prefix id.
    * @returns {Promise<[] | any>} The formatted actions response in an array.
    */
-  async formatActionsResult(result: any, requestIdPrefix?: string): Promise<[] | any> {
+  async formatActionsResult(result: any, requestIdPrefix: string): Promise<[] | any> {
     return await Promise.all(
       result.map(async (action, index) => {
         const { resolvedFrom, resolvedTo } = await this.resolveMultipleAddresses(
@@ -206,8 +206,8 @@ export class DebugService implements IDebugService {
    */
   async resolveAddress(
     address: string,
+    requestIdPrefix: string,
     types = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-    requestIdPrefix?: string,
   ): Promise<string> {
     // if the address is null or undefined we return it as is
     if (!address) return address;
@@ -233,15 +233,15 @@ export class DebugService implements IDebugService {
   async resolveMultipleAddresses(
     from: string,
     to: string,
-    requestIdPrefix?: string,
+    requestIdPrefix: string,
   ): Promise<{ resolvedFrom: string; resolvedTo: string }> {
     const [resolvedFrom, resolvedTo] = await Promise.all([
-      this.resolveAddress(
-        from,
-        [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-        requestIdPrefix,
-      ),
-      this.resolveAddress(to, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT], requestIdPrefix),
+      this.resolveAddress(from, requestIdPrefix, [
+        constants.TYPE_CONTRACT,
+        constants.TYPE_TOKEN,
+        constants.TYPE_ACCOUNT,
+      ]),
+      this.resolveAddress(to, requestIdPrefix, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT]),
     ]);
 
     return { resolvedFrom, resolvedTo };
@@ -261,7 +261,7 @@ export class DebugService implements IDebugService {
   async callOpcodeLogger(
     transactionIdOrHash: string,
     tracerConfig: IOpcodeLoggerConfig,
-    requestIdPrefix?: string,
+    requestIdPrefix: string,
   ): Promise<object> {
     try {
       const options = {
@@ -289,15 +289,11 @@ export class DebugService implements IDebugService {
    * @param {string} requestIdPrefix - The request prefix id.
    * @returns {Promise<object>} The formatted response.
    */
-  async callTracer(
-    transactionHash: string,
-    tracerConfig: ICallTracerConfig,
-    requestIdPrefix?: string,
-  ): Promise<object> {
+  async callTracer(transactionHash: string, tracerConfig: ICallTracerConfig, requestIdPrefix: string): Promise<object> {
     try {
       const [actionsResponse, transactionsResponse] = await Promise.all([
         this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestIdPrefix),
-        this.mirrorNodeClient.getContractResultWithRetry(transactionHash),
+        this.mirrorNodeClient.getContractResultWithRetry(transactionHash, requestIdPrefix),
       ]);
       if (!actionsResponse || !transactionsResponse) {
         throw predefined.RESOURCE_NOT_FOUND(`Failed to retrieve contract results for transaction ${transactionHash}`);

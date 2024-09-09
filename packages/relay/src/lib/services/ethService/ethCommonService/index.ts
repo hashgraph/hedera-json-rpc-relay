@@ -253,7 +253,7 @@ export class CommonService implements ICommonService {
     throw predefined.INTERNAL_ERROR(error.message.toString());
   }
 
-  public async validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestIdPrefix?: string) {
+  public async validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestIdPrefix: string) {
     try {
       const block = await this.mirrorNodeClient.getBlock(blockHash, requestIdPrefix);
       if (block) {
@@ -285,7 +285,7 @@ export class CommonService implements ICommonService {
   public async getLogsByAddress(address: string | string[], params: any, requestIdPrefix) {
     const addresses = Array.isArray(address) ? address : [address];
     const logPromises = addresses.map((addr) =>
-      this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestIdPrefix),
+      this.mirrorNodeClient.getContractResultsLogsByAddress(addr, requestIdPrefix, params, undefined),
     );
 
     const logResults = await Promise.all(logPromises);

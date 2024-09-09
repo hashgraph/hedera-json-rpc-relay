@@ -521,7 +521,7 @@ app.useRpc('eth_getLogs', async (params: any) => {
  */
 app.useRpc('eth_getStorageAt', async (params: any) => {
   return logAndHandleResponse('eth_getStorageAt', params, (requestId) =>
-    relay.eth().getStorageAt(requestId, params?.[0], params?.[1], params?.[2]),
+    relay.eth().getStorageAt(params?.[0], params?.[1], requestId, params?.[2]),
   );
 });
 

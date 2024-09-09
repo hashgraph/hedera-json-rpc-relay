@@ -55,9 +55,9 @@ export class HbarSpendingPlanRepository {
    * @param id - The ID of the plan to get.
    * @returns {Promise<IHbarSpendingPlan>} - The hbar spending plan object.
    */
-  async findById(id: string): Promise<IHbarSpendingPlan> {
+  async findById(id: string, requestIdPrefix: string): Promise<IHbarSpendingPlan> {
     const key = this.getKey(id);
-    const plan = await this.cache.getAsync<IHbarSpendingPlan>(key, 'findById');
+    const plan = await this.cache.getAsync<IHbarSpendingPlan>(key, 'findById', requestIdPrefix);
     if (!plan) {
       throw new HbarSpendingPlanNotFoundError(id);
     }
@@ -73,12 +73,12 @@ export class HbarSpendingPlanRepository {
    * @param id - The ID of the plan.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - The detailed hbar spending plan object.
    */
-  async findByIdWithDetails(id: string): Promise<IDetailedHbarSpendingPlan> {
-    const plan = await this.findById(id);
+  async findByIdWithDetails(id: string, requestIdPrefix: string): Promise<IDetailedHbarSpendingPlan> {
+    const plan = await this.findById(id, requestIdPrefix);
     return new HbarSpendingPlan({
       ...plan,
       spendingHistory: [],
-      spentToday: await this.getSpentToday(id),
+      spentToday: await this.getSpentToday(id, requestIdPrefix),
     });
   }
 
@@ -107,8 +107,8 @@ export class HbarSpendingPlanRepository {
    * @param id - The ID of the plan.
    * @returns {Promise<void>} - A promise that resolves if the plan exists and is active, or rejects if not.
    */
-  async checkExistsAndActive(id: string): Promise<void> {
-    const plan = await this.findById(id);
+  async checkExistsAndActive(id: string, requestIdPrefix: string): Promise<void> {
+    const plan = await this.findById(id, requestIdPrefix);
     if (!plan.active) {
       throw new HbarSpendingPlanNotActiveError(id);
     }
@@ -119,8 +119,8 @@ export class HbarSpendingPlanRepository {
    * @param id - The ID of the plan.
    * @returns {Promise<IHbarSpendingRecord[]>} - A promise that resolves with the spending history.
    */
-  async getSpendingHistory(id: string): Promise<IHbarSpendingRecord[]> {
-    await this.checkExistsAndActive(id);
+  async getSpendingHistory(id: string, requestIdPrefix: string): Promise<IHbarSpendingRecord[]> {
+    await this.checkExistsAndActive(id, requestIdPrefix);
 
     this.logger.trace(`Retrieving spending history for HbarSpendingPlan with ID ${id}...`);
     const key = this.getSpendingHistoryKey(id);
@@ -134,8 +134,8 @@ export class HbarSpendingPlanRepository {
    * @param amount - The amount to add to the plan's spending.
    * @returns {Promise<number>} - A promise that resolves with the new length of the spending history.
    */
-  async addAmountToSpendingHistory(id: string, amount: number): Promise<number> {
-    await this.checkExistsAndActive(id);
+  async addAmountToSpendingHistory(id: string, amount: number, requestIdPrefix: string): Promise<number> {
+    await this.checkExistsAndActive(id, requestIdPrefix);
 
     this.logger.trace(`Adding ${amount} to spending history for HbarSpendingPlan with ID ${id}...`);
     const key = this.getSpendingHistoryKey(id);
@@ -148,12 +148,12 @@ export class HbarSpendingPlanRepository {
    * @param id - The ID of the plan.
    * @returns {Promise<number>} - A promise that resolves with the amount spent today.
    */
-  async getSpentToday(id: string): Promise<number> {
-    await this.checkExistsAndActive(id);
+  async getSpentToday(id: string, requestIdPrefix: string): Promise<number> {
+    await this.checkExistsAndActive(id, requestIdPrefix);
 
     this.logger.trace(`Retrieving spentToday for HbarSpendingPlan with ID ${id}...`);
     const key = this.getSpentTodayKey(id);
-    return this.cache.getAsync(key, 'getSpentToday').then((spentToday) => parseInt(spentToday ?? '0'));
+    return this.cache.getAsync(key, 'getSpentToday', requestIdPrefix).then((spentToday) => parseInt(spentToday ?? '0'));
   }
 
   /**
@@ -174,11 +174,11 @@ export class HbarSpendingPlanRepository {
    * @param amount - The amount to add.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
-  async addAmountToSpentToday(id: string, amount: number): Promise<void> {
-    await this.checkExistsAndActive(id);
+  async addAmountToSpentToday(id: string, amount: number, requestIdPrefix: string): Promise<void> {
+    await this.checkExistsAndActive(id, requestIdPrefix);
 
     const key = this.getSpentTodayKey(id);
-    if (!(await this.cache.getAsync(key, 'addAmountToSpentToday'))) {
+    if (!(await this.cache.getAsync(key, 'addAmountToSpentToday', requestIdPrefix))) {
       this.logger.trace(`No spending yet for HbarSpendingPlan with ID ${id}, setting spentToday to ${amount}...`);
       await this.cache.set(key, amount, 'addAmountToSpentToday', this.oneDayInMillis);
     } else {
