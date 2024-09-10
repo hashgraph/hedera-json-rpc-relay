@@ -51,8 +51,8 @@ dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub;
-let getSdkClientStub;
-const requestIdPrefix = `[Request ID: testId]`;
+const requestIdPrefix = `[Request ID: eth_getTransactionByBlockHashAndIndexTest]`;
+const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
 
 function verifyAggregatedInfo(result: Transaction | null) {
   // verify aggregated info
@@ -104,7 +104,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash,
       numberTo0x(DEFAULT_BLOCK.count),
-      requestIdPrefix,
+      requestDetails,
     );
     expect(result).to.exist;
     expect(result).to.not.be.null;
@@ -142,7 +142,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
-      requestIdPrefix,
+      requestDetails,
     );
     expect(result).to.equal(null);
   });
@@ -153,7 +153,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
-      requestIdPrefix,
+      requestDetails,
     );
     expect(result).to.equal(null);
   });
@@ -171,7 +171,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
-      requestIdPrefix,
+      requestDetails,
     );
     expect(result).to.be.an.instanceOf(Transaction);
   });
@@ -190,7 +190,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
-      requestIdPrefix,
+      requestDetails,
     );
     expect(result).to.be.an.instanceOf(Transaction2930);
   });
@@ -211,7 +211,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
-      requestIdPrefix,
+      requestDetails,
     );
     expect(result).to.be.an.instanceOf(Transaction1559);
   });

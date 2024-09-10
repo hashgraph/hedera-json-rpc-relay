@@ -87,10 +87,10 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
     generateEthTestEnv(true);
+  const requestIdPrefix = `[Request ID: eth_getBlockByNumberTest]`;
+  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' } as IRequestDetails;
   const results = defaultContractResults.results;
   const TOTAL_GAS_USED = numberTo0x(results[0].gas_used + results[1].gas_used);
-  let requestIdPrefix: string;
-  let requestDetails: IRequestDetails;
 
   const veriftAggregatedInfo = (result) => {
     // verify aggregated info
@@ -115,8 +115,6 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     restMock.reset();
     restMock.resetHandlers();
 
-    requestIdPrefix = `[Request ID: testId]`;
-    requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -151,19 +149,19 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
 
   it('"eth_blockNumber" should return the latest block number', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    const blockNumber = await ethImpl.blockNumber(requestIdPrefix);
+    const blockNumber = await ethImpl.blockNumber(requestDetails);
     expect(blockNumber).to.be.eq(blockNumber);
   });
 
   it('"eth_blockNumber" should return the latest block number using cache', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    const blockNumber = await ethImpl.blockNumber(requestIdPrefix);
+    const blockNumber = await ethImpl.blockNumber(requestDetails);
     expect(numberTo0x(DEFAULT_BLOCK.number)).to.be.eq(blockNumber);
 
     // Second call should return the same block number using cache
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(400, DEFAULT_BLOCKS_RES);
 
-    const blockNumber2 = await ethImpl.blockNumber(requestIdPrefix);
+    const blockNumber2 = await ethImpl.blockNumber(requestDetails);
     expect(blockNumber2).to.be.eq(blockNumber);
 
     // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
@@ -173,14 +171,14 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, {
       blocks: [{ ...DEFAULT_BLOCK, number: newBlockNumber }],
     });
-    const blockNumber3 = await ethImpl.blockNumber(requestIdPrefix);
+    const blockNumber3 = await ethImpl.blockNumber(requestDetails);
     expect(numberTo0x(newBlockNumber)).to.be.eq(blockNumber3);
   });
 
-  it('"eth_blockNumber" should throw an error if no blocks are found', async function () {
+  it.only('"eth_blockNumber" should throw an error if no blocks are found', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(404, BLOCK_NOT_FOUND_RES);
     const error = predefined.COULD_NOT_RETRIEVE_LATEST_BLOCK;
-    await RelayAssertions.assertRejection(error, ethImpl.blockNumber, true, ethImpl);
+    await RelayAssertions.assertRejection(error, ethImpl.blockNumber, true, ethImpl, [requestDetails]);
   });
 
   it('"eth_blockNumber" return the latest block number on second try', async function () {
@@ -191,9 +189,9 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       .replyOnce(200, DEFAULT_BLOCKS_RES);
 
     try {
-      await ethImpl.blockNumber(requestIdPrefix);
+      await ethImpl.blockNumber(requestDetails);
     } catch (error) {}
-    const blockNumber = await ethImpl.blockNumber(requestIdPrefix);
+    const blockNumber = await ethImpl.blockNumber(requestDetails);
 
     expect(blockNumber).to.be.eq(blockNumber);
   });

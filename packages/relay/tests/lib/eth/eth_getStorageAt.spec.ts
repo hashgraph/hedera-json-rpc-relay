@@ -56,8 +56,8 @@ let currentMaxBlockRange: number;
 describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
-  let requestIdPrefix: string;
-
+  const requestIdPrefix = `[Request ID: eth_getStorageAtTest]`;
+  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
   function confirmResult(result: string) {
     expect(result).to.exist;
     expect(result).to.not.be.null;
@@ -69,7 +69,6 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     cacheService.clear();
     restMock.reset();
 
-    requestIdPrefix = `[Request ID: testId]`;
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -95,7 +94,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         )
         .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
 
-      const result = await ethImpl.getStorageAt(CONTRACT_ADDRESS_1, '0x101', requestIdPrefix, numberTo0x(BLOCK_NUMBER));
+      const result = await ethImpl.getStorageAt(CONTRACT_ADDRESS_1, '0x101', requestDetails, numberTo0x(BLOCK_NUMBER));
       confirmResult(result);
 
       // verify slot value
@@ -113,7 +112,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
         '0x0000101',
-        requestIdPrefix,
+        requestDetails,
         numberTo0x(BLOCK_NUMBER),
       );
       confirmResult(result);
@@ -133,7 +132,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
         defaultDetailedContractResults.state_changes[0].slot,
-        requestIdPrefix,
+        requestDetails,
         numberTo0x(BLOCK_NUMBER),
       );
       confirmResult(result);
@@ -153,7 +152,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
         defaultDetailedContractResults.state_changes[0].slot,
-        requestIdPrefix,
+        requestDetails,
         BLOCK_HASH,
       );
       confirmResult(result);
@@ -173,7 +172,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
         DEFAULT_CURRENT_CONTRACT_STATE.state[0].slot,
-        requestIdPrefix,
+        requestDetails,
         'latest',
       );
       confirmResult(result);
@@ -192,7 +191,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
         DEFAULT_CURRENT_CONTRACT_STATE.state[0].slot,
-        requestIdPrefix,
+        requestDetails,
         'finalized',
       );
       confirmResult(result);
@@ -211,7 +210,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
         DEFAULT_CURRENT_CONTRACT_STATE.state[0].slot,
-        requestIdPrefix,
+        requestDetails,
         'safe',
       );
       confirmResult(result);
@@ -232,7 +231,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
         defaultDetailedContractResults.state_changes[0].slot,
-        requestIdPrefix,
+        requestDetails,
       );
       confirmResult(result);
 
@@ -269,7 +268,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
         wrongSlot,
-        requestIdPrefix,
+        requestDetails,
         numberTo0x(BLOCK_NUMBER),
       );
       expect(result).to.equal(EthImpl.zeroHex32Byte);
@@ -286,7 +285,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
         DEFAULT_OLDER_CONTRACT_STATE.state[0].slot,
-        requestIdPrefix,
+        requestDetails,
         numberTo0x(OLDER_BLOCK.number),
       );
       expect(result).to.equal(DEFAULT_OLDER_CONTRACT_STATE.state[0].value);
@@ -303,7 +302,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
         DEFAULT_OLDER_CONTRACT_STATE.state[0].slot,
-        requestIdPrefix,
+        requestDetails,
         numberTo0x(OLDER_BLOCK.number),
       );
       expect(result).to.equal(ethers.ZeroHash);

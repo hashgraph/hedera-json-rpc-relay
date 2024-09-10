@@ -101,9 +101,9 @@ export interface Eth {
   ): Promise<Log[]>;
 
   getStorageAt(
-    requestDetails: IRequestDetails,
     address: string,
     slot: string,
+    requestDetails: IRequestDetails,
     blockNumber: string | null,
   ): Promise<string>;
 

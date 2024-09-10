@@ -24,16 +24,20 @@ import { Registry } from 'prom-client';
 import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 import { RelayImpl } from '../../../src/lib/relay';
+import { IRequestDetails } from '../../../src/lib/types/IRequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 describe('@ethCommon', async function () {
   let Relay: any;
-
+  let requestIdPrefix: string;
+  let requestDetails: IRequestDetails;
   this.timeout(10000);
 
   this.beforeAll(() => {
+    requestIdPrefix = `[Request ID: eth_common]`;
+    requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
     const logger = pino();
     const registry = new Registry();
     Relay = new RelayImpl(logger, registry);
@@ -41,60 +45,60 @@ describe('@ethCommon', async function () {
 
   describe('@ethCommon', async function () {
     it('should execute "eth_chainId"', async function () {
-      const chainId = Relay.eth().chainId();
+      const chainId = Relay.eth().chainId(requestDetails);
 
       expect(chainId).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
     });
 
     it('should execute "eth_accounts"', async function () {
-      const accounts = Relay.eth().accounts();
+      const accounts = Relay.eth().accounts(requestDetails);
 
       expect(accounts).to.be.an('Array');
       expect(accounts.length).to.be.equal(0);
     });
 
     it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
-      const result = await Relay.eth().getUncleByBlockHashAndIndex();
+      const result = await Relay.eth().getUncleByBlockHashAndIndex(requestDetails);
       expect(result).to.be.null;
     });
 
     it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
-      const result = await Relay.eth().getUncleByBlockNumberAndIndex();
+      const result = await Relay.eth().getUncleByBlockNumberAndIndex(requestDetails);
       expect(result).to.be.null;
     });
 
     it('should execute "eth_getUncleCountByBlockHash"', async function () {
-      const result = await Relay.eth().getUncleCountByBlockHash();
+      const result = await Relay.eth().getUncleCountByBlockHash(requestDetails);
       expect(result).to.eq('0x0');
     });
 
     it('should execute "eth_getUncleCountByBlockNumber"', async function () {
-      const result = await Relay.eth().getUncleCountByBlockNumber();
+      const result = await Relay.eth().getUncleCountByBlockNumber(requestDetails);
       expect(result).to.eq('0x0');
     });
 
     it('should execute "eth_hashrate"', async function () {
-      const result = await Relay.eth().hashrate();
+      const result = await Relay.eth().hashrate(requestDetails);
       expect(result).to.eq('0x0');
     });
 
     it('should execute "eth_mining"', async function () {
-      const result = await Relay.eth().mining();
+      const result = await Relay.eth().mining(requestDetails);
       expect(result).to.eq(false);
     });
 
     it('should execute "eth_submitWork"', async function () {
-      const result = await Relay.eth().submitWork();
+      const result = await Relay.eth().submitWork(requestDetails);
       expect(result).to.eq(false);
     });
 
     it('should execute "eth_syncing"', async function () {
-      const result = await Relay.eth().syncing();
+      const result = await Relay.eth().syncing(requestDetails);
       expect(result).to.eq(false);
     });
 
     it('should execute "eth_getWork"', async function () {
-      const result = Relay.eth().getWork();
+      const result = Relay.eth().getWork(requestDetails);
       expect(result).to.have.property('code');
       expect(result.code).to.be.equal(-32601);
       expect(result).to.have.property('message');
@@ -102,7 +106,7 @@ describe('@ethCommon', async function () {
     });
 
     it('should execute "eth_maxPriorityFeePerGas"', async function () {
-      const result = await Relay.eth().maxPriorityFeePerGas();
+      const result = await Relay.eth().maxPriorityFeePerGas(requestDetails);
       expect(result).to.eq('0x0');
     });
   });

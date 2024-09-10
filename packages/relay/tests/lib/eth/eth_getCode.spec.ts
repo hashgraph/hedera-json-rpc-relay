@@ -51,7 +51,7 @@ describe('@ethGetCode using MirrorNode', async function () {
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
   let validBlockParam = [null, 'earliest', 'latest', 'pending', 'finalized', 'safe', '0x0', '0x369ABF'];
   let invalidBlockParam = ['hedera', 'ethereum', '0xhbar', '0x369ABF369ABF369ABF369ABF'];
-  const requestIdPrefix = `[Request ID: testId]`;
+  const requestIdPrefix = `[Request ID: eth_getCodeTest]`;
   const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
 
   this.beforeEach(() => {

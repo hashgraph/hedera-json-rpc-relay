@@ -33,6 +33,7 @@ import {
   NO_SUCH_BLOCK_EXISTS_RES,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
+import { IRequestDetails } from '../../../src/lib/types/IRequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -43,7 +44,8 @@ let getSdkClientStub;
 describe('@ethGetBlockTransactionCountByHash using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
-  const requestIdPrefix = `[Request ID: testId]`;
+  const requestIdPrefix = `[Request ID: eth_getBlockTransactionCountByHashTest]`;
+  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' } as IRequestDetails;
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -64,7 +66,7 @@ describe('@ethGetBlockTransactionCountByHash using MirrorNode', async function (
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
 
-    const result = await ethImpl.getBlockTransactionCountByHash(BLOCK_HASH, requestIdPrefix);
+    const result = await ethImpl.getBlockTransactionCountByHash(BLOCK_HASH, requestDetails);
     expect(result).equal(numberTo0x(BLOCK_TRANSACTION_COUNT));
   });
 
@@ -72,7 +74,7 @@ describe('@ethGetBlockTransactionCountByHash using MirrorNode', async function (
     restMock.onGet(`blocks/${BLOCK_HASH}`).replyOnce(200, DEFAULT_BLOCK);
 
     for (let i = 0; i < 3; i++) {
-      const result = await ethImpl.getBlockTransactionCountByHash(BLOCK_HASH, requestIdPrefix);
+      const result = await ethImpl.getBlockTransactionCountByHash(BLOCK_HASH, requestDetails);
       expect(result).equal(numberTo0x(BLOCK_TRANSACTION_COUNT));
     }
   });
@@ -81,7 +83,7 @@ describe('@ethGetBlockTransactionCountByHash using MirrorNode', async function (
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_HASH}`).reply(404, NO_SUCH_BLOCK_EXISTS_RES);
 
-    const result = await ethImpl.getBlockTransactionCountByHash(BLOCK_HASH, requestIdPrefix);
+    const result = await ethImpl.getBlockTransactionCountByHash(BLOCK_HASH, requestDetails);
     expect(result).to.equal(null);
   });
 });

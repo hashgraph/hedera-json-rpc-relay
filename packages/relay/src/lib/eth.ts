@@ -901,9 +901,9 @@ export class EthImpl implements Eth {
    * @param requestIdPrefix
    */
   async getStorageAt(
-    requestDetails: IRequestDetails,
     address: string,
     slot: string,
+    requestDetails: IRequestDetails,
     blockNumberOrTagOrHash?: string | null,
   ): Promise<string> {
     const requestIdPrefix = requestDetails.requestIdPrefix;

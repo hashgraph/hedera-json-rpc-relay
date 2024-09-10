@@ -450,9 +450,9 @@ describe('Precheck', async function () {
 
     it(`should fail for missing account`, async function () {
       mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(404, mockData.notFound);
-
+      const requestId = `eth_precheckTest`;
       try {
-        await precheck.verifyAccount(parsedTx);
+        await precheck.verifyAccount(parsedTx, requestId);
         expectedError();
       } catch (e: any) {
         expect(e).to.exist;
@@ -463,7 +463,8 @@ describe('Precheck', async function () {
 
     it(`should not fail for matched account`, async function () {
       mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(200, mirrorAccount);
-      const account = await precheck.verifyAccount(parsedTx);
+      const requestId = `eth_precheckTest`;
+      const account = await precheck.verifyAccount(parsedTx, requestId);
 
       expect(account.ethereum_nonce).to.eq(defaultNonce);
     });
