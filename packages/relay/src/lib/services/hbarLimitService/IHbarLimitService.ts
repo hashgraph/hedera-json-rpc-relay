@@ -19,18 +19,7 @@
  */
 
 export interface IHbarLimitService {
-  /**
-   * Resets the Hbar limiter.
-   */
   resetLimiter(): Promise<void>;
-
-  /**
-   * Determines if the Hbar limit should be applied based on the provided Ethereum address
-   * and optionally an IP address.
-   *
-   * @param {string} ethAddress - The Ethereum address to check.
-   * @param {string} [ipAddress] - The optional IP address to check.
-   * @returns {Promise<boolean>} - True if the limit should be applied, false otherwise.
-   */
-  shouldLimit(ethAddress: string, ipAddress?: string): Promise<boolean>;
+  shouldLimit(mode: string, methodName: string, ethAddress: string, ipAddress?: string): Promise<boolean>;
+  addExpense(cost: number, ethAddress: string, ipAddress?: string): Promise<void>;
 }

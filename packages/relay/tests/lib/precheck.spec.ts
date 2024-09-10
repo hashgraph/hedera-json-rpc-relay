@@ -187,8 +187,8 @@ describe('Precheck', async function () {
           const signed = await signTransaction(tx);
           const parsedTx = ethers.Transaction.from(signed);
           const message =
-            gasLimit > constants.BLOCK_GAS_LIMIT
-              ? `Transaction gas limit '${gasLimit}' exceeds block gas limit '${constants.BLOCK_GAS_LIMIT}'`
+            gasLimit > constants.MAX_GAS_PER_SEC
+              ? `Transaction gas limit '${gasLimit}' exceeds max gas per sec limit '${constants.MAX_GAS_PER_SEC}'`
               : `Transaction gas limit provided '${gasLimit}' is insufficient of intrinsic gas required `;
           try {
             await precheck.gasLimit(parsedTx);
@@ -417,19 +417,6 @@ describe('Precheck', async function () {
       } catch (e: any) {
         expect(e).to.eql(predefined.NONCE_TOO_LOW(parsedTx.nonce, mirrorAccount.ethereum_nonce));
       }
-    });
-
-    it(`should NOT fail for low nonce, even if Nonce is 1 (default buffer) below account nonce`, async function () {
-      const tx = {
-        ...defaultTx,
-        nonce: 2,
-      };
-      const signed = await signTransaction(tx);
-      const parsedTx = ethers.Transaction.from(signed);
-
-      mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
-
-      await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
     });
 
     it(`should not fail for next nonce`, async function () {

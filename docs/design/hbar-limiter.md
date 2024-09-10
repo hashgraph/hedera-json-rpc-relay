@@ -1,6 +1,7 @@
 # Hbar limiter service design
 
 ## Table of Contents
+
 - [Hbar limiter service design](#hbar-limiter-service-design)
   - [Table of Contents](#table-of-contents)
   - [Purpose](#purpose)
@@ -29,6 +30,7 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
 5. Support flexible alerting mechanisms for spending thresholds.
 
 ## Requirements
+
 ### Spending Tracking
 
 1. Track HBar spending in real-time.
@@ -41,7 +43,7 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
 1. Compare current spending against:
    a. Total predefined limit
    b. Current operator balance
-2. Support limits based on transaction origin address (`tx.from`).  
+2. Support limits based on transaction origin address (`tx.from`).
    1. Limit based on `tx.from`
    2. Limit based on IP
 3. Support tiered spending limits, e.g.:
@@ -49,14 +51,29 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
    - **Tier 2**: Supported projects (higher limit)
    - **Tier 3**: General users (standard limit)
 
+### Early Detection and Prevention (Preemptive Rate Limit)
+
+**Preemptive Rate Limiting for HFS Transactions**
+
+1. Calculate the number of potential HFS transactions based on the size of the incoming call data:
+
+   - **File Create:** 1 transaction
+   - **File Append:** (size_of_call_data / file_chunk_size) transactions
+
+2. Use the [Hedera Fee Estimator](https://hedera.com/fees) to estimate the costs of each HFS transaction, based on the maximum chunk size configuration (currently set to 5 KB).
+
+3. Calculate the total estimated fee and compare it against the remaining budget to determine if a preemptive rate limit should be applied.
+
 ## Architecture
 
 ### High-Level Design
+
 The Hbar limiter will be implemented as a separate service, used by other services/classes that need it. It will have two main purposes - to capture the gas fees for different operation and to check if an operation needs to be paused, due to exceeded Hbar limit
 
 ### Class Diagram
 
 #### Service Layer
+
 ```mermaid
 classDiagram
     class SdkClient {
@@ -77,6 +94,7 @@ classDiagram
         -ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository
         -ipAddressHbarSpendingPlanRepository: IpAddressHbarSpendingPlanRepository
         +shouldLimit(txFrom: string, ip?: string) boolean
+        +shouldPreemtivelyLimitFileTransactions(callDataSize: number, fileChunkSize: number, currentNetworkExchangeRateInCents: number) boolean
         +resetLimiter() void
         +addExpense(amount: number, txFrom: string, ip?: string) void
         -getSpendingPlanOfEthAddress(address: string): HbarSpendingPlan
@@ -84,10 +102,11 @@ classDiagram
         -checkTotalSpent() boolean
         -shouldReset() boolean
     }
-    
+
     class IHBarLimitService
     <<interface>> IHBarLimitService
     IHBarLimitService : shouldLimit() boolean
+    IHBarLimitService : shouldPreemtivelyLimitFileTransactions() boolean
     IHBarLimitService : resetLimiter() void
     IHBarLimitService : addExpense() void
 
@@ -98,6 +117,7 @@ classDiagram
 ```
 
 #### Database Layer:
+
 ```mermaid
 classDiagram
     class HbarSpendingPlan {
@@ -118,7 +138,7 @@ classDiagram
         -ethAddress: string
         -planId: string
     }
-    
+
     class IpAddressHbarSpendingPlan {
         -ipAddress: string
         -planId: string
@@ -155,7 +175,7 @@ classDiagram
         +save(ethAddressPlan: EthAddressHbarSpendingPlan): Promise<void>
         +delete(ethAddress: string): Promise<void>
     }
-    
+
     class IpAddressHbarSpendingPlanRepository {
         -cache: CacheService
         +findByIp(ip: string): Promise<IpAddressHbarSpendingPlan>
@@ -180,14 +200,17 @@ classDiagram
 ```
 
 ## Additional Considerations
-### Performance 
+
+### Performance
 
 1. Ensure minimal impact on transaction processing times. (Capturing of transaction fees should happen asynchronously behind the scenes)
 2. Design for high throughput to handle peak transaction volumes
 
 ### Monitoring and logging
+
 1. Use the existing logger in the relay
 2. Build on existing dashboards for system health and rate limiting statistics. Add any new metrics to the current dashboards.
 
 ## Future enhancements
+
 1. Machine learning-based anomaly detection for unusual spending patterns.

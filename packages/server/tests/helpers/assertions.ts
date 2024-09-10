@@ -37,7 +37,7 @@ export default class Assertions {
   static defaultGasPrice = 710_000_000_000;
   static datedGasPrice = 570_000_000_000;
   static updatedGasPrice = 640_000_000_000;
-  static maxBlockGasLimit = 15_000_000;
+  static maxBlockGasLimit = 30_000_000;
   static defaultGasUsed = 0.5;
 
   static gasPriceDeviation = parseFloat(process.env.TEST_GAS_PRICE_DEVIATION ?? '0.2');

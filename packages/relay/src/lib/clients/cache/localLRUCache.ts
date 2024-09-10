@@ -22,8 +22,7 @@ import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
 import { ICacheClient } from './ICacheClient';
 import constants from '../../constants';
-
-const LRU = require('lru-cache');
+import LRUCache, { LimitedByCount, LimitedByTTL } from 'lru-cache';
 
 /**
  * Represents a LocalLRUCache instance that uses an LRU (Least Recently Used) caching strategy
@@ -36,7 +35,7 @@ export class LocalLRUCache implements ICacheClient {
    *
    * @private
    */
-  private readonly options = {
+  private readonly options: LimitedByCount & LimitedByTTL = {
     // The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
     max: Number.parseInt(process.env.CACHE_MAX ?? constants.CACHE_MAX.toString()),
     // Max time to live in ms, for items before they are considered stale.
@@ -48,7 +47,7 @@ export class LocalLRUCache implements ICacheClient {
    *
    * @private
    */
-  private readonly cache;
+  private readonly cache: LRUCache<string, any>;
 
   /**
    * The logger used for logging all output from this class.
@@ -73,7 +72,7 @@ export class LocalLRUCache implements ICacheClient {
    * @param {Registry} register - The registry instance used for metrics tracking.
    */
   public constructor(logger: Logger, register: Registry) {
-    this.cache = new LRU(this.options);
+    this.cache = new LRUCache(this.options);
     this.logger = logger;
     this.register = register;
 
@@ -214,5 +213,45 @@ export class LocalLRUCache implements ICacheClient {
    */
   public async clear(): Promise<void> {
     this.cache.clear();
+  }
+
+  /**
+   * Retrieves all keys in the cache that match the given pattern.
+   * @param {string} pattern - The pattern to match keys against.
+   * @param {string} callingMethod - The name of the method calling the cache.
+   * @param {string} requestIdPrefix - A prefix to include in log messages (optional).
+   * @returns {Promise<string[]>} An array of keys that match the pattern.
+   */
+  public async keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]> {
+    const keys = Array.from(this.cache.rkeys());
+
+    // Replace escaped special characters with placeholders
+    let regexPattern = pattern
+      .replace(/\\\*/g, '__ESCAPED_STAR__')
+      .replace(/\\\?/g, '__ESCAPED_QUESTION__')
+      .replace(/\\\[/g, '__ESCAPED_OPEN_BRACKET__')
+      .replace(/\\]/g, '__ESCAPED_CLOSE_BRACKET__');
+
+    // Replace unescaped special characters with regex equivalents
+    regexPattern = regexPattern
+      .replace(/\\([*?[\]])/g, (_, char) => `__ESCAPED_${char}__`)
+      .replace(/\[([^\]\\]+)]/g, '[$1]')
+      .replace(/(?<!\\)\*/g, '.*')
+      .replace(/(?<!\\)\?/g, '.')
+      .replace(/(?<!\\)\[!]/g, '[^]');
+
+    // Replace placeholders with the original special characters
+    regexPattern = regexPattern
+      .replace(/__ESCAPED_STAR__/g, '\\*')
+      .replace(/__ESCAPED_QUESTION__/g, '\\?')
+      .replace(/__ESCAPED_OPEN_BRACKET__/g, '\\[')
+      .replace(/__ESCAPED_CLOSE_BRACKET__/g, '\\]');
+
+    const regex = new RegExp(regexPattern);
+
+    const matchingKeys = keys.filter((key) => regex.test(key));
+
+    this.logger.trace(`${requestIdPrefix} retrieving keys matching ${pattern} on ${callingMethod} call`);
+    return matchingKeys;
   }
 }
