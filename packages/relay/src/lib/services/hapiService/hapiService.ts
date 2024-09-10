@@ -231,12 +231,13 @@ export default class HAPIService {
         EnvProviderService.getInstance().get('OPERATOR_ID_ETH_SENDRAWTRANSACTION') &&
         EnvProviderService.getInstance().get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION')
       ) {
-        // @ts-ignore
         privateKey = Utils.createPrivateKeyBasedOnFormat(
+          // @ts-ignore
           EnvProviderService.getInstance().get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION'),
         );
         // @ts-ignore
         client = client.setOperator(
+          // @ts-ignore
           AccountId.fromString(EnvProviderService.getInstance().get('OPERATOR_ID_ETH_SENDRAWTRANSACTION')),
           privateKey,
         );
@@ -250,8 +251,8 @@ export default class HAPIService {
       ) {
         // @ts-ignore
         privateKey = Utils.createPrivateKeyBasedOnFormat(EnvProviderService.getInstance().get('OPERATOR_KEY_MAIN'));
-        // @ts-ignore
         client = client.setOperator(
+          // @ts-ignore
           AccountId.fromString(EnvProviderService.getInstance().get('OPERATOR_ID_MAIN').trim()),
           privateKey,
         );
