@@ -55,7 +55,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
         redisUrl = process.env.REDIS_URL;
         process.env.TEST = 'false';
         process.env.REDIS_ENABLED = 'true';
-        process.env.REDIS_URL = 'redis://127.0.0.1:6382';
+        process.env.REDIS_URL = 'redis://127.0.0.1:6383';
         cacheService = new CacheService(logger.child({ name: 'CacheService' }), new Registry());
         repository = new IPAddressHbarSpendingPlanRepository(
           cacheService,
@@ -64,7 +64,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
       });
 
       this.afterAll(async () => {
-        // await redisInMemoryServer.stop();
+        await redisInMemoryServer.stop();
         process.env.TEST = test;
         process.env.REDIS_ENABLED = redisEnabled;
         process.env.REDIS_URL = redisUrl;
