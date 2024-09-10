@@ -19,7 +19,6 @@
  */
 
 import { Logger } from 'pino';
-import constants from '../../constants';
 import { Counter, Gauge, Registry } from 'prom-client';
 import { IHbarLimitService } from './IHbarLimitService';
 import { formatRequestIdMessage } from '../../../formatters';
@@ -153,18 +152,18 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
    * @param {string} ethAddress - The eth address to check.
-   * @param {number} estimatedTxFee - The total estimated transaction fee, default to 0.
    * @param {string} [ipAddress] - The ip address to check.
    * @param {string} [requestId] - A prefix to include in log messages (optional).
+   * @param {number} [estimatedTxFee] - The total estimated transaction fee, default to 0.
    * @returns {Promise<boolean>} - A promise that resolves with a boolean indicating if the address should be limited.
    */
   async shouldLimit(
     mode: string,
     methodName: string,
     ethAddress: string,
-    estimatedTxFee: number = 0,
     ipAddress?: string,
     requestId?: string,
+    estimatedTxFee: number = 0,
   ): Promise<boolean> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     if (await this.isDailyBudgetExceeded(mode, methodName, estimatedTxFee, requestIdPrefix)) {

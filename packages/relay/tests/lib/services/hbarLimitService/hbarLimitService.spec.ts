@@ -43,10 +43,12 @@ chai.use(chaiAsPromised);
 describe('HbarLimitService', function () {
   const logger = pino();
   const totalBudget = 100_000;
+  const mockIpAddress = 'x.x.x';
   const mockEstimatedTxFee = 300;
   const methodName = 'testMethod';
   const mockEthAddress = '0x123';
   const register = new Registry();
+  const mockRequestId = getRequestId();
   const mockPlanId = uuidV4(randomBytes(16));
   const mode = constants.EXECUTION_MODE.TRANSACTION;
 
@@ -115,7 +117,14 @@ describe('HbarLimitService', function () {
     it('should return true when remainingBudget < estimatedTxFee ', async function () {
       // @ts-ignore
       hbarLimitService.remainingBudget = mockEstimatedTxFee - 1;
-      const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, mockEstimatedTxFee);
+      const result = await hbarLimitService.shouldLimit(
+        mode,
+        methodName,
+        mockEthAddress,
+        mockRequestId,
+        mockIpAddress,
+        mockEstimatedTxFee,
+      );
       expect(result).to.be.true;
     });
 
@@ -193,7 +202,14 @@ describe('HbarLimitService', function () {
       });
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-      const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, mockEstimatedTxFee);
+      const result = await hbarLimitService.shouldLimit(
+        mode,
+        methodName,
+        mockEthAddress,
+        mockRequestId,
+        mockIpAddress,
+        mockEstimatedTxFee,
+      );
 
       expect(result).to.be.true;
     });
