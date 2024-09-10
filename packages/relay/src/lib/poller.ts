@@ -84,6 +84,10 @@ export class Poller {
             'latest',
             filters?.address || null,
             filters?.topics || null,
+            {
+              requestIdPrefix: '',
+              requestIp: '',
+            } as IRequestDetails,
           );
 
           poll.lastPolled = this.latestBlock;
@@ -118,7 +122,10 @@ export class Poller {
   start() {
     this.logger.info(`${LOGGER_PREFIX} Starting polling with interval=${this.pollingInterval}`);
     this.interval = setInterval(async () => {
-      this.latestBlock = await this.eth.blockNumber('');
+      this.latestBlock = await this.eth.blockNumber({
+        requestIdPrefix: '',
+        requestIp: '',
+      } as IRequestDetails);
       this.poll();
     }, this.pollingInterval);
   }

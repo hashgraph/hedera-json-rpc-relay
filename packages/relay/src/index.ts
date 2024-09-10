@@ -63,11 +63,11 @@ export interface Net {
 }
 
 export interface Eth {
-  blockNumber(requestIdPrefix: string): Promise<string>;
+  blockNumber(requestDetails: IRequestDetails): Promise<string>;
 
   call(call: any, blockParam: string | object | null, requestDetails: IRequestDetails): Promise<string | JsonRpcError>;
 
-  coinbase(requestId?: string): JsonRpcError;
+  coinbase(requestDetails: IRequestDetails): JsonRpcError;
 
   estimateGas(
     transaction: IContractCallRequest,
@@ -77,19 +77,19 @@ export interface Eth {
 
   gasPrice(requestDetails: IRequestDetails): Promise<string>;
 
-  getBalance(account: string, blockNumber: string | null, requestIdPrefix: string): Promise<string>;
+  getBalance(account: string, blockNumber: string | null, requestDetails: IRequestDetails): Promise<string>;
 
   getBlockByHash(hash: string, showDetails: boolean, requestDetails: IRequestDetails): Promise<Block | null>;
 
   getBlockByNumber(blockNum: string, showDetails: boolean, requestDetails: IRequestDetails): Promise<Block | null>;
 
-  getBlockTransactionCountByHash(hash: string, requestIdPrefix: string): Promise<string | null>;
+  getBlockTransactionCountByHash(hash: string, requestDetails: IRequestDetails): Promise<string | null>;
 
-  getBlockTransactionCountByNumber(blockNum: string, requestIdPrefix: string): Promise<string | null>;
+  getBlockTransactionCountByNumber(blockNum: string, requestDetails: IRequestDetails): Promise<string | null>;
 
   getCode(address: string, blockNumber: string | null, requestDetails: IRequestDetails): Promise<string>;
 
-  chainId(requestId?: string): string;
+  chainId(requestDetails: IRequestDetails): string;
 
   getLogs(
     blockHash: string | null,
@@ -97,34 +97,47 @@ export interface Eth {
     toBlock: string | null,
     address: string | string[] | null,
     topics: any[] | null,
-    requestId?: string,
+    requestDetails: IRequestDetails,
   ): Promise<Log[]>;
 
-  getStorageAt(requestIdPrefix: string, address: string, slot: string, blockNumber: string | null): Promise<string>;
+  getStorageAt(
+    requestDetails: IRequestDetails,
+    address: string,
+    slot: string,
+    blockNumber: string | null,
+  ): Promise<string>;
 
-  getTransactionByBlockHashAndIndex(hash: string, index: string, requestId?: string): Promise<Transaction | null>;
+  getTransactionByBlockHashAndIndex(
+    hash: string,
+    index: string,
+    requestDetails: IRequestDetails,
+  ): Promise<Transaction | null>;
 
   getTransactionByBlockNumberAndIndex(
     blockNum: string,
     index: string,
-    requestIdPrefix: string,
+    requestDetails: IRequestDetails,
   ): Promise<Transaction | null>;
 
-  getTransactionByHash(hash: string, requestIdPrefix: string): Promise<Transaction | null>;
+  getTransactionByHash(hash: string, requestDetails: IRequestDetails): Promise<Transaction | null>;
 
-  getTransactionCount(address: string, blockNum: string, requestIdPrefix: string): Promise<string | JsonRpcError>;
+  getTransactionCount(
+    address: string,
+    blockNum: string,
+    requestDetails: IRequestDetails,
+  ): Promise<string | JsonRpcError>;
 
   getTransactionReceipt(hash: string, requestDetails: IRequestDetails): Promise<Receipt | null>;
 
-  getUncleByBlockHashAndIndex(requestId?: string): Promise<any>;
+  getUncleByBlockHashAndIndex(requestDetails: IRequestDetails): Promise<any>;
 
-  getUncleByBlockNumberAndIndex(requestId?: string): Promise<any>;
+  getUncleByBlockNumberAndIndex(requestDetails: IRequestDetails): Promise<any>;
 
-  getUncleCountByBlockHash(requestId?: string): Promise<string>;
+  getUncleCountByBlockHash(requestDetails: IRequestDetails): Promise<string>;
 
-  getUncleCountByBlockNumber(requestId?: string): Promise<string>;
+  getUncleCountByBlockNumber(requestDetails: IRequestDetails): Promise<string>;
 
-  getWork(requestId?: string): JsonRpcError;
+  getWork(requestDetails: IRequestDetails): JsonRpcError;
 
   feeHistory(
     blockCount: number,
@@ -133,29 +146,29 @@ export interface Eth {
     requestDetails: IRequestDetails,
   ): Promise<any>;
 
-  hashrate(requestId?: string): Promise<string>;
+  hashrate(requestDetails: IRequestDetails): Promise<string>;
 
-  maxPriorityFeePerGas(requestId?: string): Promise<string>;
+  maxPriorityFeePerGas(requestDetails: IRequestDetails): Promise<string>;
 
-  mining(requestId?: string): Promise<boolean>;
+  mining(requestDetails: IRequestDetails): Promise<boolean>;
 
-  protocolVersion(requestId?: string): JsonRpcError;
+  protocolVersion(requestDetails: IRequestDetails): JsonRpcError;
 
   sendRawTransaction(transaction: string, requestDetails: IRequestDetails): Promise<string | JsonRpcError>;
 
-  sendTransaction(requestId?: string): JsonRpcError;
+  sendTransaction(requestDetails: IRequestDetails): JsonRpcError;
 
-  sign(requestId?: string): JsonRpcError;
+  sign(requestDetails: IRequestDetails): JsonRpcError;
 
-  signTransaction(requestId?: string): JsonRpcError;
+  signTransaction(requestDetails: IRequestDetails): JsonRpcError;
 
-  submitHashrate(requestId?: string): JsonRpcError;
+  submitHashrate(requestDetails: IRequestDetails): JsonRpcError;
 
-  submitWork(requestId?: string): Promise<boolean>;
+  submitWork(requestDetails: IRequestDetails): Promise<boolean>;
 
-  syncing(requestId?: string): Promise<boolean>;
+  syncing(requestDetails: IRequestDetails): Promise<boolean>;
 
-  accounts(requestId?: string): Array<any>;
+  accounts(requestDetails: IRequestDetails): Array<any>;
 
   filterService(): IFilterService;
 

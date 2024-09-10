@@ -29,6 +29,7 @@ import { EthImpl } from '../../eth';
 import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
 import { IOpcode } from '../../clients/models/IOpcode';
 import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from '../../types';
+import { IRequestDetails } from '../../types/IRequestDetails';
 
 /**
  * Represents a DebugService for tracing and debugging transactions and debugging
@@ -99,8 +100,9 @@ export class DebugService implements IDebugService {
     transactionIdOrHash: string,
     tracer: TracerType,
     tracerConfig: ITracerConfig,
-    requestIdPrefix: string,
+    requestDetails: IRequestDetails,
   ): Promise<any> {
+    const requestIdPrefix = requestDetails.requestIdPrefix;
     this.logger.trace(`${requestIdPrefix} debug_traceTransaction(${transactionIdOrHash})`);
     try {
       DebugService.requireDebugAPIEnabled();
