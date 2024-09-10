@@ -402,9 +402,10 @@ export class SDKClient {
       const isPreemptiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK === 'true';
 
       if (isPreemptiveCheckOn) {
+        const hexCallDataLength = Buffer.from(ethereumTransactionData.callData).toString('hex').length;
         const shouldPreemptivelyLimit = this.hbarLimiter.shouldPreemptivelyLimitFileTransactions(
           originalCallerAddress,
-          ethereumTransactionData.toString().length,
+          hexCallDataLength,
           this.fileAppendChunkSize,
           currentNetworkExchangeRateInCents,
           requestId,
