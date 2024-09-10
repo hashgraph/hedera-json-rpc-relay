@@ -40,13 +40,15 @@ describe('@web-socket-batch-1 eth_estimateGas', async function () {
     gasPriceDeviation: number,
     ethersWsProvider: WebSocketProvider,
     requestId = 'eth_estimateGas';
+  let requestDetails;
 
   before(async () => {
     requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '2500000000'; //25 Hbar
-
     const neededAccounts: number = 1;
+    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
+
     accounts.push(
       ...(await Utils.createMultipleAliasAccounts(
         mirrorNode,
