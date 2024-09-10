@@ -18,10 +18,8 @@
  *
  */
 
-import dotenv from 'dotenv';
 import { Logger } from 'pino';
 import EventEmitter from 'events';
-import findConfig from 'find-config';
 import constants from '../../constants';
 import { Utils } from './../../../utils';
 import HbarLimit from '../../hbarlimiter';
@@ -29,6 +27,7 @@ import { Registry, Counter } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import { CacheService } from '../cacheService/cacheService';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
+import { EnvProviderService } from '../envProviderService';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -98,22 +97,21 @@ export default class HAPIService {
     cacheService: CacheService,
     eventEmitter: EventEmitter,
   ) {
-    dotenv.config({ path: findConfig('.env') || '' });
-
     this.logger = logger;
     this.hbarLimiter = hbarLimiter;
 
     this.eventEmitter = eventEmitter;
-    this.hederaNetwork = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
+    this.hederaNetwork = (EnvProviderService.getInstance().get('HEDERA_NETWORK') || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
     this.cacheService = cacheService;
     this.client = this.initSDKClient(logger);
 
     const currentDateNow = Date.now();
-    this.initialTransactionCount = parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!) || 0;
-    this.initialResetDuration = parseInt(process.env.HAPI_CLIENT_DURATION_RESET!) || 0;
-    this.initialErrorCodes = JSON.parse(process.env.HAPI_CLIENT_ERROR_RESET || '[21, 50]');
+    this.initialTransactionCount =
+      parseInt(EnvProviderService.getInstance().get('HAPI_CLIENT_TRANSACTION_RESET')!) || 0;
+    this.initialResetDuration = parseInt(EnvProviderService.getInstance().get('HAPI_CLIENT_DURATION_RESET')!) || 0;
+    this.initialErrorCodes = JSON.parse(EnvProviderService.getInstance().get('HAPI_CLIENT_ERROR_RESET') || '[21, 50]');
 
     this.transactionCount = this.initialTransactionCount;
     this.resetDuration = currentDateNow + this.initialResetDuration;
@@ -229,24 +227,42 @@ export default class HAPIService {
     }
 
     if (type === 'eth_sendRawTransaction') {
-      if (process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION && process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION) {
-        privateKey = Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION);
-        client = client.setOperator(AccountId.fromString(process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION), privateKey);
+      if (
+        EnvProviderService.getInstance().get('OPERATOR_ID_ETH_SENDRAWTRANSACTION') &&
+        EnvProviderService.getInstance().get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION')
+      ) {
+        // @ts-ignore
+        privateKey = Utils.createPrivateKeyBasedOnFormat(
+          EnvProviderService.getInstance().get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION'),
+        );
+        // @ts-ignore
+        client = client.setOperator(
+          AccountId.fromString(EnvProviderService.getInstance().get('OPERATOR_ID_ETH_SENDRAWTRANSACTION')),
+          privateKey,
+        );
       } else {
         logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
       }
     } else {
-      if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
-        privateKey = Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN);
-        client = client.setOperator(AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()), privateKey);
+      if (
+        EnvProviderService.getInstance().get('OPERATOR_ID_MAIN') &&
+        EnvProviderService.getInstance().get('OPERATOR_KEY_MAIN')
+      ) {
+        // @ts-ignore
+        privateKey = Utils.createPrivateKeyBasedOnFormat(EnvProviderService.getInstance().get('OPERATOR_KEY_MAIN'));
+        // @ts-ignore
+        client = client.setOperator(
+          AccountId.fromString(EnvProviderService.getInstance().get('OPERATOR_ID_MAIN').trim()),
+          privateKey,
+        );
       } else {
         logger.warn(`Invalid 'OPERATOR' env variables provided`);
       }
     }
 
-    client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
+    client.setTransportSecurity(EnvProviderService.getInstance().get('CLIENT_TRANSPORT_SECURITY') === 'true' || false);
 
-    const SDK_REQUEST_TIMEOUT = parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000');
+    const SDK_REQUEST_TIMEOUT = parseInt(EnvProviderService.getInstance().get('SDK_REQUEST_TIMEOUT') || '10000');
     client.setRequestTimeout(SDK_REQUEST_TIMEOUT);
 
     logger.info(

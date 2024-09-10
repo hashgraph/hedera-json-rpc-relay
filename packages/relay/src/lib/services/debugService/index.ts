@@ -29,6 +29,7 @@ import { EthImpl } from '../../eth';
 import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
 import { IOpcode } from '../../clients/models/IOpcode';
 import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from '../../types';
+import { EnvProviderService } from '../envProviderService';
 
 /**
  * Represents a DebugService for tracing and debugging transactions and debugging
@@ -73,10 +74,13 @@ export class DebugService implements IDebugService {
    * Checks if the Debug API is enabled
    * @public
    */
-  public static readonly isDebugAPIEnabled = process.env.DEBUG_API_ENABLED;
+  public static readonly isDebugAPIEnabled = EnvProviderService.getInstance().get('DEBUG_API_ENABLED');
 
   static requireDebugAPIEnabled(): void {
-    if (!process.env.DEBUG_API_ENABLED || process.env.DEBUG_API_ENABLED !== 'true') {
+    if (
+      !EnvProviderService.getInstance().get('DEBUG_API_ENABLED') ||
+      EnvProviderService.getInstance().get('DEBUG_API_ENABLED') !== 'true'
+    ) {
       throw predefined.UNSUPPORTED_METHOD;
     }
   }

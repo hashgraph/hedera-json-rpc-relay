@@ -21,6 +21,7 @@
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
+import { EnvProviderService } from '../services/envProviderService';
 
 export default class HbarLimit {
   private enabled: boolean = false;
@@ -176,7 +177,7 @@ export default class HbarLimit {
    * @returns {boolean} - Returns `true` if the account is whitelisted, otherwise `false`.
    */
   isAccountWhiteListed(originalCallerAddress: string): boolean {
-    const whiteListedAccountIDs = process.env.HBAR_RATE_LIMIT_WHITELIST ?? [''];
+    const whiteListedAccountIDs = EnvProviderService.getInstance().get('HBAR_RATE_LIMIT_WHITELIST') ?? [''];
     return (whiteListedAccountIDs as string[]).includes(originalCallerAddress);
   }
 

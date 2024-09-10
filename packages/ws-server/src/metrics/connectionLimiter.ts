@@ -25,6 +25,7 @@ import { WebSocketError } from '@hashgraph/json-rpc-relay';
 import RateLimit from '@hashgraph/json-rpc-server/dist/rateLimit';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { methodConfiguration } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/methodConfiguration';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 type IpCounter = {
   [key: string]: number;
@@ -87,8 +88,9 @@ export default class ConnectionLimiter {
       registers: [register],
     });
 
-    const rateLimitDuration = process.env.LIMIT_DURATION
-      ? parseInt(process.env.LIMIT_DURATION)
+    const rateLimitDuration = EnvProviderService.getInstance().get('LIMIT_DURATION')
+      ? // @ts-ignore
+        parseInt(EnvProviderService.getInstance().get('LIMIT_DURATION'))
       : constants.DEFAULT_RATE_LIMIT.DURATION;
     this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, rateLimitDuration);
   }
@@ -124,7 +126,7 @@ export default class ConnectionLimiter {
 
   public applyLimits(ctx) {
     // Limit total connections
-    const MAX_CONNECTION_LIMIT = process.env.WS_CONNECTION_LIMIT || '10';
+    const MAX_CONNECTION_LIMIT = EnvProviderService.getInstance().get('WS_CONNECTION_LIMIT') || '10';
     if (this.connectedClients > parseInt(MAX_CONNECTION_LIMIT)) {
       this.logger.info(
         `Closing connection ${ctx.websocket.id} due to exceeded maximum connections (max_con=${MAX_CONNECTION_LIMIT})`,
@@ -150,7 +152,7 @@ export default class ConnectionLimiter {
 
     // Limit connections from a single IP address
     const { ip } = ctx.request;
-    const MAX_CONNECTION_LIMIT_PER_IP = process.env.WS_CONNECTION_LIMIT_PER_IP || '10';
+    const MAX_CONNECTION_LIMIT_PER_IP = EnvProviderService.getInstance().get('WS_CONNECTION_LIMIT_PER_IP') || '10';
     if (this.clientIps[ip] && this.clientIps[ip] > parseInt(MAX_CONNECTION_LIMIT_PER_IP)) {
       this.logger.info(
         `Closing connection ${ctx.websocket.id} due to exceeded maximum connections from a single IP: address ${ip} - ${this.clientIps[ip]} connections. (max_con=${MAX_CONNECTION_LIMIT_PER_IP})`,
@@ -187,12 +189,14 @@ export default class ConnectionLimiter {
   }
 
   public validateSubscriptionLimit(ctx) {
-    return ctx.websocket.subscriptions < parseInt(process.env.WS_SUBSCRIPTION_LIMIT || '10');
+    return (
+      ctx.websocket.subscriptions < parseInt(EnvProviderService.getInstance().get('WS_SUBSCRIPTION_LIMIT') || '10')
+    );
   }
 
   // Starts a timeout timer that closes the connection
   public startInactivityTTLTimer(websocket) {
-    const maxInactivityTTL = parseInt(process.env.WS_MAX_INACTIVITY_TTL || '300000');
+    const maxInactivityTTL = parseInt(EnvProviderService.getInstance().get('WS_MAX_INACTIVITY_TTL') || '300000');
     websocket.inactivityTTL = setTimeout(() => {
       if (websocket.readyState !== 3) {
         // 3 = CLOSED, Avoid closing already closed connections

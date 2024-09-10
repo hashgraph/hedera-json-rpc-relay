@@ -26,14 +26,15 @@ import { SubscriptionType } from '../../db/types/hbarLimiter/subscriptionType';
 import { Logger } from 'pino';
 import { formatRequestIdMessage } from '../../../formatters';
 import { Counter, Gauge, Registry } from 'prom-client';
+import { EnvProviderService } from '../envProviderService';
 
 export class HbarLimitService implements IHbarLimitService {
   static readonly ONE_DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
   // TODO: Replace with actual values
   static readonly DAILY_LIMITS: Record<SubscriptionType, number> = {
-    BASIC: parseInt(process.env.HBAR_DAILY_LIMIT_BASIC ?? '1000'),
-    EXTENDED: parseInt(process.env.HBAR_DAILY_LIMIT_EXTENDED ?? '10000'),
-    PRIVILEGED: parseInt(process.env.HBAR_DAILY_LIMIT_PRIVILEGED ?? '100000'),
+    BASIC: parseInt(EnvProviderService.getInstance().get('HBAR_DAILY_LIMIT_BASIC') ?? '1000'),
+    EXTENDED: parseInt(EnvProviderService.getInstance().get('HBAR_DAILY_LIMIT_EXTENDED') ?? '10000'),
+    PRIVILEGED: parseInt(EnvProviderService.getInstance().get('HBAR_DAILY_LIMIT_PRIVILEGED') ?? '100000'),
   };
 
   /**

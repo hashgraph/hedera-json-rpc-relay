@@ -21,11 +21,12 @@
 import { WS_CONSTANTS } from './constants';
 import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
-import { predefined, Relay } from '@hashgraph/json-rpc-relay';
+import { Relay } from '@hashgraph/json-rpc-relay';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 const hasOwnProperty = (obj: any, prop: any) => Object.prototype.hasOwnProperty.call(obj, prop);
 const getRequestIdIsOptional = () => {
-  return process.env.REQUEST_ID_IS_OPTIONAL === 'true';
+  return EnvProviderService.getInstance().get('REQUEST_ID_IS_OPTIONAL') === 'true';
 };
 
 /**
@@ -142,7 +143,7 @@ export const resolveParams = (method: string, params: any): any[] => {
  * @returns {boolean} Returns true if multiple addresses are enabled, otherwise returns false.
  */
 export const getMultipleAddressesEnabled = (): boolean => {
-  return process.env.WS_MULTIPLE_ADDRESSES_ENABLED === 'true';
+  return EnvProviderService.getInstance().get('WS_MULTIPLE_ADDRESSES_ENABLED') === 'true';
 };
 
 /**
@@ -150,7 +151,9 @@ export const getMultipleAddressesEnabled = (): boolean => {
  * @returns {boolean} A boolean indicating whether WebSocket batch requests are enabled.
  */
 export const getWsBatchRequestsEnabled = (): boolean => {
-  return process.env.WS_BATCH_REQUESTS_ENABLED ? process.env.WS_BATCH_REQUESTS_ENABLED === 'true' : true;
+  return EnvProviderService.getInstance().get('WS_BATCH_REQUESTS_ENABLED')
+    ? EnvProviderService.getInstance().get('WS_BATCH_REQUESTS_ENABLED') === 'true'
+    : true;
 };
 
 /**
@@ -158,7 +161,7 @@ export const getWsBatchRequestsEnabled = (): boolean => {
  * @returns {number} The maximum size of batch requests for WebSocket.
  */
 export const getBatchRequestsMaxSize = (): number => {
-  return Number(process.env.WS_BATCH_REQUESTS_MAX_SIZE || 20);
+  return Number(EnvProviderService.getInstance().get('WS_BATCH_REQUESTS_MAX_SIZE') || 20);
 };
 
 /**

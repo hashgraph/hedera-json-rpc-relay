@@ -21,6 +21,7 @@
 import { Eth } from '../index';
 import { Logger } from 'pino';
 import { Registry, Gauge } from 'prom-client';
+import { EnvProviderService } from './services/envProviderService';
 
 export interface Poll {
   tag: string;
@@ -47,9 +48,11 @@ export class Poller {
     this.eth = eth;
     this.logger = logger;
     this.polls = [];
-    this.pollingInterval = Number(process.env.WS_POLLING_INTERVAL) || 500;
+    this.pollingInterval = Number(EnvProviderService.getInstance().get('WS_POLLING_INTERVAL')) || 500;
     this.newHeadsEnabled =
-      typeof process.env.WS_NEW_HEADS_ENABLED !== 'undefined' ? process.env.WS_NEW_HEADS_ENABLED === 'true' : true;
+      typeof EnvProviderService.getInstance().get('WS_NEW_HEADS_ENABLED') !== 'undefined'
+        ? EnvProviderService.getInstance().get('WS_NEW_HEADS_ENABLED') === 'true'
+        : true;
 
     const activePollsGaugeName = 'rpc_websocket_active_polls';
     register.removeSingleMetric(activePollsGaugeName);

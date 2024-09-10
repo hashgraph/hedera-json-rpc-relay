@@ -29,6 +29,7 @@ import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
 import { Log } from '../../../model';
 import * as _ from 'lodash';
 import { CacheService } from '../../cacheService/cacheService';
+import { EnvProviderService } from '../../envProviderService';
 
 /**
  * Create a new Common Service implementation.
@@ -63,7 +64,7 @@ export class CommonService implements ICommonService {
   static blockPending = 'pending';
   static blockSafe = 'safe';
   static blockFinalized = 'finalized';
-  static isDevMode = process.env.DEV_MODE === 'true';
+  static isDevMode = EnvProviderService.getInstance().get('DEV_MODE') === 'true';
 
   // function callerNames
   static latestBlockNumber = 'getLatestBlockNumber';

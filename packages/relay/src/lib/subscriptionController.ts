@@ -25,6 +25,7 @@ import constants from './constants';
 import { Poller } from './poller';
 import { generateRandomHex } from '../formatters';
 import { Registry, Histogram, Counter } from 'prom-client';
+import { EnvProviderService } from './services/envProviderService';
 
 export interface Subscriber {
   connection: any;
@@ -32,7 +33,7 @@ export interface Subscriber {
   endTimer: () => void;
 }
 
-const CACHE_TTL = Number(process.env.WS_CACHE_TTL) || 20000;
+const CACHE_TTL = Number(EnvProviderService.getInstance().get('WS_CACHE_TTL')) || 20000;
 
 export class SubscriptionController {
   private poller: Poller;
@@ -79,7 +80,8 @@ export class SubscriptionController {
     });
 
     // Default: true
-    this.useTheSameSubscriptionForTheSameEvent = process.env.WS_SAME_SUB_FOR_SAME_EVENT?.toLowerCase() !== 'false';
+    this.useTheSameSubscriptionForTheSameEvent =
+      EnvProviderService.getInstance().get('WS_SAME_SUB_FOR_SAME_EVENT')?.toLowerCase() !== 'false';
   }
 
   createHash(data) {

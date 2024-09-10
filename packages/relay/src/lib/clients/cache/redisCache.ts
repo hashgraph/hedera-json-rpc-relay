@@ -25,6 +25,7 @@ import { Registry } from 'prom-client';
 import { RedisCacheError } from '../../errors/RedisCacheError';
 import constants from '../../constants';
 import { IRedisCacheClient } from './IRedisCacheClient';
+import { EnvProviderService } from '../../services/envProviderService';
 
 /**
  * A class that provides caching functionality using Redis.
@@ -37,7 +38,7 @@ export class RedisCache implements IRedisCacheClient {
    */
   private readonly options = {
     // Max time to live in ms, for items before they are considered stale.
-    ttl: Number.parseInt(process.env.CACHE_TTL ?? constants.CACHE_TTL.ONE_HOUR.toString()),
+    ttl: Number.parseInt(EnvProviderService.getInstance().get('CACHE_TTL') ?? constants.CACHE_TTL.ONE_HOUR.toString()),
   };
 
   /**
@@ -74,8 +75,8 @@ export class RedisCache implements IRedisCacheClient {
     this.logger = logger;
     this.register = register;
 
-    const redisUrl = process.env.REDIS_URL!;
-    const reconnectDelay = parseInt(process.env.REDIS_RECONNECT_DELAY_MS || '1000');
+    const redisUrl = EnvProviderService.getInstance().get('REDIS_URL')!;
+    const reconnectDelay = parseInt(EnvProviderService.getInstance().get('REDIS_RECONNECT_DELAY_MS') || '1000');
     this.client = createClient({
       url: redisUrl,
       socket: {

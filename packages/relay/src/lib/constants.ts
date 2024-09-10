@@ -18,6 +18,8 @@
  *
  */
 
+import { EnvProviderService } from './services/envProviderService';
+
 enum CACHE_KEY {
   ACCOUNT = 'account',
   ETH_BLOCK_NUMBER = 'eth_block_number',
@@ -67,8 +69,9 @@ export enum CallType {
 export default {
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
   // 131072 bytes are 128kbytes
-  SEND_RAW_TRANSACTION_SIZE_LIMIT: process.env.SEND_RAW_TRANSACTION_SIZE_LIMIT
-    ? parseInt(process.env.SEND_RAW_TRANSACTION_SIZE_LIMIT)
+  SEND_RAW_TRANSACTION_SIZE_LIMIT: EnvProviderService.getInstance().get('SEND_RAW_TRANSACTION_SIZE_LIMIT')
+    ? // @ts-ignore
+      parseInt(EnvProviderService.getInstance().get('SEND_RAW_TRANSACTION_SIZE_LIMIT'))
     : 131072,
 
   CACHE_KEY,
@@ -133,13 +136,15 @@ export default {
     DURATION: 60000,
   },
 
-  HBAR_RATE_LIMIT_DURATION: parseInt(process.env.HBAR_RATE_LIMIT_DURATION || '80000'),
-  HBAR_RATE_LIMIT_TINYBAR: parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR || '11000000000'),
-  GAS_PRICE_TINY_BAR_BUFFER: parseInt(process.env.GAS_PRICE_TINY_BAR_BUFFER || '10000000000'),
-  WEB_SOCKET_PORT: process.env.WEB_SOCKET_PORT || 8546,
-  WEB_SOCKET_HTTP_PORT: process.env.WEB_SOCKET_HTTP_PORT || 8547,
+  HBAR_RATE_LIMIT_DURATION: parseInt(EnvProviderService.getInstance().get('HBAR_RATE_LIMIT_DURATION') || '80000'),
+  HBAR_RATE_LIMIT_TINYBAR: parseInt(EnvProviderService.getInstance().get('HBAR_RATE_LIMIT_TINYBAR') || '11000000000'),
+  GAS_PRICE_TINY_BAR_BUFFER: parseInt(
+    EnvProviderService.getInstance().get('GAS_PRICE_TINY_BAR_BUFFER') || '10000000000',
+  ),
+  WEB_SOCKET_PORT: EnvProviderService.getInstance().get('WEB_SOCKET_PORT') || 8546,
+  WEB_SOCKET_HTTP_PORT: EnvProviderService.getInstance().get('WEB_SOCKET_HTTP_PORT') || 8547,
 
-  RELAY_PORT: process.env.SERVER_PORT || 7546,
+  RELAY_PORT: EnvProviderService.getInstance().get('SERVER_PORT') || 7546,
 
   FUNCTION_SELECTOR_CHAR_LENGTH: 10,
   MIRROR_NODE_RETRY_DELAY_DEFAULT: 2000,
@@ -161,7 +166,7 @@ export default {
       LOG: 'log',
       PENDING_TRANSACTION: 'pendingTransaction',
     },
-    TTL: parseInt(process.env.FILTER_TTL || '300000'), // default is 5 minutes
+    TTL: parseInt(EnvProviderService.getInstance().get('FILTER_TTL') || '300000'), // default is 5 minutes
   },
 
   METHODS: {
@@ -185,7 +190,7 @@ export default {
   DETERMINISTIC_DEPLOYMENT_SIGNER: '0x3fab184622dc19b6109349b94811493bf2a45362',
   DETERMINISTIC_PROXY_CONTRACT: '0x4e59b44847b379578588920ca78fbf26c0b4956c',
 
-  // Only active when process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = true
+  // Only active when EnvProviderService.getInstance().get('ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR') = true
   // When eth_call is called with one of the data values it should be forced to go through Consensus node regardless of ETH_CALL_DEFAULT_TO_CONSENSUS_NODE
   ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS: [
     // isAssociated()

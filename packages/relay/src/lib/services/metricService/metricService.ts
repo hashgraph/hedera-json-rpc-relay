@@ -26,6 +26,7 @@ import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { formatRequestIdMessage } from '../../../formatters';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types';
+import { EnvProviderService } from '../envProviderService';
 
 export default class MetricService {
   /**
@@ -312,7 +313,8 @@ export default class MetricService {
     operatorAccountId: string,
   ): Promise<ITransactionRecordMetric | undefined> {
     const formattedRequestId = formatRequestIdMessage(requestId);
-    const defaultToConsensusNode = process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true';
+    const defaultToConsensusNode =
+      EnvProviderService.getInstance().get('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE') === 'true';
 
     // retrieve transaction metrics
     try {

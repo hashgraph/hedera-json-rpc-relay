@@ -19,6 +19,7 @@
  */
 
 import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
@@ -32,7 +33,7 @@ import cors from 'koa-cors';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
-  level: process.env.LOG_LEVEL || 'trace',
+  level: EnvProviderService.getInstance().get('LOG_LEVEL') || 'trace',
   transport: {
     target: 'pino-pretty',
     options: {
@@ -46,7 +47,9 @@ const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger.child({ name: 'relay' }), register);
 const app = new KoaJsonRpc(logger.child({ name: 'koa-rpc' }), register, {
-  limit: process.env.INPUT_SIZE_LIMIT ? process.env.INPUT_SIZE_LIMIT + 'mb' : null,
+  limit: EnvProviderService.getInstance().get('INPUT_SIZE_LIMIT')
+    ? EnvProviderService.getInstance().get('INPUT_SIZE_LIMIT') + 'mb'
+    : null,
 });
 
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });

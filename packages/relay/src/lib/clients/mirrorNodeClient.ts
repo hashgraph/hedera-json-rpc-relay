@@ -30,6 +30,7 @@ import { SDKClientError } from '../errors/SDKClientError';
 import { IOpcodesResponse } from './models/IOpcodesResponse';
 import { install as betterLookupInstall } from 'better-lookup';
 import { CacheService } from '../services/cacheService/cacheService';
+import { EnvProviderService } from '../services/envProviderService';
 import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { parseNumericEnvVar, formatTransactionId, formatRequestIdMessage } from '../../formatters';
@@ -159,28 +160,46 @@ export class MirrorNodeClient {
 
   static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;
 
-  static mirrorNodeContractResultsPageMax = parseInt(process.env.MIRROR_NODE_CONTRACT_RESULTS_PG_MAX!) || 25;
-  static mirrorNodeContractResultsLogsPageMax = parseInt(process.env.MIRROR_NODE_CONTRACT_RESULTS_LOGS_PG_MAX!) || 200;
+  static mirrorNodeContractResultsPageMax =
+    parseInt(EnvProviderService.getInstance().get('MIRROR_NODE_CONTRACT_RESULTS_PG_MAX')!) || 25;
+  static mirrorNodeContractResultsLogsPageMax =
+    parseInt(EnvProviderService.getInstance().get('MIRROR_NODE_CONTRACT_RESULTS_LOGS_PG_MAX')!) || 200;
 
   protected createAxiosClient(baseUrl: string): AxiosInstance {
     // defualt values for axios clients to mirror node
-    const mirrorNodeTimeout = parseInt(process.env.MIRROR_NODE_TIMEOUT || '10000');
-    const mirrorNodeMaxRedirects = parseInt(process.env.MIRROR_NODE_MAX_REDIRECTS || '5');
-    const mirrorNodeHttpKeepAlive = process.env.MIRROR_NODE_HTTP_KEEP_ALIVE === 'false' ? false : true;
-    const mirrorNodeHttpKeepAliveMsecs = parseInt(process.env.MIRROR_NODE_HTTP_KEEP_ALIVE_MSECS || '1000');
-    const mirrorNodeHttpMaxSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_SOCKETS || '300');
-    const mirrorNodeHttpMaxTotalSockets = parseInt(process.env.MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS || '300');
-    const mirrorNodeHttpSocketTimeout = parseInt(process.env.MIRROR_NODE_HTTP_SOCKET_TIMEOUT || '60000');
-    const isDevMode = process.env.DEV_MODE && process.env.DEV_MODE === 'true';
-    const mirrorNodeRetries = parseInt(process.env.MIRROR_NODE_RETRIES || '0'); // we are in the process of deprecating this feature
-    const mirrorNodeRetriesDevMode = parseInt(process.env.MIRROR_NODE_RETRIES_DEVMODE || '5');
+    const mirrorNodeTimeout = parseInt(EnvProviderService.getInstance().get('MIRROR_NODE_TIMEOUT') || '10000');
+    const mirrorNodeMaxRedirects = parseInt(EnvProviderService.getInstance().get('MIRROR_NODE_MAX_REDIRECTS') || '5');
+    const mirrorNodeHttpKeepAlive =
+      EnvProviderService.getInstance().get('MIRROR_NODE_HTTP_KEEP_ALIVE') === 'false' ? false : true;
+    const mirrorNodeHttpKeepAliveMsecs = parseInt(
+      EnvProviderService.getInstance().get('MIRROR_NODE_HTTP_KEEP_ALIVE_MSECS') || '1000',
+    );
+    const mirrorNodeHttpMaxSockets = parseInt(
+      EnvProviderService.getInstance().get('MIRROR_NODE_HTTP_MAX_SOCKETS') || '300',
+    );
+    const mirrorNodeHttpMaxTotalSockets = parseInt(
+      EnvProviderService.getInstance().get('MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS') || '300',
+    );
+    const mirrorNodeHttpSocketTimeout = parseInt(
+      EnvProviderService.getInstance().get('MIRROR_NODE_HTTP_SOCKET_TIMEOUT') || '60000',
+    );
+    const isDevMode =
+      EnvProviderService.getInstance().get('DEV_MODE') && EnvProviderService.getInstance().get('DEV_MODE') === 'true';
+    const mirrorNodeRetries = parseInt(EnvProviderService.getInstance().get('MIRROR_NODE_RETRIES') || '0'); // we are in the process of deprecating this feature
+    const mirrorNodeRetriesDevMode = parseInt(
+      EnvProviderService.getInstance().get('MIRROR_NODE_RETRIES_DEVMODE') || '5',
+    );
     const mirrorNodeRetryDelay = this.MIRROR_NODE_RETRY_DELAY;
-    const mirrorNodeRetryDelayDevMode = parseInt(process.env.MIRROR_NODE_RETRY_DELAY_DEVMODE || '200');
-    const mirrorNodeRetryErrorCodes: Array<number> = process.env.MIRROR_NODE_RETRY_CODES
-      ? JSON.parse(process.env.MIRROR_NODE_RETRY_CODES)
+    const mirrorNodeRetryDelayDevMode = parseInt(
+      EnvProviderService.getInstance().get('MIRROR_NODE_RETRY_DELAY_DEVMODE') || '200',
+    );
+    const mirrorNodeRetryErrorCodes: Array<number> = EnvProviderService.getInstance().get('MIRROR_NODE_RETRY_CODES')
+      ? // @ts-ignore
+        JSON.parse(EnvProviderService.getInstance().get('MIRROR_NODE_RETRY_CODES'))
       : []; // we are in the process of deprecating this feature
     // by default will be true, unless explicitly set to false.
-    const useCacheableDnsLookup: boolean = process.env.MIRROR_NODE_AGENT_CACHEABLE_DNS === 'false' ? false : true;
+    const useCacheableDnsLookup: boolean =
+      EnvProviderService.getInstance().get('MIRROR_NODE_AGENT_CACHEABLE_DNS') === 'false' ? false : true;
 
     const httpAgent = new http.Agent({
       keepAlive: mirrorNodeHttpKeepAlive,
@@ -217,8 +236,10 @@ export class MirrorNodeClient {
     });
 
     // Custom headers
-    if (process.env.MIRROR_NODE_URL_HEADER_X_API_KEY) {
-      axiosClient.defaults.headers.common[MirrorNodeClient.X_API_KEY] = process.env.MIRROR_NODE_URL_HEADER_X_API_KEY;
+    if (EnvProviderService.getInstance().get('MIRROR_NODE_URL_HEADER_X_API_KEY')) {
+      axiosClient.defaults.headers.common[MirrorNodeClient.X_API_KEY] = EnvProviderService.getInstance().get(
+        'MIRROR_NODE_URL_HEADER_X_API_KEY',
+      );
     }
 
     //@ts-ignore
@@ -289,10 +310,11 @@ export class MirrorNodeClient {
     this.cacheService = cacheService;
 
     // set  up eth call  accepted error codes.
-    if (process.env.ETH_CALL_ACCEPTED_ERRORS) {
+    if (EnvProviderService.getInstance().get('ETH_CALL_ACCEPTED_ERRORS')) {
       MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.set(
         MirrorNodeClient.CONTRACT_CALL_ENDPOINT,
-        JSON.parse(process.env.ETH_CALL_ACCEPTED_ERRORS),
+        // @ts-ignore
+        JSON.parse(EnvProviderService.getInstance().get('ETH_CALL_ACCEPTED_ERRORS')),
       );
     }
   }
@@ -1112,7 +1134,11 @@ export class MirrorNodeClient {
       this.setQueryParam(queryParamObject, 'limit', limitOrderParams.limit);
       this.setQueryParam(queryParamObject, 'order', limitOrderParams.order);
     } else {
-      this.setQueryParam(queryParamObject, 'limit', parseInt(process.env.MIRROR_NODE_LIMIT_PARAM || '100'));
+      this.setQueryParam(
+        queryParamObject,
+        'limit',
+        parseInt(EnvProviderService.getInstance().get('MIRROR_NODE_LIMIT_PARAM') || '100'),
+      );
       this.setQueryParam(queryParamObject, 'order', constants.ORDER.ASC);
     }
   }

@@ -24,6 +24,7 @@ import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { constructValidLogSubscriptionFilter, getMultipleAddressesEnabled } from '../utils/utils';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 /**
  * Subscribes to new block headers (newHeads) events and returns the response and subscription ID.
@@ -76,7 +77,9 @@ const handleEthSubscribeNewHeads = (
   requestIdPrefix: string,
 ): { response: any; subscriptionId: any } => {
   const wsNewHeadsEnabled =
-    typeof process.env.WS_NEW_HEADS_ENABLED !== 'undefined' ? process.env.WS_NEW_HEADS_ENABLED === 'true' : true;
+    typeof EnvProviderService.getInstance().get('WS_NEW_HEADS_ENABLED') !== 'undefined'
+      ? EnvProviderService.getInstance().get('WS_NEW_HEADS_ENABLED') === 'true'
+      : true;
 
   if (wsNewHeadsEnabled) {
     ({ response, subscriptionId } = subscribeToNewHeads(filters, response, subscriptionId, ctx, event, relay, logger));

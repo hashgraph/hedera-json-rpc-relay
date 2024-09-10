@@ -37,6 +37,7 @@ import { Block, Log, Transaction, Transaction1559 } from './model';
 import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { CacheService } from './services/cacheService/cacheService';
 import { CommonService, FilterService } from './services/ethService';
+import { EnvProviderService } from './services/envProviderService';
 import { IDebugService } from './services/debugService/IDebugService';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
@@ -166,8 +167,8 @@ export class EthImpl implements Eth {
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
   );
-  private readonly estimateGasThrows = process.env.ESTIMATE_GAS_THROWS
-    ? process.env.ESTIMATE_GAS_THROWS === 'true'
+  private readonly estimateGasThrows = EnvProviderService.getInstance().get('ESTIMATE_GAS_THROWS')
+    ? EnvProviderService.getInstance().get('ESTIMATE_GAS_THROWS') === 'true'
     : true;
 
   private readonly ethGasPRiceCacheTtlMs = parseNumericEnvVar(
@@ -311,10 +312,10 @@ export class EthImpl implements Eth {
   }
 
   private getEthFeeHistoryFixedFee(): boolean {
-    if (process.env.ETH_FEE_HISTORY_FIXED === undefined) {
+    if (EnvProviderService.getInstance().get('ETH_FEE_HISTORY_FIXED') === undefined) {
       return true;
     }
-    return process.env.ETH_FEE_HISTORY_FIXED === 'true';
+    return EnvProviderService.getInstance().get('ETH_FEE_HISTORY_FIXED') === 'true';
   }
 
   /**
@@ -327,9 +328,9 @@ export class EthImpl implements Eth {
     requestIdPrefix?: string,
   ): Promise<IFeeHistory | JsonRpcError> {
     const maxResults =
-      process.env.TEST === 'true'
+      EnvProviderService.getInstance().get('TEST') === 'true'
         ? constants.DEFAULT_FEE_HISTORY_MAX_RESULTS
-        : Number(process.env.FEE_HISTORY_MAX_RESULTS);
+        : Number(EnvProviderService.getInstance().get('FEE_HISTORY_MAX_RESULTS'));
 
     this.logger.trace(
       `${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`,
@@ -705,7 +706,7 @@ export class EthImpl implements Eth {
       transaction.gas = parseInt(transaction.gas.toString());
     }
     if (!transaction.from && transaction.value && (transaction.value as number) > 0) {
-      if (process.env.OPERATOR_KEY_FORMAT === 'HEX_ECDSA') {
+      if (EnvProviderService.getInstance().get('OPERATOR_KEY_FORMAT') === 'HEX_ECDSA') {
         transaction.from = this.hapiService.getMainClientInstance().operatorPublicKey?.toEvmAddress();
       } else {
         const operatorId = this.hapiService.getMainClientInstance().operatorAccountId!.toString();
@@ -1644,11 +1645,12 @@ export class EthImpl implements Eth {
     const selector = getFunctionSelector(call.data!);
 
     const shouldForceToConsensus =
-      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR == 'true' &&
+      EnvProviderService.getInstance().get('ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR') == 'true' &&
       constants.ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS.indexOf(selector) !== -1;
 
     // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-    const shouldDefaultToConsensus = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'true';
+    const shouldDefaultToConsensus =
+      EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') === 'true';
 
     let result: string | JsonRpcError = '';
     try {

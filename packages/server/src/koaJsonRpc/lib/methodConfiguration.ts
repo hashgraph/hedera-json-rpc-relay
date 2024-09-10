@@ -17,16 +17,19 @@
  * limitations under the License.
  *
  */
-import dotenv from 'dotenv';
-import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
-
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 import CONSTANTS from '../../../../relay/dist/lib/constants';
 
-const tier1rateLimit = parseInt(process.env.TIER_1_RATE_LIMIT ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_1.toString());
-const tier2rateLimit = parseInt(process.env.TIER_2_RATE_LIMIT ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_2.toString());
-const tier3rateLimit = parseInt(process.env.TIER_3_RATE_LIMIT ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_3.toString());
+const tier1rateLimit = parseInt(
+  EnvProviderService.getInstance().get('TIER_1_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_1.toString(),
+);
+const tier2rateLimit = parseInt(
+  EnvProviderService.getInstance().get('TIER_2_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_2.toString(),
+);
+const tier3rateLimit = parseInt(
+  EnvProviderService.getInstance().get('TIER_3_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_3.toString(),
+);
 
 export interface IMethodRateLimit {
   total: number;

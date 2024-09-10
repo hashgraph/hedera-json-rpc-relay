@@ -1,4 +1,4 @@
-/*-
+/*
  *
  * Hedera JSON RPC Relay
  *
@@ -18,18 +18,8 @@
  *
  */
 
-import { Web3 } from '../index';
-import { Client } from '@hashgraph/sdk';
-import { EnvProviderService } from './services/envProviderService';
-
-export class Web3Impl implements Web3 {
-  private client: Client;
-
-  constructor(client: Client) {
-    this.client = client;
-  }
-
-  clientVersion(): string {
-    return 'relay/' + (EnvProviderService.getInstance().get('npm_package_version') ?? '');
-  }
+export interface IEnvProviderService {
+  get(name: string): string | undefined;
+  dynamicOverride(name: string, value: string): void;
+  remove(name: string): void;
 }

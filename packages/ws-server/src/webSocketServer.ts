@@ -32,14 +32,15 @@ import WsMetricRegistry from './metrics/wsMetricRegistry';
 import ConnectionLimiter from './metrics/connectionLimiter';
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
-import { JsonRpcError, predefined, type Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { JsonRpcError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
 import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
-  level: process.env.LOG_LEVEL || 'trace',
+  level: EnvProviderService.getInstance().get('LOG_LEVEL') || 'trace',
   transport: {
     target: 'pino-pretty',
     options: {
@@ -56,7 +57,7 @@ const mirrorNodeClient = relay.mirrorClient();
 const limiter = new ConnectionLimiter(logger, register);
 const wsMetricRegistry = new WsMetricRegistry(register);
 
-const pingInterval = Number(process.env.WS_PING_INTERVAL || 100000);
+const pingInterval = Number(EnvProviderService.getInstance().get('WS_PING_INTERVAL') || 100000);
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx) => {

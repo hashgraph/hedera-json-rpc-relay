@@ -18,10 +18,6 @@
  *
  */
 
-import dotenv from 'dotenv';
-import findConfig from 'find-config';
-dotenv.config({ path: findConfig('.env') || '' });
-
 import { Logger } from 'pino';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
@@ -39,6 +35,7 @@ import HAPIService from './services/hapiService/hapiService';
 import { SubscriptionController } from './subscriptionController';
 import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
+import { EnvProviderService } from './services/envProviderService';
 
 export class RelayImpl implements Relay {
   /**
@@ -116,8 +113,9 @@ export class RelayImpl implements Relay {
   constructor(logger: Logger, register: Registry) {
     logger.info('Configurations successfully loaded');
 
-    const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
-    const configuredChainId = process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
+    const hederaNetwork: string = (EnvProviderService.getInstance().get('HEDERA_NETWORK') || '{}').toLowerCase();
+    const configuredChainId =
+      EnvProviderService.getInstance().get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
@@ -133,12 +131,14 @@ export class RelayImpl implements Relay {
     this.netImpl = new NetImpl(this.clientMain);
 
     this.mirrorNodeClient = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      EnvProviderService.getInstance().get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       register,
       this.cacheService,
       undefined,
-      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
+      EnvProviderService.getInstance().get('MIRROR_NODE_URL_WEB3') ||
+        EnvProviderService.getInstance().get('MIRROR_NODE_URL') ||
+        '',
     );
 
     this.metricService = new MetricService(
@@ -159,7 +159,10 @@ export class RelayImpl implements Relay {
       this.cacheService,
     );
 
-    if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
+    if (
+      EnvProviderService.getInstance().get('SUBSCRIPTIONS_ENABLED') &&
+      EnvProviderService.getInstance().get('SUBSCRIPTIONS_ENABLED') === 'true'
+    ) {
       const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
       this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }

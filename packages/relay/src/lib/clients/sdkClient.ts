@@ -61,6 +61,7 @@ import { formatRequestIdMessage } from '../../formatters';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
+import { EnvProviderService } from '../services/envProviderService';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../types';
 
 const _ = require('lodash');
@@ -132,18 +133,20 @@ export class SDKClient {
   ) {
     this.clientMain = clientMain;
 
-    if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
+    if (EnvProviderService.getInstance().get('CONSENSUS_MAX_EXECUTION_TIME')) {
       // sets the maximum time in ms for the SDK to wait when submitting
       // a transaction/query before throwing a TIMEOUT error
-      this.clientMain = clientMain.setMaxExecutionTime(Number(process.env.CONSENSUS_MAX_EXECUTION_TIME));
+      this.clientMain = clientMain.setMaxExecutionTime(
+        Number(EnvProviderService.getInstance().get('CONSENSUS_MAX_EXECUTION_TIME')),
+      );
     }
 
     this.logger = logger;
     this.hbarLimiter = hbarLimiter;
     this.cacheService = cacheService;
     this.eventEmitter = eventEmitter;
-    this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
-    this.fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+    this.maxChunks = Number(EnvProviderService.getInstance().get('FILE_APPEND_MAX_CHUNKS')) || 20;
+    this.fileAppendChunkSize = Number(EnvProviderService.getInstance().get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   }
 
   /**
@@ -393,15 +396,15 @@ export class SDKClient {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
       // notice: this solution is temporary and subject to change.
-      const isPreemtiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK
-        ? process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK === 'true'
+      const isPreemtiveCheckOn = EnvProviderService.getInstance().get('HBAR_RATE_LIMIT_PREEMTIVE_CHECK')
+        ? EnvProviderService.getInstance().get('HBAR_RATE_LIMIT_PREEMTIVE_CHECK') === 'true'
         : false;
 
       if (isPreemtiveCheckOn) {
         const numFileCreateTxs = 1;
         const numFileAppendTxs = Math.ceil(ethereumTransactionData.callData.length / this.fileAppendChunkSize);
-        const fileCreateFee = Number(process.env.HOT_FIX_FILE_CREATE_FEE || 100000000); // 1 hbar
-        const fileAppendFee = Number(process.env.HOT_FIX_FILE_APPEND_FEE || 120000000); // 1.2 hbar
+        const fileCreateFee = Number(EnvProviderService.getInstance().get('HOT_FIX_FILE_CREATE_FEE') || 100000000); // 1 hbar
+        const fileAppendFee = Number(EnvProviderService.getInstance().get('HOT_FIX_FILE_APPEND_FEE') || 120000000); // 1.2 hbar
 
         const totalPreemtiveTransactionFee = numFileCreateTxs * fileCreateFee + numFileAppendTxs * fileAppendFee;
 
@@ -514,7 +517,7 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let retries = 0;
     let resp;
-    while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || '1') > retries) {
+    while (parseInt(EnvProviderService.getInstance().get('CONTRACT_QUERY_TIMEOUT_RETRIES') || '1') > retries) {
       try {
         resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestId);
         return resp;

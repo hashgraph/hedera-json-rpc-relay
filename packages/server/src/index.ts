@@ -19,10 +19,11 @@
  */
 
 import app from './server';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 import { setServerTimeout } from './koaJsonRpc/lib/utils'; // Import the 'setServerTimeout' function from the correct location
 
 async function main() {
-  const server = await app.listen({ port: process.env.SERVER_PORT || 7546 });
+  const server = await app.listen({ port: EnvProviderService.getInstance().get('SERVER_PORT') || 7546 });
 
   // set request timeout to ensure sockets are closed after specified time of inactivity
   setServerTimeout(server);
