@@ -42,17 +42,13 @@ chai.use(chaiAsPromised);
 
 describe('HbarLimitService', function () {
   const logger = pino();
-  const callDataSize = 6000;
   const totalBudget = 100_000;
   const mockEstimatedTxFee = 300;
   const methodName = 'testMethod';
   const mockEthAddress = '0x123';
   const register = new Registry();
-  const mockRequestId = getRequestId();
   const mockPlanId = uuidV4(randomBytes(16));
-  const mockedExchangeRateInCents: number = 12;
   const mode = constants.EXECUTION_MODE.TRANSACTION;
-  const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
 
   let hbarLimitService: HbarLimitService;
   let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarSpendingPlanRepository>;
