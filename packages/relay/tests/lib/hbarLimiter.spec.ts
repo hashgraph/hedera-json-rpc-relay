@@ -31,7 +31,7 @@ describe('HBAR Rate Limiter', async function () {
   this.timeout(20000);
   let rateLimiter: HbarLimit;
   let currentDateNow: number;
-  let rateLimiterWithInvalidTotal: HbarLimit;
+  let rateLimiterWithEmptyBudget: HbarLimit;
 
   const callDataSize = 6000;
   const invalidTotal: number = 0;
@@ -47,7 +47,7 @@ describe('HBAR Rate Limiter', async function () {
     currentDateNow = Date.now();
     process.env.HBAR_RATE_LIMIT_WHITELIST = `[${randomWhiteListedAccountAddress}]`;
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
-    rateLimiterWithInvalidTotal = new HbarLimit(logger, currentDateNow, invalidTotal, validDuration, registry);
+    rateLimiterWithEmptyBudget = new HbarLimit(logger, currentDateNow, invalidTotal, validDuration, registry);
   });
 
   this.beforeAll(() => {
@@ -59,16 +59,16 @@ describe('HBAR Rate Limiter', async function () {
   });
 
   it('should be disabled, if we pass invalid total', async function () {
-    const isEnabled = rateLimiterWithInvalidTotal.isEnabled();
-    const limiterResetTime = rateLimiterWithInvalidTotal.getResetTime();
-    const limiterRemainingBudget = rateLimiterWithInvalidTotal.getRemainingBudget();
-    const shouldRateLimit = rateLimiterWithInvalidTotal.shouldLimit(
+    const isEnabled = rateLimiterWithEmptyBudget.isEnabled();
+    const limiterResetTime = rateLimiterWithEmptyBudget.getResetTime();
+    const limiterRemainingBudget = rateLimiterWithEmptyBudget.getRemainingBudget();
+    const shouldRateLimit = rateLimiterWithEmptyBudget.shouldLimit(
       currentDateNow,
       'QUERY',
       'eth_call',
       randomAccountAddress,
     );
-    rateLimiterWithInvalidTotal.addExpense(validTotal, currentDateNow);
+    rateLimiterWithEmptyBudget.addExpense(validTotal, currentDateNow);
 
     expect(isEnabled).to.equal(false);
     expect(shouldRateLimit).to.equal(false);
@@ -214,7 +214,7 @@ describe('HBAR Rate Limiter', async function () {
   });
 
   it('Should execute shouldPreemptivelyLimitFileTransactions() and return TRUE if expected transactionFee is greater than remaining balance', () => {
-    const result = rateLimiterWithInvalidTotal.shouldPreemptivelyLimitFileTransactions(
+    const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
       randomAccountAddress,
       callDataSize,
       fileChunkSize,
@@ -236,8 +236,8 @@ describe('HBAR Rate Limiter', async function () {
   });
 
   it('Should verify if an account is whitelisted', () => {
-    const shoulNotdBeWhiteListed = rateLimiterWithInvalidTotal.isAccountWhiteListed(randomAccountAddress);
-    const shouldBeWhiteListed = rateLimiterWithInvalidTotal.isAccountWhiteListed(randomWhiteListedAccountAddress);
+    const shoulNotdBeWhiteListed = rateLimiterWithEmptyBudget.isAccountWhiteListed(randomAccountAddress);
+    const shouldBeWhiteListed = rateLimiterWithEmptyBudget.isAccountWhiteListed(randomWhiteListedAccountAddress);
 
     expect(shoulNotdBeWhiteListed).to.be.false;
     expect(shouldBeWhiteListed).to.be.true;
@@ -268,7 +268,7 @@ describe('HBAR Rate Limiter', async function () {
   });
 
   it('Should execute shouldPreemptivelyLimitFileTransactions() and return FALSE if the original caller is a white listed account', () => {
-    const result = rateLimiterWithInvalidTotal.shouldPreemptivelyLimitFileTransactions(
+    const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
       randomWhiteListedAccountAddress,
       callDataSize,
       fileChunkSize,
@@ -279,7 +279,7 @@ describe('HBAR Rate Limiter', async function () {
   });
 
   it('Should execute shouldPreemptivelyLimitFileTransactions() and return TRUE if the original caller is NOT a white listed account', () => {
-    const result = rateLimiterWithInvalidTotal.shouldPreemptivelyLimitFileTransactions(
+    const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
       randomAccountAddress,
       callDataSize,
       fileChunkSize,
