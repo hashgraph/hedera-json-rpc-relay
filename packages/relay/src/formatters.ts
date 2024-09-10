@@ -18,11 +18,13 @@
  *
  */
 
-import constants from './lib/constants';
 import crypto from 'crypto';
-import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import constants from './lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
+import { TransactionRecord } from '@hashgraph/sdk';
+import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { MirrorNodeTransactionRecord } from './lib/types/mirrorNode';
+import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 
 const EMPTY_HEX = '0x';
 
@@ -38,7 +40,10 @@ const generateRandomHex = (bytesLength = 16) => {
  * Format message prefix for logger.
  */
 const formatRequestIdMessage = (requestId?: string): string => {
-  return requestId ? `[${constants.REQUEST_ID_STRING}${requestId}]` : '';
+  if (!requestId) {
+    return '';
+  }
+  return requestId.includes(constants.REQUEST_ID_STRING) ? requestId : `[${constants.REQUEST_ID_STRING}${requestId}]`;
 };
 
 function hexToASCII(str: string): string {
@@ -208,6 +213,28 @@ const formatContractResult = (cr: any) => {
   return null;
 };
 
+/**
+ * Maps the keys and values of an object to a new object using the provided functions.
+ *
+ * @param target The object to map
+ * @param mapFn The mapping functions
+ * @param mapFn.key The function to map the keys
+ * @param mapFn.value The function to map the values
+ * @returns A new object with the mapped keys and values
+ */
+const mapKeysAndValues = <OldK extends keyof any, NewK extends keyof any, OldV, NewV>(
+  target: Record<OldK, OldV>,
+  mapFn: { key?: (key: OldK) => NewK; value?: (value: OldV) => NewV },
+): Record<NewK, NewV> => {
+  const result = {} as Record<NewK, NewV>;
+  for (const key in target) {
+    const newKey = mapFn.key ? mapFn.key(key) : (key as unknown as NewK);
+    const newValue = mapFn.value ? mapFn.value(target[key]) : (target[key] as unknown as NewV);
+    result[newKey] = newValue;
+  }
+  return result;
+};
+
 const strip0x = (input: string): string => {
   return input.startsWith(EMPTY_HEX) ? input.substring(2) : input;
 };
@@ -255,24 +282,8 @@ const toNullIfEmptyHex = (value: string): string | null => {
   return value === EMPTY_HEX ? null : value;
 };
 
-const stringToHex = (str) => {
-  let hex = '';
-  for (let i = 0; i < str.length; i++) {
-    const charCode = str.charCodeAt(i);
-    const hexValue = charCode.toString(16);
-
-    // Pad with zeros to ensure two-digit representation
-    hex += hexValue.padStart(2, '0');
-  }
-  return hex;
-};
-
-const toHexString = (byteArray) => {
-  if (typeof byteArray !== 'object') {
-    byteArray = Buffer.from(byteArray?.toString() ?? '', 'hex');
-  }
-
-  const encoded = Buffer.from(byteArray, 'utf8').toString('hex');
+const toHexString = (byteArray: Uint8Array): string => {
+  const encoded = Buffer.from(byteArray).toString('hex');
   return encoded;
 };
 
@@ -286,6 +297,11 @@ const isValidEthereumAddress = (address: string | null | undefined): boolean => 
 const isHex = (value: string): boolean => {
   const hexRegex = /^0x[0-9a-fA-F]+$/;
   return hexRegex.test(value);
+};
+
+const getFunctionSelector = (data?: string): string => {
+  if (!data) return '';
+  return data.replace(/^0x/, '').substring(0, 8);
 };
 
 export {
@@ -308,10 +324,11 @@ export {
   trimPrecedingZeros,
   stripLeadingZeroForSignatures,
   weibarHexToTinyBarInt,
-  stringToHex,
-  strip0x,
   toHexString,
+  strip0x,
   isValidEthereumAddress,
   isHex,
   ASCIIToHex,
+  getFunctionSelector,
+  mapKeysAndValues,
 };

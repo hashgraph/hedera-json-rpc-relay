@@ -35,13 +35,14 @@ import { ethers } from 'ethers';
 import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import { MirrorNodeClientError } from '../../src/lib/errors/MirrorNodeClientError';
 const logger = pino();
 const noTransactions = '?transactions=false';
 
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
 
-  let instance, mock, mirrorNodeInstance;
+  let instance, mock, mirrorNodeInstance, cacheService;
 
   before(() => {
     // mock axios
@@ -53,11 +54,12 @@ describe('MirrorNodeClient', async function () {
       },
       timeout: 20 * 1000,
     });
+    cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL,
+      process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
       registry,
-      new CacheService(logger.child({ name: `cache` }), registry),
+      cacheService,
       instance,
     );
   });
@@ -122,7 +124,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`restUrl` is exposed and correct', async () => {
-    const domain = process.env.MIRROR_NODE_URL.replace(/^https?:\/\//, '');
+    const domain = (process.env.MIRROR_NODE_URL || '').replace(/^https?:\/\//, '');
     const prodMirrorNodeInstance = new MirrorNodeClient(
       domain,
       logger.child({ name: `mirror-node` }),
@@ -150,9 +152,10 @@ describe('MirrorNodeClient', async function () {
     const exampleApiKey = 'abc123iAManAPIkey';
     process.env.MIRROR_NODE_URL_HEADER_X_API_KEY = exampleApiKey;
     const mirrorNodeInstanceOverridden = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL,
+      process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
       registry,
+      cacheService,
     );
     const axiosHeaders = mirrorNodeInstanceOverridden.getMirrorNodeRestInstance().defaults.headers.common;
     expect(axiosHeaders).has.property('x-api-key');
@@ -1160,6 +1163,116 @@ describe('MirrorNodeClient', async function () {
     });
   });
 
+  describe('getTransactionRecordMetrics', () => {
+    const mockedTxFee = 36900000;
+    const operatorAcocuntId = `0.0.1022`;
+    const mockedCallerName = 'caller_name';
+    const mockedConstructorName = 'constructor_name';
+    const mockedTransactionId = '0.0.1022@1681130064.409933500';
+    const mockedTransactionIdFormatted = '0.0.1022-1681130064-409933500';
+    const mockedUrl = `transactions/${mockedTransactionIdFormatted}?nonce=0`;
+
+    const mockedMirrorNodeTransactionRecord = {
+      transactions: [
+        {
+          charged_tx_fee: mockedTxFee,
+          result: 'SUCCESS',
+          transaction_id: '0.0.1022-1681130064-409933500',
+          transfers: [
+            {
+              account: operatorAcocuntId,
+              amount: -1 * mockedTxFee,
+              is_approval: false,
+            },
+          ],
+        },
+      ],
+    };
+
+    it('should execute getTransactionRecordMetrics to get transaction record metrics', async () => {
+      // Return data on the second call
+      mock.onGet(mockedUrl).reply(200, mockedMirrorNodeTransactionRecord);
+
+      const transactionRecordMetrics = await mirrorNodeInstance.getTransactionRecordMetrics(
+        mockedTransactionId,
+        mockedCallerName,
+        getRequestId(),
+        mockedConstructorName,
+        operatorAcocuntId,
+      );
+
+      expect(transactionRecordMetrics.transactionFee).to.eq(mockedTxFee);
+    });
+
+    it('should throw a MirrorNodeClientError if transaction record is not found when execute getTransactionRecordMetrics', async () => {
+      mock.onGet(mockedUrl).reply(404, null);
+
+      try {
+        await mirrorNodeInstance.getTransactionRecordMetrics(
+          mockedTransactionId,
+          mockedCallerName,
+          getRequestId(),
+          mockedConstructorName,
+          operatorAcocuntId,
+        );
+
+        expect.fail('should have thrown an error');
+      } catch (error) {
+        const notFoundMessage = `No transaction record retrieved: transactionId=${mockedTransactionId}, txConstructorName=${mockedConstructorName}, callerName=${mockedCallerName}.`;
+        const expectedError = new MirrorNodeClientError(
+          { message: notFoundMessage },
+          MirrorNodeClientError.statusCodes.NOT_FOUND,
+        );
+
+        expect(error).to.deep.eq(expectedError);
+      }
+    });
+  });
+
+  describe('getTransactionRecordMetrics', () => {
+    it('Should execute getTransferAmountSumForAccount() to calculate transactionFee of the specify accountId', () => {
+      const accountIdA = `0.0.1022`;
+      const accountIdB = `0.0.1023`;
+      const mockedTxFeeA = 300;
+      const mockedTxFeeB = 600;
+
+      const expectedTxFeeForAccountIdA = mockedTxFeeA + mockedTxFeeB;
+
+      const mockedMirrorNodeTransactionRecord = {
+        transactions: [
+          {
+            charged_tx_fee: 3000,
+            result: 'SUCCESS',
+            transaction_id: '0.0.1022-1681130064-409933500',
+            transfers: [
+              {
+                account: accountIdA,
+                amount: -1 * mockedTxFeeA,
+                is_approval: false,
+              },
+              {
+                account: accountIdB,
+                amount: -1 * mockedTxFeeB,
+                is_approval: false,
+              },
+              {
+                account: accountIdA,
+                amount: -1 * mockedTxFeeB,
+                is_approval: false,
+              },
+            ],
+          },
+        ],
+      };
+
+      const transactionFee = mirrorNodeInstance.getTransferAmountSumForAccount(
+        mockedMirrorNodeTransactionRecord.transactions[0],
+        accountIdA,
+      );
+      expect(transactionFee).to.eq(expectedTxFeeForAccountIdA);
+    });
+  });
+
   describe('getAccountLatestEthereumTransactionsByTimestamp', async () => {
     const evmAddress = '0x305a8e76ac38fc088132fb780b2171950ff023f7';
     const timestamp = '1686019921.957394003';
@@ -1265,7 +1378,7 @@ describe('MirrorNodeClient', async function () {
 
     it('should throw invalid address error if mirror node returns 400 error status', async () => {
       const invalidAddress = '0x123';
-      mock.onGet(transactionPath(invalidAddress, 1)).reply(400, mockData.invalidParameter);
+      mock.onGet(transactionPath(invalidAddress, 1)).reply(400, null);
       let errorRaised = false;
       try {
         await mirrorNodeInstance.getAccountLatestEthereumTransactionsByTimestamp(invalidAddress, timestamp);

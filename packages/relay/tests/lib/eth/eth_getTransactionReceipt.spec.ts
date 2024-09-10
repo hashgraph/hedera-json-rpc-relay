@@ -24,12 +24,10 @@ import sinon, { createSandbox } from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 
 import { EthImpl } from '../../../src/lib/eth';
-import { Log } from '../../../src/lib/model';
 import constants from '../../../src/lib/constants';
 import RelayAssertions from '../../assertions';
-import { nullableNumberTo0x, numberTo0x, toHash32 } from '../../../src/formatters';
-import { BLOCK_BY_HASH_FROM_RELAY, DEFAULT_BLOCK } from './eth-config';
-import { defaultErrorMessageHex, defaultLogs1 } from '../../helpers';
+import { DEFAULT_BLOCK, EMPTY_LOGS_RESPONSE } from './eth-config';
+import { defaultErrorMessageHex } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -156,6 +154,9 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
         ],
       },
     });
+    restMock
+      .onGet(`contracts/results/logs?transaction.hash=${txHash}&limit=100&order=asc`)
+      .reply(200, EMPTY_LOGS_RESPONSE);
     const receipt = await ethImpl.getTransactionReceipt(txHash);
     expect(receipt).to.be.null;
   });
@@ -314,49 +315,40 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
   });
 
   it('valid receipt on cache match', async function () {
-    let getBlockByHash = sandbox.stub(ethImpl, <any>'getBlockByHash').resolves(BLOCK_BY_HASH_FROM_RELAY);
-    let getFeeWeibars = sandbox.stub(ethImpl, <any>'getFeeWeibars').resolves(`ad78ebc5ac620000`); // 0xad78ebc5ac620000 in decimal
+    const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_RECEIPT}_${defaultDetailedContractResultByHash.hash}`;
+    const cacheReceipt = {
+      blockHash: defaultDetailedContractResultByHash.block_hash,
+      blockNumber: defaultDetailedContractResultByHash.block_number,
+      from: defaultDetailedContractResultByHash.from,
+      to: defaultDetailedContractResultByHash.to,
+      cumulativeGasUsed: defaultDetailedContractResultByHash.block_gas_used,
+      gasUsed: defaultDetailedContractResultByHash.gas_used,
+      contractAddress: defaultDetailedContractResultByHash.address,
+      logs: defaultDetailedContractResultByHash.logs,
+      logsBloom: defaultDetailedContractResultByHash.bloom,
+      transactionHash: defaultDetailedContractResultByHash.hash,
+      transactionIndex: defaultDetailedContractResultByHash.transaction_index,
+      status: defaultDetailedContractResultByHash.status,
+      type: defaultDetailedContractResultByHash.type,
+    };
 
-    // set cache with synthetic log
-    const cacheKeySyntheticLog1 = `${constants.CACHE_KEY.SYNTHETIC_LOG_TRANSACTION_HASH}${defaultDetailedContractResultByHash.hash}`;
-    const cachedLog = new Log({
-      address: defaultLogs1[0].address,
-      blockHash: toHash32(defaultLogs1[0].block_hash),
-      blockNumber: numberTo0x(defaultLogs1[0].block_number),
-      data: defaultLogs1[0].data,
-      logIndex: numberTo0x(defaultLogs1[0].index),
-      removed: false,
-      topics: defaultLogs1[0].topics,
-      transactionHash: toHash32(defaultLogs1[0].transaction_hash),
-      transactionIndex: nullableNumberTo0x(defaultLogs1[0].transaction_index),
-    });
-
-    cacheService.set(cacheKeySyntheticLog1, cachedLog, EthImpl.ethGetTransactionReceipt);
+    cacheService.set(cacheKey, cacheReceipt, EthImpl.ethGetTransactionReceipt);
 
     // w no mirror node requests
     const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
 
     // Assert the matching reciept
-    expect(receipt.blockHash).to.eq(cachedLog.blockHash);
-    expect(receipt.blockNumber).to.eq(cachedLog.blockNumber);
-    expect(receipt.contractAddress).to.eq(cachedLog.address);
-    expect(receipt.cumulativeGasUsed).to.eq(EthImpl.zeroHex);
-    expect(receipt.effectiveGasPrice).to.eq(defaultReceipt.effectiveGasPrice);
-    expect(receipt.from).to.eq(EthImpl.zeroAddressHex);
-    expect(receipt.gasUsed).to.eq(EthImpl.zeroHex);
-    expect(receipt.logs).to.deep.eq([cachedLog]);
-    expect(receipt.logsBloom).to.be.eq(EthImpl.emptyBloom);
-    expect(receipt.status).to.eq(EthImpl.oneHex);
-    expect(receipt.to).to.eq(cachedLog.address);
-    expect(receipt.transactionHash).to.eq(cachedLog.transactionHash);
-    expect(receipt.transactionIndex).to.eq(cachedLog.transactionIndex);
-    expect(receipt.root).to.eq(EthImpl.zeroHex32Byte);
-
-    expect(getBlockByHash.calledOnce).to.be.true;
-    // verify thet getFeeWeibars stub was called
-    expect(getFeeWeibars.calledOnce).to.be.true;
-    // verify getFeeWeibars was called with the correct format
-    const expectedFormat = parseInt(BLOCK_BY_HASH_FROM_RELAY.timestamp, 16).toString();
-    expect(getFeeWeibars.calledWith(`eth_GetTransactionReceipt`, undefined, expectedFormat)).to.be.true;
+    expect(receipt.blockHash).to.eq(cacheReceipt.blockHash);
+    expect(receipt.blockNumber).to.eq(cacheReceipt.blockNumber);
+    expect(receipt.contractAddress).to.eq(cacheReceipt.contractAddress);
+    expect(receipt.cumulativeGasUsed).to.eq(cacheReceipt.cumulativeGasUsed);
+    expect(receipt.from).to.eq(cacheReceipt.from);
+    expect(receipt.gasUsed).to.eq(cacheReceipt.gasUsed);
+    expect(receipt.logs).to.deep.eq(cacheReceipt.logs);
+    expect(receipt.logsBloom).to.be.eq(cacheReceipt.logsBloom);
+    expect(receipt.status).to.eq(cacheReceipt.status);
+    expect(receipt.to).to.eq(cacheReceipt.to);
+    expect(receipt.transactionHash).to.eq(cacheReceipt.transactionHash);
+    expect(receipt.transactionIndex).to.eq(cacheReceipt.transactionIndex);
   });
 });

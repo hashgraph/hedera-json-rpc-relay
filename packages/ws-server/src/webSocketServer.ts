@@ -24,7 +24,7 @@ import pino from 'pino';
 import dotenv from 'dotenv';
 import { v4 as uuid } from 'uuid';
 import websockify from 'koa-websocket';
-import { Registry } from 'prom-client';
+import { collectDefaultMetrics, Registry } from 'prom-client';
 import { getRequestResult } from './controllers';
 import { WS_CONSTANTS } from './utils/constants';
 import { formatIdMessage } from './utils/formatters';
@@ -202,6 +202,8 @@ app.ws.use(async (ctx) => {
 });
 
 const httpApp = new KoaJsonRpc(logger, register).getKoaApp();
+collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
+
 httpApp.use(async (ctx, next) => {
   // prometheus metrics exposure
   if (ctx.url === '/metrics') {

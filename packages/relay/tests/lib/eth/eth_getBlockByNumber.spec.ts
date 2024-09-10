@@ -25,14 +25,13 @@ import chaiAsPromised from 'chai-as-promised';
 
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
-import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
+import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Block, Transaction } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
+import constants from '../../../src/lib/constants';
 import { hashNumber, numberTo0x } from '../../../dist/formatters';
 import {
-  BLOCKS_LIMIT_ORDER_URL,
-  BLOCKS_RES,
   BLOCK_HASH,
   BLOCK_HASH_PREV_TRIMMED,
   BLOCK_HASH_TRIMMED,
@@ -42,7 +41,8 @@ import {
   BLOCK_NUMBER_WITH_SYN_TXN,
   BLOCK_TIMESTAMP_HEX,
   BLOCK_WITH_SYN_TXN,
-  CONTRACTS_RESULTS_NEXT_URL,
+  BLOCKS_LIMIT_ORDER_URL,
+  BLOCKS_RES,
   CONTRACT_ADDRESS_1,
   CONTRACT_ADDRESS_2,
   CONTRACT_HASH_1,
@@ -53,7 +53,9 @@ import {
   CONTRACT_RESULTS_WITH_FILTER_URL,
   CONTRACT_TIMESTAMP_1,
   CONTRACT_TIMESTAMP_2,
+  CONTRACTS_RESULTS_NEXT_URL,
   DEFAULT_BLOCK,
+  DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
   DEFAULT_BLOCKS_RES,
   DEFAULT_CONTRACT_RES_REVERT,
   DEFAULT_ETH_GET_BLOCK_BY_LOGS,
@@ -63,11 +65,11 @@ import {
   LATEST_BLOCK_QUERY,
   LATEST_BLOCK_RESPONSE,
   LINKS_NEXT_RES,
-  LOGS_RESPONSE_MOCK,
   LOG_QUERY,
+  LOGS_RESPONSE_MOCK,
   MOST_RECENT_BLOCK,
-  NOT_FOUND_RES,
   NO_SUCH_BLOCK_EXISTS_RES,
+  NOT_FOUND_RES,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 import { fail } from 'assert';
@@ -223,7 +225,46 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
         parentHash: BLOCK_HASH_PREV_TRIMMED,
         timestamp: BLOCK_TIMESTAMP_HEX,
         transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
       });
+    });
+
+    it('eth_getBlockByNumber with match and duplicated transactions', async function () {
+      restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, {
+        results: [...defaultContractResults.results, ...defaultContractResults.results],
+      });
+
+      const res = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER), false);
+      RelayAssertions.assertBlock(res, {
+        transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        hash: BLOCK_HASH_TRIMMED,
+        number: BLOCK_NUMBER_HEX,
+        timestamp: BLOCK_TIMESTAMP_HEX,
+        parentHash: BLOCK_HASH_PREV_TRIMMED,
+        gasUsed: TOTAL_GAS_USED,
+      });
+    });
+
+    it('eth_getBlockByNumber with match and valid logsBloom field', async function () {
+      restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, {
+        ...DEFAULT_BLOCK,
+        logs_bloom: blockLogsBloom,
+      });
+      restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
+
+      const result = await ethImpl.getBlockByNumber(numberTo0x(BLOCK_NUMBER), false);
+
+      RelayAssertions.assertBlock(result, {
+        hash: BLOCK_HASH_TRIMMED,
+        gasUsed: TOTAL_GAS_USED,
+        number: BLOCK_NUMBER_HEX,
+        parentHash: BLOCK_HASH_PREV_TRIMMED,
+        timestamp: BLOCK_TIMESTAMP_HEX,
+        transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
+      });
+
+      expect(result?.logsBloom).equal(blockLogsBloom);
     });
 
     it('eth_getBlockByNumber with match paginated', async function () {
@@ -238,6 +279,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
         parentHash: BLOCK_HASH_PREV_TRIMMED,
         timestamp: BLOCK_TIMESTAMP_HEX,
         transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
       });
     });
 
@@ -294,7 +336,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       veriftAggregatedInfo(result);
       expect(result.gasUsed).equal('0x0');
       expect(result.transactions.length).equal(0);
-      expect(result.transactionsRoot).equal(EthImpl.ethEmptyTrie);
+      expect(result.transactionsRoot).equal(constants.DEFAULT_ROOT_HASH);
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
@@ -315,6 +357,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
+      expect(result.receiptsRoot).to.equal(DEFAULT_BLOCK_RECEIPTS_ROOT_HASH);
     }
   });
 
@@ -353,6 +396,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
 
       // verify expected constants
       RelayAssertions.verifyBlockConstants(result);
+      expect(result.receiptsRoot).to.equal(DEFAULT_BLOCK_RECEIPTS_ROOT_HASH);
     }
   });
 

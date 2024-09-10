@@ -18,45 +18,80 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
-import { expect } from 'chai';
-import { Context } from 'mocha';
-import sinon from 'sinon';
-import { Registry } from 'prom-client';
-import HAPIService from '../../src/lib/services/hapiService/hapiService';
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-const registry = new Registry();
 import pino from 'pino';
-import {
-  AccountId,
-  Client,
-  ContractCallQuery,
-  PrivateKey,
-  TransactionId,
-  Hbar,
-  Status,
-  FileId,
-  EthereumTransactionData,
-  FileInfoQuery,
-  FileInfo,
-  FileDeleteTransaction,
-  TransactionRecord,
-  FileCreateTransaction,
-} from '@hashgraph/sdk';
-const logger = pino();
+import Long from 'long';
+import { expect } from 'chai';
+import { resolve } from 'path';
+import * as sinon from 'sinon';
+import { config } from 'dotenv';
+import { Context } from 'mocha';
+import { v4 as uuid } from 'uuid';
+import EventEmitter from 'events';
+import { Registry } from 'prom-client';
+import { Utils } from '../../src/utils';
+import axios, { AxiosInstance } from 'axios';
+import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
-import { SDKClient } from '../../src/lib/clients';
+import { formatTransactionId } from '../../src/formatters';
+import NodeClient from '@hashgraph/sdk/lib/client/NodeClient';
+import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
+import MetricService from '../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { MAX_GAS_LIMIT_HEX } from './eth/eth-config';
-import { getRequestId, signTransaction } from '../helpers';
-import { TransactionReceipt } from 'ethers';
-import exp from 'constants';
+import { calculateTxRecordChargeAmount, random20BytesAddress } from '../helpers';
+import {
+  Hbar,
+  Query,
+  Status,
+  Client,
+  FileId,
+  AccountId,
+  FeeSchedules,
+  ExchangeRate,
+  TransactionId,
+  FileInfoQuery,
+  ContractCallQuery,
+  EthereumTransaction,
+  TransactionResponse,
+  FileAppendTransaction,
+  FileCreateTransaction,
+  FileDeleteTransaction,
+  TransactionRecordQuery,
+} from '@hashgraph/sdk';
+
+config({ path: resolve(__dirname, '../test.env') });
+const registry = new Registry();
+const logger = pino();
 
 describe('SdkClient', async function () {
   this.timeout(20000);
-  let sdkClient, client, hbarLimiter;
+
+  let client: Client;
+  let mock: MockAdapter;
+  let sdkClient: SDKClient;
+  let hbarLimiter: HbarLimit;
+  let instance: AxiosInstance;
+  let eventEmitter: EventEmitter;
+  let metricService: MetricService;
+  let mirrorNodeClient: MirrorNodeClient;
+
+  const feeSchedules = {
+    current: {
+      transactionFeeSchedule: [
+        {
+          hederaFunctionality: {
+            _code: constants.ETH_FUNCTIONALITY_CODE,
+          },
+          fees: [
+            {
+              servicedata: undefined,
+            },
+          ],
+        },
+      ],
+    },
+  } as unknown as FeeSchedules;
 
   before(() => {
     const hederaNetwork = process.env.HEDERA_NETWORK!;
@@ -68,22 +103,49 @@ describe('SdkClient', async function () {
 
     client = client.setOperator(
       AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
-      PrivateKey.fromString(process.env.OPERATOR_KEY_MAIN!),
+      Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+    eventEmitter = new EventEmitter();
     sdkClient = new SDKClient(
       client,
       logger.child({ name: `consensus-node` }),
       hbarLimiter,
-      { costHistogram: undefined, gasHistogram: undefined },
       new CacheService(logger.child({ name: `cache` }), registry),
+      eventEmitter,
     );
+
+    process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
+
+    instance = axios.create({
+      baseURL: 'https://localhost:5551/api/v1',
+      responseType: 'json' as const,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      timeout: 20 * 1000,
+    });
+
+    // mirror node client
+    mirrorNodeClient = new MirrorNodeClient(
+      process.env.MIRROR_NODE_URL || '',
+      logger.child({ name: `mirror-node` }),
+      registry,
+      new CacheService(logger.child({ name: `cache` }), registry),
+      instance,
+    );
+
+    metricService = new MetricService(logger, sdkClient, mirrorNodeClient, hbarLimiter, registry, eventEmitter);
+  });
+
+  beforeEach(() => {
+    mock = new MockAdapter(instance);
   });
 
   describe('increaseCostAndRetryExecution', async () => {
-    let queryStub, contractCallQuery;
+    let queryStub: sinon.SinonStub, contractCallQuery: ContractCallQuery;
     const successResponse = '0x00001';
     const costTinybars = 1000;
     const baseCost = Hbar.fromTinybars(costTinybars);
@@ -91,7 +153,7 @@ describe('SdkClient', async function () {
     beforeEach(() => {
       contractCallQuery = new ContractCallQuery()
         .setContractId('0.0.1010')
-        .setPaymentTransactionId(TransactionId.generate(client.operatorAccountId));
+        .setPaymentTransactionId(TransactionId.generate(client.operatorAccountId!));
       queryStub = sinon.stub(contractCallQuery, 'execute');
     });
 
@@ -140,7 +202,7 @@ describe('SdkClient', async function () {
           status: Status.InsufficientTxFee,
         });
 
-        let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(contractCallQuery, baseCost, client, 3, 0);
+        await sdkClient.increaseCostAndRetryExecution(contractCallQuery, baseCost, client, 3, 0);
       } catch (e: any) {
         expect(queryStub.callCount).to.eq(4);
         expect(e.status).to.eq(Status.InsufficientTxFee);
@@ -149,24 +211,11 @@ describe('SdkClient', async function () {
 
     it('should return cached getTinyBarGasFee value', async () => {
       const getFeeScheduleStub = sinon.stub(sdkClient, 'getFeeSchedule').callsFake(() => {
-        return {
-          current: {
-            transactionFeeSchedule: [
-              {
-                hederaFunctionality: {
-                  _code: constants.ETH_FUNCTIONALITY_CODE,
-                },
-                fees: [
-                  {
-                    servicedata: undefined,
-                  },
-                ],
-              },
-            ],
-          },
-        };
+        return Promise.resolve(feeSchedules);
       });
+      // @ts-ignore
       const getExchangeRateStub = sinon.stub(sdkClient, 'getExchangeRate').callsFake(() => {});
+      // @ts-ignore
       const convertGasPriceToTinyBarsStub = sinon.stub(sdkClient, 'convertGasPriceToTinyBars').callsFake(() => 0x160c);
 
       for (let i = 0; i < 5; i++) {
@@ -176,6 +225,7 @@ describe('SdkClient', async function () {
       sinon.assert.calledOnce(getFeeScheduleStub);
       sinon.assert.calledOnce(getExchangeRateStub);
       sinon.assert.calledOnce(convertGasPriceToTinyBarsStub);
+      sinon.restore();
     });
   });
 
@@ -205,6 +255,7 @@ describe('SdkClient', async function () {
             if (prop === 'OPERATOR_KEY_FORMAT') {
               return null;
             }
+            // @ts-ignore
             return target[prop];
           },
         });
@@ -217,63 +268,83 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for default which is DER', async () => {
-      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
+      const hapiService = new HAPIService(
+        logger,
+        registry,
+        hbarLimiter,
+        new CacheService(logger, registry),
+        eventEmitter,
+      );
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
     });
 
     it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is undefined', async () => {
       delete process.env.OPERATOR_KEY_FORMAT;
-      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
-      expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
-    });
-
-    it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is null', async () => {
-      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
+      const hapiService = new HAPIService(
+        logger,
+        registry,
+        hbarLimiter,
+        new CacheService(logger, registry),
+        eventEmitter,
+      );
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
       process.env.OPERATOR_KEY_FORMAT = 'DER';
-      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.DER);
+      const hapiService = new HAPIService(
+        logger,
+        registry,
+        hbarLimiter,
+        new CacheService(logger, registry),
+        eventEmitter,
+      );
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.DER);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
       process.env.OPERATOR_KEY_FORMAT = 'HEX_ED25519';
-      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(
-        hapiService,
-        OPERATOR_KEY_ED25519.HEX_ED25519,
+      const hapiService = new HAPIService(
+        logger,
+        registry,
+        hbarLimiter,
+        new CacheService(logger, registry),
+        eventEmitter,
       );
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.HEX_ED25519);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
       process.env.OPERATOR_KEY_FORMAT = 'HEX_ECDSA';
-      const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-      const privateKey = (hapiService as any).createPrivateKeyBasedOnFormat.call(
-        hapiService,
-        OPERATOR_KEY_ECDSA.HEX_ECDSA,
+      const hapiService = new HAPIService(
+        logger,
+        registry,
+        hbarLimiter,
+        new CacheService(logger, registry),
+        eventEmitter,
       );
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.HEX_ECDSA);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
     });
 
     it('It should throw an Error when an unexpected string is set', async () => {
       process.env.OPERATOR_KEY_FORMAT = 'BAD_FORMAT';
       try {
-        const hapiService = new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry));
-        expect(true).to.be.false; // Should not make it here
+        new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter);
+        expect.fail(`Expected an error but nothing was thrown`);
       } catch (e: any) {
         expect(e.message).to.eq('Invalid OPERATOR_KEY_FORMAT provided: BAD_FORMAT');
       }
     });
   });
 
-  describe('Rate Limiter', async () => {
+  describe('HBAR Limiter', async () => {
+    const FILE_APPEND_CHUNK_SIZE = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+    const MAX_CHUNKS = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     const transactionBuffer = new Uint8Array([
       2, 249, 250, 182, 130, 1, 42, 7, 1, 133, 209, 56, 92, 123, 240, 131, 228, 225, 192, 148, 61, 176, 51, 137, 34,
       205, 229, 74, 102, 224, 197, 133, 1, 18, 73, 145, 93, 50, 210, 37, 134, 9, 24, 78, 114, 160, 0, 185, 250, 68, 130,
@@ -2056,31 +2127,551 @@ describe('SdkClient', async function () {
       124, 18, 190, 114, 79, 189, 99, 27, 157, 117, 227, 107, 74, 255, 111, 74, 166, 7, 78, 25, 35, 131, 85, 47, 52,
       120, 20,
     ]);
-    const callerName = 'eth_sendRawTransaction';
-    const requestId = getRequestId();
+    const fileCreateFee = Number(process.env.HOT_FIX_FILE_CREATE_FEE || 100000000); // 1 hbar
+    const fileDeleteFee = Number(process.env.HOT_FIX_FILE_DELETE_FEE || 11000000); // 0.11 hbar
+    const fileAppendFee = Number(process.env.HOT_FIX_FILE_APPEND_FEE || 120000000); // 1.2 hbar
+    const mockedExchangeRateIncents = 12;
+    const mockedTransactionRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateIncents);
+    const defaultTransactionFee = 1000;
 
-    before(() => {
-      const duration = constants.HBAR_RATE_LIMIT_DURATION;
-      const total = constants.HBAR_RATE_LIMIT_TINYBAR;
-      hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-      const hbarLimitMock = sinon.mock(hbarLimiter);
-      hbarLimitMock.expects('shouldLimit').returns(true);
+    const accountId = AccountId.fromString('0.0.1234');
+    const transactionId = TransactionId.generate(accountId);
+    const fileId = FileId.fromString('0.0.1234');
+    const transactionReceipt = { fileId, status: Status.Success };
+    const gasUsed = Long.fromNumber(10000);
 
-      sdkClient = new SDKClient(
-        client,
-        logger.child({ name: `consensus-node` }),
-        hbarLimiter,
-        { costHistogram: undefined, gasHistogram: undefined },
-        new CacheService(logger.child({ name: `cache` }), registry),
-      );
+    const randomAccountAddress = random20BytesAddress();
+
+    const getMockedTransaction = (transactionType: string, toHbar: boolean) => {
+      let transactionFee: any;
+      let transfers: any;
+      switch (transactionType) {
+        case FileCreateTransaction.name:
+          transactionFee = toHbar ? new Hbar(fileCreateFee / 10 ** 8) : fileCreateFee;
+          transfers = [
+            {
+              accountId: process.env.OPERATOR_ID_MAIN,
+              amount: Hbar.fromTinybars(-1 * fileCreateFee),
+              is_approval: false,
+            },
+          ];
+          break;
+        case FileAppendTransaction.name:
+          transactionFee = toHbar ? new Hbar(fileAppendFee / 10 ** 8) : fileAppendFee;
+          transfers = [
+            {
+              accountId: process.env.OPERATOR_ID_MAIN,
+              amount: Hbar.fromTinybars(-1 * fileAppendFee),
+              is_approval: false,
+            },
+          ];
+          break;
+        case FileDeleteTransaction.name:
+          transactionFee = toHbar ? new Hbar(fileDeleteFee / 10 ** 8) : fileDeleteFee;
+          transfers = [
+            {
+              accountId: process.env.OPERATOR_ID_MAIN,
+              amount: Hbar.fromTinybars(-1 * fileDeleteFee),
+              is_approval: false,
+            },
+          ];
+          break;
+        default:
+          transactionFee = toHbar ? new Hbar(defaultTransactionFee / 10 ** 8) : defaultTransactionFee;
+          transfers = [
+            {
+              accountId: '0.0.800',
+              amount: Hbar.fromTinybars(defaultTransactionFee),
+              is_approval: false,
+            },
+            {
+              accountId: process.env.OPERATOR_ID_MAIN,
+              amount: Hbar.fromTinybars(-1 * defaultTransactionFee),
+              is_approval: false,
+            },
+            {
+              accountId: accountId.toString(),
+              amount: Hbar.fromTinybars(-1 * defaultTransactionFee),
+              is_approval: false,
+            },
+          ];
+          break;
+      }
+      return { transactionFee, transfers };
+    };
+
+    const getMockedTransactionResponse = (transactionType: string) =>
+      ({
+        nodeId: accountId,
+        transactionHash: Uint8Array.from([1, 2, 3, 4]),
+        transactionId,
+        getReceipt: (_client: NodeClient) => Promise.resolve(transactionReceipt),
+        getRecord: (_client: NodeClient) => {
+          const transactionFee = getMockedTransaction(transactionType, false).transactionFee;
+          const transfers = getMockedTransaction(transactionType, false).transfers;
+          return Promise.resolve({
+            receipt: transactionReceipt,
+            transactionFee: Hbar.fromTinybars(transactionFee),
+            contractFunctionResult: {
+              gasUsed,
+            },
+            transfers,
+          });
+        },
+      }) as unknown as TransactionResponse;
+
+    const getMockedTransactionRecord: any = (transactionType: string) => ({
+      receipt: {
+        status: Status.Success,
+        exchangeRate: { exchangeRateInCents: 12 },
+      },
+      transactionFee: getMockedTransaction(transactionType, true).transactionFee,
+      contractFunctionResult: {
+        gasUsed,
+      },
+      transfers: getMockedTransaction(transactionType, false).transfers,
+    });
+
+    const fileInfo = {
+      fileId,
+      isDeleted: true,
+      size: Long.fromNumber(FILE_APPEND_CHUNK_SIZE),
+    };
+    const mockedCallerName = 'caller_name';
+    const mockedConstructorName = 'constructor_name';
+    const mockedInteractingEntity = 'interacting_entity';
+
+    let requestId: string;
+    let hbarLimitMock: sinon.SinonMock;
+    let sdkClientMock: sinon.SinonMock;
+
+    beforeEach(() => {
+      requestId = uuid();
+      hbarLimitMock = sinon.mock(hbarLimiter);
+      sdkClientMock = sinon.mock(sdkClient);
+      mock = new MockAdapter(instance);
+    });
+
+    afterEach(() => {
+      hbarLimitMock.verify();
+      sinon.restore();
+      sdkClientMock.restore();
+      hbarLimitMock.restore();
     });
 
     it('should rate limit before creating file', async () => {
+      const transactionStub = sinon
+        .stub(EthereumTransaction.prototype, 'execute')
+        .resolves(getMockedTransactionResponse(EthereumTransaction.name));
+
+      hbarLimitMock
+        .expects('shouldLimit')
+        .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName, randomAccountAddress)
+        .once()
+        .returns(true);
+
       try {
-        await sdkClient.submitEthereumTransaction(transactionBuffer, requestId, callerName);
-      } catch (error) {
+        await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestId, randomAccountAddress);
+        expect.fail(`Expected an error but nothing was thrown`);
+      } catch (error: any) {
         expect(error.message).to.equal('HBAR Rate limit exceeded');
       }
+
+      expect(transactionStub.called).to.be.false;
+    });
+
+    it('should execute submitEthereumTransaction add expenses to limiter for large transaction data', async () => {
+      const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(transactionBuffer.length / FILE_APPEND_CHUNK_SIZE));
+      const queryStub = sinon.stub(FileInfoQuery.prototype, 'execute').resolves(fileInfo as any);
+
+      const transactionStub = sinon
+        .stub(EthereumTransaction.prototype, 'execute')
+        .resolves(getMockedTransactionResponse(EthereumTransaction.name));
+      const createFileStub = sinon
+        .stub(FileCreateTransaction.prototype, 'execute')
+        .resolves(getMockedTransactionResponse(FileCreateTransaction.name));
+      const appendFileStub = sinon
+        .stub(FileAppendTransaction.prototype, 'executeAll')
+        .resolves(
+          Array.from({ length: fileAppendChunks }, () => getMockedTransactionResponse(FileAppendTransaction.name)),
+        );
+
+      const transactionRecordStub = sinon.stub(TransactionRecordQuery.prototype, 'execute');
+      // first transactionRecordStub call for FileCreate
+      transactionRecordStub.onCall(0).resolves(getMockedTransactionRecord(FileCreateTransaction.name));
+
+      // next fileAppendChunks transactionRecordStub calls for FileAppend
+      let i = 1;
+      for (i; i <= fileAppendChunks; i++) {
+        transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(FileAppendTransaction.name));
+      }
+
+      // last transactionRecordStub call for EthereumTransaction
+      transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(EthereumTransaction.name));
+
+      sdkClientMock.expects('getTinyBarGasFee').once().returns(1000);
+      hbarLimitMock.expects('shouldLimit').thrice().returns(false);
+      hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
+      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
+
+      // addExpense for mockedTransactionRecordFee will be called for a total of:
+      //   - fileAppendChunks times for fileAppend transactions
+      //   - 1 time for fileCreate transaction
+      //   - 1 time for defaultTransaction Ethereum transaction
+      hbarLimitMock
+        .expects('addExpense')
+        .withArgs(mockedTransactionRecordFee)
+        .exactly(fileAppendChunks + 2);
+
+      await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestId, randomAccountAddress);
+
+      expect(queryStub.called).to.be.true;
+      expect(transactionStub.called).to.be.true;
+      expect(createFileStub.called).to.be.true;
+      expect(appendFileStub.called).to.be.true;
+    });
+
+    it('should execute FileCreateTransaction with callData.length > fileAppendChunkSize and add expenses to limiter', async () => {
+      const callData = new Uint8Array(FILE_APPEND_CHUNK_SIZE * 2 + 1);
+      const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(callData.length / FILE_APPEND_CHUNK_SIZE));
+
+      const fileInfoQueryStub = sinon.stub(FileInfoQuery.prototype, 'execute').resolves(fileInfo as any);
+      const createFileStub = sinon
+        .stub(FileCreateTransaction.prototype, 'execute')
+        .resolves(getMockedTransactionResponse(FileCreateTransaction.name));
+      const appendFileStub = sinon
+        .stub(FileAppendTransaction.prototype, 'executeAll')
+        .resolves(
+          Array.from({ length: fileAppendChunks }, () => getMockedTransactionResponse(FileAppendTransaction.name)),
+        );
+      const transactionRecordStub = sinon.stub(TransactionRecordQuery.prototype, 'execute');
+
+      transactionRecordStub.onCall(0).resolves(getMockedTransactionRecord(FileCreateTransaction.name));
+      for (let i = 1; i <= fileAppendChunks; i++) {
+        transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(FileAppendTransaction.name));
+      }
+
+      hbarLimitMock.expects('shouldLimit').twice().returns(false);
+      hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
+      // addExpense for mockedTransactionRecordFee will be called for a total of:
+      //   - fileAppendChunks times for fileAppend transactions
+      //   - 1 time for fileCreate transaction
+      hbarLimitMock
+        .expects('addExpense')
+        .withArgs(mockedTransactionRecordFee)
+        .exactly(fileAppendChunks + 1);
+
+      const response = await sdkClient.createFile(
+        callData,
+        client,
+        requestId,
+        mockedCallerName,
+        mockedInteractingEntity,
+        randomAccountAddress,
+      );
+
+      expect(response).to.eq(fileId);
+      expect(fileInfoQueryStub.called).to.be.true;
+      expect(createFileStub.called).to.be.true;
+      expect(appendFileStub.called).to.be.true;
+      expect(transactionRecordStub.called).to.be.true;
+    });
+
+    it('should execute executeAllTransaction and add expenses to limiter', async () => {
+      const callData = new Uint8Array(FILE_APPEND_CHUNK_SIZE * 2 + 1);
+      const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(callData.length / FILE_APPEND_CHUNK_SIZE));
+
+      const appendFileStub = sinon
+        .stub(FileAppendTransaction.prototype, 'executeAll')
+        .resolves(
+          Array.from({ length: fileAppendChunks }, () => getMockedTransactionResponse(FileAppendTransaction.name)),
+        );
+
+      const transactionRecordStub = sinon
+        .stub(TransactionRecordQuery.prototype, 'execute')
+        .resolves(getMockedTransactionRecord(FileAppendTransaction.name));
+
+      hbarLimitMock.expects('shouldLimit').once().returns(false);
+      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
+      // addExpense for mockedTransactionRecordFee will be called for a total of:
+      //   - fileAppendChunks times for fileAppend transactions
+      hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).exactly(fileAppendChunks);
+
+      await sdkClient.executeAllTransaction(
+        new FileAppendTransaction(),
+        mockedCallerName,
+        mockedInteractingEntity,
+        requestId,
+        true,
+        randomAccountAddress,
+      );
+
+      expect(appendFileStub.called).to.be.true;
+      expect(transactionRecordStub.called).to.be.true;
+    });
+
+    it('should rate limit before executing executeAllTransaction', async () => {
+      const callData = new Uint8Array(FILE_APPEND_CHUNK_SIZE * 2 + 1);
+      const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(callData.length / FILE_APPEND_CHUNK_SIZE));
+
+      const appendFileStub = sinon
+        .stub(FileAppendTransaction.prototype, 'executeAll')
+        .resolves(
+          Array.from({ length: fileAppendChunks }, () => getMockedTransactionResponse(FileAppendTransaction.name)),
+        );
+
+      hbarLimitMock.expects('shouldLimit').once().returns(true);
+
+      try {
+        await sdkClient.executeAllTransaction(
+          new FileAppendTransaction(),
+          mockedCallerName,
+          mockedInteractingEntity,
+          requestId,
+          true,
+          randomAccountAddress,
+        );
+        expect.fail(`Expected an error but nothing was thrown`);
+      } catch (error: any) {
+        expect(error.message).to.equal('HBAR Rate limit exceeded');
+      }
+
+      expect(appendFileStub.called).to.be.false;
+    });
+
+    it('should execute FileCreateTransaction with callData.length <= fileAppendChunkSize and add expenses to limiter', async () => {
+      const callData = new Uint8Array(FILE_APPEND_CHUNK_SIZE);
+
+      const createFileStub = sinon
+        .stub(FileCreateTransaction.prototype, 'execute')
+        .resolves(getMockedTransactionResponse(FileCreateTransaction.name));
+      const fileInfoQueryStub = sinon.stub(FileInfoQuery.prototype, 'execute').resolves(fileInfo as any);
+      const transactionRecordStub = sinon
+        .stub(TransactionRecordQuery.prototype, 'execute')
+        .resolves(getMockedTransactionRecord(FileCreateTransaction.name));
+
+      hbarLimitMock
+        .expects('shouldLimit')
+        .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName)
+        .once()
+        .returns(false);
+
+      hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
+      hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
+
+      const response = await sdkClient.createFile(
+        callData,
+        client,
+        requestId,
+        mockedCallerName,
+        mockedInteractingEntity,
+        randomAccountAddress,
+      );
+
+      expect(response).to.eq(fileId);
+      expect(createFileStub.called).to.be.true;
+      expect(fileInfoQueryStub.called).to.be.true;
+      expect(transactionRecordStub.called).to.be.true;
+    });
+
+    it('should execute FileDeleteTransaction and add expenses to limiter', async () => {
+      const deleteFileStub = sinon
+        .stub(FileDeleteTransaction.prototype, 'execute')
+        .resolves(getMockedTransactionResponse(FileDeleteTransaction.name));
+      const fileInfoQueryStub = sinon.stub(FileInfoQuery.prototype, 'execute').resolves(fileInfo as any);
+      const transactionRecordStub = sinon
+        .stub(TransactionRecordQuery.prototype, 'execute')
+        .resolves(getMockedTransactionRecord(FileDeleteTransaction.name));
+
+      hbarLimitMock.expects('addExpense').withArgs(fileDeleteFee).once();
+      hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
+      hbarLimitMock.expects('shouldLimit').never();
+
+      await sdkClient.deleteFile(fileId, requestId, mockedCallerName, mockedInteractingEntity, randomAccountAddress);
+
+      expect(deleteFileStub.called).to.be.true;
+      expect(fileInfoQueryStub.called).to.be.true;
+      expect(transactionRecordStub.called).to.be.true;
+    });
+
+    it('should execute FileInfoQuery (without paymentTransactionId) and add expenses to limiter', async () => {
+      const queryStub = sinon.stub(Query.prototype, 'execute').resolves(fileInfo);
+      const queryCostStub = sinon.stub(Query.prototype, 'getCost');
+
+      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+
+      const result = await sdkClient.executeQuery(
+        new FileInfoQuery().setFileId(fileId).setQueryPayment(Hbar.fromTinybars(defaultTransactionFee)),
+        client,
+        mockedCallerName,
+        mockedInteractingEntity,
+        requestId,
+      );
+
+      expect(result).to.equal(fileInfo);
+      expect(queryStub.called).to.be.true;
+      expect(queryCostStub.called).to.be.false;
+    });
+
+    it('should execute FileInfoQuery (with paymentTransactionId) and add expenses to limiter', async () => {
+      const queryStub = sinon.stub(Query.prototype, 'execute').resolves(fileInfo);
+      const queryCostStub = sinon.stub(Query.prototype, 'getCost').resolves(Hbar.fromTinybars(defaultTransactionFee));
+
+      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+
+      const result = await sdkClient.executeQuery(
+        new FileInfoQuery().setFileId(fileId).setPaymentTransactionId(transactionId),
+        client,
+        mockedCallerName,
+        mockedInteractingEntity,
+        requestId,
+      );
+
+      expect(result).to.equal(fileInfo);
+      expect(queryStub.called).to.be.true;
+      expect(queryCostStub.called).to.be.true;
+    });
+
+    it('should execute EthereumTransaction and add expenses to limiter', async () => {
+      const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
+      const transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
+      const transactionRecordStub = sinon
+        .stub(TransactionRecordQuery.prototype, 'execute')
+        .resolves(getMockedTransactionRecord(EthereumTransaction.name));
+
+      hbarLimitMock
+        .expects('shouldLimit')
+        .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName)
+        .once()
+        .returns(false);
+
+      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
+
+      const response = await sdkClient.executeTransaction(
+        new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
+        mockedCallerName,
+        mockedInteractingEntity,
+        requestId,
+        true,
+        randomAccountAddress,
+      );
+
+      expect(response).to.eq(transactionResponse);
+      expect(transactionStub.called).to.be.true;
+      expect(transactionRecordStub.called).to.be.true;
+    });
+
+    it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
+      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'false'; // switch to mirror node mode
+      const mockedTransactionId = transactionId.toString();
+      const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);
+      const mockedMirrorNodeTransactionRecord = {
+        transactions: [
+          {
+            charged_tx_fee: defaultTransactionFee,
+            result: 'SUCCESS',
+            transaction_id: mockedTransactionIdFormatted,
+            transfers: [
+              {
+                account: '0.0.800',
+                amount: defaultTransactionFee,
+                is_approval: false,
+              },
+              {
+                account: process.env.OPERATOR_ID_MAIN,
+                amount: -1 * defaultTransactionFee,
+                is_approval: false,
+              },
+            ],
+          },
+        ],
+      };
+      mock.onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`).reply(200, mockedMirrorNodeTransactionRecord);
+      const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
+      const transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
+
+      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitMock
+        .expects('shouldLimit')
+        .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName)
+        .once()
+        .returns(false);
+
+      const response = await sdkClient.executeTransaction(
+        new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
+        mockedCallerName,
+        mockedInteractingEntity,
+        requestId,
+        true,
+        randomAccountAddress,
+      );
+
+      expect(response).to.eq(transactionResponse);
+      expect(transactionStub.called).to.be.true;
+
+      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true'; // switch back to consensus node
+    });
+
+    it('Should execute calculateTxRecordChargeAmount() to get the charge amount of transaction record', () => {
+      const mockedExchangeRate = {
+        hbars: 30000,
+        cents: 164330,
+        expirationTime: new Date(),
+        exchangeRateInCents: mockedExchangeRateIncents,
+      } as ExchangeRate;
+
+      const txRecordChargedAmount = sdkClient.calculateTxRecordChargeAmount(mockedExchangeRate);
+
+      expect(txRecordChargedAmount).to.eq(mockedTransactionRecordFee);
+    });
+
+    it('should execute getTransactionRecordMetrics to get transaction record metrics', async () => {
+      const mockedTxRecord = getMockedTransactionRecord();
+
+      const transactionRecordStub = sinon.stub(TransactionRecordQuery.prototype, 'execute').resolves(mockedTxRecord);
+
+      const transactionRecordMetrics = await sdkClient.getTransactionRecordMetrics(
+        transactionId.toString(),
+        mockedCallerName,
+        requestId,
+        mockedConstructorName,
+        accountId.toString(),
+      );
+
+      expect(transactionRecordStub.called).to.be.true;
+      expect(transactionRecordMetrics?.gasUsed).to.eq(gasUsed.toNumber());
+      expect(transactionRecordMetrics?.transactionFee).to.eq(defaultTransactionFee);
+      expect(transactionRecordMetrics?.txRecordChargeAmount).to.eq(mockedTransactionRecordFee);
+    });
+
+    it('should throw an SDKCLientError if transaction record is not found when execute getTransactionRecordMetrics', async () => {
+      const expectedError = { status: { _code: 404 }, message: 'Transaction Record Not Found' };
+      sinon.stub(TransactionRecordQuery.prototype, 'execute').throws(expectedError);
+
+      try {
+        await sdkClient.getTransactionRecordMetrics(
+          transactionId.toString(),
+          mockedCallerName,
+          requestId,
+          mockedConstructorName,
+          accountId.toString(),
+        );
+        expect.fail('should have thrown an error');
+      } catch (error) {
+        expect(error.status).to.eq(expectedError.status);
+        expect(error.message).to.eq(expectedError.message);
+      }
+    });
+
+    it('Should execute getTransferAmountSumForAccount() to calculate transactionFee of the specify accountId', () => {
+      const accountId = process.env.OPERATOR_ID_MAIN || '';
+      const mockedTxRecord = getMockedTransactionRecord();
+
+      const transactionFee = sdkClient.getTransferAmountSumForAccount(mockedTxRecord, accountId);
+      expect(transactionFee).to.eq(defaultTransactionFee);
     });
   });
 });
