@@ -20,29 +20,60 @@
 
 import { expect } from 'chai';
 import {
-  hexToASCII,
+  ASCIIToHex,
   decodeErrorMessage,
-  formatTransactionId,
-  parseNumericEnvVar,
-  formatTransactionIdWithoutQueryParams,
-  numberTo0x,
   formatContractResult,
-  prepend0x,
-  nullableNumberTo0x,
+  formatRequestIdMessage,
+  formatTransactionId,
+  formatTransactionIdWithoutQueryParams,
+  hexToASCII,
+  isHex,
+  isValidEthereumAddress,
+  mapKeysAndValues,
   nanOrNumberTo0x,
+  nullableNumberTo0x,
+  numberTo0x,
+  parseNumericEnvVar,
+  prepend0x,
+  strip0x,
   toHash32,
+  toHexString,
   toNullableBigNumber,
   toNullIfEmptyHex,
-  weibarHexToTinyBarInt,
-  isValidEthereumAddress,
   trimPrecedingZeros,
   isHex,
   ASCIIToHex,
+  formatRequestIdMessage,
+  strip0x,
+  getFunctionSelector,
+  toHexString,
+  weibarHexToTinyBarInt,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
+import { AbiCoder, keccak256 } from 'ethers';
 
 describe('Formatters', () => {
+  describe('formatRequestIdMessage', () => {
+    const exampleRequestId = '46530e63-e33a-4f42-8e44-b125f99f1a9b';
+    const expectedFormattedId = '[Request ID: 46530e63-e33a-4f42-8e44-b125f99f1a9b]';
+
+    it('Should format request ID message', () => {
+      const result = formatRequestIdMessage(exampleRequestId);
+      expect(result).to.eq(expectedFormattedId);
+    });
+
+    it('Should return formated request ID if already formatted request ID is passed in', () => {
+      const result = formatRequestIdMessage(expectedFormattedId);
+      expect(result).to.eq(expectedFormattedId);
+    });
+
+    it('Should return an empty string if undefined is passed in', () => {
+      const result = formatRequestIdMessage(undefined);
+      expect(result).to.eq('');
+    });
+  });
+
   describe('hexToASCII', () => {
     const inputs = ['4C6F72656D20497073756D', '466F6F', '426172'];
 
@@ -69,6 +100,10 @@ describe('Formatters', () => {
       for (let i = 0; i < inputs.length; i++) {
         expect(decodeErrorMessage(inputs[i])).to.eq(outputs[i]);
       }
+    });
+
+    it('should return empty string when we dont pass params', async function () {
+      expect(decodeErrorMessage()).to.equal('');
     });
   });
 
@@ -304,6 +339,16 @@ describe('Formatters', () => {
       const formattedResult: any = formatContractResult({ ...contractResult, chain_id: '0x' });
       expect(formattedResult.chainId).to.be.undefined;
     });
+
+    it('Should return legacy EIP155 transaction when null type', () => {
+      const formattedResult: any = formatContractResult({ ...contractResult, type: null });
+      expect(formattedResult.type).to.be.eq('0x0');
+    });
+
+    it('Should return null when contract result type is undefined', async function () {
+      const formattedResult = formatContractResult({ ...contractResult, type: undefined });
+      expect(formattedResult).to.be.null;
+    });
   });
 
   describe('prepend0x', () => {
@@ -483,6 +528,7 @@ describe('Formatters', () => {
       expect(isValidEthereumAddress(address)).to.equal(false);
     });
   });
+
   describe('isHex Function', () => {
     it('should return true for valid lowercase hexadecimal string', () => {
       expect(isHex('0x1a3f')).to.be.true;
@@ -520,6 +566,7 @@ describe('Formatters', () => {
       expect(isHex('0x58')).to.be.true;
     });
   });
+
   describe('ASCIIToHex Function', () => {
     const inputs = ['Lorem Ipsum', 'Foo', 'Bar'];
     const outputs = ['4c6f72656d20497073756d', '466f6f', '426172'];
@@ -540,6 +587,174 @@ describe('Formatters', () => {
       for (let i = 0; i < inputs.length; i++) {
         expect(ASCIIToHex(inputs[i])).to.eq(outputs[i]);
       }
+    });
+  });
+
+  describe('strip0x', () => {
+    it('should strip "0x" from the beginning of a string', () => {
+      const input = '0x123abc';
+      const result = strip0x(input);
+      expect(result).to.equal('123abc');
+    });
+
+    it('should return the same string if it does not start with "0x"', () => {
+      const input = '123abc';
+      const result = strip0x(input);
+      expect(result).to.equal('123abc');
+    });
+
+    it('should return an empty string if input is an empty string', () => {
+      const input = '';
+      const result = strip0x(input);
+      expect(result).to.equal('');
+    });
+
+    it('should handle input that only contains "0x"', () => {
+      const input = '0x';
+      const result = strip0x(input);
+      expect(result).to.equal('');
+    });
+
+    it('should not modify a string that contains "0x" not at the start', () => {
+      const input = '1230xabc';
+      const result = strip0x(input);
+      expect(result).to.equal('1230xabc');
+    });
+
+    describe('decodeErrorMessage', () => {
+      it('should return an empty string if the message is undefined', () => {
+        expect(decodeErrorMessage(undefined)).to.equal('');
+      });
+
+      it('should return an empty string if the message is an empty string', () => {
+        expect(decodeErrorMessage('')).to.equal('');
+      });
+
+      it('should return the message as is if it does not start with 0x', () => {
+        const message = 'Some non-hex error message';
+        expect(decodeErrorMessage(message)).to.equal(message);
+      });
+
+      it('should decode a valid error message', () => {
+        const hexErrorMessage =
+          '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';
+        const decodedMessage = 'Set to revert';
+
+        expect(decodeErrorMessage(hexErrorMessage)).to.equal(decodedMessage);
+      });
+
+      it('should return an empty string for a valid hex message with no content', () => {
+        const hexErrorMessage =
+          '0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000';
+        expect(decodeErrorMessage(hexErrorMessage)).to.equal('');
+      });
+
+      it('should return empty string for custom error message without parameters', () => {
+        expect(decodeErrorMessage('0x858d70bd')).to.equal('');
+      });
+
+      it('should return the message of custom error with string parameter', () => {
+        const signature = keccak256(Buffer.from('CustomError(string)')).slice(0, 10); // 0x8d6ea8be
+        const message = new AbiCoder().encode(['string'], ['Some error message']).replace('0x', '');
+        const hexErrorMessage = signature + message;
+        expect(decodeErrorMessage(hexErrorMessage)).to.equal('Some error message');
+      });
+    });
+  });
+
+  describe('toHexString', () => {
+    it('should convert a Uint8Array with single byte values to a hex string', () => {
+      const byteArray = new Uint8Array([0x00, 0xff, 0x7f]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('00ff7f');
+    });
+
+    it('should convert a Uint8Array with multiple byte values to a hex string', () => {
+      const byteArray = new Uint8Array([0x12, 0x34, 0x56, 0x78]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('12345678');
+    });
+
+    it('should convert an empty Uint8Array to an empty hex string', () => {
+      const byteArray = new Uint8Array([]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('');
+    });
+
+    it('should convert a Uint8Array with maximum byte value (0xff) to a hex string', () => {
+      const byteArray = new Uint8Array([0xff, 0xff, 0xff]);
+      const result = toHexString(byteArray);
+      expect(result).to.eq('ffffff');
+    });
+  });
+
+  describe('getFunctionSelector', () => {
+    it('should return an empty string when input is an empty string or undefined', () => {
+      const result = getFunctionSelector('');
+      expect(result).to.eq('');
+
+      const undefinedResult = getFunctionSelector(undefined);
+      expect(undefinedResult).to.eq('');
+    });
+
+    it('should return the first 8 characters of a valid hex string without "0x"', () => {
+      const result = getFunctionSelector('1234567890abcdef');
+      expect(result).to.eq('12345678');
+    });
+
+    it('should return the first 8 characters of a valid hex string starting with "0x"', () => {
+      const result = getFunctionSelector('0x1234567890abcdef');
+      expect(result).to.eq('12345678');
+    });
+   });
+  
+  describe('mapKeysAndValues', () => {
+    it('should map keys and values correctly', () => {
+      const target = { a: '1', b: '2', c: '3' };
+      const result = mapKeysAndValues(target, { key: (key) => key.toUpperCase(), value: parseInt });
+      expect(result).to.deep.equal({ A: 1, B: 2, C: 3 });
+    });
+
+    it('should handle empty object', () => {
+      const target = {};
+      const result = mapKeysAndValues(target, { key: (key) => key, value: parseInt });
+      expect(result).to.deep.equal({});
+    });
+
+    it('should handle keys with special characters', () => {
+      const target = { 'a-b': '1', c_d: '2' };
+      const result = mapKeysAndValues(target, { key: (key) => key.replace('-', '_'), value: parseInt });
+      expect(result).to.deep.equal({ a_b: 1, c_d: 2 });
+    });
+
+    it('should handle values that are not strings', () => {
+      const target = { a: '1', b: true, c: null };
+      const result = mapKeysAndValues(target, { key: (key) => key.toUpperCase(), value: (value) => String(value) });
+      expect(result).to.deep.equal({ A: '1', B: 'true', C: 'null' });
+    });
+
+    it('should handle keys that are numbers', () => {
+      const target = { '1': 'one', '2': 'two' };
+      const result = mapKeysAndValues(target, { key: parseInt, value: (value) => value.toUpperCase() });
+      expect(result).to.deep.equal({ 1: 'ONE', 2: 'TWO' });
+    });
+
+    it('should apply no mapping if mapFn is not provided', () => {
+      const target = { a: '1', b: '2', c: '3' };
+      const result = mapKeysAndValues(target, {});
+      expect(result).to.deep.equal({ a: '1', b: '2', c: '3' });
+    });
+
+    it('should apply no mapping if mapFn.key is not provided', () => {
+      const target = { a: '1', b: '2', c: '3' };
+      const result = mapKeysAndValues(target, { value: (value) => parseInt(value) });
+      expect(result).to.deep.equal({ a: 1, b: 2, c: 3 });
+    });
+
+    it('should apply no mapping if mapFn.value is not provided', () => {
+      const target = { a: '1', b: '2', c: '3' };
+      const result = mapKeysAndValues(target, { key: (key) => key.toUpperCase() });
+      expect(result).to.deep.equal({ A: '1', B: '2', C: '3' });
     });
   });
 });

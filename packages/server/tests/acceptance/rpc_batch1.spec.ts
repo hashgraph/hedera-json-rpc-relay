@@ -131,7 +131,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     });
 
     describe('eth_getLogs', () => {
-      let log0Block, log4Block, contractAddress: string, contractAddress2: string, latestBlock, previousTwelveBlocks;
+      let log0Block, log4Block, contractAddress: string, contractAddress2: string, latestBlock, previousBlock;
 
       before(async () => {
         const logsContract = await Utils.deployContract(
@@ -147,21 +147,22 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         contractAddress = logsContract.target.toString();
         contractAddress2 = logsContract2.target.toString();
 
+        previousBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
+
         // @ts-ignore
-        await logsContract.connect(accounts[1].wallet).log0(1);
+        await (await logsContract.connect(accounts[1].wallet).log0(1)).wait();
         // @ts-ignore
-        await logsContract.connect(accounts[1].wallet).log1(1);
+        await (await logsContract.connect(accounts[1].wallet).log1(1)).wait();
         // @ts-ignore
-        await logsContract.connect(accounts[1].wallet).log2(1, 1);
+        await (await logsContract.connect(accounts[1].wallet).log2(1, 1)).wait();
         // @ts-ignore
-        await logsContract.connect(accounts[1].wallet).log3(1, 1, 1);
+        await (await logsContract.connect(accounts[1].wallet).log3(1, 1, 1)).wait();
         // @ts-ignore
-        await logsContract.connect(accounts[1].wallet).log4(1, 1, 1, 1);
+        await (await logsContract.connect(accounts[1].wallet).log4(1, 1, 1, 1)).wait();
         // @ts-ignore
-        await logsContract2.connect(accounts[1].wallet).log4(1, 1, 1, 1);
+        await (await logsContract2.connect(accounts[1].wallet).log4(1, 1, 1, 1)).wait();
 
         latestBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
-        previousTwelveBlocks = latestBlock - 12;
       });
 
       it('@release should deploy a contract', async () => {
@@ -170,7 +171,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
             {
-              fromBlock: numberTo0x(previousTwelveBlocks),
+              fromBlock: numberTo0x(previousBlock),
               address: [contractAddress, contractAddress2],
             },
           ],
@@ -284,7 +285,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
             {
-              fromBlock: numberTo0x(previousTwelveBlocks),
+              fromBlock: numberTo0x(previousBlock),
               address: contractAddress,
             },
           ],
@@ -327,7 +328,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
             {
-              fromBlock: numberTo0x(previousTwelveBlocks),
+              fromBlock: numberTo0x(previousBlock),
               address: [contractAddress, contractAddress2, Address.NON_EXISTING_ADDRESS],
             },
           ],
@@ -541,6 +542,70 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // Remove synthetic transactions
         blockResult.transactions = blockResult.transactions.filter((transaction) => transaction.value !== '0x1234');
         Assertions.block(blockResult, mirrorBlock, mirrorTransactions, expectedGasPrice, false);
+      });
+
+      it('should not cache "latest" block in "eth_getBlockByNumber" ', async function () {
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['latest', false],
+          requestId,
+        );
+        await Utils.wait(1000);
+
+        const blockResult2 = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['latest', false],
+          requestId,
+        );
+        expect(blockResult).to.not.deep.equal(blockResult2);
+      });
+
+      it('should not cache "finalized" block in "eth_getBlockByNumber" ', async function () {
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['finalized', false],
+          requestId,
+        );
+        await Utils.wait(1000);
+
+        const blockResult2 = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['finalized', false],
+          requestId,
+        );
+        expect(blockResult).to.not.deep.equal(blockResult2);
+      });
+
+      it('should not cache "safe" block in "eth_getBlockByNumber" ', async function () {
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['safe', false],
+          requestId,
+        );
+        await Utils.wait(1000);
+
+        const blockResult2 = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['safe', false],
+          requestId,
+        );
+        expect(blockResult).to.not.deep.equal(blockResult2);
+      });
+
+      it('should not cache "pending" block in "eth_getBlockByNumber" ', async function () {
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['pending', false],
+          requestId,
+        );
+        await Utils.wait(1000);
+
+        const blockResult2 = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          ['pending', false],
+          requestId,
+        );
+        expect(blockResult).to.not.deep.equal(blockResult2);
       });
 
       it('@release should execute "eth_getBlockByNumber", hydrated transactions = true', async function () {
@@ -1274,7 +1339,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           nonce: await relay.getAccountNonce(accounts[2].address, requestId),
           maxPriorityFeePerGas: gasPrice,
           maxFeePerGas: gasPrice,
-          gasLimit: Constants.BLOCK_GAS_LIMIT,
+          gasLimit: Constants.MAX_GAS_PER_SEC,
           data: '0x' + '00'.repeat(40000),
         };
 
@@ -1290,7 +1355,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           BigInt(balanceBefore - balanceAfter) / BigInt(Constants.TINYBAR_TO_WEIBAR_COEF) / BigInt(100_000_000);
         expect(Number(diffInHbars)).to.be.greaterThan(2);
         expect(Number(diffInHbars)).to.be.lessThan(
-          (gasPrice * Constants.BLOCK_GAS_LIMIT) / Constants.TINYBAR_TO_WEIBAR_COEF / 100_000_000,
+          (gasPrice * Constants.MAX_GAS_PER_SEC) / Constants.TINYBAR_TO_WEIBAR_COEF / 100_000_000,
         );
       });
 
@@ -1302,7 +1367,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           nonce: await relay.getAccountNonce(accounts[2].address, requestId),
           maxPriorityFeePerGas: gasPrice,
           maxFeePerGas: gasPrice,
-          gasLimit: Constants.BLOCK_GAS_LIMIT,
+          gasLimit: Constants.MAX_GAS_PER_SEC,
           data: '0x' + '00'.repeat(60000),
         };
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
@@ -1336,7 +1401,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           };
 
           const signedTx = await accounts[2].wallet.signTransaction(transaction);
-          const error = predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.BLOCK_GAS_LIMIT);
+          const error = predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.MAX_GAS_PER_SEC);
 
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
         });
@@ -1352,7 +1417,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           };
 
           const signedTx = await accounts[2].wallet.signTransaction(transaction);
-          const error = predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT);
+          const error = predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.MAX_GAS_PER_SEC);
 
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
         });
@@ -1366,7 +1431,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             gasLimit: gasLimit,
           };
           const signedTx = await accounts[2].wallet.signTransaction(transaction);
-          const error = predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.BLOCK_GAS_LIMIT);
+          const error = predefined.GAS_LIMIT_TOO_LOW(gasLimit, Constants.MAX_GAS_PER_SEC);
 
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
         });
@@ -1380,7 +1445,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             gasLimit: gasLimit,
           };
           const signedTx = await accounts[2].wallet.signTransaction(transaction);
-          const error = predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.BLOCK_GAS_LIMIT);
+          const error = predefined.GAS_LIMIT_TOO_HIGH(gasLimit, Constants.MAX_GAS_PER_SEC);
 
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestId]);
         });

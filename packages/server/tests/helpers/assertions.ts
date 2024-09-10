@@ -23,6 +23,7 @@ import { ethers } from 'ethers';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import RelayAssertions from '@hashgraph/json-rpc-relay/tests/assertions';
+import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
 
 chai.use(chaiExclude);
 
@@ -33,11 +34,10 @@ export default class Assertions {
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static emptyBloom =
     '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-  static ethEmptyTrie = '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421';
   static defaultGasPrice = 710_000_000_000;
   static datedGasPrice = 570_000_000_000;
   static updatedGasPrice = 640_000_000_000;
-  static maxBlockGasLimit = 15_000_000;
+  static maxBlockGasLimit = 30_000_000;
   static defaultGasUsed = 0.5;
 
   static gasPriceDeviation = parseFloat(process.env.TEST_GAS_PRICE_DEVIATION ?? '0.2');
@@ -95,21 +95,20 @@ export default class Assertions {
     expect(relayResponse.nonce, "Assert block: 'nonce' should equal zero 8byte hex").to.be.equal(
       Assertions.zeroHex8Byte,
     );
-    expect(relayResponse.receiptsRoot, "Assert block: 'receiptsRoot' should equal zero 32bytes hex").to.be.equal(
-      Assertions.zeroHex32Byte,
-    );
     expect(relayResponse.sha3Uncles, "Assert block: 'sha3Uncles' should equal empty array hex").to.be.equal(
       Assertions.emptyArrayHex,
     );
     expect(relayResponse.stateRoot, "Assert block: 'stateRoot' should equal zero 32bytes hex").to.be.equal(
-      Assertions.zeroHex32Byte,
+      constants.DEFAULT_ROOT_HASH,
     );
     expect(relayResponse.totalDifficulty, "Assert block: 'totalDifficulty' should equal zero in hex").to.be.equal(
       ethers.toQuantity(0),
     );
     expect(relayResponse.uncles, "Assert block: 'uncles' property exists").to.be.exist;
     expect(relayResponse.uncles.length, "Assert block: 'uncles' length should equal 0").to.eq(0);
-    expect(relayResponse.logsBloom, "Assert block: 'logsBloom' should equal emptyBloom").to.eq(Assertions.emptyBloom);
+    expect(relayResponse.logsBloom, "Assert block: 'logsBloom' should equal mirrorNode response").to.eq(
+      mirrorNodeResponse.logs_bloom === Assertions.emptyHex ? Assertions.emptyBloom : mirrorNodeResponse.logs_bloom,
+    );
     expect(relayResponse.gasLimit, "Assert block: 'gasLimit' should equal 'maxBlockGasLimit'").to.equal(
       ethers.toQuantity(Assertions.maxBlockGasLimit),
     );
@@ -144,7 +143,7 @@ export default class Assertions {
       ).to.equal(mirrorNodeResponse.hash.slice(0, 66));
     } else {
       expect(relayResponse.transactionsRoot, "Assert block: 'transactionsRoot' should equal 'ethEmptyTrie'").to.equal(
-        Assertions.ethEmptyTrie,
+        constants.DEFAULT_ROOT_HASH,
       );
     }
 
@@ -456,4 +455,18 @@ export default class Assertions {
       });
     }
   };
+
+  /**
+   * Checks if the expected value is within a % range, relative to the actual value
+   * @param expected
+   * @param actual
+   * @param tolerance
+   */
+  static expectWithinTolerance(expected: number, actual: number, tolerance: number) {
+    global.logger.debug(`Expected: ${expected} ±${tolerance}%`);
+    global.logger.debug(`Actual: ${actual}`);
+    global.logger.debug(`Actual delta: ${(actual - expected) / 100}%`);
+    const delta = tolerance * expected;
+    expect(actual).to.be.approximately(expected, delta);
+  }
 }

@@ -83,7 +83,7 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
       value: (10 * 10 ** 18).toString(), // 10hbar - the gasPrice to deploy deterministic proxy contract
       to: constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
       gasPrice: await global.relay.gasPrice(),
-      gasLimit: numberTo0x(30000),
+      gasLimit: constants.TX_HOLLOW_ACCOUNT_CREATION_GAS,
     };
   });
 
@@ -164,9 +164,8 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
           1000,
         );
         const expectedNonceTooLowError = predefined.NONCE_TOO_LOW(0, signerNonce);
-        const errObj = response.result;
-        expect(errObj.code).to.eq(expectedNonceTooLowError.code);
-        expect(errObj.message).to.contain(expectedNonceTooLowError.message);
+        expect(response.error.code).to.eq(expectedNonceTooLowError.code);
+        expect(response.error.message).to.contain(expectedNonceTooLowError.message);
       }
     });
   });
@@ -221,10 +220,13 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
         expect(toAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
         expect(receipt.address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
       } else {
-        const errObj = await ethersWsProvider.send(METHOD_NAME, [constants.DETERMINISTIC_DEPLOYER_TRANSACTION]);
-        const expectedNonceTooLowError = predefined.NONCE_TOO_LOW(0, signerNonce);
-        expect(errObj.code).to.eq(expectedNonceTooLowError.code);
-        expect(errObj.message).to.contain(expectedNonceTooLowError.message);
+        try {
+          await ethersWsProvider.send(METHOD_NAME, [constants.DETERMINISTIC_DEPLOYER_TRANSACTION]);
+        } catch (error) {
+          const expectedNonceTooLowError = predefined.NONCE_TOO_LOW(0, signerNonce);
+          expect(error.info.error.code).to.eq(expectedNonceTooLowError.code);
+          expect(error.info.error.message).to.contain(expectedNonceTooLowError.message);
+        }
       }
     });
   });

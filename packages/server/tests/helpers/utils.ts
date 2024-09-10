@@ -28,8 +28,18 @@ import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
 import { AliasAccount } from '../types/AliasAccount';
 import ServicesClient from '../clients/servicesClient';
 import http from 'http';
+import { GCProfiler, setFlagsFromString, writeHeapSnapshot } from 'v8';
+import { runInNewContext } from 'vm';
+import { Context } from 'mocha';
+import { GitHubClient } from '../clients/githubClient';
+import MirrorClient from '../clients/mirrorClient';
+import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
 
 export class Utils {
+  static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 1e6; // 1 MB
+  static readonly HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD: number = 1.5e6; // 1.5 MB
+  static readonly WARM_UP_TEST_COUNT: number = 3;
+
   /**
    * Converts a number to its hexadecimal representation.
    *
@@ -248,11 +258,11 @@ export class Utils {
    * @param {MirrorClient} mirrorNode The mirror node client.
    * @param {AliasAccount} creator The creator account for the alias.
    * @param {string} requestId The unique identifier for the request.
-   * @param {string} balanceInWeiBars The initial balance for the alias account in wei bars. Defaults to 10 HBAR (10,000,000,000,000,000,000 wei).
+   * @param {string} balanceInTinyBar The initial balance for the alias account in tiny bars. Defaults to 10 HBAR.
    * @returns {Promise<AliasAccount>} A promise resolving to the created alias account.
    */
   static readonly createAliasAccount = async (
-    mirrorNode,
+    mirrorNode: MirrorClient,
     creator: AliasAccount,
     requestId: string,
     balanceInTinyBar: string = '1000000000', //10 HBAR
@@ -292,7 +302,7 @@ export class Utils {
   };
 
   static async createMultipleAliasAccounts(
-    mirrorNode,
+    mirrorNode: MirrorClient,
     initialAccount: AliasAccount,
     neededAccounts: number,
     initialAmountInTinyBar: string,
@@ -371,5 +381,230 @@ export class Utils {
 
   static async wait(time: number): Promise<void> {
     await new Promise((r) => setTimeout(r, time));
+  }
+
+  static async writeHeapSnapshotAsync(): Promise<string | undefined> {
+    return new Promise((resolve, reject) => {
+      try {
+        const fileName = writeHeapSnapshot();
+        console.info(`Heap snapshot written to ${fileName}`);
+        resolve(fileName);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Captures memory leaks in the test suite.
+   * The function will start the profiler before each test and stop it after each test.
+   * If a memory leak is detected, the function will log the difference in memory usage.
+   */
+  static captureMemoryLeaks(profiler: GCProfiler): void {
+    setFlagsFromString('--expose_gc');
+    const gc = runInNewContext('gc');
+    const githubClient = new GitHubClient();
+
+    let isWarmUpCompleted = false;
+
+    const warmUp = async () => {
+      for (let i = 0; i < Utils.WARM_UP_TEST_COUNT; i++) {
+        // Run dummy tests to warm up the environment
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      isWarmUpCompleted = true;
+    };
+
+    beforeEach(async function () {
+      if (!isWarmUpCompleted) {
+        await warmUp();
+      }
+      profiler.start();
+    });
+
+    afterEach(async function (this: Context) {
+      this.timeout(60000);
+      await gc(); // force a garbage collection to get accurate memory usage
+      try {
+        const result = profiler.stop();
+        const statsGrowingHeapSize = result.statistics.filter((stats) => {
+          return stats.afterGC.heapStatistics.totalHeapSize > stats.beforeGC.heapStatistics.totalHeapSize;
+        });
+        const totalDiffBytes = statsGrowingHeapSize.reduce((acc, stats) => {
+          const diff = stats.afterGC.heapStatistics.totalHeapSize - stats.beforeGC.heapStatistics.totalHeapSize;
+          return acc + diff;
+        }, 0);
+        const isPotentialMemoryLeak = totalDiffBytes > Utils.HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD;
+
+        if (isPotentialMemoryLeak) {
+          console.warn('Potential memory leak detected!');
+          const statsDiff: HeapDifferenceStatistics = statsGrowingHeapSize.map((stats) => ({
+            gcType: stats.gcType,
+            cost: stats.cost,
+            diffGC: {
+              heapStatistics: Utils.difference(stats.afterGC.heapStatistics, stats.beforeGC.heapStatistics),
+              heapSpaceStatistics: Utils.difference(
+                stats.afterGC.heapSpaceStatistics,
+                stats.beforeGC.heapSpaceStatistics,
+              ).filter((spaceStatistics) => spaceStatistics.spaceSize > 0),
+            },
+          }));
+          console.error(
+            `Total Heap Size ${Utils.formatBytes(totalDiffBytes)}: --> ` + JSON.stringify(statsDiff, null, 2),
+          );
+          // add comment on PR highlighting after which test the memory leak is happening
+          const testTitle = this.currentTest?.title ?? 'Unknown test';
+          const comment = Utils.generateMemoryLeakComment(testTitle, statsDiff);
+          await githubClient.addOrUpdateExistingCommentOnPullRequest(comment, (existing: string) =>
+            existing.includes(`\`${testTitle}\``),
+          );
+          // write a heap snapshot if the memory leak is more than 1 MB
+          const isMemoryLeakSnapshotEnabled = process.env.WRITE_SNAPSHOT_ON_MEMORY_LEAK === 'true';
+          if (isMemoryLeakSnapshotEnabled && totalDiffBytes > Utils.HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD) {
+            console.info('Writing heap snapshot...');
+            await Utils.writeHeapSnapshotAsync();
+          }
+        }
+      } catch (error) {
+        console.error('Error capturing memory leaks:', error);
+      }
+    });
+  }
+
+  /**
+   * Generates a comment indicating a memory leak detected during tests.
+   * @param {string} testTitle The title of the current test.
+   * @param {HeapDifferenceStatistics} statsDiff The difference in memory statistics indicating the leak.
+   * @returns {string} The formatted comment.
+   */
+  private static generateMemoryLeakComment(testTitle: string, statsDiff: HeapDifferenceStatistics): string {
+    const commentHeader = '## 🚨 Memory Leak Detected 🚨';
+    const summary = `A potential memory leak has been detected in the test titled \`${testTitle}\`. This may impact the application's performance and stability.`;
+    const detailsHeader = '### Details';
+    const formattedStatsDiff = this.formatHeapDifferenceStatistics(statsDiff);
+    const recommendationsHeader = '### Recommendations';
+    const recommendations =
+      'Please investigate the memory allocations in this test, focusing on objects that are not being properly deallocated.';
+
+    return `${commentHeader}\n\n${summary}\n\n${detailsHeader}\n${formattedStatsDiff}\n\n${recommendationsHeader}\n${recommendations}`;
+  }
+
+  /**
+   * Formats the difference in heap statistics into a readable string.
+   * @param {HeapDifferenceStatistics} statsDiff The difference in heap statistics.
+   * @returns {string} The formatted string.
+   */
+  private static formatHeapDifferenceStatistics(statsDiff: HeapDifferenceStatistics): string {
+    let message = '📊 **Memory Leak Detection Report** 📊\n\n';
+
+    statsDiff.forEach((entry) => {
+      message += `**GC Type**: ${entry.gcType}\n`;
+      message += `**Cost**: ${entry.cost.toLocaleString()} ms\n\n`;
+      message += '**Heap Statistics (before vs after executing the test)**:\n';
+      Object.entries(entry.diffGC.heapStatistics).forEach(([key, value]) => {
+        message += `- **${this.camelCaseToTitleCase(key)}**: ${this.formatBytes(value)}\n`;
+      });
+      message += '\n**Heap Space Statistics (before vs after executing the test)**:\n';
+      entry.diffGC.heapSpaceStatistics.forEach((space) => {
+        message += `  - **${this.snakeCaseToTitleCase(space.spaceName)}**:\n`;
+        Object.entries(space).forEach(([key, value]) => {
+          if (key !== 'spaceName') {
+            message += `    - **${this.camelCaseToTitleCase(key)}**: ${this.formatBytes(value)}\n`;
+          }
+        });
+        message += '\n';
+      });
+    });
+
+    return message;
+  }
+
+  /**
+   * Converts a string in camel case to title case.
+   * @param textInCamelCase The text in camel case.
+   * @return The text in title case.
+   */
+  private static camelCaseToTitleCase(textInCamelCase: string): string {
+    return textInCamelCase
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim();
+  }
+
+  /**
+   * Converts a string in snake case to title case.
+   * @param textInSnakeCase The text in snake case.
+   * @return The text in title case.
+   */
+  private static snakeCaseToTitleCase(textInSnakeCase: string): string {
+    return textInSnakeCase
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+      .trim();
+  }
+
+  /**
+   * Calculates the difference between two objects or arrays of objects.
+   * This utility method is used to calculate the difference in heap statistics before and after GC.
+   * @param after The object representing the state after an operation.
+   * @param before The object representing the state before the operation.
+   * @returns The difference between the two states.
+   */
+  private static difference<T extends number | string | object | object[]>(after: T, before: T): T {
+    if (Array.isArray(after) && Array.isArray(before)) {
+      return this.arrayDifference(after, before);
+    } else if (typeof after === 'object' && typeof before === 'object') {
+      return this.objectDifference(after, before);
+    } else if (typeof after === 'number' && typeof before === 'number') {
+      return (after - before) as T;
+    } else if (typeof after === 'string' && typeof before === 'string') {
+      if (after !== before) {
+        throw new Error(`Mismatched values: ${after} is not equal to ${before}`);
+      }
+      return after as T;
+    } else {
+      throw new Error('Invalid input: both parameters must be objects or arrays of objects');
+    }
+  }
+
+  /**
+   * Calculates the difference between two objects
+   * @param after
+   * @param before
+   */
+  private static objectDifference<T extends object>(after: T, before: T): T {
+    const diff = { ...after };
+    for (const key of Object.keys(after)) {
+      if (!(key in before)) {
+        throw new Error(`Mismatched properties: ${key} is not present in both objects`);
+      }
+      diff[key] = this.difference(after[key], before[key]);
+    }
+    return diff as T;
+  }
+
+  /**
+   * Calculates the difference between two arrays of objects
+   * @param after
+   * @param before
+   */
+  private static arrayDifference<T extends object[]>(after: T, before: T): T {
+    return after.map((item: object, index: number) => this.difference(item, before[index])) as T;
+  }
+
+  /**
+   * Formats bytes into a readable string.
+   * @param {number} bytes The number of bytes.
+   * @returns {string} A formatted string representing the size in bytes, KB, MB, GB, or TB.
+   */
+  private static formatBytes(bytes: number): string {
+    if (bytes === 0) return 'no changes';
+    const prefix = bytes > 0 ? 'increased with' : 'decreased with';
+    const units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
+    let power = Math.floor(Math.log(Math.abs(bytes)) / Math.log(1000));
+    power = Math.min(power, units.length - 1);
+    const size = Math.abs(bytes) / Math.pow(1000, power);
+    return `${prefix} ${size.toFixed(2)} ${units[power]}`;
   }
 }

@@ -25,11 +25,12 @@ import chaiAsPromised from 'chai-as-promised';
 
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
-import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
+import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import { numberTo0x } from '../../../dist/formatters';
 import {
+  ACCOUNT_WITHOUT_TRANSACTIONS,
   BLOCK_HASH,
   BLOCK_HASH_PREV_TRIMMED,
   BLOCK_HASH_TRIMMED,
@@ -45,10 +46,14 @@ import {
   CONTRACT_TIMESTAMP_1,
   CONTRACT_TIMESTAMP_2,
   DEFAULT_BLOCK,
+  DEFAULT_CONTRACT,
   DEFAULT_ETH_GET_BLOCK_BY_LOGS,
   DEFAULT_NETWORK_FEES,
   LINKS_NEXT_RES,
+  MOCK_ACCOUNT_WITHOUT_TRANSACTIONS,
   NO_SUCH_BLOCK_EXISTS_RES,
+  contractByEvmAddress,
+  DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 
@@ -75,6 +80,13 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(ACCOUNT_WITHOUT_TRANSACTIONS).reply(200, MOCK_ACCOUNT_WITHOUT_TRANSACTIONS);
+    restMock
+      .onGet(contractByEvmAddress(CONTRACT_ADDRESS_1))
+      .reply(200, { ...DEFAULT_CONTRACT, evmAddress: CONTRACT_ADDRESS_1 });
+    restMock
+      .onGet(contractByEvmAddress(CONTRACT_ADDRESS_2))
+      .reply(200, { ...DEFAULT_CONTRACT, evmAddress: CONTRACT_ADDRESS_2 });
 
     currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
@@ -109,7 +121,51 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       parentHash: BLOCK_HASH_PREV_TRIMMED,
       timestamp: BLOCK_TIMESTAMP_HEX,
       transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
     });
+  });
+
+  it('eth_getBlockByHash with match and duplicated transactions', async function () {
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, {
+      results: [...defaultContractResults.results, ...defaultContractResults.results],
+    });
+    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
+
+    const res = await ethImpl.getBlockByHash(BLOCK_HASH, false);
+    RelayAssertions.assertBlock(res, {
+      transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      hash: BLOCK_HASH_TRIMMED,
+      number: BLOCK_NUMBER_HEX,
+      timestamp: BLOCK_TIMESTAMP_HEX,
+      parentHash: BLOCK_HASH_PREV_TRIMMED,
+      gasUsed: TOTAL_GAS_USED,
+    });
+  });
+
+  it('eth_getBlockByHash with match and valid logsBloom field', async function () {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, {
+      ...DEFAULT_BLOCK,
+      logs_bloom: blockLogsBloom,
+    });
+    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
+    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
+
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false);
+    RelayAssertions.assertBlock(result, {
+      hash: BLOCK_HASH_TRIMMED,
+      gasUsed: TOTAL_GAS_USED,
+      number: BLOCK_NUMBER_HEX,
+      parentHash: BLOCK_HASH_PREV_TRIMMED,
+      timestamp: BLOCK_TIMESTAMP_HEX,
+      transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
+    });
+
+    expect(result?.logsBloom).equal(blockLogsBloom);
   });
 
   it('eth_getBlockByHash with match paginated', async function () {
@@ -128,6 +184,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       parentHash: BLOCK_HASH_PREV_TRIMMED,
       timestamp: BLOCK_TIMESTAMP_HEX,
       transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
     });
   });
 
@@ -164,6 +221,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
         timestamp: BLOCK_TIMESTAMP_HEX,
         parentHash: BLOCK_HASH_PREV_TRIMMED,
         transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
       },
       true,
     );
@@ -186,6 +244,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
         parentHash: BLOCK_HASH_PREV_TRIMMED,
         timestamp: BLOCK_TIMESTAMP_HEX,
         transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
       },
       true,
     );
@@ -242,7 +301,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       .onGet(
         `contracts/results?timestamp=gte:${randomBlock.timestamp.from}&timestamp=lte:${randomBlock.timestamp.to}&limit=100&order=asc`,
       )
-      .abortRequestOnce();
+      .abortRequest();
     await RelayAssertions.assertRejection(predefined.INTERNAL_ERROR(), ethImpl.getBlockByHash, false, ethImpl, [
       BLOCK_HASH,
       false,

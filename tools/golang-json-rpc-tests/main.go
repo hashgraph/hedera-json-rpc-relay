@@ -53,6 +53,7 @@ func main() {
     }
     mainnet := flag.Bool("mainnet", false, "Use mainnet network")
     previewnet := flag.Bool("previewnet", false, "Use previewnet network")
+    testnet := flag.Bool("testnet", false, "Use testnet network")
     wss := flag.Bool("wss", false, "Enable WebSocket Secure protocol")
     privateKeyHex := os.Getenv("OPERATOR_PRIVATE_KEY")
 
@@ -63,12 +64,16 @@ func main() {
         endpointUrl = mainnetEndpoint
     case *previewnet:
         endpointUrl = previewnetEndpoint
-    default:
+    case *testnet:
         endpointUrl = testnetEndpoint
+    default:
+        endpointUrl = os.Getenv("RELAY_ENDPOINT")
     }
     if *wss {
+        endpointUrl = strings.Replace(endpointUrl, "http://", "ws://", 1)
         endpointUrl = strings.Replace(endpointUrl, "https://", "wss://", 1)
         endpointUrl = strings.Replace(endpointUrl, "/api", "/ws", 1)
+        endpointUrl = strings.Replace(endpointUrl, ":7546", ":8546", 1)
     }
     client, err := ethclient.Dial(endpointUrl)
     if err != nil {

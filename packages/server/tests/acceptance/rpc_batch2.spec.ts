@@ -810,7 +810,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     let storageContract: ethers.Contract;
     let storageContractAddress: string;
     const STORAGE_CONTRACT_UPDATE = '0x2de4e884';
-    const NEXT_STORAGE_CONTRACT_UPDATE = '0x160D6484';
 
     this.beforeEach(async () => {
       storageContract = await Utils.deployContract(
@@ -974,16 +973,17 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
-      const blockNumber = await relay.call(
+      const transactionReceipt = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
         [transactionHash],
         requestId,
-      ).blockNumber;
+      );
 
+      const blockNumber = transactionReceipt.blockNumber;
       const transaction1 = {
         ...transaction,
         nonce: await relay.getAccountNonce(accounts[1].address),
-        data: NEXT_STORAGE_CONTRACT_UPDATE,
+        data: STORAGE_CONTRACT_UPDATE,
       };
 
       const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
@@ -1019,16 +1019,18 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
-      const blockHash = await relay.call(
+      const transactionReceipt = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
         [transactionHash],
         requestId,
-      ).blockHash;
+      );
+
+      const blockHash = transactionReceipt.blockHash;
 
       const transaction1 = {
         ...transaction,
         nonce: await relay.getAccountNonce(accounts[1].address),
-        data: NEXT_STORAGE_CONTRACT_UPDATE,
+        data: STORAGE_CONTRACT_UPDATE,
       };
 
       const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
@@ -1141,7 +1143,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
   describe('eth_feeHistory', () => {
     it('should call eth_feeHistory', async function () {
-      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY, ['0x1', 'latest', null], requestId);
+      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_FEE_HISTORY, ['0x1', 'latest'], requestId);
       expect(res.baseFeePerGas).to.exist.to.be.an('Array');
       expect(res.baseFeePerGas.length).to.be.gt(0);
       expect(res.gasUsedRatio).to.exist.to.be.an('Array');

@@ -25,9 +25,13 @@ import { RelayImpl } from '../../src/lib/relay';
 import constants from '../../src/lib/constants';
 
 const logger = pino();
-const Relay = new RelayImpl(logger, new Registry());
+let Relay;
 
 describe('Net', async function () {
+  this.beforeEach(() => {
+    Relay = new RelayImpl(logger, new Registry());
+  });
+
   it('should execute "net_listening"', function () {
     const result = Relay.net().listening();
     expect(result).to.eq(false);
@@ -40,5 +44,43 @@ describe('Net', async function () {
 
     const actualNetVersion = Relay.net().version();
     expect(actualNetVersion).to.eq(expectedNetVersion);
+  });
+
+  it('should set chainId from CHAIN_ID environment variable', () => {
+    process.env.CHAIN_ID = '123';
+    Relay = new RelayImpl(logger, new Registry());
+    const actualNetVersion = Relay.net().version();
+    expect(actualNetVersion).to.equal('123');
+  });
+
+  it('should set chainId from CHAIN_ID environment variable starting with 0x', () => {
+    process.env.CHAIN_ID = '0x1a';
+    Relay = new RelayImpl(logger, new Registry());
+    const actualNetVersion = Relay.net().version();
+    expect(actualNetVersion).to.equal('26'); // 0x1a in decimal is 26
+  });
+
+  it('should default chainId to 298 when no environment variables are set', () => {
+    delete process.env.HEDERA_NETWORK;
+    delete process.env.CHAIN_ID;
+    Relay = new RelayImpl(logger, new Registry());
+    const actualNetVersion = Relay.net().version();
+    expect(actualNetVersion).to.equal('298');
+  });
+
+  it('should handle empty HEDERA_NETWORK and set chainId to default', () => {
+    process.env.HEDERA_NETWORK = '';
+    delete process.env.CHAIN_ID;
+    Relay = new RelayImpl(logger, new Registry());
+    const actualNetVersion = Relay.net().version();
+    expect(actualNetVersion).to.equal('298');
+  });
+
+  it('should prioritize CHAIN_ID over HEDERA_NETWORK', () => {
+    process.env.HEDERA_NETWORK = 'mainnet';
+    process.env.CHAIN_ID = '0x2';
+    Relay = new RelayImpl(logger, new Registry());
+    const actualNetVersion = Relay.net().version();
+    expect(actualNetVersion).to.equal('2'); // 0x2 in decimal is 2
   });
 });

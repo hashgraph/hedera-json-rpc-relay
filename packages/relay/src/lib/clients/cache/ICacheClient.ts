@@ -19,16 +19,16 @@
  */
 
 export interface ICacheClient {
-  get(key: string, callingMethod: string, requestIdPrefix?: string): any;
-  set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string): void;
-  delete(key: string, callingMethod: string, requestIdPrefix?: string): void;
-  clear(): void;
-  multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): void;
+  keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]>;
+  get(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any>;
+  set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string): Promise<void>;
+  multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): Promise<void>;
   pipelineSet(
     keyValuePairs: Record<string, any>,
     callingMethod: string,
     ttl?: number | undefined,
     requestIdPrefix?: string,
-  ): void;
-  disconnect(): Promise<void> | void;
+  ): Promise<void>;
+  delete(key: string, callingMethod: string, requestIdPrefix?: string): Promise<void>;
+  clear(): Promise<void>;
 }

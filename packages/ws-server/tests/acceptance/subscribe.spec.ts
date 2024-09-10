@@ -725,7 +725,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       assertions.expectLogArgs(eventsReceived[0], contracts[1], [BigInt(1)]);
     });
 
-    it('Subscribing for contract logs for a speciffic contract address and a wrong topic.', async function () {
+    it('Subscribing for contract logs for a specific contract address and a wrong topic.', async function () {
       let eventsReceived = eventsReceivedGlobal[6];
 
       // Only the logs from logContractSigner.target are captured
@@ -878,7 +878,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     it('Calling eth_subscribe Logs with an invalid topics should fail', async function () {
       const expectedError = predefined.INVALID_PARAMETER(
         `'topics' for EthSubscribeLogsParamsObject`,
-        `Expected an array or array of arrays containing 0x prefixed string representing the hash (32 bytes) of a topic, value: 0x000`,
+        `Expected an array or array of arrays containing Expected 0x prefixed string representing the hash (32 bytes) of a topic, value: ["0x000"]`,
       );
 
       await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, [

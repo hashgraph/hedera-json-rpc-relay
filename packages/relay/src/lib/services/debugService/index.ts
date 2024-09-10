@@ -22,14 +22,13 @@ import type { Logger } from 'pino';
 import type { MirrorNodeClient } from '../../clients';
 import type { IDebugService } from './IDebugService';
 import type { CommonService } from '../ethService';
-import { decodeErrorMessage, numberTo0x, strip0x } from '../../../formatters';
-import constants from '../../constants';
-import { TracerType, CallType } from '../../constants';
+import { decodeErrorMessage, mapKeysAndValues, numberTo0x, strip0x } from '../../../formatters';
+import constants, { CallType, TracerType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
 import { EthImpl } from '../../eth';
 import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
 import { IOpcode } from '../../clients/models/IOpcode';
-const SUCCESS = 'SUCCESS';
+import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from '../../types';
 
 /**
  * Represents a DebugService for tracing and debugging transactions and debugging
@@ -88,7 +87,7 @@ export class DebugService implements IDebugService {
    * @async
    * @param {string} transactionIdOrHash - The ID or hash of the transaction to be traced.
    * @param {TracerType} tracer - The type of tracer to use (either 'CallTracer' or 'OpcodeLogger').
-   * @param {object} tracerConfig - The configuration object for the tracer.
+   * @param {ITracerConfig} tracerConfig - The configuration object for the tracer.
    * @param {string} [requestIdPrefix] - An optional request id.
    * @throws {Error} Throws an error if the specified tracer type is not supported or if an exception occurs during the trace.
    * @returns {Promise<any>} A Promise that resolves to the result of the trace operation.
@@ -99,16 +98,16 @@ export class DebugService implements IDebugService {
   async debug_traceTransaction(
     transactionIdOrHash: string,
     tracer: TracerType,
-    tracerConfig: object,
+    tracerConfig: ITracerConfig,
     requestIdPrefix?: string,
   ): Promise<any> {
     this.logger.trace(`${requestIdPrefix} debug_traceTransaction(${transactionIdOrHash})`);
     try {
       DebugService.requireDebugAPIEnabled();
       if (tracer === TracerType.CallTracer) {
-        return await this.callTracer(transactionIdOrHash, tracerConfig, requestIdPrefix);
+        return await this.callTracer(transactionIdOrHash, tracerConfig as ICallTracerConfig, requestIdPrefix);
       } else if (tracer === TracerType.OpcodeLogger) {
-        return await this.callOpcodeLogger(transactionIdOrHash, tracerConfig, requestIdPrefix);
+        return await this.callOpcodeLogger(transactionIdOrHash, tracerConfig as IOpcodeLoggerConfig, requestIdPrefix);
       }
     } catch (e) {
       throw this.common.genericErrorHandler(e);
@@ -187,9 +186,9 @@ export class DebugService implements IDebugService {
           gas: opcode.gas,
           gasCost: opcode.gas_cost,
           depth: opcode.depth,
-          stack: options.stack ? opcode.stack : null,
-          memory: options.memory ? opcode.memory : null,
-          storage: options.storage ? opcode.storage : null,
+          stack: options.stack ? opcode.stack?.map(strip0x) || [] : null,
+          memory: options.memory ? opcode.memory?.map(strip0x) || [] : null,
+          storage: options.storage ? mapKeysAndValues(opcode.storage ?? {}, { key: strip0x, value: strip0x }) : null,
           reason: opcode.reason ? strip0x(opcode.reason) : null,
         };
       }),
@@ -252,8 +251,8 @@ export class DebugService implements IDebugService {
    * Returns the final formatted response for opcodeLogger config.
    * @async
    * @param {string} transactionIdOrHash - The ID or hash of the transaction to be debugged.
-   * @param {object} tracerConfig - The tracer config to be used.
-   * @param {boolean} tracerConfig.disableMemory - Whether to disable memory.
+   * @param {IOpcodeLoggerConfig} tracerConfig - The tracer config to be used.
+   * @param {boolean} tracerConfig.enableMemory - Whether to enable memory.
    * @param {boolean} tracerConfig.disableStack - Whether to disable stack.
    * @param {boolean} tracerConfig.disableStorage - Whether to disable storage.
    * @param {string} requestIdPrefix - The request prefix id.
@@ -261,12 +260,12 @@ export class DebugService implements IDebugService {
    */
   async callOpcodeLogger(
     transactionIdOrHash: string,
-    tracerConfig: { disableMemory?: boolean; disableStack?: boolean; disableStorage?: boolean },
+    tracerConfig: IOpcodeLoggerConfig,
     requestIdPrefix?: string,
   ): Promise<object> {
     try {
       const options = {
-        memory: !tracerConfig.disableMemory,
+        memory: !!tracerConfig.enableMemory,
         stack: !tracerConfig.disableStack,
         storage: !tracerConfig.disableStorage,
       };
@@ -286,16 +285,23 @@ export class DebugService implements IDebugService {
    *
    * @async
    * @param {string} transactionHash - The hash of the transaction to be debugged.
-   * @param {any} tracerConfig - The tracer config to be used.
+   * @param {ICallTracerConfig} tracerConfig - The tracer config to be used.
    * @param {string} requestIdPrefix - The request prefix id.
    * @returns {Promise<object>} The formatted response.
    */
-  async callTracer(transactionHash: string, tracerConfig: any, requestIdPrefix?: string): Promise<object> {
+  async callTracer(
+    transactionHash: string,
+    tracerConfig: ICallTracerConfig,
+    requestIdPrefix?: string,
+  ): Promise<object> {
     try {
       const [actionsResponse, transactionsResponse] = await Promise.all([
         this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestIdPrefix),
         this.mirrorNodeClient.getContractResultWithRetry(transactionHash),
       ]);
+      if (!actionsResponse || !transactionsResponse) {
+        throw predefined.RESOURCE_NOT_FOUND(`Failed to retrieve contract results for transaction ${transactionHash}`);
+      }
 
       const { call_type: type } = actionsResponse.actions[0];
       const formattedActions = await this.formatActionsResult(actionsResponse.actions, requestIdPrefix);
@@ -315,7 +321,7 @@ export class DebugService implements IDebugService {
       const { resolvedFrom, resolvedTo } = await this.resolveMultipleAddresses(from, to, requestIdPrefix);
 
       const value = amount === 0 ? EthImpl.zeroHex : numberTo0x(amount);
-      const errorResult = result !== SUCCESS ? result : undefined;
+      const errorResult = result !== constants.SUCCESS ? result : undefined;
 
       return {
         type,
@@ -325,9 +331,9 @@ export class DebugService implements IDebugService {
         gas: numberTo0x(gas),
         gasUsed: numberTo0x(gasUsed),
         input,
-        output: result !== SUCCESS ? error : output,
-        ...(result !== SUCCESS && { error: errorResult }),
-        ...(result !== SUCCESS && { revertReason: decodeErrorMessage(error) }),
+        output: result !== constants.SUCCESS ? error : output,
+        ...(result !== constants.SUCCESS && { error: errorResult }),
+        ...(result !== constants.SUCCESS && { revertReason: decodeErrorMessage(error) }),
         // if we have more than one call executed during the transactions we would return all calls
         // except the first one in the sub-calls array,
         // therefore we need to exclude the first one from the actions response

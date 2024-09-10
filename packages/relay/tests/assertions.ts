@@ -3,6 +3,7 @@ import { JsonRpcError } from '../src';
 import { EthImpl } from '../src/lib/eth';
 import { Block, Transaction } from '../src/lib/model';
 import { numberTo0x } from '../src/formatters';
+import constants from '../src/lib/constants';
 import { BASE_FEE_PER_GAS_DEFAULT } from './lib/eth/eth-config';
 
 export default class RelayAssertions {
@@ -54,7 +55,7 @@ export default class RelayAssertions {
     expect(receipt.contractAddress).to.eq(expectedReceipt.contractAddress);
     expect(receipt.logs).to.deep.eq(expectedReceipt.logs);
     expect(receipt.logsBloom).to.eq(expectedReceipt.logsBloom);
-    expect(receipt.root).to.eq(expectedReceipt.root);
+    expect(receipt.root).to.eq(constants.DEFAULT_ROOT_HASH);
     expect(receipt.status).to.eq(expectedReceipt.status);
     expect(receipt.effectiveGasPrice).to.eq(effectiveGasPrice);
   };
@@ -123,16 +124,15 @@ export default class RelayAssertions {
   };
 
   static verifyBlockConstants = (block: Block) => {
-    expect(block.gasLimit).equal(numberTo0x(15000000));
+    expect(block.gasLimit).equal(numberTo0x(constants.BLOCK_GAS_LIMIT));
     expect(block.baseFeePerGas).equal(BASE_FEE_PER_GAS_DEFAULT);
     expect(block.difficulty).equal(EthImpl.zeroHex);
     expect(block.extraData).equal(EthImpl.emptyHex);
     expect(block.miner).equal(EthImpl.zeroAddressHex);
     expect(block.mixHash).equal(EthImpl.zeroHex32Byte);
     expect(block.nonce).equal(EthImpl.zeroHex8Byte);
-    expect(block.receiptsRoot).equal(EthImpl.zeroHex32Byte);
     expect(block.sha3Uncles).equal(EthImpl.emptyArrayHex);
-    expect(block.stateRoot).equal(EthImpl.zeroHex32Byte);
+    expect(block.stateRoot).equal(constants.DEFAULT_ROOT_HASH);
     expect(block.totalDifficulty).equal(EthImpl.zeroHex);
     expect(block.uncles).to.deep.equal([]);
     expect(block.withdrawalsRoot).to.equal(EthImpl.zeroHex32Byte);

@@ -14,7 +14,7 @@ concurrency:
 jobs:
   test-node:
     name: Tests
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: smart-contracts-linux-medium
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -42,18 +42,25 @@ jobs:
         run: npm install -g pnpm
 
       - name: Build Typescript and Run tests
-        run: |
-          output=$(npm run build-and-test 2>&1)
-          echo "$output"
-          if echo "$output" | grep -q "JavaScript heap out of memory"; then
-            echo "Heap out of Memory error detected"
-            exit 1
-          fi
-        shell: bash    
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PR_NUMBER: ${{ github.event.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: npm run build-and-test
+
+      - name: Upload Heap Snapshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        with:
+          name: Heap Snapshots
+          path: "**/*.heapsnapshot"
+          if-no-files-found: ignore
 
       - name: Upload coverage report
-        if: ${{ always() && !cancelled() }}
-        run: node_modules/codecov/bin/codecov
+        if: ${{ !cancelled() && always() }}
+        run: bash .github/scripts/codecov-upload.sh
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Publish Test Report
         if: ${{ github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name && github.actor != 'dependabot[bot]' && github.actor != 'swirlds-automation' && !cancelled() && !failure() }}
