@@ -40,6 +40,93 @@ chai.use(chaiAsPromised);
 describe('CacheService Test Suite', async function () {
   this.timeout(10000);
 
+  const describeKeysTestSuite = () => {
+    describe('keys', async function () {
+      it('should retrieve all keys from internal cache', async function () {
+        const entries: Record<string, any> = {};
+        entries['key1'] = 'value1';
+        entries['key2'] = 'value2';
+        entries['key3'] = 'value3';
+
+        await cacheService.multiSet(entries, callingMethod);
+
+        const keys = await cacheService.keys('*', callingMethod);
+        expect(keys).to.deep.equal(Object.keys(entries));
+      });
+
+      it('should retrieve keys matching pattern from internal cache', async function () {
+        const entries: Record<string, any> = {};
+        entries['key1'] = 'value1';
+        entries['key2'] = 'value2';
+        entries['key3'] = 'value3';
+
+        await cacheService.multiSet(entries, callingMethod);
+
+        const keys = await cacheService.keys('key*', callingMethod);
+        expect(keys).to.deep.equal(Object.keys(entries));
+      });
+
+      it('should retrieve keys matching pattern with ? from internal cache', async function () {
+        const entries: Record<string, any> = {};
+        entries['key1'] = 'value1';
+        entries['key2'] = 'value2';
+        entries['key3'] = 'value3';
+
+        await cacheService.multiSet(entries, callingMethod);
+
+        const keys = await cacheService.keys('key?', callingMethod);
+        expect(keys).to.deep.equal(Object.keys(entries));
+      });
+
+      it('should retrieve keys matching pattern with [] from internal cache', async function () {
+        const entries: Record<string, any> = {};
+        entries['key1'] = 'value1';
+        entries['key2'] = 'value2';
+        entries['key3'] = 'value3';
+
+        await cacheService.multiSet(entries, callingMethod);
+
+        const keys = await cacheService.keys('key[1-2]', callingMethod);
+        expect(keys).to.deep.equal(['key1', 'key2']);
+      });
+
+      it('should retrieve keys matching pattern with [^] from internal cache', async function () {
+        const entries: Record<string, any> = {};
+        entries['key1'] = 'value1';
+        entries['key2'] = 'value2';
+        entries['key3'] = 'value3';
+
+        await cacheService.multiSet(entries, callingMethod);
+
+        // [^3] should match all keys except key3
+        const keys = await cacheService.keys('key[^3]', callingMethod);
+        expect(keys).to.deep.equal(['key1', 'key2']);
+      });
+
+      it('should retrieve keys matching pattern with [a-b] from internal cache', async function () {
+        const entries: Record<string, any> = {};
+        entries['keya'] = 'value1';
+        entries['keyb'] = 'value2';
+        entries['keyc'] = 'value3';
+
+        await cacheService.multiSet(entries, callingMethod);
+
+        const keys = await cacheService.keys('key[a-c]', callingMethod);
+        expect(keys).to.deep.equal(Object.keys(entries));
+      });
+
+      it('should escape special characters in the pattern', async function () {
+        const key = 'h*llo';
+        const value = 'value';
+
+        await cacheService.set(key, value, callingMethod);
+
+        const keys = await cacheService.keys('h*llo', callingMethod);
+        expect(keys).to.deep.equal([key]);
+      });
+    });
+  };
+
   describe('Internal Cache Test Suite', async function () {
     this.beforeAll(() => {
       process.env.REDIS_ENABLED = 'false';
@@ -140,6 +227,8 @@ describe('CacheService Test Suite', async function () {
         expect(range).to.deep.equal(['item2', 'item3']);
       });
     });
+
+    describeKeysTestSuite();
 
     describe('disconnectRedisClient', async function () {
       it('should not throw error if shared cache is not enabled', async function () {
@@ -338,6 +427,8 @@ describe('CacheService Test Suite', async function () {
         expect(range).to.deep.equal(['item2', 'item3']);
       });
     });
+
+    describeKeysTestSuite();
 
     describe('disconnectRedisClient', async function () {
       it('should disconnect Redis client if shared cache is enabled', async function () {

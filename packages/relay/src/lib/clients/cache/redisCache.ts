@@ -310,4 +310,18 @@ export class RedisCache implements IRedisCacheClient {
     this.logger.trace(`${requestIdPrefix} pushing ${serializedValue} to ${key} on ${callingMethod} call`);
     return result;
   }
+
+  /**
+   * Retrieves all keys matching a pattern.
+   * @param {string} pattern The pattern to match
+   * @param {string} callingMethod The name of the calling method
+   * @param {string} [requestIdPrefix] The optional request ID prefix
+   * @returns {Promise<string[]>} The list of keys matching the pattern
+   */
+  async keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]> {
+    const client = await this.getConnectedClient();
+    const result = await client.keys(pattern);
+    this.logger.trace(`${requestIdPrefix} retrieving keys matching ${pattern} on ${callingMethod} call`);
+    return result;
+  }
 }
