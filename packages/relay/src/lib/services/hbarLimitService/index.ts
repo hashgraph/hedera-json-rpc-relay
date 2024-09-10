@@ -49,7 +49,12 @@ export class HbarLimitService implements IHbarLimitService {
   private readonly hbarLimitRemainingGauge: Gauge;
 
   /**
-   * Tracks the number of unique spending plans used daily.
+   * Tracks the number of unique spending plans that have been utilized on a daily basis
+   * (i.e., plans that had expenses added to them).
+   *
+   * For basic spending plans, this equates to the number of unique users who have made requests on that day,
+   * since each user has their own individual spending plan.
+   *
    * @private
    */
   private readonly dailyUniqueSpendingPlansCounter: Record<SubscriptionType, Counter>;
