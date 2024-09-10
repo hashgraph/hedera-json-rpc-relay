@@ -131,14 +131,6 @@ describe('Open RPC Specification', function () {
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     const eventEmitter = new EventEmitter();
 
-    const mockedExchangeRate = {
-      current_rate: {
-        cent_equivalent: 12,
-        expiration_time: 4102444800,
-        hbar_equivalent: 1,
-      },
-    };
-
     clientServiceInstance = new ClientService(logger, registry, hbarLimiter, cacheService, eventEmitter);
     sdkClientStub = sinon.createStubInstance(SDKClient);
     sinon.stub(clientServiceInstance, 'getSDKClient').returns(sdkClientStub);
@@ -199,7 +191,13 @@ describe('Open RPC Specification', function () {
       .onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`)
       .reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
 
-    mock.onGet(`network/exchangerate`).reply(200, mockedExchangeRate);
+    mock.onGet(`network/exchangerate`).reply(200, {
+      current_rate: {
+        cent_equivalent: 12,
+        expiration_time: 4102444800,
+        hbar_equivalent: 1,
+      },
+    });
 
     mock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
       from: `${defaultEvmAddress}`,
