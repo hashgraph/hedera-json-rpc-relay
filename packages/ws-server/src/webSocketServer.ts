@@ -19,9 +19,7 @@
  */
 
 import Koa from 'koa';
-import path from 'path';
 import pino from 'pino';
-import dotenv from 'dotenv';
 import { v4 as uuid } from 'uuid';
 import websockify from 'koa-websocket';
 import { collectDefaultMetrics, Registry } from 'prom-client';
@@ -35,8 +33,6 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
 import { JsonRpcError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
 import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
 import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
-
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',

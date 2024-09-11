@@ -21,6 +21,7 @@
 import WebSocket from 'ws';
 import { expect } from 'chai';
 import { WebSocketProvider } from 'ethers';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 export class WsTestHelper {
   static async assertFailInvalidParamsEthersWsProvider(
@@ -94,5 +95,5 @@ export class WsTestConstant {
   static FAKE_TX_HASH = `0x${'00'.repeat(20)}`;
   static STANDARD_WEB_SOCKET = 'Standard Web Socket';
   static ETHERS_WS_PROVIDER = 'Ethers Web Socket Provider';
-  static WS_RELAY_URL = process.env.WS_RELAY_URL || `ws://127.0.0.1:8546`;
+  static WS_RELAY_URL = EnvProviderService.getInstance().get('WS_RELAY_URL') || `ws://127.0.0.1:8546`;
 }

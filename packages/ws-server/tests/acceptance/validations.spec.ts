@@ -25,6 +25,7 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { predefined } from '@hashgraph/json-rpc-relay/src';
 import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 describe('@release @web-socket-batch-1 JSON-RPC requests validation', async function () {
   const BLOCK_NUMBER_METHOD_NAME = 'eth_blockNumber';
@@ -52,13 +53,13 @@ describe('@release @web-socket-batch-1 JSON-RPC requests validation', async func
   let ethersWsProvider: WebSocketProvider;
 
   beforeEach(async () => {
-    process.env.REQUEST_ID_IS_OPTIONAL = 'true';
+    EnvProviderService.getInstance().dynamicOverride('REQUEST_ID_IS_OPTIONAL', 'true');
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
   afterEach(async () => {
     if (ethersWsProvider) await ethersWsProvider.destroy();
-    delete process.env.REQUEST_ID_IS_OPTIONAL;
+    EnvProviderService.getInstance().remove('REQUEST_ID_IS_OPTIONAL');
   });
 
   after(async () => {

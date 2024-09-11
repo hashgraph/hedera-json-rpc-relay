@@ -23,6 +23,7 @@ import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { predefined } from '@hashgraph/json-rpc-relay/src';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 describe('@web-socket-batch-1 Batch Requests', async function () {
   const METHOD_NAME = 'batch_request';
@@ -65,13 +66,13 @@ describe('@web-socket-batch-1 Batch Requests', async function () {
   });
 
   beforeEach(async () => {
-    process.env.WS_BATCH_REQUESTS_ENABLED = 'true';
+    EnvProviderService.getInstance().dynamicOverride('WS_BATCH_REQUESTS_ENABLED', 'true');
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
   afterEach(async () => {
     if (ethersWsProvider) await ethersWsProvider.destroy();
-    delete process.env.WS_BATCH_REQUESTS_ENABLED;
+    EnvProviderService.getInstance().remove('WS_BATCH_REQUESTS_ENABLED');
   });
 
   after(async () => {
@@ -98,7 +99,7 @@ describe('@web-socket-batch-1 Batch Requests', async function () {
   });
 
   it('Should submit batch requests to WS server and get batchRequestDisabledError if WS_BATCH_REQUESTS_DISABLED=false ', async () => {
-    process.env.WS_BATCH_REQUESTS_ENABLED = 'false';
+    EnvProviderService.getInstance().dynamicOverride('WS_BATCH_REQUESTS_ENABLED', 'false');
     const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 
     const expectedError = predefined.WS_BATCH_REQUESTS_DISABLED;
@@ -108,13 +109,13 @@ describe('@web-socket-batch-1 Batch Requests', async function () {
   });
 
   it('Should submit batch requests to WS server and get batchRequestAmountMaxExceed if requests size exceeds WS_BATCH_REQUESTS_MAX_SIZE', async () => {
-    process.env.WS_BATCH_REQUESTS_MAX_SIZE = '1';
+    EnvProviderService.getInstance().dynamicOverride('WS_BATCH_REQUESTS_MAX_SIZE', '1');
 
     const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 
     const expectedError = predefined.BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED(
       batchRequests.length,
-      Number(process.env.WS_BATCH_REQUESTS_MAX_SIZE),
+      Number(EnvProviderService.getInstance().get('WS_BATCH_REQUESTS_MAX_SIZE')),
     );
     delete expectedError.data;
 

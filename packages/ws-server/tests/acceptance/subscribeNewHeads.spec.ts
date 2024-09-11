@@ -27,9 +27,11 @@ import { predefined } from '@hashgraph/json-rpc-relay';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+
 chai.use(solidity);
 
-const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
+const WS_RELAY_URL = `${EnvProviderService.getInstance().get('WS_RELAY_URL')}`;
 const ethAddressRegex = /^0x[a-fA-F0-9]*$/;
 
 function verifyResponse(response: any, done: Mocha.Done, webSocket: any, includeTransactions: boolean) {
@@ -93,7 +95,7 @@ function verifyResponse(response: any, done: Mocha.Done, webSocket: any, include
 describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const accounts: AliasAccount[] = [];
-  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const CHAIN_ID = EnvProviderService.getInstance().get('CHAIN_ID') || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let mirrorNodeServer, requestId, rpcServer, wsServer;
@@ -125,13 +127,13 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
     global.accounts.push(...accounts);
 
     // cache original ENV values
-    originalWsNewHeadsEnabledValue = process.env.WS_NEW_HEADS_ENABLED;
-    originalWsSubcriptionLimitValue = process.env.WS_SUBSCRIPTION_LIMIT;
+    originalWsNewHeadsEnabledValue = EnvProviderService.getInstance().get('WS_NEW_HEADS_ENABLED');
+    originalWsSubcriptionLimitValue = EnvProviderService.getInstance().get('WS_SUBSCRIPTION_LIMIT');
   });
 
   beforeEach(async () => {
-    process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
-    process.env.WS_SUBSCRIPTION_LIMIT = '10';
+    EnvProviderService.getInstance().dynamicOverride('WS_NEW_HEADS_ENABLED', originalWsNewHeadsEnabledValue);
+    EnvProviderService.getInstance().dynamicOverride('WS_SUBSCRIPTION_LIMIT', ' 10');
 
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -142,13 +144,14 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       await wsProvider.destroy();
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    process.env.WS_SUBSCRIPTION_LIMIT = originalWsSubcriptionLimitValue;
+
+    EnvProviderService.getInstance().dynamicOverride('WS_SUBSCRIPTION_LIMIT', originalWsSubcriptionLimitValue);
   });
 
   describe('Configuration', async function () {
     it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
       const webSocket = new WebSocket(WS_RELAY_URL);
-      process.env.WS_NEW_HEADS_ENABLED = 'false';
+      EnvProviderService.getInstance().dynamicOverride('WS_NEW_HEADS_ENABLED', 'false');
       const messagePromise = new Promise<void>((resolve, reject) => {
         webSocket.on('message', function incoming(data) {
           try {
@@ -174,12 +177,12 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       await messagePromise;
 
       webSocket.close();
-      process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
+      EnvProviderService.getInstance().dynamicOverride('WS_NEW_HEADS_ENABLED', originalWsNewHeadsEnabledValue);
     });
 
     it('Does not allow more subscriptions per connection than the specified limit with newHeads', async function () {
-      process.env.WS_SUBSCRIPTION_LIMIT = '2';
-      process.env.WS_NEW_HEADS_ENABLED = 'true';
+      EnvProviderService.getInstance().dynamicOverride('WS_SUBSCRIPTION_LIMIT', '2');
+      EnvProviderService.getInstance().dynamicOverride('WS_NEW_HEADS_ENABLED', 'true');
       // Create different subscriptions
       for (let i = 0; i < 3; i++) {
         if (i === 2) {
@@ -194,12 +197,12 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
-      process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
+      EnvProviderService.getInstance().dynamicOverride('WS_NEW_HEADS_ENABLED', originalWsNewHeadsEnabledValue);
     });
 
     it('@release should subscribe to newHeads even when WS_NEW_HEADS_ENABLED=undefined, and receive a valid JSON RPC response', async (done) => {
-      delete process.env.WS_NEW_HEADS_ENABLED;
-      expect(process.env.WS_NEW_HEADS_ENABLED).to.be.undefined;
+      EnvProviderService.getInstance().remove('WS_NEW_HEADS_ENABLED');
+      expect(EnvProviderService.getInstance().get('WS_NEW_HEADS_ENABLED')).to.be.undefined;
 
       const webSocket = new WebSocket(WS_RELAY_URL);
       const subscriptionId = 1;
@@ -231,7 +234,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
 
   describe('Subscriptions for newHeads', async function () {
     this.beforeEach(() => {
-      process.env.WS_NEW_HEADS_ENABLED = 'true';
+      EnvProviderService.getInstance().dynamicOverride('WS_NEW_HEADS_ENABLED', 'true');
     });
 
     it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
