@@ -487,6 +487,7 @@ describe('CacheService Test Suite', async function () {
       });
 
       it('should not throw error if Redis client is already connected', async function () {
+        await cacheService.connectRedisClient();
         await expect(cacheService.connectRedisClient()).to.not.be.rejected;
       });
     });
@@ -496,6 +497,11 @@ describe('CacheService Test Suite', async function () {
         const disconnectSpy = sinon.spy(cacheService['sharedCache'], <any>'disconnect');
         await cacheService.disconnectRedisClient();
         expect(disconnectSpy.calledOnce).to.be.true;
+      });
+
+      it('should not throw error if Redis client is already disconnected', async function () {
+        await cacheService.disconnectRedisClient();
+        await expect(cacheService.disconnectRedisClient()).to.not.be.rejected;
       });
     });
   });
