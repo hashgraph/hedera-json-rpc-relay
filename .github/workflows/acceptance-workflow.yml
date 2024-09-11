@@ -40,7 +40,11 @@ jobs:
     timeout-minutes: 50
     permissions:
       contents: write
+<<<<<<< HEAD
       actions: read
+=======
+      checks: write
+>>>>>>> bc640352 (Adding permissions for checks to: write)
       # issues: read
 
     steps:
