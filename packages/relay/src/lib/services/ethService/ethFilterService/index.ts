@@ -27,6 +27,7 @@ import { generateRandomHex } from '../../../../formatters';
 import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
 import { CacheService } from '../../cacheService/cacheService';
+import { IRequestDetails } from '../../../types/IRequestDetails';
 
 /**
  * Create a new Filter Service implementation.
@@ -116,10 +117,11 @@ export class FilterService implements IFilterService {
   async newFilter(
     fromBlock: string = 'latest',
     toBlock: string = 'latest',
-    requestIdPrefix: string,
+    requestDetails: IRequestDetails,
     address?: string,
     topics?: any[],
   ): Promise<string | JsonRpcError> {
+    const requestIdPrefix = requestDetails.requestIdPrefix;
     this.logger.trace(
       `${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`,
     );
@@ -147,7 +149,8 @@ export class FilterService implements IFilterService {
     }
   }
 
-  async newBlockFilter(requestIdPrefix: string): Promise<string | JsonRpcError> {
+  async newBlockFilter(requestDetails: IRequestDetails): Promise<string | JsonRpcError> {
+    const requestIdPrefix = requestDetails.requestIdPrefix;
     this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
     try {
       FilterService.requireFiltersEnabled();
@@ -163,7 +166,8 @@ export class FilterService implements IFilterService {
     }
   }
 
-  public async uninstallFilter(filterId: string, requestIdPrefix: string): Promise<boolean> {
+  public async uninstallFilter(filterId: string, requestDetails: IRequestDetails): Promise<boolean> {
+    const requestIdPrefix = requestDetails.requestIdPrefix;
     this.logger.trace(`${requestIdPrefix} uninstallFilter(${filterId})`);
     FilterService.requireFiltersEnabled();
 
@@ -178,12 +182,13 @@ export class FilterService implements IFilterService {
     return false;
   }
 
-  public newPendingTransactionFilter(requestIdPrefix: string): JsonRpcError {
-    this.logger.trace(`${requestIdPrefix} newPendingTransactionFilter()`);
+  public newPendingTransactionFilter(requestDetails: IRequestDetails): JsonRpcError {
+    this.logger.trace(`${requestDetails.requestIdPrefix} newPendingTransactionFilter()`);
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  public async getFilterLogs(filterId: string, requestIdPrefix: string): Promise<any> {
+  public async getFilterLogs(filterId: string, requestDetails: IRequestDetails): Promise<any> {
+    const requestIdPrefix = requestDetails.requestIdPrefix;
     this.logger.trace(`${requestIdPrefix} getFilterLogs(${filterId})`);
     FilterService.requireFiltersEnabled();
 
@@ -203,7 +208,11 @@ export class FilterService implements IFilterService {
     );
   }
 
-  public async getFilterChanges(filterId: string, requestIdPrefix: string): Promise<string[] | Log[] | JsonRpcError> {
+  public async getFilterChanges(
+    filterId: string,
+    requestDetails: IRequestDetails,
+  ): Promise<string[] | Log[] | JsonRpcError> {
+    const requestIdPrefix = requestDetails.requestIdPrefix;
     this.logger.trace(`${requestIdPrefix} getFilterChanges(${filterId})`);
     FilterService.requireFiltersEnabled();
 

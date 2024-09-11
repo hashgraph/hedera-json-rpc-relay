@@ -20,23 +20,24 @@
 
 import { JsonRpcError } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
+import { IRequestDetails } from '../../../types/IRequestDetails';
 
 export interface IFilterService {
   newFilter(
     fromBlock: string,
     toBlock: string,
-    requestIdPrefix: string,
+    requestDetails: IRequestDetails,
     address?: string,
     topics?: any[],
   ): Promise<string | JsonRpcError>;
 
-  newBlockFilter(requestIdPrefix: string): Promise<string | JsonRpcError>;
+  newBlockFilter(requestDetails: IRequestDetails): Promise<string | JsonRpcError>;
 
-  uninstallFilter(filterId: string, requestIdPrefix: string): Promise<boolean>;
+  uninstallFilter(filterId: string, requestDetails: IRequestDetails): Promise<boolean>;
 
-  newPendingTransactionFilter(requestIdPrefix: string): JsonRpcError;
+  newPendingTransactionFilter(requestDetails: IRequestDetails): JsonRpcError;
 
-  getFilterLogs(filterId: string, requestIdPrefix: string): Promise<any>;
+  getFilterLogs(filterId: string, requestDetails: IRequestDetails): Promise<any>;
 
-  getFilterChanges(filterId: string, requestIdPrefix: string): Promise<string[] | Log[] | JsonRpcError>;
+  getFilterChanges(filterId: string, requestDetails: IRequestDetails): Promise<string[] | Log[] | JsonRpcError>;
 }
