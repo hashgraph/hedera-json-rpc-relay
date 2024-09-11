@@ -176,6 +176,30 @@ export class HbarSpendingPlanRepository {
   }
 
   /**
+   * Finds all active hbar spending plans by subscription type.
+   * @param {SubscriptionType} subscriptionType - The subscription type to filter by.
+   * @returns {Promise<IDetailedHbarSpendingPlan[]>} - A promise that resolves with the active spending plans.
+   */
+  async findAllActiveBySubscriptionType(subscriptionType: SubscriptionType): Promise<IDetailedHbarSpendingPlan[]> {
+    const callerMethod = this.findAllActiveBySubscriptionType.name;
+    const keys = await this.cache.keys(`${this.collectionKey}:*`, callerMethod);
+    const plans = await Promise.all(keys.map((key) => this.cache.getAsync<IHbarSpendingPlan>(key, callerMethod)));
+    return Promise.all(
+      plans
+        .filter((plan) => plan.subscriptionType === subscriptionType && plan.active)
+        .map(
+          async (plan) =>
+            new HbarSpendingPlan({
+              ...plan,
+              createdAt: new Date(plan.createdAt),
+              spentToday: await this.getSpentToday(plan.id),
+              spendingHistory: await this.getSpendingHistory(plan.id),
+            }),
+        ),
+    );
+  }
+
+  /**
    * Gets the cache key for an {@link IHbarSpendingPlan}.
    * @param id - The ID of the plan to get the key for.
    * @private
