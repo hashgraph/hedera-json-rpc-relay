@@ -266,6 +266,7 @@ export class RedisCache implements IRedisCacheClient {
    * Retrieves the number of connections to the Redis server.
    *
    * @returns {Promise<number>} A Promise that resolves to the number of connections.
+   * @throws {Error} If an error occurs while retrieving the number of connections.
    */
   async getNumberOfConnections(): Promise<number> {
     const client = await this.getConnectedClient();

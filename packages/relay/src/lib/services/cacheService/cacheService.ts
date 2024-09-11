@@ -168,6 +168,11 @@ export class CacheService {
     }
   }
 
+  /**
+   * Retrieves the number of active connections to the Redis server.
+   *
+   * @returns {Promise<number>} A Promise that resolves with the number of active connections.
+   */
   async getNumberOfRedisConnections(): Promise<number> {
     if (this.sharedCache instanceof RedisCache) {
       try {
