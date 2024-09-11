@@ -62,6 +62,12 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install make
+        run: sudo apt-get update; sudo apt-get install build-essential -y
+
+      - name: Checkout repo
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
       - name: Install packages
         run: npm ci
 
@@ -119,10 +125,10 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Publish Test Report
-        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # v2.3.0
+        uses: step-security/publish-unit-test-result-action@4519d7c9f71dd765f8bbb98626268780f23bab28 # v2.17.0
         if: ${{ !cancelled() }}
         with:
-          check_run_disabled: true
+          check_name: '' # Set to empty to disable check run
           comment_mode: off
           json_thousands_separator: ','
-          junit_files: 'test-*.xml'
+          files: 'test-*.xml'
