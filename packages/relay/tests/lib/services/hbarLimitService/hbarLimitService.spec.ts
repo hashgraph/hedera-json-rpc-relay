@@ -21,12 +21,11 @@
 import sinon from 'sinon';
 import pino, { Logger } from 'pino';
 import chai, { expect } from 'chai';
-import { Registry } from 'prom-client';
 import { randomBytes, uuidV4 } from 'ethers';
 import chaiAsPromised from 'chai-as-promised';
 import { getRequestId } from '../../../helpers';
 import constants from '../../../../src/lib/constants';
-import { estimateFileTransactionsFee, getRequestId } from '../../../helpers';
+import { Counter, Gauge, Registry } from 'prom-client';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 import { HbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/hbarSpendingPlan';
@@ -194,6 +193,7 @@ describe('HbarLimitService', function () {
 
     it('should return true if spentToday + estimatedTxFee is above the limit', async function () {
       const spendingPlan = createSpendingPlan(
+        mockPlanId,
         HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - mockEstimatedTxFee + 1,
       );
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
@@ -216,6 +216,7 @@ describe('HbarLimitService', function () {
 
     it('should return false if spentToday + estimatedTxFee is below the limit', async function () {
       const spendingPlan = createSpendingPlan(
+        mockPlanId,
         HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - mockEstimatedTxFee - 1,
       );
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
@@ -231,6 +232,7 @@ describe('HbarLimitService', function () {
 
     it('should return false if spentToday + estimatedTxFee is at the limit', async function () {
       const spendingPlan = createSpendingPlan(
+        mockPlanId,
         HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - mockEstimatedTxFee,
       );
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
