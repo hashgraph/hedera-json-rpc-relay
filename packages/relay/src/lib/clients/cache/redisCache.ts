@@ -280,9 +280,6 @@ export class RedisCache implements IRedisCacheClient {
    * @throws {Error} If an error occurs while connecting to Redis.
    */
   async connect(): Promise<void> {
-    if (await this.isConnected()) {
-      return;
-    }
     await this.client.connect();
   }
 

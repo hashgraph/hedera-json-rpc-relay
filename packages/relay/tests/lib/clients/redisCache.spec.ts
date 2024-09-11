@@ -24,6 +24,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { RedisCache } from '../../../src/lib/clients';
 import { Registry } from 'prom-client';
 import { useInMemoryRedisServer } from '../../helpers';
+import { SinonSpy, spy } from 'sinon';
 
 chai.use(chaiAsPromised);
 
@@ -42,7 +43,10 @@ describe('RedisCache Test Suite', async function () {
     redisCache = new RedisCache(logger.child({ name: `cache` }), registry);
   });
 
-  this.afterEach(async () => {
+  this.beforeEach(async () => {
+    if (!(await redisCache.isConnected())) {
+      await redisCache.connect();
+    }
     await redisCache.clear();
   });
 
@@ -393,6 +397,54 @@ describe('RedisCache Test Suite', async function () {
 
       const keys = await redisCache.keys(pattern, callingMethod);
       expect(keys).to.include.members([key1, key2, key3]);
+    });
+  });
+
+  describe('Connect Test Suite', () => {
+    it('should connect to the Redis cache', async () => {
+      await redisCache.disconnect();
+      await redisCache.connect();
+      await expect(redisCache.isConnected()).to.eventually.be.true;
+    });
+
+    it('should throw an error when the client is already connected', async () => {
+      await expect(redisCache.connect()).to.eventually.be.rejectedWith('Socket already opened');
+      await expect(redisCache.isConnected()).to.eventually.be.true;
+    });
+  });
+
+  describe('Is Connected Test Suite', () => {
+    it('should return true when connected', async () => {
+      await expect(redisCache.isConnected()).to.eventually.be.true;
+    });
+
+    it('should return false when disconnected', async () => {
+      await redisCache.disconnect();
+      await expect(redisCache.isConnected()).to.eventually.be.false;
+    });
+  });
+
+  describe('Number of Connections Test Suite', () => {
+    it('should return the number of connections', async () => {
+      await expect(redisCache.getNumberOfConnections()).to.eventually.equal(1);
+    });
+
+    it('should throw an error when the client is closed', async () => {
+      await redisCache.disconnect();
+      await expect(redisCache.getNumberOfConnections()).to.eventually.be.rejectedWith('The client is closed');
+    });
+  });
+
+  describe('Disconnect Test Suite', () => {
+    it('should disconnect from the Redis cache', async () => {
+      await redisCache.disconnect();
+      await expect(redisCache.isConnected()).to.eventually.be.false;
+    });
+
+    it('should do nothing when already disconnected', async () => {
+      await redisCache.disconnect();
+      await expect(redisCache.disconnect()).to.eventually.be.rejectedWith('The client is closed');
+      await expect(redisCache.isConnected()).to.eventually.be.false;
     });
   });
 });

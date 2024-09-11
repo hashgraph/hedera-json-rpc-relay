@@ -230,9 +230,26 @@ describe('CacheService Test Suite', async function () {
 
     describeKeysTestSuite();
 
+    describe('isRedisClientConnected', async function () {
+      it('should return false if shared cache is not enabled', async function () {
+        expect(await cacheService.isRedisClientConnected()).to.be.false;
+      });
+    });
+
+    describe('getNumberOfRedisConnections', async function () {
+      it('should return 0 if shared cache is not enabled', async function () {
+        expect(await cacheService.getNumberOfRedisConnections()).to.equal(0);
+      });
+    });
+
+    describe('connectRedisClient', async function () {
+      it('should not throw error if shared cache is not enabled', async function () {
+        await expect(cacheService.connectRedisClient()).to.not.be.rejected;
+      });
+    });
+
     describe('disconnectRedisClient', async function () {
       it('should not throw error if shared cache is not enabled', async function () {
-        cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
         await expect(cacheService.disconnectRedisClient()).to.not.be.rejected;
       });
     });
@@ -432,6 +449,52 @@ describe('CacheService Test Suite', async function () {
     });
 
     describeKeysTestSuite();
+
+    describe('isRedisClientConnected', async function () {
+      it('should return true if shared cache is enabled', async function () {
+        expect(await cacheService.isRedisClientConnected()).to.be.true;
+      });
+
+      it('should return false if shared cache is enabled and client is disconnected', async function () {
+        await cacheService.disconnectRedisClient();
+        expect(await cacheService.isRedisClientConnected()).to.be.false;
+      });
+
+      it('should return true if shared cache is enabled and client is reconnected', async function () {
+        await cacheService.disconnectRedisClient();
+        await cacheService.connectRedisClient();
+        expect(await cacheService.isRedisClientConnected()).to.be.true;
+      });
+    });
+
+    describe('getNumberOfRedisConnections', async function () {
+      it('should return 1 if shared cache is enabled', async function () {
+        expect(await cacheService.getNumberOfRedisConnections()).to.equal(1);
+      });
+
+      it('should return 0 if shared cache is enabled and client is disconnected', async function () {
+        await cacheService.disconnectRedisClient();
+        expect(await cacheService.getNumberOfRedisConnections()).to.equal(0);
+      });
+
+      it('should return 1 if shared cache is enabled and client is reconnected', async function () {
+        await cacheService.disconnectRedisClient();
+        await cacheService.connectRedisClient();
+        expect(await cacheService.getNumberOfRedisConnections()).to.equal(1);
+      });
+    });
+
+    describe('connectRedisClient', async function () {
+      it('should connect Redis client if shared cache is enabled', async function () {
+        await cacheService.disconnectRedisClient();
+        await cacheService.connectRedisClient();
+        expect(await cacheService.isRedisClientConnected()).to.be.true;
+      });
+
+      it('should not throw error if Redis client is already connected', async function () {
+        await expect(cacheService.connectRedisClient()).to.not.be.rejected;
+      });
+    });
 
     describe('disconnectRedisClient', async function () {
       it('should disconnect Redis client if shared cache is enabled', async function () {
