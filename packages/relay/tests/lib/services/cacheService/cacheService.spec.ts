@@ -273,17 +273,12 @@ describe('CacheService Test Suite', async function () {
     });
 
     this.afterAll(async () => {
-      if (await cacheService.isRedisClientConnected()) {
-        logger.trace('Number of connections: ', cacheService.getNumberOfRedisConnections());
-        await cacheService.disconnectRedisClient();
-      }
+      await cacheService.disconnectRedisClient();
       process.env.MULTI_SET = multiSet;
     });
 
     this.beforeEach(async () => {
-      if (!(await cacheService.isRedisClientConnected())) {
-        await cacheService.connectRedisClient();
-      }
+      await cacheService.connectRedisClient();
       await cacheService.clear();
     });
 
