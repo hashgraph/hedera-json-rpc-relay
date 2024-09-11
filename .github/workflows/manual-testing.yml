@@ -187,3 +187,4 @@ jobs:
           check_name: '' # Set to empty to disable check run
           json_thousands_separator: ','
           files: 'test-*.xml'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
