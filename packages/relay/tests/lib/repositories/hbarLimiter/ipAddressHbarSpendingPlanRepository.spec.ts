@@ -48,7 +48,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
       let redisInMemoryServer: RedisInMemoryServer;
 
       this.beforeAll(async () => {
-        redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6382);
+        redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6383);
         await redisInMemoryServer.start();
         test = process.env.TEST;
         redisEnabled = process.env.REDIS_ENABLED;
