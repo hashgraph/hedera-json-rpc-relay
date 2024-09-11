@@ -81,7 +81,7 @@ export class RedisCache implements IRedisCacheClient {
       socket: {
         reconnectStrategy: (retries: number) => {
           const delay = retries * reconnectDelay;
-          logger.warn(`Trying to reconnect with Redis, ${retries} left. Delay is ${delay} ms...`);
+          logger.warn(`Trying to reconnect with Redis, retry #${retries}. Delay is ${delay} ms...`);
           return delay;
         },
       },
@@ -94,13 +94,19 @@ export class RedisCache implements IRedisCacheClient {
         return false;
       });
     this.client.on('ready', async () => {
+      this.connected = Promise.resolve(true);
       const connections = await this.getNumberOfConnections().catch((error) => {
         this.logger.error(error);
         return 0;
       });
       logger.info(`Connected to Redis server (${redisUrl}) successfully! Number of connections: ${connections}`);
     });
+    this.client.on('end', () => {
+      this.connected = Promise.resolve(false);
+      logger.info('Disconnected from Redis server!');
+    });
     this.client.on('error', (error) => {
+      this.connected = Promise.resolve(false);
       const redisError = new RedisCacheError(error);
       if (redisError.isSocketClosed()) {
         logger.error(`Error occurred with Redis Connection when closing socket: ${redisError.message}`);
@@ -278,7 +284,6 @@ export class RedisCache implements IRedisCacheClient {
       return;
     }
     await this.client.connect();
-    this.connected = Promise.resolve(true);
   }
 
   /**
@@ -290,7 +295,6 @@ export class RedisCache implements IRedisCacheClient {
   async disconnect(): Promise<void> {
     const client = await this.getConnectedClient();
     await client.quit();
-    this.connected = Promise.resolve(false);
   }
 
   /**

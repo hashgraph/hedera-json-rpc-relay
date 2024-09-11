@@ -47,7 +47,9 @@ describe('RedisCache Test Suite', async function () {
   });
 
   this.afterAll(async () => {
-    await redisCache.disconnect();
+    if (await redisCache.isConnected()) {
+      await redisCache.disconnect();
+    }
   });
 
   describe('Get and Set Test Suite', async function () {
