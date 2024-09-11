@@ -141,7 +141,7 @@ export class CacheService {
         await this.sharedCache.connect();
       } catch (e) {
         const redisError = new RedisCacheError(e);
-        this.logger.error(`Error occurred when connecting to Redis. Fallback to internal cache. ${redisError}`);
+        this.logger.error(`Error occurred when connecting to Redis. ${redisError}`);
       }
     }
   }
@@ -157,7 +157,7 @@ export class CacheService {
         await this.sharedCache.disconnect();
       } catch (e) {
         const redisError = new RedisCacheError(e);
-        this.logger.error(`Error occurred when disconnecting from Redis. Fallback to internal cache. ${redisError}`);
+        this.logger.error(`Error occurred when disconnecting from Redis. ${redisError}`);
       }
     }
   }
