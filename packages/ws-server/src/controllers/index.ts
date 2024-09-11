@@ -32,6 +32,7 @@ import {
   MethodNotFound,
   IPRateLimitExceeded,
 } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
+import { IRequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/IRequestDetails';
 
 /**
  * Handles sending requests to a Relay by calling a specified method with given parameters.
@@ -57,7 +58,7 @@ const handleSendingRequestsToRelay = async ({
   connectionIdPrefix,
 }): Promise<any> => {
   logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Submitting request=${JSON.stringify(request)} to relay.`);
-
+  const requestDetails = { requestIdPrefix: requestIdPrefix, requestIp: request.ip } as IRequestDetails;
   try {
     const resolvedParams = resolveParams(method, params);
     const [service, methodName] = method.split('_');
@@ -69,10 +70,10 @@ const handleSendingRequestsToRelay = async ({
       txRes = await relay
         .eth()
         .filterService()
-        [methodName](...resolvedParams, requestIdPrefix);
-    } else {
-      txRes = await relay[service]()[methodName](...resolvedParams, requestIdPrefix);
+        [methodName](...resolvedParams, requestDetails);
     }
+
+    txRes = await relay[service]()[methodName](...resolvedParams, requestDetails);
 
     if (!txRes) {
       logger.trace(

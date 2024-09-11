@@ -215,7 +215,10 @@ httpApp.use(async (ctx, next) => {
   } else if (ctx.url === '/health/readiness') {
     // readiness endpoint
     try {
-      const result = relay.eth().chainId();
+      const result = relay.eth().chainId({
+        requestIdPrefix: ctx.state.reqId,
+        requestIp: ctx.request.ip,
+      });
       if (result.includes('0x12')) {
         ctx.status = 200;
         ctx.body = 'OK';
