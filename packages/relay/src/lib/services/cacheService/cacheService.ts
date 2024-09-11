@@ -138,6 +138,9 @@ export class CacheService {
   async connectRedisClient(): Promise<void> {
     if (this.sharedCache instanceof RedisCache) {
       try {
+        if (await this.sharedCache.isConnected()) {
+          return;
+        }
         await this.sharedCache.connect();
       } catch (e) {
         const redisError = new RedisCacheError(e);
@@ -154,6 +157,9 @@ export class CacheService {
   async disconnectRedisClient(): Promise<void> {
     if (this.sharedCache instanceof RedisCache) {
       try {
+        if (!(await this.sharedCache.isConnected())) {
+          return;
+        }
         await this.sharedCache.disconnect();
       } catch (e) {
         const redisError = new RedisCacheError(e);
