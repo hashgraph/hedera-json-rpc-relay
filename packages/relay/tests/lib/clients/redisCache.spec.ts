@@ -24,7 +24,6 @@ import chaiAsPromised from 'chai-as-promised';
 import { RedisCache } from '../../../src/lib/clients';
 import { Registry } from 'prom-client';
 import { useInMemoryRedisServer } from '../../helpers';
-import { SinonSpy, spy } from 'sinon';
 
 chai.use(chaiAsPromised);
 
