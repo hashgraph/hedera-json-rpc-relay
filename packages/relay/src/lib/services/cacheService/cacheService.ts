@@ -341,7 +341,6 @@ export class CacheService {
     }
 
     // fallback to internal cache in case of Redis error
-    this.logger.trace(`${requestIdPrefix} Fallback to internal cache for key: ${key}`);
     this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.DELETE).inc(1);
     await this.internalCache.delete(key, callingMethod, requestIdPrefix);
   }
