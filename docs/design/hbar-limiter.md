@@ -9,6 +9,7 @@
   - [Requirements](#requirements)
     - [Spending Tracking](#spending-tracking)
     - [Spending Limits](#spending-limits)
+    - [Early Detection and Prevention (Preemptive Rate Limit)](#early-detection-and-prevention-preemptive-rate-limit)
   - [Architecture](#architecture)
     - [High-Level Design](#high-level-design)
     - [Class Diagram](#class-diagram)
@@ -228,9 +229,8 @@ The metrics listed below will be added to help determine the best Tier 3 General
 ##### Metrics to Track
 1. Daily Unique Users
 2. Total HBar Spent per Day
-3. Average HBar Spent per User per Day
-4. Rolling Average of Daily Unique Users (e.g., over 7 or 30 days)
-5. Individual User Daily and Monthly Usage
+3. Rolling Average of Daily Unique Users (e.g., over 7 or 30 days)
+4. Individual User Daily and Monthly Usage
    
 ##### Allocation Algorithm
 1. Base Allocation:
