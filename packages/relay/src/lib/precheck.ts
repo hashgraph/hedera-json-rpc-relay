@@ -266,14 +266,14 @@ export class Precheck {
 
     const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data);
 
-    if (gasLimit > constants.BLOCK_GAS_LIMIT) {
+    if (gasLimit > constants.MAX_GAS_PER_SEC) {
       this.logger.trace(
         `${requestIdPrefix} ${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`,
         JSON.stringify(tx),
         gasLimit,
-        constants.BLOCK_GAS_LIMIT,
+        constants.MAX_GAS_PER_SEC,
       );
-      throw predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.BLOCK_GAS_LIMIT);
+      throw predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.MAX_GAS_PER_SEC);
     } else if (gasLimit < intrinsicGasCost) {
       this.logger.trace(
         `${requestIdPrefix} ${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`,

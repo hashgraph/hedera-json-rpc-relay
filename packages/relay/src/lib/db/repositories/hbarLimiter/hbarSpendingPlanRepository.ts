@@ -183,11 +183,7 @@ export class HbarSpendingPlanRepository {
   async findAllActiveBySubscriptionType(subscriptionType: SubscriptionType): Promise<IDetailedHbarSpendingPlan[]> {
     const callerMethod = this.findAllActiveBySubscriptionType.name;
     const keys = await this.cache.keys(`${this.collectionKey}:*`, callerMethod);
-    const plans = await Promise.all(
-      keys.map(async (key: string) => {
-        return this.cache.getAsync<IHbarSpendingPlan>(key, callerMethod);
-      }),
-    );
+    const plans = await Promise.all(keys.map((key) => this.cache.getAsync<IHbarSpendingPlan>(key, callerMethod)));
     return Promise.all(
       plans
         .filter((plan) => plan.subscriptionType === subscriptionType && plan.active)

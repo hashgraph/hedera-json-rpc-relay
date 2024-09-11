@@ -50,7 +50,7 @@ export const predefined = {
   GAS_LIMIT_TOO_HIGH: (gasLimit, maxGas) =>
     new JsonRpcError({
       code: -32005,
-      message: `Transaction gas limit '${gasLimit}' exceeds block gas limit '${maxGas}'`,
+      message: `Transaction gas limit '${gasLimit}' exceeds max gas per sec limit '${maxGas}'`,
     }),
   GAS_LIMIT_TOO_LOW: (gasLimit, requiredGas) =>
     new JsonRpcError({

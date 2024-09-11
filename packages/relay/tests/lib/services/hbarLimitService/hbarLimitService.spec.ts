@@ -303,7 +303,6 @@ describe('HbarLimitService', function () {
     const testAddExpense = async (ethAddress: string, ipAddress?: string, expense: number = 100) => {
       const otherPlanUsedToday = createSpendingPlan(uuidV4(randomBytes(16)), 200);
       const existingSpendingPlan = createSpendingPlan(mockPlanId, 0);
-      const allPlans = [existingSpendingPlan, otherPlanUsedToday];
       if (ethAddress) {
         ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ethAddress,
