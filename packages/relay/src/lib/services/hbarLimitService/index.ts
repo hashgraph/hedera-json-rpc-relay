@@ -140,11 +140,24 @@ export class HbarLimitService implements IHbarLimitService {
 
   /**
    * Resets the {@link HbarSpendingPlan#spentToday} field for all existing plans.
+   * @param {string} [requestId] - An optional unique request ID for tracking the request.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
-  async resetLimiter(): Promise<void> {
-    // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2868
-    throw new Error('Not implemented');
+  async resetLimiter(requestId?: string): Promise<void> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.trace(`${requestIdPrefix} Resetting HBAR rate limiter...`);
+    await this.hbarSpendingPlanRepository.resetAllSpentTodayEntries();
+    this.remainingBudget = this.totalBudget;
+    this.hbarLimitRemainingGauge.set(this.remainingBudget);
+    for (const subscriptionType of Object.values(SubscriptionType)) {
+      this.dailyUniqueSpendingPlansCounter[subscriptionType].reset();
+      this.averageDailySpendingPlanUsagesGauge[subscriptionType].reset();
+    }
+    const tomorrow = new Date(Date.now() + HbarLimitService.ONE_DAY_IN_MILLIS);
+    this.reset = new Date(tomorrow.setHours(0, 0, 0, 0));
+    this.logger.trace(
+      `${requestIdPrefix} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
+    );
   }
 
   /**

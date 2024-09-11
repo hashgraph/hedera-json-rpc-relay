@@ -157,6 +157,18 @@ export class HbarSpendingPlanRepository {
   }
 
   /**
+   * Resets the amount spent today for all hbar spending plans.
+   * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   */
+  async resetAllSpentTodayEntries(): Promise<void> {
+    this.logger.trace('Resetting the spentToday entries for all HbarSpendingPlans...');
+    const callerMethod = this.resetAllSpentTodayEntries.name;
+    const keys = await this.cache.keys(`${this.collectionKey}:*:spentToday`, callerMethod);
+    await Promise.all(keys.map((key) => this.cache.delete(key, callerMethod)));
+    this.logger.trace(`Successfully reset ${keys.length} spentToday entries for HbarSpendingPlans.`);
+  }
+
+  /**
    * Adds an amount to the amount spent today for a plan.
    * @param id - The ID of the plan.
    * @param amount - The amount to add.
