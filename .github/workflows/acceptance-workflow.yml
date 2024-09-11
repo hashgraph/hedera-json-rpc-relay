@@ -132,3 +132,4 @@ jobs:
           comment_mode: off
           json_thousands_separator: ','
           files: 'test-*.xml'
+          github_token: ${{ secrets.GITHUB_TOKEN }}

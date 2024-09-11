@@ -56,3 +56,4 @@ jobs:
           check_name: Test Results
           json_thousands_separator: ','
           files: 'test-*.xml'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
