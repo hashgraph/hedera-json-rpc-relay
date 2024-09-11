@@ -248,26 +248,26 @@ describe('CacheService Test Suite', async function () {
     useInMemoryRedisServer(logger, 6381);
 
     let multiSet: string | undefined;
-    let disconnected: boolean;
 
-    const disconnectRedisClient = async () => {
-      await cacheService.disconnectRedisClient();
-      disconnected = true;
-    };
-
-    this.beforeEach(async () => {
+    this.beforeAll(async () => {
       multiSet = process.env.MULTI_SET;
       process.env.MULTI_SET = 'true';
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
-      disconnected = false;
     });
 
-    this.afterEach(async () => {
-      if (!disconnected) {
-        await cacheService.clear();
-        await disconnectRedisClient();
+    this.afterAll(async () => {
+      if (await cacheService.isRedisClientConnected()) {
+        logger.trace('Number of connections: ', cacheService.getNumberOfRedisConnections());
+        await cacheService.disconnectRedisClient();
       }
       process.env.MULTI_SET = multiSet;
+    });
+
+    this.beforeEach(async () => {
+      if (!(await cacheService.isRedisClientConnected())) {
+        await cacheService.connectRedisClient();
+      }
+      await cacheService.clear();
     });
 
     it('should be able to set and get from shared cache', async function () {
@@ -325,7 +325,7 @@ describe('CacheService Test Suite', async function () {
 
     it('should be able to getAsync from internal cache in case of Redis error', async function () {
       const key = 'string';
-      await disconnectRedisClient();
+      await cacheService.disconnectRedisClient();
 
       const cachedValue = await cacheService.getAsync(key, callingMethod);
       expect(cachedValue).eq(null);
@@ -335,7 +335,7 @@ describe('CacheService Test Suite', async function () {
       const key = 'string';
       const value = 'value';
 
-      await disconnectRedisClient();
+      await cacheService.disconnectRedisClient();
 
       await expect(cacheService.set(key, value, callingMethod)).to.eventually.not.be.rejected;
 
@@ -345,7 +345,7 @@ describe('CacheService Test Suite', async function () {
 
     it('should be able to delete from internal cache in case of Redis error', async function () {
       const key = 'string';
-      await disconnectRedisClient();
+      await cacheService.disconnectRedisClient();
 
       await expect(cacheService.delete(key, callingMethod)).to.eventually.not.be.rejected;
     });
@@ -436,7 +436,7 @@ describe('CacheService Test Suite', async function () {
     describe('disconnectRedisClient', async function () {
       it('should disconnect Redis client if shared cache is enabled', async function () {
         const disconnectSpy = sinon.spy(cacheService['sharedCache'], <any>'disconnect');
-        await disconnectRedisClient();
+        await cacheService.disconnectRedisClient();
         expect(disconnectSpy.calledOnce).to.be.true;
       });
     });

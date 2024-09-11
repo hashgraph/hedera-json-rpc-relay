@@ -62,6 +62,7 @@ export class RedisInMemoryServer {
       this.logger.info(`Started Redis in-memory server on ${host}:${port} successfully.`);
     } else {
       this.logger.error("Couldn't start Redis in-memory server successfully.");
+      await this.performHealthCheck();
     }
   }
 
@@ -73,10 +74,6 @@ export class RedisInMemoryServer {
     return this.inMemoryRedisServer.getHost();
   }
 
-  getInstanceInfo(): false | RedisInstanceDataT {
-    return this.inMemoryRedisServer.getInstanceInfo();
-  }
-
   async stop(): Promise<void> {
     this.logger.trace('Stopping Redis in-memory server....');
     const stopped = await this.inMemoryRedisServer.stop();
@@ -84,6 +81,16 @@ export class RedisInMemoryServer {
       this.logger.info('Stopped Redis in-memory server successfully.');
     } else {
       this.logger.info("Couldn't stop Redis in-memory server successfully.");
+    }
+  }
+
+  private async performHealthCheck(): Promise<void> {
+    try {
+      // Ensure that the instance is running -> throws error if instance cannot be started
+      const instanceData = await this.inMemoryRedisServer.ensureInstance();
+      this.logger.debug(`Redis in-memory server health check passed, server is running on port ${instanceData.port}.`);
+    } catch (error) {
+      this.logger.warn(`Redis in-memory server health check failed: ${error}`);
     }
   }
 }
