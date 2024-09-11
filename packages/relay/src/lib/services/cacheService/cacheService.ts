@@ -244,7 +244,7 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
-  private async getFromInternalCache(key: string, callingMethod: string, requestIdPrefix?: string): Promise<any> {
+  private async getFromInternalCache(key: string, callingMethod: string, requestIdPrefix: string): Promise<any> {
     this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.GET).inc(1);
 
     return await this.internalCache.get(key, callingMethod, requestIdPrefix);
@@ -264,14 +264,14 @@ export class CacheService {
     key: string,
     value: any,
     callingMethod: string,
+    requestIdPrefix: string,
     ttl?: number,
-    requestIdPrefix?: string,
   ): Promise<void> {
     if (this.isSharedCacheEnabled) {
       try {
         this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.SET).inc(1);
 
-        await this.sharedCache.set(key, value, callingMethod, ttl, requestIdPrefix);
+        await this.sharedCache.set(key, value, callingMethod, requestIdPrefix, ttl);
         return;
       } catch (error) {
         const redisError = new RedisCacheError(error);
@@ -283,7 +283,7 @@ export class CacheService {
 
     // fallback to internal cache in case of Redis error
     this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
-    await this.internalCache.set(key, value, callingMethod, ttl, requestIdPrefix);
+    await this.internalCache.set(key, value, callingMethod, requestIdPrefix, ttl);
   }
 
   /**
@@ -299,8 +299,8 @@ export class CacheService {
   public async multiSet(
     entries: Record<string, any>,
     callingMethod: string,
+    requestIdPrefix: string,
     ttl?: number,
-    requestIdPrefix?: string,
   ): Promise<void> {
     if (this.isSharedCacheEnabled) {
       const metricsMethod = this.shouldMultiSet ? CacheService.methods.MSET : CacheService.methods.PIPELINE;
@@ -308,7 +308,7 @@ export class CacheService {
         if (this.shouldMultiSet) {
           await this.sharedCache.multiSet(entries, callingMethod, requestIdPrefix);
         } else {
-          await this.sharedCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
+          await this.sharedCache.pipelineSet(entries, callingMethod, requestIdPrefix, ttl);
         }
 
         this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.REDIS, metricsMethod).inc(1);
@@ -322,7 +322,7 @@ export class CacheService {
     }
 
     // fallback to internal cache, but use pipeline, because of it's TTL support
-    await this.internalCache.pipelineSet(entries, callingMethod, ttl, requestIdPrefix);
+    await this.internalCache.pipelineSet(entries, callingMethod, requestIdPrefix, ttl);
     this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
   }
 
@@ -334,7 +334,7 @@ export class CacheService {
    * @param {string} callingMethod - The name of the method calling the cache.
    * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
    */
-  public async delete(key: string, callingMethod: string, requestIdPrefix?: string): Promise<void> {
+  public async delete(key: string, callingMethod: string, requestIdPrefix: string): Promise<void> {
     if (this.isSharedCacheEnabled) {
       try {
         this.cacheMethodsCounter
@@ -362,7 +362,7 @@ export class CacheService {
    * Else the internal cache clearing is attempted.
    * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
    */
-  public async clear(requestIdPrefix?: string): Promise<void> {
+  public async clear(requestIdPrefix: string): Promise<void> {
     if (this.isSharedCacheEnabled) {
       try {
         await this.sharedCache.clear();
@@ -387,7 +387,7 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
    * @returns {Promise<number>} A Promise that resolves with the new value of the key after incrementing.
    */
-  public async incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix?: string): Promise<number> {
+  public async incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix: string): Promise<number> {
     if (this.isSharedCacheEnabled && this.sharedCache instanceof RedisCache) {
       try {
         this.cacheMethodsCounter
@@ -412,7 +412,7 @@ export class CacheService {
         : undefined;
 
     this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
-    await this.internalCache.set(key, newValue, callingMethod, remainingTtl, requestIdPrefix);
+    await this.internalCache.set(key, newValue, callingMethod, requestIdPrefix, remainingTtl);
 
     return newValue;
   }
@@ -425,7 +425,7 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
    * @returns {Promise<number>} A Promise that resolves with the new length of the list after pushing.
    */
-  public async rPush(key: string, value: any, callingMethod: string, requestIdPrefix?: string): Promise<number> {
+  public async rPush(key: string, value: any, callingMethod: string, requestIdPrefix: string): Promise<number> {
     if (this.isSharedCacheEnabled && this.sharedCache instanceof RedisCache) {
       try {
         this.cacheMethodsCounter
@@ -453,7 +453,7 @@ export class CacheService {
         : undefined;
 
     this.cacheMethodsCounter.labels(callingMethod, CacheService.cacheTypes.LRU, CacheService.methods.SET).inc(1);
-    await this.internalCache.set(key, values, callingMethod, remainingTtl, requestIdPrefix);
+    await this.internalCache.set(key, values, callingMethod, requestIdPrefix, remainingTtl);
 
     return values.length;
   }
@@ -473,7 +473,7 @@ export class CacheService {
     start: number,
     end: number,
     callingMethod: string,
-    requestIdPrefix?: string,
+    requestIdPrefix: string,
   ): Promise<T[]> {
     if (this.isSharedCacheEnabled && this.sharedCache instanceof RedisCache) {
       try {
@@ -508,7 +508,7 @@ export class CacheService {
    * @param {string} [requestIdPrefix] - A prefix to include in log messages (optional).
    * @returns {Promise<string[]>} A Promise that resolves with an array of keys that match the pattern.
    */
-  async keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]> {
+  async keys(pattern: string, callingMethod: string, requestIdPrefix: string): Promise<string[]> {
     if (this.isSharedCacheEnabled && this.sharedCache instanceof RedisCache) {
       try {
         return await this.sharedCache.keys(pattern, callingMethod, requestIdPrefix);

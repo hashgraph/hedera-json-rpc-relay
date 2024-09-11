@@ -360,7 +360,6 @@ export class SDKClient {
           constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
           tinyBars,
           callerName,
-          undefined,
           requestDetails.requestIdPrefix,
         );
         return tinyBars;

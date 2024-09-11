@@ -175,7 +175,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     expect(numberTo0x(newBlockNumber)).to.be.eq(blockNumber3);
   });
 
-  it.only('"eth_blockNumber" should throw an error if no blocks are found', async function () {
+  it('"eth_blockNumber" should throw an error if no blocks are found', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(404, BLOCK_NOT_FOUND_RES);
     const error = predefined.COULD_NOT_RETRIEVE_LATEST_BLOCK;
     await RelayAssertions.assertRejection(error, ethImpl.blockNumber, true, ethImpl, [requestDetails]);

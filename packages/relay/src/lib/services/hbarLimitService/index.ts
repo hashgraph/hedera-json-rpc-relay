@@ -186,7 +186,7 @@ export class HbarLimitService implements IHbarLimitService {
     let spendingPlan = await this.getSpendingPlan(ethAddress, requestIdPrefix, ipAddress);
     if (!spendingPlan) {
       // Create a basic spending plan if none exists for the eth address or ip address
-      spendingPlan = await this.createBasicSpendingPlan(ethAddress, ipAddress);
+      spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestIdPrefix, ipAddress);
     }
 
     const dailyLimit = HbarLimitService.DAILY_LIMITS[spendingPlan.subscriptionType];
@@ -216,7 +216,7 @@ export class HbarLimitService implements IHbarLimitService {
     let spendingPlan = await this.getSpendingPlan(ethAddress, requestIdPrefix, ipAddress);
     if (!spendingPlan) {
       // Create a basic spending plan if none exists for the eth address or ip address
-      spendingPlan = await this.createBasicSpendingPlan(ethAddress, ipAddress);
+      spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestIdPrefix, ipAddress);
     }
 
     this.logger.trace(
@@ -235,7 +235,7 @@ export class HbarLimitService implements IHbarLimitService {
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
 
     // Done asynchronously in the background
-    this.updateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType).then();
+    this.updateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType, requestIdPrefix).then();
 
     this.logger.trace(
       `${requestIdPrefix} HBAR rate limit expense update: cost=${cost}, remainingBudget=${this.remainingBudget}`,
@@ -279,8 +279,14 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {SubscriptionType} subscriptionType - The subscription type to update the average daily usage for.
    * @private {Promise<void>} - A promise that resolves when the average daily usage has been updated.
    */
-  private async updateAverageDailyUsagePerSubscriptionType(subscriptionType: SubscriptionType): Promise<void> {
-    const plans = await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionType(subscriptionType);
+  private async updateAverageDailyUsagePerSubscriptionType(
+    subscriptionType: SubscriptionType,
+    requestIdPrefix: string,
+  ): Promise<void> {
+    const plans = await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionType(
+      subscriptionType,
+      requestIdPrefix,
+    );
     const totalUsage = plans.reduce((total, plan) => total + plan.spentToday, 0);
     const averageUsage = Math.round(totalUsage / plans.length);
     this.averageDailySpendingPlanUsagesGauge[subscriptionType].set(averageUsage);
@@ -389,15 +395,19 @@ export class HbarLimitService implements IHbarLimitService {
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
    * @private
    */
-  private async createBasicSpendingPlan(ethAddress: string, ipAddress?: string): Promise<IDetailedHbarSpendingPlan> {
+  private async createBasicSpendingPlan(
+    ethAddress: string,
+    requstIdPrefix: string,
+    ipAddress?: string,
+  ): Promise<IDetailedHbarSpendingPlan> {
     if (!ethAddress && !ipAddress) {
       throw new Error('Cannot create a spending plan without an associated eth address or ip address');
     }
-    const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC);
+    const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC, requstIdPrefix);
 
     if (ethAddress) {
       this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`);
-      await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id });
+      await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id }, requstIdPrefix);
     }
     if (ipAddress) {
       this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to ip address ${ipAddress}`);

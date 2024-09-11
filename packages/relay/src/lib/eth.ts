@@ -387,13 +387,7 @@ export class EthImpl implements Eth {
           );
         }
         if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
-          await this.cacheService.set(
-            cacheKey,
-            feeHistory,
-            EthImpl.ethFeeHistory,
-            undefined,
-            requestDetails.requestIdPrefix,
-          );
+          await this.cacheService.set(cacheKey, feeHistory, EthImpl.ethFeeHistory, requestDetails.requestIdPrefix);
         }
       }
 
@@ -554,7 +548,7 @@ export class EthImpl implements Eth {
       const timestamp = blocks[0].timestamp.to;
       const blockTimeStamp: LatestBlockNumberTimestamp = { blockNumber: currentBlock, timeStampTo: timestamp };
       // save the latest block number in cache
-      await this.cacheService.set(cacheKey, currentBlock, caller, this.ethBlockNumberCacheTtlMs, requestIdPrefix);
+      await this.cacheService.set(cacheKey, currentBlock, caller, requestIdPrefix, this.ethBlockNumberCacheTtlMs);
 
       return blockTimeStamp;
     }
@@ -708,7 +702,7 @@ export class EthImpl implements Eth {
     let account = await this.cacheService.getAsync(key, EthImpl.ethEstimateGas, requestIdPrefix);
     if (!account) {
       account = await this.mirrorNodeClient.getAccount(address, requestIdPrefix);
-      await this.cacheService.set(key, account, EthImpl.ethEstimateGas, undefined, requestIdPrefix);
+      await this.cacheService.set(key, account, EthImpl.ethEstimateGas, requestIdPrefix);
     }
     return account;
   }
@@ -776,8 +770,8 @@ export class EthImpl implements Eth {
           constants.CACHE_KEY.GAS_PRICE,
           gasPrice,
           EthImpl.ethGasPrice,
-          this.ethGasPRiceCacheTtlMs,
           requestDetails.requestIdPrefix,
+          this.ethGasPRiceCacheTtlMs,
         );
       }
 
@@ -1106,8 +1100,8 @@ export class EthImpl implements Eth {
         cacheKey,
         cachedBalance,
         EthImpl.ethGetBalance,
-        this.ethGetBalanceCacheTtlMs,
         requestIdPrefix,
+        this.ethGetBalanceCacheTtlMs,
       );
 
       return cachedBalance;
@@ -1176,7 +1170,6 @@ export class EthImpl implements Eth {
                 cachedLabel,
                 result?.entity.runtime_bytecode,
                 EthImpl.ethGetCode,
-                undefined,
                 requestIdPrefix,
               );
               return result?.entity.runtime_bytecode;
@@ -1245,7 +1238,7 @@ export class EthImpl implements Eth {
       block = await this.getBlock(hash, showDetails, requestDetails).catch((e: any) => {
         throw this.common.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
       });
-      await this.cacheService.set(cacheKey, block, EthImpl.ethGetBlockByHash, undefined, requestIdPrefix);
+      await this.cacheService.set(cacheKey, block, EthImpl.ethGetBlockByHash, requestIdPrefix);
     }
 
     return block;
@@ -1276,7 +1269,7 @@ export class EthImpl implements Eth {
       });
 
       if (!this.common.blockTagIsLatestOrPending(blockNumOrTag)) {
-        await this.cacheService.set(cacheKey, block, EthImpl.ethGetBlockByNumber, undefined, requestIdPrefix);
+        await this.cacheService.set(cacheKey, block, EthImpl.ethGetBlockByNumber, requestIdPrefix);
       }
     }
 
@@ -1313,13 +1306,7 @@ export class EthImpl implements Eth {
         throw this.common.genericErrorHandler(e, `${requestIdPrefix} Failed to retrieve block for hash ${hash}`);
       });
 
-    await this.cacheService.set(
-      cacheKey,
-      transactionCount,
-      EthImpl.ethGetTransactionCountByHash,
-      undefined,
-      requestIdPrefix,
-    );
+    await this.cacheService.set(cacheKey, transactionCount, EthImpl.ethGetTransactionCountByHash, requestIdPrefix);
     return transactionCount;
   }
 
@@ -1359,13 +1346,7 @@ export class EthImpl implements Eth {
         );
       });
 
-    await this.cacheService.set(
-      cacheKey,
-      transactionCount,
-      EthImpl.ethGetTransactionCountByNumber,
-      undefined,
-      requestIdPrefix,
-    );
+    await this.cacheService.set(cacheKey, transactionCount, EthImpl.ethGetTransactionCountByNumber, requestIdPrefix);
     return transactionCount;
   }
 
@@ -1485,7 +1466,7 @@ export class EthImpl implements Eth {
       blockNumOrTag === EthImpl.blockEarliest || !isNaN(blockNum)
         ? constants.CACHE_TTL.ONE_DAY
         : this.ethGetTransactionCountCacheTtl; // cache historical values longer as they don't change
-    await this.cacheService.set(cacheKey, nonceCount, EthImpl.ethGetTransactionCount, cacheTtl, requestIdPrefix);
+    await this.cacheService.set(cacheKey, nonceCount, EthImpl.ethGetTransactionCount, requestIdPrefix, cacheTtl);
 
     return nonceCount;
   }
@@ -1952,8 +1933,8 @@ export class EthImpl implements Eth {
           cacheKey,
           formattedCallReponse,
           EthImpl.ethCall,
-          this.ethCallCacheTtl,
           requestIdPrefix,
+          this.ethCallCacheTtl,
         );
         return formattedCallReponse;
       }
@@ -2124,8 +2105,8 @@ export class EthImpl implements Eth {
         cacheKey,
         receipt,
         EthImpl.ethGetTransactionReceipt,
-        constants.CACHE_TTL.ONE_DAY,
         requestIdPrefix,
+        constants.CACHE_TTL.ONE_DAY,
       );
       return receipt;
     } else {
@@ -2175,8 +2156,8 @@ export class EthImpl implements Eth {
         cacheKey,
         receipt,
         EthImpl.ethGetTransactionReceipt,
-        constants.CACHE_TTL.ONE_DAY,
         requestIdPrefix,
+        constants.CACHE_TTL.ONE_DAY,
       );
       return receipt;
     }

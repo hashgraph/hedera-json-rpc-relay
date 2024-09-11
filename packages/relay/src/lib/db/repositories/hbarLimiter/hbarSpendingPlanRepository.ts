@@ -87,7 +87,7 @@ export class HbarSpendingPlanRepository {
    * @param subscriptionType - The subscription type of the plan to create.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - The created hbar spending plan object.
    */
-  async create(subscriptionType: SubscriptionType): Promise<IDetailedHbarSpendingPlan> {
+  async create(subscriptionType: SubscriptionType, requestIdPrefix: string): Promise<IDetailedHbarSpendingPlan> {
     const plan: IDetailedHbarSpendingPlan = {
       id: uuidV4(randomBytes(16)),
       subscriptionType,
@@ -98,7 +98,7 @@ export class HbarSpendingPlanRepository {
     };
     this.logger.trace(`Creating HbarSpendingPlan with ID ${plan.id}...`);
     const key = this.getKey(plan.id);
-    await this.cache.set(key, plan, 'create', this.threeMonthsInMillis);
+    await this.cache.set(key, plan, 'create', requestIdPrefix, this.threeMonthsInMillis);
     return new HbarSpendingPlan(plan);
   }
 
@@ -124,7 +124,13 @@ export class HbarSpendingPlanRepository {
 
     this.logger.trace(`Retrieving spending history for HbarSpendingPlan with ID ${id}...`);
     const key = this.getSpendingHistoryKey(id);
-    const spendingHistory = await this.cache.lRange<IHbarSpendingRecord>(key, 0, -1, 'getSpendingHistory');
+    const spendingHistory = await this.cache.lRange<IHbarSpendingRecord>(
+      key,
+      0,
+      -1,
+      'getSpendingHistory',
+      requestIdPrefix,
+    );
     return spendingHistory.map((entry) => new HbarSpendingRecord(entry));
   }
 
@@ -140,7 +146,7 @@ export class HbarSpendingPlanRepository {
     this.logger.trace(`Adding ${amount} to spending history for HbarSpendingPlan with ID ${id}...`);
     const key = this.getSpendingHistoryKey(id);
     const entry: IHbarSpendingRecord = { amount, timestamp: new Date() };
-    return this.cache.rPush(key, entry, 'addAmountToSpendingHistory');
+    return this.cache.rPush(key, entry, 'addAmountToSpendingHistory', requestIdPrefix);
   }
 
   /**
@@ -180,10 +186,10 @@ export class HbarSpendingPlanRepository {
     const key = this.getSpentTodayKey(id);
     if (!(await this.cache.getAsync(key, 'addAmountToSpentToday', requestIdPrefix))) {
       this.logger.trace(`No spending yet for HbarSpendingPlan with ID ${id}, setting spentToday to ${amount}...`);
-      await this.cache.set(key, amount, 'addAmountToSpentToday', this.oneDayInMillis);
+      await this.cache.set(key, amount, 'addAmountToSpentToday', requestIdPrefix, this.oneDayInMillis);
     } else {
       this.logger.trace(`Adding ${amount} to spentToday for HbarSpendingPlan with ID ${id}...`);
-      await this.cache.incrBy(key, amount, 'addAmountToSpentToday');
+      await this.cache.incrBy(key, amount, 'addAmountToSpentToday', requestIdPrefix);
     }
   }
 
@@ -192,10 +198,15 @@ export class HbarSpendingPlanRepository {
    * @param {SubscriptionType} subscriptionType - The subscription type to filter by.
    * @returns {Promise<IDetailedHbarSpendingPlan[]>} - A promise that resolves with the active spending plans.
    */
-  async findAllActiveBySubscriptionType(subscriptionType: SubscriptionType): Promise<IDetailedHbarSpendingPlan[]> {
+  async findAllActiveBySubscriptionType(
+    subscriptionType: SubscriptionType,
+    requestIdPrefix: string,
+  ): Promise<IDetailedHbarSpendingPlan[]> {
     const callerMethod = this.findAllActiveBySubscriptionType.name;
-    const keys = await this.cache.keys(`${this.collectionKey}:*`, callerMethod);
-    const plans = await Promise.all(keys.map((key) => this.cache.getAsync<IHbarSpendingPlan>(key, callerMethod)));
+    const keys = await this.cache.keys(`${this.collectionKey}:*`, callerMethod, requestIdPrefix);
+    const plans = await Promise.all(
+      keys.map((key) => this.cache.getAsync<IHbarSpendingPlan>(key, callerMethod, requestIdPrefix)),
+    );
     return Promise.all(
       plans
         .filter((plan) => plan.subscriptionType === subscriptionType && plan.active)
@@ -205,7 +216,7 @@ export class HbarSpendingPlanRepository {
               ...plan,
               createdAt: new Date(plan.createdAt),
               spendingHistory: [],
-              spentToday: await this.getSpentToday(plan.id),
+              spentToday: await this.getSpentToday(plan.id, requestIdPrefix),
             }),
         ),
     );

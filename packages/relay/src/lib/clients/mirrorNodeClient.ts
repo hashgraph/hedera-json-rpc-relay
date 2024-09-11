@@ -352,7 +352,7 @@ export class MirrorNodeClient {
       }
 
       const ms = Date.now() - start;
-      this.logger.debug(`${requestId} [${method}] ${path} ${response.status} ${ms} ms`);
+      this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${response.status} ${ms} ms`);
       this.mirrorResponseHistogram.labels(pathLabel, response.status?.toString()).observe(ms);
       return response.data;
     } catch (error: any) {
@@ -588,7 +588,7 @@ export class MirrorNodeClient {
       requestIdPrefix,
     );
 
-    await this.cacheService.set(cachedLabel, block, MirrorNodeClient.GET_BLOCK_ENDPOINT, undefined, requestIdPrefix);
+    await this.cacheService.set(cachedLabel, block, MirrorNodeClient.GET_BLOCK_ENDPOINT, requestIdPrefix);
     return block;
   }
 
@@ -642,8 +642,8 @@ export class MirrorNodeClient {
       cachedLabel,
       valid,
       MirrorNodeClient.GET_CONTRACT_ENDPOINT,
-      constants.CACHE_TTL.ONE_DAY,
       requestIdPrefix,
+      constants.CACHE_TTL.ONE_DAY,
     );
     return valid;
   }
@@ -672,8 +672,8 @@ export class MirrorNodeClient {
         cachedLabel,
         id,
         MirrorNodeClient.GET_CONTRACT_ENDPOINT,
-        constants.CACHE_TTL.ONE_DAY,
         requestIdPrefix,
+        constants.CACHE_TTL.ONE_DAY,
       );
       return id;
     }
@@ -709,8 +709,8 @@ export class MirrorNodeClient {
         cacheKey,
         response,
         MirrorNodeClient.GET_CONTRACT_RESULT_ENDPOINT,
-        constants.CACHE_TTL.ONE_HOUR,
         requestIdPrefix,
+        constants.CACHE_TTL.ONE_HOUR,
       );
     }
 
@@ -896,8 +896,8 @@ export class MirrorNodeClient {
         cachedLabel,
         block,
         MirrorNodeClient.GET_BLOCKS_ENDPOINT,
-        constants.CACHE_TTL.ONE_DAY,
         requestIdPrefix,
+        constants.CACHE_TTL.ONE_DAY,
       );
       return block;
     }
@@ -1179,7 +1179,7 @@ export class MirrorNodeClient {
           type: constants.TYPE_CONTRACT,
           entity: contract,
         };
-        await this.cacheService.set(cachedLabel, response, callerName, undefined, requestIdPrefix);
+        await this.cacheService.set(cachedLabel, response, callerName, requestIdPrefix);
         return response;
       }
     }
@@ -1234,7 +1234,7 @@ export class MirrorNodeClient {
       type,
       entity: data.value,
     };
-    await this.cacheService.set(cachedLabel, response, callerName, undefined, requestIdPrefix);
+    await this.cacheService.set(cachedLabel, response, callerName, requestIdPrefix);
     return response;
   }
 

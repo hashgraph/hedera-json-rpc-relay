@@ -151,13 +151,7 @@ export class RedisCache implements IRedisCacheClient {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<void>} A Promise that resolves when the value is cached.
    */
-  async set(
-    key: string,
-    value: any,
-    callingMethod: string,
-    ttl?: number | undefined,
-    requestIdPrefix?: string | undefined,
-  ): Promise<void> {
+  async set(key: string, value: any, callingMethod: string, requestIdPrefix: string, ttl?: number): Promise<void> {
     const client = await this.getConnectedClient();
     const serializedValue = JSON.stringify(value);
     const resolvedTtl = ttl ?? this.options.ttl; // in milliseconds
@@ -175,7 +169,7 @@ export class RedisCache implements IRedisCacheClient {
    * @param {string} requestIdPrefix - Optional request ID prefix for logging.
    * @returns {Promise<void>} A Promise that resolves when the values are cached.
    */
-  async multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix?: string): Promise<void> {
+  async multiSet(keyValuePairs: Record<string, any>, callingMethod: string, requestIdPrefix: string): Promise<void> {
     const client = await this.getConnectedClient();
     // Serialize values
     const serializedKeyValuePairs: Record<string, string> = {};
@@ -207,8 +201,8 @@ export class RedisCache implements IRedisCacheClient {
   async pipelineSet(
     keyValuePairs: Record<string, any>,
     callingMethod: string,
-    ttl?: number | undefined,
-    requestIdPrefix?: string,
+    requestIdPrefix: string,
+    ttl?: number,
   ): Promise<void> {
     const client = await this.getConnectedClient();
     const resolvedTtl = ttl ?? this.options.ttl; // in milliseconds
@@ -236,7 +230,7 @@ export class RedisCache implements IRedisCacheClient {
    * @param {string} [requestIdPrefix] - The optional request ID prefix.
    * @returns {Promise<void>} A Promise that resolves when the value is deleted from the cache.
    */
-  async delete(key: string, callingMethod: string, requestIdPrefix?: string | undefined): Promise<void> {
+  async delete(key: string, callingMethod: string, requestIdPrefix: string): Promise<void> {
     const client = await this.getConnectedClient();
     await client.del(key);
     this.logger.trace(`${requestIdPrefix} delete cache for ${key} on ${callingMethod} call`);
@@ -304,7 +298,7 @@ export class RedisCache implements IRedisCacheClient {
    * @param {string} [requestIdPrefix] The optional request ID prefix
    * @returns {Promise<number>} The value of the key after incrementing
    */
-  async incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix?: string): Promise<number> {
+  async incrBy(key: string, amount: number, callingMethod: string, requestIdPrefix: string): Promise<number> {
     const client = await this.getConnectedClient();
     const result = await client.incrBy(key, amount);
     this.logger.trace(`${requestIdPrefix} incrementing ${key} by ${amount} on ${callingMethod} call`);
@@ -326,7 +320,7 @@ export class RedisCache implements IRedisCacheClient {
     start: number,
     end: number,
     callingMethod: string,
-    requestIdPrefix?: string,
+    requestIdPrefix: string,
   ): Promise<any[]> {
     const client = await this.getConnectedClient();
     const result = await client.lRange(key, start, end);
@@ -343,7 +337,7 @@ export class RedisCache implements IRedisCacheClient {
    * @param {string} [requestIdPrefix] The optional request ID prefix
    * @returns {Promise<number>} The length of the list after pushing
    */
-  async rPush(key: string, value: any, callingMethod: string, requestIdPrefix?: string): Promise<number> {
+  async rPush(key: string, value: any, callingMethod: string, requestIdPrefix: string): Promise<number> {
     const client = await this.getConnectedClient();
     const serializedValue = JSON.stringify(value);
     const result = await client.rPush(key, serializedValue);
@@ -358,7 +352,7 @@ export class RedisCache implements IRedisCacheClient {
    * @param {string} [requestIdPrefix] The optional request ID prefix
    * @returns {Promise<string[]>} The list of keys matching the pattern
    */
-  async keys(pattern: string, callingMethod: string, requestIdPrefix?: string): Promise<string[]> {
+  async keys(pattern: string, callingMethod: string, requestIdPrefix: string): Promise<string[]> {
     const client = await this.getConnectedClient();
     const result = await client.keys(pattern);
     this.logger.trace(`${requestIdPrefix} retrieving keys matching ${pattern} on ${callingMethod} call`);

@@ -226,8 +226,8 @@ export class CommonService implements ICommonService {
         cacheKey,
         currentBlock,
         CommonService.latestBlockNumber,
-        this.ethBlockNumberCacheTtlMs,
         requestIdPrefix,
+        this.ethBlockNumberCacheTtlMs,
       );
 
       return currentBlock;

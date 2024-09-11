@@ -67,9 +67,9 @@ export class EthAddressHbarSpendingPlanRepository {
    * @param {IEthAddressHbarSpendingPlan} addressPlan - The plan to save.
    * @returns {Promise<void>} - A promise that resolves when the ETH address is linked to the plan.
    */
-  async save(addressPlan: IEthAddressHbarSpendingPlan): Promise<void> {
+  async save(addressPlan: IEthAddressHbarSpendingPlan, requestIdPrefix: string): Promise<void> {
     const key = this.getKey(addressPlan.ethAddress);
-    await this.cache.set(key, addressPlan, 'save', this.threeMonthsInMillis);
+    await this.cache.set(key, addressPlan, 'save', requestIdPrefix, this.threeMonthsInMillis);
     this.logger.trace(`Saved EthAddressHbarSpendingPlan with address ${addressPlan.ethAddress}`);
   }
 
@@ -79,9 +79,9 @@ export class EthAddressHbarSpendingPlanRepository {
    * @param {string} ethAddress - The ETH address to unlink the plan from.
    * @returns {Promise<void>} - A promise that resolves when the ETH address is unlinked from the plan.
    */
-  async delete(ethAddress: string): Promise<void> {
+  async delete(ethAddress: string, requestIdPrefix: string): Promise<void> {
     const key = this.getKey(ethAddress);
-    await this.cache.delete(key, 'delete');
+    await this.cache.delete(key, 'delete', requestIdPrefix);
     this.logger.trace(`Deleted EthAddressHbarSpendingPlan with address ${ethAddress}`);
   }
 

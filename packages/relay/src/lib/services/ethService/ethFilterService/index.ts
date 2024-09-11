@@ -90,8 +90,8 @@ export class FilterService implements IFilterService {
         lastQueried: null,
       },
       this.ethNewFilter,
-      constants.FILTER.TTL,
       requestIdPrefix,
+      constants.FILTER.TTL,
     );
     this.logger.trace(`${requestIdPrefix} created filter with TYPE=${type}, params: ${params}`);
     return filterId;
@@ -272,8 +272,8 @@ export class FilterService implements IFilterService {
         lastQueried: latestBlockNumber,
       },
       this.ethGetFilterChanges,
-      constants.FILTER.TTL,
       requestIdPrefix,
+      constants.FILTER.TTL,
     );
 
     return result;
