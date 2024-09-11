@@ -19,20 +19,23 @@
  */
 import { expect } from 'chai';
 import { Utils } from '../helpers/utils';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 describe('@server-config Server Configuration Options Coverage', function () {
   describe('Koa Server Timeout', () => {
     it('should timeout a request after the specified time', async () => {
-      const requestTimeoutMs: number = parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS || '3000');
+      const requestTimeoutMs: number = parseInt(
+        EnvProviderService.getInstance().get('SERVER_REQUEST_TIMEOUT_MS') || '3000',
+      );
       const host = 'localhost';
-      const port = parseInt(process.env.SERVER_PORT || '7546');
+      const port = parseInt(EnvProviderService.getInstance().get('SERVER_PORT') || '7546');
       const method = 'eth_blockNumber';
       const params: any[] = [];
 
       try {
         await Utils.sendJsonRpcRequestWithDelay(host, port, method, params, requestTimeoutMs + 1000);
         throw new Error('Request did not timeout as expected'); // Force the test to fail if the request does not time out
-      } catch (err) {
+      } catch (err: any) {
         expect(err.code).to.equal('ECONNRESET');
         expect(err.message).to.equal('socket hang up');
       }

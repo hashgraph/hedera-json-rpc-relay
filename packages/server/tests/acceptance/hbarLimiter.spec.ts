@@ -27,22 +27,19 @@ import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
 import Assertions from '../helpers/assertions';
 import testConstants from '../helpers/constants';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
-import { resolve } from 'path';
-import { config } from 'dotenv';
-
-config({ path: resolve(__dirname, '../localAcceptance.env') });
 
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   // @ts-ignore
   const { mirrorNode, relay, logger, initialBalance, metrics, relayIsLocal } = global;
-  const operatorAccount = process.env.OPERATOR_ID_MAIN;
-  const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+  const operatorAccount = EnvProviderService.getInstance().get('OPERATOR_ID_MAIN');
+  const fileAppendChunkSize = Number(EnvProviderService.getInstance().get('FILE_APPEND_CHUNK_SIZE')) || 5120;
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
   if (relayIsLocal) {
@@ -130,7 +127,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       const accounts: AliasAccount[] = [];
       const defaultLondonTransactionData = {
         value: Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10))), // 1 tinybar
-        chainId: Number(process.env.CHAIN_ID || 0),
+        chainId: Number(EnvProviderService.getInstance().get('CHAIN_ID') || 0),
         maxPriorityFeePerGas: Assertions.defaultGasPrice,
         maxFeePerGas: Assertions.defaultGasPrice,
         gasLimit: 3_000_000,
@@ -149,7 +146,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
         logger.info(`${requestIdPrefix} Creating accounts`);
-        logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
+        logger.info(
+          `${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${EnvProviderService.getInstance().get(
+            'HBAR_RATE_LIMIT_TINYBAR',
+          )}`,
+        );
 
         const initialAccount: AliasAccount = global.accounts[0];
 
@@ -174,7 +175,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       describe('Remaining HBAR Limit', () => {
         before(() => {
-          process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
+          EnvProviderService.getInstance().dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
         });
 
         it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
@@ -244,8 +245,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         it('Should preemtively check the rate limit before submitting EthereumTransaction', async function () {
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
-          process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK = 'true';
-          process.env.HOT_FIX_FILE_APPEND_FEE = (remainingHbarsBefore - 100000000).toString();
+          EnvProviderService.getInstance().dynamicOverride('HBAR_RATE_LIMIT_PREEMTIVE_CHECK', 'true');
+          EnvProviderService.getInstance().dynamicOverride(
+            'HOT_FIX_FILE_APPEND_FEE',
+            (remainingHbarsBefore - 100000000).toString(),
+          );
 
           try {
             const largeContract = await Utils.deployContract(
@@ -256,11 +260,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             await largeContract.waitForDeployment();
 
             expect(true).to.be.false;
-          } catch (e) {
+          } catch (e: any) {
             expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED.message);
           }
 
-          delete process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK;
+          EnvProviderService.getInstance().remove('HBAR_RATE_LIMIT_PREEMTIVE_CHECK');
         });
 
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {

@@ -28,11 +28,9 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { signTransaction } from '../../../relay/tests/helpers';
 import { expect } from 'chai';
-import { config } from 'dotenv';
 import WebSocket from 'ws';
 import LogsContract from '../contracts/Logs.json';
 import CallerContract from '../contracts/Caller.json';
-config();
 
 let currentBlockHash;
 let legacyTransactionAndBlockHash;

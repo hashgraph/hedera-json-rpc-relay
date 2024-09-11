@@ -20,6 +20,7 @@
 
 import { Octokit } from '@octokit/core';
 import { GitHubContext } from '../types/GitHubContext';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 /**
  * Client for interacting with GitHub, providing methods to perform operations such as adding comments to pull requests.
@@ -36,7 +37,7 @@ export class GitHubClient {
   private readonly octokit: Octokit;
 
   constructor(octokit?: Octokit) {
-    this.octokit = octokit || new Octokit({ auth: process.env.GITHUB_TOKEN });
+    this.octokit = octokit || new Octokit({ auth: EnvProviderService.getInstance().get('GITHUB_TOKEN') });
   }
 
   /**
@@ -120,7 +121,9 @@ export class GitHubClient {
    * @returns {GitHubContext} The GitHub context.
    */
   private static getContext(): GitHubContext {
-    const { GITHUB_REPOSITORY, GITHUB_PR_NUMBER, GITHUB_TOKEN } = process.env;
+    const GITHUB_REPOSITORY = EnvProviderService.getInstance().get('GITHUB_REPOSITORY');
+    const GITHUB_PR_NUMBER = EnvProviderService.getInstance().get('GITHUB_PR_NUMBER');
+    const GITHUB_TOKEN = EnvProviderService.getInstance().get('GITHUB_TOKEN');
     if (!GITHUB_REPOSITORY || !GITHUB_PR_NUMBER || !GITHUB_TOKEN) {
       throw new Error(`Missing required environment variables: $GITHUB_REPOSITORY, $GITHUB_PR_NUMBER, $GITHUB_TOKEN`);
     }

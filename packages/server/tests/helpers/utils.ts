@@ -34,6 +34,7 @@ import { Context } from 'mocha';
 import { GitHubClient } from '../clients/githubClient';
 import MirrorClient from '../clients/mirrorClient';
 import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 export class Utils {
   static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 1e6; // 1 MB
@@ -282,7 +283,7 @@ export class Utils {
     const mirrorNodeAccount = (await mirrorNode.get(`/accounts/${address}`, requestId)).account;
     const accountId = AccountId.fromString(mirrorNodeAccount);
     const client: ServicesClient = new ServicesClient(
-      process.env.HEDERA_NETWORK!,
+      EnvProviderService.getInstance().get('HEDERA_NETWORK')!,
       accountId.toString(),
       privateKey.toStringDer(),
       creator.client.getLogger(),
@@ -459,7 +460,8 @@ export class Utils {
             existing.includes(`\`${testTitle}\``),
           );
           // write a heap snapshot if the memory leak is more than 1 MB
-          const isMemoryLeakSnapshotEnabled = process.env.WRITE_SNAPSHOT_ON_MEMORY_LEAK === 'true';
+          const isMemoryLeakSnapshotEnabled =
+            EnvProviderService.getInstance().get('WRITE_SNAPSHOT_ON_MEMORY_LEAK') === 'true';
           if (isMemoryLeakSnapshotEnabled && totalDiffBytes > Utils.HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD) {
             console.info('Writing heap snapshot...');
             await Utils.writeHeapSnapshotAsync();

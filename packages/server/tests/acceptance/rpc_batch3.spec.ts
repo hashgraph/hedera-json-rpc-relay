@@ -27,6 +27,7 @@ import chai, { expect } from 'chai';
 import chaiExclude from 'chai-exclude';
 import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { ContractId } from '@hashgraph/sdk';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 // Assertions and constants from local resources
 import Assertions from '../helpers/assertions';
@@ -63,7 +64,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   let mirrorPrimaryAccount: ethers.Wallet;
   let mirrorSecondaryAccount: ethers.Wallet;
 
-  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const CHAIN_ID = EnvProviderService.getInstance().get('CHAIN_ID') || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let reverterContract: ethers.Contract;
@@ -535,8 +536,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           // value is processed only when eth_call goes through the mirror node
           if (
-            process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE &&
-            process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'false'
+            EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') &&
+            EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') === 'false'
           ) {
             it('010 Should call msgValue', async function () {
               const callData = {
@@ -601,7 +602,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       };
 
       // Since we want the http status code, we need to perform the call using a client http request instead of using the relay instance directly
-      const testClientPort = process.env.E2E_SERVER_PORT || '7546';
+      const testClientPort = EnvProviderService.getInstance().get('E2E_SERVER_PORT') || '7546';
       const testClient = Axios.create({
         baseURL: 'http://localhost:' + testClientPort,
         responseType: 'json' as const,
@@ -1970,12 +1971,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     let PREV_BATCH_REQUESTS_ENABLED: string | undefined;
 
     before(async () => {
-      PREV_BATCH_REQUESTS_ENABLED = process.env.BATCH_REQUESTS_ENABLED;
-      process.env.BATCH_REQUESTS_ENABLED = 'true';
+      PREV_BATCH_REQUESTS_ENABLED = EnvProviderService.getInstance().get('BATCH_REQUESTS_ENABLED');
+      EnvProviderService.getInstance().dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
     });
 
     after(async () => {
-      process.env.BATCH_REQUESTS_ENABLED = PREV_BATCH_REQUESTS_ENABLED;
+      EnvProviderService.getInstance().dynamicOverride('BATCH_REQUESTS_ENABLED', PREV_BATCH_REQUESTS_ENABLED);
     });
 
     it('Should return a batch of requests', async function () {

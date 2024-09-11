@@ -21,6 +21,7 @@
 import { expect } from 'chai';
 import { CacheService } from '../../../../packages/relay/src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 const registry = new Registry();
 
 const DATA_LABEL_PREFIX = 'acceptance-test-';
@@ -81,7 +82,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   it('Fallsback to local cache for REDIS_ENABLED !== true', async () => {
     const dataLabel = `${DATA_LABEL_PREFIX}3`;
 
-    process.env.REDIS_ENABLED = 'false';
+    EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'false');
     const serviceWithDisabledRedis = new CacheService(global.logger, registry);
     await new Promise((r) => setTimeout(r, 1000));
     expect(serviceWithDisabledRedis.isRedisEnabled()).to.eq(false, 'redis is disabled');
@@ -91,7 +92,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD);
     expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
 
-    process.env.REDIS_ENABLED = 'true';
+    EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'true');
   });
 
   it('Cache set by one instance can be accessed by another', async () => {
@@ -111,9 +112,9 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     let cacheService;
 
     before(async () => {
-      currentRedisEnabledEnv = process.env.REDIS_ENABLED;
+      currentRedisEnabledEnv = EnvProviderService.getInstance().get('REDIS_ENABLED');
 
-      process.env.REDIS_ENABLED = 'true';
+      EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'true');
       cacheService = new CacheService(global.logger, registry);
 
       // disconnect redis client to simulate Redis error
@@ -122,7 +123,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     });
 
     after(async () => {
-      process.env.REDIS_ENABLED = currentRedisEnabledEnv;
+      EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', currentRedisEnabledEnv);
     });
 
     it('test getAsync operation', async () => {

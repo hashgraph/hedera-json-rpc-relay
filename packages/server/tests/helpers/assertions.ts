@@ -24,6 +24,7 @@ import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import RelayAssertions from '@hashgraph/json-rpc-relay/tests/assertions';
 import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 
 chai.use(chaiExclude);
 
@@ -40,7 +41,7 @@ export default class Assertions {
   static maxBlockGasLimit = 30_000_000;
   static defaultGasUsed = 0.5;
 
-  static gasPriceDeviation = parseFloat(process.env.TEST_GAS_PRICE_DEVIATION ?? '0.2');
+  static gasPriceDeviation = parseFloat(EnvProviderService.getInstance().get('TEST_GAS_PRICE_DEVIATION') ?? '0.2');
 
   static assertId = (id) => {
     const [shard, realm, num] = id.split('.');
@@ -78,7 +79,10 @@ export default class Assertions {
     // Assert static values
     expect(relayResponse.baseFeePerGas).to.exist;
 
-    if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
+    if (
+      EnvProviderService.getInstance().get('LOCAL_NODE') &&
+      EnvProviderService.getInstance().get('LOCAL_NODE') !== 'false'
+    ) {
       expect(relayResponse.baseFeePerGas).to.be.equal(expectedGasPrice);
     } else {
       expect(Number(relayResponse.baseFeePerGas)).to.be.gt(0);

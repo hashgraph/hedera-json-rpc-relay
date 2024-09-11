@@ -35,6 +35,7 @@ import basicContract from '../../tests/contracts/Basic.json';
 
 // Errors and constants from local resources
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 
@@ -58,7 +59,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let account2Address: string;
   let expectedGasPrice: string;
 
-  const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
+  const CHAIN_ID = EnvProviderService.getInstance().get('CHAIN_ID') || '0x12a';
   const INCORRECT_CHAIN_ID = 999;
   const GAS_PRICE_TOO_LOW = '0x1';
   const GAS_PRICE_REF = '0x123456';
@@ -411,7 +412,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
         //for the purpose of the test, we are settings limit to 2, and fetching all.
         //setting mirror node limit to 2 for this test only
-        process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
+        EnvProviderService.getInstance().dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
         // calculate blocks behind latest, so we can fetch logs from the past.
         // if current block is less than 10, we will fetch logs from the beginning otherwise we will fetch logs from 10 blocks behind latest
         const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
@@ -722,7 +723,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         type: 1,
       };
 
-      const gasPriceDeviation = parseFloat(process.env.TEST_GAS_PRICE_DEVIATION ?? '0.2');
+      const gasPriceDeviation = parseFloat(EnvProviderService.getInstance().get('TEST_GAS_PRICE_DEVIATION') ?? '0.2');
 
       it('@release should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
         const response = await relay.call(
