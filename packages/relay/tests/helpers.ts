@@ -927,18 +927,25 @@ export const estimateFileTransactionsFee = (
   exchangeRateInCents: number,
 ) => {
   const fileCreateTransactions = 1;
-  const fileAppendTransactions = Math.floor(callDataSize / fileChunkSize);
   const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
-  const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
 
-  const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
-  const totalRequestFeeInCents =
-    fileCreateTransactions * fileCreateFeeInCents + fileAppendTransactions * fileAppendFeeInCents;
+  // The first chunk goes in with FileCreateTransaciton, the rest are FileAppendTransactions
+  const fileAppend5kbTransactions = Math.floor(callDataSize / fileChunkSize) - 1;
+  const fileAppendfinalChunkSize = callDataSize % fileChunkSize;
 
-  const transactionFee = Math.round((totalRequestFeeInCents / exchangeRateInCents) * hbarToTinybar);
-  return {
-    fileCreateTransactions,
-    fileAppendTransactions,
-    transactionFee,
-  };
+  const fileAppendTxFeeInCents_5kb = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
+  const fileAppendTxFeeInCents_finalChunk =
+    constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_BASE_FEE +
+    fileAppendfinalChunkSize * constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_RATE_PER_BYTE;
+
+  const totalFileTransactionFeeInCents =
+    fileCreateTransactions * fileCreateFeeInCents +
+    fileAppendTxFeeInCents_5kb * fileAppend5kbTransactions +
+    fileAppendTxFeeInCents_finalChunk;
+
+  const estimatedTxFeeForFileTransactions = Math.round(
+    (totalFileTransactionFeeInCents / exchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
+  );
+
+  return estimatedTxFeeForFileTransactions;
 };

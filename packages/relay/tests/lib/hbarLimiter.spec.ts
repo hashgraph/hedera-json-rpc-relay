@@ -290,8 +290,8 @@ describe('HBAR Rate Limiter', async function () {
   });
 
   it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
-    const result = rateLimiter.estimateFileTransactionFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
+    const result = rateLimiter.estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
     const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
-    expect(result).to.deep.eq(expectedResult);
+    expect(result).to.eq(expectedResult);
   });
 });
