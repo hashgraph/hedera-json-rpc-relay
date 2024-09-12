@@ -152,7 +152,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_estimateGas', async function () {
-    it('@release should execute "eth_estimateGas"', async function () {
+    it('@mainnet-light, @release should execute "eth_estimateGas"', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{}], requestId);
       expect(res).to.contain('0x');
       expect(res).to.not.be.equal('0x');
@@ -459,7 +459,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.eq('0x0');
     });
 
-    it('@release should execute "eth_getBalance" for contract', async function () {
+    it('@mainnet-light, @release should execute "eth_getBalance" for contract', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
         [getBalanceContractAddress, 'latest'],
@@ -726,7 +726,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     async function createNftHTSToken(account) {
       const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
       const tx = await mainContract.createNonFungibleTokenPublic(account.wallet.address, {
-        value: BigInt('10000000000000000000'),
+        value: BigInt('30000000000000000000'),
         ...Helper.GAS.LIMIT_5_000_000,
       });
       const { tokenAddress } = (await tx.wait()).logs.filter(
