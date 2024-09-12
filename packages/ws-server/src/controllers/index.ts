@@ -56,9 +56,10 @@ const handleSendingRequestsToRelay = async ({
   logger,
   requestIdPrefix,
   connectionIdPrefix,
+  ctx,
 }): Promise<any> => {
   logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Submitting request=${JSON.stringify(request)} to relay.`);
-  const requestDetails = { requestIdPrefix: requestIdPrefix, requestIp: request.ip } as IRequestDetails;
+  const requestDetails = { requestIdPrefix: requestIdPrefix, requestIp: '' } as IRequestDetails;
   try {
     const resolvedParams = resolveParams(method, params);
     const [service, methodName] = method.split('_');
@@ -71,9 +72,18 @@ const handleSendingRequestsToRelay = async ({
         .eth()
         .filterService()
         [methodName](...resolvedParams, requestDetails);
+    } else if (methodName === 'estimateGas') {
+      txRes = await relay[service]()[methodName](...resolvedParams, null, requestDetails);
+    } else if (methodName === 'getStorageAt') {
+      txRes = await relay[service]()[methodName](
+        resolvedParams[0],
+        resolvedParams[1],
+        requestDetails,
+        resolvedParams[2],
+      );
+    } else {
+      txRes = await relay[service]()[methodName](...resolvedParams, requestDetails);
     }
-
-    txRes = await relay[service]()[methodName](...resolvedParams, requestDetails);
 
     if (!txRes) {
       logger.trace(

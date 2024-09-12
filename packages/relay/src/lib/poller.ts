@@ -85,16 +85,16 @@ export class Poller {
             filters?.address || null,
             filters?.topics || null,
             {
-              requestIdPrefix: '',
-              requestIp: '',
+              requestIdPrefix: `[Request ID: ${event}]`,
+              requestIp: '0.0.0.0',
             } as IRequestDetails,
           );
 
           poll.lastPolled = this.latestBlock;
         } else if (event === this.NEW_HEADS_EVENT && this.newHeadsEnabled) {
           data = await this.eth.getBlockByNumber('latest', filters?.includeTransactions ?? false, {
-            requestIdPrefix: '',
-            requestIp: '',
+            requestIdPrefix: `[Request ID: ${event}]`,
+            requestIp: '0.0.0.0',
           } as IRequestDetails);
           data.jsonrpc = '2.0';
           poll.lastPolled = this.latestBlock;
@@ -123,8 +123,8 @@ export class Poller {
     this.logger.info(`${LOGGER_PREFIX} Starting polling with interval=${this.pollingInterval}`);
     this.interval = setInterval(async () => {
       this.latestBlock = await this.eth.blockNumber({
-        requestIdPrefix: '',
-        requestIp: '',
+        requestIdPrefix: `[Request ID: ${LOGGER_PREFIX}]`,
+        requestIp: '0.0.0.0',
       } as IRequestDetails);
       this.poll();
     }, this.pollingInterval);
