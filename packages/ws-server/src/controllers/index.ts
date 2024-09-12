@@ -64,6 +64,16 @@ const handleSendingRequestsToRelay = async ({
     const resolvedParams = resolveParams(method, params);
     const [service, methodName] = method.split('_');
 
+    // Rearrange the parameters for certain methods, since not everywhere requestDetails is last aparameter
+    const paramRearrangementMap: { [key: string]: (params: any[], requestDetails: IRequestDetails) => any[] } = {
+      estimateGas: (params, requestDetails) => [...params, null, requestDetails],
+      getStorageAt: (params, requestDetails) => [params[0], params[1], requestDetails, params[2]],
+      default: (params, requestDetails) => [...params, requestDetails],
+    };
+
+    const rearrangeParams = paramRearrangementMap[methodName] || paramRearrangementMap['default'];
+    const rearrangedParams = rearrangeParams(resolvedParams, requestDetails);
+
     // Call the relay method with the resolved parameters.
     // Method will be validated by "verifySupportedMethod" before reaching this point.
     let txRes: any;
@@ -71,18 +81,9 @@ const handleSendingRequestsToRelay = async ({
       txRes = await relay
         .eth()
         .filterService()
-        [methodName](...resolvedParams, requestDetails);
-    } else if (methodName === 'estimateGas') {
-      txRes = await relay[service]()[methodName](...resolvedParams, null, requestDetails);
-    } else if (methodName === 'getStorageAt') {
-      txRes = await relay[service]()[methodName](
-        resolvedParams[0],
-        resolvedParams[1],
-        requestDetails,
-        resolvedParams[2],
-      );
+        [methodName](...rearrangedParams);
     } else {
-      txRes = await relay[service]()[methodName](...resolvedParams, requestDetails);
+      txRes = await relay[service]()[methodName](...rearrangedParams);
     }
 
     if (!txRes) {
