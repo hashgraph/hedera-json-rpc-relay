@@ -22,10 +22,7 @@ import { IMethodRateLimitConfiguration, methodConfiguration } from './lib/method
 import jsonResp from './lib/RpcResponse';
 import RateLimit from '../rateLimit';
 import parse from 'co-body';
-import dotenv from 'dotenv';
-import path from 'path';
 import { Logger } from 'pino';
-
 import {
   InternalError,
   InvalidRequest,
@@ -47,8 +44,6 @@ import {
   hasOwnProperty,
 } from './lib/utils';
 import { IJsonRpcRequest } from './lib/IJsonRpcRequest';
-
-dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
 const INVALID_REQUEST = 'INVALID REQUEST';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';

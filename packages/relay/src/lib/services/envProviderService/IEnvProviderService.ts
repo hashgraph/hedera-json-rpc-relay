@@ -22,4 +22,5 @@ export interface IEnvProviderService {
   get(name: string): string | undefined;
   dynamicOverride(name: string, value: string | undefined): void;
   remove(name: string): void;
+  appendEnvsFromPath(configPath: string): void;
 }

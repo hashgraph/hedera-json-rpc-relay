@@ -64,6 +64,18 @@ export class EnvProviderService implements IEnvProviderService {
   }
 
   /**
+   * Hot reload a new instance into the current one
+   */
+  public appendEnvsFromPath(configPath: string): void {
+    dotenv.config({ path: configPath });
+
+    const envsToAppend = JSON.parse(JSON.stringify(process.env));
+    const merged = Object.assign(this.envs, envsToAppend);
+
+    this.envs = JSON.parse(JSON.stringify(merged));
+  }
+
+  /**
    * Get an env var by name
    * @param name string
    * @returns string | undefined
