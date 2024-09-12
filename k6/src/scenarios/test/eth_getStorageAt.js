@@ -22,7 +22,7 @@ import http from 'k6/http';
 
 import { TestScenarioBuilder } from '../../lib/common.js';
 import { httpParams, getPayLoad, isNonErrorResponse } from './common.js';
-import { setupTestParameters } from './bootstrapEnvParameters.js';
+import { setupTestParameters } from '../../lib/bootstrapEnvParameters.js';
 
 const methodName = 'eth_getStorageAt';
 const { options, run } = new TestScenarioBuilder()
