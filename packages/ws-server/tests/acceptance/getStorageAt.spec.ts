@@ -24,6 +24,7 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import { IRequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/IRequestDetails';
 
 describe('@web-socket-batch-2 eth_getStorageAt', async function () {
   const METHOD_NAME = 'eth_getStorageAt';
@@ -36,7 +37,7 @@ describe('@web-socket-batch-2 eth_getStorageAt', async function () {
     [WsTestConstant.FAKE_TX_HASH, ''],
     [WsTestConstant.FAKE_TX_HASH, 36, 'latest'],
     [WsTestConstant.FAKE_TX_HASH, '0xhbar', 'latest'],
-    [WsTestConstant.FAKE_TX_HASH, '0x0', 'latest', '0xhedera'],
+    [WsTestConstant.FAKE_TX_HASH, '0x0', 'latest'],
   ];
 
   // @notice: The simple contract artifacts (ABI & bytecode) below simply has one state at position 0, which will be assigned to the number `7` within the consutrctor after deployment
@@ -55,9 +56,11 @@ describe('@web-socket-batch-2 eth_getStorageAt', async function () {
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
   let requestId: string;
+  let requestDetails: IRequestDetails;
 
   before(async () => {
-    requestId = Utils.generateRequestId();
+    requestId = `[Request ID: getStorageAtTest]`;
+    requestDetails = { requestIdPrefix: `${requestId}`, requestIp: '0.0.0.0' };
     const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '2500000000'; //25 Hbar
 
