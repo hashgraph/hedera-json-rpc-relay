@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 EnvProviderService.hotReload();
 EnvProviderService.getInstance().appendEnvsFromPath(__dirname + '/test.env');
 import Axios, { AxiosInstance } from 'axios';
@@ -38,7 +38,7 @@ import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 
-describe.only('RPC Server', function () {
+describe('RPC Server', function () {
   let testServer: Server;
   let testClient: AxiosInstance;
 

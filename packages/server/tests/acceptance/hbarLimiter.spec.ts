@@ -27,7 +27,7 @@ import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
 import Assertions from '../helpers/assertions';
 import testConstants from '../helpers/constants';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';

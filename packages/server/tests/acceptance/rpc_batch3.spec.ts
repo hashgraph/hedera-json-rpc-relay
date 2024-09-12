@@ -27,7 +27,7 @@ import chai, { expect } from 'chai';
 import chaiExclude from 'chai-exclude';
 import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { ContractId } from '@hashgraph/sdk';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 // Assertions and constants from local resources
 import Assertions from '../helpers/assertions';

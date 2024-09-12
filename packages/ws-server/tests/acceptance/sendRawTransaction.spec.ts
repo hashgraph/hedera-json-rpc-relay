@@ -28,7 +28,7 @@ import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
   const METHOD_NAME = 'eth_sendRawTransaction';

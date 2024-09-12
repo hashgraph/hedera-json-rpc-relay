@@ -33,7 +33,7 @@ import { WS_CONSTANTS } from '../../src/utils/constants';
 import { Relay } from '@hashgraph/json-rpc-relay/src';
 import ConnectionLimiter from '../../src/metrics/connectionLimiter';
 import WsMetricRegistry from '../../src/metrics/wsMetricRegistry';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 describe('Utilities unit tests', async function () {
   describe('constructValidLogSubscriptionFilter tests', () => {

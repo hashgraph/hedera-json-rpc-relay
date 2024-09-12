@@ -23,7 +23,7 @@ import sinon from 'sinon';
 import { Server } from 'http';
 import * as utils from '../../../src/koaJsonRpc/lib/utils';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 describe('utils.ts', () => {
   describe('hasOwnProperty', () => {

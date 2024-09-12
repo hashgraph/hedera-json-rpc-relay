@@ -21,7 +21,7 @@
 import WebSocket from 'ws';
 import { expect } from 'chai';
 import { WebSocketProvider } from 'ethers';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 export class WsTestHelper {
   static async assertFailInvalidParamsEthersWsProvider(

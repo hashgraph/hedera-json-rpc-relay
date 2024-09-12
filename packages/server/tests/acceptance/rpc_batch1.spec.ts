@@ -35,7 +35,7 @@ import basicContract from '../../tests/contracts/Basic.json';
 
 // Errors and constants from local resources
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 import Constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 

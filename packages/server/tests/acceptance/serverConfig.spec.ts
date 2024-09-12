@@ -19,7 +19,7 @@
  */
 import { expect } from 'chai';
 import { Utils } from '../helpers/utils';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 describe('@server-config Server Configuration Options Coverage', function () {
   describe('Koa Server Timeout', () => {

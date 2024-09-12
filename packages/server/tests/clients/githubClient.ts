@@ -20,7 +20,7 @@
 
 import { Octokit } from '@octokit/core';
 import { GitHubContext } from '../types/GitHubContext';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 /**
  * Client for interacting with GitHub, providing methods to perform operations such as adding comments to pull requests.

@@ -25,7 +25,7 @@ import { WebSocketError } from '@hashgraph/json-rpc-relay';
 import RateLimit from '@hashgraph/json-rpc-server/dist/rateLimit';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { methodConfiguration } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/methodConfiguration';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 type IpCounter = {
   [key: string]: number;

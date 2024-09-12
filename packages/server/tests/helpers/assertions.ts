@@ -24,7 +24,7 @@ import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import RelayAssertions from '@hashgraph/json-rpc-relay/tests/assertions';
 import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 chai.use(chaiExclude);
 
