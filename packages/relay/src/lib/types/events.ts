@@ -18,13 +18,15 @@
  *
  */
 
+import { RequestDetails } from './RequestDetails';
+
 export interface IExecuteTransactionEventPayload {
   transactionId: string;
   callerName: string;
-  requestId: string;
   txConstructorName: string;
   operatorAccountId: string;
   interactingEntity: string;
+  requestDetails: RequestDetails;
 }
 
 export interface IExecuteQueryEventPayload {
@@ -36,5 +38,5 @@ export interface IExecuteQueryEventPayload {
   gasUsed: number;
   interactingEntity: string;
   status: string;
-  requestId: string;
+  requestDetails: RequestDetails;
 }

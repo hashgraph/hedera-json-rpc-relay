@@ -30,7 +30,7 @@ import { DEFAULT_BLOCK, EMPTY_LOGS_RESPONSE } from './eth-config';
 import { defaultErrorMessageHex } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { ITransactionReceipt } from '../../../src/lib/types/ITransactionReceipt';
-import { IRequestDetails } from '../../../src/lib/types/IRequestDetails';
+import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

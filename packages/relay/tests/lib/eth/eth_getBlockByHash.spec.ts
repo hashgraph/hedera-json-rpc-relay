@@ -56,7 +56,7 @@ import {
   DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
-import { IRequestDetails } from '../../../src/lib/types/IRequestDetails';
+import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

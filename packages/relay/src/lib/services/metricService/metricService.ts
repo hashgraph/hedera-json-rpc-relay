@@ -26,6 +26,7 @@ import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { formatRequestIdMessage } from '../../../formatters';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types';
+import { RequestDetails } from '../../types/RequestDetails';
 
 export default class MetricService {
   /**
@@ -162,7 +163,7 @@ export default class MetricService {
           gasUsed,
           interactingEntity,
           status,
-          requestId,
+          requestDetails: requestId,
         } as IExecuteQueryEventPayload);
       }
 
@@ -176,7 +177,7 @@ export default class MetricService {
           gasUsed: 0,
           interactingEntity,
           status,
-          requestId,
+          requestDetails: requestId,
         } as IExecuteQueryEventPayload);
       }
     }
@@ -206,14 +207,14 @@ export default class MetricService {
     gasUsed,
     interactingEntity,
     status,
-    requestId,
+    requestDetails,
   }: IExecuteQueryEventPayload): void => {
-    const formattedRequestId = formatRequestIdMessage(requestId);
+    const formattedRequestId = formatRequestIdMessage(requestDetails);
     this.logger.trace(
       `${formattedRequestId} Capturing HBAR charged: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
     );
 
-    this.hbarLimiter.addExpense(cost, Date.now(), requestId);
+    this.hbarLimiter.addExpense(cost, Date.now(), requestDetails);
     this.captureMetrics(executionMode, txConstructorName, status, cost, gasUsed, callerName, interactingEntity);
   };
 
@@ -299,19 +300,18 @@ export default class MetricService {
    *
    * @param {string} transactionId - The ID of the transaction for which metrics are being retrieved.
    * @param {string} callerName - The name of the caller requesting the metrics.
-   * @param {string} requestId - The request ID for tracing the request flow.
    * @param {string} txConstructorName - The name of the transaction constructor.
    * @param {string} operatorAccountId - The account ID of the operator.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<ITransactionRecordMetric | undefined>} - The transaction record metrics or undefined if retrieval fails.
    */
   private async getTransactionRecordMetrics(
     transactionId: string,
     callerName: string,
-    requestId: string,
     txConstructorName: string,
     operatorAccountId: string,
+    requestDetails: RequestDetails,
   ): Promise<ITransactionRecordMetric | undefined> {
-    const formattedRequestId = formatRequestIdMessage(requestId);
     const defaultToConsensusNode = process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true';
 
     // retrieve transaction metrics
@@ -320,21 +320,24 @@ export default class MetricService {
         return await this.sdkClient.getTransactionRecordMetrics(
           transactionId,
           callerName,
-          requestId,
           txConstructorName,
           operatorAccountId,
+          requestDetails,
         );
       } else {
         return await this.mirrorNodeClient.getTransactionRecordMetrics(
           transactionId,
           callerName,
-          requestId,
           txConstructorName,
           operatorAccountId,
+          requestDetails,
         );
       }
     } catch (error: any) {
-      this.logger.warn(error, `${formattedRequestId} Could not fetch transaction record: error=${error.message}`);
+      this.logger.warn(
+        error,
+        `${requestDetails.formattedRequestId} Could not fetch transaction record: error=${error.message}`,
+      );
     }
   }
 }

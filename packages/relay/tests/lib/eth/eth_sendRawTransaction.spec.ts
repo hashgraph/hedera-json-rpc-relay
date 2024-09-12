@@ -31,7 +31,7 @@ import RelayAssertions from '../../assertions';
 import { getRequestId, mockData, signTransaction } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
-import { IRequestDetails } from '../../../src/lib/types/IRequestDetails';
+import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

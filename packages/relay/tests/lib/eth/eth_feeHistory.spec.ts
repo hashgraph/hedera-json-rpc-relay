@@ -38,7 +38,7 @@ import {
 } from './eth-config';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
-import { IRequestDetails } from '../../../src/lib/types/IRequestDetails';
+import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
 import { request } from 'http';
 
 dotenv.config({ path: path.resolve(__dirname, '../../test.env') });

@@ -59,7 +59,7 @@ import {
   FileDeleteTransaction,
   TransactionRecordQuery,
 } from '@hashgraph/sdk';
-import { IRequestDetails } from '../../src/lib/types/IRequestDetails';
+import { RequestDetails } from '../../src/lib/types/RequestDetails';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -76,9 +76,8 @@ describe('SdkClient', async function () {
   let eventEmitter: EventEmitter;
   let metricService: MetricService;
   let mirrorNodeClient: MirrorNodeClient;
-  let transactionService: TransactionService;
-  let requestDetails: IRequestDetails;
 
+  const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });
   const feeSchedules = {
     current: {
       transactionFeeSchedule: [
@@ -97,7 +96,6 @@ describe('SdkClient', async function () {
   } as unknown as FeeSchedules;
 
   before(() => {
-    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
     const hederaNetwork = process.env.HEDERA_NETWORK!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
@@ -163,7 +161,14 @@ describe('SdkClient', async function () {
 
     it('executes the query', async () => {
       queryStub.returns(successResponse);
-      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(contractCallQuery, baseCost, client, 3, 0);
+      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
+        contractCallQuery,
+        baseCost,
+        client,
+        3,
+        0,
+        requestDetails,
+      );
       expect(resp).to.eq(successResponse);
       expect(cost.toTinybars().toNumber()).to.eq(costTinybars);
       expect(queryStub.callCount).to.eq(1);
@@ -175,7 +180,14 @@ describe('SdkClient', async function () {
       });
 
       queryStub.onCall(1).returns(successResponse);
-      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(contractCallQuery, baseCost, client, 3, 0);
+      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
+        contractCallQuery,
+        baseCost,
+        client,
+        3,
+        0,
+        requestDetails,
+      );
       expect(resp).to.eq(successResponse);
       expect(cost.toTinybars().toNumber()).to.eq(costTinybars * constants.QUERY_COST_INCREMENTATION_STEP);
       expect(queryStub.callCount).to.eq(2);
@@ -192,7 +204,14 @@ describe('SdkClient', async function () {
 
       queryStub.onCall(2).returns(successResponse);
 
-      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(contractCallQuery, baseCost, client, 3, 0);
+      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
+        contractCallQuery,
+        baseCost,
+        client,
+        3,
+        0,
+        requestDetails,
+      );
       expect(resp).to.eq(successResponse);
       expect(cost.toTinybars().toNumber()).to.eq(
         Math.floor(costTinybars * Math.pow(constants.QUERY_COST_INCREMENTATION_STEP, 2)),
@@ -206,7 +225,7 @@ describe('SdkClient', async function () {
           status: Status.InsufficientTxFee,
         });
 
-        await sdkClient.increaseCostAndRetryExecution(contractCallQuery, baseCost, client, 3, 0);
+        await sdkClient.increaseCostAndRetryExecution(contractCallQuery, baseCost, client, 3, 0, requestDetails);
       } catch (e: any) {
         expect(queryStub.callCount).to.eq(4);
         expect(e.status).to.eq(Status.InsufficientTxFee);
@@ -2708,7 +2727,7 @@ describe('SdkClient', async function () {
           accountId.toString(),
         );
         expect.fail('should have thrown an error');
-      } catch (error) {
+      } catch (error: any) {
         expect(error.status).to.eq(expectedError.status);
         expect(error.message).to.eq(expectedError.message);
       }

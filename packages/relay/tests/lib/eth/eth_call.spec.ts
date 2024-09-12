@@ -56,7 +56,7 @@ import {
 } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
-import { IRequestDetails } from '../../../src/lib/types/IRequestDetails';
+import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

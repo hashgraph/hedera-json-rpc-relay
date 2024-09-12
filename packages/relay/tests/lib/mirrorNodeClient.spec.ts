@@ -23,21 +23,21 @@ import dotenv from 'dotenv';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
+import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { getRequestId, mockData, random20BytesAddress } from './../helpers';
+import { getRequestId, mockData, random20BytesAddress } from '../helpers';
 const registry = new Registry();
 
 import pino from 'pino';
 import { ethers } from 'ethers';
-import { predefined } from '../../src/lib/errors/JsonRpcError';
-import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+import { predefined, MirrorNodeClientError, SDKClientError } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { MirrorNodeClientError } from '../../src/lib/errors/MirrorNodeClientError';
+import { RequestDetails } from '../../src/lib/types/RequestDetails';
 const logger = pino();
 const noTransactions = '?transactions=false';
+const requestDetails = new RequestDetails({ requestId: getRequestId(), ipAddress: '0.0.0.0' });
 
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
@@ -97,7 +97,7 @@ describe('MirrorNodeClient', async function () {
           error['response'] = 'test error';
           await mirrorNodeInstance.handleError(error, CONTRACT_CALL_ENDPOINT, CONTRACT_CALL_ENDPOINT, code, 'POST');
           expect.fail('should have thrown an error');
-        } catch (e) {
+        } catch (e: any) {
           expect(e.message).to.equal('test error');
         }
       });
@@ -107,14 +107,14 @@ describe('MirrorNodeClient', async function () {
   it('Can extract the account number out of an account pagination next link url', async () => {
     const accountId = '0.0.123';
     const url = `/api/v1/accounts/${accountId}?limit=100&timestamp=lt:1682455406.562695326`;
-    const extractedAccountId = mirrorNodeInstance.extractAccountIdFromUrl(url);
+    const extractedAccountId = mirrorNodeInstance.extractAccountIdFromUrl(url, requestDetails);
     expect(extractedAccountId).to.eq(accountId);
   });
 
   it('Can extract the evm address out of an account pagination next link url', async () => {
     const evmAddress = '0x583031d1113ad414f02576bd6afa5bbdf935b7d9';
     const url = `/api/v1/accounts/${evmAddress}?limit=100&timestamp=lt:1682455406.562695326`;
-    const extractedEvmAddress = mirrorNodeInstance.extractAccountIdFromUrl(url);
+    const extractedEvmAddress = mirrorNodeInstance.extractAccountIdFromUrl(url, requestDetails);
     expect(extractedEvmAddress).to.eq(evmAddress);
   });
 
@@ -1105,7 +1105,7 @@ describe('MirrorNodeClient', async function () {
       try {
         await mirrorNodeInstance.getPaginatedResults('results?page=0', 'results', 'genericResults');
         expect.fail('should have thrown an error');
-      } catch (e) {
+      } catch (e: any) {
         const errorRef = predefined.PAGINATION_MAX(0); // reference error for all properties except message
         expect(e.message).to.equal(
           `Exceeded maximum mirror node pagination count: ${constants.MAX_MIRROR_NODE_PAGINATION}`,

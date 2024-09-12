@@ -18,6 +18,7 @@
  *
  */
 import { Log } from '../../../model';
+import { RequestDetails } from '../../../types/RequestDetails';
 
 export interface ICommonService {
   blockTagIsLatestOrPending(tag: any): boolean;
@@ -26,27 +27,31 @@ export interface ICommonService {
     params: any,
     fromBlock: string,
     toBlock: string,
-    requestIdPrefix?: string,
+    requestDetails: RequestDetails,
     address?: string | string[] | null,
   ): Promise<boolean>;
 
   getHistoricalBlockResponse(
-    requestIdPrefix: string,
+    requestDetails: RequestDetails,
     blockNumberOrTag?: string | null,
     returnLatest?: boolean,
   ): Promise<any>;
 
-  getLatestBlockNumber(requestIdPrefix?: string): Promise<string>;
+  getLatestBlockNumber(requestDetails: RequestDetails): Promise<string>;
 
   genericErrorHandler(error: any, logMessage?: string): void;
 
-  validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestIdPrefix?: string): Promise<boolean>;
+  validateBlockHashAndAddTimestampToParams(
+    params: any,
+    blockHash: string,
+    requestDetails: RequestDetails,
+  ): Promise<boolean>;
 
   addTopicsToParams(params: any, topics: any[] | null): void;
 
-  getLogsByAddress(address: string | [string], params: any, requestIdPrefix): Promise<any>;
+  getLogsByAddress(address: string | [string], params: any, requestDetails: RequestDetails): Promise<any>;
 
-  getLogsWithParams(address: string | [string] | null, param, requestIdPrefix: string): Promise<Log[]>;
+  getLogsWithParams(address: string | [string] | null, params: any, requestDetails: RequestDetails): Promise<Log[]>;
 
   getLogs(
     blockHash: string | null,
@@ -54,6 +59,6 @@ export interface ICommonService {
     toBlock: string | 'latest',
     address: string | [string] | null,
     topics: any[] | null,
-    requestIdPrefix?: string,
+    requestDetails: RequestDetails,
   ): Promise<Log[]>;
 }

@@ -244,7 +244,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
       const args = [
         CONTRACT_ADDRESS_1,
         defaultDetailedContractResults.state_changes[0].slot,
-        requestIdPrefix,
+        requestDetails,
         numberTo0x(BLOCK_NUMBER),
       ];
 

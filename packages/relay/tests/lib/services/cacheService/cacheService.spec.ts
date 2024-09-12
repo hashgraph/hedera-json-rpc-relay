@@ -27,6 +27,7 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
 import { useInMemoryRedisServer } from '../../../helpers';
+import { RequestDetails } from '../../../../dist/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const logger = pino();
@@ -39,7 +40,7 @@ chai.use(chaiAsPromised);
 
 describe('CacheService Test Suite', async function () {
   this.timeout(10000);
-  const requestIdPrefix = `[Request ID: cacheServiceTest]`;
+  const requestDetails = new RequestDetails({ requestId: 'cacheServiceTest', ipAddress: '0.0.0.0' });
   const describeKeysTestSuite = () => {
     describe('keys', async function () {
       it('should retrieve all keys', async function () {
@@ -48,9 +49,9 @@ describe('CacheService Test Suite', async function () {
         entries['key2'] = 'value2';
         entries['key3'] = 'value3';
 
-        await cacheService.multiSet(entries, callingMethod, requestIdPrefix);
+        await cacheService.multiSet(entries, callingMethod, requestDetails);
 
-        const keys = await cacheService.keys('*', callingMethod, requestIdPrefix);
+        const keys = await cacheService.keys('*', callingMethod, requestDetails);
         expect(keys).to.have.members(Object.keys(entries));
       });
 
@@ -60,9 +61,9 @@ describe('CacheService Test Suite', async function () {
         entries['key2'] = 'value2';
         entries['key3'] = 'value3';
 
-        await cacheService.multiSet(entries, callingMethod, requestIdPrefix);
+        await cacheService.multiSet(entries, callingMethod, requestDetails);
 
-        const keys = await cacheService.keys('key*', callingMethod, requestIdPrefix);
+        const keys = await cacheService.keys('key*', callingMethod, requestDetails);
         expect(keys).to.have.members(Object.keys(entries));
       });
 
@@ -72,9 +73,9 @@ describe('CacheService Test Suite', async function () {
         entries['key2'] = 'value2';
         entries['key3'] = 'value3';
 
-        await cacheService.multiSet(entries, callingMethod, requestIdPrefix);
+        await cacheService.multiSet(entries, callingMethod, requestDetails);
 
-        const keys = await cacheService.keys('key?', callingMethod, requestIdPrefix);
+        const keys = await cacheService.keys('key?', callingMethod, requestDetails);
         expect(keys).to.have.members(Object.keys(entries));
       });
 
@@ -84,9 +85,9 @@ describe('CacheService Test Suite', async function () {
         entries['key2'] = 'value2';
         entries['key3'] = 'value3';
 
-        await cacheService.multiSet(entries, callingMethod, requestIdPrefix);
+        await cacheService.multiSet(entries, callingMethod, requestDetails);
 
-        const keys = await cacheService.keys('key[1-2]', callingMethod, requestIdPrefix);
+        const keys = await cacheService.keys('key[1-2]', callingMethod, requestDetails);
         expect(keys).to.have.members(['key1', 'key2']);
       });
 
@@ -96,10 +97,10 @@ describe('CacheService Test Suite', async function () {
         entries['key2'] = 'value2';
         entries['key3'] = 'value3';
 
-        await cacheService.multiSet(entries, callingMethod, requestIdPrefix);
+        await cacheService.multiSet(entries, callingMethod, requestDetails);
 
         // [^3] should match all keys except key3
-        const keys = await cacheService.keys('key[^3]', callingMethod, requestIdPrefix);
+        const keys = await cacheService.keys('key[^3]', callingMethod, requestDetails);
         expect(keys).to.have.members(['key1', 'key2']);
       });
 
@@ -109,9 +110,9 @@ describe('CacheService Test Suite', async function () {
         entries['keyb'] = 'value2';
         entries['keyc'] = 'value3';
 
-        await cacheService.multiSet(entries, callingMethod, requestIdPrefix);
+        await cacheService.multiSet(entries, callingMethod, requestDetails);
 
-        const keys = await cacheService.keys('key[a-c]', callingMethod, requestIdPrefix);
+        const keys = await cacheService.keys('key[a-c]', callingMethod, requestDetails);
         expect(keys).to.have.members(Object.keys(entries));
       });
 
@@ -119,9 +120,9 @@ describe('CacheService Test Suite', async function () {
         const key = 'h*llo';
         const value = 'value';
 
-        await cacheService.set(key, value, callingMethod, requestIdPrefix);
+        await cacheService.set(key, value, callingMethod, requestDetails);
 
-        const keys = await cacheService.keys('h*llo', callingMethod, requestIdPrefix);
+        const keys = await cacheService.keys('h*llo', callingMethod, requestDetails);
         expect(keys).to.have.members([key]);
       });
 
@@ -132,8 +133,8 @@ describe('CacheService Test Suite', async function () {
         entries['key3'] = 'value3';
 
         await cacheService.disconnectRedisClient();
-        await cacheService.multiSet(entries, callingMethod, requestIdPrefix);
-        const keys = await cacheService.keys('*', callingMethod, requestIdPrefix);
+        await cacheService.multiSet(entries, callingMethod, requestDetails);
+        const keys = await cacheService.keys('*', callingMethod, requestDetails);
         expect(keys).to.have.members(Object.keys(entries));
       });
     });
@@ -146,15 +147,15 @@ describe('CacheService Test Suite', async function () {
     });
 
     this.afterEach(async () => {
-      await cacheService.clear(requestIdPrefix);
+      await cacheService.clear(requestDetails);
     });
 
     it('should be able to set and get from internal cache', async function () {
       const key = 'string';
       const value = 'value';
 
-      await cacheService.set(key, value, callingMethod, requestIdPrefix);
-      const cachedValue = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+      await cacheService.set(key, value, callingMethod, requestDetails);
+      const cachedValue = await cacheService.getAsync(key, callingMethod, requestDetails);
 
       expect(cachedValue).eq(value);
     });
@@ -163,9 +164,9 @@ describe('CacheService Test Suite', async function () {
       const key = 'string';
       const value = 'value';
 
-      await cacheService.set(key, value, callingMethod, requestIdPrefix);
-      await cacheService.delete(key, callingMethod, requestIdPrefix);
-      const cachedValue = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+      await cacheService.set(key, value, callingMethod, requestDetails);
+      await cacheService.delete(key, callingMethod, requestDetails);
+      const cachedValue = await cacheService.getAsync(key, callingMethod, requestDetails);
 
       expect(cachedValue).to.be.null;
     });
@@ -174,8 +175,8 @@ describe('CacheService Test Suite', async function () {
       const key = 'string';
       const value = 'value';
 
-      await cacheService.set(key, value, callingMethod, requestIdPrefix);
-      const cachedValue = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+      await cacheService.set(key, value, callingMethod, requestDetails);
+      const cachedValue = await cacheService.getAsync(key, callingMethod, requestDetails);
 
       expect(cachedValue).eq(value);
     });
@@ -186,10 +187,10 @@ describe('CacheService Test Suite', async function () {
       entries['key2'] = 'value2';
       entries['key3'] = 'value3';
 
-      await cacheService.multiSet(entries, callingMethod, requestIdPrefix);
+      await cacheService.multiSet(entries, callingMethod, requestDetails);
 
       for (const [key, value] of Object.entries(entries)) {
-        const valueFromCache = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+        const valueFromCache = await cacheService.getAsync(key, callingMethod, requestDetails);
         expect(valueFromCache).eq(value);
       }
     });
@@ -199,8 +200,8 @@ describe('CacheService Test Suite', async function () {
         const key = 'counter';
         const amount = 5;
 
-        await cacheService.set(key, 10, callingMethod, requestIdPrefix);
-        const newValue = await cacheService.incrBy(key, amount, callingMethod, requestIdPrefix);
+        await cacheService.set(key, 10, callingMethod, requestDetails);
+        const newValue = await cacheService.incrBy(key, amount, callingMethod, requestDetails);
 
         expect(newValue).to.equal(15);
       });
@@ -211,8 +212,8 @@ describe('CacheService Test Suite', async function () {
         const key = 'list';
         const value = 'item';
 
-        await cacheService.rPush(key, value, callingMethod, requestIdPrefix);
-        const cachedValue = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+        await cacheService.rPush(key, value, callingMethod, requestDetails);
+        const cachedValue = await cacheService.getAsync(key, callingMethod, requestDetails);
 
         expect(cachedValue).to.deep.equal([value]);
       });
@@ -223,8 +224,8 @@ describe('CacheService Test Suite', async function () {
         const key = 'list';
         const values = ['item1', 'item2', 'item3'];
 
-        await cacheService.set(key, values, callingMethod, requestIdPrefix);
-        const range = await cacheService.lRange(key, 0, 1, callingMethod, requestIdPrefix);
+        await cacheService.set(key, values, callingMethod, requestDetails);
+        const range = await cacheService.lRange(key, 0, 1, callingMethod, requestDetails);
 
         expect(range).to.deep.equal(['item1', 'item2']);
       });
@@ -233,8 +234,8 @@ describe('CacheService Test Suite', async function () {
         const key = 'list';
         const values = ['item1', 'item2', 'item3'];
 
-        await cacheService.set(key, values, callingMethod, requestIdPrefix);
-        const range = await cacheService.lRange(key, -2, -1, callingMethod, requestIdPrefix);
+        await cacheService.set(key, values, callingMethod, requestDetails);
+        const range = await cacheService.lRange(key, -2, -1, callingMethod, requestDetails);
 
         expect(range).to.deep.equal(['item2', 'item3']);
       });
@@ -294,16 +295,16 @@ describe('CacheService Test Suite', async function () {
     });
 
     this.afterEach(async () => {
-      await cacheService.clear( requestIdPrefix);
+      await cacheService.clear(requestDetails);
     });
 
     it('should be able to set and get from shared cache', async function () {
       const key = 'string';
       const value = 'value';
 
-      await cacheService.set(key, value, callingMethod, requestIdPrefix);
+      await cacheService.set(key, value, callingMethod, requestDetails);
 
-      const cachedValue = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+      const cachedValue = await cacheService.getAsync(key, callingMethod, requestDetails);
       expect(cachedValue).eq(value);
     });
 
@@ -311,11 +312,11 @@ describe('CacheService Test Suite', async function () {
       const key = 'string';
       const value = 'value';
 
-      await cacheService.set(key, value, callingMethod, requestIdPrefix);
+      await cacheService.set(key, value, callingMethod, requestDetails);
 
-      await cacheService.delete(key, callingMethod, requestIdPrefix);
+      await cacheService.delete(key, callingMethod, requestDetails);
 
-      const cachedValue = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+      const cachedValue = await cacheService.getAsync(key, callingMethod, requestDetails);
       expect(cachedValue).to.be.null;
     });
 
@@ -323,17 +324,17 @@ describe('CacheService Test Suite', async function () {
       const key = 'string';
       const value = 'value';
 
-      await cacheService.set(key, value, callingMethod, requestIdPrefix);
+      await cacheService.set(key, value, callingMethod, requestDetails);
 
-      const cachedValue = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+      const cachedValue = await cacheService.getAsync(key, callingMethod, requestDetails);
       expect(cachedValue).eq(value);
     });
 
     it('should be able to set using multiSet and get them separately using internal cache', async function () {
-      await cacheService.multiSet(multiSetEntries, callingMethod, requestIdPrefix);
+      await cacheService.multiSet(multiSetEntries, callingMethod, requestDetails);
 
       for (const [key, value] of Object.entries(multiSetEntries)) {
-        const valueFromCache = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+        const valueFromCache = await cacheService.getAsync(key, callingMethod, requestDetails);
         expect(valueFromCache).eq(value);
       }
     });
@@ -342,10 +343,10 @@ describe('CacheService Test Suite', async function () {
       // @ts-ignore
       cacheService['shouldMultiSet'] = false;
 
-      await cacheService.multiSet(multiSetEntries, callingMethod, requestIdPrefix);
+      await cacheService.multiSet(multiSetEntries, callingMethod, requestDetails);
 
       for (const [key, value] of Object.entries(multiSetEntries)) {
-        const valueFromCache = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+        const valueFromCache = await cacheService.getAsync(key, callingMethod, requestDetails);
         expect(valueFromCache).eq(value);
       }
     });
@@ -354,7 +355,7 @@ describe('CacheService Test Suite', async function () {
       const key = 'string';
       await cacheService.disconnectRedisClient();
 
-      const cachedValue = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+      const cachedValue = await cacheService.getAsync(key, callingMethod, requestDetails);
       expect(cachedValue).eq(null);
     });
 
@@ -364,19 +365,19 @@ describe('CacheService Test Suite', async function () {
 
       await cacheService.disconnectRedisClient();
 
-      await expect(cacheService.set(key, value, callingMethod, requestIdPrefix)).to.eventually.not.be.rejected;
+      await expect(cacheService.set(key, value, callingMethod, requestDetails)).to.eventually.not.be.rejected;
 
-      const internalCacheRes = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+      const internalCacheRes = await cacheService.getAsync(key, callingMethod, requestDetails);
       expect(internalCacheRes).to.eq(value);
     });
 
     it('should be able to multiSet to internal cache in case of Redis error', async function () {
       await cacheService.disconnectRedisClient();
 
-      await expect(cacheService.multiSet(multiSetEntries, callingMethod, requestIdPrefix)).to.eventually.not.be.rejected;
+      await expect(cacheService.multiSet(multiSetEntries, callingMethod, requestDetails)).to.eventually.not.be.rejected;
 
       for (const [key, value] of Object.entries(multiSetEntries)) {
-        const internalCacheRes = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+        const internalCacheRes = await cacheService.getAsync(key, callingMethod, requestDetails);
         expect(internalCacheRes).to.eq(value);
       }
     });
@@ -387,10 +388,10 @@ describe('CacheService Test Suite', async function () {
 
       await cacheService.disconnectRedisClient();
 
-      await expect(cacheService.multiSet(multiSetEntries, callingMethod, requestIdPrefix)).to.eventually.not.be.rejected;
+      await expect(cacheService.multiSet(multiSetEntries, callingMethod, requestDetails)).to.eventually.not.be.rejected;
 
       for (const [key, value] of Object.entries(multiSetEntries)) {
-        const internalCacheRes = await cacheService.getAsync(key, callingMethod, requestIdPrefix);
+        const internalCacheRes = await cacheService.getAsync(key, callingMethod, requestDetails);
         expect(internalCacheRes).to.eq(value);
       }
     });
@@ -398,21 +399,21 @@ describe('CacheService Test Suite', async function () {
     it('should be able to clear from internal cache in case of Redis error', async function () {
       await cacheService.disconnectRedisClient();
 
-      await expect(cacheService.clear(requestIdPrefix)).to.eventually.not.be.rejected;
+      await expect(cacheService.clear(requestDetails)).to.eventually.not.be.rejected;
     });
 
     it('should be able to delete from internal cache in case of Redis error', async function () {
       const key = 'string';
       await cacheService.disconnectRedisClient();
 
-      await expect(cacheService.delete(key, callingMethod, requestIdPrefix)).to.eventually.not.be.rejected;
+      await expect(cacheService.delete(key, callingMethod, requestDetails)).to.eventually.not.be.rejected;
     });
 
     it('should be able to set to shared cache', async function () {
       const key = 'string';
       const value = 'value';
 
-      await expect(cacheService.set(key, value, callingMethod, requestIdPrefix)).to.eventually.not.be.rejected;
+      await expect(cacheService.set(key, value, callingMethod, requestDetails)).to.eventually.not.be.rejected;
     });
 
     it('should be able to multiset to shared cache', async function () {
@@ -420,13 +421,13 @@ describe('CacheService Test Suite', async function () {
       items['key1'] = 'value1';
       items['key2'] = 'value2';
 
-      await expect(cacheService.multiSet(items, callingMethod, requestIdPrefix)).to.eventually.not.be.rejected;
+      await expect(cacheService.multiSet(items, callingMethod, requestDetails)).to.eventually.not.be.rejected;
     });
 
     it('should be able to delete from shared cache', async function () {
       const key = 'string';
 
-      await expect(cacheService.delete(key, callingMethod, requestIdPrefix)).to.eventually.not.be.rejected;
+      await expect(cacheService.delete(key, callingMethod, requestDetails)).to.eventually.not.be.rejected;
     });
 
     describe('incrBy', async function () {
@@ -434,8 +435,8 @@ describe('CacheService Test Suite', async function () {
         const key = 'counter';
         const amount = 5;
 
-        await cacheService.set(key, 10, callingMethod, requestIdPrefix);
-        const newValue = await cacheService.incrBy(key, amount, callingMethod, requestIdPrefix);
+        await cacheService.set(key, 10, callingMethod, requestDetails);
+        const newValue = await cacheService.incrBy(key, amount, callingMethod, requestDetails);
 
         expect(newValue).to.equal(15);
       });
@@ -444,8 +445,8 @@ describe('CacheService Test Suite', async function () {
         const key = 'counter';
         const amount = 5;
 
-        await cacheService.set(key, 10, callingMethod, requestIdPrefix);
-        const newValue = await cacheService.incrBy(key, amount, callingMethod, requestIdPrefix);
+        await cacheService.set(key, 10, callingMethod, requestDetails);
+        const newValue = await cacheService.incrBy(key, amount, callingMethod, requestDetails);
 
         expect(newValue).to.equal(15);
       });
@@ -456,7 +457,7 @@ describe('CacheService Test Suite', async function () {
 
         await cacheService.disconnectRedisClient();
 
-        const newValue = await cacheService.incrBy(key, amount, callingMethod, requestIdPrefix);
+        const newValue = await cacheService.incrBy(key, amount, callingMethod, requestDetails);
 
         expect(newValue).to.equal(5);
       });
@@ -467,8 +468,8 @@ describe('CacheService Test Suite', async function () {
         const key = 'list';
         const value = 'item';
 
-        await cacheService.rPush(key, value, callingMethod, requestIdPrefix);
-        const cachedValue = await cacheService.lRange(key, 0, -1, callingMethod, requestIdPrefix);
+        await cacheService.rPush(key, value, callingMethod, requestDetails);
+        const cachedValue = await cacheService.lRange(key, 0, -1, callingMethod, requestDetails);
 
         expect(cachedValue).to.deep.equal([value]);
       });
@@ -479,8 +480,8 @@ describe('CacheService Test Suite', async function () {
 
         await cacheService.disconnectRedisClient();
 
-        await cacheService.rPush(key, value, callingMethod, requestIdPrefix);
-        const cachedValue = await cacheService.lRange(key, 0, -1, callingMethod, requestIdPrefix);
+        await cacheService.rPush(key, value, callingMethod, requestDetails);
+        const cachedValue = await cacheService.lRange(key, 0, -1, callingMethod, requestDetails);
 
         expect(cachedValue).to.deep.equal([value]);
       });
@@ -491,10 +492,10 @@ describe('CacheService Test Suite', async function () {
         const key = 'list';
         const values = ['item1', 'item2', 'item3'];
         for (const item of values) {
-          await cacheService.rPush(key, item, callingMethod, requestIdPrefix);
+          await cacheService.rPush(key, item, callingMethod, requestDetails);
         }
 
-        const range = await cacheService.lRange(key, 0, 1, callingMethod, requestIdPrefix);
+        const range = await cacheService.lRange(key, 0, 1, callingMethod, requestDetails);
 
         expect(range).to.deep.equal(['item1', 'item2']);
       });
@@ -503,10 +504,10 @@ describe('CacheService Test Suite', async function () {
         const key = 'list';
         const values = ['item1', 'item2', 'item3'];
         for (const item of values) {
-          await cacheService.rPush(key, item, callingMethod, requestIdPrefix);
+          await cacheService.rPush(key, item, callingMethod, requestDetails);
         }
 
-        const range = await cacheService.lRange(key, -2, -1, callingMethod, requestIdPrefix);
+        const range = await cacheService.lRange(key, -2, -1, callingMethod, requestDetails);
 
         expect(range).to.deep.equal(['item2', 'item3']);
       });
@@ -517,10 +518,10 @@ describe('CacheService Test Suite', async function () {
         const key = 'list';
         const values = ['item1', 'item2', 'item3'];
         for (const item of values) {
-          await cacheService.rPush(key, item, callingMethod);
+          await cacheService.rPush(key, item, callingMethod, requestDetails);
         }
 
-        const range = await cacheService.lRange(key, 0, 1, callingMethod, requestIdPrefix);
+        const range = await cacheService.lRange(key, 0, 1, callingMethod, requestDetails);
 
         expect(range).to.deep.equal(['item1', 'item2']);
       });

@@ -19,9 +19,9 @@ Important details is that, if an operator does not want to use Redis or it went 
 
 ```javascript
 interface ICacheClient {
-  get(key: string, callingMethod: string, requestIdPrefix?: string): any;
-  set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string): void;
-  delete(key: string, callingMethod: string, requestIdPrefix?: string): void;
+  get(key: string, callingMethod: string): any;
+  set(key: string, value: any, callingMethod: string, ttl?: number): void;
+  delete(key: string, callingMethod: string): void;
   clear(): void;
 }
 ```
@@ -40,15 +40,15 @@ class LocalLRUCache implements ICacheClient{
     public constructor() {
         this.cache = new LRU(this.options);
     }
-    get(key: string, callingMethod: string, requestIdPrefix?: string) {
+    get(key: string, callingMethod: string) {
         // Get item from internal cache implementation
     }
 
-    set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string) {
+    set(key: string, value: any, callingMethod: string, ttl?: number) {
         // Set item to internal cache implementation
     }
 
-    delete(key: string, callingMethod: string, requestIdPrefix?: string) {
+    delete(key: string, callingMethod: string) {
         // Delete item from internal cache implementation
     }
 
@@ -81,15 +81,15 @@ class RedisCache implements ICacheClient{
 
         this.cache = client;
     }
-    get(key: string, callingMethod: string, requestIdPrefix?: string) {
+    get(key: string, callingMethod: string) {
         // Get item from shared cache implementation
     }
 
-    set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string) {
+    set(key: string, value: any, callingMethod: string, ttl?: number) {
         // Set item to shared cache implementation
     }
 
-    delete(key: string, callingMethod: string, requestIdPrefix?: string) {
+    delete(key: string, callingMethod: string) {
         // Delete item from shared cache implementation
     }
 
@@ -120,19 +120,19 @@ class CacheClientService{
         const sharedCache = new RedisCache();
     }
 
-    get(key: string, callingMethod: string, requestIdPrefix?: string, shared: boolean = false) {
+    get(key: string, callingMethod: string, shared: boolean = false) {
         // Depending on the shared boolean, this method decide from where it should request the data.
         // Fallbacks to internalCache in case of error from the shared cache.
         // Getting from shared cache depends on REDIS_ENABLED env. variable
     }
 
-    set(key: string, value: any, callingMethod: string, ttl?: number, requestIdPrefix?: string, shared: boolean = false) {
+    set(key: string, value: any, callingMethod: string, ttl?: number, shared: boolean = false) {
         // Depending on the shared boolean, this method decide where it should save the data.
         // Fallbacks to internalCache in case of error from the shared cache.
         // Setting to shared cache depends on REDIS_ENABLED env. variable
     }
 
-    delete(key: string, callingMethod: string, requestIdPrefix?: string, shared: boolean = false) {
+    delete(key: string, callingMethod: string, shared: boolean = false) {
         // Depending on the shared boolean, this method decide from where it should delete the data.
         // Fallbacks to internalCache in case of error from the shared cache.
         // Deleting from shared cache depends on REDIS_ENABLED env. variable

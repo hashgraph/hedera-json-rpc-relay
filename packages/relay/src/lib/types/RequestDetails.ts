@@ -18,16 +18,18 @@
  *
  */
 
-import { ITracerConfig } from '../../types';
-import type { TracerType } from '../../constants';
-import { RequestDetails } from '../../types/RequestDetails';
+import { formatRequestIdMessage } from '../../formatters';
 
-export interface IDebugService {
-  debug_traceTransaction: (
-    transactionIdOrHash: string,
-    tracer: TracerType,
-    tracerConfig: ITracerConfig,
-    requestDetails: RequestDetails,
-  ) => Promise<any>;
-  resolveAddress: (address: string, requestDetails: RequestDetails, types?: string[]) => Promise<string>;
+export class RequestDetails {
+  requestId: string;
+  ipAddress: string;
+
+  constructor(details: { requestId: string; ipAddress: string }) {
+    this.requestId = details.requestId;
+    this.ipAddress = details.ipAddress;
+  }
+
+  get formattedRequestId(): string {
+    return formatRequestIdMessage(this.requestId);
+  }
 }

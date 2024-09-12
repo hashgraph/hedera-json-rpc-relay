@@ -31,7 +31,7 @@ import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import { generateEthTestEnv } from './eth-helpers';
 import { toHex } from '../../helpers';
-import { IRequestDetails } from '../../../src/lib/types/IRequestDetails';
+import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
 import { request } from 'http';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });

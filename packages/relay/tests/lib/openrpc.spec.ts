@@ -35,7 +35,7 @@ import { Registry } from 'prom-client';
 import { EthImpl } from '../../src/lib/eth';
 import { SDKClient } from '../../src/lib/clients';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-import type { IRequestDetails } from '../../src/lib/types/IRequestDetails';
+import type { IRequestDetails } from '../../src/lib/types/RequestDetails';
 
 import openRpcSchema from '../../../../docs/openrpc.json';
 import {
@@ -388,7 +388,7 @@ describe('Open RPC Specification', function () {
     const response = await ethImpl.getTransactionByBlockHashAndIndex(
       defaultBlock.hash,
       numberTo0x(defaultBlock.count),
-      requestIdPrefix,
+      requestDetails,
     );
 
     validateResponseSchema(methodsResponseSchema.eth_getTransactionByBlockHashAndIndex, response);
@@ -398,7 +398,7 @@ describe('Open RPC Specification', function () {
     const response = await ethImpl.getTransactionByBlockNumberAndIndex(
       numberTo0x(defaultBlock.number),
       numberTo0x(defaultBlock.count),
-      requestIdPrefix,
+      requestDetails,
     );
 
     validateResponseSchema(methodsResponseSchema.eth_getTransactionByBlockNumberAndIndex, response);

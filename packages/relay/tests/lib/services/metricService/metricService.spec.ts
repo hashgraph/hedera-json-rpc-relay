@@ -322,7 +322,7 @@ describe('Metric Service', function () {
       gasUsed: mockedGasUsed,
       interactingEntity: mockedInteractingEntity,
       status: 'SUCCESS',
-      requestId: getRequestId(),
+      requestDetails: getRequestId(),
     };
     it('should execute addExpenseAndCaptureMetrics() to capture metrics in HBAR limiter and metric registry', async () => {
       const originalBudget = hbarLimiter.getRemainingBudget();
