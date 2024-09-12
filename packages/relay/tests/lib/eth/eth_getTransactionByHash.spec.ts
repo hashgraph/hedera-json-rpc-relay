@@ -17,11 +17,11 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
+import { EnvProviderService } from '../../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-
 import { EthImpl } from '../../../src/lib/eth';
 import { Log, Transaction, Transaction2930, Transaction1559 } from '../../../src/lib/model';
 import constants from '../../../src/lib/constants';
@@ -36,10 +36,8 @@ import {
   NO_TRANSACTIONS,
 } from './eth-config';
 import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress, defaultLogs1 } from '../../helpers';
-import { predefined } from '../../../src';
 import { generateEthTestEnv } from './eth-helpers';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async function () {

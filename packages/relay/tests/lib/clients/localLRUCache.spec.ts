@@ -18,6 +18,8 @@
  *
  */
 
+import { EnvProviderService } from '../../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
@@ -105,12 +107,12 @@ describe('LocalLRUCache Test Suite', async function () {
 
   describe('verify cache management', async function () {
     this.beforeEach(() => {
-      process.env.CACHE_MAX = constants.CACHE_MAX.toString();
+      EnvProviderService.getInstance().dynamicOverride('CACHE_MAX', constants.CACHE_MAX.toString());
     });
 
     it('verify cache size', async function () {
       const cacheMaxSize = 2;
-      process.env.CACHE_MAX = `${cacheMaxSize}`;
+      EnvProviderService.getInstance().dynamicOverride('CACHE_MAX', `${cacheMaxSize}`);
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const keyValuePairs = {
         key1: 'value1',

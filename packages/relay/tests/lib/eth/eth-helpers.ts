@@ -18,6 +18,7 @@
  *
  */
 
+import { EnvProviderService } from '../../../src/lib/services/envProviderService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import pino from 'pino';
 import { Registry } from 'prom-client';
@@ -42,13 +43,13 @@ export function balancesByAccountIdByTimestampURL(id: string, timestamp?: string
 }
 
 export function generateEthTestEnv(fixedFeeHistory = false) {
-  process.env.ETH_FEE_HISTORY_FIXED = fixedFeeHistory.toString();
+  EnvProviderService.getInstance().dynamicOverride('ETH_FEE_HISTORY_FIXED', fixedFeeHistory.toString());
   const logger = pino();
   const registry = new Registry();
   const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
   // @ts-ignore
   const mirrorNodeInstance = new MirrorNodeClient(
-    process.env.MIRROR_NODE_URL || '',
+    EnvProviderService.getInstance().get('MIRROR_NODE_URL') || '',
     logger.child({ name: `mirror-node` }),
     registry,
     cacheService,

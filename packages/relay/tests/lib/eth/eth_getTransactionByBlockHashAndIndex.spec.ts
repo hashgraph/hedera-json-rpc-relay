@@ -17,13 +17,13 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
+import { EnvProviderService } from '../../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import * as _ from 'lodash';
 import chaiAsPromised from 'chai-as-promised';
-
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Transaction, Transaction1559, Transaction2930 } from '../../../src/lib/model';
@@ -47,7 +47,6 @@ import {
 } from './eth-config';
 import { contractResultsByHashByIndexURL, generateEthTestEnv } from './eth-helpers';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub;

@@ -18,11 +18,11 @@
  *
  */
 
+import { EnvProviderService } from '../../../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import pino from 'pino';
 import { expect } from 'chai';
-import { resolve } from 'path';
 import * as sinon from 'sinon';
-import { config } from 'dotenv';
 import EventEmitter from 'events';
 import { Registry } from 'prom-client';
 import axios, { AxiosInstance } from 'axios';
@@ -37,7 +37,6 @@ import { CacheService } from '../../../../src/lib/services/cacheService/cacheSer
 import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../../../src/lib/types/events';
 import { Hbar, Long, Status, Client, AccountId, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
 
-config({ path: resolve(__dirname, '../../../test.env') });
 const registry = new Registry();
 const logger = pino();
 
@@ -96,18 +95,18 @@ describe('Metric Service', function () {
   } as unknown as TransactionRecord;
 
   before(() => {
-    process.env.OPERATOR_KEY_FORMAT = 'DER';
+    EnvProviderService.getInstance().dynamicOverride('OPERATOR_KEY_FORMAT', 'DER');
 
     // consensus node client
-    const hederaNetwork = process.env.HEDERA_NETWORK!;
+    const hederaNetwork = EnvProviderService.getInstance().get('HEDERA_NETWORK')!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
     client = client.setOperator(
-      AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
-      Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
+      AccountId.fromString(EnvProviderService.getInstance().get('OPERATOR_ID_MAIN')!),
+      Utils.createPrivateKeyBasedOnFormat(EnvProviderService.getInstance().get('OPERATOR_KEY_MAIN')!),
     );
 
     // mirror node client
@@ -120,7 +119,7 @@ describe('Metric Service', function () {
       timeout: 20 * 1000,
     });
     mirrorNodeClient = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      EnvProviderService.getInstance().get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -166,7 +165,7 @@ describe('Metric Service', function () {
     it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
       mock.onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`).reply(200, mockedMirrorNodeTransactionRecord);
 
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'false';
+      EnvProviderService.getInstance().dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'false');
 
       const originalBudget = hbarLimiter.getRemainingBudget();
 
@@ -189,7 +188,7 @@ describe('Metric Service', function () {
     });
 
     it('Should execute captureTransactionMetrics() by retrieving transaction record from CONSENSUS NODE client', async () => {
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
+      EnvProviderService.getInstance().dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
       const mockedExchangeRateInCents = 12;
       const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
 
@@ -247,7 +246,7 @@ describe('Metric Service', function () {
     });
 
     it('Should listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics()', async () => {
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
+      EnvProviderService.getInstance().dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
       const mockedExchangeRateInCents = 12;
       const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
 

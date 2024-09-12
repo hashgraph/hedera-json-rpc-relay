@@ -18,6 +18,8 @@
  *
  */
 
+import { EnvProviderService } from '../../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import { expect } from 'chai';
 import { JsonRpcError, predefined } from '../../../src';
 import { AbiCoder, keccak256 } from 'ethers';

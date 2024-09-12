@@ -18,13 +18,13 @@
  *
  */
 
+import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import Axios, { AxiosInstance } from 'axios';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import { Server } from 'http';
 import { GCProfiler } from 'v8';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/src/lib/services/envProviderService';
-EnvProviderService.hotReload('test.env');
 
 import Assertions from '../helpers/assertions';
 import app from '../../src/server';
@@ -45,6 +45,11 @@ describe('RPC Server', function () {
   before(function () {
     testServer = app.listen(EnvProviderService.getInstance().get('E2E_SERVER_PORT'));
     testClient = BaseTest.createTestClient();
+
+    // leak detection middleware
+    if (EnvProviderService.getInstance().get('MEMWATCH_ENABLED') === 'true') {
+      Utils.captureMemoryLeaks(new GCProfiler());
+    }
   });
 
   after(function () {
@@ -54,11 +59,6 @@ describe('RPC Server', function () {
       }
     });
   });
-
-  // leak detection middleware
-  if (EnvProviderService.getInstance().get('MEMWATCH_ENABLED') === 'true') {
-    Utils.captureMemoryLeaks(new GCProfiler());
-  }
 
   this.timeout(5000);
 

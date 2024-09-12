@@ -18,19 +18,16 @@
  *
  */
 
+import { EnvProviderService } from '../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import pino from 'pino';
-// @ts-ignore
 import { SubscriptionController } from '../../src/lib/subscriptionController';
 import { expect } from 'chai';
 import { Poller } from '../../src/lib/poller';
 import { EthImpl } from '../../src/lib/eth';
 import sinon from 'sinon';
-import dotenv from 'dotenv';
-import path from 'path';
 import { Registry } from 'prom-client';
 import ConnectionLimiter from '@hashgraph/json-rpc-ws-server/src/metrics/connectionLimiter';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();
 const register = new Registry();
@@ -269,17 +266,17 @@ describe('subscriptionController', async function () {
     let originalSubscriptionController;
 
     before(() => {
-      originalEnv = process.env.WS_SAME_SUB_FOR_SAME_EVENT;
+      originalEnv = EnvProviderService.getInstance().get('WS_SAME_SUB_FOR_SAME_EVENT');
       originalSubscriptionController = subscriptionController;
 
-      process.env.WS_SAME_SUB_FOR_SAME_EVENT = 'false';
+      EnvProviderService.getInstance().dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', 'false');
       const registry = new Registry();
       poller = new Poller(ethImpl, logger, registry);
       subscriptionController = new SubscriptionController(poller, logger, registry);
     });
 
     after(() => {
-      process.env.WS_SAME_SUB_FOR_SAME_EVENT = originalEnv;
+      EnvProviderService.getInstance().dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', 'originalEnv');
       subscriptionController = originalSubscriptionController;
     });
 

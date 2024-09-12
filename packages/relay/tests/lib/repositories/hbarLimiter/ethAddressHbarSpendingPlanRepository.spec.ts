@@ -18,6 +18,8 @@
  *
  */
 
+import { EnvProviderService } from '../../../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
@@ -48,12 +50,12 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
       this.beforeAll(async () => {
         redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6382);
         await redisInMemoryServer.start();
-        test = process.env.TEST;
-        redisEnabled = process.env.REDIS_ENABLED;
-        redisUrl = process.env.REDIS_URL;
-        process.env.TEST = 'false';
-        process.env.REDIS_ENABLED = 'true';
-        process.env.REDIS_URL = 'redis://127.0.0.1:6382';
+        test = EnvProviderService.getInstance().get('TEST');
+        redisEnabled = EnvProviderService.getInstance().get('REDIS_ENABLED');
+        redisUrl = EnvProviderService.getInstance().get('REDIS_URL');
+        EnvProviderService.getInstance().dynamicOverride('TEST', 'false');
+        EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'true');
+        EnvProviderService.getInstance().dynamicOverride('REDIS_URL', 'redis://127.0.0.1:6382');
         cacheService = new CacheService(logger.child({ name: 'CacheService' }), new Registry());
         repository = new EthAddressHbarSpendingPlanRepository(
           cacheService,
@@ -63,14 +65,14 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
 
       this.afterAll(async () => {
         await redisInMemoryServer.stop();
-        process.env.TEST = test;
-        process.env.REDIS_ENABLED = redisEnabled;
-        process.env.REDIS_URL = redisUrl;
+        EnvProviderService.getInstance().dynamicOverride('TEST', test);
+        EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', redisEnabled);
+        EnvProviderService.getInstance().dynamicOverride('REDIS_URL', redisUrl);
       });
     } else {
       before(() => {
-        process.env.TEST = 'true';
-        process.env.REDIS_ENABLED = 'false';
+        EnvProviderService.getInstance().dynamicOverride('TEST', 'true');
+        EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'false');
         cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
         repository = new EthAddressHbarSpendingPlanRepository(
           cacheService,

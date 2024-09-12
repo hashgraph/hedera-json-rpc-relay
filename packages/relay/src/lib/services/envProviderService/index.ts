@@ -33,7 +33,7 @@ export class EnvProviderService implements IEnvProviderService {
    * Copied envs from process.env
    * @private
    */
-  private readonly envs: JSON;
+  private envs: JSON;
 
   /**
    * Fetches all envs from process.env and pushes them into the envs property
@@ -58,10 +58,8 @@ export class EnvProviderService implements IEnvProviderService {
 
   /**
    * Hot reload a new instance into the current one
-   * @param configName
    */
-  public static hotReload(configName): void {
-    dotenv.config({ path: findConfig(configName) || '' });
+  public static hotReload(): void {
     this.instance = new EnvProviderService();
   }
 
@@ -80,7 +78,7 @@ export class EnvProviderService implements IEnvProviderService {
    * @param value string
    * @returns void
    */
-  public dynamicOverride(name: string, value: string): void {
+  public dynamicOverride(name: string, value: string | undefined): void {
     this.envs[name] = value;
   }
 

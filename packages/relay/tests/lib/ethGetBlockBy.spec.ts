@@ -18,17 +18,14 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { EnvProviderService } from '../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-
 import pino from 'pino';
 import constants from '../../src/lib/constants';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
@@ -123,16 +120,17 @@ describe('eth_getBlockBy', async function () {
 
   this.beforeAll(async () => {
     //done in order to be able to use cache
-    process.env.TEST = 'false';
-    process.env.REDIS_ENABLED = 'true';
+    EnvProviderService.getInstance().dynamicOverride('TEST', 'false');
+    EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'true');
     redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 5031);
     await redisInMemoryServer.start();
-    process.env.REDIS_URL = 'redis://127.0.0.1:5031';
+    EnvProviderService.getInstance().dynamicOverride('REDIS_URL', 'redis://127.0.0.1:5031');
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
 
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL,
+      // @ts-ignore
+      EnvProviderService.getInstance().get('MIRROR_NODE_URL'),
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -150,7 +148,7 @@ describe('eth_getBlockBy', async function () {
 
     hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService);
 
-    process.env.ETH_FEE_HISTORY_FIXED = 'false';
+    EnvProviderService.getInstance().dynamicOverride('ETH_FEE_HISTORY_FIXED', 'false');
 
     // @ts-ignore
     ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
@@ -166,7 +164,7 @@ describe('eth_getBlockBy', async function () {
   });
 
   this.afterAll(async () => {
-    process.env.REDIS_ENABLED = 'false';
+    EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'false');
     await cacheService.disconnectRedisClient();
     await redisInMemoryServer.stop();
   });

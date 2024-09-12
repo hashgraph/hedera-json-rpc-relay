@@ -18,29 +18,26 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { EnvProviderService } from '../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { RelayImpl } from '../../src/lib/relay';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
 import pino from 'pino';
-const logger = pino();
 
+const logger = pino();
 const Relay = new RelayImpl(logger, new Registry());
 
 describe('Web3', function () {
   it('should execute "web3_clientVersion"', async function () {
-    process.env.npm_package_version = '1.0.0';
+    EnvProviderService.getInstance().dynamicOverride('npm_package_version', '1.0.0');
     const clientVersion = Relay.web3().clientVersion();
 
-    expect(clientVersion).to.be.equal('relay/' + process.env.npm_package_version);
+    expect(clientVersion).to.be.equal('relay/' + EnvProviderService.getInstance().get('npm_package_version'));
   });
 
   it('should return "relay/" when npm_package_version is not set', () => {
-    delete process.env.npm_package_version;
+    EnvProviderService.getInstance().remove('npm_package_version');
     const version = Relay.web3().clientVersion();
 
     expect(version).to.equal('relay/');

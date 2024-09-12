@@ -17,6 +17,9 @@
  * limitations under the License.
  *
  */
+
+import { EnvProviderService } from '../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import { EthImpl } from '../../src/lib/eth';
 import { expect } from 'chai';
 import pino from 'pino';
@@ -189,7 +192,9 @@ describe('Polling', async function () {
         ),
       ).to.equal(true);
       expect(
-        loggerSpy.calledWith(`Poller: Starting polling with interval=${process.env.WS_POLLING_INTERVAL}`),
+        loggerSpy.calledWith(
+          `Poller: Starting polling with interval=${EnvProviderService.getInstance().get('WS_POLLING_INTERVAL')}`,
+        ),
       ).to.equal(true);
     });
 

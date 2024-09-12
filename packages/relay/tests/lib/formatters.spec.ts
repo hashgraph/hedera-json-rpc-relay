@@ -18,6 +18,8 @@
  *
  */
 
+import { EnvProviderService } from '../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import { expect } from 'chai';
 import {
   ASCIIToHex,
@@ -145,15 +147,15 @@ describe('Formatters', () => {
 
   describe('parseNumericEnvVar', () => {
     before(() => {
-      process.env.TEST_ONLY_ENV_VAR_EMPTYSTRING = '';
-      process.env.TEST_ONLY_ENV_VAR_NONNUMERICSTRING = 'foobar';
-      process.env.TEST_ONLY_ENV_VAR_NUMERICSTRING = '12345';
+      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_EMPTYSTRING', '');
+      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', 'foobar');
+      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_NUMERICSTRING', '12345');
     });
 
     after(() => {
-      process.env.TEST_ONLY_ENV_VAR_EMPTYSTRING = undefined;
-      process.env.TEST_ONLY_ENV_VAR_NONNUMERICSTRING = undefined;
-      process.env.TEST_ONLY_ENV_VAR_NUMERICSTRING = undefined;
+      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_EMPTYSTRING', undefined);
+      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', undefined);
+      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_NUMERICSTRING', undefined);
     });
 
     it('should use default value when env var is undefined', () => {
@@ -706,8 +708,8 @@ describe('Formatters', () => {
       const result = getFunctionSelector('0x1234567890abcdef');
       expect(result).to.eq('12345678');
     });
-   });
-  
+  });
+
   describe('mapKeysAndValues', () => {
     it('should map keys and values correctly', () => {
       const target = { a: '1', b: '2', c: '3' };

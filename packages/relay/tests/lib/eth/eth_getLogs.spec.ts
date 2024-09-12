@@ -17,12 +17,12 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
+import { EnvProviderService } from '../../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-
 import {
   defaultDetailedContractResults,
   defaultDetailedContractResults2,
@@ -59,7 +59,6 @@ import {
 import { ethers } from 'ethers';
 import { generateEthTestEnv } from './eth-helpers';
 
-dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub;
@@ -89,13 +88,16 @@ describe('@ethGetLogs using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
+    currentMaxBlockRange = Number(EnvProviderService.getInstance().get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
+    EnvProviderService.getInstance().dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
+    EnvProviderService.getInstance().dynamicOverride(
+      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
+      currentMaxBlockRange.toString(),
+    );
   });
 
   describe('timeout', async function () {
@@ -226,10 +228,10 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
     });
     //setting mirror node limit to 2 for this test only
-    process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
+    EnvProviderService.getInstance().dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
     const result = await ethImpl.getLogs(null, null, null, null, null);
     //resetting mirror node limit to 100
-    process.env['MIRROR_NODE_LIMIT_PARAM'] = '100';
+    EnvProviderService.getInstance().dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '100');
     expect(result).to.exist;
 
     expect(result.length).to.eq(4);

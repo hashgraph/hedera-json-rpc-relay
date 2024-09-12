@@ -18,8 +18,8 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { EnvProviderService } from '../../../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import { pino } from 'pino';
 import { Registry } from 'prom-client';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
@@ -28,7 +28,6 @@ import chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
 import { RedisInMemoryServer } from '../../../redisInMemoryServer';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const logger = pino();
 const registry = new Registry();
 let cacheService: CacheService;
@@ -129,7 +128,7 @@ describe('CacheService Test Suite', async function () {
 
   describe('Internal Cache Test Suite', async function () {
     this.beforeAll(() => {
-      process.env.REDIS_ENABLED = 'false';
+      EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'false');
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
@@ -250,16 +249,16 @@ describe('CacheService Test Suite', async function () {
       redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6381);
       await redisInMemoryServer.start();
 
-      process.env.REDIS_ENABLED = 'true';
-      process.env.REDIS_URL = 'redis://127.0.0.1:6381';
-      process.env.TEST = 'false';
-      process.env.MULTI_SET = 'true';
+      EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'true');
+      EnvProviderService.getInstance().dynamicOverride('REDIS_URL', 'redis://127.0.0.1:6381');
+      EnvProviderService.getInstance().dynamicOverride('TEST', 'false');
+      EnvProviderService.getInstance().dynamicOverride('MULTI_SET', 'true');
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
     this.afterAll(async () => {
       await redisInMemoryServer.stop();
-      process.env.TEST = 'true';
+      EnvProviderService.getInstance().dynamicOverride('TEST', 'true');
       await cacheService.disconnectRedisClient();
     });
 

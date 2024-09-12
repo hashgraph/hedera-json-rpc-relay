@@ -18,11 +18,11 @@
  *
  */
 
+import { EnvProviderService } from '../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
-const registry = new Registry();
-
 import pino from 'pino';
 import { Precheck } from '../../src/lib/precheck';
 import { blobVersionedHash, contractAddress1, expectedError, mockData, signTransaction } from '../helpers';
@@ -34,8 +34,9 @@ import constants from '../../src/lib/constants';
 import { JsonRpcError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { ONE_TINYBAR_IN_WEI_HEX } from './eth/eth-config';
-const logger = pino();
 
+const registry = new Registry();
+const logger = pino();
 const limitOrderPostFix = '?order=desc&limit=1';
 const transactionsPostFix = '?transactions=false';
 
@@ -92,7 +93,7 @@ describe('Precheck', async function () {
 
     // @ts-ignore
     const mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL!,
+      EnvProviderService.getInstance().get('MIRROR_NODE_URL')!,
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -235,11 +236,11 @@ describe('Precheck', async function () {
     let initialMinGasPriceBuffer;
     before(async () => {
       initialMinGasPriceBuffer = constants.GAS_PRICE_TINY_BAR_BUFFER;
-      process.env.GAS_PRICE_TINY_BAR_BUFFER = '10000000000'; // 1 tinybar
+      EnvProviderService.getInstance().dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', '10000000000'); // 1 tinybar
     });
 
     after(async () => {
-      process.env.GAS_PRICE_TINY_BAR_BUFFER = initialMinGasPriceBuffer;
+      EnvProviderService.getInstance().dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', initialMinGasPriceBuffer);
     });
 
     it('should pass for gas price gt to required gas price', async function () {

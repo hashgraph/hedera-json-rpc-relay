@@ -18,6 +18,8 @@
  *
  */
 
+import { EnvProviderService } from '../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import pino from 'pino';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
@@ -40,15 +42,21 @@ describe('HBAR Rate Limiter', async function () {
 
   this.beforeEach(() => {
     currentDateNow = Date.now();
-    process.env.HBAR_RATE_LIMIT_WHITELIST = `[${randomWhiteListedAccountAddress}]`;
+    EnvProviderService.getInstance().dynamicOverride(
+      'HBAR_RATE_LIMIT_WHITELIST',
+      `[${randomWhiteListedAccountAddress}]`,
+    );
   });
 
   this.beforeAll(() => {
-    process.env.HBAR_RATE_LIMIT_WHITELIST = `[${randomWhiteListedAccountAddress}]`;
+    EnvProviderService.getInstance().dynamicOverride(
+      'HBAR_RATE_LIMIT_WHITELIST',
+      `[${randomWhiteListedAccountAddress}]`,
+    );
   });
 
   this.afterAll(() => {
-    delete process.env.HBAR_RATE_LIMIT_WHITELIST;
+    EnvProviderService.getInstance().remove('HBAR_RATE_LIMIT_WHITELIST');
   });
 
   it('should be disabled, if we pass invalid total', async function () {

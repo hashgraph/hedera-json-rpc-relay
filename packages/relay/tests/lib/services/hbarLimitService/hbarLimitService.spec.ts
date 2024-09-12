@@ -18,6 +18,8 @@
  *
  */
 
+import { EnvProviderService } from '../../../../src/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
