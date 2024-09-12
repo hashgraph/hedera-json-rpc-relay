@@ -68,7 +68,23 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
 
 ### High-Level Design
 
-The Hbar limiter will be implemented as a separate service, used by other services/classes that need it. It will have two main purposes - to capture the gas fees for different operation and to check if an operation needs to be paused, due to exceeded Hbar limit
+The HBar limiter will be implemented as a separate service, used by other services/classes that need it. It will have two main purposes - to capture the gas fees for different operation and to check if an operation needs to be paused, due to an exceeded HBar limit.
+
+```mermaid
+flowchart TD
+    A[User] -->|sends transaction| B[JSON-RPC Relay]
+    B --> C{HbarLimitService}
+    C -->|new user, i.e., who is not linked to a spending plan| D[Create a BASIC HbarSpendingPlan]
+    D --> E[Link user's ETH & IP addresses to plan]
+    E --> F[Estimate fees of any additional HFS transactions which need to be executed by the operator]
+    C -->|existing user, i.e., who is linked to a spending plan| G[Retrieve HbarSpendingPlan linked to user]
+    G --> F
+    F --> H{The plan exceeds its daily HBar allowance?}
+    H --> |yes| I[Limit request]
+    H --> |no| J[Execute transaction]
+    J --> K[Capture fees the operator has been charged]
+    K --> L[Update spending plan]
+```
 
 ### Class Diagram
 
