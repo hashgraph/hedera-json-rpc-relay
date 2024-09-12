@@ -22,6 +22,7 @@ import { Eth } from '../index';
 import { Logger } from 'pino';
 import { Registry, Gauge } from 'prom-client';
 import { IRequestDetails } from './types/IRequestDetails';
+import { Utils } from '../utils';
 
 export interface Poll {
   tag: string;
@@ -85,15 +86,15 @@ export class Poller {
             filters?.address || null,
             filters?.topics || null,
             {
-              requestIdPrefix: `[Request ID: ${event}]`,
-              requestIp: '0.0.0.0',
+              requestIdPrefix: `[Request ID: ${Utils.generateRequestId()}]`,
+              requestIp: '',
             } as IRequestDetails,
           );
 
           poll.lastPolled = this.latestBlock;
         } else if (event === this.NEW_HEADS_EVENT && this.newHeadsEnabled) {
           data = await this.eth.getBlockByNumber('latest', filters?.includeTransactions ?? false, {
-            requestIdPrefix: `[Request ID: ${event}]`,
+            requestIdPrefix: `[Request ID: ${Utils.generateRequestId()}]`,
             requestIp: '0.0.0.0',
           } as IRequestDetails);
           data.jsonrpc = '2.0';
@@ -123,7 +124,7 @@ export class Poller {
     this.logger.info(`${LOGGER_PREFIX} Starting polling with interval=${this.pollingInterval}`);
     this.interval = setInterval(async () => {
       this.latestBlock = await this.eth.blockNumber({
-        requestIdPrefix: `[Request ID: ${LOGGER_PREFIX}]`,
+        requestIdPrefix: `[Request ID: ${Utils.generateRequestId()}]`,
         requestIp: '0.0.0.0',
       } as IRequestDetails);
       this.poll();
