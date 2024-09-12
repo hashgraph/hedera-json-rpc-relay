@@ -34,6 +34,7 @@ import { Context } from 'mocha';
 import { GitHubClient } from '../clients/githubClient';
 import MirrorClient from '../clients/mirrorClient';
 import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
 
 export class Utils {
   static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 1e6; // 1 MB
@@ -257,14 +258,14 @@ export class Utils {
    *
    * @param {MirrorClient} mirrorNode The mirror node client.
    * @param {AliasAccount} creator The creator account for the alias.
-   * @param {string} requestId The unique identifier for the request.
+   * @param {string} requestDetails The request details used for logging.
    * @param {string} balanceInTinyBar The initial balance for the alias account in tiny bars. Defaults to 10 HBAR.
    * @returns {Promise<AliasAccount>} A promise resolving to the created alias account.
    */
   static readonly createAliasAccount = async (
     mirrorNode: MirrorClient,
     creator: AliasAccount,
-    requestId: string,
+    requestDetails: RequestDetails,
     balanceInTinyBar: string = '1000000000', //10 HBAR
   ): Promise<AliasAccount> => {
     const signer = creator.wallet;
@@ -279,7 +280,7 @@ export class Utils {
       value: accountBalance,
     });
 
-    const mirrorNodeAccount = (await mirrorNode.get(`/accounts/${address}`, requestId)).account;
+    const mirrorNodeAccount = (await mirrorNode.get(`/accounts/${address}`, requestDetails)).account;
     const accountId = AccountId.fromString(mirrorNodeAccount);
     const client: ServicesClient = new ServicesClient(
       process.env.HEDERA_NETWORK!,
@@ -306,14 +307,18 @@ export class Utils {
     initialAccount: AliasAccount,
     neededAccounts: number,
     initialAmountInTinyBar: string,
-    requestId: string,
+    requestDetails: RequestDetails,
   ): Promise<AliasAccount[]> {
-    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const accounts: AliasAccount[] = [];
     for (let i = 0; i < neededAccounts; i++) {
-      const account = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId, initialAmountInTinyBar);
+      const account = await Utils.createAliasAccount(
+        mirrorNode,
+        initialAccount,
+        requestDetails,
+        initialAmountInTinyBar,
+      );
       global.logger.trace(
-        `${requestIdPrefix} Create new Eth compatible account w alias: ${account.address} and balance ~${initialAmountInTinyBar} wei`,
+        `${requestDetails.formattedRequestId} Create new Eth compatible account w alias: ${account.address} and balance ~${initialAmountInTinyBar} wei`,
       );
       accounts.push(account);
     }

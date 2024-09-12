@@ -24,7 +24,6 @@ import { Registry } from 'prom-client';
 import pino from 'pino';
 import { LocalLRUCache } from '../../../src/lib/clients';
 import constants from '../../../src/lib/constants';
-import { IRequestDetails } from '../../../dist/lib/types/IRequestDetails';
 
 const logger = pino();
 const registry = new Registry();

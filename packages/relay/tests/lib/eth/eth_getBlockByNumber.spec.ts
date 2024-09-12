@@ -23,7 +23,7 @@ import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 
-import { predefined } from '../../../src/lib/errors/JsonRpcError';
+import { predefined } from '../../../src';
 import { EthImpl } from '../../../src/lib/eth';
 import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Block, Transaction } from '../../../src/lib/model';
@@ -73,13 +73,13 @@ import {
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 import { fail } from 'assert';
-import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
 let ethImplLowTransactionCount: EthImpl;
 
@@ -87,10 +87,10 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
     generateEthTestEnv(true);
-  const requestIdPrefix = `[Request ID: eth_getBlockByNumberTest]`;
-  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' } as IRequestDetails;
   const results = defaultContractResults.results;
   const TOTAL_GAS_USED = numberTo0x(results[0].gas_used + results[1].gas_used);
+
+  const requestDetails = new RequestDetails({ requestId: 'eth_getBlockByNumberTest', ipAddress: '0.0.0.0' });
 
   const veriftAggregatedInfo = (result) => {
     // verify aggregated info
@@ -109,9 +109,9 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     expect(transactions[1].gas).equal(hashNumber(GAS_USED_2));
   }
 
-  this.beforeEach(() => {
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     restMock.reset();
     restMock.resetHandlers();
 
@@ -165,7 +165,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     expect(blockNumber2).to.be.eq(blockNumber);
 
     // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     // Third call should return new number using mirror node
     const newBlockNumber = 7;
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, {
@@ -439,7 +439,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       }
     }
 
-    this.beforeEach(() => {
+    beforeEach(() => {
       restMock.resetHistory();
       restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
       for (const result of defaultContractResults.results) {

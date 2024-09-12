@@ -24,7 +24,7 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
-import { IRequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/IRequestDetails';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
 
 describe('@web-socket-batch-2 eth_getStorageAt', async function () {
   const METHOD_NAME = 'eth_getStorageAt';
@@ -55,12 +55,10 @@ describe('@web-socket-batch-2 eth_getStorageAt', async function () {
   let params: any[],
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
-  let requestId: string;
-  let requestDetails: IRequestDetails;
+
+  const requestDetails = new RequestDetails({ requestId: 'ws_getStorageAtTest', ipAddress: '0.0.0.0' });
 
   before(async () => {
-    requestId = `[Request ID: getStorageAtTest]`;
-    requestDetails = { requestIdPrefix: `${requestId}`, requestIp: '0.0.0.0' };
     const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '2500000000'; //25 Hbar
 
@@ -71,7 +69,7 @@ describe('@web-socket-batch-2 eth_getStorageAt', async function () {
         initialAccount,
         neededAccounts,
         initialAmount,
-        requestId,
+        requestDetails,
       )),
     );
     global.accounts.push(...accounts);

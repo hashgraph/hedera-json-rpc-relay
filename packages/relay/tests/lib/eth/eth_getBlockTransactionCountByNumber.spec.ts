@@ -35,25 +35,27 @@ import {
   NO_SUCH_BLOCK_EXISTS_RES,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
-import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 
 describe('@ethGetBlockTransactionCountByNumber using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
-  const requestIdPrefix = `[Request ID: eth_getBlockTransactionCountByNumberTest]`;
-  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' } as IRequestDetails;
 
-  this.beforeEach(() => {
+  const requestDetails = new RequestDetails({
+    requestId: 'eth_getBlockTransactionCountByNumberTest',
+    ipAddress: '0.0.0.0',
+  });
+
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     restMock.reset();
-
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -82,7 +84,7 @@ describe('@ethGetBlockTransactionCountByNumber using MirrorNode', async function
   });
 
   it('eth_getBlockTransactionCountByNumber with no match', async function () {
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(404, NO_SUCH_BLOCK_EXISTS_RES);
 
     const result = await ethImpl.getBlockTransactionCountByNumber(BLOCK_NUMBER.toString(), requestDetails);

@@ -24,7 +24,7 @@ import sinon from 'sinon';
 import * as _ from 'lodash';
 import chaiAsPromised from 'chai-as-promised';
 
-import { predefined } from '../../../src/lib/errors/JsonRpcError';
+import { predefined } from '../../../src';
 import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Transaction } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
@@ -43,12 +43,13 @@ import {
   NOT_FOUND_RES,
 } from './eth-config';
 import { contractResultsByNumberByIndexURL, generateEthTestEnv } from './eth-helpers';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 
 function verifyAggregatedInfo(result: Transaction | null) {
   // verify aggregated info
@@ -65,13 +66,16 @@ function verifyAggregatedInfo(result: Transaction | null) {
 describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
-  const requestIdPrefix = `[Request ID: eth_getTransactionByBlockNumberAndIndexTest]`;
-  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
+
+  const requestDetails = new RequestDetails({
+    requestId: 'eth_getTransactionByBlockNumberAndIndexTest',
+    ipAddress: '0.0.0.0',
+  });
+
   this.beforeEach(() => {
     // reset cache and restMock
-    cacheService.clear();
+    cacheService.clear(requestDetails);
     restMock.reset();
-
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);

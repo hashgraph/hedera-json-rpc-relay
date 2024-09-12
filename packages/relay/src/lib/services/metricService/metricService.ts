@@ -24,7 +24,6 @@ import constants from '../../constants';
 import HbarLimit from '../../hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
-import { formatRequestIdMessage } from '../../../formatters';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types';
 import { RequestDetails } from '../../types/RequestDetails';
 
@@ -114,7 +113,7 @@ export default class MetricService {
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
 
     this.eventEmitter.on(constants.EVENTS.EXECUTE_TRANSACTION, (args: IExecuteTransactionEventPayload) => {
-      this.captureTransactionMetrics(args);
+      this.captureTransactionMetrics(args).then();
     });
 
     this.eventEmitter.on(constants.EVENTS.EXECUTE_QUERY, (args: IExecuteQueryEventPayload) => {
@@ -127,28 +126,28 @@ export default class MetricService {
    * and recording the transaction fees, gas usage, and other relevant metrics.
    *
    * @param {IExecuteTransactionEventPayload} payload - The payload object containing transaction details.
-   * @param {string} payload.requestId - The unique identifier for the request.
    * @param {string} payload.callerName - The name of the entity calling the transaction.
    * @param {string} payload.transactionId - The unique identifier for the transaction.
    * @param {string} payload.txConstructorName - The name of the transaction constructor.
    * @param {string} payload.operatorAccountId - The account ID of the operator managing the transaction.
    * @param {string} payload.interactingEntity - The entity interacting with the transaction.
+   * @param {RequestDetails} payload.requestDetails - The request details for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the transaction metrics have been captured.
    */
   public async captureTransactionMetrics({
-    requestId,
     callerName,
     transactionId,
     txConstructorName,
     operatorAccountId,
     interactingEntity,
+    requestDetails,
   }: IExecuteTransactionEventPayload): Promise<void> {
     const transactionRecordMetrics = await this.getTransactionRecordMetrics(
       transactionId,
       callerName,
-      requestId,
       txConstructorName,
       operatorAccountId,
+      requestDetails,
     );
 
     if (transactionRecordMetrics) {
@@ -163,7 +162,7 @@ export default class MetricService {
           gasUsed,
           interactingEntity,
           status,
-          requestDetails: requestId,
+          requestDetails,
         } as IExecuteQueryEventPayload);
       }
 
@@ -177,7 +176,7 @@ export default class MetricService {
           gasUsed: 0,
           interactingEntity,
           status,
-          requestDetails: requestId,
+          requestDetails,
         } as IExecuteQueryEventPayload);
       }
     }
@@ -195,7 +194,7 @@ export default class MetricService {
    * @param {number} payload.gasUsed - The amount of gas used during the transaction.
    * @param {string} payload.interactingEntity - The entity interacting with the transaction.
    * @param {string} payload.status - The entity interacting with the transaction.
-   * @param {string} payload.requestId - The unique identifier for the request.
+   * @param {string} payload.requestDetails - The request details for logging and tracking.
    * @returns {void} - This method does not return a value.
    */
   public addExpenseAndCaptureMetrics = ({
@@ -209,32 +208,13 @@ export default class MetricService {
     status,
     requestDetails,
   }: IExecuteQueryEventPayload): void => {
-    const formattedRequestId = formatRequestIdMessage(requestDetails);
     this.logger.trace(
-      `${formattedRequestId} Capturing HBAR charged: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
+      `${requestDetails.formattedRequestId} Capturing HBAR charged: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
     );
 
     this.hbarLimiter.addExpense(cost, Date.now(), requestDetails);
     this.captureMetrics(executionMode, txConstructorName, status, cost, gasUsed, callerName, interactingEntity);
   };
-
-  /**
-   * Retrieves the cost metric for consensus node client operations.
-   *
-   * @returns {Histogram} - The histogram metric tracking the cost of consensus node client operations.
-   */
-  private getCostMetric(): Histogram {
-    return this.consensusNodeClientHistogramCost;
-  }
-
-  /**
-   * Retrieves the gas fee metric for consensus node client operations.
-   *
-   * @returns {Histogram} - The histogram metric tracking the gas fees of consensus node client operations.
-   */
-  private getGasFeeMetric(): Histogram {
-    return this.consensusNodeClientHistogramGasFee;
-  }
 
   /**
    * Initialize consensus node cost metrics

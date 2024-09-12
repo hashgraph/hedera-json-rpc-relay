@@ -23,24 +23,20 @@ import { expect, use } from 'chai';
 import { Registry } from 'prom-client';
 import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
-import { RelayImpl } from '../../../src/lib/relay';
-import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RelayImpl } from '../../../src';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 describe('@ethCommon', async function () {
-  let Relay: any;
-  let requestIdPrefix: string;
-  let requestDetails: IRequestDetails;
+  let Relay: RelayImpl;
   this.timeout(10000);
 
+  const requestDetails = new RequestDetails({ requestId: 'eth_commonTest', ipAddress: '0.0.0.0' });
+
   this.beforeAll(() => {
-    requestIdPrefix = `[Request ID: eth_common]`;
-    requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
-    const logger = pino();
-    const registry = new Registry();
-    Relay = new RelayImpl(logger, registry);
+    Relay = new RelayImpl(pino(), new Registry());
   });
 
   describe('@ethCommon', async function () {

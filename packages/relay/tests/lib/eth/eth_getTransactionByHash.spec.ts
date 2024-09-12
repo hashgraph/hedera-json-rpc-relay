@@ -22,11 +22,8 @@ import dotenv from 'dotenv';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
-import { EthImpl } from '../../../src/lib/eth';
-import { Log, Transaction, Transaction2930, Transaction1559 } from '../../../src/lib/model';
-import constants from '../../../src/lib/constants';
+import { Transaction, Transaction2930, Transaction1559 } from '../../../src/lib/model';
 import RelayAssertions from '../../assertions';
-import { nullableNumberTo0x, numberTo0x, toHash32 } from '../../../src/formatters';
 import {
   DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED,
   DEFAULT_TRANSACTION,
@@ -35,15 +32,15 @@ import {
   EMPTY_LOGS_RESPONSE,
   NO_TRANSACTIONS,
 } from './eth-config';
-import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress, defaultLogs1 } from '../../helpers';
-import { predefined } from '../../../src';
+import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async function () {
-  let { restMock, ethImpl, cacheService } = generateEthTestEnv();
+  let { restMock, ethImpl } = generateEthTestEnv();
   const from = '0x00000000000000000000000000000000000003f7';
   const evm_address = '0xc37f417fa09933335240fca72dd257bfbde9c275';
   const contractResultMock = {
@@ -78,8 +75,8 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     v: 1,
     nonce: 9,
   };
-  const requestIdPrefix = `[Request ID: eth_getTransactionByHashTest]`;
-  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
+
+  const requestDetails = new RequestDetails({ requestId: 'eth_getTransactionByHashTest', ipAddress: '0.0.0.0' });
 
   this.beforeEach(function () {
     restMock.reset();

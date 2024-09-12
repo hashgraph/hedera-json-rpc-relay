@@ -59,7 +59,7 @@ const wsMetricRegistry = new WsMetricRegistry(register);
 const pingInterval = Number(process.env.WS_PING_INTERVAL || 100000);
 
 const app = websockify(new Koa());
-app.ws.use(async (ctx) => {
+app.ws.use(async (ctx: Koa.Context) => {
   // Increment the total opened connections
   wsMetricRegistry.getCounter('totalOpenedConnections').inc();
 
@@ -204,7 +204,7 @@ app.ws.use(async (ctx) => {
 const httpApp = new KoaJsonRpc(logger, register).getKoaApp();
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
 
-httpApp.use(async (ctx, next) => {
+httpApp.use(async (ctx: Koa.Context, next: Koa.Next) => {
   // prometheus metrics exposure
   if (ctx.url === '/metrics') {
     ctx.status = 200;
@@ -215,10 +215,7 @@ httpApp.use(async (ctx, next) => {
   } else if (ctx.url === '/health/readiness') {
     // readiness endpoint
     try {
-      const result = relay.eth().chainId({
-        requestIdPrefix: ctx.state.reqId,
-        requestIp: ctx.request.ip,
-      });
+      const result = relay.eth().chainId(httpApp.getRequestDetails());
       if (result.includes('0x12')) {
         ctx.status = 200;
         ctx.body = 'OK';

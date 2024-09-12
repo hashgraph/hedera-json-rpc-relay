@@ -23,7 +23,7 @@ import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 
-import { predefined } from '../../../src/lib/errors/JsonRpcError';
+import { predefined } from '../../../src';
 import { EthImpl } from '../../../src/lib/eth';
 import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
@@ -56,16 +56,15 @@ import {
   DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
-import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
 let ethImplLowTransactionCount: EthImpl;
-let requestDetails: IRequestDetails;
 
 describe('@ethGetBlockByHash using MirrorNode', async function () {
   this.timeout(10000);
@@ -74,12 +73,12 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
   const results = defaultContractResults.results;
   const TOTAL_GAS_USED = numberTo0x(results[0].gas_used + results[1].gas_used);
 
+  const requestDetails = new RequestDetails({ requestId: 'eth_getBlockByHashTest', ipAddress: '0.0.0.0' });
+
   this.beforeEach(() => {
     // reset cache and restMock
-    cacheService.clear();
+    cacheService.clear(requestDetails);
     restMock.reset();
-
-    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -254,7 +253,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
   });
 
   it('eth_getBlockByHash with block match and contract revert', async function () {
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     const randomBlock = {
       ...DEFAULT_BLOCK,
       gas_used: 400000,
@@ -283,7 +282,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
   });
 
   it('eth_getBlockByHash with no match', async function () {
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_HASH}`).reply(404, NO_SUCH_BLOCK_EXISTS_RES);
 

@@ -21,10 +21,10 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { expect, use } from 'chai';
 import sinon from 'sinon';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import chaiAsPromised from 'chai-as-promised';
 
-import { predefined } from '../../../src/lib/errors/JsonRpcError';
+import { predefined } from '../../../src';
 import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Transaction, Transaction1559, Transaction2930 } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
@@ -41,18 +41,15 @@ import {
   DEFAULT_NETWORK_FEES,
   EMPTY_RES,
   NOT_FOUND_RES,
-  ACCOUNT_ADDRESS_1,
-  CONTRACT_ADDRESS_2,
-  CONTRACT_ID_2,
 } from './eth-config';
 import { contractResultsByHashByIndexURL, generateEthTestEnv } from './eth-helpers';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-const requestIdPrefix = `[Request ID: eth_getTransactionByBlockHashAndIndexTest]`;
-const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 
 function verifyAggregatedInfo(result: Transaction | null) {
   // verify aggregated info
@@ -66,11 +63,16 @@ function verifyAggregatedInfo(result: Transaction | null) {
 
 describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async function () {
   this.timeout(10000);
-  let { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
-  this.beforeEach(() => {
+  const requestDetails = new RequestDetails({
+    requestId: 'eth_getTransactionByBlockHashAndIndexTest',
+    ipAddress: '0.0.0.0',
+  });
+
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);

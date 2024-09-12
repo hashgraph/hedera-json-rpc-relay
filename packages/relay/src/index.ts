@@ -27,9 +27,8 @@ import { MirrorNodeClient } from './lib/clients';
 import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
 import { IDebugService } from './lib/services/debugService/IDebugService';
 import { RequestDetails } from './lib/types/RequestDetails';
-import { SDKClientError } from './lib/errors/SDKClientError';
 
-export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError, SDKClientError };
+export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError };
 
 export { RelayImpl } from './lib/relay';
 

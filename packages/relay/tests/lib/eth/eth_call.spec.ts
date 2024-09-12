@@ -43,7 +43,7 @@ import {
   ONE_TINYBAR_IN_WEI_HEX,
   EXAMPLE_CONTRACT_BYTECODE,
 } from './eth-config';
-import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
+import { JsonRpcError, predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import constants from '../../../src/lib/constants';
 import {
@@ -55,14 +55,15 @@ import {
   mockData,
 } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
-import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
-import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
+import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
+import { ContractFunctionResult } from '@hashgraph/sdk';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
 
 describe('@ethCall Eth Call spec', async function () {
@@ -76,16 +77,12 @@ describe('@ethCall Eth Call spec', async function () {
     gas: MAX_GAS_LIMIT_HEX,
   };
 
-  let requestDetails: IRequestDetails;
-  let requestIdPrefix: string;
+  const requestDetails = new RequestDetails({ requestId: 'eth_callTest', ipAddress: '0.0.0.0' });
 
-  this.beforeEach(() => {
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     restMock.reset();
-
-    requestIdPrefix = `[Request ID: testId]`;
-    requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -137,7 +134,7 @@ describe('@ethCall Eth Call spec', async function () {
         },
         'latest',
         requestDetails,
-        (error) => {
+        (error: any) => {
           expect(error.message).to.equal(
             `Invalid Contract Address: ${EthImpl.zeroHex}. Expected length of 42 chars but was 3.`,
           );
@@ -250,26 +247,26 @@ describe('@ethCall Eth Call spec', async function () {
   });
 
   describe('eth_call using consensus node', async function () {
-    let initialEthCallConesneusFF;
+    let initialEthCallDefaultsToConsensus: string | undefined;
 
     before(() => {
-      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+      initialEthCallDefaultsToConsensus = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
     });
 
     after(() => {
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallDefaultsToConsensus;
     });
 
     it('eth_call with no gas', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
-      sdkClientStub.submitContractCallQueryWithRetry.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
           return Uint8Array.of(0);
         },
-      });
+      } as unknown as ContractFunctionResult);
 
       const result = await ethImpl.call(
         {
@@ -294,11 +291,11 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('eth_call with no data', async function () {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      sdkClientStub.submitContractCallQueryWithRetry.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
           return Uint8Array.of(0);
         },
-      });
+      } as unknown as ContractFunctionResult);
 
       const result = await ethImpl.call(
         {
@@ -331,11 +328,11 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      sdkClientStub.submitContractCallQueryWithRetry.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
           return Uint8Array.of(0);
         },
-      });
+      } as unknown as ContractFunctionResult);
 
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.equal('0x00');
@@ -360,11 +357,11 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('eth_call with all fields', async function () {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      sdkClientStub.submitContractCallQueryWithRetry.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
           return Uint8Array.of(0);
         },
-      });
+      } as unknown as ContractFunctionResult);
 
       const result = await ethImpl.call(ETH_CALL_REQ_ARGS, 'latest', requestDetails);
 
@@ -382,11 +379,11 @@ describe('@ethCall Eth Call spec', async function () {
     //Return once the value, then it's being fetched from cache. After the loop we reset the sdkClientStub, so that it returns nothing, if we get an error in the next request that means that the cache was cleared.
     it('eth_call should cache the response for 200ms', async function () {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
-      sdkClientStub.submitContractCallQueryWithRetry.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
           return Uint8Array.of(0);
         },
-      });
+      } as unknown as ContractFunctionResult);
 
       for (let index = 0; index < 3; index++) {
         const result = await ethImpl.call(
@@ -451,7 +448,7 @@ describe('@ethCall Eth Call spec', async function () {
     it('eth_call throws internal error when consensus node times out and submitContractCallQueryWithRetry returns undefined', async function () {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
-      sdkClientStub.submitContractCallQueryWithRetry.returns(undefined);
+      sdkClientStub.submitContractCallQueryWithRetry.resolves(undefined);
 
       const result = await ethImpl.call(
         {
@@ -476,7 +473,7 @@ describe('@ethCall Eth Call spec', async function () {
       gas: 400000,
       value: null,
     };
-    let initialEthCallConesneusFF;
+    let initialEthCallConesneusFF: string | undefined;
 
     before(() => {
       initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
@@ -646,11 +643,11 @@ describe('@ethCall Eth Call spec', async function () {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
       await mockContractCall({ ...callData, block: 'latest' }, false, 501, mockData.notSuported, requestDetails);
 
-      sdkClientStub.submitContractCallQueryWithRetry.returns({
+      sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
           return Uint8Array.of(0);
         },
-      });
+      } as unknown as ContractFunctionResult);
 
       const result = await ethImpl.call(callData, 'latest', requestDetails);
 
@@ -812,7 +809,7 @@ describe('@ethCall Eth Call spec', async function () {
       estimate: boolean,
       statusCode: number,
       result: IContractCallResponse,
-      requestDetails: IRequestDetails,
+      requestDetails: RequestDetails,
     ) {
       const formattedCallData = { ...callData, estimate };
       await ethImpl.contractCallFormat(formattedCallData, requestDetails);
@@ -934,7 +931,8 @@ describe('@ethCall Eth Call spec', async function () {
   });
 
   describe('eth_call using consensus node because of redirect by selector', async function () {
-    let initialEthCallConesneusFF: any, initialEthCallSelectorsAlwaysToConsensus: any;
+    let initialForceToConsensusBySelector: string | undefined;
+    let initialEthCallDefaultsToConsensus: string | undefined;
     const REDIRECTED_SELECTOR = '0x4d8fdd6d';
     const NON_REDIRECTED_SELECTOR = '0xaaaaaaaa';
     let callConsensusNodeSpy: sinon.SinonSpy;
@@ -942,14 +940,15 @@ describe('@ethCall Eth Call spec', async function () {
     let sandbox: sinon.SinonSandbox;
 
     before(() => {
-      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
-      initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+      initialForceToConsensusBySelector = process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR;
+      initialEthCallDefaultsToConsensus = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = 'true';
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
     });
 
     after(() => {
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
-      process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
+      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = initialForceToConsensusBySelector;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallDefaultsToConsensus;
     });
 
     beforeEach(() => {

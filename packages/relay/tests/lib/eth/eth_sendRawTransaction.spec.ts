@@ -22,35 +22,34 @@ import dotenv from 'dotenv';
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-import { Hbar, HbarUnit, TransactionId } from '@hashgraph/sdk';
+import { Hbar, HbarUnit, TransactionId, TransactionResponse } from '@hashgraph/sdk';
 
 import { SDKClient } from '../../../src/lib/clients';
 import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
-import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
+import { JsonRpcError, predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import { getRequestId, mockData, signTransaction } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
-import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
 
 describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
-  let requestDetails: IRequestDetails;
+
+  const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });
 
   this.beforeEach(() => {
     // reset cache and restMock
-    cacheService.clear();
+    cacheService.clear(requestDetails);
     restMock.reset();
-
-    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -96,7 +95,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       },
     };
 
-    this.beforeEach(() => {
+    beforeEach(() => {
       sinon.restore();
       sdkClientStub = sinon.createStubInstance(SDKClient);
       sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
@@ -104,7 +103,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       restMock.onGet(networkExchangeRateEndpoint).reply(200, mockedExchangeRate);
     });
 
-    this.afterEach(() => {
+    afterEach(() => {
       sinon.restore();
     });
 
@@ -136,10 +135,10 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
       restMock.onGet(`transactions/${transactionId}?nonce=0`).reply(200, null);
 
-      sdkClientStub.submitEthereumTransaction.returns({
+      sdkClientStub.submitEthereumTransaction.resolves({
         txResponse: {
           transactionId: '',
-        },
+        } as unknown as TransactionResponse,
         fileId: null,
       });
 
@@ -154,10 +153,10 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
-      sdkClientStub.submitEthereumTransaction.returns({
+      sdkClientStub.submitEthereumTransaction.resolves({
         txResponse: {
           transactionId: '',
-        },
+        } as unknown as TransactionResponse,
         fileId: null,
       });
 
@@ -170,10 +169,10 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     it('should return hash from ContractResult mirror node api', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
-      sdkClientStub.submitEthereumTransaction.returns({
+      sdkClientStub.submitEthereumTransaction.resolves({
         txResponse: {
           transactionId: TransactionId.fromString(transactionIdServicesFormat),
-        },
+        } as unknown as TransactionResponse,
         fileId: null,
       });
       const signed = await signTransaction(transaction);
@@ -185,10 +184,10 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     it('should not send second transaction upon succession', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
-      sdkClientStub.submitEthereumTransaction.returns({
+      sdkClientStub.submitEthereumTransaction.resolves({
         txResponse: {
           transactionId: TransactionId.fromString(transactionIdServicesFormat),
-        },
+        } as unknown as TransactionResponse,
         fileId: null,
       });
 

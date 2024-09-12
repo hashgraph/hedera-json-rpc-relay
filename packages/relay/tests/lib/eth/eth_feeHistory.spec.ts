@@ -38,27 +38,25 @@ import {
 } from './eth-config';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
-import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
-import { request } from 'http';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
-let requestDetails: IRequestDetails;
 
 describe('@ethFeeHistory using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
+  const requestDetails = new RequestDetails({ requestId: 'eth_feeHistoryTest', ipAddress: '0.0.0.0' });
+
   this.beforeEach(() => {
     // reset cache and restMock
-    cacheService.clear();
+    cacheService.clear(requestDetails);
     restMock.reset();
-
-    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -203,7 +201,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     }
 
     this.beforeEach(() => {
-      sdkClientStub.getTinyBarGasFee.returns(fauxGasTinyBars);
+      sdkClientStub.getTinyBarGasFee.resolves(fauxGasTinyBars);
       restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
       restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
       restMock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(404, NOT_FOUND_RES);
@@ -244,7 +242,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     });
 
     this.beforeEach(function () {
-      cacheService.clear();
+      cacheService.clear(requestDetails);
       restMock.reset();
       restMock.onGet(`network/fees`).reply(200, DEFAULT_NETWORK_FEES);
     });

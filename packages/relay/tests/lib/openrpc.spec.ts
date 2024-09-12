@@ -29,13 +29,13 @@ import axios from 'axios';
 import sinon from 'sinon';
 import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
-import { RelayImpl } from '../../src/lib/relay';
 import { Registry } from 'prom-client';
+import { BigNumber } from 'bignumber.js';
 
+import { RelayImpl } from '../../src';
 import { EthImpl } from '../../src/lib/eth';
-import { SDKClient } from '../../src/lib/clients';
-import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-import type { IRequestDetails } from '../../src/lib/types/RequestDetails';
+import { SDKClient, MirrorNodeClient } from '../../src/lib/clients';
+import { RequestDetails } from '../../src/lib/types/RequestDetails';
 
 import openRpcSchema from '../../../../docs/openrpc.json';
 import {
@@ -64,19 +64,20 @@ import {
   defaultLogTopics,
   defaultNetworkFees,
   defaultTxHash,
-  getRequestId,
   signedTransactionHash,
 } from '../helpers';
 import { NOT_FOUND_RES } from './eth/eth-config';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
-import { numberTo0x } from '../../../../packages/relay/src/formatters';
+import { numberTo0x } from '../../src/formatters';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 import constants from '../../src/lib/constants';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import EventEmitter from 'events';
+import Long from 'long';
+import { AccountInfo } from '@hashgraph/sdk';
 
 process.env.npm_package_version = 'relay/0.0.1-SNAPSHOT';
 
@@ -87,7 +88,7 @@ const Relay = new RelayImpl(logger, registry);
 let mock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let clientServiceInstance: ClientService;
-let sdkClientStub: any;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 
 const noTransactions = '?transactions=false';
 
@@ -95,12 +96,10 @@ describe('Open RPC Specification', function () {
   let rpcDocument: any;
   let methodsResponseSchema: { [method: string]: any };
   let ethImpl: EthImpl;
-  let requestDetails: IRequestDetails;
-  let requestIdPrefix: string;
+
+  const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });
 
   this.beforeAll(async () => {
-    requestIdPrefix = `[Request ID: testId]`;
-    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
     rpcDocument = await parseOpenRPCDocument(JSON.stringify(openRpcSchema));
     methodsResponseSchema = rpcDocument.methods.reduce(
       (res: { [method: string]: any }, method: any) => ({
@@ -211,11 +210,11 @@ describe('Open RPC Specification', function () {
       mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
     }
     mock.onPost(`contracts/call`, { ...defaultCallData, estimate: false }).reply(200, { result: '0x12' });
-    sdkClientStub.getAccountBalanceInWeiBar.returns(1000);
-    sdkClientStub.getAccountBalanceInTinyBar.returns(100000000000);
-    sdkClientStub.getContractByteCode.returns(Buffer.from(bytecode.replace('0x', ''), 'hex'));
-    sdkClientStub.getAccountInfo.returns({ ethereumNonce: '0x1' });
-    sdkClientStub.submitEthereumTransaction.returns({});
+    sdkClientStub.getAccountBalanceInWeiBar.resolves(BigNumber(1000));
+    sdkClientStub.getAccountBalanceInTinyBar.resolves(BigNumber(100000000000));
+    sdkClientStub.getContractByteCode.resolves(Buffer.from(bytecode.replace('0x', ''), 'hex'));
+    sdkClientStub.getAccountInfo.resolves({ ethereumNonce: Long.ONE } as unknown as AccountInfo);
+    sdkClientStub.submitEthereumTransaction.resolves();
     mock.onGet(`accounts/${defaultContractResults.results[0].from}?transactions=false`).reply(200);
     mock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
     mock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
@@ -249,32 +248,32 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_accounts"', function () {
-    const response = ethImpl.accounts();
+    const response = ethImpl.accounts(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_accounts, response);
   });
 
   it('should execute "eth_blockNumber"', async function () {
-    const response = await ethImpl.blockNumber(requestIdPrefix);
+    const response = await ethImpl.blockNumber(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_blockNumber, response);
   });
 
   it('should execute "eth_chainId"', function () {
-    const response = ethImpl.chainId();
+    const response = ethImpl.chainId(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_chainId, response);
   });
 
   it('should execute "eth_coinbase"', function () {
-    const response = ethImpl.coinbase();
+    const response = ethImpl.coinbase(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_coinbase, response);
   });
 
   it('should execute "eth_estimateGas"', async function () {
     mock.onGet(`accounts/undefined${noTransactions}`).reply(404);
-    const response = await ethImpl.estimateGas({}, null, requestIdPrefix);
+    const response = await ethImpl.estimateGas({}, null, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_estimateGas, response);
   });
@@ -292,7 +291,7 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_getBalance"', async function () {
-    const response = await ethImpl.getBalance(contractAddress1, 'latest', getRequestId());
+    const response = await ethImpl.getBalance(contractAddress1, 'latest', requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getBalance, response);
   });
@@ -322,19 +321,19 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_getBlockTransactionCountByHash"', async function () {
-    const response = await ethImpl.getBlockTransactionCountByHash(blockHash);
+    const response = await ethImpl.getBlockTransactionCountByHash(blockHash, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockTransactionCountByHash, response);
   });
 
   it('should execute "eth_getBlockTransactionCountByNumber" with block tag', async function () {
-    const response = await ethImpl.getBlockTransactionCountByNumber('latest', requestIdPrefix);
+    const response = await ethImpl.getBlockTransactionCountByNumber('latest', requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockTransactionCountByNumber, response);
   });
 
   it('should execute "eth_getBlockTransactionCountByNumber" with block number', async function () {
-    const response = await ethImpl.getBlockTransactionCountByNumber('0x3', requestIdPrefix);
+    const response = await ethImpl.getBlockTransactionCountByNumber('0x3', requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getBlockTransactionCountByNumber, response);
   });
@@ -354,7 +353,7 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_getLogs" with no filters', async function () {
-    const response = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails.requestIdPrefix);
+    const response = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getLogs, response);
   });
@@ -379,7 +378,7 @@ describe('Open RPC Specification', function () {
       mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
     }
 
-    const response = await ethImpl.getLogs(null, 'latest', 'latest', null, defaultLogTopics, requestDetails.requestIdPrefix);
+    const response = await ethImpl.getLogs(null, 'latest', 'latest', null, defaultLogTopics, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getLogs, response);
   });
@@ -405,7 +404,7 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_getTransactionByHash"', async function () {
-    const response = await ethImpl.getTransactionByHash(defaultTxHash, requestIdPrefix);
+    const response = await ethImpl.getTransactionByHash(defaultTxHash, requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getTransactionByHash, response);
   });
@@ -415,7 +414,7 @@ describe('Open RPC Specification', function () {
       .onGet(`accounts/${contractAddress1}${noTransactions}`)
       .reply(200, { account: contractAddress1, ethereum_nonce: 5 });
     mock.onGet(`contracts/${contractAddress1}${noTransactions}`).reply(404);
-    const response = await ethImpl.getTransactionCount(contractAddress1, 'latest', requestIdPrefix);
+    const response = await ethImpl.getTransactionCount(contractAddress1, 'latest', requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getTransactionCount, response);
   });
@@ -430,55 +429,55 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_getUncleByBlockHashAndIndex"', async function () {
-    const response = await ethImpl.getUncleByBlockHashAndIndex();
+    const response = await ethImpl.getUncleByBlockHashAndIndex(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getUncleByBlockHashAndIndex, response);
   });
 
   it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
-    const response = await ethImpl.getUncleByBlockNumberAndIndex();
+    const response = await ethImpl.getUncleByBlockNumberAndIndex(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getUncleByBlockNumberAndIndex, response);
   });
 
   it('should execute "eth_getUncleByBlockNumberAndIndex"', async function () {
-    const response = await ethImpl.getUncleByBlockNumberAndIndex();
+    const response = await ethImpl.getUncleByBlockNumberAndIndex(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getUncleByBlockNumberAndIndex, response);
   });
 
   it('should execute "eth_getUncleCountByBlockHash"', async function () {
-    const response = await ethImpl.getUncleCountByBlockHash();
+    const response = await ethImpl.getUncleCountByBlockHash(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getUncleCountByBlockHash, response);
   });
 
   it('should execute "eth_getUncleCountByBlockNumber"', async function () {
-    const response = await ethImpl.getUncleCountByBlockNumber();
+    const response = await ethImpl.getUncleCountByBlockNumber(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getUncleCountByBlockNumber, response);
   });
 
   it('should execute "eth_getWork"', async function () {
-    const response = ethImpl.getWork();
+    const response = ethImpl.getWork(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_getWork, response);
   });
 
   it('should execute "eth_hashrate"', async function () {
-    const response = await ethImpl.hashrate();
+    const response = await ethImpl.hashrate(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_hashrate, response);
   });
 
   it('should execute "eth_mining"', async function () {
-    const response = await ethImpl.mining();
+    const response = await ethImpl.mining(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_mining, response);
   });
 
   it('should execute "eth_protocolVersion"', async function () {
-    const response = ethImpl.protocolVersion();
+    const response = ethImpl.protocolVersion(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_protocolVersion, response);
   });
@@ -490,37 +489,37 @@ describe('Open RPC Specification', function () {
   });
 
   it('should execute "eth_sendTransaction"', async function () {
-    const response = ethImpl.sendTransaction();
+    const response = ethImpl.sendTransaction(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_sendTransaction, response);
   });
 
   it('should execute "eth_signTransaction"', async function () {
-    const response = ethImpl.signTransaction();
+    const response = ethImpl.signTransaction(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_signTransaction, response);
   });
 
   it('should execute "eth_sign"', async function () {
-    const response = ethImpl.sign();
+    const response = ethImpl.sign(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_sign, response);
   });
 
   it('should execute "eth_submitHashrate"', async function () {
-    const response = ethImpl.submitHashrate();
+    const response = ethImpl.submitHashrate(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_submitHashrate, response);
   });
 
   it('should execute "eth_submitWork"', async function () {
-    const response = await ethImpl.submitWork();
+    const response = await ethImpl.submitWork(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_submitWork, response);
   });
 
   it('should execute "eth_syncing"', async function () {
-    const response = await ethImpl.syncing();
+    const response = await ethImpl.syncing(requestDetails);
 
     validateResponseSchema(methodsResponseSchema.eth_syncing, response);
   });

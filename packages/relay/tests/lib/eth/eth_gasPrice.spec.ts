@@ -27,31 +27,29 @@ import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import { numberTo0x } from '../../../dist/formatters';
 import { DEFAULT_NETWORK_FEES, NOT_FOUND_RES } from './eth-config';
-import { predefined } from '../../../src/lib/errors/JsonRpcError';
+import { predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import { generateEthTestEnv } from './eth-helpers';
 import { toHex } from '../../helpers';
-import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
-import { request } from 'http';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
-let requestDetails: IRequestDetails;
 
 describe('@ethGasPrice Gas Price spec', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
+  const requestDetails = new RequestDetails({ requestId: 'eth_getPriceTest', ipAddress: '0.0.0.0' });
+
   this.beforeEach(() => {
     // reset cache and restMock
-    cacheService.clear();
+    cacheService.clear(requestDetails);
     restMock.reset();
-
-    requestDetails = { requestIdPrefix: `[Request ID: testId]`, requestIp: '0.0.0.0' };
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -110,7 +108,7 @@ describe('@ethGasPrice Gas Price spec', async function () {
           const initialGasPrice = await ethImpl.gasPrice(requestDetails);
           process.env.GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER;
 
-          await cacheService.clear();
+          await cacheService.clear(requestDetails);
 
           const gasPriceWithBuffer = await ethImpl.gasPrice(requestDetails);
           process.env.GAS_PRICE_PERCENTAGE_BUFFER = '0';
@@ -141,7 +139,7 @@ describe('@ethGasPrice Gas Price spec', async function () {
       it('eth_gasPrice with mirror node return network fees found', async function () {
         const fauxGasTinyBars = 35_000;
         const fauxGasWeiBarHex = '0x13e52b9abe000';
-        sdkClientStub.getTinyBarGasFee.returns(fauxGasTinyBars);
+        sdkClientStub.getTinyBarGasFee.resolves(fauxGasTinyBars);
 
         const gas = await ethImpl.gasPrice(requestDetails);
         expect(gas).to.equal(fauxGasWeiBarHex);

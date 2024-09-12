@@ -39,7 +39,7 @@ import {
   ONE_TINYBAR_IN_WEI_HEX,
   RECEIVER_ADDRESS,
 } from './eth-config';
-import { IRequestDetails } from '../../../dist/lib/types/IRequestDetails';
+import { RequestDetails } from '../../../dist/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -53,15 +53,15 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   this.timeout(10000);
   const { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
     generateEthTestEnv();
-  let requestIdPrefix: string;
-  let requestDetails: IRequestDetails;
+
+  const requestDetails = new RequestDetails({ requestId: 'eth_estimateGasTest', ipAddress: '0.0.0.0' });
 
   async function mockContractCall(
     callData: IContractCallRequest,
     estimate: boolean,
     statusCode: number,
     result: IContractCallResponse,
-    requestDetails: IRequestDetails,
+    requestDetails: RequestDetails,
   ) {
     const formattedData = { ...callData, estimate };
     await ethImpl.contractCallFormat(formattedData, requestDetails);
@@ -82,11 +82,8 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
 
   this.beforeEach(() => {
     // reset cache and restMock
-    cacheService.clear();
+    cacheService.clear(requestDetails);
     restMock.reset();
-
-    requestIdPrefix = `[Request ID: testId]`;
-    requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
     sdkClientStub = createStubInstance(SDKClient);
     getSdkClientStub = stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     ethImplOverridden = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);

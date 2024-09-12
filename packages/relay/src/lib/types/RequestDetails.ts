@@ -18,8 +18,6 @@
  *
  */
 
-import { formatRequestIdMessage } from '../../formatters';
-
 export class RequestDetails {
   requestId: string;
   ipAddress: string;
@@ -30,6 +28,6 @@ export class RequestDetails {
   }
 
   get formattedRequestId(): string {
-    return formatRequestIdMessage(this.requestId);
+    return `[Request ID: ${this.requestId}]`;
   }
 }

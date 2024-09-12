@@ -40,24 +40,24 @@ import {
   OLDER_BLOCK,
   BLOCK_HASH,
 } from './eth-config';
-import { predefined } from '../../../src/lib/errors/JsonRpcError';
+import { predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import { defaultDetailedContractResults } from '../../helpers';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
 
 describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
-  const requestIdPrefix = `[Request ID: eth_getStorageAtTest]`;
-  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
+  const requestDetails = new RequestDetails({ requestId: 'eth_getStorageAtTest', ipAddress: '0.0.0.0' });
   function confirmResult(result: string) {
     expect(result).to.exist;
     expect(result).to.not.be.null;
@@ -66,7 +66,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
 
   this.beforeEach(() => {
     // reset cache and restMock
-    cacheService.clear();
+    cacheService.clear(requestDetails);
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
@@ -219,7 +219,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     });
 
     // Block number is a required param, this should not work and should be removed when/if validations are added.
-    // Instead the relay should return `missing value for required argument <argumentIndex> error`.
+    // Instead, the relay should return `missing value for required argument <argumentIndex> error`.
     it('eth_getStorageAt with match null block', async function () {
       // mirror node request mocks
       restMock

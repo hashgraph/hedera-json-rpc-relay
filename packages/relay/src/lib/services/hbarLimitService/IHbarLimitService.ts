@@ -18,13 +18,15 @@
  *
  */
 
+import { RequestDetails } from '../../types/RequestDetails';
+
 export interface IHbarLimitService {
   resetLimiter(): Promise<void>;
   shouldLimit(
     mode: string,
     methodName: string,
     ethAddress: string,
-    requestId: string,
+    requestDetails: RequestDetails,
     ipAddress?: string,
     estimatedTxFee?: number,
   ): Promise<boolean>;

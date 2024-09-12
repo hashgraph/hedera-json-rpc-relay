@@ -23,6 +23,7 @@ import { Logger } from 'pino';
 import { IEthAddressHbarSpendingPlan } from '../../types/hbarLimiter/ethAddressHbarSpendingPlan';
 import { EthAddressHbarSpendingPlanNotFoundError } from '../../types/hbarLimiter/errors';
 import { EthAddressHbarSpendingPlan } from '../../entities/hbarLimiter/ethAddressHbarSpendingPlan';
+import { RequestDetails } from '../../../types/RequestDetails';
 
 export class EthAddressHbarSpendingPlanRepository {
   private readonly collectionKey = 'ethAddressHbarSpendingPlan';
@@ -49,11 +50,12 @@ export class EthAddressHbarSpendingPlanRepository {
    * Finds an {@link EthAddressHbarSpendingPlan} for an ETH address.
    *
    * @param {string} ethAddress - The ETH address to search for.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<EthAddressHbarSpendingPlan>} - The associated plan for the ETH address.
    */
-  async findByAddress(ethAddress: string, requestIdPrefix: string): Promise<EthAddressHbarSpendingPlan> {
+  async findByAddress(ethAddress: string, requestDetails: RequestDetails): Promise<EthAddressHbarSpendingPlan> {
     const key = this.getKey(ethAddress);
-    const addressPlan = await this.cache.getAsync<IEthAddressHbarSpendingPlan>(key, 'findByAddress', requestIdPrefix);
+    const addressPlan = await this.cache.getAsync<IEthAddressHbarSpendingPlan>(key, 'findByAddress', requestDetails);
     if (!addressPlan) {
       throw new EthAddressHbarSpendingPlanNotFoundError(ethAddress);
     }
@@ -65,11 +67,12 @@ export class EthAddressHbarSpendingPlanRepository {
    * Saves an {@link EthAddressHbarSpendingPlan} to the cache, linking the plan to the ETH address.
    *
    * @param {IEthAddressHbarSpendingPlan} addressPlan - The plan to save.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the ETH address is linked to the plan.
    */
-  async save(addressPlan: IEthAddressHbarSpendingPlan, requestIdPrefix: string): Promise<void> {
+  async save(addressPlan: IEthAddressHbarSpendingPlan, requestDetails: RequestDetails): Promise<void> {
     const key = this.getKey(addressPlan.ethAddress);
-    await this.cache.set(key, addressPlan, 'save', requestIdPrefix, this.threeMonthsInMillis);
+    await this.cache.set(key, addressPlan, 'save', requestDetails, this.threeMonthsInMillis);
     this.logger.trace(`Saved EthAddressHbarSpendingPlan with address ${addressPlan.ethAddress}`);
   }
 
@@ -77,11 +80,12 @@ export class EthAddressHbarSpendingPlanRepository {
    * Deletes an {@link EthAddressHbarSpendingPlan} from the cache, unlinking the plan from the ETH address.
    *
    * @param {string} ethAddress - The ETH address to unlink the plan from.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the ETH address is unlinked from the plan.
    */
-  async delete(ethAddress: string, requestIdPrefix: string): Promise<void> {
+  async delete(ethAddress: string, requestDetails: RequestDetails): Promise<void> {
     const key = this.getKey(ethAddress);
-    await this.cache.delete(key, 'delete', requestIdPrefix);
+    await this.cache.delete(key, 'delete', requestDetails);
     this.logger.trace(`Deleted EthAddressHbarSpendingPlan with address ${ethAddress}`);
   }
 

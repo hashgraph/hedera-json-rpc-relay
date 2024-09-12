@@ -120,7 +120,7 @@ export class FilterService implements IFilterService {
     requestDetails: RequestDetails,
     address?: string,
     topics?: any[],
-  ): Promise<string | JsonRpcError> {
+  ): Promise<string> {
     const requestIdPrefix = requestDetails.formattedRequestId;
     this.logger.trace(
       `${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`,
@@ -149,7 +149,7 @@ export class FilterService implements IFilterService {
     }
   }
 
-  async newBlockFilter(requestDetails: RequestDetails): Promise<string | JsonRpcError> {
+  async newBlockFilter(requestDetails: RequestDetails): Promise<string> {
     const requestIdPrefix = requestDetails.formattedRequestId;
     this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
     try {

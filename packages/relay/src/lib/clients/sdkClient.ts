@@ -57,15 +57,14 @@ import { EventEmitter } from 'events';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { SDKClientError } from './../errors/SDKClientError';
-import { JsonRpcError, predefined } from './../errors/JsonRpcError';
+import { SDKClientError } from '../errors/SDKClientError';
+import { JsonRpcError, predefined } from '../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
 import { formatRequestIdMessage, weibarHexToTinyBarInt } from '../../formatters';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../types';
 import { RequestDetails } from '../types/RequestDetails';
 
 const _ = require('lodash');
-const LRU = require('lru-cache');
 
 export class SDKClient {
   /**
@@ -357,12 +356,7 @@ export class SDKClient {
         const exchangeRates = await this.getExchangeRate(callerName, requestDetails);
         const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
-        await this.cacheService.set(
-          constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
-          tinyBars,
-          callerName,
-          requestDetails.formattedRequestId,
-        );
+        await this.cacheService.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, requestDetails);
         return tinyBars;
       }
     }
@@ -609,6 +603,7 @@ export class SDKClient {
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<T>} A promise resolving to the query response.
    * @throws {Error} Throws an error if the query fails or if rate limits are exceeded.
+   * @template T - The type of the query response.
    */
   async executeQuery<T>(
     query: Query<T>,
@@ -683,7 +678,7 @@ export class SDKClient {
    * @param {Transaction} transaction - The transaction to execute.
    * @param {string} callerName - The name of the caller requesting the transaction.
    * @param {string} interactingEntity - The entity interacting with the transaction.
-   * @param {string} requestId - The ID of the request.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
    * @returns {Promise<TransactionResponse>} - A promise that resolves to the transaction response.
@@ -770,7 +765,7 @@ export class SDKClient {
    * @param {FileAppendTransaction} transaction - The batch transaction to execute.
    * @param {string} callerName - The name of the caller requesting the transaction.
    * @param {string} interactingEntity - The entity interacting with the transaction.
-   * @param {string} requestId - The ID of the request.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
    * @returns {Promise<void>} - A promise that resolves when the batch execution is complete.
@@ -821,7 +816,7 @@ export class SDKClient {
             this.eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, {
               transactionId: transactionResponse.transactionId.toString(),
               callerName,
-              requestId: requestDetails.formattedRequestId,
+              requestDetails,
               txConstructorName,
               operatorAccountId: this.clientMain.operatorAccountId!.toString(),
               interactingEntity,
@@ -836,7 +831,7 @@ export class SDKClient {
    * Creates a file on the Hedera network using the provided call data.
    * @param {Uint8Array} callData - The data to be written to the file.
    * @param {Client} client - The Hedera client to use for the transaction.
-   * @param {string} requestId - The request ID associated with the transaction.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @param {string} callerName - The name of the caller creating the file.
    * @param {string} interactingEntity - The entity interacting with the transaction.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
@@ -910,7 +905,7 @@ export class SDKClient {
    * Deletes a file on the Hedera network and verifies its deletion.
    *
    * @param {FileId} fileId - The ID of the file to be deleted.
-   * @param {string} requestId - A unique identifier for the request.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @param {string} callerName - The name of the entity initiating the request.
    * @param {string} interactingEntity - The name of the interacting entity.
    * @param {string} originalCallerAddress - The address of the original caller making the request.

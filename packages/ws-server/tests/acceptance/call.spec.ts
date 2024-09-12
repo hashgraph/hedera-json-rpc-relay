@@ -25,6 +25,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import ERC20MockJson from '@hashgraph/json-rpc-server/tests/contracts/ERC20Mock.json';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
 
 describe('@web-socket-batch-1 eth_call', async function () {
   const METHOD_NAME = 'eth_call';
@@ -60,14 +61,14 @@ describe('@web-socket-batch-1 eth_call', async function () {
   // @ts-ignore
   const { mirrorNode } = global;
 
-  let requestId: string,
-    erc20TokenAddr: string,
+  let erc20TokenAddr: string,
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider,
     erc20EtherInterface: ethers.Interface;
 
+  const requestDetails = new RequestDetails({ requestId: 'ws_callTest', ipAddress: '0.0.0.0' });
+
   before(async () => {
-    requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '2500000000'; //25 Hbar
 
@@ -78,7 +79,7 @@ describe('@web-socket-batch-1 eth_call', async function () {
         initialAccount,
         neededAccounts,
         initialAmount,
-        requestId,
+        requestDetails,
       )),
     );
     global.accounts.push(...accounts);

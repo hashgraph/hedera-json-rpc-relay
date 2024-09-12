@@ -23,7 +23,7 @@ import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import { MirrorNodeClient } from '../../../../src/lib/clients/mirrorNodeClient';
+import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
 import constants from '../../../../src/lib/constants';
 import { FilterService, CommonService } from '../../../../src/lib/services/ethService';
@@ -32,7 +32,6 @@ import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import * as sinon from 'sinon';
-import { request } from 'http';
 import { RequestDetails } from '../../../../src/lib/types/RequestDetails';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -271,7 +270,7 @@ describe('Filter API Test Suite', async function () {
         defaultEvmAddress,
         defaultLogTopics,
       );
-      validateFilterCache(filterId, constants.FILTER.TYPE.LOG, {
+      await validateFilterCache(filterId, constants.FILTER.TYPE.LOG, {
         fromBlock: numberHex,
         toBlock: 'latest',
         address: defaultEvmAddress,
@@ -327,13 +326,17 @@ describe('Filter API Test Suite', async function () {
 
       cacheMock.stub(cacheService, 'getAsync').onFirstCall().returns(filterObject).onSecondCall().returns(undefined);
 
-      cacheService.set(cacheKey, filterObject, filterService.ethUninstallFilter, requestDetails, constants.FILTER.TTL);
+      await cacheService.set(
+        cacheKey,
+        filterObject,
+        filterService.ethUninstallFilter,
+        requestDetails,
+        constants.FILTER.TTL,
+      );
 
       const result = await filterService.uninstallFilter(existingFilterId, requestDetails);
 
-      const isDeleted = (await cacheService.getAsync(cacheKey, filterService.ethUninstallFilter, requestDetails))
-        ? false
-        : true;
+      const isDeleted = !(await cacheService.getAsync(cacheKey, filterService.ethUninstallFilter, requestDetails));
       expect(result).to.eq(true);
       expect(isDeleted).to.eq(true);
     });
@@ -356,7 +359,7 @@ describe('Filter API Test Suite', async function () {
 
     it('Creates a filter with type=new_block', async function () {
       const filterId = await filterService.newBlockFilter(requestDetails);
-      validateFilterCache(filterId, constants.FILTER.TYPE.NEW_BLOCK, {
+      await validateFilterCache(filterId, constants.FILTER.TYPE.NEW_BLOCK, {
         blockAtCreation: toHex(defaultBlock.number),
       });
     });
@@ -528,7 +531,7 @@ describe('Filter API Test Suite', async function () {
         )
         .reply(200, filteredLogs);
 
-      const filterId = await filterService.newFilter(null, null, requestDetails, null, customTopic);
+      const filterId = await filterService.newFilter(undefined, undefined, requestDetails, undefined, customTopic);
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
       cacheMock
         .stub(cacheService, 'getAsync')
@@ -682,7 +685,7 @@ describe('Filter API Test Suite', async function () {
 
       const logs = await filterService.getFilterChanges(filterId, requestDetails);
       expect(logs).to.not.be.empty;
-      logs.every((log) => expect(Number(log.blockNumber)).to.equal(9));
+      logs.forEach((log) => expect(Number(log.blockNumber)).to.equal(9));
     });
 
     it('should return an empty set if there are no logs', async function () {
@@ -716,7 +719,13 @@ describe('Filter API Test Suite', async function () {
       });
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-      cacheService.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL, undefined);
+      await cacheService.set(
+        cacheKey,
+        blockFilterObject,
+        filterService.ethGetFilterChanges,
+        requestDetails,
+        constants.FILTER.TTL,
+      );
       cacheMock.stub(cacheService, 'getAsync').returns(blockFilterObject);
 
       const blocks = await filterService.getFilterChanges(existingFilterId, requestDetails);

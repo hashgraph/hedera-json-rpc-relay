@@ -22,6 +22,7 @@ import Axios, { AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
 import { Logger } from 'pino';
 import { Utils } from '../helpers/utils';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
 
 export default class MirrorClient {
   private readonly logger: Logger;
@@ -63,9 +64,8 @@ export default class MirrorClient {
     this.client = mirrorNodeClient;
   }
 
-  async get(path: string, requestId?: string) {
-    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-    this.logger.debug(`${requestIdPrefix} [GET] MirrorNode ${path} endpoint`);
+  async get(path: string, requestDetails: RequestDetails) {
+    this.logger.debug(`${requestDetails.formattedRequestId} [GET] MirrorNode ${path} endpoint`);
     return (await this.client.get(path)).data;
   }
 }

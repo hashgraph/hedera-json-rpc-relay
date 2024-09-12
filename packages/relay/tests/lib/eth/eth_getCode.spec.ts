@@ -38,12 +38,13 @@ import {
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 import { JsonRpcError, predefined } from '../../../src';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
 
 describe('@ethGetCode using MirrorNode', async function () {
@@ -51,12 +52,12 @@ describe('@ethGetCode using MirrorNode', async function () {
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
   let validBlockParam = [null, 'earliest', 'latest', 'pending', 'finalized', 'safe', '0x0', '0x369ABF'];
   let invalidBlockParam = ['hedera', 'ethereum', '0xhbar', '0x369ABF369ABF369ABF369ABF'];
-  const requestIdPrefix = `[Request ID: eth_getCodeTest]`;
-  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
 
-  this.beforeEach(() => {
+  const requestDetails = new RequestDetails({ requestId: 'eth_getCodeTest', ipAddress: '0.0.0.0' });
+
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
@@ -68,7 +69,7 @@ describe('@ethGetCode using MirrorNode', async function () {
     restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, null);
     restMock.onGet(`tokens/0.0.${parseInt(CONTRACT_ADDRESS_1, 16)}`).reply(404, null);
     restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(200, DEFAULT_CONTRACT);
-    sdkClientStub.getContractByteCode.returns(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
+    sdkClientStub.getContractByteCode.resolves(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
   });
 
   this.afterEach(() => {

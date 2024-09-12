@@ -20,24 +20,24 @@
 
 import { JsonRpcError } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
-import { IRequestDetails } from '../../../types/RequestDetails';
+import { RequestDetails } from '../../../types/RequestDetails';
 
 export interface IFilterService {
   newFilter(
     fromBlock: string,
     toBlock: string,
-    requestDetails: IRequestDetails,
+    requestDetails: RequestDetails,
     address?: string,
     topics?: any[],
   ): Promise<string | JsonRpcError>;
 
-  newBlockFilter(requestDetails: IRequestDetails): Promise<string | JsonRpcError>;
+  newBlockFilter(requestDetails: RequestDetails): Promise<string | JsonRpcError>;
 
-  uninstallFilter(filterId: string, requestDetails: IRequestDetails): Promise<boolean>;
+  uninstallFilter(filterId: string, requestDetails: RequestDetails): Promise<boolean>;
 
-  newPendingTransactionFilter(requestDetails: IRequestDetails): JsonRpcError;
+  newPendingTransactionFilter(requestDetails: RequestDetails): JsonRpcError;
 
-  getFilterLogs(filterId: string, requestDetails: IRequestDetails): Promise<any>;
+  getFilterLogs(filterId: string, requestDetails: RequestDetails): Promise<any>;
 
-  getFilterChanges(filterId: string, requestDetails: IRequestDetails): Promise<string[] | Log[] | JsonRpcError>;
+  getFilterChanges(filterId: string, requestDetails: RequestDetails): Promise<string[] | Log[] | JsonRpcError>;
 }

@@ -27,24 +27,25 @@ import { EthImpl } from '../../../src/lib/eth';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS } from './eth-config';
-import { predefined } from '../../../src/lib/errors/JsonRpcError';
+import { predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import { defaultDetailedContractResults, defaultEthereumTransactions, mockData } from '../../helpers';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
 
 describe('@ethGetTransactionCount eth_getTransactionCount spec', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
-  const requestIdPrefix = `[Request ID: eth_getTransactionCountTest]`;
-  const requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
+
+  const requestDetails = new RequestDetails({ requestId: 'eth_getTransactionCountTest', ipAddress: '0.0.0.0' });
   const blockNumber = mockData.blocks.blocks[2].number;
   const blockNumberHex = numberTo0x(blockNumber);
   const transactionId = '0.0.1078@1686183420.196506746';
@@ -58,8 +59,8 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
   const blockPath = `blocks/${blockNumber}`;
   const latestBlockPath = `blocks?limit=1&order=desc`;
 
-  function transactionPath(addresss, num) {
-    return `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
+  function transactionPath(address: string, num: number) {
+    return `accounts/${address}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
   }
 
   this.beforeEach(() => {
@@ -86,7 +87,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     restMock.resetHandlers();
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
     // reset cache and restMock
-    cacheService.clear();
+    cacheService.clear(requestDetails);
     restMock.reset();
   });
 

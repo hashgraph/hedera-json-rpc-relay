@@ -32,7 +32,7 @@ import {
   MethodNotFound,
   IPRateLimitExceeded,
 } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
-import { IRequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/IRequestDetails';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
 
 /**
  * Handles sending requests to a Relay by calling a specified method with given parameters.
@@ -59,13 +59,13 @@ const handleSendingRequestsToRelay = async ({
   ctx,
 }): Promise<any> => {
   logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Submitting request=${JSON.stringify(request)} to relay.`);
-  const requestDetails = { requestIdPrefix: requestIdPrefix, requestIp: '' } as IRequestDetails;
+  const requestDetails = new RequestDetails({ requestId: ctx.req.id, ipAddress: ctx.request.ip });
   try {
     const resolvedParams = resolveParams(method, params);
     const [service, methodName] = method.split('_');
 
     // Rearrange the parameters for certain methods, since not everywhere requestDetails is last aparameter
-    const paramRearrangementMap: { [key: string]: (params: any[], requestDetails: IRequestDetails) => any[] } = {
+    const paramRearrangementMap: { [key: string]: (params: any[], requestDetails: RequestDetails) => any[] } = {
       estimateGas: (params, requestDetails) => [...params, null, requestDetails],
       getStorageAt: (params, requestDetails) => [params[0], params[1], requestDetails, params[2]],
       default: (params, requestDetails) => [...params, requestDetails],

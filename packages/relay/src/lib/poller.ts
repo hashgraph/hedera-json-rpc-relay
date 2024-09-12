@@ -21,7 +21,7 @@
 import { Eth } from '../index';
 import { Logger } from 'pino';
 import { Registry, Gauge } from 'prom-client';
-import { IRequestDetails } from './types/RequestDetails';
+import { RequestDetails } from './types/RequestDetails';
 import { Utils } from '../utils';
 
 export interface Poll {
@@ -33,15 +33,15 @@ export interface Poll {
 const LOGGER_PREFIX = 'Poller:';
 
 export class Poller {
-  private eth: Eth;
-  private logger: Logger;
+  private readonly eth: Eth;
+  private readonly logger: Logger;
   private polls: Poll[];
   private interval?: NodeJS.Timer;
   private latestBlock?: string;
-  private pollingInterval: number;
-  private newHeadsEnabled: boolean;
-  private activePollsGauge: Gauge;
-  private activeNewHeadsPollsGauge: Gauge;
+  private readonly pollingInterval: number;
+  private readonly newHeadsEnabled: boolean;
+  private readonly activePollsGauge: Gauge;
+  private readonly activeNewHeadsPollsGauge: Gauge;
 
   private NEW_HEADS_EVENT = 'newHeads';
 
@@ -85,18 +85,16 @@ export class Poller {
             'latest',
             filters?.address || null,
             filters?.topics || null,
-            {
-              requestIdPrefix: `[Request ID: ${Utils.generateRequestId()}]`,
-              requestIp: '',
-            } as IRequestDetails,
+            new RequestDetails({ requestId: Utils.generateRequestId(), ipAddress: '' }),
           );
 
           poll.lastPolled = this.latestBlock;
         } else if (event === this.NEW_HEADS_EVENT && this.newHeadsEnabled) {
-          data = await this.eth.getBlockByNumber('latest', filters?.includeTransactions ?? false, {
-            requestIdPrefix: `[Request ID: ${Utils.generateRequestId()}]`,
-            requestIp: '0.0.0.0',
-          } as IRequestDetails);
+          data = await this.eth.getBlockByNumber(
+            'latest',
+            filters?.includeTransactions ?? false,
+            new RequestDetails({ requestId: Utils.generateRequestId(), ipAddress: '' }),
+          );
           data.jsonrpc = '2.0';
           poll.lastPolled = this.latestBlock;
         } else {
@@ -123,10 +121,9 @@ export class Poller {
   start() {
     this.logger.info(`${LOGGER_PREFIX} Starting polling with interval=${this.pollingInterval}`);
     this.interval = setInterval(async () => {
-      this.latestBlock = await this.eth.blockNumber({
-        requestIdPrefix: `[Request ID: ${Utils.generateRequestId()}]`,
-        requestIp: '0.0.0.0',
-      } as IRequestDetails);
+      this.latestBlock = await this.eth.blockNumber(
+        new RequestDetails({ requestId: Utils.generateRequestId(), ipAddress: '' }),
+      );
       this.poll();
     }, this.pollingInterval);
   }

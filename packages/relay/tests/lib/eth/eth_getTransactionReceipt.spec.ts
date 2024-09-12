@@ -29,8 +29,7 @@ import RelayAssertions from '../../assertions';
 import { DEFAULT_BLOCK, EMPTY_LOGS_RESPONSE } from './eth-config';
 import { defaultErrorMessageHex } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
-import { ITransactionReceipt } from '../../../src/lib/types/ITransactionReceipt';
-import { IRequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -39,14 +38,12 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
   this.timeout(10000);
   let { restMock, ethImpl, cacheService } = generateEthTestEnv();
   let sandbox: sinon.SinonSandbox;
-  let requestDetails: IRequestDetails;
-  let requestIdPrefix: string;
+
+  const requestDetails = new RequestDetails({ requestId: 'eth_getTransactionReceiptTest', ipAddress: '0.0.0.0' });
 
   this.beforeAll(() => {
     // @ts-ignore
     sandbox = createSandbox();
-    requestIdPrefix = `[Request ID: testId]`;
-    requestDetails = { requestIdPrefix: `${requestIdPrefix}`, requestIp: '0.0.0.0' };
   });
 
   const contractEvmAddress = '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9';
@@ -146,7 +143,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
   this.afterEach(() => {
     restMock.resetHandlers();
     sandbox.restore();
-    cacheService.clear();
+    cacheService.clear(requestDetails);
   });
 
   it('returns `null` for non-existent hash', async function () {
@@ -338,7 +335,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
       type: defaultDetailedContractResultByHash.type,
     };
 
-    cacheService.set(cacheKey, cacheReceipt, EthImpl.ethGetTransactionReceipt);
+    await cacheService.set(cacheKey, cacheReceipt, EthImpl.ethGetTransactionReceipt, requestDetails);
 
     // w no mirror node requests
     const receipt = await ethImpl.getTransactionReceipt(defaultTxHash, requestDetails);

@@ -29,7 +29,7 @@ import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { formatRequestIdMessage } from './formatters';
 import cors from 'koa-cors';
-import { IRequestDetails } from './types/types';
+import { RequestDetails } from '../../relay/src/lib/types/RequestDetails';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -115,10 +115,7 @@ app.getKoaApp().use(async (ctx, next) => {
 app.getKoaApp().use(async (ctx, next) => {
   if (ctx.url === '/health/readiness') {
     try {
-      const result = relay.eth().chainId({
-        requestIdPrefix: ctx.state.reqId,
-        requestIp: ctx.request.ip,
-      } as IRequestDetails);
+      const result = relay.eth().chainId(app.getRequestDetails());
       if (result.indexOf('0x12') >= 0) {
         ctx.status = 200;
         ctx.body = 'OK';
@@ -202,19 +199,18 @@ app.getKoaApp().use(async (ctx, next) => {
 });
 
 const logAndHandleResponse = async (methodName: string, methodParams: any[], methodFunction: any) => {
+  const requestDetails = app.getRequestDetails();
   logger.debug('Method name: ' + methodName);
-  const requestId = app.getRequestId();
-  logger.debug('Request id' + requestId);
-  const requestIp = app.getIpRequest();
-  logger.debug('Request ip' + requestIp);
-  const requestIdPrefix = requestId ? formatRequestIdMessage(requestId) : '';
-  const requestDetails: IRequestDetails = { requestIdPrefix, requestIp };
+  logger.debug('Request id: ' + requestDetails.requestId);
+  logger.debug('Request ip: ' + requestDetails.ipAddress);
 
   try {
     const methodValidations = Validator.METHODS[methodName];
     if (methodValidations) {
       logger.debug(
-        `${requestIdPrefix} Validating method parameters for ${methodName}, params: ${JSON.stringify(methodParams)}`,
+        `${requestDetails.formattedRequestId} Validating method parameters for ${methodName}, params: ${JSON.stringify(
+          methodParams,
+        )}`,
       );
       Validator.validateParams(methodParams, methodValidations);
     }
@@ -222,9 +218,9 @@ const logAndHandleResponse = async (methodName: string, methodParams: any[], met
     if (response instanceof JsonRpcError) {
       // log error only if it is not a contract revert, otherwise log it as debug
       if (response.code === predefined.CONTRACT_REVERT().code) {
-        logger.debug(`${requestIdPrefix} ${response.message}`);
+        logger.debug(`${requestDetails.formattedRequestId} ${response.message}`);
       } else {
-        logger.error(`${requestIdPrefix} ${response.message}`);
+        logger.error(`${requestDetails.formattedRequestId} ${response.message}`);
       }
 
       return new JsonRpcError(
@@ -233,7 +229,7 @@ const logAndHandleResponse = async (methodName: string, methodParams: any[], met
           message: response.message,
           data: response.data,
         },
-        requestId,
+        requestDetails.requestId,
       );
     }
     return response;
@@ -246,17 +242,17 @@ const logAndHandleResponse = async (methodName: string, methodParams: any[], met
     } else if (e instanceof JsonRpcError) {
       error = e;
     } else {
-      logger.error(`${requestIdPrefix} ${e.message}`);
+      logger.error(`${requestDetails.formattedRequestId} ${e.message}`);
     }
 
-    logger.error(`${requestIdPrefix} ${error.message}`);
+    logger.error(`${requestDetails.formattedRequestId} ${error.message}`);
     return new JsonRpcError(
       {
         code: error.code,
         message: error.message,
         data: error.data,
       },
-      requestId,
+      requestDetails.requestId,
     );
   }
 };
@@ -679,7 +675,7 @@ app.useRpc('eth_maxPriorityFeePerGas', async () => {
  */
 
 app.useRpc('debug_traceTransaction', async (params: any) => {
-  return logAndHandleResponse('debug_traceTransaction', params, (requestDetails: IRequestDetails) => {
+  return logAndHandleResponse('debug_traceTransaction', params, (requestDetails: RequestDetails) => {
     const transactionIdOrHash = params[0];
     let tracer: TracerType = TracerType.OpcodeLogger;
     let tracerConfig: ITracerConfig = {};
