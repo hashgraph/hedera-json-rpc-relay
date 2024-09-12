@@ -206,6 +206,13 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
 
   // collect the metrics
   const { metrics } = data;
+
+  const isDebugMode = __ENV['DEBUG_MODE'] === 'true';
+  if (isDebugMode) {
+    console.log("Raw metrics:");
+    console.log(JSON.stringify(metrics, null, 2));
+  }
+
   const scenarioMetrics = {};
 
   for (const [key, value] of Object.entries(metrics)) {
