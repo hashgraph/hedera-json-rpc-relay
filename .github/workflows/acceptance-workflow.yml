@@ -36,6 +36,7 @@ jobs:
     timeout-minutes: 50
     permissions:
       contents: write
+      actions: read
       # issues: read
     steps:
       - name: Harden Runner

@@ -16,6 +16,9 @@ on:
 jobs:
   release-acceptance-test:
     runs-on: smart-contracts-linux-medium
+    permissions:
+      contents: read
+      actions: read
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
