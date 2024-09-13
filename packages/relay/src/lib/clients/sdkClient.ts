@@ -57,10 +57,10 @@ import { EventEmitter } from 'events';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { formatRequestIdMessage } from '../../formatters';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
+import { formatRequestIdMessage, weibarHexToTinyBarInt } from '../../formatters';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../types';
 
 const _ = require('lodash');
@@ -304,10 +304,13 @@ export class SDKClient {
   }
 
   /**
-   * Retrieves the gas fee in tinybars for Ethereum transactions.
-   * Caches the result to avoid repeated fee schedule queries.
-   * @param {string} callerName - The name of the caller for logging purposes.
-   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * Retrieves the gas fee in tinybars for Ethereum transactions using HAPI and caches the result to avoid repeated fee schedule queries.
+   *
+   * @note This method should be used as a fallback if retrieving the network gas price with MAPI fails.
+   * MAPI does not incur any fees, while HAPI will incur a query fee.
+   *
+   * @param {string} callerName - The name of the caller, used for logging purposes.
+   * @param {string} [requestId] - Optional request ID, used for logging purposes.
    * @returns {Promise<number>} The gas fee in tinybars.
    * @throws {SDKClientError} Throws an SDK client error if the fee schedules or exchange rates are invalid.
    */
@@ -371,16 +374,18 @@ export class SDKClient {
    *
    * @param {Uint8Array} transactionBuffer - The transaction data in bytes.
    * @param {string} callerName - The name of the caller initiating the transaction.
-   * @param {string} requestId - The unique identifier for the request.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
+   * @param {string} networkGasPriceInWeiBars - The predefined gas price of the network in hexadecimal weibar.
+   * @param {string} requestId - The unique identifier for the request.
    * @returns {Promise<{ txResponse: TransactionResponse; fileId: FileId | null }>}
    * @throws {SDKClientError} Throws an error if no file ID is created or if the preemptive fee check fails.
    */
   async submitEthereumTransaction(
     transactionBuffer: Uint8Array,
     callerName: string,
-    requestId: string,
     originalCallerAddress: string,
+    networkGasPriceInWeiBars: string,
+    requestId: string,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
@@ -432,9 +437,11 @@ export class SDKClient {
       ethereumTransactionData.callData = new Uint8Array();
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId);
     }
+    const networkGasPriceInTinyBars = weibarHexToTinyBarInt(networkGasPriceInWeiBars)!;
 
-    const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction', requestId);
-    ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.MAX_GAS_PER_SEC)));
+    ethereumTransaction.setMaxTransactionFee(
+      Hbar.fromTinybars(Math.floor(networkGasPriceInTinyBars * constants.MAX_GAS_PER_SEC)),
+    );
 
     return {
       fileId,

@@ -68,17 +68,21 @@ export class Precheck {
   /**
    * Sends a raw transaction after performing various prechecks.
    * @param {ethers.Transaction} parsedTx - The parsed transaction.
-   * @param {number} gasPrice - The gas price.
+   * @param {string} networkGasPriceInWeiBars - The predefined gas price of the network in hexadecimal weibar.
    * @param {string} [requestId] - The request ID.
    */
-  async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId?: string): Promise<void> {
+  async sendRawTransactionCheck(
+    parsedTx: ethers.Transaction,
+    networkGasPriceInWeiBars: string,
+    requestId?: string,
+  ): Promise<void> {
     this.transactionType(parsedTx, requestId);
     this.gasLimit(parsedTx, requestId);
     const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
     this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
     this.chainId(parsedTx, requestId);
     this.value(parsedTx);
-    this.gasPrice(parsedTx, gasPrice, requestId);
+    this.gasPrice(parsedTx, networkGasPriceInWeiBars, requestId);
     this.balance(parsedTx, mirrorAccountInfo, requestId);
   }
 
@@ -156,12 +160,12 @@ export class Precheck {
   /**
    * Checks the gas price of the transaction.
    * @param {Transaction} tx - The transaction.
-   * @param {number} gasPrice - The gas price.
+   * @param {string} networkGasPriceInWeiBars - The predefined gas price of the network in hexadecimal weibar.
    * @param {string} [requestId] - The request ID.
    */
-  gasPrice(tx: Transaction, gasPrice: number, requestId?: string): void {
+  gasPrice(tx: Transaction, networkGasPriceInWeiBars: string, requestId?: string): void {
     const requestIdPrefix = formatRequestIdMessage(requestId);
-    const minGasPrice = BigInt(gasPrice);
+    const networkGasPrice = BigInt(networkGasPriceInWeiBars);
     const txGasPrice = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
 
     // **notice: Pass gasPrice precheck if txGasPrice is greater than the minimum network's gas price value,
@@ -169,14 +173,14 @@ export class Precheck {
     // **explanation: The deterministic deployment transaction is pre-signed with a gasPrice value of only 10 hbars,
     //                which is lower than the minimum gas price value in all Hedera network environments. Therefore,
     //                this special case is exempt from the precheck in the Relay, and the gas price logic will be resolved at the Services level.
-    const passes = txGasPrice >= minGasPrice || Precheck.isDeterministicDeploymentTransaction(tx);
+    const passes = txGasPrice >= networkGasPrice || Precheck.isDeterministicDeploymentTransaction(tx);
 
     if (!passes) {
       if (constants.GAS_PRICE_TINY_BAR_BUFFER) {
         // Check if failure is within buffer range (Often it's by 1 tinybar) as network gasprice calculation can change slightly.
         // e.g gasPrice=1450000000000, requiredGasPrice=1460000000000, in which case we should allow users to go through and let the network check
         const txGasPriceWithBuffer = txGasPrice + BigInt(constants.GAS_PRICE_TINY_BAR_BUFFER);
-        if (txGasPriceWithBuffer >= minGasPrice) {
+        if (txGasPriceWithBuffer >= networkGasPrice) {
           return;
         }
       }
@@ -185,9 +189,9 @@ export class Precheck {
         `${requestIdPrefix} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`,
         JSON.stringify(tx),
         txGasPrice,
-        minGasPrice,
+        networkGasPrice,
       );
-      throw predefined.GAS_PRICE_TOO_LOW(txGasPrice, minGasPrice);
+      throw predefined.GAS_PRICE_TOO_LOW(txGasPrice, networkGasPrice);
     }
   }
 

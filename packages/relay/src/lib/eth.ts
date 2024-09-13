@@ -728,7 +728,11 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Gets the current gas price of the network.
+   * Retrieves the current network gas price in weibars.
+   *
+   * @param {string} [requestIdPrefix] - An optional prefix for the request ID used for logging purposes.
+   * @returns {Promise<string>} The current gas price in weibars as a hexadecimal string.
+   * @throws Will throw an error if unable to retrieve the gas price.
    */
   async gasPrice(requestIdPrefix?: string): Promise<string> {
     this.logger.trace(`${requestIdPrefix} gasPrice()`);
@@ -1438,7 +1442,11 @@ export class EthImpl implements Eth {
     return nonceCount;
   }
 
-  async parseRawTxAndPrecheck(transaction: string, requestIdPrefix?: string): Promise<EthersTransaction> {
+  async parseRawTxAndPrecheck(
+    transaction: string,
+    networkGasPriceInWeiBars: string,
+    requestIdPrefix?: string,
+  ): Promise<EthersTransaction> {
     let interactingEntity = '';
     let originatingAddress = '';
     try {
@@ -1450,8 +1458,7 @@ export class EthImpl implements Eth {
         `${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`,
       );
 
-      const gasPrice = Number(await this.gasPrice(requestIdPrefix));
-      await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestIdPrefix);
+      await this.precheck.sendRawTransactionCheck(parsedTx, networkGasPriceInWeiBars, requestIdPrefix);
       return parsedTx;
     } catch (e: any) {
       this.logger.warn(
@@ -1537,7 +1544,8 @@ export class EthImpl implements Eth {
         .labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
         .inc();
 
-    const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestIdPrefix);
+    const networkGasPriceInWeiBars = await this.gasPrice(requestIdPrefix);
+    const parsedTx = await this.parseRawTxAndPrecheck(transaction, networkGasPriceInWeiBars, requestIdPrefix);
     const originalCallerAddress = parsedTx.from?.toString() || '';
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     let fileId: FileId | null = null;
@@ -1548,8 +1556,9 @@ export class EthImpl implements Eth {
         .submitEthereumTransaction(
           transactionBuffer,
           EthImpl.ethSendRawTransaction,
-          requestIdPrefix,
           originalCallerAddress,
+          networkGasPriceInWeiBars,
+          requestIdPrefix,
         );
 
       txSubmitted = true;
