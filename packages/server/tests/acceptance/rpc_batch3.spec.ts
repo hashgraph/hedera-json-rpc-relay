@@ -45,6 +45,8 @@ import callerContractJson from '../contracts/Caller.json';
 import DeployerContractJson from '../contracts/Deployer.json';
 import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
+import HRC719ContractJson from '../contracts/HRC719Contract.json';
+import TokenCreateJson from '../contracts/TokenCreateContract.json';
 
 // Helper functions/constants from local resources
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
@@ -623,6 +625,74 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       expect(response.data.error.code).to.be.equal(3);
       expect(response.data.error.message).to.contain('execution reverted: CONTRACT_REVERT_EXECUTED');
       expect(response.data.error.name).to.undefined;
+    });
+
+    describe('eth_call with force-to-consensus-by-selector logic', () => {
+      // context: The `IHRC719.isAssociated()` function is a new feature which is, at the moment, fully supported only by the Consensus node and not yet by the Mirror node.
+      // Since `IHRC719.isAssociated()` is a view function, requests for this function are typically directed to the Mirror node by default.
+      // This acceptance test ensures that the new force-to-consensus-by-selector logic correctly routes requests for `IHRC719.isAssociated()`
+      // through the Consensus node rather than the Mirror node when using the `eth_call` endpoint.
+
+      let initialEthCallForceToConsensusBySelector: any,
+        initialEthCallSelectorsAlwaysToConsensus: any,
+        tokenAddress: string,
+        hrc719Contract: ethers.Contract;
+
+      before(async () => {
+        initialEthCallForceToConsensusBySelector = process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR;
+        initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+        process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = 'true';
+
+        const tokenCreateContract = await Utils.deployContract(
+          TokenCreateJson.abi,
+          TokenCreateJson.bytecode,
+          accounts[3].wallet,
+        );
+
+        const tx = await tokenCreateContract.createNonFungibleTokenPublic(tokenCreateContract.target, {
+          value: BigInt('10000000000000000000'),
+          ...Helper.GAS.LIMIT_5_000_000,
+        });
+
+        const tokenCreateLog = (await tx.wait()).logs.filter(
+          (e: any) => e.fragment.name === RelayCalls.HTS_CONTRACT_EVENTS.CreatedToken,
+        )[0].args;
+        tokenAddress = tokenCreateLog.tokenAddress;
+
+        hrc719Contract = await Utils.deployContract(
+          HRC719ContractJson.abi,
+          HRC719ContractJson.bytecode,
+          accounts[3].wallet,
+        );
+      });
+
+      after(() => {
+        process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = initialEthCallForceToConsensusBySelector;
+        process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
+      });
+
+      it('should NOT allow eth_call to process IHRC719.isAssociated() method', async () => {
+        const selectorsList = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+        expect(selectorsList).to.be.undefined;
+
+        // If the selector for `isAssociated` is not included in `ETH_CALL_CONSENSUS_SELECTORS`, the request will fail with a `CALL_EXCEPTION` error code.
+        await expect(hrc719Contract.isAssociated(tokenAddress)).to.eventually.be.rejected.and.have.property(
+          'code',
+          'CALL_EXCEPTION',
+        );
+      });
+
+      it('should allow eth_call to successfully process IHRC719.isAssociated() method', async () => {
+        const isAssociatedSelector = (await hrc719Contract.isAssociated.populateTransaction(tokenAddress)).data.slice(
+          2,
+          10,
+        );
+
+        // Add the selector for isAssociated to ETH_CALL_CONSENSUS_SELECTORS to ensure isAssociated() passes
+        process.env.ETH_CALL_CONSENSUS_SELECTORS = `[${isAssociatedSelector}]`;
+        const isAssociatedResult = await hrc719Contract.isAssociated(tokenAddress);
+        expect(isAssociatedResult).to.be.false; // associate status of the token with the caller
+      });
     });
   });
 
