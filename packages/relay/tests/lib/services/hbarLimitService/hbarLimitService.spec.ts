@@ -18,34 +18,39 @@
  *
  */
 
+import sinon from 'sinon';
+import pino, { Logger } from 'pino';
 import chai, { expect } from 'chai';
+import { randomBytes, uuidV4 } from 'ethers';
 import chaiAsPromised from 'chai-as-promised';
 import sinon, { SinonSpy } from 'sinon';
+import { getRequestId } from '../../../helpers';
+import constants from '../../../../src/lib/constants';
+import { Counter, Gauge, Registry } from 'prom-client';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
+import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
+import { HbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/hbarSpendingPlan';
 import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
-import pino, { Logger } from 'pino';
-import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 import {
-  EthAddressHbarSpendingPlanNotFoundError,
-  HbarSpendingPlanNotActiveError,
   HbarSpendingPlanNotFoundError,
+  HbarSpendingPlanNotActiveError,
+  EthAddressHbarSpendingPlanNotFoundError,
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
-import { HbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/hbarSpendingPlan';
-import { randomBytes, uuidV4 } from 'ethers';
-import { Counter, Gauge, Registry } from 'prom-client';
-import constants from '../../../../src/lib/constants';
 
 chai.use(chaiAsPromised);
 
 describe('HbarLimitService', function () {
   const logger = pino();
-  const register = new Registry();
   const totalBudget = 100_000;
-  const mode = constants.EXECUTION_MODE.TRANSACTION;
+  const mockIpAddress = 'x.x.x';
+  const mockEstimatedTxFee = 300;
   const methodName = 'testMethod';
   const mockEthAddress = '0x123';
+  const register = new Registry();
+  const mockRequestId = getRequestId();
   const mockPlanId = uuidV4(randomBytes(16));
+  const mode = constants.EXECUTION_MODE.TRANSACTION;
 
   let hbarLimitService: HbarLimitService;
   let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarSpendingPlanRepository>;
@@ -153,6 +158,20 @@ describe('HbarLimitService', function () {
       expect(result).to.be.true;
     });
 
+    it('should return true when remainingBudget < estimatedTxFee ', async function () {
+      // @ts-ignore
+      hbarLimitService.remainingBudget = mockEstimatedTxFee - 1;
+      const result = await hbarLimitService.shouldLimit(
+        mode,
+        methodName,
+        mockEthAddress,
+        mockRequestId,
+        mockIpAddress,
+        mockEstimatedTxFee,
+      );
+      expect(result).to.be.true;
+    });
+
     it('should create a basic spending plan if none exists for the ethAddress', async function () {
       const newSpendingPlan = createSpendingPlan(mockPlanId);
       const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
@@ -215,6 +234,61 @@ describe('HbarLimitService', function () {
       const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress);
 
       expect(result).to.be.true;
+    });
+
+    it('should return true if spentToday + estimatedTxFee is above the limit', async function () {
+      const spendingPlan = createSpendingPlan(
+        mockPlanId,
+        HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - mockEstimatedTxFee + 1,
+      );
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+      const result = await hbarLimitService.shouldLimit(
+        mode,
+        methodName,
+        mockEthAddress,
+        mockRequestId,
+        mockIpAddress,
+        mockEstimatedTxFee,
+      );
+
+      expect(result).to.be.true;
+    });
+
+    it('should return false if spentToday + estimatedTxFee is below the limit', async function () {
+      const spendingPlan = createSpendingPlan(
+        mockPlanId,
+        HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - mockEstimatedTxFee - 1,
+      );
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+      const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress);
+
+      expect(result).to.be.false;
+    });
+
+    it('should return false if spentToday + estimatedTxFee is at the limit', async function () {
+      const spendingPlan = createSpendingPlan(
+        mockPlanId,
+        HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC] - mockEstimatedTxFee,
+      );
+      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        ethAddress: mockEthAddress,
+        planId: mockPlanId,
+      });
+      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+      const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress);
+
+      expect(result).to.be.false;
     });
   });
 
