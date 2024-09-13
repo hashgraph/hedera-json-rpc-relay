@@ -19,6 +19,7 @@
  */
 
 import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
+EnvProviderService.hotReload();
 import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { BaseContract, ethers } from 'ethers';
 import { expect } from 'chai';
@@ -38,11 +39,6 @@ import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeCont
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   before(() => {
     EnvProviderService.getInstance().dynamicOverride('HBAR_RATE_LIMIT_TINYBAR', '3000000000');
-    EnvProviderService.getInstance().dynamicOverride('RATE_LIMIT_DISABLED', 'false');
-  });
-
-  after(() => {
-    EnvProviderService.getInstance().dynamicOverride('RATE_LIMIT_DISABLED', 'true');
   });
 
   // @ts-ignore
