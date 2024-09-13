@@ -375,7 +375,7 @@ export class SDKClient {
    * @param {Uint8Array} transactionBuffer - The transaction data in bytes.
    * @param {string} callerName - The name of the caller initiating the transaction.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
-   * @param {string} networkGasPriceInWeiBars - The predefined gas price of the network in hexadecimal weibar.
+   * @param {number} networkGasPriceInWeiBars - The predefined gas price of the network in weibar.
    * @param {string} requestId - The unique identifier for the request.
    * @returns {Promise<{ txResponse: TransactionResponse; fileId: FileId | null }>}
    * @throws {SDKClientError} Throws an error if no file ID is created or if the preemptive fee check fails.
@@ -384,7 +384,7 @@ export class SDKClient {
     transactionBuffer: Uint8Array,
     callerName: string,
     originalCallerAddress: string,
-    networkGasPriceInWeiBars: string,
+    networkGasPriceInWeiBars: number,
     requestId: string,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);

@@ -68,12 +68,12 @@ export class Precheck {
   /**
    * Sends a raw transaction after performing various prechecks.
    * @param {ethers.Transaction} parsedTx - The parsed transaction.
-   * @param {string} networkGasPriceInWeiBars - The predefined gas price of the network in hexadecimal weibar.
+   * @param {number} networkGasPriceInWeiBars - The predefined gas price of the network in weibar.
    * @param {string} [requestId] - The request ID.
    */
   async sendRawTransactionCheck(
     parsedTx: ethers.Transaction,
-    networkGasPriceInWeiBars: string,
+    networkGasPriceInWeiBars: number,
     requestId?: string,
   ): Promise<void> {
     this.transactionType(parsedTx, requestId);
@@ -160,10 +160,10 @@ export class Precheck {
   /**
    * Checks the gas price of the transaction.
    * @param {Transaction} tx - The transaction.
-   * @param {string} networkGasPriceInWeiBars - The predefined gas price of the network in hexadecimal weibar.
+   * @param {number} networkGasPriceInWeiBars - The predefined gas price of the network in weibar.
    * @param {string} [requestId] - The request ID.
    */
-  gasPrice(tx: Transaction, networkGasPriceInWeiBars: string, requestId?: string): void {
+  gasPrice(tx: Transaction, networkGasPriceInWeiBars: number, requestId?: string): void {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     const networkGasPrice = BigInt(networkGasPriceInWeiBars);
     const txGasPrice = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;

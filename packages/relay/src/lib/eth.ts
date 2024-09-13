@@ -475,16 +475,18 @@ export class EthImpl implements Eth {
 
   private async getFeeWeibars(callerName: string, requestIdPrefix?: string, timestamp?: string): Promise<number> {
     let networkFees;
+
     try {
       networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp, undefined, requestIdPrefix);
-      if (_.isNil(networkFees)) {
-        this.logger.debug(`${requestIdPrefix} Mirror Node returned no fees. Fallback to network`);
-      }
     } catch (e: any) {
-      this.logger.warn(e, `${requestIdPrefix} Mirror Node threw an error retrieving fees. Fallback to network`);
+      this.logger.warn(
+        e,
+        `${requestIdPrefix} Mirror Node threw an error while retrieving fees. Fallback to consensus node.`,
+      );
     }
 
     if (_.isNil(networkFees)) {
+      this.logger.debug(`${requestIdPrefix} Mirror Node returned no network fees. Fallback to consensus node.`);
       networkFees = {
         fees: [
           {
@@ -735,7 +737,7 @@ export class EthImpl implements Eth {
    * @throws Will throw an error if unable to retrieve the gas price.
    */
   async gasPrice(requestIdPrefix?: string): Promise<string> {
-    this.logger.trace(`${requestIdPrefix} gasPrice()`);
+    this.logger.trace(`${requestIdPrefix} eth_gasPrice`);
     try {
       let gasPrice: number | undefined = await this.cacheService.getAsync(
         constants.CACHE_KEY.GAS_PRICE,
@@ -1444,7 +1446,7 @@ export class EthImpl implements Eth {
 
   async parseRawTxAndPrecheck(
     transaction: string,
-    networkGasPriceInWeiBars: string,
+    networkGasPriceInWeiBars: number,
     requestIdPrefix?: string,
   ): Promise<EthersTransaction> {
     let interactingEntity = '';
@@ -1544,7 +1546,10 @@ export class EthImpl implements Eth {
         .labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
         .inc();
 
-    const networkGasPriceInWeiBars = await this.gasPrice(requestIdPrefix);
+    const networkGasPriceInWeiBars = Utils.addPercentageBufferToGasPrice(
+      await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix),
+    );
+
     const parsedTx = await this.parseRawTxAndPrecheck(transaction, networkGasPriceInWeiBars, requestIdPrefix);
     const originalCallerAddress = parsedTx.from?.toString() || '';
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
