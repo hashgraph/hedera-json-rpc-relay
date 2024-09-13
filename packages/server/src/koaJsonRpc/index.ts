@@ -33,7 +33,7 @@ import {
 } from './lib/RpcError';
 import Koa from 'koa';
 import { Histogram, Registry } from 'prom-client';
-import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
+import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay/dist';
 import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
 import {
   getBatchRequestsEnabled,

@@ -23,7 +23,7 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
-import { predefined } from '@hashgraph/json-rpc-relay';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { ContractId, Hbar, HbarUnit } from '@hashgraph/sdk';

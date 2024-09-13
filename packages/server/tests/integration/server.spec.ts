@@ -32,7 +32,7 @@ import { TracerType, Validator } from '../../src/validator';
 import RelayCalls from '../../tests/helpers/constants';
 import * as Constants from '../../src/validator/constants';
 import { Utils } from '../helpers/utils';
-import { predefined } from '@hashgraph/json-rpc-relay';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import {
   contractAddress1,
   contractAddress2,

@@ -49,7 +49,7 @@ import EstimateGasContract from '../contracts/EstimateGasContract.json';
 
 // Helper functions/constants from local resources
 import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
-import { predefined } from '@hashgraph/json-rpc-relay';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { TYPES } from '../../src/validator';
 
 chai.use(chaiExclude);

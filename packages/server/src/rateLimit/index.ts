@@ -48,8 +48,10 @@ export default class RateLimit {
     if (
       EnvProviderService.getInstance().get('RATE_LIMIT_DISABLED') &&
       EnvProviderService.getInstance().get('RATE_LIMIT_DISABLED') === 'true'
-    )
+    ) {
       return false;
+    }
+
     this.precheck(ip, methodName, total);
     if (!this.shouldReset(ip)) {
       if (this.checkRemaining(ip, methodName)) {
