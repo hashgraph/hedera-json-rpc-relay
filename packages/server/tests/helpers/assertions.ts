@@ -20,10 +20,10 @@
 import chai, { expect } from 'chai';
 import chaiExclude from 'chai-exclude';
 import { ethers } from 'ethers';
-import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay/dist';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import RelayAssertions from '@hashgraph/json-rpc-relay/tests/assertions';
-import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 chai.use(chaiExclude);

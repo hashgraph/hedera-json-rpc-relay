@@ -19,7 +19,7 @@
  */
 
 import { expect } from 'chai';
-import { CacheService } from '../../../../packages/relay/src/lib/services/cacheService/cacheService';
+import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
 import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 const registry = new Registry();

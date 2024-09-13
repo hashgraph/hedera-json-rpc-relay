@@ -34,14 +34,14 @@ import logsContractJson from '../contracts/Logs.json';
 import basicContract from '../../tests/contracts/Basic.json';
 
 // Errors and constants from local resources
-import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
-import Constants from '../../../relay/src/lib/constants';
+import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 
 // Other imports
-import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
-import constants from '../../../relay/src/lib/constants';
+import { numberTo0x, prepend0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import constants from '@hashgraph/json-rpc-relay/dist/constants';
 const Address = RelayCalls;
 
 describe('@api-batch-1 RPC Server Acceptance Tests', function () {

@@ -26,7 +26,7 @@ import axios from 'axios';
 import openRpcData from '../../../../docs/openrpc.json';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { signTransaction } from '../../../relay/tests/helpers';
+import { signTransaction } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { expect } from 'chai';
 import WebSocket from 'ws';
 import LogsContract from '../contracts/Logs.json';

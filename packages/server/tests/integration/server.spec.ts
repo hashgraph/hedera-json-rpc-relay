@@ -33,7 +33,12 @@ import RelayCalls from '../../tests/helpers/constants';
 import * as Constants from '../../src/validator/constants';
 import { Utils } from '../helpers/utils';
 import { predefined } from '@hashgraph/json-rpc-relay';
-import { contractAddress1, contractAddress2, contractHash1, contractId1 } from '../../../relay/tests/helpers';
+import {
+  contractAddress1,
+  contractAddress2,
+  contractHash1,
+  contractId1,
+} from '@hashgraph/json-rpc-relay/tests/helpers';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';

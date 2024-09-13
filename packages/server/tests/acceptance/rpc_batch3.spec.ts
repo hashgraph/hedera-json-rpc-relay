@@ -36,8 +36,8 @@ import RelayCall from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import RelayCalls from '../helpers/constants';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
-import { TracerType } from '@hashgraph/json-rpc-relay/src/lib/constants';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { TracerType } from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 // Contracts and JSON files from local resources
 import reverterContractJson from '../contracts/Reverter.json';
@@ -48,7 +48,7 @@ import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 
 // Helper functions/constants from local resources
-import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
+import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { TYPES } from '../../src/validator';
 

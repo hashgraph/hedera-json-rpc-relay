@@ -26,10 +26,10 @@ import EstimatePrecompileContractJson from '../contracts/EstimatePrecompileContr
 import Constants from '../helpers/constants';
 import EquivalenceContractJson from '../contracts/EquivalenceContract.json';
 import { ethers, toUtf8Bytes } from 'ethers';
-import { Precheck } from '../../../relay/src/lib/precheck';
+import { Precheck } from '@hashgraph/json-rpc-relay/dist/lib/precheck';
 import pino from 'pino';
-import { MirrorNodeClient } from '../../../relay/src/lib/clients';
-import { hexToASCII } from '../../../relay/src/formatters';
+import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
+import { hexToASCII } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { AliasAccount } from '../types/AliasAccount';
 const logger = pino();
 

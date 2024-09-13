@@ -21,7 +21,7 @@
 import { ethers } from 'ethers';
 import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
-import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { Utils } from '../helpers/utils';
 
 export default class RelayClient {

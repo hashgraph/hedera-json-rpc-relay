@@ -22,7 +22,7 @@ import { ethers } from 'ethers';
 import Assertions from './assertions';
 import crypto from 'crypto';
 import RelayClient from '../clients/relayClient';
-import { numberTo0x } from '../../../relay/src/formatters';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import RelayCall from '../../tests/helpers/constants';
 import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
 import { AliasAccount } from '../types/AliasAccount';

@@ -21,7 +21,7 @@
 // Assertions and constants from local resources
 import Assertions from '../helpers/assertions';
 import testConstants from '../../tests/helpers/constants';
-import relayConstants from '../../../../packages/relay/src/lib/constants';
+import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
