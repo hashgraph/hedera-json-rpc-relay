@@ -21,7 +21,7 @@
 import { Logger } from 'pino';
 import { WS_CONSTANTS } from '../utils/constants';
 import { Gauge, Registry, Counter } from 'prom-client';
-import { WebSocketError } from '@hashgraph/json-rpc-relay';
+import { WebSocketError } from '@hashgraph/json-rpc-relay/dist';
 import RateLimit from '@hashgraph/json-rpc-server/dist/rateLimit';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { methodConfiguration } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/methodConfiguration';

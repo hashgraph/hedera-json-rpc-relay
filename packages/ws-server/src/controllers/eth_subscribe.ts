@@ -18,7 +18,7 @@
  *
  */
 
-import { predefined, Relay } from '@hashgraph/json-rpc-relay';
+import { predefined, Relay } from '@hashgraph/json-rpc-relay/dist';
 import { validateSubscribeEthLogsParams } from '../utils/validators';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';

@@ -23,7 +23,7 @@ import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
 import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import { handleEthSubsribe, handleEthUnsubscribe } from './eth_subscribe';
-import { JsonRpcError, predefined, Relay } from '@hashgraph/json-rpc-relay';
+import { JsonRpcError, predefined, Relay } from '@hashgraph/json-rpc-relay/dist';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { resolveParams, validateJsonRpcRequest, verifySupportedMethod } from '../utils/utils';

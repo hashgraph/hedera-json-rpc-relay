@@ -21,7 +21,7 @@
 import { WS_CONSTANTS } from './constants';
 import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
-import { Relay } from '@hashgraph/json-rpc-relay';
+import { Relay } from '@hashgraph/json-rpc-relay/dist';
 import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 const hasOwnProperty = (obj: any, prop: any) => Object.prototype.hasOwnProperty.call(obj, prop);
