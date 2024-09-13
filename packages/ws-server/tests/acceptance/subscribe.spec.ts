@@ -26,7 +26,7 @@ import { WsTestHelper } from '../helper';
 import { solidity } from 'ethereum-waffle';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import Constants from '@hashgraph/json-rpc-server/tests/helpers/constants';
-import { predefined, WebSocketError } from '@hashgraph/json-rpc-relay/src';
+import { predefined, WebSocketError } from '@hashgraph/json-rpc-relay/dist';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import LogContractJson from '@hashgraph/json-rpc-server/tests/contracts/Logs.json';

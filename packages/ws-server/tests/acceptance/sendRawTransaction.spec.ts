@@ -22,9 +22,9 @@
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { predefined } from '@hashgraph/json-rpc-relay/src';
-import constants from '@hashgraph/json-rpc-relay/src/lib/constants';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';

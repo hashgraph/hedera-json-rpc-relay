@@ -22,7 +22,7 @@
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { predefined } from '@hashgraph/json-rpc-relay/src';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
 describe('@web-socket-batch-1 Batch Requests', async function () {

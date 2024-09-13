@@ -21,7 +21,7 @@
 // external resources
 import { expect } from 'chai';
 import { WsTestHelper } from '../helper';
-import relayConstants from '@hashgraph/json-rpc-relay/src/lib/constants';
+import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';

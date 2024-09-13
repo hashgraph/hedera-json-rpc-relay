@@ -23,7 +23,7 @@ import WebSocket from 'ws';
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { predefined } from '@hashgraph/json-rpc-relay/src';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
 
