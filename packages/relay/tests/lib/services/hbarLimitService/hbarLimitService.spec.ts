@@ -23,7 +23,6 @@ import pino, { Logger } from 'pino';
 import chai, { expect } from 'chai';
 import { randomBytes, uuidV4 } from 'ethers';
 import chaiAsPromised from 'chai-as-promised';
-import sinon, { SinonSpy } from 'sinon';
 import { getRequestId } from '../../../helpers';
 import constants from '../../../../src/lib/constants';
 import { Counter, Gauge, Registry } from 'prom-client';
@@ -95,6 +94,11 @@ describe('HbarLimitService', function () {
   });
 
   describe('resetLimiter', function () {
+    const createSpiesForSpendingPlanMetrics = () =>
+      Object.values(SubscriptionType).map((subscriptionType) =>
+        sinon.spy(hbarLimitService['dailyUniqueSpendingPlansCounter'][subscriptionType], 'reset'),
+      );
+
     beforeEach(() => {
       hbarSpendingPlanRepositoryStub.resetAllSpentTodayEntries.resolves();
     });
@@ -111,33 +115,21 @@ describe('HbarLimitService', function () {
     it('should reset the remaining budget and update the gauge', async function () {
       // @ts-ignore
       hbarLimitService.remainingBudget = 1000;
-      // @ts-ignore
-      const setSpy = sinon.spy(hbarLimitService.hbarLimitRemainingGauge, 'set');
+      const setSpy = sinon.spy(hbarLimitService['hbarLimitRemainingGauge'], 'set');
       await hbarLimitService.resetLimiter();
-      // @ts-ignore
-      expect(hbarLimitService.remainingBudget).to.equal(totalBudget);
+      expect(hbarLimitService['remainingBudget']).to.equal(totalBudget);
       expect(setSpy.calledOnceWith(totalBudget)).to.be.true;
     });
 
     it('should reset the daily unique spending plans counter', async function () {
-      let spies: SinonSpy[] = [];
-      Object.values(SubscriptionType).forEach((subscriptionType) => {
-        spies.push(sinon.spy(hbarLimitService['dailyUniqueSpendingPlansCounter'][subscriptionType], 'reset'));
-      });
-
+      const spies = createSpiesForSpendingPlanMetrics();
       await hbarLimitService.resetLimiter();
-
       spies.forEach((spy) => sinon.assert.calledOnce(spy));
     });
 
     it('should reset the average daily spending plan usages gauge', async function () {
-      let spies: SinonSpy[] = [];
-      Object.values(SubscriptionType).forEach((subscriptionType) => {
-        spies.push(sinon.spy(hbarLimitService['averageDailySpendingPlanUsagesGauge'][subscriptionType], 'reset'));
-      });
-
+      const spies = createSpiesForSpendingPlanMetrics();
       await hbarLimitService.resetLimiter();
-
       spies.forEach((spy) => sinon.assert.calledOnce(spy));
     });
 
@@ -145,8 +137,7 @@ describe('HbarLimitService', function () {
       const tomorrow = new Date(Date.now() + HbarLimitService.ONE_DAY_IN_MILLIS);
       const expectedResetDate = new Date(tomorrow.setHours(0, 0, 0, 0));
       await hbarLimitService.resetLimiter();
-      // @ts-ignore
-      expect(hbarLimitService.reset).to.deep.equal(expectedResetDate);
+      expect(hbarLimitService['reset']).to.deep.equal(expectedResetDate);
     });
   });
 
