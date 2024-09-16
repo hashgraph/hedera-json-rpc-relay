@@ -19,7 +19,7 @@
  */
 
 import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
-import { ITracerConfig } from '@hashgraph/json-rpc-relay/src/lib/types';
+import { ITracerConfig, RequestDetails } from '@hashgraph/json-rpc-relay/src/lib/types';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';
 import { TracerType, TYPES, Validator } from './validator';
@@ -29,7 +29,6 @@ import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { formatRequestIdMessage } from './formatters';
 import cors from 'koa-cors';
-import { RequestDetails } from '../../relay/src/lib/types/RequestDetails';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',

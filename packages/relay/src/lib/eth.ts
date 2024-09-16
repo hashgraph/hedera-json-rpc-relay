@@ -41,7 +41,7 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
 import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
-import { IFeeHistory, IContractCallRequest, IContractCallResponse, ITransactionReceipt } from './types';
+import { IFeeHistory, IContractCallRequest, IContractCallResponse, ITransactionReceipt, RequestDetails } from './types';
 import {
   isHex,
   toHash32,
@@ -59,8 +59,6 @@ import {
   formatTransactionIdWithoutQueryParams,
   getFunctionSelector,
 } from '../formatters';
-import { time } from 'console';
-import { RequestDetails } from './types/RequestDetails';
 
 const _ = require('lodash');
 const createHash = require('keccak');

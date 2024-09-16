@@ -29,7 +29,7 @@ import RelayAssertions from '../../assertions';
 import { DEFAULT_BLOCK, EMPTY_LOGS_RESPONSE } from './eth-config';
 import { defaultErrorMessageHex } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
-import { RequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

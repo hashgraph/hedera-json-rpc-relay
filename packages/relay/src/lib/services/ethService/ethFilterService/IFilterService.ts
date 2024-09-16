@@ -20,7 +20,7 @@
 
 import { JsonRpcError } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
-import { RequestDetails } from '../../../types/RequestDetails';
+import { RequestDetails } from '../../../types';
 
 export interface IFilterService {
   newFilter(

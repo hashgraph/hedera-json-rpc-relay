@@ -25,7 +25,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import ERC20MockJson from '@hashgraph/json-rpc-server/tests/contracts/ERC20Mock.json';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@web-socket-batch-1 eth_call', async function () {
   const METHOD_NAME = 'eth_call';

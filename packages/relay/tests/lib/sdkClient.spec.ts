@@ -59,7 +59,7 @@ import {
   FileDeleteTransaction,
   TransactionRecordQuery,
 } from '@hashgraph/sdk';
-import { RequestDetails } from '../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../src/lib/types';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();

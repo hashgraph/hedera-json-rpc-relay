@@ -32,7 +32,7 @@ import {
   MethodNotFound,
   IPRateLimitExceeded,
 } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 /**
  * Handles sending requests to a Relay by calling a specified method with given parameters.
@@ -44,8 +44,8 @@ import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/Request
  * @param {any} args.params - The parameters for the method call.
  * @param {Relay} args.relay - The relay object.
  * @param {any} args.logger - The logger object used for tracing.
- * @param {string} args.requestIdPrefix - Prefix for request ID used for logging.
  * @param {string} args.connectionIdPrefix - Prefix for connection ID used for logging.
+ * @param {RequestDetails} args.requestDetails - The request details for logging and tracking.
  * @returns {Promise<any>} A promise that resolves to the result of the request.
  */
 const handleSendingRequestsToRelay = async ({
@@ -54,12 +54,15 @@ const handleSendingRequestsToRelay = async ({
   params,
   relay,
   logger,
-  requestIdPrefix,
   connectionIdPrefix,
   ctx,
+  requestDetails,
 }): Promise<any> => {
-  logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Submitting request=${JSON.stringify(request)} to relay.`);
-  const requestDetails = new RequestDetails({ requestId: ctx.req.id, ipAddress: ctx.request.ip });
+  logger.trace(
+    `${connectionIdPrefix} ${requestDetails.formattedRequestId}: Submitting request=${JSON.stringify(
+      request,
+    )} to relay.`,
+  );
   try {
     const resolvedParams = resolveParams(method, params);
     const [service, methodName] = method.split('_');
@@ -88,9 +91,9 @@ const handleSendingRequestsToRelay = async ({
 
     if (!txRes) {
       logger.trace(
-        `${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for request=${JSON.stringify(
-          request,
-        )}. Result=${txRes}`,
+        `${connectionIdPrefix} ${
+          requestDetails.formattedRequestId
+        }: Fail to retrieve result for request=${JSON.stringify(request)}. Result=${txRes}`,
       );
     }
 
@@ -112,10 +115,10 @@ const handleSendingRequestsToRelay = async ({
  * @param {any} logger - The logger object.
  * @param {any} request - The request object.
  * @param {ConnectionLimiter} limiter - The connection limiter object.
- * @param {string} requestIdPrefix - Prefix for request ID.
  * @param {string} connectionIdPrefix - Prefix for connection ID.
  * @param {MirrorNodeClient} mirrorNodeClient - The MirrorNodeClient object.
  * @param {WsMetricRegistry} wsMetricRegistry - The WsMetricRegistry object.
+ * @param {RequestDetails} requestDetails - The request details for logging and tracking.
  * @returns {Promise<any>} A promise that resolves to the response of the request.
  */
 export const getRequestResult = async (
@@ -124,10 +127,10 @@ export const getRequestResult = async (
   logger: any,
   request: any,
   limiter: ConnectionLimiter,
-  requestIdPrefix: string,
   connectionIdPrefix: string,
   mirrorNodeClient: MirrorNodeClient,
   wsMetricRegistry: WsMetricRegistry,
+  requestDetails: RequestDetails,
 ): Promise<any> => {
   // Extract the method and parameters from the received request
   let { method, params } = request;
@@ -140,6 +143,7 @@ export const getRequestResult = async (
   wsMetricRegistry.getCounter('methodsCounterByIp').labels(ctx.request.ip, method).inc();
 
   // validate request's jsonrpc object
+  const requestIdPrefix = requestDetails.formattedRequestId;
   if (!validateJsonRpcRequest(request, logger, requestIdPrefix, connectionIdPrefix)) {
     return jsonResp(request.id || null, new InvalidRequest(), undefined);
   }
@@ -188,9 +192,9 @@ export const getRequestResult = async (
       request,
       method,
       limiter,
-      requestIdPrefix,
       mirrorNodeClient,
       connectionIdPrefix,
+      requestDetails,
     };
 
     switch (method) {

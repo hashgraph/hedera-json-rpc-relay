@@ -23,7 +23,7 @@ import { Counter, Registry } from 'prom-client';
 import { ICacheClient } from '../../clients/cache/ICacheClient';
 import { LocalLRUCache, RedisCache } from '../../clients';
 import { RedisCacheError } from '../../errors/RedisCacheError';
-import { RequestDetails } from '../../types/RequestDetails';
+import { RequestDetails } from '../../types';
 
 /**
  * A service that manages caching using different cache implementations based on configuration.

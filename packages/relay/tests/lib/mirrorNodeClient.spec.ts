@@ -34,7 +34,7 @@ import pino from 'pino';
 import { ethers } from 'ethers';
 import { predefined, MirrorNodeClientError } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { RequestDetails } from '../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../src/lib/types';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 const logger = pino();
 const noTransactions = '?transactions=false';

@@ -37,6 +37,7 @@ import {
 import Koa from 'koa';
 import { Histogram, Registry } from 'prom-client';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
 import {
   getBatchRequestsEnabled,
@@ -47,7 +48,6 @@ import {
   hasOwnProperty,
 } from './lib/utils';
 import { IJsonRpcRequest } from './lib/IJsonRpcRequest';
-import { RequestDetails } from '../../../relay/src/lib/types/RequestDetails';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 

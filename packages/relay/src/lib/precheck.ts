@@ -25,7 +25,7 @@ import { Logger } from 'pino';
 import constants from './constants';
 import { ethers, Transaction } from 'ethers';
 import { prepend0x } from '../formatters';
-import { RequestDetails } from './types/RequestDetails';
+import { RequestDetails } from './types';
 
 /**
  * Precheck class for handling various prechecks before sending a raw transaction.

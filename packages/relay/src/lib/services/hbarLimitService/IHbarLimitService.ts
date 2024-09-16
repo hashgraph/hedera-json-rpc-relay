@@ -18,7 +18,7 @@
  *
  */
 
-import { RequestDetails } from '../../types/RequestDetails';
+import { RequestDetails } from '../../types';
 
 export interface IHbarLimitService {
   resetLimiter(): Promise<void>;

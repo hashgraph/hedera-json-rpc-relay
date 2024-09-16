@@ -25,7 +25,7 @@ import { Registry } from 'prom-client';
 import { RedisCacheError } from '../../errors/RedisCacheError';
 import constants from '../../constants';
 import { IRedisCacheClient } from './IRedisCacheClient';
-import { RequestDetails } from '../../types/RequestDetails';
+import { RequestDetails } from '../../types';
 
 /**
  * A class that provides caching functionality using Redis.

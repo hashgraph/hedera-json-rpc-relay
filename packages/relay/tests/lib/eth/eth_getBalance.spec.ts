@@ -44,7 +44,7 @@ import {
   TINYBAR_TO_WEIBAR_COEF_BIGINT,
 } from './eth-config';
 import { balancesByAccountIdByTimestampURL, generateEthTestEnv } from './eth-helpers';
-import { RequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

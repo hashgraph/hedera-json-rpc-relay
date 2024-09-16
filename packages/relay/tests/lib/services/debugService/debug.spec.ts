@@ -35,7 +35,7 @@ import { CacheService } from '../../../../src/lib/services/cacheService/cacheSer
 import { CommonService } from '../../../../src/lib/services/ethService';
 import { IOpcodesResponse } from '../../../../src/lib/clients/models/IOpcodesResponse';
 import { strip0x } from '../../../../src/formatters';
-import { RequestDetails } from '../../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 chai.use(chaiAsPromised);

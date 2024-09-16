@@ -35,7 +35,7 @@ import { BigNumber } from 'bignumber.js';
 import { RelayImpl } from '../../src';
 import { EthImpl } from '../../src/lib/eth';
 import { SDKClient, MirrorNodeClient } from '../../src/lib/clients';
-import { RequestDetails } from '../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../src/lib/types';
 
 import openRpcSchema from '../../../../docs/openrpc.json';
 import {

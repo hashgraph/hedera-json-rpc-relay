@@ -42,8 +42,8 @@ import {
   IContractLogsResultsParams,
   MirrorNodeTransactionRecord,
   IMirrorNodeTransactionRecord,
+  RequestDetails,
 } from '../types';
-import { RequestDetails } from '../types/RequestDetails';
 
 type REQUEST_METHODS = 'GET' | 'POST';
 

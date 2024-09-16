@@ -23,7 +23,7 @@ import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { estimateFileTransactionsFee, getRequestId, random20BytesAddress } from '../helpers';
-import { RequestDetails } from '../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../src/lib/types';
 
 const registry = new Registry();
 const logger = pino();

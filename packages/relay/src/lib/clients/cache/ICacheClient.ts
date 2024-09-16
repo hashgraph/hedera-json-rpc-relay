@@ -18,7 +18,7 @@
  *
  */
 
-import { RequestDetails } from '../../types/RequestDetails';
+import { RequestDetails } from '../../types';
 
 export interface ICacheClient {
   keys(pattern: string, callingMethod: string, requestDetails: RequestDetails): Promise<string[]>;

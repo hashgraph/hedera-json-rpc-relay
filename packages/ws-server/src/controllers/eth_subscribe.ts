@@ -24,6 +24,7 @@ import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { constructValidLogSubscriptionFilter, getMultipleAddressesEnabled } from '../utils/utils';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 /**
  * Subscribes to new block headers (newHeads) events and returns the response and subscription ID.
@@ -61,6 +62,7 @@ const subscribeToNewHeads = (
  * @param {string} event - The event name to subscribe to (e.g., "newHeads").
  * @param {Relay} relay - The relay object used for managing WebSocket subscriptions.
  * @param {any} logger - The logger object used for logging subscription information.
+ * @param {RequestDetails} requestDetails - The request details for logging and tracking.
  * @returns {{ response: any; subscriptionId: any }} Returns an object containing the response and subscription ID.
  */
 const handleEthSubscribeNewHeads = (
@@ -73,7 +75,7 @@ const handleEthSubscribeNewHeads = (
   relay: Relay,
   logger: any,
   connectionIdPrefix: string,
-  requestIdPrefix: string,
+  requestDetails: RequestDetails,
 ): { response: any; subscriptionId: any } => {
   const wsNewHeadsEnabled =
     typeof process.env.WS_NEW_HEADS_ENABLED !== 'undefined' ? process.env.WS_NEW_HEADS_ENABLED === 'true' : true;
@@ -82,7 +84,7 @@ const handleEthSubscribeNewHeads = (
     ({ response, subscriptionId } = subscribeToNewHeads(filters, response, subscriptionId, ctx, event, relay, logger));
   } else {
     logger.warn(
-      `${connectionIdPrefix} ${requestIdPrefix}: Unsupported JSON-RPC method due to the value of environment variable WS_NEW_HEADS_ENABLED`,
+      `${connectionIdPrefix} ${requestDetails.formattedRequestId}: Unsupported JSON-RPC method due to the value of environment variable WS_NEW_HEADS_ENABLED`,
     );
     response = jsonResp(request.id, predefined.UNSUPPORTED_METHOD, undefined);
   }
@@ -94,7 +96,6 @@ const handleEthSubscribeNewHeads = (
  * Validates the subscription parameters, checks if multiple addresses are enabled,
  * and subscribes to the event or sends an error response accordingly.
  * @param {any} filters - The filters object specifying criteria for the subscription.
- * @param {string} requestIdPrefix - The prefix for the request ID.
  * @param {any} response - The response object to be sent to the client.
  * @param {any} request - The request object received from the client.
  * @param {any} subscriptionId - The ID of the subscription.
@@ -102,11 +103,11 @@ const handleEthSubscribeNewHeads = (
  * @param {any} event - The event name to subscribe to.
  * @param {Relay} relay - The relay object used for managing WebSocket subscriptions.
  * @param {MirrorNodeClient} mirrorNodeClient - The client for interacting with the MirrorNode API.
+ * @param {RequestDetails} requestDetails - The request details for logging and tracking.
  * @returns {{ response: any; subscriptionId: any }} Returns an object containing the response and subscription ID.
  */
 const handleEthSubscribeLogs = async (
   filters: any,
-  requestIdPrefix: string,
   response: any,
   request: any,
   subscriptionId: any,
@@ -114,10 +115,11 @@ const handleEthSubscribeLogs = async (
   event: any,
   relay: Relay,
   mirrorNodeClient: MirrorNodeClient,
+  requestDetails: RequestDetails,
 ): Promise<{ response: any; subscriptionId: any }> => {
   const validFiltersObject = constructValidLogSubscriptionFilter(filters);
 
-  await validateSubscribeEthLogsParams(validFiltersObject, requestIdPrefix, mirrorNodeClient);
+  await validateSubscribeEthLogsParams(validFiltersObject, mirrorNodeClient, requestDetails);
   if (
     !getMultipleAddressesEnabled() &&
     Array.isArray(validFiltersObject['address']) &&
@@ -140,24 +142,24 @@ const handleEthSubscribeLogs = async (
  * @param {object} args - An object containing the function parameters as properties.
  * @param {any} args.ctx - The context object containing information about the WebSocket connection.
  * @param {any[]} args.params - The parameters of the method request, expecting an event and filters.
- * @param {string} args.requestIdPrefix - The prefix for the request ID.
  * @param {any} args.request - The request object received from the client.
  * @param {Relay} args.relay - The relay object for interacting with the Hedera network.
  * @param {MirrorNodeClient} args.mirrorNodeClient - The mirror node client for handling subscriptions.
  * @param {ConnectionLimiter} args.limiter - The limiter object for managing connection subscriptions.
  * @param {any} args.logger - The logger object for logging messages and events.
+ * @param {RequestDetails} args.requestDetails - The request details for logging and tracking.
  * @returns {Promise<any>} Returns a promise that resolves with the subscription response.
  */
 export const handleEthSubsribe = async ({
   ctx,
   params,
-  requestIdPrefix,
   request,
   relay,
   mirrorNodeClient,
   limiter,
   logger,
   connectionIdPrefix,
+  requestDetails,
 }): Promise<any> => {
   const event = params[0];
   const filters = params[1];
@@ -168,7 +170,6 @@ export const handleEthSubsribe = async ({
     case constants.SUBSCRIBE_EVENTS.LOGS:
       ({ response, subscriptionId } = await handleEthSubscribeLogs(
         filters,
-        requestIdPrefix,
         response,
         request,
         subscriptionId,
@@ -176,6 +177,7 @@ export const handleEthSubsribe = async ({
         event,
         relay,
         mirrorNodeClient,
+        requestDetails,
       ));
       break;
 
@@ -190,7 +192,7 @@ export const handleEthSubsribe = async ({
         relay,
         logger,
         connectionIdPrefix,
-        requestIdPrefix,
+        requestDetails,
       ));
       break;
     case constants.SUBSCRIBE_EVENTS.NEW_PENDING_TRANSACTIONS:

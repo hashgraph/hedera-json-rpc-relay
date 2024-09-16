@@ -18,7 +18,7 @@
  *
  */
 import { Log } from '../../../model';
-import { RequestDetails } from '../../../types/RequestDetails';
+import { RequestDetails } from '../../../types';
 
 export interface ICommonService {
   blockTagIsLatestOrPending(tag: any): boolean;

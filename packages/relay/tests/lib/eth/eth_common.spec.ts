@@ -24,7 +24,7 @@ import { Registry } from 'prom-client';
 import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
 import { RelayImpl } from '../../../src';
-import { RequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

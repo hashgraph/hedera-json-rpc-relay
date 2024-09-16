@@ -38,7 +38,7 @@ import {
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 import { JsonRpcError, predefined } from '../../../src';
-import { RequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

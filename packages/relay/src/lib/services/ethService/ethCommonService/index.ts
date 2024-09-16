@@ -29,7 +29,7 @@ import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
 import { Log } from '../../../model';
 import * as _ from 'lodash';
 import { CacheService } from '../../cacheService/cacheService';
-import { RequestDetails } from '../../../types/RequestDetails';
+import { RequestDetails } from '../../../types';
 
 /**
  * Create a new Common Service implementation.

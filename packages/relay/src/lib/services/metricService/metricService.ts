@@ -25,7 +25,7 @@ import HbarLimit from '../../hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types';
-import { RequestDetails } from '../../types/RequestDetails';
+import { RequestDetails } from '../../types';
 
 export default class MetricService {
   /**

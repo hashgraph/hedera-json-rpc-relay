@@ -21,7 +21,7 @@
 import { Eth } from '../index';
 import { Logger } from 'pino';
 import { Registry, Gauge } from 'prom-client';
-import { RequestDetails } from './types/RequestDetails';
+import { RequestDetails } from './types';
 import { Utils } from '../utils';
 
 export interface Poll {

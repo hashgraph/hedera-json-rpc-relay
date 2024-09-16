@@ -42,11 +42,6 @@ describe('RedisCache Test Suite', async function () {
   useInMemoryRedisServer(logger, 6379);
 
   this.beforeAll(async () => {
-<<<<<<< HEAD
-=======
-    redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6379);
-    await redisInMemoryServer.start();
->>>>>>> c7c5c919 (chore: draft changes)
     redisCache = new RedisCache(logger.child({ name: `cache` }), registry);
   });
 

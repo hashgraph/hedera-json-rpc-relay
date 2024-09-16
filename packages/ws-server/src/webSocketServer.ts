@@ -34,6 +34,7 @@ import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { JsonRpcError, predefined, type Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
 import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
@@ -72,8 +73,10 @@ app.ws.use(async (ctx: Koa.Context) => {
   ctx.websocket.limiter = limiter;
   ctx.websocket.wsMetricRegistry = wsMetricRegistry;
   const connectionIdPrefix = formatIdMessage('Connection ID', ctx.websocket.id);
-  const requestIdPrefix = formatIdMessage('Request ID', ctx.websocket.requestId);
+  const requestDetails = new RequestDetails({ requestId: ctx.websocket.requestId, ipAddress: ctx.request.ip });
+  const requestIdPrefix = requestDetails.formattedRequestId;
   logger.info(
+    // @ts-ignore
     `${connectionIdPrefix} ${requestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
   );
 
@@ -153,10 +156,10 @@ app.ws.use(async (ctx: Koa.Context) => {
           logger,
           item,
           limiter,
-          requestIdPrefix,
           connectionIdPrefix,
           mirrorNodeClient,
           wsMetricRegistry,
+          requestDetails,
         );
       });
 
@@ -175,10 +178,10 @@ app.ws.use(async (ctx: Koa.Context) => {
         logger,
         request,
         limiter,
-        requestIdPrefix,
         connectionIdPrefix,
         mirrorNodeClient,
         wsMetricRegistry,
+        requestDetails,
       );
 
       // send to client
@@ -201,7 +204,8 @@ app.ws.use(async (ctx: Koa.Context) => {
   }
 });
 
-const httpApp = new KoaJsonRpc(logger, register).getKoaApp();
+const koaJsonRpc = new KoaJsonRpc(logger, register);
+const httpApp = koaJsonRpc.getKoaApp();
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
 
 httpApp.use(async (ctx: Koa.Context, next: Koa.Next) => {
@@ -215,7 +219,7 @@ httpApp.use(async (ctx: Koa.Context, next: Koa.Next) => {
   } else if (ctx.url === '/health/readiness') {
     // readiness endpoint
     try {
-      const result = relay.eth().chainId(httpApp.getRequestDetails());
+      const result = relay.eth().chainId(koaJsonRpc.getRequestDetails());
       if (result.includes('0x12')) {
         ctx.status = 200;
         ctx.body = 'OK';

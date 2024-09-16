@@ -73,7 +73,7 @@ import {
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 import { fail } from 'assert';
-import { RequestDetails } from '../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);

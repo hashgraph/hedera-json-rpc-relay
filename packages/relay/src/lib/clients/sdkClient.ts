@@ -62,7 +62,7 @@ import { JsonRpcError, predefined } from '../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
 import { formatRequestIdMessage, weibarHexToTinyBarInt } from '../../formatters';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../types';
-import { RequestDetails } from '../types/RequestDetails';
+import { RequestDetails } from '../types';
 
 const _ = require('lodash');
 

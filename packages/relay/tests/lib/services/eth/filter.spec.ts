@@ -32,7 +32,7 @@ import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import * as sinon from 'sinon';
-import { RequestDetails } from '../../../../src/lib/types/RequestDetails';
+import { RequestDetails } from '../../../../src/lib/types';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();

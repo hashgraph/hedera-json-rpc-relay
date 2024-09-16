@@ -39,7 +39,7 @@ import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeCont
 import fs from 'fs';
 import { resolve } from 'path';
 import { config } from 'dotenv';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));

@@ -34,7 +34,7 @@ import { Context } from 'mocha';
 import { GitHubClient } from '../clients/githubClient';
 import MirrorClient from '../clients/mirrorClient';
 import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 export class Utils {
   static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 1e6; // 1 MB

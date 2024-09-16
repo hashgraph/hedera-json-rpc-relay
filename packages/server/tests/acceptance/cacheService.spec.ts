@@ -21,7 +21,7 @@
 import { expect } from 'chai';
 import { CacheService } from '../../../../packages/relay/src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 const registry = new Registry();
 
 const DATA_LABEL_PREFIX = 'acceptance-test-';

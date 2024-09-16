@@ -39,7 +39,7 @@ import HAPIService from './services/hapiService/hapiService';
 import { SubscriptionController } from './subscriptionController';
 import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
-import { RequestDetails } from './types/RequestDetails';
+import { RequestDetails } from './types';
 import { Utils } from '../utils';
 
 export class RelayImpl implements Relay {

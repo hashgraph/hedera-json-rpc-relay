@@ -23,7 +23,7 @@ import { Logger } from 'pino';
 import { IEthAddressHbarSpendingPlan } from '../../types/hbarLimiter/ethAddressHbarSpendingPlan';
 import { EthAddressHbarSpendingPlanNotFoundError } from '../../types/hbarLimiter/errors';
 import { EthAddressHbarSpendingPlan } from '../../entities/hbarLimiter/ethAddressHbarSpendingPlan';
-import { RequestDetails } from '../../../types/RequestDetails';
+import { RequestDetails } from '../../../types';
 
 export class EthAddressHbarSpendingPlanRepository {
   private readonly collectionKey = 'ethAddressHbarSpendingPlan';

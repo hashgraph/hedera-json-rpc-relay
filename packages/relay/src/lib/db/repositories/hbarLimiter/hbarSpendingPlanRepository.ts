@@ -27,7 +27,7 @@ import { IDetailedHbarSpendingPlan, IHbarSpendingPlan } from '../../types/hbarLi
 import { HbarSpendingRecord } from '../../entities/hbarLimiter/hbarSpendingRecord';
 import { SubscriptionType } from '../../types/hbarLimiter/subscriptionType';
 import { HbarSpendingPlan } from '../../entities/hbarLimiter/hbarSpendingPlan';
-import { RequestDetails } from '../../../types/RequestDetails';
+import { RequestDetails } from '../../../types';
 
 export class HbarSpendingPlanRepository {
   private readonly collectionKey = 'hbarSpendingPlan';

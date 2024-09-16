@@ -55,8 +55,7 @@ import {
   mockData,
 } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
-import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types';
-import { RequestDetails } from '../../../src/lib/types/RequestDetails';
+import { IContractCallRequest, IContractCallResponse, RequestDetails } from '../../../src/lib/types';
 import { ContractFunctionResult } from '@hashgraph/sdk';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });

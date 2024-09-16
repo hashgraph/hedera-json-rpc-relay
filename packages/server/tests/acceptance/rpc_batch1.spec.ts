@@ -41,7 +41,7 @@ import RelayCalls from '../../tests/helpers/constants';
 // Other imports
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
 import constants from '../../../relay/src/lib/constants';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 
 const Address = RelayCalls;

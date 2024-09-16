@@ -19,7 +19,7 @@
  */
 
 import type { ICacheClient } from './ICacheClient';
-import { RequestDetails } from '../../types/RequestDetails';
+import { RequestDetails } from '../../types';
 
 export interface IRedisCacheClient extends ICacheClient {
   disconnect: () => Promise<void>;

@@ -22,7 +22,7 @@ import { Logger } from 'pino';
 import constants from '../constants';
 import { Registry, Counter, Gauge } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
-import { RequestDetails } from '../types/RequestDetails';
+import { RequestDetails } from '../types';
 
 export default class HbarLimit {
   private enabled: boolean = false;
