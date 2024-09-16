@@ -37,6 +37,7 @@ import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -64,6 +65,7 @@ global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 describe('RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
+  const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
   let relayServer; // Relay Server
   let socketServer;
   global.servicesNode = new ServicesClient(
@@ -101,7 +103,7 @@ describe('RPC Server Acceptance Tests', function () {
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
-    await global.mirrorNode.get(`/accounts/${initialAccount.address}`);
+    await global.mirrorNode.get(`/accounts/${initialAccount.address}`, requestDetails);
   });
 
   after(async function () {

@@ -31,6 +31,7 @@ import pino from 'pino';
 import { MirrorNodeClient } from '../../../relay/src/lib/clients';
 import { hexToASCII } from '../../../relay/src/formatters';
 import { AliasAccount } from '../types/AliasAccount';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 const logger = pino();
 
 enum CallTypes {
@@ -76,6 +77,7 @@ describe('Equivalence tests', async function () {
   const { servicesNode, mirrorNode, relay }: any = global;
   const servicesClient = servicesNode as ServicesClient;
   const mirrorNodeClient = mirrorNode as MirrorNodeClient;
+  const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
   let precheck: Precheck;
 
   const SUCCESS = 'SUCCESS';
@@ -185,7 +187,10 @@ describe('Equivalence tests', async function () {
     equivalenceContractId = equivalenceContractReceipt.contractId.toString();
 
     requestId = Utils.generateRequestId();
-    const contractMirror = await mirrorNodeClient.get(`/contracts/${estimatePrecompileSolidityAddress}`, requestId);
+    const contractMirror = await mirrorNodeClient.get(
+      `/contracts/${estimatePrecompileSolidityAddress}`,
+      requestDetails,
+    );
 
     accounts[0] = await servicesClient.createAccountWithContractIdKey(
       contractMirror.contract_id,
@@ -355,7 +360,7 @@ describe('Equivalence tests', async function () {
   };
 
   async function getResultByEntityIdAndTxTimestamp(entityId, txTimestamp) {
-    return await mirrorNode.get(`/contracts/${entityId}/results/${txTimestamp}`);
+    return await mirrorNode.get(`/contracts/${entityId}/results/${txTimestamp}`, requestDetails);
   }
 
   /**
@@ -364,7 +369,7 @@ describe('Equivalence tests', async function () {
    * @returns list of ContractActions
    */
   async function getContractActions(transactionIdOrHash: string) {
-    return await mirrorNodeClient.get(`/contracts/results/${transactionIdOrHash}/actions`, Utils.generateRequestId());
+    return await mirrorNode.get(`/contracts/results/${transactionIdOrHash}/actions`, requestDetails);
   }
 
   async function createFungibleToken() {

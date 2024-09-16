@@ -135,7 +135,7 @@ describe('RPC Server Acceptance Tests', function () {
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
-    await global.mirrorNode.get(`/accounts/${initialAccount.address}`);
+    await global.mirrorNode.get(`/accounts/${initialAccount.address}`, Utils.generateRequestId());
   });
 
   after(async function () {

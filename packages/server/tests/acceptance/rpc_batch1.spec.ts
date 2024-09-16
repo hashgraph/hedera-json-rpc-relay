@@ -42,7 +42,6 @@ import RelayCalls from '../../tests/helpers/constants';
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
 import constants from '../../../relay/src/lib/constants';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
-import { JsonRpcError } from '@hashgraph/json-rpc-relay';
 
 const Address = RelayCalls;
 
@@ -73,9 +72,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
    * @param tx: any - supposedly a proper transaction that has `from` and `to` fields
    * @returns Promise<{from: any|null, to: any|null}>
    */
-  const resolveAccountEvmAddresses = async (tx: any) => {
-    const fromAccountInfo = await mirrorNode.get(`/accounts/${tx.from}`);
-    const toAccountInfo = await mirrorNode.get(`/accounts/${tx.to}`);
+  const resolveAccountEvmAddresses = async (tx: any, requestDetails: RequestDetails) => {
+    const fromAccountInfo = await mirrorNode.get(`/accounts/${tx.from}`, requestDetails);
+    const toAccountInfo = await mirrorNode.get(`/accounts/${tx.to}`, requestDetails);
     return {
       from: fromAccountInfo?.evm_address ?? tx.from,
       to: toAccountInfo?.evm_address ?? tx.to,
@@ -488,7 +487,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         // resolve EVM address for `from` and `to`
         for (const mirrorTx of mirrorTransactions) {
-          const resolvedAddresses = await resolveAccountEvmAddresses(mirrorTx);
+          const resolvedAddresses = await resolveAccountEvmAddresses(mirrorTx, requestDetails);
 
           mirrorTx.from = resolvedAddresses.from;
           mirrorTx.to = resolvedAddresses.to;
@@ -998,8 +997,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             `/contracts/results/${deterministicDeployTransactionHash}`,
             requestDetails,
           );
-          const fromAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.from}`);
-          const toAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.to}`);
+          const fromAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.from}`, requestDetails);
+          const toAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.to}`, requestDetails);
 
           expect(receipt).to.exist;
           expect(fromAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
@@ -1273,7 +1272,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         await Utils.wait(1000);
         const txInfo = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
 
-        const contractResult = await mirrorNode.get(`/contracts/${txInfo.contract_id}`);
+        const contractResult = await mirrorNode.get(`/contracts/${txInfo.contract_id}`, requestDetails);
         const fileInfo = await new FileInfoQuery().setFileId(contractResult.file_id).execute(servicesNode.client);
         expect(fileInfo).to.exist;
         expect(fileInfo instanceof FileInfo).to.be.true;

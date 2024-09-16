@@ -52,6 +52,7 @@ import TokenCreateJson from '../contracts/TokenCreateContract.json';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { TYPES } from '../../src/validator';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 chai.use(chaiExclude);
 
@@ -59,6 +60,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
   const accounts: AliasAccount[] = [];
+  const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
 
   // @ts-ignore
   const { servicesNode, mirrorNode, relay } = global;
@@ -110,7 +112,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         initialAccount,
         neededAccounts,
         initialBalance,
-        requestId,
+        requestDetails,
       )),
     );
     global.accounts.push(...accounts);
@@ -1008,7 +1010,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     });
 
     it('should execute "eth_getTransactionCount" for account with non-zero nonce', async function () {
-      const account = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId);
+      const account = await Utils.createAliasAccount(mirrorNode, accounts[0], requestDetails);
 
       const gasPrice = await relay.gasPrice(requestId);
       const transaction = {
@@ -1245,7 +1247,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
-      estimateGasContractAddress = await mirrorNode.get(`/contracts/results/${transactionHash}`);
+      estimateGasContractAddress = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
     });
 
     describe('Positive scenarios', async function () {
@@ -2027,7 +2029,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     });
 
     it('Should return a batch of requests', async function () {
-      const testAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId);
+      const testAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestDetails);
 
       {
         const payload = [
