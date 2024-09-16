@@ -829,7 +829,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         Assertions.transactionReceipt(res, mirrorResult, currentPrice);
       });
 
-      it('@release-light,, @release should execute "eth_getTransactionReceipt" for hash of 2930 transaction', async function () {
+      it('@release-light, @release should execute "eth_getTransactionReceipt" for hash of 2930 transaction', async function () {
         const transaction = {
           ...defaultLegacy2930TransactionData,
           to: parentContractAddress,

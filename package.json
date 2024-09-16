@@ -42,7 +42,7 @@
     "acceptancetest:release": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit && ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@release' --exit",
     "acceptancetest:release_http": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release' --exit",
     "acceptancetest:release_ws": "nyc ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@release' --exit",
-    "acceptancetest:release_light": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@mainnet-light' --exit",
+    "acceptancetest:release_light": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@release-light' --exit",
     "acceptancetest:ws": "nyc ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket' --exit",
     "acceptancetest:ws_batch1": "nyc ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket-batch-1' --exit",
     "acceptancetest:ws_batch2": "nyc ts-mocha packages/ws-server/tests/acceptance/index.spec.ts  -g '@web-socket-batch-2' --exit",
