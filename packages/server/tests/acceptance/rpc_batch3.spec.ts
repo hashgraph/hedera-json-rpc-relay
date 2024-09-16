@@ -633,15 +633,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       // This acceptance test ensures that the new force-to-consensus-by-selector logic correctly routes requests for `IHRC719.isAssociated()`
       // through the Consensus node rather than the Mirror node when using the `eth_call` endpoint.
 
-      let initialEthCallForceToConsensusBySelector: any,
-        initialEthCallSelectorsAlwaysToConsensus: any,
-        tokenAddress: string,
-        hrc719Contract: ethers.Contract;
+      let initialEthCallSelectorsAlwaysToConsensus: any, tokenAddress: string, hrc719Contract: ethers.Contract;
 
       before(async () => {
-        initialEthCallForceToConsensusBySelector = process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR;
         initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
-        process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = 'true';
 
         const tokenCreateContract = await Utils.deployContract(
           TokenCreateJson.abi,
@@ -667,7 +662,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       });
 
       after(() => {
-        process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = initialEthCallForceToConsensusBySelector;
         process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
       });
 
