@@ -145,7 +145,7 @@ export default class HbarLimit {
 
     if (this.isAccountWhiteListed(originalCallerAddress)) {
       this.logger.trace(
-        `${requestIdPrefix} HBAR preemptive rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
+        `${requestIdPrefix} Request bypasses the preemptive limit check - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
       );
       return false;
     }
@@ -158,13 +158,13 @@ export default class HbarLimit {
 
     if (this.remainingBudget - estimatedTxFee < 0) {
       this.logger.warn(
-        `${requestIdPrefix} HBAR preemptive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+        `${requestIdPrefix} Request fails the preemptive limit check - the remaining HBAR budget was not enough to accommodate the estimated transaction fee: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
       );
       return true;
     }
 
     this.logger.trace(
-      `${requestIdPrefix} HBAR preemptive rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+      `${requestIdPrefix} Request passes the preemptive limit check - the remaining HBAR budget is enough to accommodate the estimated transaction fee: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
     );
     return false;
   }
