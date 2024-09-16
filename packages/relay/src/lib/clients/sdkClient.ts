@@ -437,7 +437,7 @@ export class SDKClient {
       ethereumTransactionData.callData = new Uint8Array();
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId);
     }
-    const networkGasPriceInTinyBars = weibarHexToTinyBarInt(networkGasPriceInWeiBars)!;
+    const networkGasPriceInTinyBars = weibarHexToTinyBarInt(networkGasPriceInWeiBars);
 
     ethereumTransaction.setMaxTransactionFee(
       Hbar.fromTinybars(Math.floor(networkGasPriceInTinyBars * constants.MAX_GAS_PER_SEC)),
