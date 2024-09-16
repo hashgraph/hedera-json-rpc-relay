@@ -37,13 +37,19 @@ async function getIssueDetails(issueNumber) {
 async function run() {
     try {
         const pr = await getPRDetails();
-        const { labels: prLabels, milestone: prMilestone, body: prBody } = pr;
+        const { labels: prLabels, milestone: prMilestone, body: prBody, title: prTitle } = pr;
 
         if (prLabels.length === 0) {
             throw new Error('The PR has no labels.');
         }
         if (!prMilestone) {
             throw new Error('The PR has no milestone.');
+        }
+
+        // Thirdparty dependencies are not controlled by us so we will skip the issue matching check for them"
+        if (prTitle.includes("build(deps):")) {
+            console.log('PR is a thirdparty dependency update, skipping issue matching check.');
+            return;
         }
 
         const issueNumberMatches = prBody.match(/#(\d+)/g);
