@@ -943,9 +943,9 @@ export const estimateFileTransactionsFee = (
     fileAppendTxFeeInCents_5kb * fileAppend5kbTransactions +
     fileAppendTxFeeInCents_finalChunk;
 
-  const estimatedTxFeeForFileTransactions = Math.round(
+  const estimatedTxFee = Math.round(
     (totalFileTransactionFeeInCents / exchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
   );
 
-  return estimatedTxFeeForFileTransactions;
+  return estimatedTxFee;
 };

@@ -150,21 +150,21 @@ export default class HbarLimit {
       return false;
     }
 
-    const estimatedTxFeeForFileTransactions = this.estimateFileTransactionsFee(
+    const estimatedTxFee = this.estimateFileTransactionsFee(
       callDataSize,
       fileChunkSize,
       currentNetworkExchangeRateInCents,
     );
 
-    if (this.remainingBudget - estimatedTxFeeForFileTransactions < 0) {
+    if (this.remainingBudget - estimatedTxFee < 0) {
       this.logger.warn(
-        `${requestIdPrefix} HBAR preemptive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFeeForFileTransactions=${estimatedTxFeeForFileTransactions}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+        `${requestIdPrefix} HBAR preemptive rate limit incoming call - the total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
       );
       return true;
     }
 
     this.logger.trace(
-      `${requestIdPrefix} HBAR preemptive rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFeeForFileTransactions=${estimatedTxFeeForFileTransactions}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+      `${requestIdPrefix} HBAR preemptive rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
     );
     return false;
   }
@@ -253,11 +253,11 @@ export default class HbarLimit {
       fileAppendTxFeeInCents_5kb * fileAppend5kbTransactions +
       fileAppendTxFeeInCents_finalChunk;
 
-    const estimatedTxFeeForFileTransactions = Math.round(
+    const estimatedTxFee = Math.round(
       (totalFileTransactionFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
     );
 
-    return estimatedTxFeeForFileTransactions;
+    return estimatedTxFee;
   }
 
   /**
