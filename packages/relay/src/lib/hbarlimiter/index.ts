@@ -240,21 +240,21 @@ export default class HbarLimit {
     const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
 
     // The first chunk goes in with FileCreateTransaciton, the rest are FileAppendTransactions
-    const fileAppend5kbTransactions = Math.floor(callDataSize / fileChunkSize) - 1;
-    const fileAppendfinalChunkSize = callDataSize % fileChunkSize;
+    const fileAppendTransactions = Math.floor(callDataSize / fileChunkSize) - 1;
+    const lastFileAppendChunkSize = callDataSize % fileChunkSize;
 
-    const fileAppendTxFeeInCents_5kb = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
-    const fileAppendTxFeeInCents_finalChunk =
+    const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
+    const lastFileAppendChunkFeeInCents =
       constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_BASE_FEE +
-      fileAppendfinalChunkSize * constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_RATE_PER_BYTE;
+      lastFileAppendChunkSize * constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_RATE_PER_BYTE;
 
-    const totalFileTransactionFeeInCents =
+    const totalTxFeeInCents =
       fileCreateTransactions * fileCreateFeeInCents +
-      fileAppendTxFeeInCents_5kb * fileAppend5kbTransactions +
-      fileAppendTxFeeInCents_finalChunk;
+      fileAppendFeeInCents * fileAppendTransactions +
+      lastFileAppendChunkFeeInCents;
 
     const estimatedTxFee = Math.round(
-      (totalFileTransactionFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
+      (totalTxFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
     );
 
     return estimatedTxFee;
