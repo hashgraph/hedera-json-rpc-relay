@@ -37,6 +37,9 @@ import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
 import fs from 'fs';
+import { resolve } from 'path';
+import { config } from 'dotenv';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types/RequestDetails';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
@@ -105,21 +108,21 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       return fileAppendTxFee;
     };
 
-    const getExpectedCostOfLastLargeTx = async (requestId: string, txData: string) => {
+    const getExpectedCostOfLastLargeTx = async (txData: string, requestDetails: RequestDetails) => {
       const ethereumTransaction = (
         await mirrorNode.get(
           `/transactions?transactiontype=ETHEREUMTRANSACTION&order=desc&account.id=${operatorAccount}&limit=1`,
-          requestId,
+          requestDetails,
         )
       ).transactions[0];
       const ethereumTxFee = sumAccountTransfers(ethereumTransaction.transfers, operatorAccount);
-      const { fileCreateTxFee, fileCreateTimestamp } = await getExpectedCostOfFileCreateTx(requestId);
-      const fileAppendTxFee = await getExpectedCostOfFileAppendTx(requestId, fileCreateTimestamp, txData);
+      const { fileCreateTxFee, fileCreateTimestamp } = await getExpectedCostOfFileCreateTx(requestDetails);
+      const fileAppendTxFee = await getExpectedCostOfFileAppendTx(requestDetails, fileCreateTimestamp, txData);
 
       const fileDeleteTx = (
         await mirrorNode.get(
           `/transactions?transactiontype=FILEDELETE&order=desc&account.id=${operatorAccount}&limit=1`,
-          requestId,
+          requestDetails,
         )
       ).transactions[0];
 
@@ -128,11 +131,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       return ethereumTxFee + fileCreateTxFee + fileAppendTxFee + fileDeleteTxFee;
     };
 
-    const getExpectedCostOfLastSmallTx = async (requestId: string) => {
+    const getExpectedCostOfLastSmallTx = async (requestDetails: RequestDetails) => {
       const ethereumTransaction = (
         await mirrorNode.get(
           `/transactions?transactiontype=ETHEREUMTRANSACTION&order=desc&account.id=${operatorAccount}&limit=1`,
-          requestId,
+          requestDetails,
         )
       ).transactions[0];
       return sumAccountTransfers(ethereumTransaction.transfers, operatorAccount);
@@ -151,19 +154,16 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         type: 2,
       };
 
-      // cached entities
-      let requestId: string;
-      let requestIdPrefix: string;
+      const requestDetails = new RequestDetails({ requestId: 'hbarLimiterTest', ipAddress: '0.0.0.0' });
 
       before(async function () {
         // Restart the relay to reset the limits
         await global.restartLocalRelay();
 
-        requestId = Utils.generateRequestId();
-        requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-
-        logger.info(`${requestIdPrefix} Creating accounts`);
-        logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`);
+        logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
+        logger.info(
+          `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`,
+        );
 
         const initialAccount: AliasAccount = global.accounts[0];
 
@@ -174,15 +174,13 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             initialAccount,
             neededAccounts,
             initialBalance,
-            requestId,
+            requestDetails,
           )),
         );
         global.accounts.push(...accounts);
       });
 
       beforeEach(async function () {
-        requestId = Utils.generateRequestId();
-        requestIdPrefix = Utils.formatRequestIdMessage(requestId);
         await new Promise((r) => setTimeout(r, 3000));
       });
 
@@ -194,25 +192,27 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
           const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
           const parentContractAddress = parentContract.target as string;
-          global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
+          global.logger.trace(
+            `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
+          );
 
-          const gasPrice = await relay.gasPrice(requestId);
+          const gasPrice = await relay.gasPrice(requestDetails);
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
           const transaction = {
             ...defaultLondonTransactionData,
             to: parentContractAddress,
-            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+            nonce: await relay.getAccountNonce(accounts[1].address, requestDetails),
             maxPriorityFeePerGas: gasPrice,
             maxFeePerGas: gasPrice,
           };
           const signedTx = await accounts[1].wallet.signTransaction(transaction);
 
-          await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
-            .fulfilled;
+          await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestDetails)).to
+            .be.fulfilled;
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
+          const expectedCost = await getExpectedCostOfLastSmallTx(requestDetails);
 
           verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
         });
@@ -224,7 +224,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const contract = await deployContract(largeContractJson, accounts[0].wallet);
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          const expectedCost = await getExpectedCostOfLastLargeTx(requestId, contract.deploymentTransaction()!.data);
+          const expectedCost = await getExpectedCostOfLastLargeTx(
+            contract.deploymentTransaction()!.data,
+            requestDetails,
+          );
 
           verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
         });
@@ -237,7 +240,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           await deployContract(EstimateGasContract, accounts[0].wallet);
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
+          const expectedCost = await getExpectedCostOfLastSmallTx(requestDetails);
           verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
         });
 
@@ -249,7 +252,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const contract = await deployContract(mediumSizeContract, accounts[0].wallet);
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          const expectedCost = await getExpectedCostOfLastLargeTx(requestId, contract.deploymentTransaction()!.data);
+          const expectedCost = await getExpectedCostOfLastLargeTx(
+            contract.deploymentTransaction()!.data,
+            requestDetails,
+          );
           verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
         });
 
@@ -294,18 +300,18 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const TOLERANCE = 0.02;
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           expect(remainingHbarsBefore).to.be.gt(0);
-          const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
+          const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestDetails)).balance
             .balance;
           const largeContract = await deployContract(largeContractJson, accounts[0].wallet);
 
-          const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
+          const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestDetails)).balance
             .balance;
 
           const amountPaidByOperator = operatorBalanceBefore - operatorBalanceAfter;
 
           const totalOperatorFees = await getExpectedCostOfLastLargeTx(
-            requestId,
             largeContract.deploymentTransaction()!.data,
+            requestDetails,
           );
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const hbarLimitReducedAmount = remainingHbarsBefore - remainingHbarsAfter;
