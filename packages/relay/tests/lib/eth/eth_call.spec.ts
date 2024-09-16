@@ -911,7 +911,8 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with matched selector redirects to consensus', async function () {
-      process.env.ETH_CALL_CONSENSUS_SELECTORS = `[${REDIRECTED_SELECTOR}]`;
+      process.env.ETH_CALL_CONSENSUS_SELECTORS = JSON.stringify([REDIRECTED_SELECTOR.slice(2)]);
+
       await ethImpl.call(
         {
           to: ACCOUNT_ADDRESS_1,

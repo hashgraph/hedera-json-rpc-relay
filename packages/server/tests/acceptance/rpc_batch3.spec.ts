@@ -820,7 +820,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         );
 
         // Add the selector for isAssociated to ETH_CALL_CONSENSUS_SELECTORS to ensure isAssociated() passes
-        process.env.ETH_CALL_CONSENSUS_SELECTORS = `[${isAssociatedSelector}]`;
+        process.env.ETH_CALL_CONSENSUS_SELECTORS = JSON.stringify([isAssociatedSelector]);
         const isAssociatedResult = await hrc719Contract.isAssociated(tokenAddress);
         expect(isAssociatedResult).to.be.false; // associate status of the token with the caller
       });

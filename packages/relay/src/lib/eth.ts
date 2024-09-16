@@ -1646,7 +1646,8 @@ export class EthImpl implements Eth {
     // When eth_call is invoked with a selector listed in specialSelectors, it will be routed through the consensus node, regardless of ETH_CALL_DEFAULT_TO_CONSENSUS_NODE.
     // note: this feature is a workaround for when a feature is supported by consensus node but not yet by mirror node.
     // Follow this ticket https://github.com/hashgraph/hedera-json-rpc-relay/issues/2984 to revisit and remove special selectors.
-    const specialSelectors = process.env.ETH_CALL_CONSENSUS_SELECTORS || [''];
+    const specialSelectors: string[] = JSON.parse(process.env.ETH_CALL_CONSENSUS_SELECTORS || '[]');
+
     const shouldForceToConsensus = selector !== '' && specialSelectors.includes(selector);
 
     // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
