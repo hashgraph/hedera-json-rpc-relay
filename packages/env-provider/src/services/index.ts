@@ -57,7 +57,7 @@ export class EnvProviderService implements IEnvProviderService {
   }
 
   /**
-   * Hot reload a new instance into the current one
+   * Hot reload a new instance into the current one, used in test cases only
    */
   public static hotReload(): void {
     this.instance = new EnvProviderService();
