@@ -20,7 +20,11 @@
 
 export interface IEnvProviderService {
   get(name: string): string | undefined;
+
+  // used in test cases only
   dynamicOverride(name: string, value: string | undefined): void;
+  // used in test cases only
   remove(name: string): void;
+  // used in test cases only
   appendEnvsFromPath(configPath: string): void;
 }
