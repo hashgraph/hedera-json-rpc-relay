@@ -376,6 +376,7 @@ export class SDKClient {
    * @param {string} callerName - The name of the caller initiating the transaction.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
    * @param {number} networkGasPriceInWeiBars - The predefined gas price of the network in weibar.
+   * @param {number} currentNetworkExchangeRateInCents - The exchange rate in cents of the current network.
    * @param {string} requestId - The unique identifier for the request.
    * @returns {Promise<{ txResponse: TransactionResponse; fileId: FileId | null }>}
    * @throws {SDKClientError} Throws an error if no file ID is created or if the preemptive fee check fails.
@@ -385,6 +386,7 @@ export class SDKClient {
     callerName: string,
     originalCallerAddress: string,
     networkGasPriceInWeiBars: number,
+    currentNetworkExchangeRateInCents: number,
     requestId: string,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
@@ -397,29 +399,20 @@ export class SDKClient {
     if (ethereumTransactionData.callData.length <= this.fileAppendChunkSize) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
-      // notice: this solution is temporary and subject to change.
-      const isPreemtiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK
-        ? process.env.HBAR_RATE_LIMIT_PREEMTIVE_CHECK === 'true'
-        : false;
+      const isPreemptiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK === 'true';
 
-      if (isPreemtiveCheckOn) {
-        const numFileCreateTxs = 1;
-        const numFileAppendTxs = Math.ceil(ethereumTransactionData.callData.length / this.fileAppendChunkSize);
-        const fileCreateFee = Number(process.env.HOT_FIX_FILE_CREATE_FEE || 100000000); // 1 hbar
-        const fileAppendFee = Number(process.env.HOT_FIX_FILE_APPEND_FEE || 120000000); // 1.2 hbar
-
-        const totalPreemtiveTransactionFee = numFileCreateTxs * fileCreateFee + numFileAppendTxs * fileAppendFee;
-
-        const shouldPreemtivelyLimit = this.hbarLimiter.shouldPreemtivelyLimit(
+      if (isPreemptiveCheckOn) {
+        const hexCallDataLength = Buffer.from(ethereumTransactionData.callData).toString('hex').length;
+        const shouldPreemptivelyLimit = this.hbarLimiter.shouldPreemptivelyLimitFileTransactions(
           originalCallerAddress,
-          totalPreemtiveTransactionFee,
+          hexCallDataLength,
+          this.fileAppendChunkSize,
+          currentNetworkExchangeRateInCents,
           requestId,
         );
-        if (shouldPreemtivelyLimit) {
-          this.logger.trace(
-            `${requestIdPrefix} The total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, callDataSize=${ethereumTransactionData.callData.length}`,
-          );
-          throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
+
+        if (shouldPreemptivelyLimit) {
+          throw predefined.HBAR_RATE_LIMIT_PREEMPTIVE_EXCEEDED;
         }
       }
 
@@ -1045,7 +1038,7 @@ export class SDKClient {
   public calculateTxRecordChargeAmount(exchangeRate: ExchangeRate): number {
     const exchangeRateInCents = exchangeRate.exchangeRateInCents;
     const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
-    return Math.round((constants.TX_RECORD_QUERY_COST_IN_CENTS / exchangeRateInCents) * hbarToTinybar);
+    return Math.round((constants.NETWORK_FEES_IN_CENTS.TRANSACTION_GET_RECORD / exchangeRateInCents) * hbarToTinybar);
   }
 
   /**

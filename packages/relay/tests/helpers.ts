@@ -879,7 +879,7 @@ export const defaultErrorMessageHex =
   '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000d53657420746f2072657665727400000000000000000000000000000000000000';
 
 export const calculateTxRecordChargeAmount = (exchangeRateIncents: number) => {
-  const txQueryCostInCents = constants.TX_RECORD_QUERY_COST_IN_CENTS;
+  const txQueryCostInCents = constants.NETWORK_FEES_IN_CENTS.TRANSACTION_GET_RECORD;
   const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
   return Math.round((txQueryCostInCents / exchangeRateIncents) * hbarToTinybar);
 };
@@ -919,4 +919,31 @@ export const stopRedisInMemoryServer = async (
   process.env.TEST = envsToReset.TEST;
   process.env.REDIS_ENABLED = envsToReset.REDIS_ENABLED;
   process.env.REDIS_URL = envsToReset.REDIS_URL;
+};
+
+export const estimateFileTransactionsFee = (
+  callDataSize: number,
+  fileChunkSize: number,
+  exchangeRateInCents: number,
+) => {
+  const fileCreateTransactions = 1;
+  const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
+
+  // The first chunk goes in with FileCreateTransaciton, the rest are FileAppendTransactions
+  const fileAppendTransactions = Math.floor(callDataSize / fileChunkSize) - 1;
+  const lastFileAppendChunkSize = callDataSize % fileChunkSize;
+
+  const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
+  const lastFileAppendChunkFeeInCents =
+    constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_BASE_FEE +
+    lastFileAppendChunkSize * constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_RATE_PER_BYTE;
+
+  const totalTxFeeInCents =
+    fileCreateTransactions * fileCreateFeeInCents +
+    fileAppendFeeInCents * fileAppendTransactions +
+    lastFileAppendChunkFeeInCents;
+
+  const estimatedTxFee = Math.round((totalTxFeeInCents / exchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF);
+
+  return estimatedTxFee;
 };
