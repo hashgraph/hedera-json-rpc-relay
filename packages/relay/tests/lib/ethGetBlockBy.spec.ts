@@ -121,7 +121,7 @@ describe('eth_getBlockBy', async function () {
 
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL ?? '',
+      EnvProviderService.getInstance().get('MIRROR_NODE_URL')?? '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

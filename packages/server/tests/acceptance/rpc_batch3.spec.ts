@@ -790,7 +790,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       let initialEthCallSelectorsAlwaysToConsensus: any, hrc719Contract: ethers.Contract;
 
       before(async () => {
-        initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+        initialEthCallSelectorsAlwaysToConsensus = EnvProviderService.getInstance().get('ETH_CALL_CONSENSUS_SELECTORS');
 
         hrc719Contract = await Utils.deployContract(
           HRC719ContractJson.abi,
@@ -800,11 +800,11 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       });
 
       after(() => {
-        process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
+        EnvProviderService.getInstance().dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', initialEthCallSelectorsAlwaysToConsensus);
       });
 
       it('should NOT allow eth_call to process IHRC719.isAssociated() method', async () => {
-        const selectorsList = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+        const selectorsList = EnvProviderService.getInstance().get('ETH_CALL_CONSENSUS_SELECTORS');
         expect(selectorsList).to.be.undefined;
 
         // If the selector for `isAssociated` is not included in `ETH_CALL_CONSENSUS_SELECTORS`, the request will fail with a `CALL_EXCEPTION` error code.
@@ -821,7 +821,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         );
 
         // Add the selector for isAssociated to ETH_CALL_CONSENSUS_SELECTORS to ensure isAssociated() passes
-        process.env.ETH_CALL_CONSENSUS_SELECTORS = JSON.stringify([isAssociatedSelector]);
+        EnvProviderService.getInstance().dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', JSON.stringify([isAssociatedSelector]));
         const isAssociatedResult = await hrc719Contract.isAssociated(tokenAddress);
         expect(isAssociatedResult).to.be.false; // associate status of the token with the caller
       });

@@ -27,6 +27,7 @@ import { Hbar, HbarUnit } from '@hashgraph/sdk';
 import { formatRequestIdMessage, numberTo0x, toHash32 } from '../src/formatters';
 import { RedisInMemoryServer } from './redisInMemoryServer';
 import { Logger } from 'pino';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -901,13 +902,13 @@ export const startRedisInMemoryServer = async (logger: Logger, port: number) => 
   const redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: 'RedisInMemoryServer' }), port);
   await redisInMemoryServer.start();
   const envsToReset = {
-    TEST: process.env.TEST,
-    REDIS_ENABLED: process.env.REDIS_ENABLED,
-    REDIS_URL: process.env.REDIS_URL,
+    TEST: EnvProviderService.getInstance().get('TEST'),
+    REDIS_ENABLED: EnvProviderService.getInstance().get('REDIS_ENABLED'),
+    REDIS_URL: EnvProviderService.getInstance().get('REDIS_URL'),
   };
-  process.env.TEST = 'false';
-  process.env.REDIS_ENABLED = 'true';
-  process.env.REDIS_URL = `redis://127.0.0.1:${port}`;
+  EnvProviderService.getInstance().dynamicOverride('TEST', 'false');
+  EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'true');
+  EnvProviderService.getInstance().dynamicOverride('REDIS_URL', `redis://127.0.0.1:${port}`);
   return { redisInMemoryServer, envsToReset };
 };
 
@@ -916,7 +917,7 @@ export const stopRedisInMemoryServer = async (
   envsToReset: { TEST?: string; REDIS_ENABLED?: string; REDIS_URL?: string },
 ): Promise<void> => {
   await redisInMemoryServer.stop();
-  process.env.TEST = envsToReset.TEST;
-  process.env.REDIS_ENABLED = envsToReset.REDIS_ENABLED;
-  process.env.REDIS_URL = envsToReset.REDIS_URL;
+  EnvProviderService.getInstance().dynamicOverride('TEST', envsToReset.TEST);
+  EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', envsToReset.REDIS_ENABLED);
+  EnvProviderService.getInstance().dynamicOverride('REDIS_URL', envsToReset.REDIS_URL);
 };
