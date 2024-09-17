@@ -25,6 +25,8 @@ import { v4 as uuid } from 'uuid';
 import constants from '../src/lib/constants';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 import { formatRequestIdMessage, numberTo0x, toHash32 } from '../src/formatters';
+import { RedisInMemoryServer } from './redisInMemoryServer';
+import { Logger } from 'pino';
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -880,4 +882,41 @@ export const calculateTxRecordChargeAmount = (exchangeRateIncents: number) => {
   const txQueryCostInCents = constants.TX_RECORD_QUERY_COST_IN_CENTS;
   const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
   return Math.round((txQueryCostInCents / exchangeRateIncents) * hbarToTinybar);
+};
+
+export const useInMemoryRedisServer = (logger: Logger, port: number) => {
+  let envsToReset: { TEST?: string; REDIS_ENABLED?: string; REDIS_URL?: string };
+  let redisInMemoryServer: RedisInMemoryServer;
+
+  before(async () => {
+    ({ envsToReset, redisInMemoryServer } = await startRedisInMemoryServer(logger, port));
+  });
+
+  after(async () => {
+    await stopRedisInMemoryServer(redisInMemoryServer, envsToReset);
+  });
+};
+
+export const startRedisInMemoryServer = async (logger: Logger, port: number) => {
+  const redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: 'RedisInMemoryServer' }), port);
+  await redisInMemoryServer.start();
+  const envsToReset = {
+    TEST: process.env.TEST,
+    REDIS_ENABLED: process.env.REDIS_ENABLED,
+    REDIS_URL: process.env.REDIS_URL,
+  };
+  process.env.TEST = 'false';
+  process.env.REDIS_ENABLED = 'true';
+  process.env.REDIS_URL = `redis://127.0.0.1:${port}`;
+  return { redisInMemoryServer, envsToReset };
+};
+
+export const stopRedisInMemoryServer = async (
+  redisInMemoryServer: RedisInMemoryServer,
+  envsToReset: { TEST?: string; REDIS_ENABLED?: string; REDIS_URL?: string },
+): Promise<void> => {
+  await redisInMemoryServer.stop();
+  process.env.TEST = envsToReset.TEST;
+  process.env.REDIS_ENABLED = envsToReset.REDIS_ENABLED;
+  process.env.REDIS_URL = envsToReset.REDIS_URL;
 };
