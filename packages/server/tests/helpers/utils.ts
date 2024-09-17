@@ -35,6 +35,7 @@ import { GitHubClient } from '../clients/githubClient';
 import MirrorClient from '../clients/mirrorClient';
 import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { Relay } from '@hashgraph/json-rpc-relay';
 
 export class Utils {
   static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 1e6; // 1 MB
@@ -180,9 +181,10 @@ export class Utils {
   };
 
   static gasOptions = async (requestId, gasLimit = 1_500_000) => {
+    const relay: RelayClient = global.relay;
     return {
       gasLimit: gasLimit,
-      gasPrice: await global.relay.gasPrice(requestId),
+      gasPrice: await relay.gasPrice(requestId),
     };
   };
 

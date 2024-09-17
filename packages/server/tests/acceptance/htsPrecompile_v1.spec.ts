@@ -30,12 +30,21 @@ import { AliasAccount } from '../types/AliasAccount';
 import { ethers } from 'ethers';
 import BaseHTSJson from '../contracts/contracts_v1/BaseHTS.json';
 import { Utils } from '../helpers/utils';
+import ServicesClient from '../clients/servicesClient';
+import RelayClient from '../clients/relayClient';
+import MirrorClient from '../clients/mirrorClient';
 
 chai.use(solidity);
 
 describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
-  const { servicesNode, relay, mirrorNode }: any = global;
+
+  // @ts-ignore
+  const {
+    servicesNode,
+    relay,
+    mirrorNode,
+  }: { servicesNode: ServicesClient; relay: RelayClient; mirrorNode: MirrorClient } = global;
 
   const TX_SUCCESS_CODE = BigInt(22);
 

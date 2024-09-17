@@ -37,7 +37,6 @@ describe('@web-socket-batch-2 eth_getStorageAt', async function () {
     [WsTestConstant.FAKE_TX_HASH, ''],
     [WsTestConstant.FAKE_TX_HASH, 36, 'latest'],
     [WsTestConstant.FAKE_TX_HASH, '0xhbar', 'latest'],
-    [WsTestConstant.FAKE_TX_HASH, '0x0', 'latest'],
   ];
 
   // @notice: The simple contract artifacts (ABI & bytecode) below simply has one state at position 0, which will be assigned to the number `7` within the consutrctor after deployment

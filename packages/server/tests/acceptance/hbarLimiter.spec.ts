@@ -40,15 +40,26 @@ import fs from 'fs';
 import { resolve } from 'path';
 import { config } from 'dotenv';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import MirrorClient from '../clients/mirrorClient';
+import RelayClient from '../clients/relayClient';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
 
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   // @ts-ignore
-  const { mirrorNode, relay, logger, initialBalance, metrics, relayIsLocal } = global;
+  const {
+    mirrorNode,
+    relay,
+    logger,
+    initialBalance,
+    metrics,
+    relayIsLocal,
+  }: { mirrorNode: MirrorClient; relay: RelayClient } = global;
   const operatorAccount = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
   const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+  const requestId = 'hbarLimiterTest';
+  const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
   if (relayIsLocal) {
@@ -154,8 +165,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         type: 2,
       };
 
-      const requestDetails = new RequestDetails({ requestId: 'hbarLimiterTest', ipAddress: '0.0.0.0' });
-
       before(async function () {
         // Restart the relay to reset the limits
         await global.restartLocalRelay();
@@ -196,20 +205,20 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
           );
 
-          const gasPrice = await relay.gasPrice(requestDetails);
+          const gasPrice = await relay.gasPrice(requestId);
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
           const transaction = {
             ...defaultLondonTransactionData,
             to: parentContractAddress,
-            nonce: await relay.getAccountNonce(accounts[1].address, requestDetails),
+            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
             maxPriorityFeePerGas: gasPrice,
             maxFeePerGas: gasPrice,
           };
           const signedTx = await accounts[1].wallet.signTransaction(transaction);
 
-          await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestDetails)).to
-            .be.fulfilled;
+          await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
+            .fulfilled;
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const expectedCost = await getExpectedCostOfLastSmallTx(requestDetails);
@@ -343,7 +352,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = 'false';
 
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          let lastRemainingHbars = remainingHbarsBefore;
+          const lastRemainingHbars = remainingHbarsBefore;
           expect(remainingHbarsBefore).to.be.gt(0);
           try {
             for (let i = 0; i < 50; i++) {

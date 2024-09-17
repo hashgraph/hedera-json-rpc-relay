@@ -32,6 +32,8 @@ import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 
 // Constants from local resources
 import Constants from '../../../server/tests/helpers/constants';
+import ServicesClient from '../clients/servicesClient';
+import RelayClient from '../clients/relayClient';
 
 chai.use(solidity);
 
@@ -42,7 +44,9 @@ const extractRevertReason = (errorReason: string) => {
 
 describe('@erc20 Acceptance Tests', async function () {
   this.timeout(240 * 1000); // 240 seconds
-  const { servicesNode, relay }: any = global;
+
+  // @ts-ignore
+  const { servicesNode, relay }: { servicesNode: ServicesClient; relay: RelayClient } = global;
 
   // cached entities
   const accounts: AliasAccount[] = [];
