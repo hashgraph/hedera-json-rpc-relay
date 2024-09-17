@@ -27,7 +27,7 @@ import { Registry, Counter } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import { CacheService } from '../cacheService/cacheService';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
-import { EnvProviderService } from '../envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export default class HAPIService {
   private transactionCount: number;

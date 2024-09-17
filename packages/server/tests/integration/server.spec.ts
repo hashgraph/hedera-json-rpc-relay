@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 EnvProviderService.hotReload();
 EnvProviderService.getInstance().appendEnvsFromPath(__dirname + '/test.env');
 import Axios, { AxiosInstance } from 'axios';

@@ -23,7 +23,7 @@ import sinon from 'sinon';
 import { Registry } from 'prom-client';
 import pino, { Logger } from 'pino';
 import RateLimit from '../../src/rateLimit';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 describe('RateLimit', () => {
   let logger: Logger;

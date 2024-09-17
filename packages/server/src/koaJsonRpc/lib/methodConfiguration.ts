@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 import CONSTANTS from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 const tier1rateLimit = parseInt(

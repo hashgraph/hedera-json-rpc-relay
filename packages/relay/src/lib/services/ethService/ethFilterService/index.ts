@@ -27,7 +27,7 @@ import { generateRandomHex } from '../../../../formatters';
 import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
 import { CacheService } from '../../cacheService/cacheService';
-import { EnvProviderService } from '../../envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 /**
  * Create a new Filter Service implementation.

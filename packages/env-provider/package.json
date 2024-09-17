@@ -1,0 +1,40 @@
+{
+  "name": "@hashgraph/env-provider",
+  "version": "0.56.0-SNAPSHOT",
+  "description": "Hedera Hashgraph singleton implementation of environment variables provider",
+  "main": "dist/index.js",
+  "keywords": [],
+  "author": "Hedera Smart Contracts Team",
+  "scripts": {
+    "build": "pnpm run clean && pnpm run compile",
+    "clean": "rm -rf ./dist && rm -rf tsconfig.tsbuildinfo",
+    "compile": "tsc -b tsconfig.json",
+    "lint": "npx eslint --ext .js,.ts .",
+    "format": "npx prettier --ignore-path ../../.gitignore --write \"**/*.+(js|ts|json)\"",
+    "test": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' --exit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "find-config": "^1.0.0",
+    "pnpm": "^8.7.1"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^9.1.0",
+    "@types/node": "^17.0.14",
+    "chai": "^4.3.6",
+    "sinon": "^14.0.0",
+    "ts-mocha": "^9.0.2",
+    "typescript": "^4.6.4"
+  },
+  "nyc": {
+    "check-coverage": false,
+    "reporter": [
+      "html",
+      "lcov",
+      "text",
+      "text-summary"
+    ],
+    "report-dir": "coverage"
+  }
+}

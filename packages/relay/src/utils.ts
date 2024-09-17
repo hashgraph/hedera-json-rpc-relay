@@ -20,7 +20,7 @@
 
 import { PrivateKey } from '@hashgraph/sdk';
 import constants from './lib/constants';
-import { EnvProviderService } from './lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export class Utils {
   public static readonly addPercentageBufferToGasPrice = (gasPrice: number): number => {

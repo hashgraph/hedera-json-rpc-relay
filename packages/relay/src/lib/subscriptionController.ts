@@ -25,7 +25,7 @@ import constants from './constants';
 import { Poller } from './poller';
 import { generateRandomHex } from '../formatters';
 import { Registry, Histogram, Counter } from 'prom-client';
-import { EnvProviderService } from './services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export interface Subscriber {
   connection: any;

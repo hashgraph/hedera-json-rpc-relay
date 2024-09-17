@@ -20,7 +20,7 @@
 
 import type { Server } from 'http';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export function hasOwnProperty(obj: any, prop: PropertyKey): boolean {
   return Object.prototype.hasOwnProperty.call(obj, prop);

@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '../../../src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 import {
   defaultEvmAddress,
   defaultLogs1,

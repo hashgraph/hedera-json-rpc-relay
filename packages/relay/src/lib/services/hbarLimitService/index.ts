@@ -26,7 +26,7 @@ import { SubscriptionType } from '../../db/types/hbarLimiter/subscriptionType';
 import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendingPlan';
 import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
-import { EnvProviderService } from '../envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export class HbarLimitService implements IHbarLimitService {
   static readonly ONE_DAY_IN_MILLIS = 24 * 60 * 60 * 1000;

@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from './services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 enum CACHE_KEY {
   ACCOUNT = 'account',

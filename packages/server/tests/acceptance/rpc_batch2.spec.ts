@@ -27,7 +27,7 @@ import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { ContractId, Hbar, HbarUnit } from '@hashgraph/sdk';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 // Assertions from local resources
 import Assertions from '../helpers/assertions';

@@ -21,7 +21,7 @@
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
-import { EnvProviderService } from '../services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export default class HbarLimit {
   private enabled: boolean = false;

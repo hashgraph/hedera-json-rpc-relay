@@ -21,7 +21,7 @@
 import { Net } from '../index';
 import constants from './constants';
 import { Client } from '@hashgraph/sdk';
-import { EnvProviderService } from './services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export class NetImpl implements Net {
   private client: Client;

@@ -22,7 +22,7 @@
 import Assertions from '../helpers/assertions';
 import testConstants from '../../tests/helpers/constants';
 import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds

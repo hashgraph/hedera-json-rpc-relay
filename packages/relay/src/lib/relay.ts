@@ -35,7 +35,7 @@ import HAPIService from './services/hapiService/hapiService';
 import { SubscriptionController } from './subscriptionController';
 import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
-import { EnvProviderService } from './services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export class RelayImpl implements Relay {
   /**

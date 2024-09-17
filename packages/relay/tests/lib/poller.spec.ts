@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '../../src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 EnvProviderService.hotReload();
 import { EthImpl } from '../../src/lib/eth';
 import { expect } from 'chai';

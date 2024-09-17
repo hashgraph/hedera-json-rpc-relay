@@ -30,7 +30,7 @@ import { SDKClientError } from '../errors/SDKClientError';
 import { IOpcodesResponse } from './models/IOpcodesResponse';
 import { install as betterLookupInstall } from 'better-lookup';
 import { CacheService } from '../services/cacheService/cacheService';
-import { EnvProviderService } from '../services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { parseNumericEnvVar, formatTransactionId, formatRequestIdMessage } from '../../formatters';

@@ -20,7 +20,7 @@
 
 import { Web3 } from '../index';
 import { Client } from '@hashgraph/sdk';
-import { EnvProviderService } from './services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export class Web3Impl implements Web3 {
   private client: Client;

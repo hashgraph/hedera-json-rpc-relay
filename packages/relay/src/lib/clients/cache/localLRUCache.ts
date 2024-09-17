@@ -23,7 +23,7 @@ import { Gauge, Registry } from 'prom-client';
 import { ICacheClient } from './ICacheClient';
 import constants from '../../constants';
 import LRUCache, { LimitedByCount, LimitedByTTL } from 'lru-cache';
-import { EnvProviderService } from '../../services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 /**
  * Represents a LocalLRUCache instance that uses an LRU (Least Recently Used) caching strategy

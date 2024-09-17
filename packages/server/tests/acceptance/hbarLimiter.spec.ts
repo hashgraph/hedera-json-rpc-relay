@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/json-rpc-relay/dist/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 EnvProviderService.hotReload();
 import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { BaseContract, ethers } from 'ethers';

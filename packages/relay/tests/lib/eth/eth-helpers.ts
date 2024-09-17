@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '../../../src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import pino from 'pino';
 import { Registry } from 'prom-client';

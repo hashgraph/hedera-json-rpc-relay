@@ -29,7 +29,7 @@ import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
 import { Log } from '../../../model';
 import * as _ from 'lodash';
 import { CacheService } from '../../cacheService/cacheService';
-import { EnvProviderService } from '../../envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 /**
  * Create a new Common Service implementation.

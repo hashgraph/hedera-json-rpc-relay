@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '../../../src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 EnvProviderService.hotReload();
 import { expect, use } from 'chai';
 import { v4 as uuid } from 'uuid';

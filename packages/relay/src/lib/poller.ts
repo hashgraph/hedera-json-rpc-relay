@@ -21,7 +21,7 @@
 import { Eth } from '../index';
 import { Logger } from 'pino';
 import { Registry, Gauge } from 'prom-client';
-import { EnvProviderService } from './services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export interface Poll {
   tag: string;

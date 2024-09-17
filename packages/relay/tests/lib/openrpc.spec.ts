@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '../../src/lib/services/envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 EnvProviderService.hotReload();
 import { expect } from 'chai';
 import { validateOpenRPCDocument, parseOpenRPCDocument } from '@open-rpc/schema-utils-js';

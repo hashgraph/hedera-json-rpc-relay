@@ -26,7 +26,7 @@ import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { formatRequestIdMessage } from '../../../formatters';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types';
-import { EnvProviderService } from '../envProviderService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
 export default class MetricService {
   /**

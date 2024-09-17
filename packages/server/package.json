@@ -6,6 +6,7 @@
   "keywords": [],
   "author": "Hedera Smart Contracts Team",
   "dependencies": {
+    "@hashgraph/env-provider": "file:../env-provider",
     "@hashgraph/json-rpc-relay": "file:../relay",
     "axios": "^1.4.0",
     "co-body": "6.2.0",
