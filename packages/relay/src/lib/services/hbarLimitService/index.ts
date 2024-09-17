@@ -26,6 +26,7 @@ import { SubscriptionType } from '../../db/types/hbarLimiter/subscriptionType';
 import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendingPlan';
 import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 
 export class HbarLimitService implements IHbarLimitService {
   static readonly ONE_DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
@@ -80,6 +81,7 @@ export class HbarLimitService implements IHbarLimitService {
   constructor(
     private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository,
     private readonly ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
+    private readonly ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
     private readonly logger: Logger,
     private readonly register: Registry,
     private readonly totalBudget: number,
@@ -305,7 +307,11 @@ export class HbarLimitService implements IHbarLimitService {
       }
     }
     if (ipAddress) {
-      // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
+      try {
+        return await this.getSpendingPlanByIPAddress(ipAddress);
+      } catch (error) {
+        this.logger.warn(error, `Failed to get spending plan for IP address '${ipAddress}'`);
+      }
     }
     return null;
   }
@@ -319,6 +325,17 @@ export class HbarLimitService implements IHbarLimitService {
   private async getSpendingPlanByEthAddress(ethAddress: string): Promise<IDetailedHbarSpendingPlan> {
     const ethAddressHbarSpendingPlan = await this.ethAddressHbarSpendingPlanRepository.findByAddress(ethAddress);
     return this.hbarSpendingPlanRepository.findByIdWithDetails(ethAddressHbarSpendingPlan.planId);
+  }
+
+  /**
+   * Gets the spending plan for the given IP address.
+   * @param {string} ipAddress - The IP address to get the spending plan for.
+   * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the spending plan.
+   * @private
+   */
+  private async getSpendingPlanByIPAddress(ipAddress: string): Promise<IDetailedHbarSpendingPlan> {
+    const ipAddressHbarSpendingPlan = await this.ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress);
+    return this.hbarSpendingPlanRepository.findByIdWithDetails(ipAddressHbarSpendingPlan.planId);
   }
 
   /**
@@ -337,10 +354,10 @@ export class HbarLimitService implements IHbarLimitService {
     if (ethAddress) {
       this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`);
       await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id });
-    } else if (ipAddress) {
+    }
+    if (ipAddress) {
       this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to ip address ${ipAddress}`);
-      // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
-      // await this.ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: spendingPlan.id });
+      await this.ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: spendingPlan.id });
     }
     return spendingPlan;
   }
