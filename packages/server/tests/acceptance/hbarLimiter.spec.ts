@@ -37,10 +37,6 @@ import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContra
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
 
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
-  before(() => {
-    EnvProviderService.getInstance().dynamicOverride('HBAR_RATE_LIMIT_TINYBAR', '3000000000');
-  });
-
   // @ts-ignore
   const { mirrorNode, relay, logger, initialBalance, metrics, relayIsLocal } = global;
   const operatorAccount = EnvProviderService.getInstance().get('OPERATOR_ID_MAIN');
