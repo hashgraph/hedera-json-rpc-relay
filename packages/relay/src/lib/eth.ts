@@ -1880,7 +1880,7 @@ export class EthImpl implements Eth {
         data = crypto.createHash('sha1').update(call.data).digest('hex'); // NOSONAR
       }
 
-      const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:.${call.to}.${data}`;
+      const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:${call.from || ''}.${call.to}.${data}`;
       const cachedResponse = await this.cacheService.getAsync(cacheKey, EthImpl.ethCall, requestIdPrefix);
 
       if (cachedResponse != undefined) {
