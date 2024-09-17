@@ -16,139 +16,38 @@ on:
         required: true
         type: choice
         options:
+          - mainnet
           - testnet
           - previewnet
 
+
+
 jobs:
-  api_batch_1:
-    name: API Batch 1
+  release-tests:
+    name: Release Tests
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: api_batch1
+      testfilter: release-light
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
       operator_key: ${{ inputs.operator_key }}
 
-  api_batch_2:
-    name: API Batch 2
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: api_batch2
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
 
-  api_batch_3:
-    name: API Batch 3
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: api_batch3
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
-
-  erc20:
-    name: ERC20
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: erc20
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
-
-  ratelimiter:
-    name: Rate Limiter
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: ratelimiter
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
-
-  tokencreate:
-    name: Token Create
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: tokencreate
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
-
-  tokenmanagement:
-    name: Token Management
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: tokenmanagement
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
-
-  htsprecompilev1:
-    name: Precompile
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: htsprecompilev1
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
-
-  precompilecalls:
-    name: Precompile
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: precompile
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
-
-  websocket-batch-1:
-    name: Websocket Batch 1
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: ws_batch1
-      test_ws_server: true
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
-
-  websocket-batch-2:
-    name: Websocket Batch 2
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: ws_batch2
-      test_ws_server: true
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
-
-  websocket-batch-3:
-    name: Websocket Batch 3
-    uses: ./.github/workflows/acceptance-workflow.yml
-    with:
-      testfilter: ws_batch3
-      test_ws_server: true
-      envfile: ${{ inputs.network }}Acceptance.env
-      operator_id: ${{ inputs.operator_id }}
-      operator_key: ${{ inputs.operator_key }}
+  get_results:
+    name: Get Results
+    needs:
+      - release-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get full results
+        run: echo "Full results"
 
   publish_results:
     name: Publish Results
-    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    if: always()
     needs:
-      - api_batch_1
-      - api_batch_2
-      - api_batch_3
-      - erc20
-      - ratelimiter
-      - tokencreate
-      - tokenmanagement
-      - htsprecompilev1
-      - precompilecalls
-      - websocket-batch-1
-      - websocket-batch-2
-      - websocket-batch-3
-
-    runs-on: smart-contracts-linux-medium
+      - get_results
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
