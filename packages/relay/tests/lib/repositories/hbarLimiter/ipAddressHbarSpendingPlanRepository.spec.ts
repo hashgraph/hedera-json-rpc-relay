@@ -27,7 +27,7 @@ import { IIPAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLim
 import { IPAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { randomBytes, uuidV4 } from 'ethers';
 import { Registry } from 'prom-client';
-import { RedisInMemoryServer } from '../../../redisInMemoryServer';
+import { useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
@@ -42,44 +42,20 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
     const nonExistingIpAddress = 'xxx.xxx.xxx.xxx';
 
     if (isSharedCacheEnabled) {
-      let test: string | undefined;
-      let redisEnabled: string | undefined;
-      let redisUrl: string | undefined;
-      let redisInMemoryServer: RedisInMemoryServer;
-
-      this.beforeAll(async () => {
-        redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6383);
-        await redisInMemoryServer.start();
-        test = process.env.TEST;
-        redisEnabled = process.env.REDIS_ENABLED;
-        redisUrl = process.env.REDIS_URL;
-        process.env.TEST = 'false';
-        process.env.REDIS_ENABLED = 'true';
-        process.env.REDIS_URL = 'redis://127.0.0.1:6383';
-        cacheService = new CacheService(logger.child({ name: 'CacheService' }), new Registry());
-        repository = new IPAddressHbarSpendingPlanRepository(
-          cacheService,
-          logger.child({ name: 'IPAddressHbarSpendingPlanRepository' }),
-        );
-      });
-
-      this.afterAll(async () => {
-        await redisInMemoryServer.stop();
-        process.env.TEST = test;
-        process.env.REDIS_ENABLED = redisEnabled;
-        process.env.REDIS_URL = redisUrl;
-      });
-    } else {
-      before(() => {
-        process.env.TEST = 'true';
-        process.env.REDIS_ENABLED = 'false';
-        cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
-        repository = new IPAddressHbarSpendingPlanRepository(
-          cacheService,
-          logger.child({ name: 'IPAddressHbarSpendingPlanRepository' }),
-        );
-      });
+      useInMemoryRedisServer(logger, 6383);
     }
+
+    before(() => {
+      cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
+      repository = new IPAddressHbarSpendingPlanRepository(
+        cacheService,
+        logger.child({ name: 'IPAddressHbarSpendingPlanRepository' }),
+      );
+    });
+
+    after(async () => {
+      await cacheService.disconnectRedisClient();
+    });
 
     describe('findByAddress', () => {
       it('retrieves an address plan by ip', async () => {

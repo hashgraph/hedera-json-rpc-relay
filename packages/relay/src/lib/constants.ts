@@ -185,14 +185,6 @@ export default {
   DETERMINISTIC_DEPLOYMENT_SIGNER: '0x3fab184622dc19b6109349b94811493bf2a45362',
   DETERMINISTIC_PROXY_CONTRACT: '0x4e59b44847b379578588920ca78fbf26c0b4956c',
 
-  // Only active when process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = true
-  // When eth_call is called with one of the data values it should be forced to go through Consensus node regardless of ETH_CALL_DEFAULT_TO_CONSENSUS_NODE
-  ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS: [
-    // isAssociated()
-    // calls to this method should be handled by Consensus until the required EVM changes are applied to the Mirror node
-    '4d8fdd6d',
-  ],
-
   // computed hash of an empty Trie object
   DEFAULT_ROOT_HASH: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 

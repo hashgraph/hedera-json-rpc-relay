@@ -19,7 +19,7 @@
  */
 
 // External resources
-import { Contract, ethers } from 'ethers';
+import { BaseContract, ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
 import Axios from 'axios';
@@ -45,6 +45,8 @@ import callerContractJson from '../contracts/Caller.json';
 import DeployerContractJson from '../contracts/Deployer.json';
 import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
+import HRC719ContractJson from '../contracts/HRC719Contract.json';
+import TokenCreateJson from '../contracts/TokenCreateContract.json';
 
 // Helper functions/constants from local resources
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
@@ -743,7 +745,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const INITIAL_SUPPLY = 100000;
     const IS_TOKEN_ADDRESS_SIGNATURE = '0xbff9834f000000000000000000000000';
 
-    let htsImpl: Contract;
+    let htsImpl: BaseContract;
     let tokenAddress: string;
 
     before(async () => {
@@ -776,6 +778,52 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       let res = await Utils.ethCallWRetries(relay, callData, 'latest', requestId);
       expect(res).to.eq(RESULT_TRUE);
+    });
+
+    describe('eth_call with force-to-consensus-by-selector logic', () => {
+      // context: The `IHRC719.isAssociated()` function is a new feature which is, at the moment, fully supported only by the Consensus node and not yet by the Mirror node.
+      // Since `IHRC719.isAssociated()` is a view function, requests for this function are typically directed to the Mirror node by default.
+      // This acceptance test ensures that the new force-to-consensus-by-selector logic correctly routes requests for `IHRC719.isAssociated()`
+      // through the Consensus node rather than the Mirror node when using the `eth_call` endpoint.
+
+      let initialEthCallSelectorsAlwaysToConsensus: any, hrc719Contract: ethers.Contract;
+
+      before(async () => {
+        initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+
+        hrc719Contract = await Utils.deployContract(
+          HRC719ContractJson.abi,
+          HRC719ContractJson.bytecode,
+          accounts[0].wallet,
+        );
+      });
+
+      after(() => {
+        process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
+      });
+
+      it('should NOT allow eth_call to process IHRC719.isAssociated() method', async () => {
+        const selectorsList = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+        expect(selectorsList).to.be.undefined;
+
+        // If the selector for `isAssociated` is not included in `ETH_CALL_CONSENSUS_SELECTORS`, the request will fail with a `CALL_EXCEPTION` error code.
+        await expect(hrc719Contract.isAssociated(tokenAddress)).to.eventually.be.rejected.and.have.property(
+          'code',
+          'CALL_EXCEPTION',
+        );
+      });
+
+      it('should allow eth_call to successfully process IHRC719.isAssociated() method', async () => {
+        const isAssociatedSelector = (await hrc719Contract.isAssociated.populateTransaction(tokenAddress)).data.slice(
+          2,
+          10,
+        );
+
+        // Add the selector for isAssociated to ETH_CALL_CONSENSUS_SELECTORS to ensure isAssociated() passes
+        process.env.ETH_CALL_CONSENSUS_SELECTORS = JSON.stringify([isAssociatedSelector]);
+        const isAssociatedResult = await hrc719Contract.isAssociated(tokenAddress);
+        expect(isAssociatedResult).to.be.false; // associate status of the token with the caller
+      });
     });
   });
 
