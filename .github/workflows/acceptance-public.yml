@@ -21,8 +21,16 @@ on:
           - previewnet
 
 
-
 jobs:
+  bash-example:
+    runs-on: ubuntu-latest
+    env:
+      MY_NAME: "Mona The Octocat"
+    steps:
+      - name: bash-version
+        run: echo "::add-mask::$MY_NAME"
+
+
   release-tests:
     name: Release Tests
     uses: ./.github/workflows/acceptance-workflow.yml
