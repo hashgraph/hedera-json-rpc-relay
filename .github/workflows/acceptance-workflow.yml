@@ -54,20 +54,20 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-      #- name: Install packages
-      #  run: npm ci
-#
-      #- name: Create .env file
-      #  run: cp ./packages/server/tests/${{ inputs.envfile }} .env
-#
-      #- name: Install pnpm
-      #  run: npm install -g pnpm
-#
-      #- name: Build Typescript
-      #  run: npx lerna run build
-#
-      #- name: Install hedera local
-      #  run: npm install @hashgraph/hedera-local -g
+      - name: Install packages
+        run: npm ci
+
+      - name: Create .env file
+        run: cp ./packages/server/tests/${{ inputs.envfile }} .env
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Build Typescript
+        run: npx lerna run build
+
+      - name: Install hedera local
+        run: npm install @hashgraph/hedera-local -g
 
       - name: Set mask for operator key
         if: ${{ inputs.operator_id }}
