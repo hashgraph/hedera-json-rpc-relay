@@ -22,27 +22,6 @@ on:
 
 
 jobs:
-  bash-example:
-    runs-on: ubuntu-latest
-    env:
-      MY_NAME: "Mona The Octocat"
-    steps:
-      - name: bash-version
-        run: echo "::add-mask::$MY_NAME"
-
-  is-github-ok:
-    runs-on: ubuntu-latest
-    steps:
-      - id: sets-a-secret
-        name: Generate, mask, and output a secret
-        run: |
-          the_secret=some_value
-          echo "::add-mask::$the_secret"
-          echo "secret-number=$the_secret" >> "$GITHUB_OUTPUT"
-      - name: Use that secret output (protected by a mask)
-        run: |
-          echo "the secret number is ${{ steps.sets-a-secret.outputs.secret-number }}"
-
   release-tests:
     name: Release Tests
     uses: ./.github/workflows/acceptance-workflow.yml
@@ -56,8 +35,6 @@ jobs:
   get_results:
     name: Get Results
     needs:
-      - is-github-ok
-      - bash-example
       - release-tests
     runs-on: ubuntu-latest
     steps:
