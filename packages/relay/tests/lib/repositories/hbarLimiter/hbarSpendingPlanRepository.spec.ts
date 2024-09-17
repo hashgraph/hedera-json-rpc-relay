@@ -148,12 +148,6 @@ describe('HbarSpendingPlanRepository', function () {
         expect(spendingHistory).to.have.lengthOf(1);
         expect(spendingHistory[0].amount).to.equal(amount);
         expect(spendingHistory[0].timestamp).to.be.a('Date');
-
-        // const plan = await repository.findByIdWithDetails(createdPlan.id);
-        // expect(plan).to.not.be.null;
-        // expect(plan.spendingHistory).to.have.lengthOf(1);
-        // expect(plan.spendingHistory[0].amount).to.equal(amount);
-        // expect(plan.spendingHistory[0].timestamp).to.be.a('Date');
       });
 
       it('adds multiple amounts to spending history', async () => {
@@ -169,11 +163,6 @@ describe('HbarSpendingPlanRepository', function () {
         const spendingHistory = await repository.getSpendingHistory(createdPlan.id);
         expect(spendingHistory).to.have.lengthOf(3);
         expect(spendingHistory.map((entry) => entry.amount)).to.deep.equal(amounts);
-
-        // const plan = await repository.findByIdWithDetails(createdPlan.id);
-        // expect(plan).to.not.be.null;
-        // expect(plan.spendingHistory).to.have.lengthOf(3);
-        // expect(plan.spendingHistory.map((entry) => entry.amount)).to.deep.equal(amounts);
       });
 
       it('throws error if plan not found when adding to spending history', async () => {
