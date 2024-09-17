@@ -21,7 +21,6 @@
 import { pino } from 'pino';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { RedisInMemoryServer } from '../../../redisInMemoryServer';
 import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
@@ -33,6 +32,7 @@ import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hb
 
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 import { IDetailedHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingPlan';
+import { useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
@@ -45,30 +45,15 @@ describe('HbarSpendingPlanRepository', function () {
     let repository: HbarSpendingPlanRepository;
 
     if (isSharedCacheEnabled) {
-      let test: string | undefined;
-      let redisEnabled: string | undefined;
-      let redisUrl: string | undefined;
-      let redisInMemoryServer: RedisInMemoryServer;
+      useInMemoryRedisServer(logger, 6380);
 
       before(async () => {
-        redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6380);
-        await redisInMemoryServer.start();
-        test = process.env.TEST;
-        redisEnabled = process.env.REDIS_ENABLED;
-        redisUrl = process.env.REDIS_URL;
-        process.env.TEST = 'false';
-        process.env.REDIS_ENABLED = 'true';
-        process.env.REDIS_URL = 'redis://127.0.0.1:6380';
         cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
         repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
       });
 
       after(async () => {
         await cacheService.disconnectRedisClient();
-        await redisInMemoryServer.stop();
-        process.env.TEST = test;
-        process.env.REDIS_ENABLED = redisEnabled;
-        process.env.REDIS_URL = redisUrl;
       });
     } else {
       before(async () => {
