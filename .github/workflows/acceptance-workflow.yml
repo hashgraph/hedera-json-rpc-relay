@@ -69,20 +69,15 @@ jobs:
       - name: Install hedera local
         run: npm install @hashgraph/hedera-local -g
 
-      - name: Set mask for operator key
-        if: ${{ inputs.operator_id }}
-        run: |
-
-
-          echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
 
       - name: Set operator id and key env variable if CI is manual
         if: ${{ inputs.operator_id }}
         run: |
+          echo "::add-mask::${{ inputs.operator_key }}"
           operator_key=${{ inputs.operator_key }}
-          echo "::add-mask::$operator_key"
           echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
           echo "OPERATOR_KEY_MAIN=$operator_key" >> $GITHUB_ENV
+          echo "OPERATOR_KEY_FORMAT=HEX_ECDSA" >> $GITHUB_ENV
 
       - name: Run hedera local
         run: npx hedera restart -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace
