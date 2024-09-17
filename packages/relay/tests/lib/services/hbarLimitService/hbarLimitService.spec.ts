@@ -94,9 +94,9 @@ describe('HbarLimitService', function () {
   });
 
   describe('resetLimiter', function () {
-    const createSpiesForSpendingPlanMetrics = () =>
+    const createSpiesForMetricsReset = (fieldName: string) =>
       Object.values(SubscriptionType).map((subscriptionType) =>
-        sinon.spy(hbarLimitService['dailyUniqueSpendingPlansCounter'][subscriptionType], 'reset'),
+        sinon.spy(hbarLimitService[fieldName][subscriptionType], 'reset'),
       );
 
     beforeEach(() => {
@@ -122,13 +122,13 @@ describe('HbarLimitService', function () {
     });
 
     it('should reset the daily unique spending plans counter', async function () {
-      const spies = createSpiesForSpendingPlanMetrics();
+      const spies = createSpiesForMetricsReset('dailyUniqueSpendingPlansCounter');
       await hbarLimitService.resetLimiter();
       spies.forEach((spy) => sinon.assert.calledOnce(spy));
     });
 
     it('should reset the average daily spending plan usages gauge', async function () {
-      const spies = createSpiesForSpendingPlanMetrics();
+      const spies = createSpiesForMetricsReset('averageDailySpendingPlanUsagesGauge');
       await hbarLimitService.resetLimiter();
       spies.forEach((spy) => sinon.assert.calledOnce(spy));
     });
