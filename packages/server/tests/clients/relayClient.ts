@@ -125,7 +125,7 @@ export default class RelayClient {
    * @param block
    * @param requestId
    */
-  async getBalance(address, block = 'latest', requestId?: string) {
+  async getBalance(address, block = 'latest', requestId: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     this.logger.debug(`${requestIdPrefix} [POST] to relay eth_getBalance for address ${address}]`);
     return this.provider.getBalance(address, block);
@@ -136,7 +136,7 @@ export default class RelayClient {
    * @param requestId
    * Returns: The nonce of the account with the provided `evmAddress`
    */
-  async getAccountNonce(evmAddress, requestId?: string): Promise<number> {
+  async getAccountNonce(evmAddress, requestId: string): Promise<number> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_getTransactionCount for address ${evmAddress}`);
     const nonce = await this.provider.send('eth_getTransactionCount', [evmAddress, 'latest']);

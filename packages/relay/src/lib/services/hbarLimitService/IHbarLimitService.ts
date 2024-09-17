@@ -27,8 +27,8 @@ export interface IHbarLimitService {
     methodName: string,
     ethAddress: string,
     requestDetails: RequestDetails,
-    ipAddress?: string,
+    ipAddress: string,
     estimatedTxFee?: number,
   ): Promise<boolean>;
-  addExpense(cost: number, ethAddress: string, ipAddress?: string): Promise<void>;
+  addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails, ipAddress?: string): Promise<void>;
 }

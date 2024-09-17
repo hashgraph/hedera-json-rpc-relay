@@ -213,12 +213,8 @@ export class CacheService {
     } catch (error) {
       const redisError = new RedisCacheError(error);
       this.logger.error(
-<<<<<<< HEAD
-        `${requestIdPrefix} Error occurred while getting the cache from Redis. Fallback to internal cache. ${redisError}`,
-=======
         redisError,
         `${requestDetails.formattedRequestId} Error occurred while getting the cache from Redis. Fallback to internal cache.`,
->>>>>>> c7c5c919 (chore: draft changes)
       );
 
       // fallback to internal cache in case of Redis error
@@ -282,12 +278,8 @@ export class CacheService {
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
-<<<<<<< HEAD
-          `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. ${redisError}`,
-=======
           redisError,
           `${requestDetails.formattedRequestId} Error occurred while setting the cache to Redis. Fallback to internal cache.`,
->>>>>>> c7c5c919 (chore: draft changes)
         );
       }
     }
@@ -327,12 +319,8 @@ export class CacheService {
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
-<<<<<<< HEAD
-          `${requestIdPrefix} Error occurred while setting the cache to Redis. Fallback to internal cache. ${redisError}`,
-=======
           redisError,
           `${requestDetails.formattedRequestId} Error occurred while setting the cache to Redis. Fallback to internal cache.`,
->>>>>>> c7c5c919 (chore: draft changes)
         );
       }
     }
@@ -362,12 +350,8 @@ export class CacheService {
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
-<<<<<<< HEAD
-          `${requestIdPrefix} Error occurred while deleting cache from Redis. Fallback to internal cache. ${redisError}`,
-=======
           redisError,
           `${requestDetails.formattedRequestId} Error occurred while deleting cache from Redis.`,
->>>>>>> c7c5c919 (chore: draft changes)
         );
       }
     }
@@ -391,12 +375,8 @@ export class CacheService {
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
-<<<<<<< HEAD
-          `${requestIdPrefix} Error occurred while clearing Redis cache. Fallback to internal cache. ${redisError}`,
-=======
           redisError,
           `${requestDetails.formattedRequestId} Error occurred while clearing Redis cache.`,
->>>>>>> c7c5c919 (chore: draft changes)
         );
       }
     }
@@ -429,12 +409,8 @@ export class CacheService {
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
-<<<<<<< HEAD
-          `${requestIdPrefix} Error occurred while incrementing cache in Redis. Fallback to internal cache. ${redisError}`,
-=======
           redisError,
           `${requestDetails.formattedRequestId} Error occurred while incrementing cache in Redis.`,
->>>>>>> c7c5c919 (chore: draft changes)
         );
       }
     }
@@ -472,12 +448,8 @@ export class CacheService {
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
-<<<<<<< HEAD
-          `${requestIdPrefix} Error occurred while pushing cache in Redis. Fallback to internal cache. ${redisError}`,
-=======
           redisError,
           `${requestDetails.formattedRequestId} Error occurred while pushing cache in Redis.`,
->>>>>>> c7c5c919 (chore: draft changes)
         );
       }
     }
@@ -526,12 +498,8 @@ export class CacheService {
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
-<<<<<<< HEAD
-          `${requestIdPrefix} Error occurred while getting cache in Redis. Fallback to internal cache. ${redisError}`,
-=======
           redisError,
           `${requestDetails.formattedRequestId} Error occurred while getting cache in Redis.`,
->>>>>>> c7c5c919 (chore: draft changes)
         );
       }
     }
@@ -561,12 +529,8 @@ export class CacheService {
       } catch (error) {
         const redisError = new RedisCacheError(error);
         this.logger.error(
-<<<<<<< HEAD
-          `${requestIdPrefix} Error occurred while getting keys from Redis. Fallback to internal cache. ${redisError}`,
-=======
           redisError,
           `${requestDetails.formattedRequestId} Error occurred while getting keys from Redis.`,
->>>>>>> c7c5c919 (chore: draft changes)
         );
       }
     }

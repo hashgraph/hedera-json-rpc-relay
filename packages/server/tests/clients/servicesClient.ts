@@ -174,7 +174,7 @@ export default class ServicesClient {
     return { executedTimestamp, executedTransactionId };
   }
 
-  async createToken(initialSupply = 1000, requestId?: string) {
+  async createToken(initialSupply = 1000, requestId: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const symbol = Math.random().toString(36).slice(2, 6).toUpperCase();
     this.logger.trace(`${requestIdPrefix} symbol = ${symbol}`);
@@ -195,7 +195,7 @@ export default class ServicesClient {
     return tokenId;
   }
 
-  async associateToken(tokenId, requestId?: string) {
+  async associateToken(tokenId, requestId: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     await this.executeAndGetTransactionReceipt(
       await new TokenAssociateTransaction()

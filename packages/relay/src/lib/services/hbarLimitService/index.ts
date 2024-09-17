@@ -21,7 +21,6 @@
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 import { IHbarLimitService } from './IHbarLimitService';
-import { formatRequestIdMessage } from '../../../formatters';
 import { SubscriptionType } from '../../db/types/hbarLimiter/subscriptionType';
 import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendingPlan';
 import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
@@ -171,7 +170,7 @@ export class HbarLimitService implements IHbarLimitService {
     methodName: string,
     ethAddress: string,
     requestDetails: RequestDetails,
-    ipAddress?: string,
+    ipAddress: string,
     estimatedTxFee: number = 0,
   ): Promise<boolean> {
     if (await this.isDailyBudgetExceeded(mode, methodName, estimatedTxFee, requestDetails)) {
@@ -208,7 +207,7 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the expense has been added.
    */
-  async addExpense(cost: number, ethAddress: string, ipAddress: string, requestDetails: RequestDetails): Promise<void> {
+  async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails, ipAddress: string): Promise<void> {
     if (!ethAddress && !ipAddress) {
       throw new Error('Cannot add expense without an eth address or ip address');
     }
@@ -410,27 +409,8 @@ export class HbarLimitService implements IHbarLimitService {
     if (!ethAddress && !ipAddress) {
       throw new Error('Cannot create a spending plan without an associated eth address or ip address');
     }
-<<<<<<< HEAD
-    const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC, requstIdPrefix);
 
-    if (ethAddress) {
-      this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`);
-      await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id }, requstIdPrefix);
-    }
-    if (ipAddress) {
-      this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to ip address ${ipAddress}`);
-      await this.ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: spendingPlan.id });
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-    const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC);
-
-=======
-    const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC, requstIdPrefix);
->>>>>>> 171fcf4c (Makes requestId required in all methods of cacheService)
-=======
     const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC, requestDetails);
->>>>>>> ca55f87f (chore: draft changes)
     if (ethAddress) {
       this.logger.trace(
         `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`,
@@ -442,7 +422,6 @@ export class HbarLimitService implements IHbarLimitService {
       );
       // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2888
       // await this.ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: spendingPlan.id });
->>>>>>> 6ec726a8 (chore: draft changes)
     }
     return spendingPlan;
   }
