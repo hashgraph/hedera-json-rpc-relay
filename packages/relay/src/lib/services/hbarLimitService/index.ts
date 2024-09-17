@@ -135,18 +135,24 @@ export class HbarLimitService implements IHbarLimitService {
     );
 
     // Reset the rate limiter at the start of the next day
-    const now = Date.now();
-    const tomorrow = new Date(now + HbarLimitService.ONE_DAY_IN_MILLIS);
-    this.reset = new Date(tomorrow.setHours(0, 0, 0, 0));
+    this.reset = this.getResetTimestamp();
   }
 
   /**
    * Resets the {@link HbarSpendingPlan#spentToday} field for all existing plans.
+   * @param {string} [requestId] - An optional unique request ID for tracking the request.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
-  async resetLimiter(): Promise<void> {
-    // TODO: Implement this with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2868
-    throw new Error('Not implemented');
+  async resetLimiter(requestId?: string): Promise<void> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    this.logger.trace(`${requestIdPrefix} Resetting HBAR rate limiter...`);
+    await this.hbarSpendingPlanRepository.resetAllSpentTodayEntries();
+    this.resetBudget();
+    this.resetMetrics();
+    this.reset = this.getResetTimestamp();
+    this.logger.trace(
+      `${requestIdPrefix} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
+    );
   }
 
   /**
@@ -289,6 +295,36 @@ export class HbarLimitService implements IHbarLimitService {
    */
   private shouldResetLimiter(): boolean {
     return Date.now() >= this.reset.getTime();
+  }
+
+  /**
+   * Resets the remaining budget to the total budget.
+   * @private
+   */
+  private resetBudget(): void {
+    this.remainingBudget = this.totalBudget;
+    this.hbarLimitRemainingGauge.set(this.remainingBudget);
+  }
+
+  /**
+   * Resets the metrics that track daily unique spending plans and average daily spending plan usages.
+   * @private
+   */
+  private resetMetrics(): void {
+    for (const subscriptionType of Object.values(SubscriptionType)) {
+      this.dailyUniqueSpendingPlansCounter[subscriptionType].reset();
+      this.averageDailySpendingPlanUsagesGauge[subscriptionType].reset();
+    }
+  }
+
+  /**
+   * Gets a new reset timestamp for the rate limiter.
+   * @returns {Date} - The new reset timestamp.
+   * @private
+   */
+  private getResetTimestamp(): Date {
+    const tomorrow = new Date(Date.now() + HbarLimitService.ONE_DAY_IN_MILLIS);
+    return new Date(tomorrow.setHours(0, 0, 0, 0));
   }
 
   /**
