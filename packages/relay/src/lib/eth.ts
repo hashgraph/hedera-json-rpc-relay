@@ -549,7 +549,7 @@ export class EthImpl implements Eth {
    * `CHAIN_ID`.
    */
   chainId(requestDetails: RequestDetails): string {
-    this.logger.trace(`${requestDetails.formattedRequestId} chainId()`);
+    //this.logger.trace(`${requestDetails.formattedRequestId} chainId()`);
     return this.chain;
   }
 
