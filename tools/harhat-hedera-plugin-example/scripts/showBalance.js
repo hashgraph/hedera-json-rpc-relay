@@ -1,6 +1,6 @@
 /*-
  *
- * Hedera JSON RPC Relay - Hardhat Example
+ * Hedera Hardhat Viem Example Project
  *
  * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
@@ -18,14 +18,13 @@
  *
  */
 
-const { ethers } = require('hardhat');
+const hre = require('hardhat');
 
-module.exports = async (address, msg) => {
-  const wallet = (await ethers.getSigners())[0];
-  const greeter = await ethers.getContractAt('Greeter', address, wallet);
-  const updateTx = await greeter.setGreeting(msg);
+module.exports = async (contractAddress, accountAddress) => {
+  const ft = await hre.viem.getContractAt('HtsSystemContract', contractAddress);
+  const callRes = await ft.read.balanceOf([accountAddress]);
 
-  console.log(`Updated call result: ${msg}`);
+  console.log(`Balance of: ${callRes}`);
 
-  return updateTx;
+  return callRes;
 };

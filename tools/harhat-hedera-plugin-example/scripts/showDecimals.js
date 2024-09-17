@@ -1,6 +1,6 @@
 /*-
  *
- * Hedera JSON RPC Relay - Hardhat Example
+ * Hedera Hardhat Viem Example Project
  *
  * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
@@ -18,14 +18,17 @@
  *
  */
 
-const { ethers } = require('hardhat');
+const hre = require('hardhat');
 
 module.exports = async (address) => {
-  const wallet = (await ethers.getSigners())[0];
-  const greeter = await hre.ethers.getContractAt('Greeter', address, wallet);
-  const callRes = await greeter.greet();
+  //Assign the greeter contract object in a variable, this is used for already deployed contract, which we have the address for. ethers.getContractAt accepts:
+  //name of contract as first parameter
+  //address of our contract
+  const ft = await hre.viem.getContractAt('HtsSystemContract', address);
+  //using the greeter object(which is our contract) we can call functions from the contract. In this case we call greet which returns our greeting msg
+  const callRes = await ft.read.decimals();
 
-  console.log(`Contract call result: ${callRes}`);
+  console.log(`Decimals: ${callRes}`);
 
   return callRes;
 };

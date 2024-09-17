@@ -21,31 +21,38 @@
 require('dotenv').config();
 require('@nomicfoundation/hardhat-toolbox');
 require('@nomicfoundation/hardhat-chai-matchers');
+require('arianejasuwienas-hardhat-hedera');
 
 task('show-balance', async () => {
   const showBalance = require('./scripts/showBalance');
   return showBalance();
 });
 
-task('transfer-hbars', async () => {
-  const transferHbar = require('./scripts/transferHbars');
-  return transferHbar();
+task("show-balance", async (taskArgs) => {
+  const showBalance = require("./scripts/showBalance");
+  return showBalance(taskArgs.contractAddress, taskArgs.accountAddress);
 });
 
-task('deploy-contract', async () => {
-  const deployContract = require('./scripts/deployContract');
-  return deployContract();
+task("show-name", async (taskArgs) => {
+  const showName = require("./scripts/showName");
+  return showName(taskArgs.contractAddress);
 });
 
-task('contract-view-call', async (taskArgs) => {
-  const contractViewCall = require('./scripts/contractViewCall');
-  return contractViewCall(taskArgs.contractAddress);
+task("show-symbol", async (taskArgs) => {
+  const showSymbol = require("./scripts/showSymbol");
+  return showSymbol(taskArgs.contractAddress);
 });
 
-task('contract-call', async (taskArgs) => {
-  const contractCall = require('./scripts/contractCall');
-  return contractCall(taskArgs.contractAddress, taskArgs.msg);
+task("show-decimals", async (taskArgs) => {
+  const showDecimals = require("./scripts/showDecimals");
+  return showDecimals(taskArgs.contractAddress);
 });
+
+task("mine-block", async () => {
+  const mineBlock = require("./scripts/mineBlock");
+  return mineBlock();
+});
+
 
 const mnemonic = process.env.MNEMONIC;
 if (!mnemonic) {
@@ -77,7 +84,7 @@ module.exports = {
     local: {
       url: process.env.RELAY_ENDPOINT,
       accounts: [process.env.OPERATOR_PRIVATE_KEY, process.env.RECEIVER_PRIVATE_KEY],
-      chainId: 298,
+      chainId: 31337,
     },
     testnet: {
       url: 'https://testnet.hashio.io/api',
