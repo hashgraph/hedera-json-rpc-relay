@@ -2139,6 +2139,7 @@ describe('SdkClient', async function () {
     const fileId = FileId.fromString('0.0.1234');
     const transactionReceipt = { fileId, status: Status.Success };
     const gasUsed = Long.fromNumber(10000);
+    const mockedNetworkGasPrice = '0xa54f4c3c00';
 
     const randomAccountAddress = random20BytesAddress();
 
@@ -2271,7 +2272,13 @@ describe('SdkClient', async function () {
         .returns(true);
 
       try {
-        await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestId, randomAccountAddress);
+        await sdkClient.submitEthereumTransaction(
+          transactionBuffer,
+          mockedCallerName,
+          randomAccountAddress,
+          mockedNetworkGasPrice,
+          requestId,
+        );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
         expect(error.message).to.equal('HBAR Rate limit exceeded');
@@ -2309,7 +2316,6 @@ describe('SdkClient', async function () {
       // last transactionRecordStub call for EthereumTransaction
       transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(EthereumTransaction.name));
 
-      sdkClientMock.expects('getTinyBarGasFee').once().returns(1000);
       hbarLimitMock.expects('shouldLimit').thrice().returns(false);
       hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
@@ -2324,7 +2330,13 @@ describe('SdkClient', async function () {
         .withArgs(mockedTransactionRecordFee)
         .exactly(fileAppendChunks + 2);
 
-      await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestId, randomAccountAddress);
+      await sdkClient.submitEthereumTransaction(
+        transactionBuffer,
+        mockedCallerName,
+        randomAccountAddress,
+        mockedNetworkGasPrice,
+        requestId,
+      );
 
       expect(queryStub.called).to.be.true;
       expect(transactionStub.called).to.be.true;

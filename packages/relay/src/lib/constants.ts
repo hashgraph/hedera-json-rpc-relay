@@ -32,6 +32,7 @@ enum CACHE_KEY {
   FEE_HISTORY = 'fee_history',
   FILTER = 'filter',
   GAS_PRICE = 'gas_price',
+  NETWORK_FEES = 'network_fees',
   GET_BLOCK = 'getBlock',
   GET_CONTRACT = 'getContract',
   GET_CONTRACT_RESULT = 'getContractResult',
