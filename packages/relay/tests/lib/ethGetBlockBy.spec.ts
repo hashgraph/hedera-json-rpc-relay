@@ -33,9 +33,8 @@ import HbarLimit from '../../src/lib/hbarlimiter';
 import { Log, Transaction } from '../../src/lib/model';
 import { nullableNumberTo0x, numberTo0x, nanOrNumberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import * as sinon from 'sinon';
-import { RedisInMemoryServer } from '../redisInMemoryServer';
-import { defaultDetailedContractResults } from '../helpers';
+import { defaultDetailedContractResults, useInMemoryRedisServer } from '../helpers';
+import { EventEmitter } from 'events';
 
 use(chaiAsPromised);
 
@@ -46,8 +45,6 @@ let restMock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let hapiServiceInstance: HAPIService;
 let cacheService: CacheService;
-let redisInMemoryServer: RedisInMemoryServer;
-let mirrorNodeCache;
 
 const blockHashTrimmed = '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b';
 const blockHash = `${blockHashTrimmed}999fc7e86699f60f2a3fb3ed9a646c6b`;
@@ -116,28 +113,19 @@ const defaultLogs1 = [
 describe('eth_getBlockBy', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
-  const sandbox = sinon.createSandbox();
+
+  useInMemoryRedisServer(logger, 5031);
 
   this.beforeAll(async () => {
-    //done in order to be able to use cache
-    EnvProviderService.getInstance().dynamicOverride('TEST', 'false');
-    EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'true');
-    redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 5031);
-    await redisInMemoryServer.start();
-    EnvProviderService.getInstance().dynamicOverride('REDIS_URL', 'redis://127.0.0.1:5031');
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
 
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      // @ts-ignore
-      EnvProviderService.getInstance().get('MIRROR_NODE_URL'),
+      process.env.MIRROR_NODE_URL ?? '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
     );
-
-    // @ts-ignore
-    mirrorNodeCache = mirrorNodeInstance.cache;
 
     // @ts-ignore
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
@@ -145,8 +133,8 @@ describe('eth_getBlockBy', async function () {
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
-
-    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService);
+    const eventEmitter = new EventEmitter();
+    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
 
     EnvProviderService.getInstance().dynamicOverride('ETH_FEE_HISTORY_FIXED', 'false');
 
@@ -159,14 +147,8 @@ describe('eth_getBlockBy', async function () {
     restMock.reset();
   });
 
-  afterEach(function () {
-    sandbox.restore();
-  });
-
   this.afterAll(async () => {
-    EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'false');
     await cacheService.disconnectRedisClient();
-    await redisInMemoryServer.stop();
   });
 
   const mirrorLogToModelLog = (mirrorLog) => {

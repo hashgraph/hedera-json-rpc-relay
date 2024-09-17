@@ -23,7 +23,6 @@ EnvProviderService.hotReload();
 import { pino } from 'pino';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { RedisInMemoryServer } from '../../../redisInMemoryServer';
 import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
@@ -33,6 +32,7 @@ import {
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingRecord';
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
+import { useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
@@ -45,30 +45,15 @@ describe('HbarSpendingPlanRepository', function () {
     let repository: HbarSpendingPlanRepository;
 
     if (isSharedCacheEnabled) {
-      let test: string | undefined;
-      let redisEnabled: string | undefined;
-      let redisUrl: string | undefined;
-      let redisInMemoryServer: RedisInMemoryServer;
+      useInMemoryRedisServer(logger, 6380);
 
       before(async () => {
-        redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6380);
-        await redisInMemoryServer.start();
-        test = EnvProviderService.getInstance().get('TEST');
-        redisEnabled = EnvProviderService.getInstance().get('REDIS_ENABLED');
-        redisUrl = EnvProviderService.getInstance().get('REDIS_URL');
-        EnvProviderService.getInstance().dynamicOverride('TEST', 'false');
-        EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'true');
-        EnvProviderService.getInstance().dynamicOverride('REDIS_URL', 'redis://127.0.0.1:6380');
         cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
         repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
       });
 
       after(async () => {
         await cacheService.disconnectRedisClient();
-        await redisInMemoryServer.stop();
-        EnvProviderService.getInstance().dynamicOverride('TEST', test);
-        EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', redisEnabled);
-        EnvProviderService.getInstance().dynamicOverride('REDIS_URL', redisUrl);
       });
     } else {
       before(async () => {

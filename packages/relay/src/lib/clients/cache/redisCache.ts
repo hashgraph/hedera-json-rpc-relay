@@ -63,7 +63,7 @@ export class RedisCache implements IRedisCacheClient {
    * Boolean showing if the connection to the Redis client has finished.
    * @private
    */
-  private readonly connected: Promise<boolean>;
+  private connected: Promise<boolean>;
 
   /**
    * Creates an instance of `RedisCache`.
@@ -82,7 +82,7 @@ export class RedisCache implements IRedisCacheClient {
       socket: {
         reconnectStrategy: (retries: number) => {
           const delay = retries * reconnectDelay;
-          logger.warn(`Trying to reconnect with Redis, ${retries} left. Delay is ${delay} ms...`);
+          logger.warn(`Trying to reconnect with Redis, retry #${retries}. Delay is ${delay} ms...`);
           return delay;
         },
       },
@@ -94,10 +94,20 @@ export class RedisCache implements IRedisCacheClient {
         this.logger.error(error, 'Redis connection could not be established!');
         return false;
       });
-    this.client.on('ready', () => {
-      logger.info(`Connected to Redis server (${redisUrl}) successfully!`);
+    this.client.on('ready', async () => {
+      this.connected = Promise.resolve(true);
+      const connections = await this.getNumberOfConnections().catch((error) => {
+        this.logger.error(error);
+        return 0;
+      });
+      logger.info(`Connected to Redis server (${redisUrl}) successfully! Number of connections: ${connections}`);
     });
-    this.client.on('error', function (error) {
+    this.client.on('end', () => {
+      this.connected = Promise.resolve(false);
+      logger.info('Disconnected from Redis server!');
+    });
+    this.client.on('error', (error) => {
+      this.connected = Promise.resolve(false);
       const redisError = new RedisCacheError(error);
       if (redisError.isSocketClosed()) {
         logger.error(`Error occurred with Redis Connection when closing socket: ${redisError.message}`);
@@ -108,7 +118,7 @@ export class RedisCache implements IRedisCacheClient {
   }
 
   async getConnectedClient(): Promise<RedisClientType> {
-    return this.connected.then(() => this.client);
+    return this.isConnected().then(() => this.client);
   }
 
   /**
@@ -245,15 +255,45 @@ export class RedisCache implements IRedisCacheClient {
   }
 
   /**
+   * Checks if the client is connected to the Redis server.
+   *
+   * @returns {Promise<boolean>} A Promise that resolves to true if the client is connected, false otherwise.
+   */
+  async isConnected(): Promise<boolean> {
+    return this.connected;
+  }
+
+  /**
+   * Retrieves the number of connections to the Redis server.
+   *
+   * @returns {Promise<number>} A Promise that resolves to the number of connections.
+   * @throws {Error} If an error occurs while retrieving the number of connections.
+   */
+  async getNumberOfConnections(): Promise<number> {
+    const client = await this.getConnectedClient();
+    const clientList = await client.clientList();
+    return clientList.length;
+  }
+
+  /**
+   * Connects the client to the Redis server.
+   *
+   * @returns {Promise<void>} A Promise that resolves when the client is connected.
+   * @throws {Error} If an error occurs while connecting to Redis.
+   */
+  async connect(): Promise<void> {
+    await this.client.connect();
+  }
+
+  /**
    * Disconnects the client from the Redis server.
    *
    * @returns {Promise<void>} A Promise that resolves when the client is disconnected.
+   * @throws {Error} If an error occurs while disconnecting from Redis.
    */
   async disconnect(): Promise<void> {
-    await this.getConnectedClient().then((client) => {
-      client.disconnect();
-      client.unsubscribe();
-    });
+    const client = await this.getConnectedClient();
+    await client.quit();
   }
 
   /**

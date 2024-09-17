@@ -885,8 +885,7 @@ describe('@ethCall Eth Call spec', async function () {
   });
 
   describe('eth_call using consensus node because of redirect by selector', async function () {
-    let initialForceToConsensusBySelectorFF;
-    let initialEthCallConesneusFF;
+    let initialEthCallConesneusFF: any, initialEthCallSelectorsAlwaysToConsensus: any;
     const REDIRECTED_SELECTOR = '0x4d8fdd6d';
     const NON_REDIRECTED_SELECTOR = '0xaaaaaaaa';
     let callConsensusNodeSpy: sinon.SinonSpy;
@@ -894,20 +893,14 @@ describe('@ethCall Eth Call spec', async function () {
     let sandbox: sinon.SinonSandbox;
 
     before(() => {
-      initialForceToConsensusBySelectorFF = EnvProviderService.getInstance().get(
-        'ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR',
-      );
-      initialEthCallConesneusFF = EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR', 'true');
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+      initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
     });
 
     after(() => {
-      EnvProviderService.getInstance().dynamicOverride(
-        'ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR',
-        initialForceToConsensusBySelectorFF,
-      );
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
+      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
+      process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
     });
 
     beforeEach(() => {
@@ -921,6 +914,8 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with matched selector redirects to consensus', async function () {
+      process.env.ETH_CALL_CONSENSUS_SELECTORS = JSON.stringify([REDIRECTED_SELECTOR.slice(2)]);
+
       await ethImpl.call(
         {
           to: ACCOUNT_ADDRESS_1,
