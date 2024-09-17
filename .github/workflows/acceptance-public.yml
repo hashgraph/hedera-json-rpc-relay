@@ -44,6 +44,7 @@ jobs:
   get_results:
     name: Get Results
     needs:
+      - bash-example
       - release-tests
     runs-on: ubuntu-latest
     steps:
