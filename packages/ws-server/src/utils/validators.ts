@@ -39,9 +39,9 @@ const validateIsContractOrTokenAddress = async (
 ) => {
   const isContractOrToken = await mirrorNodeClient.resolveEntityType(
     address,
-    [constants.TYPE_CONTRACT, constants.TYPE_TOKEN],
     constants.METHODS.ETH_SUBSCRIBE,
     requestDetails,
+    [constants.TYPE_CONTRACT, constants.TYPE_TOKEN],
   );
   if (!isContractOrToken) {
     throw new JsonRpcError(
