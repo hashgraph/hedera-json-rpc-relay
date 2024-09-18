@@ -46,6 +46,7 @@ import constants from '../../tests/helpers/constants';
 import RelayClient from '../clients/relayClient';
 import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
+import { Logger } from 'pino';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -59,7 +60,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     relay,
     logger,
     initialBalance,
-  }: { servicesNode: ServicesClient; mirrorNode: MirrorClient; relay: RelayClient } = global;
+  }: {
+    servicesNode: ServicesClient;
+    mirrorNode: MirrorClient;
+    relay: RelayClient;
+    logger: Logger;
+    initialBalance: string;
+  } = global;
 
   // cached entities
   let tokenId;
@@ -739,7 +746,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     async function createNftHTSToken(account) {
       const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
       const tx = await mainContract.createNonFungibleTokenPublic(account.wallet.address, {
-        value: 30000000000000000000n,
+        value: BigInt('30000000000000000000'),
         ...Helper.GAS.LIMIT_5_000_000,
       });
       const { tokenAddress } = (await tx.wait()).logs.filter(

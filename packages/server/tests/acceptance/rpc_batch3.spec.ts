@@ -46,7 +46,6 @@ import DeployerContractJson from '../contracts/Deployer.json';
 import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import HRC719ContractJson from '../contracts/HRC719Contract.json';
-import TokenCreateJson from '../contracts/TokenCreateContract.json';
 
 // Helper functions/constants from local resources
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
@@ -56,7 +55,6 @@ import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import RelayClient from '../clients/relayClient';
 import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
-import { request } from 'http';
 
 chai.use(chaiExclude);
 
@@ -284,7 +282,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       // get block hash before deployment
       const blockNumber = deploymentBlockNumber - 1;
-      const nextBlockHash = (await mirrorNode.get(`/blocks/${blockNumber}`, requestDetails)).hash;
+      const nextBlockHash = (await mirrorNode.get(`/blocks/${blockNumber}`, requestId)).hash;
       const truncatedHash = nextBlockHash.slice(0, 66);
 
       const res = await relay.call(
@@ -412,7 +410,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
               callerContractJson.bytecode,
               activeAccount.wallet,
             );
-            const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestDetails);
+            const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestId);
 
             const callerContractId = ContractId.fromString(callerMirror.contract_id);
             callerAddress = `0x${callerContractId.toSolidityAddress()}`;
@@ -436,7 +434,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
               relay,
             )) as ethers.Contract;
             // Wait for creation to propagate
-            const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestDetails);
+            const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestId);
             callerAddress = callerMirror.evm_address;
             defaultCallData = {
               from: activeAccount.address,
@@ -594,7 +592,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       const activeAccount = accounts[1];
       const callerContract = await Utils.deployContractWithEthers([], callerContractJson, activeAccount.wallet, relay);
       // Wait for creation to propagate
-      const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestDetails);
+      const callerMirror = await mirrorNode.get(`/contracts/${callerContract.target}`, requestId);
       const callerAddress = callerMirror.evm_address;
       const defaultCallData = {
         from: activeAccount.address,
@@ -685,7 +683,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
       // Wait until receipt is available in mirror node
-      await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+      await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
       const receipt = await relay.call(
         RelayCall.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
@@ -767,7 +765,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         adminPrivateKey: accounts[1].privateKey,
       });
 
-      tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
+      tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId!.toString());
 
       // Deploy a contract implementing HederaTokenService
       const HederaTokenServiceImplFactory = new ethers.ContractFactory(
@@ -874,7 +872,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       );
 
       // get contract details
-      const mirrorContract = await mirrorNode.get(`/contracts/${deployerContractAddress}`, requestDetails);
+      const mirrorContract = await mirrorNode.get(`/contracts/${deployerContractAddress}`, requestId);
       contractId = ContractId.fromString(mirrorContract.contract_id);
 
       primaryAccountNonce = await relay.call(
@@ -993,7 +991,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         [signedTxHollowAccountCreation],
         requestId,
       );
-      await mirrorNode.get(`/contracts/results/${txHashHAC}`, requestDetails);
+      await mirrorNode.get(`/contracts/results/${txHashHAC}`, requestId);
 
       const signTxFromHollowAccount = await hollowAccount.signTransaction({
         ...defaultTransaction,
@@ -1007,7 +1005,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         [signTxFromHollowAccount],
         requestId,
       );
-      await mirrorNode.get(`/contracts/results/${txHashHA}`, requestDetails);
+      await mirrorNode.get(`/contracts/results/${txHashHA}`, requestId);
 
       const resAfterCreation = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
@@ -1018,7 +1016,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     });
 
     it('should execute "eth_getTransactionCount" for account with non-zero nonce', async function () {
-      const account = await Utils.createAliasAccount(mirrorNode, accounts[0], requestDetails);
+      const account = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId);
 
       const gasPrice = await relay.gasPrice(requestId);
       const transaction = {
@@ -1033,7 +1031,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
       // Since the transactionId is not available in this context
       // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-      await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+      await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
@@ -1255,7 +1253,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
-      estimateGasContractAddress = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+      estimateGasContractAddress = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
     });
 
     describe('Positive scenarios', async function () {
@@ -2037,7 +2035,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     });
 
     it('Should return a batch of requests', async function () {
-      const testAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestDetails);
+      const testAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId);
 
       {
         const payload = [

@@ -2378,7 +2378,7 @@ describe('EstimatePrecompileContract tests', function () {
     let estimateGasResponse;
     try {
       estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    } catch (e) {
+    } catch (e: any) {
       expect(e.code).to.eq(errorMessage);
       failed = true;
     }

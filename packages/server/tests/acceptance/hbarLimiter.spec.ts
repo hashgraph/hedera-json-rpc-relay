@@ -42,6 +42,8 @@ import { config } from 'dotenv';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
+import { Logger } from 'pino';
+import MetricsClient from '../clients/metricsClient';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
@@ -55,7 +57,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     initialBalance,
     metrics,
     relayIsLocal,
-  }: { mirrorNode: MirrorClient; relay: RelayClient } = global;
+  }: {
+    mirrorNode: MirrorClient;
+    relay: RelayClient;
+    logger: Logger;
+    initialBalance: string;
+    metrics: MetricsClient;
+    relayIsLocal: boolean;
+  } = global;
   const operatorAccount = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
   const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
   const requestId = 'hbarLimiterTest';
@@ -123,7 +132,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       const ethereumTransaction = (
         await mirrorNode.get(
           `/transactions?transactiontype=ETHEREUMTRANSACTION&order=desc&account.id=${operatorAccount}&limit=1`,
-          requestDetails,
+          requestId,
         )
       ).transactions[0];
       const ethereumTxFee = sumAccountTransfers(ethereumTransaction.transfers, operatorAccount);
@@ -133,7 +142,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       const fileDeleteTx = (
         await mirrorNode.get(
           `/transactions?transactiontype=FILEDELETE&order=desc&account.id=${operatorAccount}&limit=1`,
-          requestDetails,
+          requestId,
         )
       ).transactions[0];
 
@@ -142,11 +151,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       return ethereumTxFee + fileCreateTxFee + fileAppendTxFee + fileDeleteTxFee;
     };
 
-    const getExpectedCostOfLastSmallTx = async (requestDetails: RequestDetails) => {
+    const getExpectedCostOfLastSmallTx = async (requestId: string) => {
       const ethereumTransaction = (
         await mirrorNode.get(
           `/transactions?transactiontype=ETHEREUMTRANSACTION&order=desc&account.id=${operatorAccount}&limit=1`,
-          requestDetails,
+          requestId,
         )
       ).transactions[0];
       return sumAccountTransfers(ethereumTransaction.transfers, operatorAccount);
@@ -221,7 +230,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             .fulfilled;
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          const expectedCost = await getExpectedCostOfLastSmallTx(requestDetails);
+          const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
 
           verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
         });
@@ -249,7 +258,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           await deployContract(EstimateGasContract, accounts[0].wallet);
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          const expectedCost = await getExpectedCostOfLastSmallTx(requestDetails);
+          const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
           verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
         });
 
@@ -309,11 +318,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const TOLERANCE = 0.02;
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           expect(remainingHbarsBefore).to.be.gt(0);
-          const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestDetails)).balance
+          const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
             .balance;
           const largeContract = await deployContract(largeContractJson, accounts[0].wallet);
 
-          const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestDetails)).balance
+          const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
             .balance;
 
           const amountPaidByOperator = operatorBalanceBefore - operatorBalanceAfter;

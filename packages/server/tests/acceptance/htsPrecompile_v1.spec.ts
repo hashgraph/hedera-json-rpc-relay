@@ -33,6 +33,7 @@ import { Utils } from '../helpers/utils';
 import ServicesClient from '../clients/servicesClient';
 import RelayClient from '../clients/relayClient';
 import MirrorClient from '../clients/mirrorClient';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 chai.use(solidity);
 
@@ -46,6 +47,8 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
     mirrorNode,
   }: { servicesNode: ServicesClient; relay: RelayClient; mirrorNode: MirrorClient } = global;
 
+  const requestDetails = new RequestDetails({ requestId: 'htsPrecompile_v1Test', ipAddress: '0.0.0.0' });
+
   const TX_SUCCESS_CODE = BigInt(22);
 
   const accounts: AliasAccount[] = [];
@@ -57,36 +60,38 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
   let baseHTSContractReceiverWalletFirst;
   let baseHTSContractReceiverWalletSecond;
   let HTSTokenWithCustomFeesContractAddress;
-  let requestId;
 
   this.beforeAll(async () => {
-    requestId = Utils.generateRequestId();
-
     const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '5000000000'; //50 Hbar
 
-    const contractDeployer = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId, initialAmount);
+    const contractDeployer = await Utils.createAliasAccount(
+      mirrorNode,
+      initialAccount,
+      requestDetails.requestId,
+      initialAmount,
+    );
     const BaseHTSContract = await Utils.deployContract(BaseHTSJson.abi, BaseHTSJson.bytecode, contractDeployer.wallet);
     BaseHTSContractAddress = BaseHTSContract.target;
-    const contractMirror = await mirrorNode.get(`/contracts/${BaseHTSContractAddress}`, requestId);
+    const contractMirror = await mirrorNode.get(`/contracts/${BaseHTSContractAddress}`, requestDetails.requestId);
 
     accounts[0] = await servicesNode.createAccountWithContractIdKey(
       contractMirror.contract_id,
       70,
       relay.provider,
-      requestId,
+      requestDetails.requestId,
     );
     accounts[1] = await servicesNode.createAccountWithContractIdKey(
       contractMirror.contract_id,
       25,
       relay.provider,
-      requestId,
+      requestDetails.requestId,
     );
     accounts[2] = await servicesNode.createAccountWithContractIdKey(
       contractMirror.contract_id,
       25,
       relay.provider,
-      requestId,
+      requestDetails.requestId,
     );
 
     // allow mirror node a 2 full record stream write windows (2 sec) and a buffer to persist setup details
@@ -97,10 +102,6 @@ describe('@htsprecompilev1 HTS Precompile V1 Acceptance Tests', async function (
     baseHTSContractOwner = baseHTSContract;
     baseHTSContractReceiverWalletFirst = baseHTSContract.connect(accounts[1].wallet);
     baseHTSContractReceiverWalletSecond = baseHTSContract.connect(accounts[2].wallet);
-  });
-
-  this.beforeEach(async () => {
-    requestId = Utils.generateRequestId();
   });
 
   async function createHTSToken() {

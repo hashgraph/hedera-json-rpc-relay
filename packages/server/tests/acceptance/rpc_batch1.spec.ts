@@ -23,7 +23,7 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
-import { FileInfo, FileInfoQuery, TransferTransaction } from '@hashgraph/sdk';
+import { FileInfo, FileInfoQuery, Hbar, TransferTransaction } from '@hashgraph/sdk';
 
 // Assertions from local resources
 import Assertions from '../helpers/assertions';
@@ -59,7 +59,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     mirrorNode,
     relay,
     initialBalance,
-  }: { servicesNode: ServicesClient; mirrorNode: MirrorClient; relay: RelayClient } = global;
+  }: { servicesNode: ServicesClient; mirrorNode: MirrorClient; relay: RelayClient; initialBalance: string } = global;
 
   // cached entities
   let parentContractAddress: string;
@@ -75,16 +75,17 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   const GAS_PRICE_TOO_LOW = '0x1';
   const GAS_PRICE_REF = '0x123456';
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(Constants.TINYBAR_TO_WEIBAR_COEF));
+  const TEN_HBAR = Utils.add0xPrefix(new Hbar(10).toTinybars().mul(Constants.TINYBAR_TO_WEIBAR_COEF).toString(16));
   const sendRawTransaction = relay.sendRawTransaction;
 
   /**
    * resolves long zero addresses to EVM addresses by querying mirror node
-   * @param tx: any - supposedly a proper transaction that has `from` and `to` fields
+   * @param tx - supposedly a proper transaction that has `from` and `to` fields
    * @returns Promise<{from: any|null, to: any|null}>
    */
-  const resolveAccountEvmAddresses = async (tx: any, requestDetails: RequestDetails) => {
-    const fromAccountInfo = await mirrorNode.get(`/accounts/${tx.from}`, requestDetails);
-    const toAccountInfo = await mirrorNode.get(`/accounts/${tx.to}`, requestDetails);
+  const resolveAccountEvmAddresses = async (tx: any) => {
+    const fromAccountInfo = await mirrorNode.get(`/accounts/${tx.from}`, requestId);
+    const toAccountInfo = await mirrorNode.get(`/accounts/${tx.to}`, requestId);
     return {
       from: fromAccountInfo?.evm_address ?? tx.from,
       to: toAccountInfo?.evm_address ?? tx.to,
@@ -132,7 +133,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         `${requestDetails.formattedRequestId} Contract call createChild on parentContract results in tx hash: ${createChildTx.hash}`,
       );
       // get contract result details
-      mirrorContractDetails = await mirrorNode.get(`/contracts/results/${createChildTx.hash}`, requestDetails);
+      mirrorContractDetails = await mirrorNode.get(`/contracts/results/${createChildTx.hash}`, requestId);
 
       mirrorContractDetails.from = accounts[0].address;
       account2Address = accounts[2].address;
@@ -487,21 +488,20 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       const mirrorTransactions: any[] = [];
 
       before(async () => {
-        mirrorBlock = (
-          await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`, requestDetails)
-        ).blocks[0];
+        mirrorBlock = (await mirrorNode.get(`/blocks?block.number=${mirrorContractDetails.block_number}`, requestId))
+          .blocks[0];
         const timestampQuery = `timestamp=gte:${mirrorBlock.timestamp.from}&timestamp=lte:${mirrorBlock.timestamp.to}`;
-        mirrorContractResults = (await mirrorNode.get(`/contracts/results?${timestampQuery}`, requestDetails)).results;
+        mirrorContractResults = (await mirrorNode.get(`/contracts/results?${timestampQuery}`, requestId)).results;
 
         for (const res of mirrorContractResults) {
           mirrorTransactions.push(
-            await mirrorNode.get(`/contracts/${res.contract_id}/results/${res.timestamp}`, requestDetails),
+            await mirrorNode.get(`/contracts/${res.contract_id}/results/${res.timestamp}`, requestId),
           );
         }
 
         // resolve EVM address for `from` and `to`
         for (const mirrorTx of mirrorTransactions) {
-          const resolvedAddresses = await resolveAccountEvmAddresses(mirrorTx, requestDetails);
+          const resolvedAddresses = await resolveAccountEvmAddresses(mirrorTx);
 
           mirrorTx.from = resolvedAddresses.from;
           mirrorTx.to = resolvedAddresses.to;
@@ -688,7 +688,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
       it('should execute "eth_getBlockTransactionCountByNumber"', async function () {
         it('@release should execute "eth_blockNumber"', async function () {
-          const mirrorBlocks = await mirrorNode.get(`blocks`, requestDetails);
+          const mirrorBlocks = await mirrorNode.get(`blocks`, requestId);
           expect(mirrorBlocks).to.have.property('blocks');
           expect(mirrorBlocks.blocks.length).to.gt(0);
           const mirrorBlockNumber = mirrorBlocks.blocks[0].number;
@@ -804,7 +804,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const legacyTxHash = await relay.sendRawTransaction(signedTx, requestId);
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-        const mirrorResult = await mirrorNode.get(`/contracts/results/${legacyTxHash}`, requestDetails);
+        const mirrorResult = await mirrorNode.get(`/contracts/results/${legacyTxHash}`, requestId);
         mirrorResult.from = accounts[2].wallet.address;
         mirrorResult.to = parentContractAddress;
 
@@ -832,7 +832,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-        const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         mirrorResult.from = accounts[2].wallet.address;
         mirrorResult.to = parentContractAddress;
 
@@ -858,7 +858,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
-        const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        const mirrorResult = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         mirrorResult.from = accounts[2].wallet.address;
         mirrorResult.to = parentContractAddress;
 
@@ -902,7 +902,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const resp = await transaction.execute(servicesNode.client);
         await resp.getRecord(servicesNode.client);
         await Utils.wait(1000);
-        const logsRes = await mirrorNode.get(`/contracts/results/logs?limit=1`, requestDetails);
+        const logsRes = await mirrorNode.get(`/contracts/results/logs?limit=1`, requestId);
         const blockNumber = logsRes.logs[0].block_number;
         const formattedBlockNumber = prepend0x(blockNumber.toString(16));
         const contractId = logsRes.logs[0].contract_id;
@@ -976,7 +976,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // send gas money to the proxy deployer
         const sendHbarTx = {
           ...defaultLegacyTransactionData,
-          value: (10 * ONE_TINYBAR * 10 ** 8).toString(), // 10hbar - the gasPrice to deploy the deterministic proxy contract
+          value: TEN_HBAR, // 10hbar - the gasPrice to deploy the deterministic proxy contract
           to: constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
           nonce: await relay.getAccountNonce(accounts[0].address, requestId),
           gasPrice: await relay.gasPrice(requestId),
@@ -1007,12 +1007,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             requestId,
           );
 
-          const receipt = await mirrorNode.get(
-            `/contracts/results/${deterministicDeployTransactionHash}`,
-            requestDetails,
-          );
-          const fromAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.from}`, requestDetails);
-          const toAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.to}`, requestDetails);
+          const receipt = await mirrorNode.get(`/contracts/results/${deterministicDeployTransactionHash}`, requestId);
+          const fromAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.from}`, requestId);
+          const toAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.to}`, requestId);
 
           expect(receipt).to.exist;
           expect(fromAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
@@ -1044,7 +1041,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
         await Utils.wait(5000);
-        await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const receiverEndBalance = await relay.getBalance(parentContractAddress, 'latest', requestId);
         const balanceChange = receiverEndBalance - receiverInitialBalance;
@@ -1079,7 +1076,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // Since the transactionId is not available in this context
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
         await Utils.wait(5000);
-        await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const receiverEndBalance = await relay.getBalance(parentContractAddress, 'latest', requestId);
         const balanceChange = receiverEndBalance - receiverInitialBalance;
@@ -1129,7 +1126,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         };
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         expect(info).to.exist;
         expect(info.result).to.equal('SUCCESS');
       });
@@ -1212,7 +1209,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // Wait for the transaction to be processed and imported in the mirror node with axios-retry
         await Utils.wait(5000);
 
-        await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         const receiverEndBalance = await relay.getBalance(parentContractAddress, 'latest', requestId);
         const balanceChange = receiverEndBalance - receiverInitialBalance;
         expect(balanceChange.toString()).to.eq(Number(ONE_TINYBAR).toString());
@@ -1232,7 +1229,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         expect(info).to.have.property('contract_id');
         expect(info.contract_id).to.not.be.null;
         expect(info).to.have.property('created_contract_ids');
@@ -1259,7 +1256,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           };
           const signedTx = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-          const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+          const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
           expect(info).to.have.property('contract_id');
           expect(info.contract_id).to.not.be.null;
           expect(info).to.have.property('created_contract_ids');
@@ -1284,9 +1281,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
 
         await Utils.wait(1000);
-        const txInfo = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        const txInfo = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
-        const contractResult = await mirrorNode.get(`/contracts/${txInfo.contract_id}`, requestDetails);
+        const contractResult = await mirrorNode.get(`/contracts/${txInfo.contract_id}`, requestId);
         const fileInfo = await new FileInfoQuery().setFileId(contractResult.file_id).execute(servicesNode.client);
         expect(fileInfo).to.exist;
         expect(fileInfo instanceof FileInfo).to.be.true;
@@ -1323,7 +1320,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         expect(info).to.have.property('contract_id');
         expect(info.contract_id).to.not.be.null;
         expect(info).to.have.property('created_contract_ids');
@@ -1344,7 +1341,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         expect(info).to.have.property('contract_id');
         expect(info.contract_id).to.not.be.null;
         expect(info).to.have.property('max_fee_per_gas');
@@ -1372,7 +1369,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
         const balanceAfter = await relay.getBalance(accounts[2].wallet.address, 'latest', requestId);
         expect(info).to.have.property('contract_id');
         expect(info.contract_id).to.not.be.null;
@@ -1516,7 +1513,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
           const signedTx = await accounts[2].wallet.signTransaction(transaction);
           const txHash1 = await relay.sendRawTransaction(signedTx, requestId);
-          const mirrorResult = await mirrorNode.get(`/contracts/results/${txHash1}`, requestDetails);
+          const mirrorResult = await mirrorNode.get(`/contracts/results/${txHash1}`, requestId);
           mirrorResult.from = accounts[2].wallet.address;
           mirrorResult.to = parentContractAddress;
 
@@ -1594,14 +1591,14 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         };
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-        const mirrorTransaction = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestDetails);
+        const mirrorTransaction = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
         const res = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
           [transactionHash],
           requestIdPrefix,
         );
-        const addressResult = await mirrorNode.get(`/accounts/${res.from}`, requestDetails);
+        const addressResult = await mirrorNode.get(`/accounts/${res.from}`, requestId);
         mirrorTransaction.from = addressResult.evm_address;
 
         Assertions.transaction(res, mirrorTransaction);

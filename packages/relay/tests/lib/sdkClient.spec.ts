@@ -2266,12 +2266,10 @@ describe('SdkClient', async function () {
     const mockedConstructorName = 'constructor_name';
     const mockedInteractingEntity = 'interacting_entity';
 
-    let requestId: string;
     let hbarLimitMock: sinon.SinonMock;
     let sdkClientMock: sinon.SinonMock;
 
     beforeEach(() => {
-      requestId = uuid();
       hbarLimitMock = sinon.mock(hbarLimiter);
       sdkClientMock = sinon.mock(sdkClient);
       mock = new MockAdapter(instance);
@@ -2703,9 +2701,9 @@ describe('SdkClient', async function () {
       const transactionRecordMetrics = await sdkClient.getTransactionRecordMetrics(
         transactionId.toString(),
         mockedCallerName,
-        requestId,
         mockedConstructorName,
         accountId.toString(),
+        requestDetails,
       );
 
       expect(transactionRecordStub.called).to.be.true;
@@ -2722,9 +2720,9 @@ describe('SdkClient', async function () {
         await sdkClient.getTransactionRecordMetrics(
           transactionId.toString(),
           mockedCallerName,
-          requestId,
           mockedConstructorName,
           accountId.toString(),
+          requestDetails,
         );
         expect.fail('should have thrown an error');
       } catch (error: any) {

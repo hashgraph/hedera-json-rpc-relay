@@ -35,7 +35,6 @@ import { GitHubClient } from '../clients/githubClient';
 import MirrorClient from '../clients/mirrorClient';
 import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
-import { Relay } from '@hashgraph/json-rpc-relay';
 
 export class Utils {
   static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 1e6; // 1 MB
@@ -45,11 +44,11 @@ export class Utils {
   /**
    * Converts a number to its hexadecimal representation.
    *
-   * @param {number} num The number to convert to hexadecimal.
+   * @param {number | bigint | string} num The number to convert to hexadecimal.
    * @returns {string} The hexadecimal representation of the number.
    */
-  static toHex = (num) => {
-    return parseInt(num).toString(16);
+  static toHex = (num: number | bigint | string): string => {
+    return Number(num).toString(16);
   };
 
   /**
@@ -58,7 +57,7 @@ export class Utils {
    * @param {string} id The Hedera account ID to convert.
    * @returns {string} The EVM compatible address.
    */
-  static idToEvmAddress = (id): string => {
+  static idToEvmAddress = (id: string): string => {
     Assertions.assertId(id);
     const [shard, realm, num] = id.split('.');
 
@@ -73,10 +72,10 @@ export class Utils {
   /**
    * Converts a value from tinybars to weibars.
    *
-   * @param {number} value The value in tinybars to convert.
-   * @returns {ethers.BigNumber} The value converted to weibars.
+   * @param {number | bigint | string} value The value in tinybars to convert.
+   * @returns {bigint} The value converted to weibars.
    */
-  static tinyBarsToWeibars = (value) => {
+  static tinyBarsToWeibars = (value: number | bigint | string): bigint => {
     return ethers.parseUnits(Number(value).toString(), 10);
   };
 
@@ -86,7 +85,7 @@ export class Utils {
    * @param {number} length The length of the random string to generate.
    * @returns {string} The generated random string.
    */
-  static randomString(length) {
+  static randomString(length: number): string {
     let result = '';
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
     for (let i = 0; i < length; i++) {
@@ -111,21 +110,38 @@ export class Utils {
     return requestId ? `[Request ID: ${requestId}]` : '';
   };
 
-  static deployContractWithEthers = async (constructorArgs: any[] = [], contractJson, wallet, relay) => {
+  static deployContractWithEthers = async (
+    constructorArgs: any[] = [],
+    contractJson: { abi: ethers.InterfaceAbi | ethers.Interface; bytecode: ethers.BytesLike | { object: string } },
+    wallet: ethers.Wallet,
+    relay: RelayClient,
+  ) => {
     const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
     let contract = await factory.deploy(...constructorArgs);
     await contract.waitForDeployment();
 
     // re-init the contract with the deployed address
-    const receipt = await relay.provider.getTransactionReceipt(contract.deploymentTransaction()?.hash);
-    contract = new ethers.Contract(receipt.to, contractJson.abi, wallet);
+    const receipt = await relay.provider.getTransactionReceipt(contract.deploymentTransaction()!.hash);
 
-    return contract;
+    let contractAddress: string | ethers.Addressable;
+    if (receipt?.to) {
+      // long-zero address
+      contractAddress = receipt.to;
+    } else {
+      // evm address
+      contractAddress = contract.target;
+    }
+
+    return new ethers.Contract(contractAddress, contractJson.abi, wallet);
   };
 
   // The main difference between this and deployContractWithEthers is that this does not re-init the contract with the deployed address
   // and that results in the contract address coming in EVM Format instead of LongZero format
-  static deployContractWithEthersV2 = async (constructorArgs: any[] = [], contractJson, wallet) => {
+  static deployContractWithEthersV2 = async (
+    constructorArgs: any[] = [],
+    contractJson: { abi: ethers.Interface | ethers.InterfaceAbi; bytecode: ethers.BytesLike | { object: string } },
+    wallet: ethers.Wallet,
+  ) => {
     const factory = new ethers.ContractFactory(contractJson.abi, contractJson.bytecode, wallet);
     const contract = await factory.deploy(...constructorArgs);
     await contract.waitForDeployment();
@@ -134,15 +150,15 @@ export class Utils {
   };
 
   static createHTS = async (
-    tokenName,
-    symbol,
-    adminAccount,
-    initialSupply,
-    abi,
-    associatedAccounts,
-    owner,
-    servicesNode,
-    requestId,
+    tokenName: string,
+    symbol: string,
+    adminAccount: AliasAccount,
+    initialSupply: number,
+    abi: ethers.InterfaceAbi | ethers.Interface,
+    associatedAccounts: AliasAccount[],
+    owner: AliasAccount,
+    servicesNode: ServicesClient,
+    requestId?: string,
   ) => {
     const htsResult = await servicesNode.createHTS({
       tokenName,
@@ -156,31 +172,31 @@ export class Utils {
     for (const account of associatedAccounts) {
       await servicesNode.associateHTSToken(
         account.accountId,
-        htsResult.receipt.tokenId,
+        htsResult.receipt.tokenId!,
         account.privateKey,
         htsResult.client,
         requestId,
       );
-      await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId, htsResult.client, requestId);
+      await servicesNode.approveHTSToken(account.accountId, htsResult.receipt.tokenId!, htsResult.client, requestId);
     }
 
     // Setup initial balance of token owner account
     await servicesNode.transferHTSToken(
       owner.accountId,
-      htsResult.receipt.tokenId,
+      htsResult.receipt.tokenId!,
       initialSupply,
-      htsResult.client,
+      htsResult.client.operatorAccountId!,
       requestId,
     );
-    const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
+    const evmAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId!.toString());
     return new ethers.Contract(evmAddress, abi, owner.wallet);
   };
 
-  static add0xPrefix = (num) => {
+  static add0xPrefix = (num: string) => {
     return num.startsWith('0x') ? num : '0x' + num;
   };
 
-  static gasOptions = async (requestId, gasLimit = 1_500_000) => {
+  static gasOptions = async (requestId: string, gasLimit = 1_500_000) => {
     const relay: RelayClient = global.relay;
     return {
       gasLimit: gasLimit,
@@ -260,14 +276,14 @@ export class Utils {
    *
    * @param {MirrorClient} mirrorNode The mirror node client.
    * @param {AliasAccount} creator The creator account for the alias.
-   * @param {string} requestDetails The request details used for logging.
+   * @param {string} requestId The unique identifier for the request.
    * @param {string} balanceInTinyBar The initial balance for the alias account in tiny bars. Defaults to 10 HBAR.
    * @returns {Promise<AliasAccount>} A promise resolving to the created alias account.
    */
   static readonly createAliasAccount = async (
     mirrorNode: MirrorClient,
     creator: AliasAccount,
-    requestDetails: RequestDetails,
+    requestId: string,
     balanceInTinyBar: string = '1000000000', //10 HBAR
   ): Promise<AliasAccount> => {
     const signer = creator.wallet;
@@ -282,7 +298,7 @@ export class Utils {
       value: accountBalance,
     });
 
-    const mirrorNodeAccount = (await mirrorNode.get(`/accounts/${address}`, requestDetails)).account;
+    const mirrorNodeAccount = (await mirrorNode.get(`/accounts/${address}`, requestId)).account;
     const accountId = AccountId.fromString(mirrorNodeAccount);
     const client: ServicesClient = new ServicesClient(
       process.env.HEDERA_NETWORK!,
@@ -316,7 +332,7 @@ export class Utils {
       const account = await Utils.createAliasAccount(
         mirrorNode,
         initialAccount,
-        requestDetails,
+        requestDetails.requestId,
         initialAmountInTinyBar,
       );
       global.logger.trace(

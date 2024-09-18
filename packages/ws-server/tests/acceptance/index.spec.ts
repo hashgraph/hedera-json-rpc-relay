@@ -38,6 +38,8 @@ import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccoun
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { Server } from 'node:http';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -66,8 +68,6 @@ describe('RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
   const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
-  let relayServer; // Relay Server
-  let socketServer;
   global.servicesNode = new ServicesClient(
     NETWORK,
     OPERATOR_ID,
@@ -76,8 +76,6 @@ describe('RPC Server Acceptance Tests', function () {
   );
   global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
   global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
-  global.relayServer = relayServer;
-  global.socketServer = socketServer;
   global.logger = logger;
 
   before(async () => {
@@ -142,10 +140,12 @@ describe('RPC Server Acceptance Tests', function () {
 
     //stop relay
     logger.info('Stop relay');
+    const relayServer: Server = global.relayServer;
     if (relayServer !== undefined) {
       relayServer.close();
     }
 
+    const socketServer: Server = global.socketServer;
     if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
       socketServer.close();
     }
@@ -173,7 +173,7 @@ describe('RPC Server Acceptance Tests', function () {
     // start local relay, relay instance in local should not be running
 
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
-    relayServer = app.listen({ port: constants.RELAY_PORT });
+    const relayServer = app.listen({ port: constants.RELAY_PORT });
 
     if (process.env.TEST_WS_SERVER === 'true') {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
