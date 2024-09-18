@@ -129,6 +129,7 @@ describe('RPC Server Acceptance Tests', function () {
       RELAY_URL,
       CHAIN_ID,
       Utils.generateRequestId(),
+      Number(process.env.INITIAL_ALIAS_ACCOUNT_AMOUNT_IN_HBAR || 2000),
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
