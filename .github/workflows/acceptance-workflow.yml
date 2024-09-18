@@ -70,7 +70,7 @@ jobs:
       - name: Install hedera local
         run: npm install @hashgraph/hedera-local -g
 
-      - name: Set operator id and key env variable if CI is manual
+      - name: Set operator id env variable if CI is manual
         if: ${{ inputs.operator_id }}
         run: echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
 
