@@ -238,22 +238,22 @@ describe('HbarSpendingPlanRepository', function () {
       it('resets all spent today entries', async () => {
         const plans: IDetailedHbarSpendingPlan[] = [];
         for (const subscriptionType of Object.values(SubscriptionType)) {
-          const createdPlan = await repository.create(subscriptionType);
+          const createdPlan = await repository.create(subscriptionType, requestDetails);
           plans.push(createdPlan);
           const amount = 50 * plans.length;
-          await repository.addAmountToSpentToday(createdPlan.id, amount);
-          await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(amount);
+          await repository.addAmountToSpentToday(createdPlan.id, amount, requestDetails);
+          await expect(repository.getSpentToday(createdPlan.id, requestDetails)).to.eventually.equal(amount);
         }
 
-        await repository.resetAllSpentTodayEntries();
+        await repository.resetAllSpentTodayEntries(requestDetails);
 
         for (const plan of plans) {
-          await expect(repository.getSpentToday(plan.id)).to.eventually.equal(0);
+          await expect(repository.getSpentToday(plan.id, requestDetails)).to.eventually.equal(0);
         }
       });
 
       it('does not throw an error if no spent today keys exist', async () => {
-        await expect(repository.resetAllSpentTodayEntries()).to.not.be.rejected;
+        await expect(repository.resetAllSpentTodayEntries(requestDetails)).to.not.be.rejected;
       });
     });
 
