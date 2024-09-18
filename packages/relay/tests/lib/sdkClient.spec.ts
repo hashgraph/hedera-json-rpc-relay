@@ -18,12 +18,12 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
 import pino from 'pino';
 import Long from 'long';
 import { expect } from 'chai';
+import { resolve } from 'path';
 import * as sinon from 'sinon';
+import { config } from 'dotenv';
 import { Context } from 'mocha';
 import { v4 as uuid } from 'uuid';
 import EventEmitter from 'events';
@@ -34,7 +34,7 @@ import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { formatTransactionId } from '../../src/formatters';
-import NodeClient from '@hashgraph/sdk/lib/client/NodeClient';
+import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import MetricService from '../../src/lib/services/metricService/metricService';
@@ -60,6 +60,7 @@ import {
   TransactionRecordQuery,
 } from '@hashgraph/sdk';
 
+config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
 const logger = pino();
 
@@ -93,7 +94,7 @@ describe('SdkClient', async function () {
   } as unknown as FeeSchedules;
 
   before(() => {
-    const hederaNetwork = EnvProviderService.getInstance().get('HEDERA_NETWORK')!;
+    const hederaNetwork = process.env.HEDERA_NETWORK!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
@@ -101,8 +102,8 @@ describe('SdkClient', async function () {
     }
 
     client = client.setOperator(
-      AccountId.fromString(EnvProviderService.getInstance().get('OPERATOR_ID_MAIN')!),
-      Utils.createPrivateKeyBasedOnFormat(EnvProviderService.getInstance().get('OPERATOR_KEY_MAIN')!),
+      AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
+      Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TINYBAR;
@@ -116,7 +117,7 @@ describe('SdkClient', async function () {
       eventEmitter,
     );
 
-    EnvProviderService.getInstance().dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
+    process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
 
     instance = axios.create({
       baseURL: 'https://localhost:5551/api/v1',
@@ -129,7 +130,7 @@ describe('SdkClient', async function () {
 
     // mirror node client
     mirrorNodeClient = new MirrorNodeClient(
-      EnvProviderService.getInstance().get('MIRROR_NODE_URL') || '',
+      process.env.MIRROR_NODE_URL || '',
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -229,6 +230,8 @@ describe('SdkClient', async function () {
   });
 
   describe('HAPIService', async () => {
+    let originalEnv: NodeJS.ProcessEnv;
+
     const OPERATOR_KEY_ED25519 = {
       DER: '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
       HEX_ED25519: '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
@@ -238,6 +241,31 @@ describe('SdkClient', async function () {
       DER: '3030020100300706052b8104000a0422042008e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
       HEX_ECDSA: '0x08e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
     };
+
+    before(function (this: Context) {
+      // Store the original process.env
+      originalEnv = process.env;
+
+      if (
+        this.currentTest?.title ===
+        'Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is null'
+      ) {
+        process.env = new Proxy(process.env, {
+          get: (target, prop) => {
+            if (prop === 'OPERATOR_KEY_FORMAT') {
+              return null;
+            }
+            // @ts-ignore
+            return target[prop];
+          },
+        });
+      }
+    });
+
+    after(() => {
+      // Restore the original process.env after the test
+      process.env = originalEnv;
+    });
 
     it('Initialize the privateKey for default which is DER', async () => {
       const hapiService = new HAPIService(
@@ -252,7 +280,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is undefined', async () => {
-      EnvProviderService.getInstance().remove('OPERATOR_KEY_FORMAT');
+      delete process.env.OPERATOR_KEY_FORMAT;
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -265,7 +293,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
-      EnvProviderService.getInstance().dynamicOverride('OPERATOR_KEY_FORMAT', 'DER');
+      process.env.OPERATOR_KEY_FORMAT = 'DER';
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -278,7 +306,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
-      EnvProviderService.getInstance().dynamicOverride('OPERATOR_KEY_FORMAT', 'HEX_ED25519');
+      process.env.OPERATOR_KEY_FORMAT = 'HEX_ED25519';
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -291,7 +319,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
-      EnvProviderService.getInstance().dynamicOverride('OPERATOR_KEY_FORMAT', 'HEX_ECDSA');
+      process.env.OPERATOR_KEY_FORMAT = 'HEX_ECDSA';
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -304,7 +332,7 @@ describe('SdkClient', async function () {
     });
 
     it('It should throw an Error when an unexpected string is set', async () => {
-      EnvProviderService.getInstance().dynamicOverride('OPERATOR_KEY_FORMAT', 'BAD_FORMAT');
+      process.env.OPERATOR_KEY_FORMAT = 'BAD_FORMAT';
       try {
         new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter);
         expect.fail(`Expected an error but nothing was thrown`);
@@ -315,8 +343,8 @@ describe('SdkClient', async function () {
   });
 
   describe('HBAR Limiter', async () => {
-    const FILE_APPEND_CHUNK_SIZE = Number(EnvProviderService.getInstance().get('FILE_APPEND_CHUNK_SIZE')) || 5120;
-    const MAX_CHUNKS = Number(EnvProviderService.getInstance().get('FILE_APPEND_MAX_CHUNKS')) || 20;
+    const FILE_APPEND_CHUNK_SIZE = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+    const MAX_CHUNKS = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     const transactionBuffer = new Uint8Array([
       2, 249, 250, 182, 130, 1, 42, 7, 1, 133, 209, 56, 92, 123, 240, 131, 228, 225, 192, 148, 61, 176, 51, 137, 34,
       205, 229, 74, 102, 224, 197, 133, 1, 18, 73, 145, 93, 50, 210, 37, 134, 9, 24, 78, 114, 160, 0, 185, 250, 68, 130,
@@ -2099,9 +2127,9 @@ describe('SdkClient', async function () {
       124, 18, 190, 114, 79, 189, 99, 27, 157, 117, 227, 107, 74, 255, 111, 74, 166, 7, 78, 25, 35, 131, 85, 47, 52,
       120, 20,
     ]);
-    const fileCreateFee = Number(EnvProviderService.getInstance().get('HOT_FIX_FILE_CREATE_FEE') || 100000000); // 1 hbar
-    const fileDeleteFee = Number(EnvProviderService.getInstance().get('HOT_FIX_FILE_DELETE_FEE') || 11000000); // 0.11 hbar
-    const fileAppendFee = Number(EnvProviderService.getInstance().get('HOT_FIX_FILE_APPEND_FEE') || 120000000); // 1.2 hbar
+    const fileCreateFee = 100000000; // 1 hbar
+    const fileDeleteFee = 11000000; // 0.11 hbar
+    const fileAppendFee = 120000000; // 1.2 hbar
     const mockedExchangeRateIncents = 12;
     const mockedTransactionRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateIncents);
     const defaultTransactionFee = 1000;
@@ -2111,8 +2139,10 @@ describe('SdkClient', async function () {
     const fileId = FileId.fromString('0.0.1234');
     const transactionReceipt = { fileId, status: Status.Success };
     const gasUsed = Long.fromNumber(10000);
+    const mockedNetworkGasPrice = 710000;
 
     const randomAccountAddress = random20BytesAddress();
+    let hbarRateLimitPreemptiveCheck: string | undefined;
 
     const getMockedTransaction = (transactionType: string, toHbar: boolean) => {
       let transactionFee: any;
@@ -2122,7 +2152,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileCreateFee / 10 ** 8) : fileCreateFee;
           transfers = [
             {
-              accountId: EnvProviderService.getInstance().get('OPERATOR_ID_MAIN'),
+              accountId: process.env.OPERATOR_ID_MAIN,
               amount: Hbar.fromTinybars(-1 * fileCreateFee),
               is_approval: false,
             },
@@ -2132,7 +2162,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileAppendFee / 10 ** 8) : fileAppendFee;
           transfers = [
             {
-              accountId: EnvProviderService.getInstance().get('OPERATOR_ID_MAIN'),
+              accountId: process.env.OPERATOR_ID_MAIN,
               amount: Hbar.fromTinybars(-1 * fileAppendFee),
               is_approval: false,
             },
@@ -2142,7 +2172,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileDeleteFee / 10 ** 8) : fileDeleteFee;
           transfers = [
             {
-              accountId: EnvProviderService.getInstance().get('OPERATOR_ID_MAIN'),
+              accountId: process.env.OPERATOR_ID_MAIN,
               amount: Hbar.fromTinybars(-1 * fileDeleteFee),
               is_approval: false,
             },
@@ -2157,7 +2187,7 @@ describe('SdkClient', async function () {
               is_approval: false,
             },
             {
-              accountId: EnvProviderService.getInstance().get('OPERATOR_ID_MAIN'),
+              accountId: process.env.OPERATOR_ID_MAIN,
               amount: Hbar.fromTinybars(-1 * defaultTransactionFee),
               is_approval: false,
             },
@@ -2177,8 +2207,8 @@ describe('SdkClient', async function () {
         nodeId: accountId,
         transactionHash: Uint8Array.from([1, 2, 3, 4]),
         transactionId,
-        getReceipt: (_client: NodeClient) => Promise.resolve(transactionReceipt),
-        getRecord: (_client: NodeClient) => {
+        getReceipt: (_client: Client) => Promise.resolve(transactionReceipt),
+        getRecord: (_client: Client) => {
           const transactionFee = getMockedTransaction(transactionType, false).transactionFee;
           const transfers = getMockedTransaction(transactionType, false).transfers;
           return Promise.resolve({
@@ -2222,6 +2252,8 @@ describe('SdkClient', async function () {
       hbarLimitMock = sinon.mock(hbarLimiter);
       sdkClientMock = sinon.mock(sdkClient);
       mock = new MockAdapter(instance);
+      hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK;
+      process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = 'true';
     });
 
     afterEach(() => {
@@ -2229,6 +2261,7 @@ describe('SdkClient', async function () {
       sinon.restore();
       sdkClientMock.restore();
       hbarLimitMock.restore();
+      process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = hbarRateLimitPreemptiveCheck;
     });
 
     it('should rate limit before creating file', async () => {
@@ -2243,7 +2276,14 @@ describe('SdkClient', async function () {
         .returns(true);
 
       try {
-        await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestId, randomAccountAddress);
+        await sdkClient.submitEthereumTransaction(
+          transactionBuffer,
+          mockedCallerName,
+          randomAccountAddress,
+          mockedNetworkGasPrice,
+          mockedExchangeRateIncents,
+          requestId,
+        );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
         expect(error.message).to.equal('HBAR Rate limit exceeded');
@@ -2281,7 +2321,6 @@ describe('SdkClient', async function () {
       // last transactionRecordStub call for EthereumTransaction
       transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(EthereumTransaction.name));
 
-      sdkClientMock.expects('getTinyBarGasFee').once().returns(1000);
       hbarLimitMock.expects('shouldLimit').thrice().returns(false);
       hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
       hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
@@ -2296,7 +2335,14 @@ describe('SdkClient', async function () {
         .withArgs(mockedTransactionRecordFee)
         .exactly(fileAppendChunks + 2);
 
-      await sdkClient.submitEthereumTransaction(transactionBuffer, mockedCallerName, requestId, randomAccountAddress);
+      await sdkClient.submitEthereumTransaction(
+        transactionBuffer,
+        mockedCallerName,
+        randomAccountAddress,
+        mockedNetworkGasPrice,
+        mockedExchangeRateIncents,
+        requestId,
+      );
 
       expect(queryStub.called).to.be.true;
       expect(transactionStub.called).to.be.true;
@@ -2411,6 +2457,24 @@ describe('SdkClient', async function () {
       }
 
       expect(appendFileStub.called).to.be.false;
+    });
+
+    it('should preemptively rate limit before executing file transactions', async () => {
+      const expectedError = predefined.HBAR_RATE_LIMIT_PREEMPTIVE_EXCEEDED;
+      hbarLimitMock.expects('shouldPreemptivelyLimitFileTransactions').once().returns(true);
+
+      try {
+        await sdkClient.submitEthereumTransaction(
+          transactionBuffer,
+          mockedCallerName,
+          requestId,
+          randomAccountAddress,
+          mockedExchangeRateIncents,
+        );
+        expect.fail(`Expected an error but nothing was thrown`);
+      } catch (error: any) {
+        expect(error).to.deep.equal(expectedError);
+      }
     });
 
     it('should execute FileCreateTransaction with callData.length <= fileAppendChunkSize and add expenses to limiter', async () => {
@@ -2537,7 +2601,7 @@ describe('SdkClient', async function () {
     });
 
     it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
-      EnvProviderService.getInstance().dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'false'; // switch to mirror node mode
       const mockedTransactionId = transactionId.toString();
       const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);
       const mockedMirrorNodeTransactionRecord = {
@@ -2553,7 +2617,7 @@ describe('SdkClient', async function () {
                 is_approval: false,
               },
               {
-                account: EnvProviderService.getInstance().get('OPERATOR_ID_MAIN'),
+                account: process.env.OPERATOR_ID_MAIN,
                 amount: -1 * defaultTransactionFee,
                 is_approval: false,
               },
@@ -2584,7 +2648,7 @@ describe('SdkClient', async function () {
       expect(response).to.eq(transactionResponse);
       expect(transactionStub.called).to.be.true;
 
-      EnvProviderService.getInstance().dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
+      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true'; // switch back to consensus node
     });
 
     it('Should execute calculateTxRecordChargeAmount() to get the charge amount of transaction record', () => {
@@ -2639,7 +2703,7 @@ describe('SdkClient', async function () {
     });
 
     it('Should execute getTransferAmountSumForAccount() to calculate transactionFee of the specify accountId', () => {
-      const accountId = EnvProviderService.getInstance().get('OPERATOR_ID_MAIN') || '';
+      const accountId = process.env.OPERATOR_ID_MAIN || '';
       const mockedTxRecord = getMockedTransactionRecord();
 
       const transactionFee = sdkClient.getTransferAmountSumForAccount(mockedTxRecord, accountId);

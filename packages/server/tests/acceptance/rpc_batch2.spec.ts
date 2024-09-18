@@ -83,7 +83,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
   const signSendAndConfirmTransaction = async (transaction, accounts, requestId) => {
     const signedTx = await accounts.wallet.signTransaction(transaction);
-    const txHash = await relay.sendRawTransaction(signedTx);
+    const txHash = await relay.sendRawTransaction(signedTx, requestId);
     await mirrorNode.get(`/contracts/results/${txHash}`, requestId);
     await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash]);
     await new Promise((r) => setTimeout(r, 2000));
@@ -153,7 +153,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_estimateGas', async function () {
-    it('@release should execute "eth_estimateGas"', async function () {
+    it('@release-light, @release should execute "eth_estimateGas"', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{}], requestId);
       expect(res).to.contain('0x');
       expect(res).to.not.be.equal('0x');
@@ -463,7 +463,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.eq('0x0');
     });
 
-    it('@release should execute "eth_getBalance" for contract', async function () {
+    it('@release-light, @release should execute "eth_getBalance" for contract', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
         [getBalanceContractAddress, 'latest'],

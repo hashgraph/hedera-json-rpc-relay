@@ -32,6 +32,7 @@ import {
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingRecord';
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
+import { IDetailedHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingPlan';
 import { useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
@@ -236,6 +237,29 @@ describe('HbarSpendingPlanRepository', function () {
         await new Promise((resolve) => setTimeout(resolve, mockedOneDayInMillis + 100));
 
         await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(0);
+      });
+    });
+
+    describe('resetAllSpentTodayEntries', () => {
+      it('resets all spent today entries', async () => {
+        const plans: IDetailedHbarSpendingPlan[] = [];
+        for (const subscriptionType of Object.values(SubscriptionType)) {
+          const createdPlan = await repository.create(subscriptionType);
+          plans.push(createdPlan);
+          const amount = 50 * plans.length;
+          await repository.addAmountToSpentToday(createdPlan.id, amount);
+          await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(amount);
+        }
+
+        await repository.resetAllSpentTodayEntries();
+
+        for (const plan of plans) {
+          await expect(repository.getSpentToday(plan.id)).to.eventually.equal(0);
+        }
+      });
+
+      it('does not throw an error if no spent today keys exist', async () => {
+        await expect(repository.resetAllSpentTodayEntries()).to.not.be.rejected;
       });
     });
 

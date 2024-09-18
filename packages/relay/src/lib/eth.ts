@@ -56,6 +56,7 @@ import {
   formatContractResult,
   weibarHexToTinyBarInt,
   isValidEthereumAddress,
+  formatRequestIdMessage,
   formatTransactionIdWithoutQueryParams,
   getFunctionSelector,
 } from '../formatters';
@@ -476,16 +477,18 @@ export class EthImpl implements Eth {
 
   private async getFeeWeibars(callerName: string, requestIdPrefix?: string, timestamp?: string): Promise<number> {
     let networkFees;
+
     try {
       networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp, undefined, requestIdPrefix);
-      if (_.isNil(networkFees)) {
-        this.logger.debug(`${requestIdPrefix} Mirror Node returned no fees. Fallback to network`);
-      }
     } catch (e: any) {
-      this.logger.warn(e, `${requestIdPrefix} Mirror Node threw an error retrieving fees. Fallback to network`);
+      this.logger.warn(
+        e,
+        `${requestIdPrefix} Mirror Node threw an error while retrieving fees. Fallback to consensus node.`,
+      );
     }
 
     if (_.isNil(networkFees)) {
+      this.logger.debug(`${requestIdPrefix} Mirror Node returned no network fees. Fallback to consensus node.`);
       networkFees = {
         fees: [
           {
@@ -729,10 +732,14 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Gets the current gas price of the network.
+   * Retrieves the current network gas price in weibars.
+   *
+   * @param {string} [requestIdPrefix] - An optional prefix for the request ID used for logging purposes.
+   * @returns {Promise<string>} The current gas price in weibars as a hexadecimal string.
+   * @throws Will throw an error if unable to retrieve the gas price.
    */
   async gasPrice(requestIdPrefix?: string): Promise<string> {
-    this.logger.trace(`${requestIdPrefix} gasPrice()`);
+    this.logger.trace(`${requestIdPrefix} eth_gasPrice`);
     try {
       let gasPrice: number | undefined = await this.cacheService.getAsync(
         constants.CACHE_KEY.GAS_PRICE,
@@ -1439,7 +1446,11 @@ export class EthImpl implements Eth {
     return nonceCount;
   }
 
-  async parseRawTxAndPrecheck(transaction: string, requestIdPrefix?: string): Promise<EthersTransaction> {
+  async parseRawTxAndPrecheck(
+    transaction: string,
+    networkGasPriceInWeiBars: number,
+    requestIdPrefix?: string,
+  ): Promise<EthersTransaction> {
     let interactingEntity = '';
     let originatingAddress = '';
     try {
@@ -1451,8 +1462,7 @@ export class EthImpl implements Eth {
         `${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`,
       );
 
-      const gasPrice = Number(await this.gasPrice(requestIdPrefix));
-      await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestIdPrefix);
+      await this.precheck.sendRawTransactionCheck(parsedTx, networkGasPriceInWeiBars, requestIdPrefix);
       return parsedTx;
     } catch (e: any) {
       this.logger.warn(
@@ -1501,7 +1511,7 @@ export class EthImpl implements Eth {
 
         if (!accountNonce) {
           this.logger.warn(`${requestIdPrefix} Cannot find updated account nonce.`);
-          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONT_NONCE error.`);
+          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONG_NONCE error.`);
         }
 
         if (parsedTx.nonce > accountNonce) {
@@ -1530,15 +1540,20 @@ export class EthImpl implements Eth {
    * Submits a transaction to the network for execution.
    *
    * @param transaction
-   * @param requestIdPrefix
+   * @param requestId
    */
-  async sendRawTransaction(transaction: string, requestIdPrefix: string): Promise<string | JsonRpcError> {
+  async sendRawTransaction(transaction: string, requestId: string): Promise<string | JsonRpcError> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     if (transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter
         .labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
         .inc();
 
-    const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestIdPrefix);
+    const networkGasPriceInWeiBars = Utils.addPercentageBufferToGasPrice(
+      await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix),
+    );
+
+    const parsedTx = await this.parseRawTxAndPrecheck(transaction, networkGasPriceInWeiBars, requestIdPrefix);
     const originalCallerAddress = parsedTx.from?.toString() || '';
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     let fileId: FileId | null = null;
@@ -1549,8 +1564,10 @@ export class EthImpl implements Eth {
         .submitEthereumTransaction(
           transactionBuffer,
           EthImpl.ethSendRawTransaction,
-          requestIdPrefix,
           originalCallerAddress,
+          networkGasPriceInWeiBars,
+          await this.getCurrentNetworkExchangeRateInCents(requestIdPrefix),
+          requestIdPrefix,
         );
 
       txSubmitted = true;
@@ -1864,7 +1881,7 @@ export class EthImpl implements Eth {
         data = crypto.createHash('sha1').update(call.data).digest('hex'); // NOSONAR
       }
 
-      const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:.${call.to}.${data}`;
+      const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:${call.from || ''}.${call.to}.${data}`;
       const cachedResponse = await this.cacheService.getAsync(cacheKey, EthImpl.ethCall, requestIdPrefix);
 
       if (cachedResponse != undefined) {
@@ -2500,5 +2517,28 @@ export class EthImpl implements Eth {
       .reduce((total, amount) => {
         return total + amount;
       }, 0);
+  }
+
+  /**
+   * Retrieves the current network exchange rate of HBAR to USD in cents.
+   *
+   * @param {string} requestId - The unique identifier for the request.
+   * @returns {Promise<number>} - A promise that resolves to the current exchange rate in cents.
+   */
+  private async getCurrentNetworkExchangeRateInCents(requestId: string): Promise<number> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const cacheKey = constants.CACHE_KEY.CURRENT_NETWORK_EXCHANGE_RATE;
+    const callingMethod = this.getCurrentNetworkExchangeRateInCents.name;
+    const cacheTTL = 15 * 60 * 1000; // 15 minutes
+
+    let currentNetworkExchangeRate = await this.cacheService.getAsync(cacheKey, callingMethod, requestIdPrefix);
+
+    if (!currentNetworkExchangeRate) {
+      currentNetworkExchangeRate = (await this.mirrorNodeClient.getNetworkExchangeRate(requestId)).current_rate;
+      await this.cacheService.set(cacheKey, currentNetworkExchangeRate, callingMethod, cacheTTL, requestIdPrefix);
+    }
+
+    const exchangeRateInCents = currentNetworkExchangeRate.cent_equivalent / currentNetworkExchangeRate.hbar_equivalent;
+    return exchangeRateInCents;
   }
 }

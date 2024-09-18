@@ -34,6 +34,7 @@ enum CACHE_KEY {
   FEE_HISTORY = 'fee_history',
   FILTER = 'filter',
   GAS_PRICE = 'gas_price',
+  NETWORK_FEES = 'network_fees',
   GET_BLOCK = 'getBlock',
   GET_CONTRACT = 'getContract',
   GET_CONTRACT_RESULT = 'getContractResult',
@@ -41,6 +42,7 @@ enum CACHE_KEY {
   RESOLVE_ENTITY_TYPE = 'resolveEntityType',
   SYNTHETIC_LOG_TRANSACTION_HASH = 'syntheticLogTransactionHash',
   FILTERID = 'filterId',
+  CURRENT_NETWORK_EXCHANGE_RATE = 'currentNetworkExchangeRate',
 }
 
 enum CACHE_TTL {
@@ -67,6 +69,7 @@ export enum CallType {
 }
 
 export default {
+  HBAR_TO_TINYBAR_COEF: 100_000_000,
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
   // 131072 bytes are 128kbytes
   SEND_RAW_TRANSACTION_SIZE_LIMIT: EnvProviderService.getInstance().get('SEND_RAW_TRANSACTION_SIZE_LIMIT')
@@ -193,8 +196,22 @@ export default {
   // computed hash of an empty Trie object
   DEFAULT_ROOT_HASH: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 
-  // @source: https://docs.hedera.com/hedera/networks/mainnet/fees
-  TX_RECORD_QUERY_COST_IN_CENTS: 0.01,
+  // The fee is calculated via the fee calculator: https://docs.hedera.com/hedera/networks/mainnet/fees
+  // The maximum fileAppendChunkSize is currently set to 5KB by default; therefore, the estimated fees for FileCreate below are based on a file size of 5KB.
+  // FILE_APPEND_BASE_FEE & FILE_APPEND_RATE_PER_BYTE are calculated based on data colelction from the fee calculator:
+  // - 0 bytes = 3.9 cents
+  // - 100 bytes = 4.01 cents = 3.9 + (100 * 0.0011)
+  // - 500 bytes = 4.45 cents = 3.9 + (500 * 0.0011)
+  // - 1000 bytes = 5.01 cents = 3.9 + (1000 * 0.0011)
+  // - 5120 bytes = 9.53 cents = 3.9 + (5120 * 0.0011)
+  // final equation: cost_in_cents = base_cost + (bytes × rate_per_byte)
+  NETWORK_FEES_IN_CENTS: {
+    TRANSACTION_GET_RECORD: 0.01,
+    FILE_CREATE_PER_5_KB: 9.51,
+    FILE_APPEND_PER_5_KB: 9.55,
+    FILE_APPEND_BASE_FEE: 3.9,
+    FILE_APPEND_RATE_PER_BYTE: 0.0011,
+  },
 
   EVENTS: {
     EXECUTE_TRANSACTION: 'execute_transaction',

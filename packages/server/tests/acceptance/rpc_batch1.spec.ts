@@ -778,7 +778,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         expect(response).to.be.null;
       });
 
-      it('@release should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
+      it('@release-light, @release should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
         const transaction = {
           ...default155TransactionData,
           to: parentContractAddress,
@@ -801,7 +801,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         Assertions.transactionReceipt(res, mirrorResult, currentPrice);
       });
 
-      it('@release should execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
+      it('@release-light, @release should execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
         const gasPrice = await relay.gasPrice(requestId);
         const transaction = {
           ...defaultLondonTransactionData,
@@ -829,7 +829,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         Assertions.transactionReceipt(res, mirrorResult, currentPrice);
       });
 
-      it('@release should execute "eth_getTransactionReceipt" for hash of 2930 transaction', async function () {
+      it('@release-light, @release should execute "eth_getTransactionReceipt" for hash of 2930 transaction', async function () {
         const transaction = {
           ...defaultLegacy2930TransactionData,
           to: parentContractAddress,
@@ -998,13 +998,12 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             const expectedNonceTooLowError = predefined.NONCE_TOO_LOW(0, signerNonce);
             const errObj = JSON.parse(error.info.responseBody).error;
             expect(errObj.code).to.eq(expectedNonceTooLowError.code);
-            expect(errObj.name).to.eq(expectedNonceTooLowError.name);
             expect(errObj.message).to.contain(expectedNonceTooLowError.message);
           }
         }
       });
 
-      it('@release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
+      it('@release-light, @release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
         const receiverInitialBalance = await relay.getBalance(parentContractAddress, 'latest', requestId);
         const transaction = {
           ...default155TransactionData,

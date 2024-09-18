@@ -846,7 +846,7 @@ describe('MirrorNodeClient', async function () {
 
     mock.onGet(`network/exchangerate`).reply(200, exchangerate);
 
-    const result = await mirrorNodeInstance.getNetworkExchangeRate();
+    const result = await mirrorNodeInstance.getNetworkExchangeRate(getRequestId());
     expect(result).to.exist;
     expect(result.current_rate).to.exist;
     expect(result.next_rate).to.exist;

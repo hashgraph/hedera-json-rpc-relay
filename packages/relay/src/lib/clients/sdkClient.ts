@@ -57,11 +57,10 @@ import { EventEmitter } from 'events';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { formatRequestIdMessage } from '../../formatters';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { formatRequestIdMessage, weibarHexToTinyBarInt } from '../../formatters';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../types';
 
 const _ = require('lodash');
@@ -133,20 +132,18 @@ export class SDKClient {
   ) {
     this.clientMain = clientMain;
 
-    if (EnvProviderService.getInstance().get('CONSENSUS_MAX_EXECUTION_TIME')) {
+    if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
       // sets the maximum time in ms for the SDK to wait when submitting
       // a transaction/query before throwing a TIMEOUT error
-      this.clientMain = clientMain.setMaxExecutionTime(
-        Number(EnvProviderService.getInstance().get('CONSENSUS_MAX_EXECUTION_TIME')),
-      );
+      this.clientMain = clientMain.setMaxExecutionTime(Number(process.env.CONSENSUS_MAX_EXECUTION_TIME));
     }
 
     this.logger = logger;
     this.hbarLimiter = hbarLimiter;
     this.cacheService = cacheService;
     this.eventEmitter = eventEmitter;
-    this.maxChunks = Number(EnvProviderService.getInstance().get('FILE_APPEND_MAX_CHUNKS')) || 20;
-    this.fileAppendChunkSize = Number(EnvProviderService.getInstance().get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+    this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
+    this.fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
   }
 
   /**
@@ -307,10 +304,13 @@ export class SDKClient {
   }
 
   /**
-   * Retrieves the gas fee in tinybars for Ethereum transactions.
-   * Caches the result to avoid repeated fee schedule queries.
-   * @param {string} callerName - The name of the caller for logging purposes.
-   * @param {string} [requestId] - Optional request ID for logging purposes.
+   * Retrieves the gas fee in tinybars for Ethereum transactions using HAPI and caches the result to avoid repeated fee schedule queries.
+   *
+   * @note This method should be used as a fallback if retrieving the network gas price with MAPI fails.
+   * MAPI does not incur any fees, while HAPI will incur a query fee.
+   *
+   * @param {string} callerName - The name of the caller, used for logging purposes.
+   * @param {string} [requestId] - Optional request ID, used for logging purposes.
    * @returns {Promise<number>} The gas fee in tinybars.
    * @throws {SDKClientError} Throws an SDK client error if the fee schedules or exchange rates are invalid.
    */
@@ -374,16 +374,20 @@ export class SDKClient {
    *
    * @param {Uint8Array} transactionBuffer - The transaction data in bytes.
    * @param {string} callerName - The name of the caller initiating the transaction.
-   * @param {string} requestId - The unique identifier for the request.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
+   * @param {number} networkGasPriceInWeiBars - The predefined gas price of the network in weibar.
+   * @param {number} currentNetworkExchangeRateInCents - The exchange rate in cents of the current network.
+   * @param {string} requestId - The unique identifier for the request.
    * @returns {Promise<{ txResponse: TransactionResponse; fileId: FileId | null }>}
    * @throws {SDKClientError} Throws an error if no file ID is created or if the preemptive fee check fails.
    */
   async submitEthereumTransaction(
     transactionBuffer: Uint8Array,
     callerName: string,
-    requestId: string,
     originalCallerAddress: string,
+    networkGasPriceInWeiBars: number,
+    currentNetworkExchangeRateInCents: number,
+    requestId: string,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
@@ -395,29 +399,20 @@ export class SDKClient {
     if (ethereumTransactionData.callData.length <= this.fileAppendChunkSize) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
-      // notice: this solution is temporary and subject to change.
-      const isPreemtiveCheckOn = EnvProviderService.getInstance().get('HBAR_RATE_LIMIT_PREEMTIVE_CHECK')
-        ? EnvProviderService.getInstance().get('HBAR_RATE_LIMIT_PREEMTIVE_CHECK') === 'true'
-        : false;
+      const isPreemptiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK === 'true';
 
-      if (isPreemtiveCheckOn) {
-        const numFileCreateTxs = 1;
-        const numFileAppendTxs = Math.ceil(ethereumTransactionData.callData.length / this.fileAppendChunkSize);
-        const fileCreateFee = Number(EnvProviderService.getInstance().get('HOT_FIX_FILE_CREATE_FEE') || 100000000); // 1 hbar
-        const fileAppendFee = Number(EnvProviderService.getInstance().get('HOT_FIX_FILE_APPEND_FEE') || 120000000); // 1.2 hbar
-
-        const totalPreemtiveTransactionFee = numFileCreateTxs * fileCreateFee + numFileAppendTxs * fileAppendFee;
-
-        const shouldPreemtivelyLimit = this.hbarLimiter.shouldPreemtivelyLimit(
+      if (isPreemptiveCheckOn) {
+        const hexCallDataLength = Buffer.from(ethereumTransactionData.callData).toString('hex').length;
+        const shouldPreemptivelyLimit = this.hbarLimiter.shouldPreemptivelyLimitFileTransactions(
           originalCallerAddress,
-          totalPreemtiveTransactionFee,
+          hexCallDataLength,
+          this.fileAppendChunkSize,
+          currentNetworkExchangeRateInCents,
           requestId,
         );
-        if (shouldPreemtivelyLimit) {
-          this.logger.trace(
-            `${requestIdPrefix} The total preemptive transaction fee exceeds the current remaining HBAR budget due to an excessively large callData size: numFileCreateTxs=${numFileCreateTxs}, numFileAppendTxs=${numFileAppendTxs}, totalPreemtiveTransactionFee=${totalPreemtiveTransactionFee}, callDataSize=${ethereumTransactionData.callData.length}`,
-          );
-          throw predefined.HBAR_RATE_LIMIT_PREEMTIVE_EXCEEDED;
+
+        if (shouldPreemptivelyLimit) {
+          throw predefined.HBAR_RATE_LIMIT_PREEMPTIVE_EXCEEDED;
         }
       }
 
@@ -435,9 +430,11 @@ export class SDKClient {
       ethereumTransactionData.callData = new Uint8Array();
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes()).setCallDataFileId(fileId);
     }
+    const networkGasPriceInTinyBars = weibarHexToTinyBarInt(networkGasPriceInWeiBars);
 
-    const tinybarsGasFee = await this.getTinyBarGasFee('eth_sendRawTransaction', requestId);
-    ethereumTransaction.setMaxTransactionFee(Hbar.fromTinybars(Math.floor(tinybarsGasFee * constants.MAX_GAS_PER_SEC)));
+    ethereumTransaction.setMaxTransactionFee(
+      Hbar.fromTinybars(Math.floor(networkGasPriceInTinyBars * constants.MAX_GAS_PER_SEC)),
+    );
 
     return {
       fileId,
@@ -517,7 +514,7 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let retries = 0;
     let resp;
-    while (parseInt(EnvProviderService.getInstance().get('CONTRACT_QUERY_TIMEOUT_RETRIES') || '1') > retries) {
+    while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || '1') > retries) {
       try {
         resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestId);
         return resp;
@@ -1041,7 +1038,7 @@ export class SDKClient {
   public calculateTxRecordChargeAmount(exchangeRate: ExchangeRate): number {
     const exchangeRateInCents = exchangeRate.exchangeRateInCents;
     const hbarToTinybar = Hbar.from(1, HbarUnit.Hbar).toTinybars().toNumber();
-    return Math.round((constants.TX_RECORD_QUERY_COST_IN_CENTS / exchangeRateInCents) * hbarToTinybar);
+    return Math.round((constants.NETWORK_FEES_IN_CENTS.TRANSACTION_GET_RECORD / exchangeRateInCents) * hbarToTinybar);
   }
 
   /**

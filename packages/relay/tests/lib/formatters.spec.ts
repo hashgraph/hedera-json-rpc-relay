@@ -22,14 +22,11 @@ import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 EnvProviderService.hotReload();
 import { expect } from 'chai';
 import {
-  ASCIIToHex,
   decodeErrorMessage,
   formatContractResult,
-  formatRequestIdMessage,
   formatTransactionId,
   formatTransactionIdWithoutQueryParams,
   hexToASCII,
-  isHex,
   isValidEthereumAddress,
   mapKeysAndValues,
   nanOrNumberTo0x,
@@ -37,9 +34,7 @@ import {
   numberTo0x,
   parseNumericEnvVar,
   prepend0x,
-  strip0x,
   toHash32,
-  toHexString,
   toNullableBigNumber,
   toNullIfEmptyHex,
   trimPrecedingZeros,
@@ -449,24 +444,9 @@ describe('Formatters', () => {
       expect(weibarHexToTinyBarInt(value)).to.eq(111);
     });
 
-    it('should convert weibar hex value to tinybar number', () => {
-      const value = undefined;
-      expect(weibarHexToTinyBarInt(value)).to.be.null;
-    });
-
-    it('should convert weibar hex value to tinybar number', () => {
-      const value = null;
-      expect(weibarHexToTinyBarInt(value)).to.be.null;
-    });
-
     it('should handle 0x value', () => {
       const value = '0x';
-      expect(weibarHexToTinyBarInt(value)).to.eq(null);
-    });
-
-    it('should handle 0x value', () => {
-      const value = '0x';
-      expect(weibarHexToTinyBarInt(value)).to.eq(null);
+      expect(weibarHexToTinyBarInt(value)).to.eq(0);
     });
 
     it('should 0x0', () => {

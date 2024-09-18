@@ -101,14 +101,50 @@ describe('HbarLimitService', function () {
   });
 
   describe('resetLimiter', function () {
-    // TODO: Add tests here with https://github.com/hashgraph/hedera-json-rpc-relay/issues/2868
+    const createSpiesForMetricsReset = (fieldName: string) =>
+      Object.values(SubscriptionType).map((subscriptionType) =>
+        sinon.spy(hbarLimitService[fieldName][subscriptionType], 'reset'),
+      );
 
-    it('should throw an error when resetLimiter is called', async function () {
-      try {
-        await hbarLimitService.resetLimiter();
-      } catch (error: any) {
-        expect(error.message).to.equal('Not implemented');
-      }
+    beforeEach(() => {
+      hbarSpendingPlanRepositoryStub.resetAllSpentTodayEntries.resolves();
+    });
+
+    afterEach(() => {
+      hbarSpendingPlanRepositoryStub.resetAllSpentTodayEntries.restore();
+    });
+
+    it('should reset the spentToday field of all spending plans', async function () {
+      await hbarLimitService.resetLimiter();
+      expect(hbarSpendingPlanRepositoryStub.resetAllSpentTodayEntries.called).to.be.true;
+    });
+
+    it('should reset the remaining budget and update the gauge', async function () {
+      // @ts-ignore
+      hbarLimitService.remainingBudget = 1000;
+      const setSpy = sinon.spy(hbarLimitService['hbarLimitRemainingGauge'], 'set');
+      await hbarLimitService.resetLimiter();
+      expect(hbarLimitService['remainingBudget']).to.equal(totalBudget);
+      expect(setSpy.calledOnceWith(totalBudget)).to.be.true;
+    });
+
+    it('should reset the daily unique spending plans counter', async function () {
+      const spies = createSpiesForMetricsReset('dailyUniqueSpendingPlansCounter');
+      await hbarLimitService.resetLimiter();
+      spies.forEach((spy) => sinon.assert.calledOnce(spy));
+    });
+
+    it('should reset the average daily spending plan usages gauge', async function () {
+      const spies = createSpiesForMetricsReset('averageDailySpendingPlanUsagesGauge');
+      await hbarLimitService.resetLimiter();
+      spies.forEach((spy) => sinon.assert.calledOnce(spy));
+    });
+
+    it('should set the reset date to the next day at midnight', async function () {
+      const tomorrow = new Date(Date.now() + HbarLimitService.ONE_DAY_IN_MILLIS);
+      const expectedResetDate = new Date(tomorrow.setHours(0, 0, 0, 0));
+      await hbarLimitService.resetLimiter();
+      expect(hbarLimitService['reset']).to.deep.equal(expectedResetDate);
     });
   });
 
@@ -570,7 +606,7 @@ describe('HbarLimitService', function () {
         hbarLimitService['dailyUniqueSpendingPlansCounter'][SubscriptionType.BASIC],
         'inc',
       );
-      const setAverageDailySpendingPlanUsagesGaugeStub = sinon.spy(
+      const setAverageDailySpendingPlanUsagesGaugeSpy = sinon.spy(
         hbarLimitService['averageDailySpendingPlanUsagesGauge'][SubscriptionType.BASIC],
         'set',
       );
@@ -592,7 +628,7 @@ describe('HbarLimitService', function () {
       );
       await Promise.all(updateAverageDailyUsagePerSubscriptionTypeSpy.returnValues);
       const expectedAverageUsage = Math.round((otherPlanUsedToday.spentToday + expense) / 2);
-      sinon.assert.calledOnceWithExactly(setAverageDailySpendingPlanUsagesGaugeStub, expectedAverageUsage);
+      sinon.assert.calledOnceWithExactly(setAverageDailySpendingPlanUsagesGaugeSpy, expectedAverageUsage);
       sinon.assert.calledOnceWithExactly(incDailyUniqueSpendingPlansCounterSpy, 1);
     };
 
@@ -692,9 +728,8 @@ describe('HbarLimitService', function () {
     it('should reset the limiter when the reset date is reached', async function () {
       // @ts-ignore
       hbarLimitService.reset = new Date();
-      // @ts-ignore
       const resetLimiterSpy = sinon.spy(hbarLimitService, 'resetLimiter');
-      await expect(testIsDailyBudgetExceeded(0, true)).to.be.eventually.rejectedWith('Not implemented');
+      await testIsDailyBudgetExceeded(0, false);
       expect(resetLimiterSpy.calledOnce).to.be.true;
     });
   });
