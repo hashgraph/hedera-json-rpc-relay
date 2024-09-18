@@ -82,17 +82,8 @@ jobs:
       - name: Install hedera local
         run: npm install @hashgraph/hedera-local -g
 
-#      Note: this step will never run as there are no input parameters on the workflow file or job.
-#      - name: Set operator id env variable if CI is manual
-#        if: ${{ inputs.operator_id }}
-#        run: |
-#          echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
-
-
       - name: Run hedera local
-        # Note: Since there are no input parameters to the workflow or job network tag and mirror tag are ALWAYS blank on this step
-        #run: npx hedera restart -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace
-        run: npx hedera restart -d --network-tag="" --mirror-tag="" --verbose=trace
+        run: npx hedera restart -d --verbose=trace
 
       - name: Stop  relay
         run: docker stop json-rpc-relay json-rpc-relay-ws
