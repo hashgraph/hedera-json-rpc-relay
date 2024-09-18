@@ -58,7 +58,3 @@ There are also matchers for Chai that test raw strings such as addresses and key
 However, the mocks provided by Waffle are designed to simulate Ethereum network behavior, which means they may not replicate some Hedera-specific traits, such as `ecrecover` behavior for non-ECDSA keys or after private key changes. The wallet mock will only support wallets utilizing ECDSA keys.
 
 The mock Waffle provider allows users to imitate basic ENS operations, such as registering domains and retrieving the address of a domain. The Hedera Name Service (HNS) at its core level provides similar functionalities, so this mock can be used as its replacement.
-
-### Known issues
-
-Waffle fixtures are not supported, more information: https://github.com/hashgraph/hedera-smart-contracts/issues/702
