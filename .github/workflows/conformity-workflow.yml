@@ -12,6 +12,11 @@ jobs:
     runs-on: smart-contracts-linux-medium
 
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Checkout execution-apis repo
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
@@ -43,6 +48,11 @@ jobs:
     needs: clone-and-build-execution-apis
 
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
@@ -76,7 +86,9 @@ jobs:
         if: ${{ inputs.operator_id }}
         run: |
           echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
-          echo "OPERATOR_KEY_MAIN=${{ inputs.operator_key }}" >> $GITHUB_ENV
+          OPERATOR_KEY=${{ inputs.operator_key}}
+          echo "::add-mask::${OPERATOR_KEY}"
+          echo "OPERATOR_KEY_MAIN=${OPERATOR_KEY}" >> $GITHUB_ENV
 
       - name: Run hedera local
         run: npx hedera restart -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace

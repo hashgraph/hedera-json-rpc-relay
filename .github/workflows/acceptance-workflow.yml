@@ -73,7 +73,9 @@ jobs:
         if: ${{ inputs.operator_id }}
         run: |
           echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
-          echo "OPERATOR_KEY_MAIN=${{ inputs.operator_key }}" >> $GITHUB_ENV
+          OPERATOR_KEY=${{ inputs.operator_key}}
+          echo "::add-mask::${OPERATOR_KEY}"
+          echo "OPERATOR_KEY_MAIN=${OPERATOR_KEY}" >> $GITHUB_ENV
 
       - name: Run hedera local
         run: npx hedera restart -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace
