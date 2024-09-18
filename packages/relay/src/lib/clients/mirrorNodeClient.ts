@@ -464,8 +464,8 @@ export class MirrorNodeClient {
   public async getAccountLatestEthereumTransactionsByTimestamp(
     idOrAliasOrEvmAddress: string,
     timestampTo: string,
-    numberOfTransactions: number = 1,
     requestDetails: RequestDetails,
+    numberOfTransactions: number = 1,
   ) {
     const queryParamObject = {};
     this.setQueryParam(
@@ -1040,7 +1040,7 @@ export class MirrorNodeClient {
     );
   }
 
-  public async getTransactionById(transactionId: string, nonce: number | undefined, requestDetails: RequestDetails) {
+  public async getTransactionById(transactionId: string, requestDetails: RequestDetails, nonce?: number) {
     const formattedId = formatTransactionId(transactionId);
     if (formattedId == null) {
       return formattedId;
@@ -1072,7 +1072,7 @@ export class MirrorNodeClient {
     if (e instanceof SDKClientError && e.isContractRevertExecuted()) {
       const transactionId = e.message.match(constants.TRANSACTION_ID_REGEX);
       if (transactionId) {
-        const tx = await this.getTransactionById(transactionId[0], undefined, requestDetails);
+        const tx = await this.getTransactionById(transactionId[0], requestDetails);
 
         if (tx === null) {
           this.logger.error(`${requestDetails.formattedRequestId} Transaction failed with null result`);
@@ -1148,9 +1148,9 @@ export class MirrorNodeClient {
    */
   public async resolveEntityType(
     entityIdentifier: string,
-    searchableTypes: any[] = [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT, constants.TYPE_TOKEN],
     callerName: string,
     requestDetails: RequestDetails,
+    searchableTypes: any[] = [constants.TYPE_CONTRACT, constants.TYPE_ACCOUNT, constants.TYPE_TOKEN],
     retries?: number,
   ) {
     const cachedLabel = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${entityIdentifier}`;
@@ -1263,7 +1263,7 @@ export class MirrorNodeClient {
     let result;
     for (let i = 0; i < repeatCount; i++) {
       try {
-        result = await this[methodName](...args, requestDetails);
+        result = await this[methodName](...args);
       } catch (e: any) {
         // note: for some methods, it will throw 404 not found error as the record is not yet recorded in mirror-node
         //       if error is 404, `result` would be assigned as null for it to not break out the loop.
@@ -1320,7 +1320,7 @@ export class MirrorNodeClient {
 
     const transactionRecords = await this.repeatedRequest(
       this.getTransactionById.name,
-      [transactionId, 0],
+      [transactionId, requestDetails, 0],
       this.MIRROR_NODE_REQUEST_RETRY_COUNT,
       requestDetails,
     );

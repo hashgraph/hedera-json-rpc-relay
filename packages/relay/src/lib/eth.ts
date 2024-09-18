@@ -1132,12 +1132,10 @@ export class EthImpl implements Eth {
     }
 
     try {
-      const result = await this.mirrorNodeClient.resolveEntityType(
-        address,
-        [constants.TYPE_CONTRACT, constants.TYPE_TOKEN],
-        EthImpl.ethGetCode,
-        requestDetails,
-      );
+      const result = await this.mirrorNodeClient.resolveEntityType(address, EthImpl.ethGetCode, requestDetails, [
+        constants.TYPE_CONTRACT,
+        constants.TYPE_TOKEN,
+      ]);
       if (result) {
         if (result?.type === constants.TYPE_TOKEN) {
           this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
@@ -1595,7 +1593,7 @@ export class EthImpl implements Eth {
 
       const contractResult = await this.mirrorNodeClient.repeatedRequest(
         this.mirrorNodeClient.getContractResult.name,
-        [formattedId],
+        [formattedId, requestDetails],
         this.mirrorNodeClient.getMirrorNodeRequestRetryCount(),
         requestDetails,
       );
@@ -1963,9 +1961,9 @@ export class EthImpl implements Eth {
 
     const entity = await this.mirrorNodeClient.resolveEntityType(
       address,
-      searchableTypes,
       EthImpl.ethGetCode,
       requestDetails,
+      searchableTypes,
       0,
     );
     let resolvedAddress = address;
@@ -2413,8 +2411,8 @@ export class EthImpl implements Eth {
     const ethereumTransactions = await this.mirrorNodeClient.getAccountLatestEthereumTransactionsByTimestamp(
       address,
       block.timestamp.to,
-      2,
       requestDetails,
+      2,
     );
     if (ethereumTransactions == null || ethereumTransactions.transactions.length === 0) {
       return EthImpl.zeroHex;

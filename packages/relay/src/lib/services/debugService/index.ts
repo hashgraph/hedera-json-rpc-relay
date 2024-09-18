@@ -215,9 +215,9 @@ export class DebugService implements IDebugService {
 
     const entity = await this.mirrorNodeClient.resolveEntityType(
       address,
-      types,
       EthImpl.debugTraceTransaction,
       requestDetails,
+      types,
     );
 
     if (
