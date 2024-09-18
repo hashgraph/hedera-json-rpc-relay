@@ -33,6 +33,7 @@ import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hb
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 import { IDetailedHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingPlan';
 import { useInMemoryRedisServer } from '../../../helpers';
+import { RequestDetails } from '../../../../src/lib/types';
 
 chai.use(chaiAsPromised);
 
