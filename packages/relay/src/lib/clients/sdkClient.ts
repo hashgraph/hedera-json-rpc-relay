@@ -60,6 +60,7 @@ import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { SDKClientError } from './../errors/SDKClientError';
 import { JsonRpcError, predefined } from './../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 import { formatRequestIdMessage, weibarHexToTinyBarInt } from '../../formatters';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../types';
 
@@ -132,18 +133,20 @@ export class SDKClient {
   ) {
     this.clientMain = clientMain;
 
-    if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
+    if (EnvProviderService.getInstance().get('CONSENSUS_MAX_EXECUTION_TIME')) {
       // sets the maximum time in ms for the SDK to wait when submitting
       // a transaction/query before throwing a TIMEOUT error
-      this.clientMain = clientMain.setMaxExecutionTime(Number(process.env.CONSENSUS_MAX_EXECUTION_TIME));
+      this.clientMain = clientMain.setMaxExecutionTime(
+        Number(EnvProviderService.getInstance().get('CONSENSUS_MAX_EXECUTION_TIME')),
+      );
     }
 
     this.logger = logger;
     this.hbarLimiter = hbarLimiter;
     this.cacheService = cacheService;
     this.eventEmitter = eventEmitter;
-    this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
-    this.fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+    this.maxChunks = Number(EnvProviderService.getInstance().get('FILE_APPEND_MAX_CHUNKS')) || 20;
+    this.fileAppendChunkSize = Number(EnvProviderService.getInstance().get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   }
 
   /**
@@ -399,7 +402,7 @@ export class SDKClient {
     if (ethereumTransactionData.callData.length <= this.fileAppendChunkSize) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
-      const isPreemptiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK === 'true';
+      const isPreemptiveCheckOn = EnvProviderService.getInstance().get('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK') === 'true';
 
       if (isPreemptiveCheckOn) {
         const hexCallDataLength = Buffer.from(ethereumTransactionData.callData).toString('hex').length;
@@ -514,7 +517,7 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let retries = 0;
     let resp;
-    while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || '1') > retries) {
+    while (parseInt(EnvProviderService.getInstance().get('CONTRACT_QUERY_TIMEOUT_RETRIES') || '1') > retries) {
       try {
         resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestId);
         return resp;

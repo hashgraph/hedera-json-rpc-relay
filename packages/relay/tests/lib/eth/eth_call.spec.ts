@@ -17,8 +17,8 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
+import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 import { assert, expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -56,9 +56,7 @@ import {
 } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub;
@@ -95,7 +93,10 @@ describe('@ethCall Eth Call spec', async function () {
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    EnvProviderService.getInstance().dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', currentMaxBlockRange.toString());
+    EnvProviderService.getInstance().dynamicOverride(
+      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
+      currentMaxBlockRange.toString(),
+    );
   });
 
   describe('eth_call precheck failures', async function () {
@@ -898,7 +899,10 @@ describe('@ethCall Eth Call spec', async function () {
 
     after(() => {
       EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', initialEthCallSelectorsAlwaysToConsensus);
+      EnvProviderService.getInstance().dynamicOverride(
+        'ETH_CALL_CONSENSUS_SELECTORS',
+        initialEthCallSelectorsAlwaysToConsensus,
+      );
     });
 
     beforeEach(() => {
@@ -912,7 +916,10 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with matched selector redirects to consensus', async function () {
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', JSON.stringify([REDIRECTED_SELECTOR.slice(2)]));
+      EnvProviderService.getInstance().dynamicOverride(
+        'ETH_CALL_CONSENSUS_SELECTORS',
+        JSON.stringify([REDIRECTED_SELECTOR.slice(2)]),
+      );
 
       await ethImpl.call(
         {
