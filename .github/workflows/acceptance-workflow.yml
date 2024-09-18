@@ -38,6 +38,10 @@ jobs:
     permissions:
       contents: write
       # issues: read
+
+    env:
+      OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -69,10 +73,6 @@ jobs:
 
       - name: Install hedera local
         run: npm install @hashgraph/hedera-local -g
-
-      - name: Set operator id env variable if CI is manual
-        if: ${{ inputs.operator_id }}
-        run: echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
 
       - name: Run hedera local
         run: npx hedera restart -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace
