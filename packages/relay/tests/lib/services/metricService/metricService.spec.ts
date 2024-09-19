@@ -56,6 +56,7 @@ describe('Metric Service', function () {
   let instance: AxiosInstance;
   let eventEmitter: EventEmitter;
   let metricService: MetricService;
+  let hbarLimitService: HbarLimitService;
   let mirrorNodeClient: MirrorNodeClient;
 
   const requestDetails = new RequestDetails({ requestId: 'metricServiceTest', ipAddress: '0.0.0.0' });
@@ -151,7 +152,7 @@ describe('Metric Service', function () {
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
     const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
     const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
-    const hbarLimitService = new HbarLimitService(
+    hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepository,
       ethAddressHbarSpendingPlanRepository,
       ipAddressHbarSpendingPlanRepository,
@@ -169,15 +170,7 @@ describe('Metric Service', function () {
       hbarLimitService,
     );
     // Init new MetricService instance
-    metricService = new MetricService(
-      logger,
-      sdkClient,
-      mirrorNodeClient,
-      hbarLimiter,
-      registry,
-      eventEmitter,
-      hbarLimitService,
-    );
+    metricService = new MetricService(logger, sdkClient, mirrorNodeClient, registry, eventEmitter, hbarLimitService);
   });
 
   afterEach(() => {
@@ -202,13 +195,12 @@ describe('Metric Service', function () {
           .onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`)
           .reply(200, mockedMirrorNodeTransactionRecord);
 
-        const originalBudget = hbarLimiter.getRemainingBudget();
-
         // capture metrics
         await metricService.captureTransactionMetrics(mockedExecuteTransactionEventPayload);
+        const originalBudget = hbarLimitService.getRemainingBudget();
 
-        // validate hbarLimiter
-        const updatedBudget = hbarLimiter.getRemainingBudget();
+        // validate hbarLimitService
+        const updatedBudget = hbarLimitService.getRemainingBudget();
         expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
 
         // validate cost metrics
@@ -232,14 +224,14 @@ describe('Metric Service', function () {
           .stub(TransactionRecordQuery.prototype, 'execute')
           .resolves(mockedConsensusNodeTransactionRecord);
 
-        const originalBudget = hbarLimiter.getRemainingBudget();
+        const originalBudget = hbarLimitService.getRemainingBudget();
 
         await metricService.captureTransactionMetrics(mockedExecuteTransactionEventPayload);
         expect(transactionRecordStub.called).to.be.true;
 
-        // validate hbarLimiter
+        // validate hbarLimitService
         // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
-        const updatedBudget = hbarLimiter.getRemainingBudget();
+        const updatedBudget = hbarLimitService.getRemainingBudget();
         expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
 
         // validate cost metric
@@ -291,7 +283,7 @@ describe('Metric Service', function () {
           .stub(TransactionRecordQuery.prototype, 'execute')
           .resolves(mockedConsensusNodeTransactionRecord);
 
-        const originalBudget = hbarLimiter.getRemainingBudget();
+        const originalBudget = hbarLimitService.getRemainingBudget();
 
         // emitting an EXECUTE_TRANSACTION event to kick off capturing metrics process asynchronously
         eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, mockedExecuteTransactionEventPayload);
@@ -301,9 +293,9 @@ describe('Metric Service', function () {
 
         expect(transactionRecordStub.called).to.be.true;
 
-        // validate hbarLimiter
+        // validate hbarLimitService
         // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
-        const updatedBudget = hbarLimiter.getRemainingBudget();
+        const updatedBudget = hbarLimitService.getRemainingBudget();
 
         expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
 
@@ -363,13 +355,14 @@ describe('Metric Service', function () {
       originalCallerAddress: mockedOriginalCallerAddress,
     };
     it('should execute addExpenseAndCaptureMetrics() to capture metrics in HBAR limiter and metric registry', async () => {
-      const originalBudget = hbarLimiter.getRemainingBudget();
+      const originalBudget = hbarLimitService.getRemainingBudget();
 
       // capture metrics
-      metricService.addExpenseAndCaptureMetrics(mockedExecuteQueryEventPayload);
+      await metricService.addExpenseAndCaptureMetrics(mockedExecuteQueryEventPayload);
 
-      // validate hbarLimiter
-      const updatedBudget = hbarLimiter.getRemainingBudget();
+      // validate hbarLimitService
+      const updatedBudget = hbarLimitService.getRemainingBudget();
+
       expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
 
       // validate cost metrics
@@ -377,6 +370,7 @@ describe('Metric Service', function () {
       const costMetricObject = (await metricService['consensusNodeClientHistogramCost'].get()).values.find(
         (metric) => metric.metricName === metricHistogramCostSumTitle,
       )!;
+
       expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
       expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
       expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
@@ -397,7 +391,7 @@ describe('Metric Service', function () {
     });
 
     it('should listen to EXECUTE_QUERY event and kick off addExpenseAndCaptureMetrics()', async () => {
-      const originalBudget = hbarLimiter.getRemainingBudget();
+      const originalBudget = hbarLimitService.getRemainingBudget();
 
       // emitting an EXECUTE_QUERY event to kick off capturing metrics process
       eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, mockedExecuteQueryEventPayload);
@@ -405,8 +399,8 @@ describe('Metric Service', function () {
       // small wait for hbar rate limiter to settle
       await new Promise((r) => setTimeout(r, 100));
 
-      // validate hbarLimiter
-      const updatedBudget = hbarLimiter.getRemainingBudget();
+      // validate hbarLimitService
+      const updatedBudget = hbarLimitService.getRemainingBudget();
       expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
 
       // validate cost metrics
