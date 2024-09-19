@@ -50,6 +50,7 @@ describe('HBAR Rate Limit Service', function () {
   const totalBudgetInTinybars = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
   const limitDuration = constants.HBAR_RATE_LIMIT_DURATION;
   const mode = constants.EXECUTION_MODE.TRANSACTION;
+  const mockTxCost = 100;
   const methodName = 'testMethod';
   const txConstructorName = 'testConstructorName';
   const mockEthAddress = '0x123';
