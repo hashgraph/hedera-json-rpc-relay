@@ -638,14 +638,11 @@ describe('HbarLimitService', function () {
 
       expect(hbarSpendingPlanRepositoryStub.addAmountToSpentToday.calledOnceWith(mockPlanId, expense)).to.be.true;
       expect(hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.calledOnceWith(mockPlanId, expense)).to.be.true;
-      // @ts-ignore
-      expect(hbarLimitService.remainingBudget.toTinybars().toNumber()).to.eq(
-        hbarLimitService.totalBudget.toTinybars().sub(expense).toNumber(),
+      expect(hbarLimitService['remainingBudget'].toTinybars().toNumber()).to.eq(
+        hbarLimitService['totalBudget'].toTinybars().sub(expense).toNumber(),
       );
-      // @ts-ignore
-      expect((await hbarLimitService.hbarLimitRemainingGauge.get()).values[0].value).to.equal(
-        // @ts-ignore
-        hbarLimitService.totalBudget.toTinybars().sub(expense).toNumber(),
+      expect((await hbarLimitService['hbarLimitRemainingGauge'].get()).values[0].value).to.equal(
+        hbarLimitService['totalBudget'].toTinybars().sub(expense).toNumber(),
       );
       await Promise.all(updateAverageDailyUsagePerSubscriptionTypeSpy.returnValues);
       const expectedAverageUsage = Math.round((otherPlanUsedToday.spentToday + expense) / 2);
