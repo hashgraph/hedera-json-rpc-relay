@@ -653,7 +653,6 @@ describe('HbarLimitService', function () {
       }
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(existingSpendingPlan);
       hbarSpendingPlanRepositoryStub.addToAmountSpent.resolves();
-      hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.resolves();
       hbarSpendingPlanRepositoryStub.findAllActiveBySubscriptionType.resolves([
         otherPlanOfTheSameTier,
         {
@@ -678,7 +677,6 @@ describe('HbarLimitService', function () {
       await hbarLimitService.addExpense(expense, ethAddress, ipAddress);
 
       expect(hbarSpendingPlanRepositoryStub.addToAmountSpent.calledOnceWith(mockPlanId, expense)).to.be.true;
-      expect(hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.calledOnceWith(mockPlanId, expense)).to.be.true;
       expect(hbarLimitService['remainingBudget'].toTinybars().toNumber()).to.eq(
         hbarLimitService['totalBudget'].toTinybars().sub(expense).toNumber(),
       );

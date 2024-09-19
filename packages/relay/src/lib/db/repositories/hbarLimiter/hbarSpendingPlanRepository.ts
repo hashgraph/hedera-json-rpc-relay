@@ -76,7 +76,7 @@ export class HbarSpendingPlanRepository {
     const plan = await this.findById(id);
     return new HbarSpendingPlan({
       ...plan,
-      spendingHistory: await this.getSpendingHistory(id),
+      spendingHistory: [],
       amountSpent: await this.getAmountSpent(id),
     });
   }
@@ -208,8 +208,8 @@ export class HbarSpendingPlanRepository {
             new HbarSpendingPlan({
               ...plan,
               createdAt: new Date(plan.createdAt),
+              spendingHistory: [],
               amountSpent: await this.getAmountSpent(plan.id),
-              spendingHistory: await this.getSpendingHistory(plan.id),
             }),
         ),
     );
