@@ -24,22 +24,26 @@ import { resolve } from 'path';
 import * as sinon from 'sinon';
 import { config } from 'dotenv';
 import EventEmitter from 'events';
-import { Registry } from 'prom-client';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { Utils } from '../../../../src/utils';
+import { register, Registry } from 'prom-client';
 import constants from '../../../../src/lib/constants';
 import HbarLimit from '../../../../src/lib/hbarlimiter';
-import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import {
   calculateTxRecordChargeAmount,
   overrideEnvsInMochaDescribe,
   withOverriddenEnvsInMochaTest,
 } from '../../../helpers';
+import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
+import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
 import MetricService from '../../../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
+import { Hbar, Long, Status, Client, AccountId, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
 import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload, RequestDetails } from '../../../../src/lib/types';
-import { AccountId, Client, Hbar, Long, Status, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
+import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 
 config({ path: resolve(__dirname, '../../../test.env') });
 const registry = new Registry();
@@ -142,12 +146,26 @@ describe('Metric Service', function () {
     hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     eventEmitter = new EventEmitter();
 
+    const cacheService = new CacheService(logger, registry);
+    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
+    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
+    const hbarLimitService = new HbarLimitService(
+      hbarSpendingPlanRepository,
+      ethAddressHbarSpendingPlanRepository,
+      ipAddressHbarSpendingPlanRepository,
+      logger,
+      register,
+      total,
+    );
+
     const sdkClient = new SDKClient(
       client,
       logger.child({ name: `consensus-node` }),
       hbarLimiter,
       new CacheService(logger.child({ name: `cache` }), registry),
       eventEmitter,
+      hbarLimitService,
     );
     // Init new MetricService instance
     metricService = new MetricService(logger, sdkClient, mirrorNodeClient, hbarLimiter, registry, eventEmitter);

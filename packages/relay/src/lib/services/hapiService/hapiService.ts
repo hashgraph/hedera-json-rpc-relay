@@ -321,6 +321,7 @@ export default class HAPIService {
       this.hbarLimiter,
       this.cacheService,
       this.eventEmitter,
+      this.hbarLimitService,
     );
   }
 
