@@ -205,42 +205,43 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Add expense to the remaining budget.
+   * Add expense to the remaining budget and update the spending plan if applicable.
    * @param {number} cost - The cost of the expense.
-   * @param {string} ethAddress - The Ethereum address to add the expense to.
-   * @param {string} ipAddress - The optional IP address to add the expense to.
-   * @param {RequestDetails} requestDetails The request details for logging and tracking.
-   * @returns {Promise<void>} - A promise that resolves when the expense has been added.
+   * @param {string} [ethAddress] - The optional Ethereum address associated with the expense.
+   * @param {RequestDetails} requestDetails - The details of the request, including IP address and formatted request ID.
+   * @returns {Promise<void>} - A promise that resolves when the expense has been added and all updates are complete.
    */
-  async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails): Promise<void> {
+  async addExpense(cost: number, ethAddress: string | undefined, requestDetails: RequestDetails): Promise<void> {
     const ipAddress = requestDetails.ipAddress;
-    if (!ethAddress && !ipAddress) {
-      throw new Error('Cannot add expense without an eth address or ip address');
+
+    if (ethAddress || ipAddress) {
+      let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
+
+      if (!spendingPlan) {
+        // Create a basic spending plan if none exists for the eth address or ip address
+        spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestDetails);
+      }
+
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Spending plan expense update: planID=${
+          spendingPlan.id
+        }, subscriptionType=${spendingPlan.subscriptionType}, cost=${cost}, originalSpentToday=${
+          spendingPlan.spentToday
+        }, updatedSpentToday=${spendingPlan.spentToday + cost}`,
+      );
+
+      // Check if the spending plan is being used for the first time today
+      if (spendingPlan.spentToday === 0) {
+        this.dailyUniqueSpendingPlansCounter[spendingPlan.subscriptionType].inc(1);
+      }
+      await this.hbarSpendingPlanRepository.addAmountToSpentToday(spendingPlan.id, cost, requestDetails);
+
+      // Done asynchronously in the background
+      this.updateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType, requestDetails).then();
     }
 
-    let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
-    if (!spendingPlan) {
-      // Create a basic spending plan if none exists for the eth address or ip address
-      spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestDetails);
-    }
-
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} Adding expense of ${cost} to spending plan with ID ${
-        spendingPlan.id
-      }, new spentToday=${spendingPlan.spentToday + cost}`,
-    );
-
-    // Check if the spending plan is being used for the first time today
-    if (spendingPlan.spentToday === 0) {
-      this.dailyUniqueSpendingPlansCounter[spendingPlan.subscriptionType].inc(1);
-    }
-
-    await this.hbarSpendingPlanRepository.addAmountToSpentToday(spendingPlan.id, cost, requestDetails);
     this.remainingBudget -= cost;
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
-
-    // Done asynchronously in the background
-    this.updateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType, requestDetails).then();
 
     this.logger.trace(
       `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost}, remainingBudget=${this.remainingBudget}`,
@@ -338,15 +339,14 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Gets the spending plan for the given eth address or ip address.
-   * @param {string} ethAddress - The eth address to get the spending plan for.
-   * @param {string} ipAddress - The ip address to get the spending plan for.
-   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * Gets the spending plan for the given eth address or IP address.
+   * @param {string | undefined} ethAddress - The eth address to get the spending plan for.
+   * @param {RequestDetails} requestDetails - The request details containing IP address, formatted request ID, and other tracking information.
    * @returns {Promise<IDetailedHbarSpendingPlan | null>} - A promise that resolves with the spending plan or null if none exists.
    * @private
    */
   private async getSpendingPlan(
-    ethAddress: string,
+    ethAddress: string | undefined,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan | null> {
     const ipAddress = requestDetails.ipAddress;
@@ -404,15 +404,15 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Creates a basic spending plan for the given eth address.
-   * @param {string} ethAddress - The eth address to create the spending plan for.
-   * @param {string} ipAddress - The ip address to create the spending plan for.
-   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * Creates a basic spending plan for the given eth address or IP address.
+   * @param {string | undefined} ethAddress - The eth address to create the spending plan for (optional).
+   * @param {RequestDetails} requestDetails - The request details for logging, tracking, and containing the IP address.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
+   * @throws {Error} - If neither eth address nor IP address is provided.
    * @private
    */
   private async createBasicSpendingPlan(
-    ethAddress: string,
+    ethAddress: string | undefined,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan> {
     const ipAddress = requestDetails.ipAddress;
