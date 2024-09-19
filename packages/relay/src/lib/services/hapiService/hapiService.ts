@@ -27,6 +27,7 @@ import { Utils } from './../../../utils';
 import HbarLimit from '../../hbarlimiter';
 import { Counter, Registry } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
+import { HbarLimitService } from '../hbarLimitService';
 import { CacheService } from '../cacheService/cacheService';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import fs from 'fs';
@@ -141,6 +142,13 @@ export default class HAPIService {
   private readonly hbarLimiter: HbarLimit;
 
   /**
+   * An instance of the HbarLimitService that tracks hbar expenses and limits.
+   * @private
+   * @readonly
+   * @type {HbarLimitService}
+   */
+  private readonly hbarLimitService: HbarLimitService;
+  /**
    * An instance of EventEmitter used for emitting and handling events within the class.
    * @private
    * @readonly
@@ -185,6 +193,7 @@ export default class HAPIService {
    * @param {HbarLimit} hbarLimiter - The Hbar rate limiter instance.
    * @param {CacheService} cacheService - The cache service instance.
    * @param {EventEmitter} eventEmitter - The event emitter instance used for emitting events.
+   * @param {HbarLimitService} hbarLimitService - An HBAR Rate Limit service that tracks hbar expenses and limits.
    */
   constructor(
     logger: Logger,
@@ -192,6 +201,7 @@ export default class HAPIService {
     hbarLimiter: HbarLimit,
     cacheService: CacheService,
     eventEmitter: EventEmitter,
+    hbarLimitService: HbarLimitService,
   ) {
     dotenv.config({ path: findConfig('.env') || '' });
     if (fs.existsSync(findConfig('.env') || '')) {
@@ -203,6 +213,7 @@ export default class HAPIService {
     this.logger = logger;
     this.hbarLimiter = hbarLimiter;
 
+    this.hbarLimitService = hbarLimitService;
     this.eventEmitter = eventEmitter;
     this.hederaNetwork = (process.env.HEDERA_NETWORK || this.config.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);

@@ -25,16 +25,18 @@ import { resolve } from 'path';
 import * as sinon from 'sinon';
 import { config } from 'dotenv';
 import EventEmitter from 'events';
-import { Registry } from 'prom-client';
 import { Utils } from '../../src/utils';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
+import { register, Registry } from 'prom-client';
 import HbarLimit from '../../src/lib/hbarlimiter';
+import { RequestDetails } from '../../src/lib/types';
 import { formatTransactionId } from '../../src/formatters';
 import { predefined } from '../../src';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
+import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
 import MetricService from '../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import {
@@ -43,26 +45,28 @@ import {
   random20BytesAddress,
   withOverriddenEnvsInMochaTest,
 } from '../helpers';
+import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import {
-  AccountId,
-  Client,
-  ContractCallQuery,
-  EthereumTransaction,
-  ExchangeRate,
-  FeeSchedules,
-  FileAppendTransaction,
-  FileCreateTransaction,
-  FileDeleteTransaction,
-  FileId,
-  FileInfoQuery,
   Hbar,
   Query,
   Status,
+  Client,
+  FileId,
+  AccountId,
+  ExchangeRate,
+  FeeSchedules,
   TransactionId,
-  TransactionRecordQuery,
+  FileInfoQuery,
+  ContractCallQuery,
   TransactionResponse,
+  EthereumTransaction,
+  FileAppendTransaction,
+  FileCreateTransaction,
+  FileDeleteTransaction,
+  TransactionRecordQuery,
 } from '@hashgraph/sdk';
-import { RequestDetails } from '../../src/lib/types';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -256,6 +260,12 @@ describe('SdkClient', async function () {
   });
 
   describe('HAPIService', async () => {
+    let hapiService: HAPIService;
+    let cacheService: CacheService;
+    let originalEnv: NodeJS.ProcessEnv;
+    let hbarLimitService: HbarLimitService;
+    let initialOperatorKeyFormat: string | undefined;
+
     const OPERATOR_KEY_ED25519 = {
       DER: '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
       HEX_ED25519: '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
@@ -266,27 +276,58 @@ describe('SdkClient', async function () {
       HEX_ECDSA: '0x08e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
     };
 
-    it('Initialize the privateKey for default which is DER', async () => {
-      const hapiService = new HAPIService(
+    before(function (this: Context) {
+      // Store the original process.env
+      originalEnv = process.env;
+
+      if (
+        this.currentTest?.title ===
+        'Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is null'
+      ) {
+        process.env = new Proxy(process.env, {
+          get: (target, prop) => {
+            if (prop === 'OPERATOR_KEY_FORMAT') {
+              return null;
+            }
+            // @ts-ignore
+            return target[prop];
+          },
+        });
+      }
+
+      const total = constants.HBAR_RATE_LIMIT_TINYBAR();
+      cacheService = new CacheService(logger, registry);
+      const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
+      const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+      const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
+      hbarLimitService = new HbarLimitService(
+        hbarSpendingPlanRepository,
+        ethAddressHbarSpendingPlanRepository,
+        ipAddressHbarSpendingPlanRepository,
         logger,
-        registry,
-        hbarLimiter,
-        new CacheService(logger, registry),
-        eventEmitter,
+        register,
+        total,
       );
+    });
+
+    this.beforeEach(() => {
+      initialOperatorKeyFormat = process.env.OPERATOR_KEY_FORMAT;
+      hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter, hbarLimitService);
+    });
+
+    after(() => {
+      // Restore the original process.env after the test
+      process.env = originalEnv;
+      process.env.OPERATOR_KEY_FORMAT = initialOperatorKeyFormat;
+    });
+
+    it('Initialize the privateKey for default which is DER', async () => {
       const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
     });
 
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: undefined }, () => {
       it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is undefined', async () => {
-        const hapiService = new HAPIService(
-          logger,
-          registry,
-          hbarLimiter,
-          new CacheService(logger, registry),
-          eventEmitter,
-        );
         const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
         expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
       });
@@ -294,13 +335,6 @@ describe('SdkClient', async function () {
 
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'DER' }, () => {
       it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
-        const hapiService = new HAPIService(
-          logger,
-          registry,
-          hbarLimiter,
-          new CacheService(logger, registry),
-          eventEmitter,
-        );
         const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.DER);
         expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
       });
@@ -308,13 +342,6 @@ describe('SdkClient', async function () {
 
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'HEX_ED25519' }, () => {
       it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
-        const hapiService = new HAPIService(
-          logger,
-          registry,
-          hbarLimiter,
-          new CacheService(logger, registry),
-          eventEmitter,
-        );
         const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.HEX_ED25519);
         expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
       });
@@ -322,13 +349,6 @@ describe('SdkClient', async function () {
 
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'HEX_ECDSA' }, () => {
       it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
-        const hapiService = new HAPIService(
-          logger,
-          registry,
-          hbarLimiter,
-          new CacheService(logger, registry),
-          eventEmitter,
-        );
         const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.HEX_ECDSA);
         expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
       });
@@ -337,7 +357,7 @@ describe('SdkClient', async function () {
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'BAD_FORMAT' }, () => {
       it('It should throw an Error when an unexpected string is set', async () => {
         try {
-          new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter);
+          new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter, hbarLimitService);
           expect.fail(`Expected an error but nothing was thrown`);
         } catch (e: any) {
           expect(e.message).to.eq('Invalid OPERATOR_KEY_FORMAT provided: BAD_FORMAT');
