@@ -32,22 +32,12 @@ jobs:
     secrets:
       operator_key: ${{ inputs.operator_key }}
 
-
-  get_results:
-    name: Get Results
-    needs:
-      - release-tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get full results
-        run: echo "Full results"
-
   publish_results:
     name: Publish Results
     runs-on: ubuntu-latest
     if: always()
     needs:
-      - get_results
+      - release-tests
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
