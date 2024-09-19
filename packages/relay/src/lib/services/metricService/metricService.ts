@@ -147,6 +147,7 @@ export default class MetricService {
    * @param {string} payload.operatorAccountId - The account ID of the operator managing the transaction.
    * @param {string} payload.interactingEntity - The entity interacting with the transaction.
    * @param {RequestDetails} payload.requestDetails - The request details for logging and tracking.
+   * @param {string} payload.originalCallerAddress - The address of the original caller making the request.
    * @returns {Promise<void>} - A promise that resolves when the transaction metrics have been captured.
    */
   public async captureTransactionMetrics({
@@ -156,6 +157,7 @@ export default class MetricService {
     operatorAccountId,
     interactingEntity,
     requestDetails,
+    originalCallerAddress,
   }: IExecuteTransactionEventPayload): Promise<void> {
     const transactionRecordMetrics = await this.getTransactionRecordMetrics(
       transactionId,
@@ -178,6 +180,7 @@ export default class MetricService {
           interactingEntity,
           status,
           requestDetails,
+          originalCallerAddress,
         } as IExecuteQueryEventPayload);
       }
 
@@ -210,9 +213,10 @@ export default class MetricService {
    * @param {string} payload.interactingEntity - The entity interacting with the transaction.
    * @param {string} payload.status - The entity interacting with the transaction.
    * @param {string} payload.requestDetails - The request details for logging and tracking.
+   * @param {string | null} payload.originalCallerAddress - The address of the original caller making the request.
    * @returns {void} - This method does not return a value.
    */
-  public addExpenseAndCaptureMetrics = ({
+  public addExpenseAndCaptureMetrics = async ({
     executionMode,
     transactionId,
     txConstructorName,
@@ -222,7 +226,8 @@ export default class MetricService {
     interactingEntity,
     status,
     requestDetails,
-  }: IExecuteQueryEventPayload): void => {
+    originalCallerAddress,
+  }: IExecuteQueryEventPayload): Promise<void> => {
     this.logger.trace(
       `${requestDetails.formattedRequestId} Capturing HBAR charged: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
     );
