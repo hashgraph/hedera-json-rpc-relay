@@ -48,6 +48,9 @@ import {
   random20BytesAddress,
   withOverriddenEnvsInMochaTest,
 } from '../helpers';
+import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import {
   Hbar,
   Query,
@@ -275,8 +278,6 @@ describe('SdkClient', async function () {
 
   describe('HAPIService', async () => {
     let hapiService: HAPIService;
-    let originalEnv: NodeJS.ProcessEnv;
-    let initialOperatorKeyFormat: string | undefined;
 
     const OPERATOR_KEY_ED25519 = {
       DER: '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
@@ -295,13 +296,6 @@ describe('SdkClient', async function () {
 
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: undefined }, () => {
       it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is undefined', async () => {
-        const hapiService = new HAPIService(
-          logger,
-          registry,
-          hbarLimiter,
-          new CacheService(logger, registry),
-          eventEmitter,
-        );
         const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
         expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
       });
@@ -309,13 +303,6 @@ describe('SdkClient', async function () {
 
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'DER' }, () => {
       it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
-        const hapiService = new HAPIService(
-          logger,
-          registry,
-          hbarLimiter,
-          new CacheService(logger, registry),
-          eventEmitter,
-        );
         const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.DER);
         expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
       });
@@ -323,13 +310,6 @@ describe('SdkClient', async function () {
 
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'HEX_ED25519' }, () => {
       it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
-        const hapiService = new HAPIService(
-          logger,
-          registry,
-          hbarLimiter,
-          new CacheService(logger, registry),
-          eventEmitter,
-        );
         const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.HEX_ED25519);
         expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
       });
@@ -337,13 +317,6 @@ describe('SdkClient', async function () {
 
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'HEX_ECDSA' }, () => {
       it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
-        const hapiService = new HAPIService(
-          logger,
-          registry,
-          hbarLimiter,
-          new CacheService(logger, registry),
-          eventEmitter,
-        );
         const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.HEX_ECDSA);
         expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
       });
@@ -352,7 +325,7 @@ describe('SdkClient', async function () {
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'BAD_FORMAT' }, () => {
       it('It should throw an Error when an unexpected string is set', async () => {
         try {
-          new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter);
+          new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter, hbarLimitService);
           expect.fail(`Expected an error but nothing was thrown`);
         } catch (e: any) {
           expect(e.message).to.eq('Invalid OPERATOR_KEY_FORMAT provided: BAD_FORMAT');

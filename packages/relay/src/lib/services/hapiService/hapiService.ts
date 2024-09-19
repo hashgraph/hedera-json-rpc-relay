@@ -140,6 +140,13 @@ export default class HAPIService {
    */
   private readonly hbarLimitService: HbarLimitService;
   /**
+   * An instance of the HbarLimitService that tracks hbar expenses and limits.
+   * @private
+   * @readonly
+   * @type {HbarLimitService}
+   */
+  private readonly hbarLimitService: HbarLimitService;
+  /**
    * An instance of EventEmitter used for emitting and handling events within the class.
    * @private
    * @readonly

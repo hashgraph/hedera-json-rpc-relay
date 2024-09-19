@@ -36,17 +36,13 @@ import { Log, Transaction } from '../../src/lib/model';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-<<<<<<< HEAD
-import { defaultDetailedContractResults, useInMemoryRedisServer } from '../helpers';
 import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
-=======
 import { defaultDetailedContractResults, overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../helpers';
-import { EventEmitter } from 'events';
 import { RequestDetails } from '../../src/lib/types';
->>>>>>> 2e2fc079 (test: add helper method for overriding env variables (#3022))
+
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
