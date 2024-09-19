@@ -328,8 +328,12 @@ The JSON file can also be updated over time to add new supported projects or par
 
 ### Spending Limits of Different Tiers
 
-The spending limits for different tiers (`BASIC`, `EXTENDED`, `PRIVILEGED`) are defined as environment variables:
+The spending limits for different tiers are defined as environment variables:
+- `HBAR_RATE_LIMIT_BASIC`: The spending limit (in hbars) for general users (tier 3)
+- `HBAR_RATE_LIMIT_EXTENDED`: The spending limit (in hbars) for supported projects (tier 2)
+- `HBAR_RATE_LIMIT_PRIVILEGED`: The spending limit (in hbars) for trusted partners (tier 1)
 
+Example configuration for tiered spending limits:
 ```dotenv
 HBAR_RATE_LIMIT_BASIC=1000
 HBAR_RATE_LIMIT_EXTENDED=10000
