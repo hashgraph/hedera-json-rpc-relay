@@ -20,27 +20,31 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
+dotenv.config({ path: findConfig('.env') || '' });
+
 import { Logger } from 'pino';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
+import { Utils } from '../utils';
 import { Poller } from './poller';
 import { Web3Impl } from './web3';
 import EventEmitter from 'events';
 import constants from './constants';
 import HbarLimit from './hbarlimiter';
 import { Client } from '@hashgraph/sdk';
+import { RequestDetails } from './types';
 import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';
 import { Gauge, Registry } from 'prom-client';
 import { Eth, Net, Relay, Subs, Web3 } from '../index';
 import HAPIService from './services/hapiService/hapiService';
+import { HbarLimitService } from './services/hbarLimitService';
 import { SubscriptionController } from './subscriptionController';
 import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
-import { RequestDetails } from './types';
-import { Utils } from '../utils';
-
-dotenv.config({ path: findConfig('.env') || '' });
+import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 
 export class RelayImpl implements Relay {
   /**
@@ -129,6 +133,18 @@ export class RelayImpl implements Relay {
     this.eventEmitter = new EventEmitter();
     this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);
     const hapiService = new HAPIService(logger, register, hbarLimiter, this.cacheService, this.eventEmitter);
+
+    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(this.cacheService, logger);
+    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(this.cacheService, logger);
+    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(this.cacheService, logger);
+    const hbarLimitService = new HbarLimitService(
+      hbarSpendingPlanRepository,
+      ethAddressHbarSpendingPlanRepository,
+      ipAddressHbarSpendingPlanRepository,
+      logger.child({ name: 'hbar-rate-limit' }),
+      register,
+      total,
+    );
     this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
