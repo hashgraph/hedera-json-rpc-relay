@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay - Wagmi Example
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,18 @@
  *
  */
 
-import {useAccount, useBalance} from "wagmi";
+import { useAccount, useBalance } from 'wagmi';
 
 function calculateBalance(value: BigInt, decimals: number) {
-  return Number(value) / 10 ** decimals
+  return Number(value) / 10 ** decimals;
 }
 
 export function useAccountBalance() {
-  const {address} = useAccount();
+  const { address } = useAccount();
 
-  const {data} = useBalance({address})
+  const { data } = useBalance({ address });
 
-  const balance = data && calculateBalance(data.value, data.decimals)
+  const balance = data && calculateBalance(data.value, data.decimals);
 
-  return {balance}
+  return { balance };
 }
