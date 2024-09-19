@@ -23,11 +23,11 @@ import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 
-import { predefined } from '../../../src';
+import { Eth, predefined } from '../../../src';
 import { EthImpl } from '../../../src/lib/eth';
 import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Block, Transaction } from '../../../src/lib/model';
-import { SDKClient } from '../../../src/lib/clients';
+import { MirrorNodeClient, SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import constants from '../../../src/lib/constants';
 import { hashNumber, numberTo0x } from '../../../dist/formatters';
@@ -74,6 +74,10 @@ import {
 import { generateEthTestEnv } from './eth-helpers';
 import { fail } from 'assert';
 import { RequestDetails } from '../../../src/lib/types';
+import MockAdapter from 'axios-mock-adapter';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
+import { Registry } from 'prom-client';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -85,8 +89,23 @@ let ethImplLowTransactionCount: EthImpl;
 
 describe('@ethGetBlockByNumber using MirrorNode', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
-    generateEthTestEnv(true);
+  const {
+    restMock,
+    hapiServiceInstance,
+    ethImpl,
+    cacheService,
+    mirrorNodeInstance,
+    logger,
+    registry,
+  }: {
+    restMock: MockAdapter;
+    hapiServiceInstance: HAPIService;
+    ethImpl: Eth;
+    cacheService: CacheService;
+    mirrorNodeInstance: MirrorNodeClient;
+    logger: any;
+    registry: Registry;
+  } = generateEthTestEnv(true);
   const results = defaultContractResults.results;
   const TOTAL_GAS_USED = numberTo0x(results[0].gas_used + results[1].gas_used);
 
@@ -204,6 +223,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       ethImpl.blockNumber,
       true,
       ethImpl,
+      [requestDetails],
     );
   });
 

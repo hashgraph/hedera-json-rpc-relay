@@ -24,7 +24,7 @@ import sinon from 'sinon';
 import * as _ from 'lodash';
 import chaiAsPromised from 'chai-as-promised';
 
-import { predefined } from '../../../src';
+import { Eth, predefined } from '../../../src';
 import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Transaction } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
@@ -44,6 +44,9 @@ import {
 } from './eth-config';
 import { contractResultsByNumberByIndexURL, generateEthTestEnv } from './eth-helpers';
 import { RequestDetails } from '../../../src/lib/types';
+import MockAdapter from 'axios-mock-adapter';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -65,7 +68,13 @@ function verifyAggregatedInfo(result: Transaction | null) {
 
 describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  const {
+    restMock,
+    hapiServiceInstance,
+    ethImpl,
+    cacheService,
+  }: { restMock: MockAdapter; hapiServiceInstance: HAPIService; ethImpl: Eth; cacheService: CacheService } =
+    generateEthTestEnv();
 
   const requestDetails = new RequestDetails({
     requestId: 'eth_getTransactionByBlockNumberAndIndexTest',
@@ -164,7 +173,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
       .onGet(contractResultsByNumberByIndexURL(randomBlock.number, randomBlock.count))
       .reply(200, defaultContractResultsWithNullableFrom);
 
-    const args = [numberTo0x(randomBlock.number), numberTo0x(randomBlock.count)];
+    const args = [numberTo0x(randomBlock.number), numberTo0x(randomBlock.count), requestDetails];
     const errMessage = "Cannot read properties of null (reading 'substring')";
 
     await RelayAssertions.assertRejection(

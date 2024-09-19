@@ -59,6 +59,10 @@ import {
 import { ethers } from 'ethers';
 import { generateEthTestEnv } from './eth-helpers';
 import { RequestDetails } from '../../../src/lib/types';
+import MockAdapter from 'axios-mock-adapter';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { Eth } from '../../../src';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
 use(chaiAsPromised);
@@ -77,7 +81,13 @@ describe('@ethGetLogs using MirrorNode', async function () {
       to: '1651560395.060890949',
     },
   };
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  const {
+    restMock,
+    hapiServiceInstance,
+    ethImpl,
+    cacheService,
+  }: { restMock: MockAdapter; hapiServiceInstance: HAPIService; ethImpl: Eth; cacheService: CacheService } =
+    generateEthTestEnv();
   const filteredLogs = {
     logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1]],
   };
@@ -110,14 +120,14 @@ describe('@ethGetLogs using MirrorNode', async function () {
     });
 
     it('BLOCK_HASH filter timeouts and throws the expected error', async () => {
-      await ethGetLogsFailing(ethImpl, [BLOCK_HASH, null, null, null, null], (error: any) => {
+      await ethGetLogsFailing(ethImpl, [BLOCK_HASH, null, null, null, null, requestDetails], (error: any) => {
         expect(error.statusCode).to.equal(504);
         expect(error.message).to.eq('timeout of 10000ms exceeded');
       });
     });
 
     it('address filter timeouts and throws the expected error', async () => {
-      await ethGetLogsFailing(ethImpl, [null, null, null, CONTRACT_ADDRESS_1, null], (error: any) => {
+      await ethGetLogsFailing(ethImpl, [null, null, null, CONTRACT_ADDRESS_1, null, requestDetails], (error: any) => {
         expect(error.statusCode).to.equal(504);
         expect(error.message).to.eq('timeout of 10000ms exceeded');
       });
@@ -465,7 +475,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
     restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCKS_RES);
 
-    await ethGetLogsFailing(ethImpl, [null, null, '0x5', null, null], (error: any) => {
+    await ethGetLogsFailing(ethImpl, [null, null, '0x5', null, null, requestDetails], (error: any) => {
       expect(error.code).to.equal(-32011);
       expect(error.message).to.equal('Provided toBlock parameter without specifying fromBlock');
     });

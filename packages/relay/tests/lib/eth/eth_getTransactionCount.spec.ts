@@ -27,12 +27,15 @@ import { EthImpl } from '../../../src/lib/eth';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS } from './eth-config';
-import { predefined } from '../../../src';
+import { Eth, predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import { defaultDetailedContractResults, defaultEthereumTransactions, mockData } from '../../helpers';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
 import { RequestDetails } from '../../../src/lib/types';
+import MockAdapter from 'axios-mock-adapter';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -43,7 +46,13 @@ let currentMaxBlockRange: number;
 
 describe('@ethGetTransactionCount eth_getTransactionCount spec', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  const {
+    restMock,
+    hapiServiceInstance,
+    ethImpl,
+    cacheService,
+  }: { restMock: MockAdapter; hapiServiceInstance: HAPIService; ethImpl: Eth; cacheService: CacheService } =
+    generateEthTestEnv();
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getTransactionCountTest', ipAddress: '0.0.0.0' });
   const blockNumber = mockData.blocks.blocks[2].number;
@@ -163,7 +172,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
 
   it('should throw error for earliest block with invalid block', async () => {
     restMock.onGet(earliestBlockPath).reply(200, { blocks: [] });
-    const args = [MOCK_ACCOUNT_ADDR, EthImpl.blockEarliest];
+    const args = [MOCK_ACCOUNT_ADDR, EthImpl.blockEarliest, requestDetails];
 
     await RelayAssertions.assertRejection(
       predefined.INTERNAL_ERROR('No network blocks found'),
@@ -177,7 +186,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
   it('should throw error for earliest block with non 0 or 1 block', async () => {
     restMock.onGet(earliestBlockPath).reply(200, { blocks: [mockData.blocks.blocks[2]] });
 
-    const args = [MOCK_ACCOUNT_ADDR, EthImpl.blockEarliest];
+    const args = [MOCK_ACCOUNT_ADDR, EthImpl.blockEarliest, requestDetails];
 
     const errMessage = `Partial mirror node encountered, earliest block number is ${mockData.blocks.blocks[2].number}`;
 
@@ -210,7 +219,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
   it('should throw error for account historical numerical block tag with missing block', async () => {
     restMock.onGet(blockPath).reply(404, mockData.notFound);
 
-    const args = [MOCK_ACCOUNT_ADDR, blockNumberHex];
+    const args = [MOCK_ACCOUNT_ADDR, blockNumberHex, requestDetails];
 
     await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK(), ethImpl.getTransactionCount, true, ethImpl, args);
   });
@@ -219,7 +228,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     restMock.onGet(blockPath).reply(404, mockData.notFound);
     restMock.onGet(latestBlockPath).reply(404, mockData.notFound);
 
-    const args = [MOCK_ACCOUNT_ADDR, blockNumberHex];
+    const args = [MOCK_ACCOUNT_ADDR, blockNumberHex, requestDetails];
 
     await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK(), ethImpl.getTransactionCount, true, ethImpl, args);
   });
@@ -262,7 +271,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
       .reply(200, { transactions: [{ transaction_id: transactionId }, {}] });
     restMock.onGet(contractResultsPath).reply(404, mockData.notFound);
 
-    const args = [MOCK_ACCOUNT_ADDR, blockNumberHex];
+    const args = [MOCK_ACCOUNT_ADDR, blockNumberHex, requestDetails];
     const errMessage = `Failed to retrieve contract results for transaction ${transactionId}`;
 
     await RelayAssertions.assertRejection(
@@ -301,13 +310,13 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
   });
 
   it('should throw for -1 invalid block tag', async () => {
-    const args = [MOCK_ACCOUNT_ADDR, '-1'];
+    const args = [MOCK_ACCOUNT_ADDR, '-1', requestDetails];
 
     await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK(), ethImpl.getTransactionCount, true, ethImpl, args);
   });
 
   it('should throw for invalid block tag', async () => {
-    const args = [MOCK_ACCOUNT_ADDR, 'notablock'];
+    const args = [MOCK_ACCOUNT_ADDR, 'notablock', requestDetails];
 
     await RelayAssertions.assertRejection(predefined.UNKNOWN_BLOCK(), ethImpl.getTransactionCount, true, ethImpl, args);
   });

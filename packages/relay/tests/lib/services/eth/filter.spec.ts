@@ -141,21 +141,21 @@ describe('Filter API Test Suite', async function () {
         filterService.newFilter,
         true,
         filterService,
-        [],
+        [requestDetails],
       );
       await RelayAssertions.assertRejection(
         predefined.UNSUPPORTED_METHOD,
         filterService.uninstallFilter,
         true,
         filterService,
-        [existingFilterId],
+        [existingFilterId, requestDetails],
       );
       await RelayAssertions.assertRejection(
         predefined.UNSUPPORTED_METHOD,
         filterService.getFilterChanges,
         true,
         filterService,
-        [existingFilterId],
+        [existingFilterId, requestDetails],
       );
     });
 
@@ -273,6 +273,7 @@ describe('Filter API Test Suite', async function () {
       await validateFilterCache(filterId, constants.FILTER.TYPE.LOG, {
         fromBlock: numberHex,
         toBlock: 'latest',
+        requestDetails: requestDetails,
         address: defaultEvmAddress,
         topics: defaultLogTopics,
       });
@@ -285,14 +286,14 @@ describe('Filter API Test Suite', async function () {
         filterService.newFilter,
         true,
         filterService,
-        [blockNumberHexes[1500], blockNumberHexes[1400]],
+        [blockNumberHexes[1500], blockNumberHexes[1400], requestDetails],
       );
       await RelayAssertions.assertRejection(
         predefined.INVALID_BLOCK_RANGE,
         filterService.newFilter,
         true,
         filterService,
-        ['latest', blockNumberHexes[1400]],
+        ['latest', blockNumberHexes[1400], requestDetails],
       );
 
       // block range is too large
@@ -301,7 +302,7 @@ describe('Filter API Test Suite', async function () {
         filterService.newFilter,
         true,
         filterService,
-        [blockNumberHexes[5], blockNumberHexes[2000]],
+        [blockNumberHexes[5], blockNumberHexes[2000], requestDetails],
       );
 
       // block range is valid
@@ -378,7 +379,7 @@ describe('Filter API Test Suite', async function () {
         filterService.getFilterLogs,
         true,
         filterService,
-        [filterIdBlockType],
+        [filterIdBlockType, requestDetails],
       );
     });
 
@@ -394,7 +395,7 @@ describe('Filter API Test Suite', async function () {
         filterService.getFilterLogs,
         true,
         filterService,
-        [filterIdBlockType],
+        [filterIdBlockType, requestDetails],
       );
     });
 
@@ -559,7 +560,7 @@ describe('Filter API Test Suite', async function () {
         filterService.getFilterChanges,
         true,
         filterService,
-        [nonExistingFilterId],
+        [nonExistingFilterId, requestDetails],
       );
     });
 
@@ -570,7 +571,7 @@ describe('Filter API Test Suite', async function () {
         filterService.getFilterChanges,
         true,
         filterService,
-        [nonExistingFilterId],
+        [nonExistingFilterId, requestDetails],
       );
     });
 

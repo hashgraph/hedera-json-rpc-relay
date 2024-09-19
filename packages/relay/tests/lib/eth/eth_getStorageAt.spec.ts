@@ -40,12 +40,15 @@ import {
   OLDER_BLOCK,
   BLOCK_HASH,
 } from './eth-config';
-import { predefined } from '../../../src';
+import { Eth, predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import { defaultDetailedContractResults } from '../../helpers';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
 import { RequestDetails } from '../../../src/lib/types';
+import MockAdapter from 'axios-mock-adapter';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -56,7 +59,13 @@ let currentMaxBlockRange: number;
 
 describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  const {
+    restMock,
+    hapiServiceInstance,
+    ethImpl,
+    cacheService,
+  }: { restMock: MockAdapter; hapiServiceInstance: HAPIService; ethImpl: Eth; cacheService: CacheService } =
+    generateEthTestEnv();
   const requestDetails = new RequestDetails({ requestId: 'eth_getStorageAtTest', ipAddress: '0.0.0.0' });
   function confirmResult(result: string) {
     expect(result).to.exist;
