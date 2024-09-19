@@ -23,12 +23,13 @@ import EventEmitter from 'events';
 import constants from '../../constants';
 import HbarLimit from '../../hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
+import { HbarLimitService } from '../hbarLimitService';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import {
+  RequestDetails,
+  ITransactionRecordMetric,
   IExecuteQueryEventPayload,
   IExecuteTransactionEventPayload,
-  ITransactionRecordMetric,
-  RequestDetails,
 } from '../../types';
 
 export default class MetricService {
@@ -90,6 +91,14 @@ export default class MetricService {
   private readonly eventEmitter: EventEmitter;
 
   /**
+   * An instance of the HbarLimitService that tracks hbar expenses and limits.
+   * @private
+   * @readonly
+   * @type {HbarLimitService}
+   */
+  private readonly hbarLimitService: HbarLimitService;
+
+  /**
    * Constructs an instance of the MetricService responsible for tracking and recording various metrics
    * related to Hedera network interactions and resource usage.
    *
@@ -107,12 +116,14 @@ export default class MetricService {
     hbarLimiter: HbarLimit,
     register: Registry,
     eventEmitter: EventEmitter,
+    hbarLimitService: HbarLimitService,
   ) {
     this.logger = logger;
     this.sdkClient = sdkClient;
     this.hbarLimiter = hbarLimiter;
     this.eventEmitter = eventEmitter;
     this.mirrorNodeClient = mirrorNodeClient;
+    this.hbarLimitService = hbarLimitService;
     this.consensusNodeClientHistogramCost = this.initCostMetric(register);
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
 

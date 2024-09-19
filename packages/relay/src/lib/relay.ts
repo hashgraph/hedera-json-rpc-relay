@@ -175,6 +175,7 @@ export class RelayImpl implements Relay {
       hbarLimiter,
       register,
       this.eventEmitter,
+      hbarLimitService,
     );
 
     this.ethImpl = new EthImpl(
