@@ -168,7 +168,15 @@ describe('Metric Service', function () {
       hbarLimitService,
     );
     // Init new MetricService instance
-    metricService = new MetricService(logger, sdkClient, mirrorNodeClient, hbarLimiter, registry, eventEmitter);
+    metricService = new MetricService(
+      logger,
+      sdkClient,
+      mirrorNodeClient,
+      hbarLimiter,
+      registry,
+      eventEmitter,
+      hbarLimitService,
+    );
   });
 
   afterEach(() => {
