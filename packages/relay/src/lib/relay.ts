@@ -167,7 +167,6 @@ export class RelayImpl implements Relay {
       logger,
       hapiService.getSDKClient(),
       this.mirrorNodeClient,
-      hbarLimiter,
       register,
       this.eventEmitter,
       hbarLimitService,

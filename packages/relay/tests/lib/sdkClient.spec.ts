@@ -78,7 +78,6 @@ describe('SdkClient', async function () {
   let instance: AxiosInstance;
   let eventEmitter: EventEmitter;
   let cacheService: CacheService;
-  let metricService: MetricService;
   let mirrorNodeClient: MirrorNodeClient;
   let hbarLimitService: HbarLimitService;
 
@@ -159,15 +158,9 @@ describe('SdkClient', async function () {
       instance,
     );
 
-    metricService = new MetricService(
-      logger,
-      sdkClient,
-      mirrorNodeClient,
-      hbarLimiter,
-      registry,
-      eventEmitter,
-      hbarLimitService,
-    );
+    // Note: Since the main capturing metric logic of the `MetricService` class works by listening to specific events,
+    //       this class does not need an instance but must still be initiated.
+    new MetricService(logger, sdkClient, mirrorNodeClient, registry, eventEmitter, hbarLimitService);
   });
 
   beforeEach(() => {
@@ -2268,10 +2261,12 @@ describe('SdkClient', async function () {
     const mockedInteractingEntity = 'interacting_entity';
 
     let hbarLimitMock: sinon.SinonMock;
+    let hbarLimitServiceMock: sinon.SinonMock;
     let sdkClientMock: sinon.SinonMock;
 
     beforeEach(() => {
       hbarLimitMock = sinon.mock(hbarLimiter);
+      hbarLimitServiceMock = sinon.mock(hbarLimitService);
       sdkClientMock = sinon.mock(sdkClient);
       mock = new MockAdapter(instance);
       hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK;
@@ -2280,9 +2275,11 @@ describe('SdkClient', async function () {
 
     afterEach(() => {
       hbarLimitMock.verify();
+      hbarLimitServiceMock.verify();
       sinon.restore();
       sdkClientMock.restore();
       hbarLimitMock.restore();
+      hbarLimitServiceMock.restore();
       process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = hbarRateLimitPreemptiveCheck;
     });
 
@@ -2344,15 +2341,15 @@ describe('SdkClient', async function () {
       transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(EthereumTransaction.name));
 
       hbarLimitMock.expects('shouldLimit').thrice().returns(false);
-      hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
+      hbarLimitServiceMock.expects('addExpense').withArgs(fileCreateFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
 
       // addExpense for mockedTransactionRecordFee will be called for a total of:
       //   - fileAppendChunks times for fileAppend transactions
       //   - 1 time for fileCreate transaction
       //   - 1 time for defaultTransaction Ethereum transaction
-      hbarLimitMock
+      hbarLimitServiceMock
         .expects('addExpense')
         .withArgs(mockedTransactionRecordFee)
         .exactly(fileAppendChunks + 2);
@@ -2393,12 +2390,12 @@ describe('SdkClient', async function () {
       }
 
       hbarLimitMock.expects('shouldLimit').twice().returns(false);
-      hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
+      hbarLimitServiceMock.expects('addExpense').withArgs(fileCreateFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
       // addExpense for mockedTransactionRecordFee will be called for a total of:
       //   - fileAppendChunks times for fileAppend transactions
       //   - 1 time for fileCreate transaction
-      hbarLimitMock
+      hbarLimitServiceMock
         .expects('addExpense')
         .withArgs(mockedTransactionRecordFee)
         .exactly(fileAppendChunks + 1);
@@ -2434,10 +2431,10 @@ describe('SdkClient', async function () {
         .resolves(getMockedTransactionRecord(FileAppendTransaction.name));
 
       hbarLimitMock.expects('shouldLimit').once().returns(false);
-      hbarLimitMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
+      hbarLimitServiceMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
       // addExpense for mockedTransactionRecordFee will be called for a total of:
       //   - fileAppendChunks times for fileAppend transactions
-      hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).exactly(fileAppendChunks);
+      hbarLimitServiceMock.expects('addExpense').withArgs(mockedTransactionRecordFee).exactly(fileAppendChunks);
 
       await sdkClient.executeAllTransaction(
         new FileAppendTransaction(),
@@ -2517,8 +2514,8 @@ describe('SdkClient', async function () {
         .once()
         .returns(false);
 
-      hbarLimitMock.expects('addExpense').withArgs(fileCreateFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(fileCreateFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
 
       const response = await sdkClient.createFile(
         callData,
@@ -2544,8 +2541,8 @@ describe('SdkClient', async function () {
         .stub(TransactionRecordQuery.prototype, 'execute')
         .resolves(getMockedTransactionRecord(FileDeleteTransaction.name));
 
-      hbarLimitMock.expects('addExpense').withArgs(fileDeleteFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(fileDeleteFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
       hbarLimitMock.expects('shouldLimit').never();
 
       await sdkClient.deleteFile(
@@ -2565,7 +2562,7 @@ describe('SdkClient', async function () {
       const queryStub = sinon.stub(Query.prototype, 'execute').resolves(fileInfo);
       const queryCostStub = sinon.stub(Query.prototype, 'getCost');
 
-      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(defaultTransactionFee).once();
 
       const result = await sdkClient.executeQuery(
         new FileInfoQuery().setFileId(fileId).setQueryPayment(Hbar.fromTinybars(defaultTransactionFee)),
@@ -2584,7 +2581,7 @@ describe('SdkClient', async function () {
       const queryStub = sinon.stub(Query.prototype, 'execute').resolves(fileInfo);
       const queryCostStub = sinon.stub(Query.prototype, 'getCost').resolves(Hbar.fromTinybars(defaultTransactionFee));
 
-      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(defaultTransactionFee).once();
 
       const result = await sdkClient.executeQuery(
         new FileInfoQuery().setFileId(fileId).setPaymentTransactionId(transactionId),
@@ -2612,8 +2609,8 @@ describe('SdkClient', async function () {
         .once()
         .returns(false);
 
-      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
-      hbarLimitMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
 
       const response = await sdkClient.executeTransaction(
         new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
@@ -2658,7 +2655,7 @@ describe('SdkClient', async function () {
       const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
       const transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
 
-      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+      hbarLimitServiceMock.expects('addExpense').withArgs(defaultTransactionFee).once();
       hbarLimitMock
         .expects('shouldLimit')
         .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName)
