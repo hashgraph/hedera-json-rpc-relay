@@ -132,8 +132,8 @@ describe('Metric Service', function () {
   beforeEach(() => {
     mock = new MockAdapter(instance);
 
-    const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const duration = constants.HBAR_RATE_LIMIT_DURATION();
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR();
 
     hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     eventEmitter = new EventEmitter();

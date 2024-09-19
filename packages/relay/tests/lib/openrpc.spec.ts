@@ -129,8 +129,8 @@ describe('Open RPC Specification', function () {
       cacheService,
       instance,
     );
-    const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const duration = constants.HBAR_RATE_LIMIT_DURATION();
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR();
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     const eventEmitter = new EventEmitter();
 

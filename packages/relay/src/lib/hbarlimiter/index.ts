@@ -20,8 +20,8 @@
 
 import { Logger } from 'pino';
 import constants from '../constants';
-import { Counter, Gauge, Registry } from 'prom-client';
 import { RequestDetails } from '../types';
+import { Registry, Counter, Gauge } from 'prom-client';
 
 export default class HbarLimit {
   private enabled: boolean = false;
