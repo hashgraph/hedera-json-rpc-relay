@@ -75,7 +75,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   const GAS_PRICE_TOO_LOW = '0x1';
   const GAS_PRICE_REF = '0x123456';
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(Constants.TINYBAR_TO_WEIBAR_COEF));
-  const TEN_HBAR = Utils.add0xPrefix(new Hbar(10).toTinybars().mul(Constants.TINYBAR_TO_WEIBAR_COEF).toString(16));
+  const TEN_HBAR = Utils.add0xPrefix(
+    (BigInt(new Hbar(10).toTinybars().toString()) * BigInt(Constants.TINYBAR_TO_WEIBAR_COEF)).toString(16),
+  );
   const sendRawTransaction = relay.sendRawTransaction;
 
   /**
