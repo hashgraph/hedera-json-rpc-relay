@@ -136,6 +136,12 @@ export class HbarLimitService implements IHbarLimitService {
 
     // Reset the rate limiter at the start of the next day
     this.reset = this.getResetTimestamp();
+
+    this.logger.trace(
+      `HBAR Rate Limit service successfully configured: totalBudget=${this.totalBudget}tℏ, resetDuration=${
+        HbarLimitService.ONE_DAY_IN_MILLIS
+      }ms, resetTimestamp=${this.reset.getMilliseconds()}`,
+    );
   }
 
   /**
