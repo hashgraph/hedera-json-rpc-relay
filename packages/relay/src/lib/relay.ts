@@ -181,7 +181,9 @@ export class RelayImpl implements Relay {
       process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
     );
 
-    this.metricService = new MetricService(
+    // Note: Since the main capturing metric logic of the `MetricService` class works by listening to specific events,
+    //       this class does not need an instance but must still be initiated.
+    new MetricService(
       logger,
       hapiService.getSDKClient(),
       this.mirrorNodeClient,
