@@ -16,6 +16,7 @@ permissions:
   contents: write
   checks: write
   pull-requests: write
+  actions: read
 
 jobs:
   api_batch_1:
