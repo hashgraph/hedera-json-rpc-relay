@@ -27,14 +27,16 @@ import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendi
 import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import constants from '../../constants';
+import { Hbar } from '@hashgraph/sdk';
 
 export class HbarLimitService implements IHbarLimitService {
   static readonly ONE_DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
-  // TODO: Replace with actual values
-  static readonly DAILY_LIMITS: Record<SubscriptionType, number> = {
-    BASIC: parseInt(process.env.HBAR_DAILY_LIMIT_BASIC ?? '1000'),
-    EXTENDED: parseInt(process.env.HBAR_DAILY_LIMIT_EXTENDED ?? '10000'),
-    PRIVILEGED: parseInt(process.env.HBAR_DAILY_LIMIT_PRIVILEGED ?? '100000'),
+  // TODO: Replace with actual values - https://github.com/hashgraph/hedera-json-rpc-relay/issues/2895
+  static readonly DAILY_LIMITS: Record<SubscriptionType, Hbar> = {
+    BASIC: constants.HBAR_DAILY_LIMIT_BASIC,
+    EXTENDED: constants.HBAR_DAILY_LIMIT_EXTENDED,
+    PRIVILEGED: constants.HBAR_DAILY_LIMIT_PRIVILEGED,
   };
 
   /**
@@ -70,7 +72,7 @@ export class HbarLimitService implements IHbarLimitService {
    * The remaining budget for the rate limiter.
    * @private
    */
-  private remainingBudget: number;
+  private remainingBudget: Hbar;
 
   /**
    * The reset timestamp for the rate limiter.
@@ -84,7 +86,7 @@ export class HbarLimitService implements IHbarLimitService {
     private readonly ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
     private readonly logger: Logger,
     private readonly register: Registry,
-    private readonly totalBudget: number,
+    private readonly totalBudget: Hbar,
   ) {
     const metricCounterName = 'rpc_relay_hbar_rate_limit';
     this.register.removeSingleMetric(metricCounterName);
@@ -103,8 +105,8 @@ export class HbarLimitService implements IHbarLimitService {
       help: 'Relay Hbar rate limit remaining budget',
       registers: [register],
     });
-    this.hbarLimitRemainingGauge.set(this.totalBudget);
     this.remainingBudget = this.totalBudget;
+    this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
 
     this.dailyUniqueSpendingPlansCounter = Object.values(SubscriptionType).reduce(
       (acc, type) => {
@@ -189,13 +191,14 @@ export class HbarLimitService implements IHbarLimitService {
       spendingPlan = await this.createBasicSpendingPlan(ethAddress, ipAddress);
     }
 
-    const dailyLimit = HbarLimitService.DAILY_LIMITS[spendingPlan.subscriptionType];
+    const dailyLimit = HbarLimitService.DAILY_LIMITS[spendingPlan.subscriptionType].toTinybars();
 
-    const exceedsLimit = spendingPlan.spentToday >= dailyLimit || spendingPlan.spentToday + estimatedTxFee > dailyLimit;
+    const exceedsLimit =
+      dailyLimit.lte(spendingPlan.spentToday) || dailyLimit.lt(spendingPlan.spentToday + estimatedTxFee);
     this.logger.trace(
       `${requestIdPrefix} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited: spentToday=${
         spendingPlan.spentToday
-      }, estimatedTxFee=${estimatedTxFee}, dailyLimit=${dailyLimit}`,
+      }, estimatedTxFee=${estimatedTxFee} tℏ, dailyLimit=${dailyLimit.toString()} tℏ`,
     );
     return exceedsLimit;
   }
@@ -233,14 +236,14 @@ export class HbarLimitService implements IHbarLimitService {
 
     await this.hbarSpendingPlanRepository.addAmountToSpentToday(spendingPlan.id, cost);
     await this.hbarSpendingPlanRepository.addAmountToSpendingHistory(spendingPlan.id, cost);
-    this.remainingBudget -= cost;
-    this.hbarLimitRemainingGauge.set(this.remainingBudget);
+    this.remainingBudget = Hbar.fromTinybars(this.remainingBudget.toTinybars().sub(cost));
+    this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
 
     // Done asynchronously in the background
     this.updateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType).then();
 
     this.logger.trace(
-      `${requestIdPrefix} HBAR rate limit expense update: cost=${cost}, remainingBudget=${this.remainingBudget}`,
+      `${requestIdPrefix} HBAR rate limit expense update: cost=${cost} tℏ, remainingBudget=${this.remainingBudget}`,
     );
   }
 
@@ -262,15 +265,15 @@ export class HbarLimitService implements IHbarLimitService {
     if (this.shouldResetLimiter()) {
       await this.resetLimiter();
     }
-    if (this.remainingBudget <= 0 || this.remainingBudget - estimatedTxFee < 0) {
+    if (this.remainingBudget.toTinybars().lte(0) || this.remainingBudget.toTinybars().sub(estimatedTxFee).lt(0)) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
-        `${requestIdPrefix} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset}`,
+        `${requestIdPrefix} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee} tℏ, resetTimestamp=${this.reset}`,
       );
       return true;
     } else {
       this.logger.trace(
-        `${requestIdPrefix} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee} resetTimestamp=${this.reset}.`,
+        `${requestIdPrefix} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee} tℏ, resetTimestamp=${this.reset}.`,
       );
       return false;
     }
@@ -303,7 +306,7 @@ export class HbarLimitService implements IHbarLimitService {
    */
   private resetBudget(): void {
     this.remainingBudget = this.totalBudget;
-    this.hbarLimitRemainingGauge.set(this.remainingBudget);
+    this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
   }
 
   /**

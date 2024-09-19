@@ -19,6 +19,7 @@
       - [HBar Allocation Strategy](#hbar-allocation-strategy)
         - [Metrics to Track](#metrics-to-track)
         - [Allocation Algorithm](#allocation-algorithm)
+  - [Configurations](#configurations)
   - [Additional Considerations](#additional-considerations)
     - [Performance](#performance)
     - [Monitoring and logging](#monitoring-and-logging)
@@ -270,6 +271,75 @@ c. Current day's usage (increase limits if overall usage is low)
 5. Reserve Pool:
    - Keep a small portion of the daily budget (e.g., 10%) as a reserve
    - Use this to accommodate unexpected spikes or high-priority users
+
+## Configurations
+
+### Pre-populating the Redis Cache with Spending Plans for Supported Projects and Partner Projects
+
+The following configurations will be used to automatically populate the Redis cache with `HbarSpendingPlan`, `EthAddressHbarSpendingPlan`, and `IPAddressHbarSpendingPlan` entries for the outlined supported projects and partner projects on every start-up of the relay.
+
+All other users (ETH and IP addresses which are not specified in the configuration file) will be treated as "general users" and will be assigned a basic `HbarSpendingPlan` on their first request and their ETH address and IP address will be linked to that plan for all subsequent requests.
+
+```json
+[
+  {
+    "name": "partner name",
+    "ethAddresses": ["0x123", "0x124"],
+    "ipAddresses": ["127.0.0.1", "128.0.0.1"],
+    "subscriptionTier": "ADVANCED"
+  },
+  {
+    "name": "some other partner that has given us only eth addresses",
+    "ethAddresses": ["0x125", "0x126"],
+    "subscriptionTier": "ADVANCED"
+  },
+  {
+    "name": "supported project name",
+    "ethAddresses": ["0x127", "0x128"],
+    "ipAddresses": ["129.0.0.1", "130.0.0.1"],
+    "subscriptionTier": "EXTENDED"
+  },
+  {
+    "name": "some other supported project that has given us only ip addresses",
+    "ipAddresses": ["131.0.0.1", "132.0.0.1"],
+    "subscriptionTier": "EXTENDED"
+  }
+]
+```
+
+On every start-up, the relay will check if these entries are already populated in the Redis cache. If not, it will populate them accordingly. 
+
+The JSON file can also be updated over time to add new supported projects or partner projects and it will populated only the new entries on the next start-up.
+
+```json
+[
+  ...,
+  {
+    "name": "new partner name",
+    "ethAddresses": ["0x129", "0x130"],
+    "ipAddresses": ["133.0.0.1"],
+    "subscriptionTier": "ADVANCED"
+  }
+]
+```
+
+### Spending Limits of Different Tiers
+
+**Tiered Spending Limits**: The spending limits for different tiers (`BASIC`, `EXTENDED`, `PRIVILEGED`) are defined as environment variables:
+
+```dotenv
+HBAR_DAILY_LIMIT_BASIC=1000
+HBAR_DAILY_LIMIT_EXTENDED=10000
+HBAR_DAILY_LIMIT_PRIVILEGED=20000
+```
+
+### Total Daily Budget
+
+The total daily budget is a ceiling on the total amount of HBars that can be spent in a day. This value is defined as an environment variable:
+
+```dotenv
+HBAR_DAILY_TOTAL_BUDGET=158400
+```
 
 ## Additional Considerations
 
