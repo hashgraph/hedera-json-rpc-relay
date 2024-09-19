@@ -19,52 +19,53 @@
  */
 
 import {
-  AccountBalance,
-  AccountBalanceQuery,
-  AccountId,
-  AccountInfo,
-  AccountInfoQuery,
-  Client,
-  ContractByteCodeQuery,
-  ContractCallQuery,
-  ContractFunctionResult,
-  ContractId,
-  EthereumTransaction,
-  EthereumTransactionData,
-  ExchangeRate,
-  ExchangeRates,
-  FeeComponents,
-  FeeSchedules,
-  FileAppendTransaction,
-  FileContentsQuery,
-  FileCreateTransaction,
-  FileDeleteTransaction,
-  FileId,
-  FileInfoQuery,
   Hbar,
-  HbarUnit,
-  PrecheckStatusError,
   Query,
   Status,
+  FileId,
+  Client,
+  HbarUnit,
+  AccountId,
+  ContractId,
   Transaction,
+  AccountInfo,
+  ExchangeRate,
+  FeeSchedules,
+  FileInfoQuery,
   TransactionId,
+  ExchangeRates,
+  FeeComponents,
+  AccountBalance,
+  AccountInfoQuery,
   TransactionRecord,
-  TransactionRecordQuery,
+  FileContentsQuery,
+  ContractCallQuery,
   TransactionResponse,
+  PrecheckStatusError,
+  EthereumTransaction,
+  AccountBalanceQuery,
+  FileAppendTransaction,
+  FileCreateTransaction,
+  FileDeleteTransaction,
+  ContractByteCodeQuery,
+  TransactionRecordQuery,
+  ContractFunctionResult,
+  EthereumTransactionData,
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { EventEmitter } from 'events';
 import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { SDKClientError } from '../errors/SDKClientError';
-import { JsonRpcError, predefined } from '../errors/JsonRpcError';
-import { CacheService } from '../services/cacheService/cacheService';
 import { weibarHexToTinyBarInt } from '../../formatters';
+import { SDKClientError } from './../errors/SDKClientError';
+import { HbarLimitService } from '../services/hbarLimitService';
+import { JsonRpcError, predefined } from './../errors/JsonRpcError';
+import { CacheService } from '../services/cacheService/cacheService';
 import {
+  ITransactionRecordMetric,
   IExecuteQueryEventPayload,
   IExecuteTransactionEventPayload,
-  ITransactionRecordMetric,
   RequestDetails,
 } from '../types';
 
@@ -119,6 +120,14 @@ export class SDKClient {
   private readonly eventEmitter: EventEmitter;
 
   /**
+   * An instance of the HbarLimitService that tracks hbar expenses and limits.
+   * @private
+   * @readonly
+   * @type {HbarLimitService}
+   */
+  private readonly hbarLimitService: HbarLimitService;
+
+  /**
    * Constructs an instance of the SDKClient and initializes various services and settings.
    *
    * @param {Client} clientMain - The primary Hedera client instance used for executing transactions and queries.
@@ -133,6 +142,7 @@ export class SDKClient {
     hbarLimiter: HbarLimit,
     cacheService: CacheService,
     eventEmitter: EventEmitter,
+    hbarLimitService: HbarLimitService,
   ) {
     this.clientMain = clientMain;
 
@@ -146,6 +156,7 @@ export class SDKClient {
     this.hbarLimiter = hbarLimiter;
     this.cacheService = cacheService;
     this.eventEmitter = eventEmitter;
+    this.hbarLimitService = hbarLimitService;
     this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     this.fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
   }

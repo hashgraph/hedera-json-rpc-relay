@@ -77,8 +77,10 @@ describe('SdkClient', async function () {
   let hbarLimiter: HbarLimit;
   let instance: AxiosInstance;
   let eventEmitter: EventEmitter;
+  let cacheService: CacheService;
   let metricService: MetricService;
   let mirrorNodeClient: MirrorNodeClient;
+  let hbarLimitService: HbarLimitService;
 
   const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });
   const feeSchedules = {
@@ -114,12 +116,27 @@ describe('SdkClient', async function () {
     const total = constants.HBAR_RATE_LIMIT_TINYBAR();
     hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     eventEmitter = new EventEmitter();
+
+    cacheService = new CacheService(logger, registry);
+    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
+    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
+    hbarLimitService = new HbarLimitService(
+      hbarSpendingPlanRepository,
+      ethAddressHbarSpendingPlanRepository,
+      ipAddressHbarSpendingPlanRepository,
+      logger,
+      register,
+      total,
+    );
+
     sdkClient = new SDKClient(
       client,
       logger.child({ name: `consensus-node` }),
       hbarLimiter,
       new CacheService(logger.child({ name: `cache` }), registry),
       eventEmitter,
+      hbarLimitService,
     );
 
     process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
@@ -257,9 +274,7 @@ describe('SdkClient', async function () {
 
   describe('HAPIService', async () => {
     let hapiService: HAPIService;
-    let cacheService: CacheService;
     let originalEnv: NodeJS.ProcessEnv;
-    let hbarLimitService: HbarLimitService;
     let initialOperatorKeyFormat: string | undefined;
 
     const OPERATOR_KEY_ED25519 = {
@@ -290,20 +305,6 @@ describe('SdkClient', async function () {
           },
         });
       }
-
-      const total = constants.HBAR_RATE_LIMIT_TINYBAR();
-      cacheService = new CacheService(logger, registry);
-      const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
-      const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
-      const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
-      hbarLimitService = new HbarLimitService(
-        hbarSpendingPlanRepository,
-        ethAddressHbarSpendingPlanRepository,
-        ipAddressHbarSpendingPlanRepository,
-        logger,
-        register,
-        total,
-      );
     });
 
     this.beforeEach(() => {
