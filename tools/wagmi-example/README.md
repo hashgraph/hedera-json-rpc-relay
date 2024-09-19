@@ -1,5 +1,9 @@
 # Wagmi Hedera Example
 
+Wagmi is a library for building Web3 apps, offering hooks (React version) for wallet connections, blockchain data, and transactions.
+
+Learn more [here](https://wagmi.sh).
+
 ## How to run example?
 1. Install dependencies `npm install`
 2. Run project `npm dev`
