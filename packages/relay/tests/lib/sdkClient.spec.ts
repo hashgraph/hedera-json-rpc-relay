@@ -325,7 +325,14 @@ describe('SdkClient', async function () {
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'BAD_FORMAT' }, () => {
       it('It should throw an Error when an unexpected string is set', async () => {
         try {
-          new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter, hbarLimitService);
+          new HAPIService(
+            logger,
+            registry,
+            hbarLimiter,
+            new CacheService(logger, registry),
+            eventEmitter,
+            hbarLimitService,
+          );
           expect.fail(`Expected an error but nothing was thrown`);
         } catch (e: any) {
           expect(e.message).to.eq('Invalid OPERATOR_KEY_FORMAT provided: BAD_FORMAT');
