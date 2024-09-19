@@ -614,6 +614,7 @@ export class SDKClient {
    * @param {string} callerName - The name of the caller executing the query.
    * @param {string} interactingEntity - The entity interacting with the query.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @param {string} [originalCallerAddress] - The optional address of the original caller making the request.
    * @returns {Promise<T>} A promise resolving to the query response.
    * @throws {Error} Throws an error if the query fails or if rate limits are exceeded.
    * @template T - The type of the query response.
@@ -624,6 +625,7 @@ export class SDKClient {
     callerName: string,
     interactingEntity: string,
     requestDetails: RequestDetails,
+    originalCallerAddress?: string,
   ): Promise<T> {
     const queryConstructorName = query.constructor.name;
     const requestIdPrefix = requestDetails.formattedRequestId;
@@ -680,6 +682,7 @@ export class SDKClient {
           interactingEntity,
           status,
           requestDetails,
+          originalCallerAddress,
         } as IExecuteQueryEventPayload);
       }
     }
@@ -767,6 +770,7 @@ export class SDKClient {
           txConstructorName,
           operatorAccountId: this.clientMain.operatorAccountId!.toString(),
           interactingEntity,
+          originalCallerAddress,
         } as IExecuteTransactionEventPayload);
       }
     }
@@ -833,6 +837,7 @@ export class SDKClient {
               txConstructorName,
               operatorAccountId: this.clientMain.operatorAccountId!.toString(),
               interactingEntity,
+              originalCallerAddress,
             } as IExecuteTransactionEventPayload);
           }
         }
@@ -900,6 +905,7 @@ export class SDKClient {
         callerName,
         interactingEntity,
         requestDetails,
+        originalCallerAddress,
       );
 
       if (fileInfo.size.isZero()) {

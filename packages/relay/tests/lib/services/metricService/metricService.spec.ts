@@ -69,6 +69,7 @@ describe('Metric Service', function () {
   const mockedTransactionIdFormatted = '0.0.1022-1681130064-409933500';
   const metricHistogramCostSumTitle = 'rpc_relay_consensusnode_response_sum';
   const metricHistogramGasFeeSumTitle = 'rpc_relay_consensusnode_gasfee_sum';
+  const mockedOriginalCallerAddress = '0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69';
   const mockedMirrorNodeTransactionRecord = {
     transactions: [
       {
@@ -192,6 +193,7 @@ describe('Metric Service', function () {
       operatorAccountId,
       interactingEntity: mockedInteractingEntity,
       requestDetails,
+      originalCallerAddress: mockedOriginalCallerAddress,
     };
 
     withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
@@ -358,6 +360,7 @@ describe('Metric Service', function () {
       interactingEntity: mockedInteractingEntity,
       status: 'SUCCESS',
       requestDetails,
+      originalCallerAddress: mockedOriginalCallerAddress,
     };
     it('should execute addExpenseAndCaptureMetrics() to capture metrics in HBAR limiter and metric registry', async () => {
       const originalBudget = hbarLimiter.getRemainingBudget();
