@@ -23,19 +23,25 @@ import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { Registry } from 'prom-client';
+import { register, Registry } from 'prom-client';
+
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 import pino from 'pino';
+import { EventEmitter } from 'events';
 import constants from '../../src/lib/constants';
-import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { Log, Transaction } from '../../src/lib/model';
-import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
+import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { defaultDetailedContractResults, useInMemoryRedisServer } from '../helpers';
-import { EventEmitter } from 'events';
+import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
+import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -137,7 +143,20 @@ describe('eth_getBlockBy', async function () {
     const total = constants.HBAR_RATE_LIMIT_TINYBAR();
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     const eventEmitter = new EventEmitter();
-    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
+
+    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
+    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
+    const hbarLimitService = new HbarLimitService(
+      hbarSpendingPlanRepository,
+      ethAddressHbarSpendingPlanRepository,
+      ipAddressHbarSpendingPlanRepository,
+      logger,
+      register,
+      total,
+    );
+
+    hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter, hbarLimitService);
 
     process.env.ETH_FEE_HISTORY_FIXED = 'false';
 

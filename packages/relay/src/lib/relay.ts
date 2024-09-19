@@ -132,7 +132,6 @@ export class RelayImpl implements Relay {
 
     this.eventEmitter = new EventEmitter();
     this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);
-    const hapiService = new HAPIService(logger, register, hbarLimiter, this.cacheService, this.eventEmitter);
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(this.cacheService, logger);
     const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(this.cacheService, logger);
@@ -145,6 +144,16 @@ export class RelayImpl implements Relay {
       register,
       total,
     );
+
+    const hapiService = new HAPIService(
+      logger,
+      register,
+      hbarLimiter,
+      this.cacheService,
+      this.eventEmitter,
+      hbarLimitService,
+    );
+
     this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
