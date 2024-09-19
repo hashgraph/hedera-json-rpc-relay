@@ -159,7 +159,15 @@ describe('SdkClient', async function () {
       instance,
     );
 
-    metricService = new MetricService(logger, sdkClient, mirrorNodeClient, hbarLimiter, registry, eventEmitter);
+    metricService = new MetricService(
+      logger,
+      sdkClient,
+      mirrorNodeClient,
+      hbarLimiter,
+      registry,
+      eventEmitter,
+      hbarLimitService,
+    );
   });
 
   beforeEach(() => {
