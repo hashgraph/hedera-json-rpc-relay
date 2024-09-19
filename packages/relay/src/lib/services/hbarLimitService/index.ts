@@ -199,14 +199,15 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Add expense to the remaining budget.
+   * Add expense to the remaining budget and update the spending plan if applicable.
    * @param {number} cost - The cost of the expense.
    * @param {string} ethAddress - The Ethereum address to add the expense to.
    * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the expense has been added.
    */
-  async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails): Promise<void> {
+  async addExpense(cost: number, ethAddress: string | undefined, requestDetails: RequestDetails): Promise<void> {
     const ipAddress = requestDetails.ipAddress;
+
     if (!ethAddress && !ipAddress) {
       throw new Error('Cannot add expense without an eth address or ip address');
     }
@@ -218,9 +219,11 @@ export class HbarLimitService implements IHbarLimitService {
     }
 
     this.logger.trace(
-      `${requestDetails.formattedRequestId} Adding expense of ${cost} to spending plan with ID ${
-        spendingPlan.id
-      }, new amountSpent=${spendingPlan.amountSpent + cost}`,
+      `${requestDetails.formattedRequestId} Spending plan expense update: planID=${spendingPlan.id}, subscriptionType=${
+        spendingPlan.subscriptionType
+      }, cost=${cost}, originalAmountSpent=${spendingPlan.amountSpent}, updatedAmountSpent=${
+        spendingPlan.amountSpent + cost
+      }`,
     );
 
     // Check if the spending plan is being used for the first time today
@@ -350,7 +353,7 @@ export class HbarLimitService implements IHbarLimitService {
    * @private
    */
   private async getSpendingPlan(
-    ethAddress: string,
+    ethAddress: string | undefined,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan | null> {
     const ipAddress = requestDetails.ipAddress;
@@ -412,10 +415,11 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} ethAddress - The eth address to create the spending plan for.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
+   * @throws {Error} - If neither eth address nor IP address is provided.
    * @private
    */
   private async createBasicSpendingPlan(
-    ethAddress: string,
+    ethAddress: string | undefined,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan> {
     const ipAddress = requestDetails.ipAddress;

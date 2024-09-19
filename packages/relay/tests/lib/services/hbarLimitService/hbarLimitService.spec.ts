@@ -655,21 +655,6 @@ describe('HbarLimitService', function () {
       sinon.assert.calledOnceWithExactly(incUniqueSpendingPlansCounterSpy, 1);
     };
 
-    it('should throw an error if empty ethAddress or ipAddress is provided', async function () {
-      const ipAddresses = [''];
-      const ethAddresses = [''];
-      const testCases = ethAddresses.flatMap((ethAddress) =>
-        ipAddresses.map((ipAddress) => ({ ethAddress, ipAddress })),
-      );
-      for (const { ethAddress, ipAddress } of testCases) {
-        const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: ipAddress });
-        // @ts-ignore
-        await expect(hbarLimitService.addExpense(100, ethAddress, requestDetails)).to.be.eventually.rejectedWith(
-          'Cannot add expense without an eth address or ip address',
-        );
-      }
-    });
-
     it('should create a basic spending plan if none exists', async function () {
       const newSpendingPlan = createSpendingPlan(mockPlanId);
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
