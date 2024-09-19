@@ -43,8 +43,8 @@ import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
 import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigService';
 import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 
 dotenv.config({ path: findConfig('.env') || '' });
 
@@ -196,21 +196,6 @@ export class RelayImpl implements Relay {
       chainId,
       register,
       this.cacheService,
-    );
-
-    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'hbar-spending-plan-repository' }),
-    );
-
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
-    );
-
-    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
     );
 
     this.hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
