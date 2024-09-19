@@ -47,6 +47,7 @@ describe('HbarLimitService', function () {
   const register = new Registry();
   const totalBudget = 100_000;
   const mode = constants.EXECUTION_MODE.TRANSACTION;
+  const mockTxCost = 100;
   const methodName = 'testMethod';
   const mockEthAddress = '0x123';
   const mockIpAddress = 'x.x.x';
@@ -658,6 +659,17 @@ describe('HbarLimitService', function () {
       await expect(hbarLimitService.addExpense(100, mockEthAddress, requestDetails)).to.be.eventually.rejectedWith(
         'Failed to add expense',
       );
+    });
+  });
+
+  describe('getRemainingBudget', () => {
+    it('Should correctly get the remaining budget', async () => {
+      const originalRemainingBudget = hbarLimitService.getRemainingBudget();
+      expect(originalRemainingBudget).to.eq(totalBudget);
+
+      await hbarLimitService.addExpense(mockTxCost);
+      const updatedRemainingBudget = hbarLimitService.getRemainingBudget();
+      expect(updatedRemainingBudget).to.eq(totalBudget - mockTxCost);
     });
   });
 
