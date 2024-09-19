@@ -27,12 +27,13 @@ import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
 import constants from '../../../../src/lib/constants';
 import { FilterService, CommonService } from '../../../../src/lib/services/ethService';
-import { defaultEvmAddress, getRequestId, toHex, defaultBlock, defaultLogTopics, defaultLogs1 } from '../../../helpers';
+import { defaultEvmAddress, toHex, defaultBlock, defaultLogTopics, defaultLogs1 } from '../../../helpers';
 import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import * as sinon from 'sinon';
 import { RequestDetails } from '../../../../src/lib/types';
+import { v4 as uuid } from 'uuid';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();
@@ -46,7 +47,7 @@ let cacheService: CacheService;
 describe('Filter API Test Suite', async function () {
   this.timeout(10000);
 
-  const requestDetails = new RequestDetails({ requestId: getRequestId(), ipAddress: '0.0.0.0' });
+  const requestDetails = new RequestDetails({ requestId: uuid(), ipAddress: '0.0.0.0' });
   const filterObject = {
     toBlock: 'latest',
   };
@@ -141,7 +142,7 @@ describe('Filter API Test Suite', async function () {
         filterService.newFilter,
         true,
         filterService,
-        [requestDetails],
+        [undefined, undefined, requestDetails],
       );
       await RelayAssertions.assertRejection(
         predefined.UNSUPPORTED_METHOD,
@@ -192,21 +193,21 @@ describe('Filter API Test Suite', async function () {
         filterService.newFilter,
         true,
         filterService,
-        [],
+        [undefined, undefined, requestDetails],
       );
       await RelayAssertions.assertRejection(
         predefined.UNSUPPORTED_METHOD,
         filterService.uninstallFilter,
         true,
         filterService,
-        [existingFilterId],
+        [existingFilterId, requestDetails],
       );
       await RelayAssertions.assertRejection(
         predefined.UNSUPPORTED_METHOD,
         filterService.getFilterChanges,
         true,
         filterService,
-        [existingFilterId],
+        [existingFilterId, requestDetails],
       );
     });
   });
