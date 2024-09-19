@@ -243,6 +243,16 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
+   * Retrieves the remaining budget.
+   *
+   * @public
+   * @returns {number} The remaining budget value.
+   */
+  public getRemainingBudget(): number {
+    return this.remainingBudget;
+  }
+
+  /**
    * Checks if the total daily budget has been exceeded.
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
