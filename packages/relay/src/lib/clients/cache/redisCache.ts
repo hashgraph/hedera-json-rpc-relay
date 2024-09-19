@@ -162,7 +162,11 @@ export class RedisCache implements IRedisCacheClient {
     const serializedValue = JSON.stringify(value);
     const resolvedTtl = ttl ?? this.options.ttl; // in milliseconds
 
-    await client.set(key, serializedValue, { PX: resolvedTtl });
+    if (resolvedTtl === -1) {
+      await client.set(key, serializedValue);
+    } else {
+      await client.set(key, serializedValue, { PX: resolvedTtl });
+    }
     this.logger.trace(`${requestIdPrefix} caching ${key}: ${serializedValue} on ${callingMethod} for ${resolvedTtl} s`);
     // TODO: add metrics
   }

@@ -27,6 +27,7 @@ import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import MockAdapter from 'axios-mock-adapter';
 import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import { EthImpl } from '../../../src/lib/eth';
+import EventEmitter from 'events';
 
 export function contractResultsByNumberByIndexURL(number: number, index: number): string {
   return `contracts/results?block.number=${number}&transaction.index=${index}&limit=100&order=asc`;
@@ -60,10 +61,11 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
   const web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
 
   const duration = constants.HBAR_RATE_LIMIT_DURATION;
-  const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+  const total = constants.HBAR_RATE_LIMIT_TOTAL.toTinybars().toNumber();
   const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+  const eventEmitter = new EventEmitter();
 
-  const hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService);
+  const hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
 
   // @ts-ignore
   const ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);

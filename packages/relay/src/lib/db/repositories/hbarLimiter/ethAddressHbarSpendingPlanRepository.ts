@@ -26,7 +26,7 @@ import { EthAddressHbarSpendingPlan } from '../../entities/hbarLimiter/ethAddres
 
 export class EthAddressHbarSpendingPlanRepository {
   private readonly collectionKey = 'ethAddressHbarSpendingPlan';
-  private readonly threeMonthsInMillis = 90 * 24 * 60 * 60 * 1000;
+  private readonly oneDayInMillis = 24 * 60 * 60 * 1000;
 
   /**
    * The cache service used for storing data.
@@ -65,11 +65,12 @@ export class EthAddressHbarSpendingPlanRepository {
    * Saves an {@link EthAddressHbarSpendingPlan} to the cache, linking the plan to the ETH address.
    *
    * @param {IEthAddressHbarSpendingPlan} addressPlan - The plan to save.
+   * @param {number} [ttl] - The time-to-live for the cache entry. (default: 1 day)
    * @returns {Promise<void>} - A promise that resolves when the ETH address is linked to the plan.
    */
-  async save(addressPlan: IEthAddressHbarSpendingPlan): Promise<void> {
+  async save(addressPlan: IEthAddressHbarSpendingPlan, ttl: number = this.oneDayInMillis): Promise<void> {
     const key = this.getKey(addressPlan.ethAddress);
-    await this.cache.set(key, addressPlan, 'save', this.threeMonthsInMillis);
+    await this.cache.set(key, addressPlan, 'save', ttl);
     this.logger.trace(`Saved EthAddressHbarSpendingPlan with address ${addressPlan.ethAddress}`);
   }
 

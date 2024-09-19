@@ -188,14 +188,15 @@ describe('HbarSpendingPlanRepository', function () {
       });
     });
 
-    describe('getSpentToday', () => {
+    describe('getAmountSpent', () => {
       const mockedOneDayInMillis: number = 200;
       let oneDayInMillis: number;
+      let createdPlan: IDetailedHbarSpendingPlan;
 
-      beforeEach(() => {
-        // save the oneDayInMillis value
+      beforeEach(async () => {
+        createdPlan = await repository.create(SubscriptionType.BASIC);
         oneDayInMillis = repository['oneDayInMillis'];
-        // set oneDayInMillis to 1 second for testing
+        // mock the oneDayInMillis value to speed up the test
         // @ts-ignore
         repository['oneDayInMillis'] = mockedOneDayInMillis;
       });
@@ -206,94 +207,82 @@ describe('HbarSpendingPlanRepository', function () {
         repository['oneDayInMillis'] = oneDayInMillis;
       });
 
-      it('retrieves spent today for a plan', async () => {
-        const subscriptionType = SubscriptionType.BASIC;
-        const createdPlan = await repository.create(subscriptionType);
+      it('retrieves amountSpent for a plan', async () => {
         const amount = 50;
-
-        await repository.addAmountToSpentToday(createdPlan.id, amount);
-
-        const spentToday = await repository.getSpentToday(createdPlan.id);
-        expect(spentToday).to.equal(amount);
+        await repository.addToAmountSpent(createdPlan.id, amount);
+        await expect(repository.getAmountSpent(createdPlan.id)).to.eventually.equal(amount);
       });
 
-      it('returns 0 if spent today key does not exist', async () => {
-        const subscriptionType = SubscriptionType.BASIC;
-        const createdPlan = await repository.create(subscriptionType);
-
-        const spentToday = await repository.getSpentToday(createdPlan.id);
-        expect(spentToday).to.equal(0);
+      it('returns 0 if amountSpent key does not exist', async () => {
+        await expect(repository.getAmountSpent(createdPlan.id)).to.eventually.equal(0);
       });
 
-      it('should expire spent today key at the end of the day', async () => {
-        const subscriptionType = SubscriptionType.BASIC;
-        const createdPlan = await repository.create(subscriptionType);
+      it('should expire amountSpent key at the end of the day', async () => {
         const amount = 50;
-
-        await repository.addAmountToSpentToday(createdPlan.id, amount);
-        await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(amount);
+        await repository.addToAmountSpent(createdPlan.id, amount);
+        await expect(repository.getAmountSpent(createdPlan.id)).to.eventually.equal(amount);
 
         await new Promise((resolve) => setTimeout(resolve, mockedOneDayInMillis + 100));
 
-        await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(0);
+        await expect(repository.getAmountSpent(createdPlan.id)).to.eventually.equal(0);
       });
     });
 
-    describe('resetAllSpentTodayEntries', () => {
-      it('resets all spent today entries', async () => {
+    describe('resetAllAmountSpentEntries', () => {
+      it('resets all amountSpent entries', async () => {
         const plans: IDetailedHbarSpendingPlan[] = [];
         for (const subscriptionType of Object.values(SubscriptionType)) {
           const createdPlan = await repository.create(subscriptionType);
           plans.push(createdPlan);
           const amount = 50 * plans.length;
-          await repository.addAmountToSpentToday(createdPlan.id, amount);
-          await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(amount);
+          await repository.addToAmountSpent(createdPlan.id, amount);
+          await expect(repository.getAmountSpent(createdPlan.id)).to.eventually.equal(amount);
         }
 
-        await repository.resetAllSpentTodayEntries();
+        await repository.resetAmountSpentOfAllPlans();
 
         for (const plan of plans) {
-          await expect(repository.getSpentToday(plan.id)).to.eventually.equal(0);
+          await expect(repository.getAmountSpent(plan.id)).to.eventually.equal(0);
         }
       });
 
-      it('does not throw an error if no spent today keys exist', async () => {
-        await expect(repository.resetAllSpentTodayEntries()).to.not.be.rejected;
+      it('does not throw an error if no amountSpent keys exist', async () => {
+        await expect(repository.resetAmountSpentOfAllPlans()).to.not.be.rejected;
       });
     });
 
-    describe('addAmountToSpentToday', () => {
-      it('adds amount to spent today', async () => {
+    describe('addAmountToAmountSpent', () => {
+      it('adds amount to amountSpent', async () => {
         const subscriptionType = SubscriptionType.BASIC;
         const createdPlan = await repository.create(subscriptionType);
         const amount = 50;
 
-        await repository.addAmountToSpentToday(createdPlan.id, amount);
+        await repository.addToAmountSpent(createdPlan.id, amount);
 
         const plan = await repository.findByIdWithDetails(createdPlan.id);
         expect(plan).to.not.be.null;
-        expect(plan!.spentToday).to.equal(amount);
+        expect(plan!.amountSpent).to.equal(amount);
 
-        // Add more to spent today
+        // Add more to amountSpent
         const newAmount = 100;
-        await repository.addAmountToSpentToday(createdPlan.id, newAmount);
+        await repository.addToAmountSpent(createdPlan.id, newAmount);
 
         const updatedPlan = await repository.findByIdWithDetails(createdPlan.id);
         expect(updatedPlan).to.not.be.null;
-        expect(updatedPlan!.spentToday).to.equal(amount + newAmount);
+        expect(updatedPlan!.amountSpent).to.equal(amount + newAmount);
       });
 
-      it('throws error if plan not found when adding to spent today', async () => {
+      it('throws error if plan not found when adding to amountSpent', async () => {
         const id = 'non-existent-id';
         const amount = 50;
 
-        await expect(repository.addAmountToSpentToday(id, amount)).to.be.eventually.rejectedWith(
+        await expect(repository.addToAmountSpent(id, amount)).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotFoundError,
           `HbarSpendingPlan with ID ${id} not found`,
         );
       });
 
-      it('throws an error if plan is not active when adding to spent today', async () => {
+      it('throws an error if plan is not active when adding to amountSpent', async () => {
         const subscriptionType = SubscriptionType.BASIC;
         const createdPlan = await repository.create(subscriptionType);
 
@@ -302,7 +291,7 @@ describe('HbarSpendingPlanRepository', function () {
         await cacheService.set(key, { ...createdPlan, active: false }, 'test');
 
         const amount = 50;
-        await expect(repository.addAmountToSpentToday(createdPlan.id, amount)).to.be.eventually.rejectedWith(
+        await expect(repository.addToAmountSpent(createdPlan.id, amount)).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotActiveError,
           `HbarSpendingPlan with ID ${createdPlan.id} is not active`,
         );

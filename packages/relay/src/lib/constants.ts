@@ -18,7 +18,8 @@
  *
  */
 
-import { Hbar } from '@hashgraph/sdk';
+import { Hbar, HbarUnit } from '@hashgraph/sdk';
+import { BigNumber } from 'bignumber.js';
 
 enum CACHE_KEY {
   ACCOUNT = 'account',
@@ -139,11 +140,10 @@ export default {
   },
 
   HBAR_RATE_LIMIT_DURATION: parseInt(process.env.HBAR_RATE_LIMIT_DURATION || '80000'),
-  HBAR_RATE_LIMIT_TINYBAR: parseInt(process.env.HBAR_RATE_LIMIT_TINYBAR || '11000000000'),
-  HBAR_DAILY_TOTAL_BUDGET: new Hbar(parseInt(process.env.HBAR_TOTAL_BUDGET_AMOUNT || '158400')), // daily equivalent to current limit of 110 hbars per minute
-  HBAR_DAILY_LIMIT_BASIC: new Hbar(parseInt(process.env.HBAR_DAILY_LIMIT_BASIC || '1000')),
-  HBAR_DAILY_LIMIT_EXTENDED: new Hbar(parseInt(process.env.HBAR_DAILY_LIMIT_EXTENDED || '10000')),
-  HBAR_DAILY_LIMIT_PRIVILEGED: new Hbar(parseInt(process.env.HBAR_DAILY_LIMIT_PRIVILEGED || '20000')),
+  HBAR_RATE_LIMIT_TOTAL: Hbar.fromTinybars(process.env.HBAR_RATE_LIMIT_TINYBAR || '11000000000'),
+  HBAR_RATE_LIMIT_BASIC: Hbar.from(BigNumber(process.env.HBAR_DAILY_LIMIT_BASIC || '1000'), HbarUnit.Hbar),
+  HBAR_RATE_LIMIT_EXTENDED: Hbar.from(BigNumber(process.env.HBAR_DAILY_LIMIT_EXTENDED || '10000'), HbarUnit.Hbar),
+  HBAR_RATE_LIMIT_PRIVILEGED: Hbar.from(BigNumber(process.env.HBAR_DAILY_LIMIT_PRIVILEGED || '20000'), HbarUnit.Hbar),
   GAS_PRICE_TINY_BAR_BUFFER: parseInt(process.env.GAS_PRICE_TINY_BAR_BUFFER || '10000000000'),
   WEB_SOCKET_PORT: process.env.WEB_SOCKET_PORT || 8546,
   WEB_SOCKET_HTTP_PORT: process.env.WEB_SOCKET_HTTP_PORT || 8547,

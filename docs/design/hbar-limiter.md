@@ -87,7 +87,7 @@ flowchart TD
     E --> F[Estimate fees of any additional HFS transactions which need to be executed by the operator]
     C -->|existing user, i.e., who is linked to a spending plan| G[Retrieve HbarSpendingPlan linked to user]
     G --> F
-    F --> H{The plan exceeds its daily HBar allowance?}
+    F --> H{The plan exceeds its HBar allowance?}
     H --> |yes| I[Limit request]
     H --> |no| J[Execute transaction]
     J --> K[Capture fees the operator has been charged]
@@ -150,7 +150,7 @@ classDiagram
         -createdAt: Date
         -active: boolean
         -spendingHistory: HbarSpendingRecord[]
-        -spentToday: number
+        -amountSpent: number
     }
 
     class HbarSpendingRecord {
@@ -189,8 +189,8 @@ classDiagram
         +checkExistsAndActive(id: string): Promise<void>
         +getSpendingHistory(id: string): Promise<HbarSpendingRecord[]>
         +addAmountToSpendingHistory(id: string, amount: number): Promise<number>
-        +getSpentToday(id: string): Promise<number>
-        +addAmountToSpentToday(id: string, amount: number): Promise<void>
+        +getAmountSpent(id: string): Promise<number>
+        +addToAmountSpent(id: string, amount: number): Promise<void>
     }
 
     class EthAddressHbarSpendingPlanRepository {
@@ -325,20 +325,24 @@ The JSON file can also be updated over time to add new supported projects or par
 
 ### Spending Limits of Different Tiers
 
-**Tiered Spending Limits**: The spending limits for different tiers (`BASIC`, `EXTENDED`, `PRIVILEGED`) are defined as environment variables:
+The spending limits for different tiers (`BASIC`, `EXTENDED`, `PRIVILEGED`) are defined as environment variables:
 
 ```dotenv
-HBAR_DAILY_LIMIT_BASIC=1000
-HBAR_DAILY_LIMIT_EXTENDED=10000
-HBAR_DAILY_LIMIT_PRIVILEGED=20000
+HBAR_RATE_LIMIT_BASIC=1000
+HBAR_RATE_LIMIT_EXTENDED=10000
+HBAR_RATE_LIMIT_PRIVILEGED=20000
 ```
 
-### Total Daily Budget
+### Total Budget and Limit Duration
 
-The total daily budget is a ceiling on the total amount of HBars that can be spent in a day. This value is defined as an environment variable:
+The total budget and the limit duration are defined as environment variables:
+- `HBAR_RATE_LIMIT_DURATION`: The time window (in milliseconds) for which both the total bud
+- `HBAR_RATE_LIMIT_TINYBAR`: The ceiling on the total amount of HBars that can be spent in the limit duration.
 
+Example configuration for a daily budget of 15,840,000,000,000 tinybars (15,840 HBars):
 ```dotenv
-HBAR_DAILY_TOTAL_BUDGET=158400
+HBAR_RATE_LIMIT_TINYBAR=15840000000000
+HBAR_RATE_LIMIT_DURATION=86400000
 ```
 
 ## Additional Considerations

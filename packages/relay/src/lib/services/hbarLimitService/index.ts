@@ -31,13 +31,14 @@ import constants from '../../constants';
 import { Hbar } from '@hashgraph/sdk';
 
 export class HbarLimitService implements IHbarLimitService {
-  static readonly ONE_DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
   // TODO: Replace with actual values - https://github.com/hashgraph/hedera-json-rpc-relay/issues/2895
   static readonly DAILY_LIMITS: Record<SubscriptionType, Hbar> = {
-    BASIC: constants.HBAR_DAILY_LIMIT_BASIC,
-    EXTENDED: constants.HBAR_DAILY_LIMIT_EXTENDED,
-    PRIVILEGED: constants.HBAR_DAILY_LIMIT_PRIVILEGED,
+    BASIC: constants.HBAR_RATE_LIMIT_BASIC,
+    EXTENDED: constants.HBAR_RATE_LIMIT_EXTENDED,
+    PRIVILEGED: constants.HBAR_RATE_LIMIT_PRIVILEGED,
   };
+
+  private readonly oneDayInMillis = 24 * 60 * 60 * 1000;
 
   /**
    * Counts the number of times the rate limit has been reached.
@@ -87,7 +88,11 @@ export class HbarLimitService implements IHbarLimitService {
     private readonly logger: Logger,
     private readonly register: Registry,
     private readonly totalBudget: Hbar,
+    private readonly limitDuration: number,
   ) {
+    this.reset = this.getResetTimestamp();
+    this.remainingBudget = this.totalBudget;
+
     const metricCounterName = 'rpc_relay_hbar_rate_limit';
     this.register.removeSingleMetric(metricCounterName);
     this.hbarLimitCounter = new Counter({
@@ -105,7 +110,6 @@ export class HbarLimitService implements IHbarLimitService {
       help: 'Relay Hbar rate limit remaining budget',
       registers: [register],
     });
-    this.remainingBudget = this.totalBudget;
     this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
 
     this.dailyUniqueSpendingPlansCounter = Object.values(SubscriptionType).reduce(
@@ -136,21 +140,21 @@ export class HbarLimitService implements IHbarLimitService {
       {} as Record<SubscriptionType, Gauge>,
     );
 
-    // Reset the rate limiter at the start of the next day
-    this.reset = this.getResetTimestamp();
+    setInterval(() => {
+      this.resetMetrics();
+    }, this.oneDayInMillis);
   }
 
   /**
-   * Resets the {@link HbarSpendingPlan#spentToday} field for all existing plans.
+   * Resets the {@link HbarSpendingPlan#amountSpent} field for all existing plans.
    * @param {string} [requestId] - An optional unique request ID for tracking the request.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
   async resetLimiter(requestId?: string): Promise<void> {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(`${requestIdPrefix} Resetting HBAR rate limiter...`);
-    await this.hbarSpendingPlanRepository.resetAllSpentTodayEntries();
+    await this.hbarSpendingPlanRepository.resetAmountSpentOfAllPlans();
     this.resetBudget();
-    this.resetMetrics();
     this.reset = this.getResetTimestamp();
     this.logger.trace(
       `${requestIdPrefix} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
@@ -194,10 +198,10 @@ export class HbarLimitService implements IHbarLimitService {
     const dailyLimit = HbarLimitService.DAILY_LIMITS[spendingPlan.subscriptionType].toTinybars();
 
     const exceedsLimit =
-      dailyLimit.lte(spendingPlan.spentToday) || dailyLimit.lt(spendingPlan.spentToday + estimatedTxFee);
+      dailyLimit.lte(spendingPlan.amountSpent) || dailyLimit.lt(spendingPlan.amountSpent + estimatedTxFee);
     this.logger.trace(
-      `${requestIdPrefix} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited: spentToday=${
-        spendingPlan.spentToday
+      `${requestIdPrefix} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited: amountSpent=${
+        spendingPlan.amountSpent
       }, estimatedTxFee=${estimatedTxFee} tℏ, dailyLimit=${dailyLimit.toString()} tℏ`,
     );
     return exceedsLimit;
@@ -224,17 +228,17 @@ export class HbarLimitService implements IHbarLimitService {
 
     const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(
-      `${requestIdPrefix} Adding expense of ${cost} to spending plan with ID ${spendingPlan.id}, new spentToday=${
-        spendingPlan.spentToday + cost
+      `${requestIdPrefix} Adding expense of ${cost} to spending plan with ID ${spendingPlan.id}, new amountSpent=${
+        spendingPlan.amountSpent + cost
       }`,
     );
 
     // Check if the spending plan is being used for the first time today
-    if (spendingPlan.spentToday === 0) {
+    if (spendingPlan.amountSpent === 0) {
       this.dailyUniqueSpendingPlansCounter[spendingPlan.subscriptionType].inc(1);
     }
 
-    await this.hbarSpendingPlanRepository.addAmountToSpentToday(spendingPlan.id, cost);
+    await this.hbarSpendingPlanRepository.addToAmountSpent(spendingPlan.id, cost, this.limitDuration);
     await this.hbarSpendingPlanRepository.addAmountToSpendingHistory(spendingPlan.id, cost);
     this.remainingBudget = Hbar.fromTinybars(this.remainingBudget.toTinybars().sub(cost));
     this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
@@ -286,7 +290,7 @@ export class HbarLimitService implements IHbarLimitService {
    */
   private async updateAverageDailyUsagePerSubscriptionType(subscriptionType: SubscriptionType): Promise<void> {
     const plans = await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionType(subscriptionType);
-    const totalUsage = plans.reduce((total, plan) => total + plan.spentToday, 0);
+    const totalUsage = plans.reduce((total, plan) => total + plan.amountSpent, 0);
     const averageUsage = Math.round(totalUsage / plans.length);
     this.averageDailySpendingPlanUsagesGauge[subscriptionType].set(averageUsage);
   }
@@ -321,13 +325,21 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Gets a new reset timestamp for the rate limiter.
+   * Gets the new reset timestamp for the rate limiter.
+   *
+   * If the new reset timestamp falls on a different day, the time is set to midnight.
+   *
    * @returns {Date} - The new reset timestamp.
    * @private
    */
   private getResetTimestamp(): Date {
-    const tomorrow = new Date(Date.now() + HbarLimitService.ONE_DAY_IN_MILLIS);
-    return new Date(tomorrow.setHours(0, 0, 0, 0));
+    const now = new Date();
+    const resetDate = new Date(now.getTime() + this.limitDuration);
+    if (this.limitDuration >= this.oneDayInMillis) {
+      return new Date(resetDate.setHours(0, 0, 0, 0));
+    } else {
+      return resetDate;
+    }
   }
 
   /**

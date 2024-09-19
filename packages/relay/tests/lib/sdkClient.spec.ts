@@ -106,7 +106,7 @@ describe('SdkClient', async function () {
       Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const total = constants.HBAR_RATE_LIMIT_TOTAL.toTinybars().toNumber();
     hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     eventEmitter = new EventEmitter();
     sdkClient = new SDKClient(
@@ -2467,9 +2467,10 @@ describe('SdkClient', async function () {
         await sdkClient.submitEthereumTransaction(
           transactionBuffer,
           mockedCallerName,
-          requestId,
           randomAccountAddress,
+          mockedNetworkGasPrice,
           mockedExchangeRateIncents,
+          requestId,
         );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
@@ -2696,7 +2697,7 @@ describe('SdkClient', async function () {
           accountId.toString(),
         );
         expect.fail('should have thrown an error');
-      } catch (error) {
+      } catch (error: any) {
         expect(error.status).to.eq(expectedError.status);
         expect(error.message).to.eq(expectedError.message);
       }
