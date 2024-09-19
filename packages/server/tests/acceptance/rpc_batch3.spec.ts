@@ -65,7 +65,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   let mirrorPrimaryAccount: ethers.Wallet;
   let mirrorSecondaryAccount: ethers.Wallet;
 
-  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const CHAIN_ID = process.env.CHAIN_ID || 0x12a;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let reverterContract: ethers.Contract;
@@ -1311,7 +1311,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should be able to debug a successful CREATE transaction of type Legacy with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionTypeLegacy,
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
@@ -1371,7 +1371,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionTypeLegacy,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             from: accounts[0].address,
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
@@ -1421,7 +1421,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should be able to debug a successful CREATE transaction of type Legacy with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionTypeLegacy,
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
@@ -1470,7 +1470,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionTypeLegacy,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             from: accounts[0].address,
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
@@ -1522,7 +1522,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should be able to debug a successful CREATE transaction of type 2930 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2930,
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
@@ -1579,7 +1579,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionType2930,
             nonce: await relay.getAccountNonce(accounts[2].address, requestId),
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             from: accounts[2].address,
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
@@ -1629,7 +1629,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should be able to debug a successful CREATE transaction of type 2930 with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionType2930,
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
@@ -1685,7 +1685,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionType2930,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             from: accounts[0].address,
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
@@ -1737,7 +1737,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should be able to debug a successful CREATE transaction of type 1559 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2,
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
@@ -1900,7 +1900,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionType2,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
           };
@@ -1965,7 +1965,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       it('should fail to debug a transaction with invalid onlyTopCall value type', async function () {
         const transaction = {
           ...transactionTypeLegacy,
-          chainId: 0x12a,
+          chainId: Number(CHAIN_ID),
           data: bytecode,
           nonce: await relay.getAccountNonce(accounts[0].address, requestId),
           gasPrice: await relay.gasPrice(requestId),
@@ -1990,7 +1990,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       it('should fail to debug a transaction with invalid tracer type', async function () {
         const transaction = {
           ...transactionTypeLegacy,
-          chainId: 0x12a,
+          chainId: Number(CHAIN_ID),
           data: bytecode,
           nonce: await relay.getAccountNonce(accounts[0].address, requestId),
           gasPrice: await relay.gasPrice(requestId),
