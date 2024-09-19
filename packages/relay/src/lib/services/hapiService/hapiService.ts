@@ -32,44 +32,116 @@ import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import fs from 'fs';
 
 export default class HAPIService {
+  /**
+   * The number of transactions that have occurred.
+   * @private
+   * @type {number}
+   */
   private transactionCount: number;
-  private errorCodes: number[];
+
+  /**
+   * An array of error codes encountered.
+   * @private
+   * @readonly
+   * @type {number[]}
+   */
+  private readonly errorCodes: number[];
+
+  /**
+   * The duration for resetting operations.
+   * @private
+   * @type {number}
+   */
   private resetDuration: number;
+
+  /**
+   * Indicates whether a reset operation should occur.
+   * @private
+   * @type {boolean}
+   */
   private shouldReset: boolean;
 
-  private isReinitEnabled: boolean;
-  private isTimeResetDisabled: boolean;
+  /**
+   * Indicates whether reinitialization is enabled.
+   * @private
+   * @readonly
+   * @type {boolean}
+   */
+  private readonly isReinitEnabled: boolean;
 
-  private initialTransactionCount: number;
-  private initialErrorCodes: number[];
-  private initialResetDuration: number;
+  /**
+   * Indicates whether time-based resets are disabled.
+   * @private
+   * @readonly
+   * @type {boolean}
+   */
+  private readonly isTimeResetDisabled: boolean;
 
-  private hederaNetwork: string;
+  /**
+   * The initial count of transactions.
+   * @private
+   * @readonly
+   * @type {number}
+   */
+  private readonly initialTransactionCount: number;
+
+  /**
+   * The initial array of error codes.
+   * @private
+   * @readonly
+   * @type {number[]}
+   */
+  private readonly initialErrorCodes: number[];
+
+  /**
+   * The initial duration for resetting operations.
+   * @private
+   * @readonly
+   * @type {number}
+   */
+  private readonly initialResetDuration: number;
+
+  /**
+   * The network name for Hedera services.
+   * @private
+   * @readonly
+   * @type {string}
+   */
+  private readonly hederaNetwork: string;
+
+  /**
+   * The main client for interacting with the Hedera network.
+   * @private
+   * @type {Client}
+   */
   private clientMain: Client;
 
   /**
-   * The SDK Client use for connecting to both the consensus nodes and mirror node. The account
+   * The SDK Client used for connecting to both the consensus nodes and mirror node. The account
    * associated with this client will pay for all operations on the main network.
-   *
    * @private
+   * @type {SDKClient}
    */
   private client: SDKClient;
 
   /**
    * The logger used for logging all output from this class.
    * @private
+   * @readonly
+   * @type {Logger}
    */
-  private logger: Logger;
+  private readonly logger: Logger;
 
   /**
    * This limiter tracks hbar expenses and limits.
    * @private
+   * @readonly
+   * @type {HbarLimit}
    */
-  private hbarLimiter: HbarLimit;
+  private readonly hbarLimiter: HbarLimit;
 
   /**
    * An instance of EventEmitter used for emitting and handling events within the class.
-   *
    * @private
    * @readonly
    * @type {EventEmitter}
@@ -77,10 +149,27 @@ export default class HAPIService {
   private readonly eventEmitter: EventEmitter;
 
   /**
+   * A registry used within the class.
    * @private
+   * @readonly
+   * @type {Registry}
    */
   private readonly register: Registry;
-  private clientResetCounter: Counter;
+
+  /**
+   * A counter for tracking client resets.
+   * @private
+   * @readonly
+   * @type {Counter}
+   */
+  private readonly clientResetCounter: Counter;
+
+  /**
+   * A service for caching data within the class.
+   * @private
+   * @readonly
+   * @type {CacheService}
+   */
   private readonly cacheService: CacheService;
 
   /**
