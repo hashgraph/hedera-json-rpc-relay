@@ -391,7 +391,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         expect(customFees.fixedFees).to.exist;
         expect(customFees.fixedFees.length).to.eq(1);
         expect(customFees.fixedFees[0].amount).to.exist;
-        expect(customFees.fixedFees[0].amount.toString()).to.eq(Hbar.fromTinybars(1).toString());
+        expect(customFees.fixedFees[0].amount.toString()).to.eq('1');
         expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
         expect(customFees.fixedFees[0].feeCollector).to.exist;
         expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
