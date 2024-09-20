@@ -43,7 +43,7 @@ import { Long } from 'long';
 
 chai.use(chaiAsPromised);
 
-describe('HbarLimitService', function () {
+describe('HBAR Rate Limit Service', function () {
   const logger = pino();
   const register = new Registry();
   const totalBudget = Hbar.fromTinybars(constants.HBAR_RATE_LIMIT_TOTAL);
