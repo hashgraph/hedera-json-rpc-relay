@@ -30,10 +30,8 @@ import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
 import { register, Registry } from 'prom-client';
-import HbarLimit from '../../src/lib/hbarlimiter';
 import { RequestDetails } from '../../src/lib/types';
 import { formatTransactionId } from '../../src/formatters';
-import { predefined } from '../../src';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
@@ -70,6 +68,7 @@ import {
   FileDeleteTransaction,
   TransactionRecordQuery,
 } from '@hashgraph/sdk';
+import { Context } from 'mocha';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -132,7 +131,8 @@ describe('SdkClient', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
 
     sdkClient = new SDKClient(
@@ -289,6 +289,40 @@ describe('SdkClient', async function () {
       HEX_ECDSA: '0x08e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
     };
 
+<<<<<<< HEAD
+=======
+    before(function (this: Context) {
+      // Store the original process.env
+      originalEnv = process.env;
+
+      if (
+        this.currentTest?.title ===
+        'Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is null'
+      ) {
+        process.env = new Proxy(process.env, {
+          get: (target, prop) => {
+            if (prop === 'OPERATOR_KEY_FORMAT') {
+              return null;
+            }
+            // @ts-ignore
+            return target[prop];
+          },
+        });
+      }
+    });
+
+    this.beforeEach(() => {
+      initialOperatorKeyFormat = process.env.OPERATOR_KEY_FORMAT;
+      hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
+    });
+
+    after(() => {
+      // Restore the original process.env after the test
+      process.env = originalEnv;
+      process.env.OPERATOR_KEY_FORMAT = initialOperatorKeyFormat;
+    });
+
+>>>>>>> 391b7f28 (feat: removed hbarLimiter instance in SDKClient classes)
     it('Initialize the privateKey for default which is DER', async () => {
       const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
@@ -325,14 +359,7 @@ describe('SdkClient', async function () {
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'BAD_FORMAT' }, () => {
       it('It should throw an Error when an unexpected string is set', async () => {
         try {
-          new HAPIService(
-            logger,
-            registry,
-            hbarLimiter,
-            new CacheService(logger, registry),
-            eventEmitter,
-            hbarLimitService,
-          );
+          new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
           expect.fail(`Expected an error but nothing was thrown`);
         } catch (e: any) {
           expect(e.message).to.eq('Invalid OPERATOR_KEY_FORMAT provided: BAD_FORMAT');

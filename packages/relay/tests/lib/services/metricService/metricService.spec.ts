@@ -156,7 +156,8 @@ describe('Metric Service', function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
 
     const sdkClient = new SDKClient(

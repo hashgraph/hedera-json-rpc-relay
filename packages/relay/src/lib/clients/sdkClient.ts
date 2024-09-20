@@ -881,6 +881,7 @@ export class SDKClient {
       requestDetails,
       false,
       originalCallerAddress,
+      esitmatedFileCreateTxFee,
     );
 
     const { fileId } = await fileCreateTxResponse.getReceipt(client);
@@ -899,6 +900,7 @@ export class SDKClient {
         requestDetails,
         false,
         originalCallerAddress,
+        esitmatedFileAppendTxFee,
       );
     }
 
