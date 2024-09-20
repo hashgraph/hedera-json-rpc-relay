@@ -2146,6 +2146,7 @@ describe('SdkClient', async function () {
     const mockedExchangeRateIncents = 12;
     const mockedTransactionRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateIncents);
     const defaultTransactionFee = 1000;
+    const createFileConstructorName = 'createFile';
 
     const accountId = AccountId.fromString('0.0.1234');
     const transactionId = TransactionId.generate(accountId);
@@ -2285,7 +2286,7 @@ describe('SdkClient', async function () {
         .withArgs(
           constants.EXECUTION_MODE.TRANSACTION,
           mockedCallerName,
-          FileCreateTransaction.name,
+          createFileConstructorName,
           randomAccountAddress,
           sinon.match.any,
         )
@@ -2338,7 +2339,7 @@ describe('SdkClient', async function () {
       // last transactionRecordStub call for EthereumTransaction
       transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(EthereumTransaction.name));
 
-      hbarLimitServiceMock.expects('shouldLimit').thrice().returns(false);
+      hbarLimitServiceMock.expects('shouldLimit').twice().returns(false);
       hbarLimitServiceMock.expects('addExpense').withArgs(fileCreateFee).once();
       hbarLimitServiceMock.expects('addExpense').withArgs(defaultTransactionFee).once();
       hbarLimitServiceMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
@@ -2387,7 +2388,7 @@ describe('SdkClient', async function () {
         transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(FileAppendTransaction.name));
       }
 
-      hbarLimitServiceMock.expects('shouldLimit').twice().returns(false);
+      hbarLimitServiceMock.expects('shouldLimit').once().returns(false);
       hbarLimitServiceMock.expects('addExpense').withArgs(fileCreateFee).once();
       hbarLimitServiceMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
       // addExpense for mockedTransactionRecordFee will be called for a total of:
@@ -2497,7 +2498,7 @@ describe('SdkClient', async function () {
         .withArgs(
           constants.EXECUTION_MODE.TRANSACTION,
           mockedCallerName,
-          FileCreateTransaction.name,
+          createFileConstructorName,
           randomAccountAddress,
           sinon.match.any,
         )
