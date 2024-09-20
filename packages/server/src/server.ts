@@ -199,9 +199,6 @@ app.getKoaApp().use(async (ctx, next) => {
 
 const logAndHandleResponse = async (methodName: string, methodParams: any[], methodFunction: any) => {
   const requestDetails = app.getRequestDetails();
-  logger.debug('Method name: ' + methodName);
-  logger.debug('Request id: ' + requestDetails.requestId);
-  logger.debug('Request ip: ' + requestDetails.ipAddress);
 
   try {
     const methodValidations = Validator.METHODS[methodName];
