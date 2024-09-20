@@ -31,6 +31,9 @@ on:
         description: 'The ED25519 or ECDSA  DER encoded private key of the operator'
         required: false
 
+env:
+  OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
+
 jobs:
   acceptance-workflow:
     runs-on: smart-contracts-linux-large
@@ -40,25 +43,28 @@ jobs:
       actions: read
       # issues: read
 
-   # env:
-     # OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
-
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           egress-policy: audit
 
+      - name: Checkout repo
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+      - name: Debug Operator ID
+        run: |
+          echo "Effective BASH OperatorID: '${OPERATOR_ID_MAIN}'"
+          echo "Effective GHA Env OperatorID: '${{ env.OPERATOR_ID_MAIN }}'"
+          echo "Effective GHA Inputs OperatorID: '${{ inputs.operator_id }}'"
+
       - name: Setup node
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: 20
-      
+
       - name: Install make
         run: sudo apt-get update; sudo apt-get install build-essential -y
-      
-      - name: Checkout repo
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
       - name: Install packages
         run: npm ci
