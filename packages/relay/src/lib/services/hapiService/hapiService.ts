@@ -29,6 +29,8 @@ import { Registry, Counter } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import { CacheService } from '../cacheService/cacheService';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
+import fs from 'fs';
+import path from 'path';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -83,6 +85,11 @@ export default class HAPIService {
   private readonly cacheService: CacheService;
 
   /**
+   * @private
+   */
+  private config: any;
+
+  /**
    * Constructs an instance of the class, initializes configuration settings, and sets up various services.
    *
    * @param {Logger} logger - The logger instance used for logging.
@@ -99,12 +106,13 @@ export default class HAPIService {
     eventEmitter: EventEmitter,
   ) {
     dotenv.config({ path: findConfig('.env') || '' });
+    this.config = dotenv.parse(fs.readFileSync(findConfig('.env') || ''));
 
     this.logger = logger;
     this.hbarLimiter = hbarLimiter;
 
     this.eventEmitter = eventEmitter;
-    this.hederaNetwork = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
+    this.hederaNetwork = (process.env.HEDERA_NETWORK || this.config.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
     this.cacheService = cacheService;
@@ -236,9 +244,12 @@ export default class HAPIService {
         logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
       }
     } else {
-      if (process.env.OPERATOR_ID_MAIN && process.env.OPERATOR_KEY_MAIN) {
-        privateKey = Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN);
-        client = client.setOperator(AccountId.fromString(process.env.OPERATOR_ID_MAIN.trim()), privateKey);
+      const operatorId: string = process.env.OPERATOR_ID_MAIN || this.config.OPERATOR_ID_MAIN || '';
+      const operatorKey: string = process.env.OPERATOR_KEY_MAIN || this.config.OPERATOR_KEY_MAIN || '';
+
+      if (operatorId && operatorKey) {
+        privateKey = Utils.createPrivateKeyBasedOnFormat(operatorKey);
+        client = client.setOperator(AccountId.fromString(operatorId.trim()), privateKey);
       } else {
         logger.warn(`Invalid 'OPERATOR' env variables provided`);
       }
