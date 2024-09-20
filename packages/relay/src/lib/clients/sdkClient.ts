@@ -764,7 +764,7 @@ export class SDKClient {
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
-   * * @param {number} [estimatedTxFee] - The optioanl total estimated transaction fee.
+   * @param {number} [estimatedTxFee] - The optioanl total estimated transaction fee.
    * @returns {Promise<void>} - A promise that resolves when the batch execution is complete.
    * @throws {SDKClientError} - Throws if an error occurs during batch transaction execution.
    */
@@ -775,7 +775,7 @@ export class SDKClient {
     requestDetails: RequestDetails,
     shouldThrowHbarLimit: boolean,
     originalCallerAddress: string,
-    estimatedTxFee: number,
+    estimatedTxFee?: number,
   ): Promise<void> {
     const txConstructorName = transaction.constructor.name;
     let transactionResponses: TransactionResponse[] | null = null;
@@ -851,7 +851,7 @@ export class SDKClient {
   ): Promise<FileId | null> {
     const hexedCallData = Buffer.from(callData).toString('hex');
 
-    const { esitmatedFileCreateTxFee, esitmatedFileAppendTxFee } = Utils.estimateFileTransactionsFee(
+    const estimatedTxFee = Utils.estimateFileTransactionsFee(
       hexedCallData.length,
       this.fileAppendChunkSize,
       currentNetworkExchangeRateInCents,
@@ -866,9 +866,8 @@ export class SDKClient {
       callerName,
       interactingEntity,
       requestDetails,
-      true,
+      false,
       originalCallerAddress,
-      esitmatedFileCreateTxFee,
     );
 
     const { fileId } = await fileCreateTxResponse.getReceipt(client);
@@ -885,9 +884,8 @@ export class SDKClient {
         callerName,
         interactingEntity,
         requestDetails,
-        true,
+        false,
         originalCallerAddress,
-        esitmatedFileAppendTxFee,
       );
     }
 

@@ -54,7 +54,7 @@ describe('Utils', () => {
     it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
       const result = Utils.estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
       const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
-      expect(result).to.deep.eq(expectedResult);
+      expect(result).to.eq(expectedResult);
     });
   });
 });
