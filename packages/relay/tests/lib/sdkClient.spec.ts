@@ -25,7 +25,6 @@ import { resolve } from 'path';
 import * as sinon from 'sinon';
 import { config } from 'dotenv';
 import { Context } from 'mocha';
-import { v4 as uuid } from 'uuid';
 import EventEmitter from 'events';
 import { Registry } from 'prom-client';
 import { Utils } from '../../src/utils';
@@ -2304,7 +2303,6 @@ describe('SdkClient', async function () {
           randomAccountAddress,
           mockedNetworkGasPrice,
           mockedExchangeRateIncents,
-          requestDetails.requestIdPrefix,
         );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
@@ -2364,7 +2362,6 @@ describe('SdkClient', async function () {
         randomAccountAddress,
         mockedNetworkGasPrice,
         mockedExchangeRateIncents,
-        requestDetails.requestIdPrefix,
       );
 
       expect(queryStub.called).to.be.true;
@@ -2490,8 +2487,9 @@ describe('SdkClient', async function () {
         await sdkClient.submitEthereumTransaction(
           transactionBuffer,
           mockedCallerName,
-          requestId,
+          requestDetails,
           randomAccountAddress,
+          mockedNetworkGasPrice,
           mockedExchangeRateIncents,
         );
         expect.fail(`Expected an error but nothing was thrown`);

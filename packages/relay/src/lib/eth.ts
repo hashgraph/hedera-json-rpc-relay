@@ -1578,7 +1578,6 @@ export class EthImpl implements Eth {
           originalCallerAddress,
           networkGasPriceInWeiBars,
           await this.getCurrentNetworkExchangeRateInCents(requestDetails),
-          requestDetails.formattedRequestId,
         );
 
       txSubmitted = true;

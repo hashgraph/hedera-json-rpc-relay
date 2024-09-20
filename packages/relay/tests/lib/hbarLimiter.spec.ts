@@ -69,7 +69,7 @@ describe('HBAR Rate Limiter', async function () {
       'QUERY',
       'eth_call',
       randomAccountAddress,
-      requestDetails
+      requestDetails,
     );
     rateLimiterWithEmptyBudget.addExpense(validTotal, currentDateNow, requestDetails);
 
@@ -106,7 +106,13 @@ describe('HBAR Rate Limiter', async function () {
     const isEnabled = invalidRateLimiter.isEnabled();
     const limiterResetTime = invalidRateLimiter.getResetTime();
     const limiterRemainingBudget = invalidRateLimiter.getRemainingBudget();
-    const shouldRateLimit = invalidRateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call', randomAccountAddress, requestDetails);
+    const shouldRateLimit = invalidRateLimiter.shouldLimit(
+      currentDateNow,
+      'QUERY',
+      'eth_call',
+      randomAccountAddress,
+      requestDetails,
+    );
     invalidRateLimiter.addExpense(validTotal, currentDateNow, requestDetails);
 
     expect(isEnabled).to.equal(false);
@@ -239,7 +245,7 @@ describe('HBAR Rate Limiter', async function () {
       callDataSize,
       fileChunkSize,
       mockedExchangeRateInCents,
-      getRequestId(),
+      requestDetails,
     );
     expect(result).to.be.true;
   });
@@ -250,7 +256,7 @@ describe('HBAR Rate Limiter', async function () {
       callDataSize,
       fileChunkSize,
       mockedExchangeRateInCents,
-      getRequestId(),
+      requestDetails,
     );
     expect(result).to.be.false;
   });
@@ -295,7 +301,7 @@ describe('HBAR Rate Limiter', async function () {
       callDataSize,
       fileChunkSize,
       mockedExchangeRateInCents,
-      getRequestId(),
+      requestDetails,
     );
     expect(result).to.be.false;
   });
@@ -306,7 +312,7 @@ describe('HBAR Rate Limiter', async function () {
       callDataSize,
       fileChunkSize,
       mockedExchangeRateInCents,
-      getRequestId(),
+      requestDetails,
     );
     expect(result).to.be.true;
   });

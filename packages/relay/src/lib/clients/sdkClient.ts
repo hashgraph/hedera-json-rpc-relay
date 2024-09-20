@@ -404,7 +404,6 @@ export class SDKClient {
     originalCallerAddress: string,
     networkGasPriceInWeiBars: number,
     currentNetworkExchangeRateInCents: number,
-    requestId: string,
   ): Promise<{ txResponse: TransactionResponse; fileId: FileId | null }> {
     const ethereumTransactionData: EthereumTransactionData = EthereumTransactionData.fromBytes(transactionBuffer);
     const ethereumTransaction = new EthereumTransaction();
