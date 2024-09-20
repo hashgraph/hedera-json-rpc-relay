@@ -283,7 +283,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           );
 
           const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
-          const { esitmatedFileCreateTxFee, esitmatedFileAppendTxFee } = estimateFileTransactionsFee(
+          const estimatedTxFee = estimateFileTransactionsFee(
             contract.deploymentTransaction()!.data.length,
             fileChunkSize,
             exchangeRateInCents,
@@ -347,6 +347,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
               expect(remainingHbars).to.be.lt(lastRemainingHbars);
             }
+            expect.fail(`Expected an error but nothing was thrown`);
+          } catch (e: any) {
+            expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+          }
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
