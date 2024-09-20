@@ -98,9 +98,11 @@ export class WsTestHelper {
   };
 
   static withOverriddenEnvs(envs: NodeJS.Dict<string>, tests: () => void) {
-    describe(`given ${Object.entries(envs)
+    const overriddenEnvs = Object.entries(envs)
       .map(([key, value]) => `${key}=${value}`)
-      .join(', ')} are set`, () => {
+      .join(', ');
+
+    describe(`given ${overriddenEnvs} are set`, () => {
       let envsToReset: NodeJS.Dict<string> = {};
 
       before(() => {

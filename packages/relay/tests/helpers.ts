@@ -943,9 +943,11 @@ export const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: str
  * @param {Function} tests - A function containing the tests to run with the overridden environment variables.
  */
 export const withOverriddenEnvs = (envs: NodeJS.Dict<string>, tests: () => void) => {
-  describe(`given ${Object.entries(envs)
+  const overriddenEnvs = Object.entries(envs)
     .map(([key, value]) => `${key}=${value}`)
-    .join(', ')} are set`, () => {
+    .join(', ');
+
+  describe(`given ${overriddenEnvs} are set`, () => {
     let envsToReset: NodeJS.Dict<string> = {};
 
     before(() => {
