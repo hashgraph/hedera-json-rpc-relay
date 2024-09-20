@@ -116,9 +116,9 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info('Acceptance Tests Configurations successfully loaded');
     logger.info(`LOCAL_NODE: ${process.env.LOCAL_NODE}`);
     logger.info(`CHAIN_ID: ${process.env.CHAIN_ID}`);
-    logger.info(`HEDERA_NETWORK: ${process.env.HEDERA_NETWORK}`);
-    logger.info(`OPERATOR_ID_MAIN: ${process.env.OPERATOR_ID_MAIN}`);
-    logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
+    logger.info(`HEDERA_NETWORK: ${NETWORK}`);
+    logger.info(`OPERATOR_ID_MAIN: ${OPERATOR_ID}`);
+    logger.info(`MIRROR_NODE_URL: ${MIRROR_NODE_URL}`);
     logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
     if (global.relayIsLocal) {
