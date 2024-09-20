@@ -88,6 +88,7 @@ describe('RPC Server Acceptance Tests', function () {
 
   // TODO: This must be removed after diagnostics since it will leak secrets
   logger.info(`Utilizing Operator Credentials [ id = '${OPERATOR_ID}', key = '${OPERATOR_KEY}' ]`);
+  logger.info(`Display .env contents: ${DOT_ENV.parsed}`);
 
   global.servicesNode = new ServicesClient(
     NETWORK,
