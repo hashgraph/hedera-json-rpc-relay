@@ -36,6 +36,7 @@ import ServicesClient from '@hashgraph/json-rpc-server/tests/clients/servicesCli
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../.env')));
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -50,10 +51,10 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const NETWORK = process.env.HEDERA_NETWORK || '';
-const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
-const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
-const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
+const NETWORK = process.env.HEDERA_NETWORK || DOT_ENV.HEDERA_NETWORK || '';
+const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || DOT_ENV.OPERATOR_KEY_MAIN || '';
+const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
+const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || DOT_ENV.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
@@ -82,9 +83,9 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info('Acceptance Tests Configurations successfully loaded');
     logger.info(`LOCAL_NODE: ${process.env.LOCAL_NODE}`);
     logger.info(`CHAIN_ID: ${process.env.CHAIN_ID}`);
-    logger.info(`HEDERA_NETWORK: ${process.env.HEDERA_NETWORK}`);
-    logger.info(`OPERATOR_ID_MAIN: ${process.env.OPERATOR_ID_MAIN}`);
-    logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
+    logger.info(`HEDERA_NETWORK: ${NETWORK}`);
+    logger.info(`OPERATOR_ID_MAIN: ${OPERATOR_ID}`);
+    logger.info(`MIRROR_NODE_URL: ${MIRROR_NODE_URL}`);
     logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
     if (global.relayIsLocal) {
