@@ -17,6 +17,9 @@ on:
       operator_id:
         required: false
         type: string
+      operator_key:
+        required: false
+        type: string
       networkTag:
         required: false
         type: string
@@ -74,6 +77,17 @@ jobs:
 
       - name: Install hedera local
         run: npm install @hashgraph/hedera-local -g
+
+      - name: Set operator id and key env variables
+        run: |
+          if [[ -n "${{ inputs.operator_id }}" ]]; then
+            echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
+          fi
+          if [[ -n "${{ inputs.operator_key }}" ]]; then
+            echo "OPERATOR_KEY_MAIN=${{ inputs.operator_key }}" >> $GITHUB_ENV
+          elif [[ -n "${{ secrets.operator_key }}" ]]; then
+            echo "OPERATOR_KEY_MAIN=${{ secrets.operator_key }}" >> $GITHUB_ENV
+          fi
 
       - name: Run hedera local
         run: npx hedera restart -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace
