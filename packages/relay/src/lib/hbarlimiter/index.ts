@@ -147,11 +147,13 @@ export default class HbarLimit {
       return false;
     }
 
-    const estimatedTxFee = this.estimateFileTransactionsFee(
+    const { esitmatedFileCreateTxFee, esitmatedFileAppendTxFee } = this.estimateFileTransactionsFee(
       callDataSize,
       fileChunkSize,
       currentNetworkExchangeRateInCents,
     );
+
+    const estimatedTxFee = esitmatedFileCreateTxFee + esitmatedFileAppendTxFee;
 
     if (this.remainingBudget - estimatedTxFee < 0) {
       this.logger.warn(
@@ -218,19 +220,24 @@ export default class HbarLimit {
   }
 
   /**
-   * Estimates the total fee in tinybars for file transactions based on the given call data size,
-   * file chunk size, and the current network exchange rate.
+   * Estimates the transaction fees for file create and file append transactions based on the provided
+   * call data size, file chunk size, and current network exchange rate.
    *
-   * @param {number} callDataSize - The total size of the call data in bytes.
+   * @param {number} callDataSize - The size of the call data in bytes.
    * @param {number} fileChunkSize - The size of each file chunk in bytes.
-   * @param {number} currentNetworkExchangeRateInCents - The current network exchange rate in cents per HBAR.
-   * @returns {number} The estimated transaction fee in tinybars.
+   * @param {number} currentNetworkExchangeRateInCents - The current network exchange rate in cents.
+   * @returns {Object} - An object containing the estimated fees for file create and file append transactions.
+   * @property {number} esitmatedFileCreateTxFee - The estimated fee for the file create transaction in tinybars.
+   * @property {number} esitmatedFileAppendTxFee - The estimated fee for the file append transactions in tinybars.
    */
   estimateFileTransactionsFee(
     callDataSize: number,
     fileChunkSize: number,
     currentNetworkExchangeRateInCents: number,
-  ): number {
+  ): {
+    esitmatedFileCreateTxFee: number;
+    esitmatedFileAppendTxFee: number;
+  } {
     const fileCreateTransactions = 1;
     const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
 
@@ -243,16 +250,18 @@ export default class HbarLimit {
       constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_BASE_FEE +
       lastFileAppendChunkSize * constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_RATE_PER_BYTE;
 
-    const totalTxFeeInCents =
-      fileCreateTransactions * fileCreateFeeInCents +
-      fileAppendFeeInCents * fileAppendTransactions +
-      lastFileAppendChunkFeeInCents;
-
-    const estimatedTxFee = Math.round(
-      (totalTxFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
+    const esitmatedFileCreateTxFee = Math.round(
+      ((fileCreateTransactions * fileCreateFeeInCents) / currentNetworkExchangeRateInCents) *
+        constants.HBAR_TO_TINYBAR_COEF,
     );
 
-    return estimatedTxFee;
+    const esitmatedFileAppendTxFee = Math.round(
+      ((fileAppendTransactions * fileAppendFeeInCents + lastFileAppendChunkFeeInCents) /
+        currentNetworkExchangeRateInCents) *
+        constants.HBAR_TO_TINYBAR_COEF,
+    );
+
+    return { esitmatedFileCreateTxFee, esitmatedFileAppendTxFee };
   }
 
   /**

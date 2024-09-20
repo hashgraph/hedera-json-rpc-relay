@@ -996,14 +996,16 @@ export const estimateFileTransactionsFee = (
     constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_BASE_FEE +
     lastFileAppendChunkSize * constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_RATE_PER_BYTE;
 
-  const totalTxFeeInCents =
-    fileCreateTransactions * fileCreateFeeInCents +
-    fileAppendFeeInCents * fileAppendTransactions +
-    lastFileAppendChunkFeeInCents;
-
-  const estimatedTxFee = Math.round(
-    (totalTxFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
+  const esitmatedFileCreateTxFee = Math.round(
+    ((fileCreateTransactions * fileCreateFeeInCents) / currentNetworkExchangeRateInCents) *
+      constants.HBAR_TO_TINYBAR_COEF,
   );
 
-  return estimatedTxFee;
+  const esitmatedFileAppendTxFee = Math.round(
+    ((fileAppendTransactions * fileAppendFeeInCents + lastFileAppendChunkFeeInCents) /
+      currentNetworkExchangeRateInCents) *
+      constants.HBAR_TO_TINYBAR_COEF,
+  );
+
+  return { esitmatedFileCreateTxFee, esitmatedFileAppendTxFee };
 };
