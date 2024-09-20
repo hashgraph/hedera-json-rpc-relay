@@ -857,6 +857,19 @@ export class SDKClient {
       currentNetworkExchangeRateInCents,
     );
 
+    const shouldPreemptivelyLimit = await this.hbarLimitService.shouldLimit(
+      constants.EXECUTION_MODE.TRANSACTION,
+      callerName,
+      this.createFile.name,
+      originalCallerAddress,
+      requestDetails,
+      estimatedTxFee,
+    );
+
+    if (shouldPreemptivelyLimit) {
+      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+    }
+
     const fileCreateTx = new FileCreateTransaction()
       .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
       .setKeys(client.operatorPublicKey ? [client.operatorPublicKey] : []);
