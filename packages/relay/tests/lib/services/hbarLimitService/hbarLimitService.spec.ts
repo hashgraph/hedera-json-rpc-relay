@@ -49,6 +49,7 @@ describe('HbarLimitService', function () {
   const mode = constants.EXECUTION_MODE.TRANSACTION;
   const mockTxCost = 100;
   const methodName = 'testMethod';
+  const txConstructorName = 'testConstructorName';
   const mockEthAddress = '0x123';
   const mockIpAddress = 'x.x.x';
   const mockEstimatedTxFee = 300;
@@ -155,7 +156,13 @@ describe('HbarLimitService', function () {
       it('should return true if the total daily budget is exceeded', async function () {
         // @ts-ignore
         hbarLimitService.remainingBudget = 0;
-        const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, requestDetails);
+        const result = await hbarLimitService.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          mockEthAddress,
+          requestDetails,
+        );
         expect(result).to.be.true;
       });
 
@@ -165,6 +172,7 @@ describe('HbarLimitService', function () {
         const result = await hbarLimitService.shouldLimit(
           mode,
           methodName,
+          txConstructorName,
           mockEthAddress,
           requestDetails,
           mockEstimatedTxFee,
@@ -179,7 +187,13 @@ describe('HbarLimitService', function () {
         hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
         ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, requestDetails);
+        const result = await hbarLimitService.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          mockEthAddress,
+          requestDetails,
+        );
 
         expect(result).to.be.false;
         expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
@@ -194,7 +208,7 @@ describe('HbarLimitService', function () {
 
       it('should return false if ethAddress and ipAddress is empty string', async function () {
         const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: '' });
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails);
+        const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
         expect(result).to.be.false;
       });
 
@@ -206,7 +220,13 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, requestDetails);
+        const result = await hbarLimitService.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          mockEthAddress,
+          requestDetails,
+        );
 
         expect(result).to.be.true;
       });
@@ -219,7 +239,13 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, requestDetails);
+        const result = await hbarLimitService.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          mockEthAddress,
+          requestDetails,
+        );
 
         expect(result).to.be.false;
       });
@@ -232,7 +258,13 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, requestDetails);
+        const result = await hbarLimitService.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          mockEthAddress,
+          requestDetails,
+        );
 
         expect(result).to.be.true;
       });
@@ -251,6 +283,7 @@ describe('HbarLimitService', function () {
         const result = await hbarLimitService.shouldLimit(
           mode,
           methodName,
+          txConstructorName,
           mockEthAddress,
           requestDetails,
           mockEstimatedTxFee,
@@ -270,7 +303,13 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, requestDetails);
+        const result = await hbarLimitService.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          mockEthAddress,
+          requestDetails,
+        );
 
         expect(result).to.be.false;
       });
@@ -286,7 +325,13 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, requestDetails);
+        const result = await hbarLimitService.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          mockEthAddress,
+          requestDetails,
+        );
 
         expect(result).to.be.false;
       });
@@ -296,14 +341,21 @@ describe('HbarLimitService', function () {
       it('should return true if the total daily budget is exceeded', async function () {
         // @ts-ignore
         hbarLimitService.remainingBudget = 0;
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails);
+        const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
         expect(result).to.be.true;
       });
 
       it('should return true when remainingBudget < estimatedTxFee ', async function () {
         // @ts-ignore
         hbarLimitService.remainingBudget = mockEstimatedTxFee - 1;
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails, mockEstimatedTxFee);
+        const result = await hbarLimitService.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          '',
+          requestDetails,
+          mockEstimatedTxFee,
+        );
         expect(result).to.be.true;
       });
 
@@ -315,7 +367,7 @@ describe('HbarLimitService', function () {
         ipAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
         const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: mockIpAddress });
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails);
+        const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
 
         expect(result).to.be.false;
         expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
@@ -330,7 +382,7 @@ describe('HbarLimitService', function () {
 
       it('should return false if ipAddress is null or empty', async function () {
         const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: '' });
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails);
+        const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
         expect(result).to.be.false;
       });
 
@@ -342,7 +394,7 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails);
+        const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
 
         expect(result).to.be.true;
       });
@@ -355,7 +407,7 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails);
+        const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
 
         expect(result).to.be.false;
       });
@@ -368,7 +420,7 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails);
+        const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
 
         expect(result).to.be.true;
       });
@@ -384,7 +436,14 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails, mockEstimatedTxFee);
+        const result = await hbarLimitService.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          '',
+          requestDetails,
+          mockEstimatedTxFee,
+        );
 
         expect(result).to.be.true;
       });
@@ -400,7 +459,7 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails);
+        const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
 
         expect(result).to.be.false;
       });
@@ -416,7 +475,7 @@ describe('HbarLimitService', function () {
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-        const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails);
+        const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
 
         expect(result).to.be.false;
       });
@@ -667,7 +726,7 @@ describe('HbarLimitService', function () {
       const originalRemainingBudget = hbarLimitService.getRemainingBudget();
       expect(originalRemainingBudget).to.eq(totalBudget);
 
-      await hbarLimitService.addExpense(mockTxCost);
+      await hbarLimitService.addExpense(mockTxCost, '', requestDetails);
       const updatedRemainingBudget = hbarLimitService.getRemainingBudget();
       expect(updatedRemainingBudget).to.eq(totalBudget - mockTxCost);
     });
@@ -678,7 +737,7 @@ describe('HbarLimitService', function () {
       // @ts-ignore
       hbarLimitService.remainingBudget = remainingBudget;
       await expect(
-        hbarLimitService['isDailyBudgetExceeded'](mode, methodName, undefined, requestDetails),
+        hbarLimitService['isDailyBudgetExceeded'](mode, methodName, txConstructorName, 0, requestDetails),
       ).to.eventually.equal(expected);
     };
 
