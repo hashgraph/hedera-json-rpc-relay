@@ -309,10 +309,32 @@ describe('HBAR Rate Limiter', async function () {
       expect(result).to.be.true;
     });
 
+    it('Should execute shouldPreemptivelyLimitFileTransactions() and return FALSE if the original caller is a white listed account', () => {
+      const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
+        randomWhiteListedAccountAddress,
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+        requestDetails,
+      );
+      expect(result).to.be.false;
+    });
+
+    it('Should execute shouldPreemptivelyLimitFileTransactions() and return TRUE if the original caller is NOT a white listed account', () => {
+      const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
+        randomAccountAddress,
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+        requestDetails,
+      );
+      expect(result).to.be.true;
+    });
+
     it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
       const result = rateLimiter.estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
       const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
-      expect(result).to.eq(expectedResult);
+      expect(result).to.deep.eq(expectedResult);
     });
   });
 });

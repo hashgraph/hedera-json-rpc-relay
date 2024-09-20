@@ -283,14 +283,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           );
 
           const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
-          const estimatedTxFee = estimateFileTransactionsFee(
+          const { esitmatedFileCreateTxFee, esitmatedFileAppendTxFee } = estimateFileTransactionsFee(
             contract.deploymentTransaction()!.data.length,
             fileChunkSize,
             exchangeRateInCents,
           );
 
+          const estimatedFileTransactionTotalFee = esitmatedFileCreateTxFee + esitmatedFileAppendTxFee;
           const actualFileTransactionTotalFee = fileCreateTxFee + fileAppendTxFee;
-          const estimatedFileTransactionTotalFee = estimatedTxFee;
 
           const tolerance = 0.003 * actualFileTransactionTotalFee; // 0.3% tolerance
           expect(estimatedFileTransactionTotalFee).to.be.approximately(actualFileTransactionTotalFee, tolerance);
