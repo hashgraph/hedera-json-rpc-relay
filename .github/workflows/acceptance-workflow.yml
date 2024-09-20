@@ -52,12 +52,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-      - name: Debug Operator ID
-        run: |
-          echo "Effective BASH OperatorID: '${OPERATOR_ID_MAIN}'"
-          echo "Effective GHA Env OperatorID: '${{ env.OPERATOR_ID_MAIN }}'"
-          echo "Effective GHA Inputs OperatorID: '${{ inputs.operator_id }}'"
-
       - name: Setup node
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
