@@ -18,13 +18,11 @@
  *
  */
 
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import pino from 'pino';
+import MockAdapter from 'axios-mock-adapter';
 import { register, Registry } from 'prom-client';
 import constants from '../../../src/lib/constants';
-import HbarLimit from '../../../src/lib/hbarlimiter';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import MockAdapter from 'axios-mock-adapter';
 import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import { EthImpl } from '../../../src/lib/eth';
 import EventEmitter from 'events';
@@ -33,6 +31,7 @@ import { HbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hba
 import { IPAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
 import { Hbar } from '@hashgraph/sdk';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 export function contractResultsByNumberByIndexURL(number: number, index: number): string {
   return `contracts/results?block.number=${number}&transaction.index=${index}&limit=100&order=asc`;
@@ -67,13 +66,6 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
 
   const duration = constants.HBAR_RATE_LIMIT_DURATION;
   const total = constants.HBAR_RATE_LIMIT_TOTAL;
-  const hbarLimiter = new HbarLimit(
-    logger.child({ name: 'hbar-rate-limit' }),
-    Date.now(),
-    total.toNumber(),
-    duration,
-    registry,
-  );
   const eventEmitter = new EventEmitter();
 
   const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
@@ -89,14 +81,7 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
     duration,
   );
 
-  const hapiServiceInstance = new HAPIService(
-    logger,
-    registry,
-    hbarLimiter,
-    cacheService,
-    eventEmitter,
-    hbarLimitService,
-  );
+  const hapiServiceInstance = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
 
   // @ts-ignore
   const ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);

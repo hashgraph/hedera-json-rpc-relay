@@ -31,7 +31,6 @@ import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
 import { register, Registry } from 'prom-client';
-import HbarLimit from '../../src/lib/hbarlimiter';
 import { RequestDetails } from '../../src/lib/types';
 import { formatTransactionId } from '../../src/formatters';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
@@ -111,7 +110,6 @@ describe('SdkClient', async function () {
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TOTAL;
-    hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total.toNumber(), duration, registry);
     eventEmitter = new EventEmitter();
 
     cacheService = new CacheService(logger, registry);
