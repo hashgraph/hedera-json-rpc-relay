@@ -50,7 +50,7 @@ import { AliasAccount } from '../types/AliasAccount';
 import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
 
 chai.use(chaiAsPromised);
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+const DOT_ENV = dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -65,10 +65,14 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const NETWORK = process.env.HEDERA_NETWORK || '';
-const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
-const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
-const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
+// @ts-ignore
+const NETWORK = process.env.HEDERA_NETWORK || DOT_ENV.parsed.HEDERA_NETWORK || '';
+// @ts-ignore
+const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || DOT_ENV.parsed.OPERATOR_KEY_MAIN || '';
+// @ts-ignore
+const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || DOT_ENV.parsed.OPERATOR_ID_MAIN || '';
+// @ts-ignore
+const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || DOT_ENV.parsed.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
