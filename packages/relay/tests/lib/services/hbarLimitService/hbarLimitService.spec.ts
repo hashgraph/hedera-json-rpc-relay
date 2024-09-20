@@ -179,7 +179,7 @@ describe('HBAR Rate Limit Service', function () {
     describe('based on ethAddress', async function () {
       it('should return true if the total budget is exceeded', async function () {
         // @ts-ignore
-        hbarLimitService.remainingBudget = 0;
+        hbarLimitService.remainingBudget = Hbar.fromTinybars(0);
         const result = await hbarLimitService.shouldLimit(
           mode,
           methodName,
@@ -370,14 +370,14 @@ describe('HBAR Rate Limit Service', function () {
     describe('based on ipAddress', async function () {
       it('should return true if the total budget is exceeded', async function () {
         // @ts-ignore
-        hbarLimitService.remainingBudget = 0;
+        hbarLimitService.remainingBudget = Hbar.fromTinybars(0);
         const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
         expect(result).to.be.true;
       });
 
       it('should return true when remainingBudget < estimatedTxFee ', async function () {
         // @ts-ignore
-        hbarLimitService.remainingBudget = mockEstimatedTxFee - 1;
+        hbarLimitService.remainingBudget = Hbar.fromTinybars(mockEstimatedTxFee - 1);
         const result = await hbarLimitService.shouldLimit(
           mode,
           methodName,
@@ -760,7 +760,7 @@ describe('HBAR Rate Limit Service', function () {
       // @ts-ignore
       hbarLimitService.remainingBudget = Hbar.fromTinybars(remainingBudget);
       await expect(
-        hbarLimitService['isTotalBudgetExceeded'](mode, methodName, undefined, requestDetails),
+        hbarLimitService['isTotalBudgetExceeded'](mode, methodName, txConstructorName, 0, requestDetails),
       ).to.eventually.equal(expected);
     };
 
