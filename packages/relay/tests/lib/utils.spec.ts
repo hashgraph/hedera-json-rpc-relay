@@ -23,6 +23,7 @@ import { Utils } from '../../src/utils';
 import constants from '../../src/lib/constants';
 import { estimateFileTransactionsFee } from '../helpers';
 import { overrideEnvsInMochaDescribe } from '../helpers';
+import { estimateFileTransactionsFee } from '../helpers';
 
 describe('Utils', () => {
   describe('addPercentageBufferToGasPrice', () => {
