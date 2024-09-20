@@ -73,7 +73,7 @@ jobs:
         run: npm install @hashgraph/hedera-local -g
 
       - name: Run hedera local
-        run: npx hedera restart -d --verbose=trace
+        run: npx hedera restart -d --verbose=trace --network-tag=${{ inputs.networkTag }} --mirror-tag=${{ inputs.mirrorTag }}
 
       - name: Stop relay
         run: docker stop json-rpc-relay json-rpc-relay-ws
