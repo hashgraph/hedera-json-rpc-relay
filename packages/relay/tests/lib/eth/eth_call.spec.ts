@@ -53,6 +53,7 @@ import {
   defaultErrorMessageText,
   ethCallFailing,
   mockData,
+  withOverriddenEnvs,
 } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
@@ -138,54 +139,54 @@ describe('@ethCall Eth Call spec', async function () {
       );
     });
 
-    it('should execute "eth_call" against mirror node with a false ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
-      web3Mock.onPost('contracts/call').reply(200);
-      const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+    withOverriddenEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+      it('should execute "eth_call" against mirror node with a false ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
+        web3Mock.onPost('contracts/call').reply(200);
+        restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
+        restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
+          account: '0.0.1723',
+          evm_address: defaultCallData.from,
+        });
+        restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, DEFAULT_CONTRACT);
 
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
-      restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-      restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: defaultCallData.from,
+        await ethImpl.call({ ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` }, 'latest');
+
+        assert(callMirrorNodeSpy.calledOnce);
+        assert(callConsensusNodeSpy.notCalled);
       });
-      restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, DEFAULT_CONTRACT);
-      await ethImpl.call({ ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` }, 'latest');
-
-      assert(callMirrorNodeSpy.calledOnce);
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
-    it('should execute "eth_call" against mirror node with an undefined ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
-      web3Mock.onPost('contracts/call').reply(200);
-      const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+    withOverriddenEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: undefined }, () => {
+      it('should execute "eth_call" against mirror node with an undefined ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
+        web3Mock.onPost('contracts/call').reply(200);
+        restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
+        restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
+          account: '0.0.1723',
+          evm_address: defaultCallData.from,
+        });
+        restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, DEFAULT_CONTRACT);
 
-      delete process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
-      restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-      restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: defaultCallData.from,
+        await ethImpl.call({ ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` }, 'latest');
+
+        assert(callMirrorNodeSpy.calledOnce);
+        assert(callConsensusNodeSpy.notCalled);
       });
-      restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, DEFAULT_CONTRACT);
-      await ethImpl.call({ ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` }, 'latest');
-
-      assert(callMirrorNodeSpy.calledOnce);
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
-    it('should execute "eth_call" against mirror node with a ETH_CALL_DEFAULT_TO_CONSENSUS_NODE set to true', async function () {
-      const initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
+    withOverriddenEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
+      it('should execute "eth_call" against consensus node with a ETH_CALL_DEFAULT_TO_CONSENSUS_NODE set to true', async function () {
+        restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
+        restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
+          account: '0.0.1723',
+          evm_address: defaultCallData.from,
+        });
+        restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, DEFAULT_CONTRACT);
 
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
-      restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-      restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
-        account: '0.0.1723',
-        evm_address: defaultCallData.from,
+        await ethImpl.call({ ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` }, 'latest');
+
+        assert(callMirrorNodeSpy.notCalled);
+        assert(callConsensusNodeSpy.calledOnce);
       });
-      restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, DEFAULT_CONTRACT);
-      await ethImpl.call({ ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` }, 'latest');
-
-      assert(callConsensusNodeSpy.calledOnce);
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
     });
 
     it('to field is not a contract or token', async function () {

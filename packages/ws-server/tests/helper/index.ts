@@ -31,7 +31,7 @@ export class WsTestHelper {
     try {
       await wsProvider.send(methodName, params);
       expect(true).to.eq(false);
-    } catch (error) {
+    } catch (error: any) {
       if (error.info) error = error.info;
       expect(error.error).to.exist;
       expect(error.error.code).to.be.oneOf([-32602, -32603]);
@@ -87,6 +87,37 @@ export class WsTestHelper {
       method,
       params,
     };
+  }
+
+  static overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
+    if (value === undefined) {
+      delete object[key];
+    } else {
+      object[key] = value;
+    }
+  };
+
+  static withOverriddenEnvs(envs: NodeJS.Dict<string>, tests: () => void) {
+    describe(`given ${Object.entries(envs)
+      .map(([key, value]) => `${key}=${value}`)
+      .join(', ')} are set`, () => {
+      let envsToReset: NodeJS.Dict<string> = {};
+
+      before(() => {
+        for (const key in envs) {
+          envsToReset[key] = process.env[key];
+          WsTestHelper.overrideEnv(process.env, key, envs[key]);
+        }
+      });
+
+      tests();
+
+      after(() => {
+        for (const key in envsToReset) {
+          WsTestHelper.overrideEnv(process.env, key, envsToReset[key]);
+        }
+      });
+    });
   }
 }
 

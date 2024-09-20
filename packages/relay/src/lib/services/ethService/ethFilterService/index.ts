@@ -119,7 +119,7 @@ export class FilterService implements IFilterService {
     address?: string,
     topics?: any[],
     requestIdPrefix?: string,
-  ): Promise<string | JsonRpcError> {
+  ): Promise<string> {
     this.logger.trace(
       `${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`,
     );
@@ -147,7 +147,7 @@ export class FilterService implements IFilterService {
     }
   }
 
-  async newBlockFilter(requestIdPrefix?: string): Promise<string | JsonRpcError> {
+  async newBlockFilter(requestIdPrefix?: string): Promise<string> {
     this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
     try {
       FilterService.requireFiltersEnabled();
@@ -203,7 +203,7 @@ export class FilterService implements IFilterService {
     );
   }
 
-  public async getFilterChanges(filterId: string, requestIdPrefix?: string): Promise<string[] | Log[] | JsonRpcError> {
+  public async getFilterChanges(filterId: string, requestIdPrefix?: string): Promise<string[] | Log[]> {
     this.logger.trace(`${requestIdPrefix} getFilterChanges(${filterId})`);
     FilterService.requireFiltersEnabled();
 

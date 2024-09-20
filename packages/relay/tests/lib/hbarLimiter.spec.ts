@@ -22,7 +22,7 @@ import pino from 'pino';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import HbarLimit from '../../src/lib/hbarlimiter';
-import { estimateFileTransactionsFee, getRequestId, random20BytesAddress } from '../helpers';
+import { estimateFileTransactionsFee, getRequestId, random20BytesAddress, withOverriddenEnvs } from '../helpers';
 
 const registry = new Registry();
 const logger = pino();
@@ -45,253 +45,246 @@ describe('HBAR Rate Limiter', async function () {
 
   this.beforeEach(() => {
     currentDateNow = Date.now();
-    process.env.HBAR_RATE_LIMIT_WHITELIST = `[${randomWhiteListedAccountAddress}]`;
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
     rateLimiterWithEmptyBudget = new HbarLimit(logger, currentDateNow, invalidTotal, validDuration, registry);
   });
 
-  this.beforeAll(() => {
-    process.env.HBAR_RATE_LIMIT_WHITELIST = `[${randomWhiteListedAccountAddress}]`;
-  });
+  withOverriddenEnvs({ HBAR_RATE_LIMIT_WHITELIST: `[${randomWhiteListedAccountAddress}]` }, () => {
+    it('should be disabled, if we pass invalid total', async function () {
+      const isEnabled = rateLimiterWithEmptyBudget.isEnabled();
+      const limiterResetTime = rateLimiterWithEmptyBudget.getResetTime();
+      const limiterRemainingBudget = rateLimiterWithEmptyBudget.getRemainingBudget();
+      const shouldRateLimit = rateLimiterWithEmptyBudget.shouldLimit(
+        currentDateNow,
+        'QUERY',
+        'eth_call',
+        randomAccountAddress,
+      );
+      rateLimiterWithEmptyBudget.addExpense(validTotal, currentDateNow);
 
-  this.afterAll(() => {
-    delete process.env.HBAR_RATE_LIMIT_WHITELIST;
-  });
+      expect(isEnabled).to.equal(false);
+      expect(shouldRateLimit).to.equal(false);
+      expect(limiterResetTime).to.equal(currentDateNow);
+      expect(limiterRemainingBudget).to.equal(0);
+    });
 
-  it('should be disabled, if we pass invalid total', async function () {
-    const isEnabled = rateLimiterWithEmptyBudget.isEnabled();
-    const limiterResetTime = rateLimiterWithEmptyBudget.getResetTime();
-    const limiterRemainingBudget = rateLimiterWithEmptyBudget.getRemainingBudget();
-    const shouldRateLimit = rateLimiterWithEmptyBudget.shouldLimit(
-      currentDateNow,
-      'QUERY',
-      'eth_call',
-      randomAccountAddress,
-    );
-    rateLimiterWithEmptyBudget.addExpense(validTotal, currentDateNow);
+    it('should be disabled, if we pass invalid duration', async function () {
+      rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, invalidDuration, registry);
 
-    expect(isEnabled).to.equal(false);
-    expect(shouldRateLimit).to.equal(false);
-    expect(limiterResetTime).to.equal(currentDateNow);
-    expect(limiterRemainingBudget).to.equal(0);
-  });
+      const isEnabled = rateLimiter.isEnabled();
+      const limiterResetTime = rateLimiter.getResetTime();
+      const limiterRemainingBudget = rateLimiter.getRemainingBudget();
+      const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call', randomAccountAddress);
+      rateLimiter.addExpense(validTotal, currentDateNow);
 
-  it('should be disabled, if we pass invalid duration', async function () {
-    rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, invalidDuration, registry);
+      expect(isEnabled).to.equal(false);
+      expect(shouldRateLimit).to.equal(false);
+      expect(limiterResetTime).to.equal(currentDateNow);
+      expect(limiterRemainingBudget).to.equal(0);
+    });
 
-    const isEnabled = rateLimiter.isEnabled();
-    const limiterResetTime = rateLimiter.getResetTime();
-    const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call', randomAccountAddress);
-    rateLimiter.addExpense(validTotal, currentDateNow);
+    it('should be disabled, if we pass both invalid duration and total', async function () {
+      const invalidRateLimiter = new HbarLimit(logger, currentDateNow, invalidTotal, invalidDuration, registry);
 
-    expect(isEnabled).to.equal(false);
-    expect(shouldRateLimit).to.equal(false);
-    expect(limiterResetTime).to.equal(currentDateNow);
-    expect(limiterRemainingBudget).to.equal(0);
-  });
+      const isEnabled = invalidRateLimiter.isEnabled();
+      const limiterResetTime = invalidRateLimiter.getResetTime();
+      const limiterRemainingBudget = invalidRateLimiter.getRemainingBudget();
+      const shouldRateLimit = invalidRateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call', randomAccountAddress);
+      invalidRateLimiter.addExpense(validTotal, currentDateNow);
 
-  it('should be disabled, if we pass both invalid duration and total', async function () {
-    const invalidRateLimiter = new HbarLimit(logger, currentDateNow, invalidTotal, invalidDuration, registry);
+      expect(isEnabled).to.equal(false);
+      expect(shouldRateLimit).to.equal(false);
+      expect(limiterResetTime).to.equal(currentDateNow);
+      expect(limiterRemainingBudget).to.equal(0);
+    });
 
-    const isEnabled = invalidRateLimiter.isEnabled();
-    const limiterResetTime = invalidRateLimiter.getResetTime();
-    const limiterRemainingBudget = invalidRateLimiter.getRemainingBudget();
-    const shouldRateLimit = invalidRateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call', randomAccountAddress);
-    invalidRateLimiter.addExpense(validTotal, currentDateNow);
+    it('should be enabled, if we pass valid duration and total', async function () {
+      const isEnabled = rateLimiter.isEnabled();
+      const limiterResetTime = rateLimiter.getResetTime();
+      const limiterRemainingBudget = rateLimiter.getRemainingBudget();
+      const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call', randomAccountAddress);
 
-    expect(isEnabled).to.equal(false);
-    expect(shouldRateLimit).to.equal(false);
-    expect(limiterResetTime).to.equal(currentDateNow);
-    expect(limiterRemainingBudget).to.equal(0);
-  });
+      expect(isEnabled).to.equal(true);
+      expect(shouldRateLimit).to.equal(false);
+      expect(limiterResetTime).to.equal(currentDateNow + validDuration);
+      expect(limiterRemainingBudget).to.equal(validTotal);
+    });
 
-  it('should be enabled, if we pass valid duration and total', async function () {
-    const isEnabled = rateLimiter.isEnabled();
-    const limiterResetTime = rateLimiter.getResetTime();
-    const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call', randomAccountAddress);
+    it('should not rate limit', async function () {
+      const cost = 10000000;
 
-    expect(isEnabled).to.equal(true);
-    expect(shouldRateLimit).to.equal(false);
-    expect(limiterResetTime).to.equal(currentDateNow + validDuration);
-    expect(limiterRemainingBudget).to.equal(validTotal);
-  });
+      rateLimiter.addExpense(cost, currentDateNow);
 
-  it('should not rate limit', async function () {
-    const cost = 10000000;
+      const isEnabled = rateLimiter.isEnabled();
+      const limiterResetTime = rateLimiter.getResetTime();
+      const limiterRemainingBudget = rateLimiter.getRemainingBudget();
+      const shouldRateLimit = rateLimiter.shouldLimit(
+        currentDateNow,
+        'TRANSACTION',
+        'eth_sendRawTransaction',
+        randomAccountAddress,
+      );
 
-    rateLimiter.addExpense(cost, currentDateNow);
+      expect(isEnabled).to.equal(true);
+      expect(shouldRateLimit).to.equal(false);
+      expect(limiterResetTime).to.equal(currentDateNow + validDuration);
+      expect(limiterRemainingBudget).to.equal(validTotal - cost);
+    });
 
-    const isEnabled = rateLimiter.isEnabled();
-    const limiterResetTime = rateLimiter.getResetTime();
-    const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(
-      currentDateNow,
-      'TRANSACTION',
-      'eth_sendRawTransaction',
-      randomAccountAddress,
-    );
+    it('should rate limit', async function () {
+      const cost = 1000000000;
 
-    expect(isEnabled).to.equal(true);
-    expect(shouldRateLimit).to.equal(false);
-    expect(limiterResetTime).to.equal(currentDateNow + validDuration);
-    expect(limiterRemainingBudget).to.equal(validTotal - cost);
-  });
+      rateLimiter.addExpense(cost, currentDateNow);
 
-  it('should rate limit', async function () {
-    const cost = 1000000000;
+      const isEnabled = rateLimiter.isEnabled();
+      const limiterResetTime = rateLimiter.getResetTime();
+      const limiterRemainingBudget = rateLimiter.getRemainingBudget();
+      const shouldRateLimit = rateLimiter.shouldLimit(
+        currentDateNow,
+        'TRANSACTION',
+        'eth_sendRawTransaction',
+        randomAccountAddress,
+      );
 
-    rateLimiter.addExpense(cost, currentDateNow);
+      expect(isEnabled).to.equal(true);
+      expect(shouldRateLimit).to.equal(true);
+      expect(limiterResetTime).to.equal(currentDateNow + validDuration);
+      expect(limiterRemainingBudget).to.equal(validTotal - cost);
+    });
 
-    const isEnabled = rateLimiter.isEnabled();
-    const limiterResetTime = rateLimiter.getResetTime();
-    const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(
-      currentDateNow,
-      'TRANSACTION',
-      'eth_sendRawTransaction',
-      randomAccountAddress,
-    );
+    it('should reset budget, while checking if we should rate limit', async function () {
+      const cost = 1000000000;
 
-    expect(isEnabled).to.equal(true);
-    expect(shouldRateLimit).to.equal(true);
-    expect(limiterResetTime).to.equal(currentDateNow + validDuration);
-    expect(limiterRemainingBudget).to.equal(validTotal - cost);
-  });
+      rateLimiter.addExpense(cost, currentDateNow);
 
-  it('should reset budget, while checking if we should rate limit', async function () {
-    const cost = 1000000000;
+      const isEnabled = rateLimiter.isEnabled();
+      const futureDate = currentDateNow + validDuration * 2;
+      const shouldRateLimit = rateLimiter.shouldLimit(
+        futureDate,
+        'TRANSACTION',
+        'eth_sendRawTransaction',
+        randomAccountAddress,
+      );
+      const limiterResetTime = rateLimiter.getResetTime();
+      const limiterRemainingBudget = rateLimiter.getRemainingBudget();
 
-    rateLimiter.addExpense(cost, currentDateNow);
+      expect(isEnabled).to.equal(true);
+      expect(shouldRateLimit).to.equal(false);
+      expect(limiterResetTime).to.equal(futureDate + validDuration);
+      expect(limiterRemainingBudget).to.equal(validTotal);
+    });
 
-    const isEnabled = rateLimiter.isEnabled();
-    const futureDate = currentDateNow + validDuration * 2;
-    const shouldRateLimit = rateLimiter.shouldLimit(
-      futureDate,
-      'TRANSACTION',
-      'eth_sendRawTransaction',
-      randomAccountAddress,
-    );
-    const limiterResetTime = rateLimiter.getResetTime();
-    const limiterRemainingBudget = rateLimiter.getRemainingBudget();
+    it('should reset budget, while adding expense', async function () {
+      const cost = 1000000000;
 
-    expect(isEnabled).to.equal(true);
-    expect(shouldRateLimit).to.equal(false);
-    expect(limiterResetTime).to.equal(futureDate + validDuration);
-    expect(limiterRemainingBudget).to.equal(validTotal);
-  });
+      rateLimiter.addExpense(cost, currentDateNow);
+      const shouldRateLimitBefore = rateLimiter.shouldLimit(
+        currentDateNow,
+        'TRANSACTION',
+        'eth_sendRawTransaction',
+        randomAccountAddress,
+      );
 
-  it('should reset budget, while adding expense', async function () {
-    const cost = 1000000000;
+      const futureDate = currentDateNow + validDuration * 2;
+      rateLimiter.addExpense(100, futureDate);
+      const shouldRateLimitAfter = rateLimiter.shouldLimit(
+        futureDate,
+        'TRANSACTION',
+        'eth_sendRawTransaction',
+        randomAccountAddress,
+      );
 
-    rateLimiter.addExpense(cost, currentDateNow);
-    const shouldRateLimitBefore = rateLimiter.shouldLimit(
-      currentDateNow,
-      'TRANSACTION',
-      'eth_sendRawTransaction',
-      randomAccountAddress,
-    );
+      const isEnabled = rateLimiter.isEnabled();
+      const limiterResetTime = rateLimiter.getResetTime();
+      const limiterRemainingBudget = rateLimiter.getRemainingBudget();
 
-    const futureDate = currentDateNow + validDuration * 2;
-    rateLimiter.addExpense(100, futureDate);
-    const shouldRateLimitAfter = rateLimiter.shouldLimit(
-      futureDate,
-      'TRANSACTION',
-      'eth_sendRawTransaction',
-      randomAccountAddress,
-    );
+      expect(isEnabled).to.equal(true);
+      expect(shouldRateLimitBefore).to.equal(true);
+      expect(shouldRateLimitAfter).to.equal(false);
+      expect(limiterResetTime).to.equal(futureDate + validDuration);
+      expect(limiterRemainingBudget).to.equal(validTotal - 100);
+    });
 
-    const isEnabled = rateLimiter.isEnabled();
-    const limiterResetTime = rateLimiter.getResetTime();
-    const limiterRemainingBudget = rateLimiter.getRemainingBudget();
+    it('Should execute shouldPreemptivelyLimitFileTransactions() and return TRUE if expected transactionFee is greater than remaining balance', () => {
+      const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
+        randomAccountAddress,
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+        getRequestId(),
+      );
+      expect(result).to.be.true;
+    });
 
-    expect(isEnabled).to.equal(true);
-    expect(shouldRateLimitBefore).to.equal(true);
-    expect(shouldRateLimitAfter).to.equal(false);
-    expect(limiterResetTime).to.equal(futureDate + validDuration);
-    expect(limiterRemainingBudget).to.equal(validTotal - 100);
-  });
+    it('Shouldexecute shouldPreemptivelyLimitFileTransactions() and return FALSE if expected transactionFee is less than remaining balance', () => {
+      const result = rateLimiter.shouldPreemptivelyLimitFileTransactions(
+        randomAccountAddress,
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+        getRequestId(),
+      );
+      expect(result).to.be.false;
+    });
 
-  it('Should execute shouldPreemptivelyLimitFileTransactions() and return TRUE if expected transactionFee is greater than remaining balance', () => {
-    const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
-      randomAccountAddress,
-      callDataSize,
-      fileChunkSize,
-      mockedExchangeRateInCents,
-      getRequestId(),
-    );
-    expect(result).to.be.true;
-  });
+    it('Should verify if an account is whitelisted', () => {
+      const shoulNotdBeWhiteListed = rateLimiterWithEmptyBudget.isAccountWhiteListed(randomAccountAddress);
+      const shouldBeWhiteListed = rateLimiterWithEmptyBudget.isAccountWhiteListed(randomWhiteListedAccountAddress);
 
-  it('Shouldexecute shouldPreemptivelyLimitFileTransactions() and return FALSE if expected transactionFee is less than remaining balance', () => {
-    const result = rateLimiter.shouldPreemptivelyLimitFileTransactions(
-      randomAccountAddress,
-      callDataSize,
-      fileChunkSize,
-      mockedExchangeRateInCents,
-      getRequestId(),
-    );
-    expect(result).to.be.false;
-  });
+      expect(shoulNotdBeWhiteListed).to.be.false;
+      expect(shouldBeWhiteListed).to.be.true;
+    });
 
-  it('Should verify if an account is whitelisted', () => {
-    const shoulNotdBeWhiteListed = rateLimiterWithEmptyBudget.isAccountWhiteListed(randomAccountAddress);
-    const shouldBeWhiteListed = rateLimiterWithEmptyBudget.isAccountWhiteListed(randomWhiteListedAccountAddress);
+    it('should bypass rate limit if original caller is a white listed account', async function () {
+      // add expense to rate limit throttle
+      rateLimiter.addExpense(validTotal, currentDateNow);
 
-    expect(shoulNotdBeWhiteListed).to.be.false;
-    expect(shouldBeWhiteListed).to.be.true;
-  });
+      // should return true as `randomAccountAddress` is not white listed
+      const shouldNOTByPassRateLimit = rateLimiter.shouldLimit(
+        currentDateNow,
+        'TRANSACTION',
+        'eth_sendRawTransaction',
+        randomAccountAddress,
+      );
 
-  it('should bypass rate limit if original caller is a white listed account', async function () {
-    // add expense to rate limit throttle
-    rateLimiter.addExpense(validTotal, currentDateNow);
+      // should return false as `randomWhiteListedAccountAddress` is white listed
+      const shouldByPassRateLimit = rateLimiter.shouldLimit(
+        currentDateNow,
+        'TRANSACTION',
+        'eth_sendRawTransaction',
+        randomWhiteListedAccountAddress,
+      );
 
-    // should return true as `randomAccountAddress` is not white listed
-    const shouldNOTByPassRateLimit = rateLimiter.shouldLimit(
-      currentDateNow,
-      'TRANSACTION',
-      'eth_sendRawTransaction',
-      randomAccountAddress,
-    );
+      expect(shouldByPassRateLimit).to.equal(false);
+      expect(shouldNOTByPassRateLimit).to.equal(true);
+    });
 
-    // should return false as `randomWhiteListedAccountAddress` is white listed
-    const shouldByPassRateLimit = rateLimiter.shouldLimit(
-      currentDateNow,
-      'TRANSACTION',
-      'eth_sendRawTransaction',
-      randomWhiteListedAccountAddress,
-    );
+    it('Should execute shouldPreemptivelyLimitFileTransactions() and return FALSE if the original caller is a white listed account', () => {
+      const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
+        randomWhiteListedAccountAddress,
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+        getRequestId(),
+      );
+      expect(result).to.be.false;
+    });
 
-    expect(shouldByPassRateLimit).to.equal(false);
-    expect(shouldNOTByPassRateLimit).to.equal(true);
-  });
+    it('Should execute shouldPreemptivelyLimitFileTransactions() and return TRUE if the original caller is NOT a white listed account', () => {
+      const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
+        randomAccountAddress,
+        callDataSize,
+        fileChunkSize,
+        mockedExchangeRateInCents,
+        getRequestId(),
+      );
+      expect(result).to.be.true;
+    });
 
-  it('Should execute shouldPreemptivelyLimitFileTransactions() and return FALSE if the original caller is a white listed account', () => {
-    const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
-      randomWhiteListedAccountAddress,
-      callDataSize,
-      fileChunkSize,
-      mockedExchangeRateInCents,
-      getRequestId(),
-    );
-    expect(result).to.be.false;
-  });
-
-  it('Should execute shouldPreemptivelyLimitFileTransactions() and return TRUE if the original caller is NOT a white listed account', () => {
-    const result = rateLimiterWithEmptyBudget.shouldPreemptivelyLimitFileTransactions(
-      randomAccountAddress,
-      callDataSize,
-      fileChunkSize,
-      mockedExchangeRateInCents,
-      getRequestId(),
-    );
-    expect(result).to.be.true;
-  });
-
-  it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
-    const result = rateLimiter.estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
-    const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
-    expect(result).to.eq(expectedResult);
+    it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
+      const result = rateLimiter.estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
+      const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
+      expect(result).to.eq(expectedResult);
+    });
   });
 });

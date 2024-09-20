@@ -27,11 +27,21 @@ import { MirrorNodeClient } from '../../../../src/lib/clients/mirrorNodeClient';
 import pino from 'pino';
 import constants from '../../../../src/lib/constants';
 import { FilterService, CommonService } from '../../../../src/lib/services/ethService';
-import { defaultEvmAddress, getRequestId, toHex, defaultBlock, defaultLogTopics, defaultLogs1 } from '../../../helpers';
+import {
+  defaultEvmAddress,
+  getRequestId,
+  toHex,
+  defaultBlock,
+  defaultLogTopics,
+  defaultLogs1,
+  withOverriddenEnvs,
+} from '../../../helpers';
 import RelayAssertions from '../../../assertions';
-import { predefined } from '../../../../src';
+import { JsonRpcError, predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import * as sinon from 'sinon';
+import { Log } from 'ethers';
+
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();
@@ -59,7 +69,7 @@ describe('Filter API Test Suite', async function () {
 
   const validateFilterCache = async (filterId, expectedFilterType, expectedParams = {}) => {
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const cachedFilter = await cacheService.getAsync(cacheKey, undefined);
+    const cachedFilter = await cacheService.getAsync(cacheKey, 'validateFilterCache');
     expect(cachedFilter).to.exist;
     expect(cachedFilter.type).to.exist;
     expect(cachedFilter.type).to.eq(expectedFilterType);
@@ -90,7 +100,7 @@ describe('Filter API Test Suite', async function () {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL,
+      process.env.MIRROR_NODE_URL ?? '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -122,90 +132,105 @@ describe('Filter API Test Suite', async function () {
   });
 
   describe('all methods require a filter flag', async function () {
-    let ffAtStart;
+    withOverriddenEnvs({ FILTER_API_ENABLED: undefined }, () => {
+      it(`should throw UNSUPPORTED_METHOD for ${filterService.newFilter.name}`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.newFilter,
+          true,
+          filterService,
+          [],
+        );
+      });
 
-    before(function () {
-      ffAtStart = process.env.FILTER_API_ENABLED;
+      it(`should throw UNSUPPORTED_METHOD for ${filterService.uninstallFilter.name}`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.uninstallFilter,
+          true,
+          filterService,
+          [existingFilterId],
+        );
+      });
+
+      it(`should throw UNSUPPORTED_METHOD for ${filterService.getFilterChanges.name}`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.getFilterChanges,
+          true,
+          filterService,
+          [existingFilterId],
+        );
+      });
     });
 
-    after(function () {
-      process.env.FILTER_API_ENABLED = ffAtStart;
+    withOverriddenEnvs({ FILTER_API_ENABLED: 'true' }, () => {
+      let filterId: string;
+
+      beforeEach(async () => {
+        restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock }] });
+        filterId = await filterService.newFilter();
+      });
+
+      it(`should call ${filterService.newFilter.name}`, async function () {
+        expect(filterId).to.exist;
+        expect(filterId).instanceof(String);
+        expect(RelayAssertions.validateHash(filterId as string, 32)).to.eq(true, 'returns valid filterId');
+      });
+
+      it(`should call ${filterService.getFilterChanges.name}`, async function () {
+        const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
+        cacheMock.stub(cacheService, 'getAsync').withArgs(cacheKey, 'eth_getFilterChanges').returns(logFilterObject);
+
+        restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
+        restMock
+          .onGet(
+            `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
+          )
+          .reply(200, defaultLogs1);
+        const filterChanges = await filterService.getFilterChanges(filterId);
+        expect(filterChanges).to.exist;
+      });
+
+      it(`should call ${filterService.uninstallFilter.name}`, async function () {
+        const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
+        cacheMock.stub(cacheService, 'getAsync').withArgs(cacheKey, 'eth_uninstallFilter').returns(logFilterObject);
+
+        const isFilterUninstalled = await filterService.uninstallFilter(filterId);
+        expect(isFilterUninstalled).to.eq(true, 'executes correctly');
+      });
     });
 
-    it('FILTER_API_ENABLED is not specified', async function () {
-      delete process.env.FILTER_API_ENABLED;
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.newFilter,
-        true,
-        filterService,
-        {},
-      );
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.uninstallFilter,
-        true,
-        filterService,
-        [existingFilterId],
-      );
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.getFilterChanges,
-        true,
-        filterService,
-        [existingFilterId],
-      );
-    });
+    withOverriddenEnvs({ FILTER_API_ENABLED: 'false' }, () => {
+      it(`should throw UNSUPPORTED_METHOD for ${filterService.newFilter.name}`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.newFilter,
+          true,
+          filterService,
+          [],
+        );
+      });
 
-    it('FILTER_API_ENABLED=true', async function () {
-      process.env.FILTER_API_ENABLED = 'true';
-      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock }] });
-      const filterId = await filterService.newFilter();
-      expect(filterId).to.exist;
-      expect(RelayAssertions.validateHash(filterId, 32)).to.eq(true, 'returns valid filterId');
+      it(`should throw UNSUPPORTED_METHOD for ${filterService.uninstallFilter.name}`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.uninstallFilter,
+          true,
+          filterService,
+          [existingFilterId],
+        );
+      });
 
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-      cacheMock.stub(cacheService, 'getAsync').withArgs(cacheKey, 'eth_getFilterChanges').returns(logFilterObject);
-
-      restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
-      restMock
-        .onGet(
-          `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
-        )
-        .reply(200, defaultLogs1);
-      const filterChanges = await filterService.getFilterChanges(filterId);
-      expect(filterChanges).to.exist;
-
-      cacheMock.restore();
-      cacheMock.stub(cacheService, 'getAsync').withArgs(cacheKey, 'eth_uninstallFilter').returns(logFilterObject);
-
-      const isFilterUninstalled = await filterService.uninstallFilter(filterId);
-      expect(isFilterUninstalled).to.eq(true, 'executes correctly');
-    });
-
-    it('FILTER_API_ENABLED=false', async function () {
-      process.env.FILTER_API_ENABLED = 'false';
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.newFilter,
-        true,
-        filterService,
-        [],
-      );
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.uninstallFilter,
-        true,
-        filterService,
-        [existingFilterId],
-      );
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.getFilterChanges,
-        true,
-        filterService,
-        [existingFilterId],
-      );
+      it(`should throw UNSUPPORTED_METHOD for ${filterService.getFilterChanges.name}`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.getFilterChanges,
+          true,
+          filterService,
+          [existingFilterId],
+        );
+      });
     });
   });
 
@@ -315,13 +340,11 @@ describe('Filter API Test Suite', async function () {
 
       cacheMock.stub(cacheService, 'getAsync').onFirstCall().returns(filterObject).onSecondCall().returns(undefined);
 
-      cacheService.set(cacheKey, filterObject, filterService.ethUninstallFilter, constants.FILTER.TTL, undefined, true);
+      await cacheService.set(cacheKey, filterObject, filterService.ethUninstallFilter, constants.FILTER.TTL);
 
       const result = await filterService.uninstallFilter(existingFilterId);
 
-      const isDeleted = (await cacheService.getAsync(cacheKey, filterService.ethUninstallFilter, undefined))
-        ? false
-        : true;
+      const isDeleted = !(await cacheService.getAsync(cacheKey, filterService.ethUninstallFilter, undefined));
       expect(result).to.eq(true);
       expect(isDeleted).to.eq(true);
     });
@@ -437,7 +460,7 @@ describe('Filter API Test Suite', async function () {
         )
         .reply(200, filteredLogs);
 
-      const filterId = await filterService.newFilter(null, '0x3');
+      const filterId = await filterService.newFilter(undefined, '0x3');
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
       cacheMock
         .stub(cacheService, 'getAsync')
@@ -471,7 +494,7 @@ describe('Filter API Test Suite', async function () {
         )
         .reply(200, filteredLogs);
 
-      const filterId = await filterService.newFilter(null, null, defaultEvmAddress);
+      const filterId = await filterService.newFilter(undefined, undefined, defaultEvmAddress);
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
 
       cacheMock
@@ -511,7 +534,7 @@ describe('Filter API Test Suite', async function () {
         )
         .reply(200, filteredLogs);
 
-      const filterId = await filterService.newFilter(null, null, null, customTopic);
+      const filterId = await filterService.newFilter(undefined, undefined, undefined, customTopic);
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
       cacheMock
         .stub(cacheService, 'getAsync')
@@ -568,14 +591,7 @@ describe('Filter API Test Suite', async function () {
         .reply(200, { blocks: [] });
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-      cacheService.set(
-        cacheKey,
-        blockFilterObject,
-        filterService.ethGetFilterChanges,
-        constants.FILTER.TTL,
-        undefined,
-        true,
-      );
+      await cacheService.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
       cacheMock
         .stub(cacheService, 'getAsync')
         .onFirstCall()
@@ -609,14 +625,7 @@ describe('Filter API Test Suite', async function () {
         .reply(200, { blocks: [] });
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-      cacheService.set(
-        cacheKey,
-        blockFilterObject,
-        filterService.ethGetFilterChanges,
-        constants.FILTER.TTL,
-        undefined,
-        true,
-      );
+      cacheService.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
       cacheMock
         .stub(cacheService, 'getAsync')
         .onFirstCall()
@@ -667,7 +676,7 @@ describe('Filter API Test Suite', async function () {
 
       const logs = await filterService.getFilterChanges(filterId);
       expect(logs).to.not.be.empty;
-      logs.every((log) => expect(Number(log.blockNumber)).to.equal(9));
+      logs.forEach((log) => expect(Number(log.blockNumber)).to.equal(9));
     });
 
     it('should return an empty set if there are no logs', async function () {
@@ -701,14 +710,7 @@ describe('Filter API Test Suite', async function () {
       });
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-      cacheService.set(
-        cacheKey,
-        blockFilterObject,
-        filterService.ethGetFilterChanges,
-        constants.FILTER.TTL,
-        undefined,
-        true,
-      );
+      cacheService.set(cacheKey, blockFilterObject, filterService.ethGetFilterChanges, constants.FILTER.TTL);
       cacheMock.stub(cacheService, 'getAsync').returns(blockFilterObject);
 
       const blocks = await filterService.getFilterChanges(existingFilterId);

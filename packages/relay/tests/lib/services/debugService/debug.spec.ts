@@ -28,7 +28,7 @@ import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
 import { TracerType } from '../../../../src/lib/constants';
 import { DebugService } from '../../../../src/lib/services/debugService';
-import { getQueryParams, getRequestId } from '../../../helpers';
+import { getQueryParams, getRequestId, withOverriddenEnvs } from '../../../helpers';
 import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
@@ -319,19 +319,8 @@ describe('Debug API Test Suite', async function () {
       web3Mock.reset();
     });
 
-    describe('all methods require a debug flag', async function () {
-      let ffAtStart;
-
-      before(function () {
-        ffAtStart = process.env.DEBUG_API_ENABLED;
-      });
-
-      after(function () {
-        process.env.DEBUG_API_ENABLED = ffAtStart;
-      });
-
-      it('DEBUG_API_ENABLED is not specified', async function () {
-        delete process.env.DEBUG_API_ENABLED;
+    withOverriddenEnvs({ DEBUG_API_ENABLED: undefined }, () => {
+      it('should throw UNSUPPORTED_METHOD', async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           debugService.debug_traceTransaction,
@@ -340,10 +329,22 @@ describe('Debug API Test Suite', async function () {
           [transactionHash, callTracer, tracerConfigFalse, getRequestId()],
         );
       });
+    });
 
-      it('DEBUG_API_ENABLED=true', async function () {
-        process.env.DEBUG_API_ENABLED = 'true';
+    withOverriddenEnvs({ DEBUG_API_ENABLED: 'false' }, () => {
+      it('should throw UNSUPPORTED_METHOD', async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          debugService.debug_traceTransaction,
+          true,
+          debugService,
+          [transactionHash, callTracer, tracerConfigFalse, getRequestId()],
+        );
+      });
+    });
 
+    withOverriddenEnvs({ DEBUG_API_ENABLED: 'true' }, () => {
+      it('should successfully debug a transaction', async function () {
         const traceTransaction = await debugService.debug_traceTransaction(
           transactionHash,
           callTracer,
@@ -353,188 +354,167 @@ describe('Debug API Test Suite', async function () {
         expect(traceTransaction).to.exist;
       });
 
-      it('DEBUG_API_ENABLED=false', async function () {
-        process.env.DEBUG_API_ENABLED = 'false';
-        await RelayAssertions.assertRejection(
-          predefined.UNSUPPORTED_METHOD,
-          debugService.debug_traceTransaction,
-          true,
-          debugService,
-          [transactionHash, callTracer, tracerConfigFalse, getRequestId()],
-        );
-      });
-    });
-
-    describe('callTracer', async function () {
-      before(() => {
-        process.env.DEBUG_API_ENABLED = 'true';
-      });
-
-      it('Test call tracer with onlyTopCall false', async function () {
-        const expectedResult = {
-          type: 'CREATE',
-          from: '0xc37f417fa09933335240fca72dd257bfbde9c275',
-          to: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
-          value: '0x0',
-          gas: '0x493e0',
-          gasUsed: '0x3a980',
-          input: '0x1',
-          output: '0x2',
-          calls: [
-            {
-              type: 'CREATE',
-              from: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
-              to: '0x91b1c451777122afc9b83f9b96160d7e59847ad7',
-              gas: '0x2e525',
-              gasUsed: '0x4b',
-              input: '0x',
-              output: '0x',
-              value: '0x0',
-            },
-          ],
-        };
-
-        const result = await debugService.debug_traceTransaction(
-          transactionHash,
-          callTracer,
-          tracerConfigFalse,
-          getRequestId(),
-        );
-
-        expect(result).to.deep.equal(expectedResult);
-      });
-
-      it('Test call tracer with onlyTopCall true', async function () {
-        const expectedResult = {
-          type: 'CREATE',
-          from: '0xc37f417fa09933335240fca72dd257bfbde9c275',
-          to: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
-          value: '0x0',
-          gas: '0x493e0',
-          gasUsed: '0x3a980',
-          input: '0x1',
-          output: '0x2',
-          calls: undefined,
-        };
-        const result = await debugService.debug_traceTransaction(
-          transactionHash,
-          callTracer,
-          tracerConfigTrue,
-          getRequestId(),
-        );
-
-        expect(result).to.deep.equal(expectedResult);
-      });
-    });
-
-    describe('opcodeLogger', async function () {
-      before(() => {
-        process.env.DEBUG_API_ENABLED = 'true';
-      });
-
-      for (const config of opcodeLoggerConfigs) {
-        const opcodeLoggerParams = Object.keys(config)
-          .map((key) => `${key}=${config[key]}`)
-          .join(', ');
-
-        describe(`When opcode logger is called with ${opcodeLoggerParams}`, async function () {
-          const emptyFields = Object.keys(config)
-            .filter((key) => (key.startsWith('disable') && config[key]) || (key.startsWith('enable') && !config[key]))
-            .map((key) => (config[key] ? key.replace('disable', '') : key.replace('enable', '')))
-            .map((key) => key.toLowerCase());
-
-          it(`Then ${
-            emptyFields.length ? `'${emptyFields}' should be empty` : 'all should be returned'
-          }`, async function () {
-            const expectedResult = {
-              gas: opcodesResponse.gas,
-              failed: opcodesResponse.failed,
-              returnValue: strip0x(opcodesResponse.return_value!),
-              structLogs: opcodesResponse.opcodes?.map((opcode) => ({
-                pc: opcode.pc,
-                op: opcode.op,
-                gas: opcode.gas,
-                gasCost: opcode.gas_cost,
-                depth: opcode.depth,
-                stack: config.disableStack ? null : opcode.stack,
-                memory: config.enableMemory ? opcode.memory : null,
-                storage: config.disableStorage ? null : opcode.storage,
-                reason: opcode.reason ? strip0x(opcode.reason) : null,
-              })),
-            };
-
-            const result = await debugService.debug_traceTransaction(
-              transactionHash,
-              opcodeLogger,
-              config,
-              getRequestId(),
-            );
-
-            expect(result).to.deep.equal(expectedResult);
-          });
-        });
-      }
-    });
-
-    describe('Invalid scenarios', async function () {
-      let notFound;
-      before(() => {
-        process.env.DEBUG_API_ENABLED = 'true';
-      });
-
-      beforeEach(() => {
-        notFound = {
-          _status: {
-            messages: [
+      describe('callTracer', async function () {
+        it('Test call tracer with onlyTopCall false', async function () {
+          const expectedResult = {
+            type: 'CREATE',
+            from: '0xc37f417fa09933335240fca72dd257bfbde9c275',
+            to: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
+            value: '0x0',
+            gas: '0x493e0',
+            gasUsed: '0x3a980',
+            input: '0x1',
+            output: '0x2',
+            calls: [
               {
-                message: 'Not found',
+                type: 'CREATE',
+                from: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
+                to: '0x91b1c451777122afc9b83f9b96160d7e59847ad7',
+                gas: '0x2e525',
+                gasUsed: '0x4b',
+                input: '0x',
+                output: '0x',
+                value: '0x0',
               },
             ],
-          },
-        };
-        restMock.onGet(CONTRACTS_RESULTS_BY_NON_EXISTENT_HASH).reply(404, notFound);
-        restMock.onGet(CONTRACT_RESULTS_BY_ACTIONS_NON_EXISTENT_HASH).reply(404, notFound);
-      });
+          };
 
-      afterEach(() => {
-        restMock.reset();
-      });
+          const result = await debugService.debug_traceTransaction(
+            transactionHash,
+            callTracer,
+            tracerConfigFalse,
+            getRequestId(),
+          );
 
-      it('test case for non-existing transaction hash', async function () {
-        const expectedError = predefined.RESOURCE_NOT_FOUND(
-          `Failed to retrieve contract results for transaction ${nonExistentTransactionHash}`,
-        );
-
-        await RelayAssertions.assertRejection(expectedError, debugService.debug_traceTransaction, true, debugService, [
-          nonExistentTransactionHash,
-          callTracer,
-          tracerConfigTrue,
-          getRequestId(),
-        ]);
-      });
-
-      it('should return empty result with invalid parameters in formatOpcodeResult', async function () {
-        const opcodeResult = await debugService.formatOpcodesResult(null, {});
-        // @ts-ignore
-        expect(opcodeResult.gas).to.eq(0);
-        // @ts-ignore
-        expect(opcodeResult.failed).to.eq(true);
-        // @ts-ignore
-        expect(opcodeResult.returnValue).to.eq('');
-        // @ts-ignore
-        expect(opcodeResult.structLogs).to.be.an('array').that.is.empty;
-      });
-
-      describe('resolveAddress', async function () {
-        it('should return null address with invalid parameters in resolveAddress', async function () {
-          const address = await debugService.resolveAddress(null!);
-          expect(address).to.be.null;
+          expect(result).to.deep.equal(expectedResult);
         });
 
-        it('should return passed address on notFound entity from the mirror node', async function () {
-          restMock.onGet(ACCOUNT_BY_ADDRESS).reply(404, notFound);
-          const address = await debugService.resolveAddress(accountAddress);
-          expect(address).to.eq(accountAddress);
+        it('Test call tracer with onlyTopCall true', async function () {
+          const expectedResult = {
+            type: 'CREATE',
+            from: '0xc37f417fa09933335240fca72dd257bfbde9c275',
+            to: '0x637a6a8e5a69c087c24983b05261f63f64ed7e9b',
+            value: '0x0',
+            gas: '0x493e0',
+            gasUsed: '0x3a980',
+            input: '0x1',
+            output: '0x2',
+            calls: undefined,
+          };
+          const result = await debugService.debug_traceTransaction(
+            transactionHash,
+            callTracer,
+            tracerConfigTrue,
+            getRequestId(),
+          );
+
+          expect(result).to.deep.equal(expectedResult);
+        });
+      });
+
+      describe('opcodeLogger', async function () {
+        for (const config of opcodeLoggerConfigs) {
+          const opcodeLoggerParams = Object.keys(config)
+            .map((key) => `${key}=${config[key]}`)
+            .join(', ');
+
+          describe(`When opcode logger is called with ${opcodeLoggerParams}`, async function () {
+            const emptyFields = Object.keys(config)
+              .filter((key) => (key.startsWith('disable') && config[key]) || (key.startsWith('enable') && !config[key]))
+              .map((key) => (config[key] ? key.replace('disable', '') : key.replace('enable', '')))
+              .map((key) => key.toLowerCase());
+
+            it(`Then ${
+              emptyFields.length ? `'${emptyFields}' should be empty` : 'all should be returned'
+            }`, async function () {
+              const expectedResult = {
+                gas: opcodesResponse.gas,
+                failed: opcodesResponse.failed,
+                returnValue: strip0x(opcodesResponse.return_value!),
+                structLogs: opcodesResponse.opcodes?.map((opcode) => ({
+                  pc: opcode.pc,
+                  op: opcode.op,
+                  gas: opcode.gas,
+                  gasCost: opcode.gas_cost,
+                  depth: opcode.depth,
+                  stack: config.disableStack ? null : opcode.stack,
+                  memory: config.enableMemory ? opcode.memory : null,
+                  storage: config.disableStorage ? null : opcode.storage,
+                  reason: opcode.reason ? strip0x(opcode.reason) : null,
+                })),
+              };
+
+              const result = await debugService.debug_traceTransaction(
+                transactionHash,
+                opcodeLogger,
+                config,
+                getRequestId(),
+              );
+
+              expect(result).to.deep.equal(expectedResult);
+            });
+          });
+        }
+      });
+
+      describe('Invalid scenarios', async function () {
+        let notFound: { _status: { messages: { message: string }[] } };
+
+        beforeEach(() => {
+          notFound = {
+            _status: {
+              messages: [
+                {
+                  message: 'Not found',
+                },
+              ],
+            },
+          };
+          restMock.onGet(CONTRACTS_RESULTS_BY_NON_EXISTENT_HASH).reply(404, notFound);
+          restMock.onGet(CONTRACT_RESULTS_BY_ACTIONS_NON_EXISTENT_HASH).reply(404, notFound);
+        });
+
+        afterEach(() => {
+          restMock.reset();
+        });
+
+        it('test case for non-existing transaction hash', async function () {
+          const expectedError = predefined.RESOURCE_NOT_FOUND(
+            `Failed to retrieve contract results for transaction ${nonExistentTransactionHash}`,
+          );
+
+          await RelayAssertions.assertRejection(
+            expectedError,
+            debugService.debug_traceTransaction,
+            true,
+            debugService,
+            [nonExistentTransactionHash, callTracer, tracerConfigTrue, getRequestId()],
+          );
+        });
+
+        it('should return empty result with invalid parameters in formatOpcodeResult', async function () {
+          const opcodeResult = await debugService.formatOpcodesResult(null, {});
+          // @ts-ignore
+          expect(opcodeResult.gas).to.eq(0);
+          // @ts-ignore
+          expect(opcodeResult.failed).to.eq(true);
+          // @ts-ignore
+          expect(opcodeResult.returnValue).to.eq('');
+          // @ts-ignore
+          expect(opcodeResult.structLogs).to.be.an('array').that.is.empty;
+        });
+
+        describe('resolveAddress', async function () {
+          it('should return null address with invalid parameters in resolveAddress', async function () {
+            const address = await debugService.resolveAddress(null!);
+            expect(address).to.be.null;
+          });
+
+          it('should return passed address on notFound entity from the mirror node', async function () {
+            restMock.onGet(ACCOUNT_BY_ADDRESS).reply(404, notFound);
+            const address = await debugService.resolveAddress(accountAddress);
+            expect(address).to.eq(accountAddress);
+          });
         });
       });
     });

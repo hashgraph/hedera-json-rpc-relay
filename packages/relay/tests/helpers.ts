@@ -921,6 +921,50 @@ export const stopRedisInMemoryServer = async (
   process.env.REDIS_URL = envsToReset.REDIS_URL;
 };
 
+/**
+ * Overrides an environment variable in the provided {@link NodeJS.Dict} object.
+ *
+ * @param {NodeJS.Dict<string>} object - The object containing the environment variables.
+ * @param {string} key - The key of the environment variable to override.
+ * @param {string | undefined} value - The value to set the environment variable to.
+ */
+export const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
+  if (value === undefined) {
+    delete object[key];
+  } else {
+    object[key] = value;
+  }
+};
+
+/**
+ * Overrides environment variables for the duration of the provided tests.
+ *
+ * @param {NodeJS.Dict<string>} envs - An object containing key-value pairs of environment variables to set.
+ * @param {Function} tests - A function containing the tests to run with the overridden environment variables.
+ */
+export const withOverriddenEnvs = (envs: NodeJS.Dict<string>, tests: () => void) => {
+  describe(`given ${Object.entries(envs)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(', ')} are set`, () => {
+    let envsToReset: NodeJS.Dict<string> = {};
+
+    before(() => {
+      for (const key in envs) {
+        envsToReset[key] = process.env[key];
+        overrideEnv(process.env, key, envs[key]);
+      }
+    });
+
+    tests();
+
+    after(() => {
+      for (const key in envsToReset) {
+        overrideEnv(process.env, key, envsToReset[key]);
+      }
+    });
+  });
+};
+
 export const estimateFileTransactionsFee = (
   callDataSize: number,
   fileChunkSize: number,
