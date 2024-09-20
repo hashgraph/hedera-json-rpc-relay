@@ -42,7 +42,7 @@ import { RequestDetails } from '../../../../src/lib/types';
 
 chai.use(chaiAsPromised);
 
-describe('HbarLimitService', function () {
+describe('HBAR Rate Limit Service', function () {
   const logger = pino();
   const register = new Registry();
   const totalBudget = 100_000;

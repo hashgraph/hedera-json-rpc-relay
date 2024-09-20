@@ -29,7 +29,6 @@ import MockAdapter from 'axios-mock-adapter';
 import { Utils } from '../../../../src/utils';
 import { register, Registry } from 'prom-client';
 import constants from '../../../../src/lib/constants';
-import HbarLimit from '../../../../src/lib/hbarlimiter';
 import { calculateTxRecordChargeAmount } from '../../../helpers';
 import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
@@ -48,7 +47,6 @@ const logger = pino();
 describe('Metric Service', function () {
   let client: Client;
   let mock: MockAdapter;
-  let hbarLimiter: HbarLimit;
   let instance: AxiosInstance;
   let eventEmitter: EventEmitter;
   let metricService: MetricService;
@@ -140,7 +138,6 @@ describe('Metric Service', function () {
 
     const total = constants.HBAR_RATE_LIMIT_TINYBAR();
 
-    hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     eventEmitter = new EventEmitter();
 
     const cacheService = new CacheService(logger, registry);
@@ -159,7 +156,6 @@ describe('Metric Service', function () {
     const sdkClient = new SDKClient(
       client,
       logger.child({ name: `consensus-node` }),
-      hbarLimiter,
       new CacheService(logger.child({ name: `cache` }), registry),
       eventEmitter,
       hbarLimitService,
