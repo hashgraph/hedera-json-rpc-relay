@@ -38,6 +38,10 @@ jobs:
     permissions:
       contents: write
       actions: read
+      # issues: read
+
+   # env:
+     # OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
 
     steps:
       - name: Harden Runner
@@ -71,16 +75,10 @@ jobs:
       - name: Install hedera local
         run: npm install @hashgraph/hedera-local -g
 
-      - name: Set operator id env variable
-        run: |
-          if [[ -n "${{ inputs.operator_id }}" ]]; then
-            echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
-          fi
-
       - name: Run hedera local
         run: npx hedera restart -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace
-        env:
-          OPERATOR_KEY_MAIN: ${{ secrets.operator_key }}
+        #env:
+         # OPERATOR_KEY_MAIN: ${{ secrets.operator_key }}
 
       - name: Stop relay
         run: docker stop json-rpc-relay json-rpc-relay-ws
@@ -97,7 +95,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_PR_NUMBER: ${{ github.event.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          OPERATOR_KEY_MAIN: ${{ secrets.operator_key }}
 
       - name: Upload Heap Snapshots
         if: ${{ !cancelled() }}
