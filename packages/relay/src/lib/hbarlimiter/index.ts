@@ -139,13 +139,11 @@ export default class HbarLimit {
     callDataSize: number,
     fileChunkSize: number,
     currentNetworkExchangeRateInCents: number,
-    requestId: string,
+    requestDetails: RequestDetails,
   ): boolean {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-
     if (this.isAccountWhiteListed(originalCallerAddress)) {
       this.logger.trace(
-        `${requestIdPrefix} Request bypasses the preemptive limit check - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
+        `${requestDetails.formattedRequestId} Request bypasses the preemptive limit check - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
       );
       return false;
     }
@@ -158,13 +156,13 @@ export default class HbarLimit {
 
     if (this.remainingBudget - estimatedTxFee < 0) {
       this.logger.warn(
-        `${requestIdPrefix} Request fails the preemptive limit check - the remaining HBAR budget was not enough to accommodate the estimated transaction fee: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+        `${requestDetails.formattedRequestId} Request fails the preemptive limit check - the remaining HBAR budget was not enough to accommodate the estimated transaction fee: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
       );
       return true;
     }
 
     this.logger.trace(
-      `${requestIdPrefix} Request passes the preemptive limit check - the remaining HBAR budget is enough to accommodate the estimated transaction fee: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+      `${requestDetails.formattedRequestId} Request passes the preemptive limit check - the remaining HBAR budget is enough to accommodate the estimated transaction fee: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
     );
     return false;
   }

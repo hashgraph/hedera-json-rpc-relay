@@ -488,7 +488,9 @@ export class EthImpl implements Eth {
     }
 
     if (_.isNil(networkFees)) {
-      this.logger.debug(`${requestDetails.formattedRequestId} Mirror Node returned no network fees. Fallback to consensus node.`);
+      this.logger.debug(
+        `${requestDetails.formattedRequestId} Mirror Node returned no network fees. Fallback to consensus node.`,
+      );
       networkFees = {
         fees: [
           {
@@ -549,7 +551,7 @@ export class EthImpl implements Eth {
    * `CHAIN_ID`.
    */
   chainId(requestDetails: RequestDetails): string {
-    //this.logger.trace(`${requestDetails.formattedRequestId} chainId()`);
+    this.logger.trace(`${requestDetails.formattedRequestId} chainId()`);
     return this.chain;
   }
 
@@ -1575,8 +1577,8 @@ export class EthImpl implements Eth {
           requestDetails,
           originalCallerAddress,
           networkGasPriceInWeiBars,
-          await this.getCurrentNetworkExchangeRateInCents(requestDetails.requestIdPrefix),
-          requestDetails.requestIdPrefix
+          await this.getCurrentNetworkExchangeRateInCents(requestDetails),
+          requestDetails.formattedRequestId,
         );
 
       txSubmitted = true;
@@ -2543,17 +2545,16 @@ export class EthImpl implements Eth {
    * @param {string} requestId - The unique identifier for the request.
    * @returns {Promise<number>} - A promise that resolves to the current exchange rate in cents.
    */
-  private async getCurrentNetworkExchangeRateInCents(requestId: string): Promise<number> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
+  private async getCurrentNetworkExchangeRateInCents(requestDetails: RequestDetails): Promise<number> {
     const cacheKey = constants.CACHE_KEY.CURRENT_NETWORK_EXCHANGE_RATE;
     const callingMethod = this.getCurrentNetworkExchangeRateInCents.name;
     const cacheTTL = 15 * 60 * 1000; // 15 minutes
 
-    let currentNetworkExchangeRate = await this.cacheService.getAsync(cacheKey, callingMethod, requestIdPrefix);
+    let currentNetworkExchangeRate = await this.cacheService.getAsync(cacheKey, callingMethod, requestDetails);
 
     if (!currentNetworkExchangeRate) {
-      currentNetworkExchangeRate = (await this.mirrorNodeClient.getNetworkExchangeRate(requestId)).current_rate;
-      await this.cacheService.set(cacheKey, currentNetworkExchangeRate, callingMethod, cacheTTL, requestIdPrefix);
+      currentNetworkExchangeRate = (await this.mirrorNodeClient.getNetworkExchangeRate(requestDetails)).current_rate;
+      await this.cacheService.set(cacheKey, currentNetworkExchangeRate, callingMethod, requestDetails, cacheTTL);
     }
 
     const exchangeRateInCents = currentNetworkExchangeRate.cent_equivalent / currentNetworkExchangeRate.hbar_equivalent;

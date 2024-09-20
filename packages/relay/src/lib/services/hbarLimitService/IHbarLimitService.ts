@@ -21,7 +21,7 @@
 import { RequestDetails } from '../../types';
 
 export interface IHbarLimitService {
-  resetLimiter(): Promise<void>;
+  resetLimiter(requestDetails: RequestDetails): Promise<void>;
   shouldLimit(
     mode: string,
     methodName: string,

@@ -83,7 +83,7 @@ export class Precheck {
     this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestDetails);
     this.chainId(parsedTx, requestDetails);
     this.value(parsedTx);
-    this.gasPrice(parsedTx, networkGasPriceInWeiBars, requestDetails.formattedRequestId);
+    this.gasPrice(parsedTx, networkGasPriceInWeiBars, requestDetails);
     this.balance(parsedTx, mirrorAccountInfo, requestDetails);
   }
 

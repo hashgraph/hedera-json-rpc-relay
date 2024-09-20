@@ -23,6 +23,7 @@ import { Logger } from 'pino';
 import { IIPAddressHbarSpendingPlan } from '../../types/hbarLimiter/ipAddressHbarSpendingPlan';
 import { IPAddressHbarSpendingPlanNotFoundError } from '../../types/hbarLimiter/errors';
 import { IPAddressHbarSpendingPlan } from '../../entities/hbarLimiter/ipAddressHbarSpendingPlan';
+import { RequestDetails } from '../../../types';
 
 export class IPAddressHbarSpendingPlanRepository {
   private readonly collectionKey = 'ipAddressHbarSpendingPlan';
@@ -51,9 +52,9 @@ export class IPAddressHbarSpendingPlanRepository {
    * @param {string} ipAddress - The IP address to search for.
    * @returns {Promise<IPAddressHbarSpendingPlan>} - The associated plan for the IP address.
    */
-  async findByAddress(ipAddress: string): Promise<IPAddressHbarSpendingPlan> {
+  async findByAddress(ipAddress: string, requestDetails: RequestDetails): Promise<IPAddressHbarSpendingPlan> {
     const key = this.getKey(ipAddress);
-    const addressPlan = await this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, 'findByAddress');
+    const addressPlan = await this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, 'findByAddress', requestDetails);
     if (!addressPlan) {
       throw new IPAddressHbarSpendingPlanNotFoundError(ipAddress);
     }
@@ -67,9 +68,9 @@ export class IPAddressHbarSpendingPlanRepository {
    * @param {IIPAddressHbarSpendingPlan} addressPlan - The plan to save.
    * @returns {Promise<void>} - A promise that resolves when the IP address is linked to the plan.
    */
-  async save(addressPlan: IIPAddressHbarSpendingPlan): Promise<void> {
+  async save(addressPlan: IIPAddressHbarSpendingPlan, requestDetails: RequestDetails): Promise<void> {
     const key = this.getKey(addressPlan.ipAddress);
-    await this.cache.set(key, addressPlan, 'save', this.threeMonthsInMillis);
+    await this.cache.set(key, addressPlan, 'save', requestDetails, this.threeMonthsInMillis);
     this.logger.trace(`Saved IPAddressHbarSpendingPlan with address ${addressPlan.ipAddress}`);
   }
 
@@ -79,9 +80,9 @@ export class IPAddressHbarSpendingPlanRepository {
    * @param {string} ipAddress - The IP address to unlink the plan from.
    * @returns {Promise<void>} - A promise that resolves when the IP address is unlinked from the plan.
    */
-  async delete(ipAddress: string): Promise<void> {
+  async delete(ipAddress: string, requestDetails: RequestDetails): Promise<void> {
     const key = this.getKey(ipAddress);
-    await this.cache.delete(key, 'delete');
+    await this.cache.delete(key, 'delete', requestDetails);
     this.logger.trace(`Deleted IPAddressHbarSpendingPlan with address ${ipAddress}`);
   }
 

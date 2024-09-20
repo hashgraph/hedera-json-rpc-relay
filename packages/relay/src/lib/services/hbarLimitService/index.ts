@@ -143,15 +143,14 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} [requestId] - An optional unique request ID for tracking the request.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
-  async resetLimiter(requestId?: string): Promise<void> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    this.logger.trace(`${requestIdPrefix} Resetting HBAR rate limiter...`);
-    await this.hbarSpendingPlanRepository.resetAllSpentTodayEntries();
+  async resetLimiter(requestDetails: RequestDetails): Promise<void> {
+    this.logger.trace(`${requestDetails.formattedRequestId} Resetting HBAR rate limiter...`);
+    await this.hbarSpendingPlanRepository.resetAllSpentTodayEntries(requestDetails);
     this.resetBudget();
     this.resetMetrics();
     this.reset = this.getResetTimestamp();
     this.logger.trace(
-      `${requestIdPrefix} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
+      `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
     );
   }
 
@@ -257,7 +256,7 @@ export class HbarLimitService implements IHbarLimitService {
     requestDetails: RequestDetails,
   ): Promise<boolean> {
     if (this.shouldResetLimiter()) {
-      await this.resetLimiter();
+      await this.resetLimiter(requestDetails);
     }
     if (this.remainingBudget <= 0 || this.remainingBudget - estimatedTxFee < 0) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
@@ -356,7 +355,7 @@ export class HbarLimitService implements IHbarLimitService {
     }
     if (ipAddress) {
       try {
-        return await this.getSpendingPlanByIPAddress(ipAddress);
+        return await this.getSpendingPlanByIPAddress(ipAddress, requestDetails);
       } catch (error) {
         this.logger.warn(error, `Failed to get spending plan for IP address '${ipAddress}'`);
       }
@@ -388,9 +387,15 @@ export class HbarLimitService implements IHbarLimitService {
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the spending plan.
    * @private
    */
-  private async getSpendingPlanByIPAddress(ipAddress: string): Promise<IDetailedHbarSpendingPlan> {
-    const ipAddressHbarSpendingPlan = await this.ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress);
-    return this.hbarSpendingPlanRepository.findByIdWithDetails(ipAddressHbarSpendingPlan.planId);
+  private async getSpendingPlanByIPAddress(
+    ipAddress: string,
+    requestDetails: RequestDetails,
+  ): Promise<IDetailedHbarSpendingPlan> {
+    const ipAddressHbarSpendingPlan = await this.ipAddressHbarSpendingPlanRepository.findByAddress(
+      ipAddress,
+      requestDetails,
+    );
+    return this.hbarSpendingPlanRepository.findByIdWithDetails(ipAddressHbarSpendingPlan.planId, requestDetails);
   }
 
   /**
