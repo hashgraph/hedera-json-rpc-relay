@@ -212,11 +212,11 @@ export class HbarLimitService implements IHbarLimitService {
 
     if (exceedsLimit) {
       this.logger.warn(
-        `${requestDetails.formattedRequestId} User has exceeded HBAR rate limit threshold: user=${user}, spentToday=${spendingPlan.spentToday},  estimatedTxFee=${estimatedTxFee}, dailyLimit=${dailyLimit}`,
+        `${requestDetails.formattedRequestId} User has exceeded HBAR rate limit threshold: user=${user}, spentToday=${spendingPlan.spentToday}, estimatedTxFee=${estimatedTxFee}, dailyLimit=${dailyLimit}, txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
       );
     } else {
       this.logger.trace(
-        `${requestDetails.formattedRequestId} User has NOT exceeded HBAR rate limit threshold: user=${user}, spentToday=${spendingPlan.spentToday},  estimatedTxFee=${estimatedTxFee}, dailyLimit=${dailyLimit}`,
+        `${requestDetails.formattedRequestId} User has NOT exceeded HBAR rate limit threshold: user=${user}, spentToday=${spendingPlan.spentToday}, estimatedTxFee=${estimatedTxFee}, dailyLimit=${dailyLimit}, txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
       );
     }
 
