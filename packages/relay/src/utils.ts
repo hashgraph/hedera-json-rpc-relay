@@ -75,18 +75,13 @@ export class Utils {
    * @param {number} callDataSize - The size of the call data in bytes.
    * @param {number} fileChunkSize - The size of each file chunk in bytes.
    * @param {number} currentNetworkExchangeRateInCents - The current network exchange rate in cents.
-   * @returns {Object} - An object containing the estimated fees for file create and file append transactions.
-   * @property {number} esitmatedFileCreateTxFee - The estimated fee for the file create transaction in tinybars.
-   * @property {number} esitmatedFileAppendTxFee - The estimated fee for the file append transactions in tinybars.
+   * @returns {number} The estimated transaction fee in tinybars.
    */
   public static estimateFileTransactionsFee(
     callDataSize: number,
     fileChunkSize: number,
     currentNetworkExchangeRateInCents: number,
-  ): {
-    esitmatedFileCreateTxFee: number;
-    esitmatedFileAppendTxFee: number;
-  } {
+  ): number {
     const fileCreateTransactions = 1;
     const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
 
@@ -99,17 +94,15 @@ export class Utils {
       constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_BASE_FEE +
       lastFileAppendChunkSize * constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_RATE_PER_BYTE;
 
-    const esitmatedFileCreateTxFee = Math.round(
-      ((fileCreateTransactions * fileCreateFeeInCents) / currentNetworkExchangeRateInCents) *
-        constants.HBAR_TO_TINYBAR_COEF,
+    const totalTxFeeInCents =
+      fileCreateTransactions * fileCreateFeeInCents +
+      fileAppendFeeInCents * fileAppendTransactions +
+      lastFileAppendChunkFeeInCents;
+
+    const estimatedTxFee = Math.round(
+      (totalTxFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
     );
 
-    const esitmatedFileAppendTxFee = Math.round(
-      ((fileAppendTransactions * fileAppendFeeInCents + lastFileAppendChunkFeeInCents) /
-        currentNetworkExchangeRateInCents) *
-        constants.HBAR_TO_TINYBAR_COEF,
-    );
-
-    return { esitmatedFileCreateTxFee, esitmatedFileAppendTxFee };
+    return estimatedTxFee;
   }
 }
