@@ -983,7 +983,7 @@ export const estimateFileTransactionsFee = (
   callDataSize: number,
   fileChunkSize: number,
   currentNetworkExchangeRateInCents: number,
-) => {
+): number => {
   const fileCreateTransactions = 1;
   const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
 
@@ -996,16 +996,14 @@ export const estimateFileTransactionsFee = (
     constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_BASE_FEE +
     lastFileAppendChunkSize * constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_RATE_PER_BYTE;
 
-  const esitmatedFileCreateTxFee = Math.round(
-    ((fileCreateTransactions * fileCreateFeeInCents) / currentNetworkExchangeRateInCents) *
-      constants.HBAR_TO_TINYBAR_COEF,
+  const totalTxFeeInCents =
+    fileCreateTransactions * fileCreateFeeInCents +
+    fileAppendFeeInCents * fileAppendTransactions +
+    lastFileAppendChunkFeeInCents;
+
+  const estimatedTxFee = Math.round(
+    (totalTxFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
   );
 
-  const esitmatedFileAppendTxFee = Math.round(
-    ((fileAppendTransactions * fileAppendFeeInCents + lastFileAppendChunkFeeInCents) /
-      currentNetworkExchangeRateInCents) *
-      constants.HBAR_TO_TINYBAR_COEF,
-  );
-
-  return { esitmatedFileCreateTxFee, esitmatedFileAppendTxFee };
+  return estimatedTxFee;
 };
