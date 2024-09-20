@@ -82,9 +82,7 @@ jobs:
         run: npm install @hashgraph/hedera-local -g
 
       - name: Run hedera local
-        run: npx hedera restart -d --network-tag=${{inputs.networkTag}} --mirror-tag=${{inputs.mirrorTag}} --verbose=trace
-        #env:
-         # OPERATOR_KEY_MAIN: ${{ secrets.operator_key }}
+        run: npx hedera restart -d --verbose=trace
 
       - name: Stop relay
         run: docker stop json-rpc-relay json-rpc-relay-ws
@@ -101,6 +99,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_PR_NUMBER: ${{ github.event.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          OPERATOR_KEY_MAIN: ${{ secrets.operator_key }}
 
       - name: Upload Heap Snapshots
         if: ${{ !cancelled() }}
