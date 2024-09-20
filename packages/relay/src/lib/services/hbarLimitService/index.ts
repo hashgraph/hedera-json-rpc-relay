@@ -155,8 +155,10 @@ export class HbarLimitService implements IHbarLimitService {
 
   /**
    * Checks if the given eth address or ip address should be limited.
+   *
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
+   * @param {string} txConstructorName - The name of the transaction constructor associated with the transaction.
    * @param {string} ethAddress - The eth address to check.
    * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @param {number} [estimatedTxFee] - The total estimated transaction fee, default to 0.
@@ -165,20 +167,28 @@ export class HbarLimitService implements IHbarLimitService {
   async shouldLimit(
     mode: string,
     methodName: string,
+    txConstructorName: string,
     ethAddress: string,
     requestDetails: RequestDetails,
     estimatedTxFee: number = 0,
   ): Promise<boolean> {
     const ipAddress = requestDetails.ipAddress;
-    if (await this.isDailyBudgetExceeded(mode, methodName, estimatedTxFee, requestDetails)) {
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} Initiating HBAR rate limit assessment process: txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
+    );
+
+    if (await this.isDailyBudgetExceeded(mode, methodName, txConstructorName, estimatedTxFee, requestDetails)) {
       return true;
     }
+
     if (!ethAddress && !ipAddress) {
-      this.logger.warn('No eth address or ip address provided, cannot check if address should be limited');
+      this.logger.warn(
+        `${requestDetails.formattedRequestId} No eth address or ip address provided, cannot check if address should be limited.`,
+      );
       return false;
     }
-    const user = `(ethAddress=${ethAddress})`;
-    this.logger.trace(`${requestDetails.formattedRequestId} Checking if ${user} should be limited...`);
+    const user = `(ethAddress=${ethAddress}, ipAddress=${ipAddress})`;
+    this.logger.trace(`${requestDetails.formattedRequestId} Checking if ${user} should be rate limited...`);
     let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
     if (!spendingPlan) {
       // Create a basic spending plan if none exists for the eth address or ip address
@@ -187,13 +197,22 @@ export class HbarLimitService implements IHbarLimitService {
 
     const spendingLimit = HbarLimitService.TIER_LIMITS[spendingPlan.subscriptionTier].toTinybars();
 
+    // note: estimatedTxFee is only applicable in a few cases (currently, only for file transactions).
+    //      In most situations, estimatedTxFee is set to 0 (i.e., not considered).
+    //      In such cases, it should still be true if spendingPlan.spentToday === dailyLimit.
     const exceedsLimit =
       spendingLimit.lte(spendingPlan.amountSpent) || spendingLimit.lt(spendingPlan.amountSpent + estimatedTxFee);
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited: amountSpent=${
-        spendingPlan.amountSpent
-      }, estimatedTxFee=${estimatedTxFee} tℏ, spendingLimit=${spendingLimit.toString()} tℏ`,
-    );
+
+    if (exceedsLimit) {
+      this.logger.warn(
+        `${requestDetails.formattedRequestId} User has exceeded HBAR rate limit threshold: user=${user}, amountSpent=${spendingPlan.amountSpent},  estimatedTxFee=${estimatedTxFee}, spendingLimit=${spendingLimit}`,
+      );
+    } else {
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} User has NOT exceeded HBAR rate limit threshold: user=${user}, amountSpent=${spendingPlan.amountSpent},  estimatedTxFee=${estimatedTxFee}, spendingLimit=${spendingLimit}`,
+      );
+    }
+
     return exceedsLimit;
   }
 
@@ -249,13 +268,14 @@ export class HbarLimitService implements IHbarLimitService {
    * @returns {number} The remaining budget value.
    */
   public getRemainingBudget(): number {
-    return this.remainingBudget;
+    return this.remainingBudget.toTinybars().toNumber();
   }
 
   /**
    * Checks if the total daily budget has been exceeded.
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
+   * @param {string} txConstructorName - The name of the transaction constructor associated with the transaction.
    * @param {number} estimatedTxFee - The total estimated transaction fee, default to 0.
    * @param {RequestDetails} requestDetails The request details for logging and tracking
    * @returns {Promise<boolean>} - Resolves `true` if the daily budget has been exceeded, otherwise `false`.
@@ -264,21 +284,33 @@ export class HbarLimitService implements IHbarLimitService {
   private async isDailyBudgetExceeded(
     mode: string,
     methodName: string,
+    txConstructorName: string,
     estimatedTxFee: number = 0,
     requestDetails: RequestDetails,
   ): Promise<boolean> {
     if (this.shouldResetLimiter()) {
       await this.resetLimiter(requestDetails);
     }
+    // note: estimatedTxFee is only applicable in a few cases (currently, only for file transactions).
+    //      In most situations, estimatedTxFee is set to 0 (i.e., not considered).
+    //      In such cases, it should still be false if remainingBudget === 0.
     if (this.remainingBudget.toTinybars().lte(0) || this.remainingBudget.toTinybars().sub(estimatedTxFee).lt(0)) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
-        `${requestDetails.formattedRequestId} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee} tℏ, resetTimestamp=${this.reset}`,
+        `${requestDetails.formattedRequestId} Daily HBAR rate limit incoming call: remainingBudget=${
+          this.remainingBudget
+        }, totalBudget=${
+          this.totalBudget
+        }, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
       );
       return true;
     } else {
       this.logger.trace(
-        `${requestDetails.formattedRequestId} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee} tℏ, resetTimestamp=${this.reset}.`,
+        `${requestDetails.formattedRequestId} Daily HBAR rate limit not reached: remainingBudget=${
+          this.remainingBudget
+        }, totalBudget=${
+          this.totalBudget
+        }, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
       );
       return false;
     }
