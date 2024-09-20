@@ -205,7 +205,7 @@ export class HbarLimitService implements IHbarLimitService {
 
     // note: estimatedTxFee is only applicable in a few cases (currently, only for file transactions).
     //      In most situations, estimatedTxFee is set to 0 (i.e., not considered).
-    //      In such cases, it should still be true if spendingPlan.spentToday === dailyLimit.
+    //      In such cases, it should still be true if spendingPlan.amountSpent === spendingLimit.
     const exceedsLimit =
       spendingLimit.lte(spendingPlan.amountSpent) || spendingLimit.lt(spendingPlan.amountSpent + estimatedTxFee);
     this.logger.trace(
