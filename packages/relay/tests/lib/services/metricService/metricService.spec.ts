@@ -139,9 +139,15 @@ describe('Metric Service', function () {
     mock = new MockAdapter(instance);
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
 
-    hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+    hbarLimiter = new HbarLimit(
+      logger.child({ name: 'hbar-rate-limit' }),
+      Date.now(),
+      total.toNumber(),
+      duration,
+      registry,
+    );
     eventEmitter = new EventEmitter();
 
     const cacheService = new CacheService(logger, registry);
@@ -154,7 +160,8 @@ describe('Metric Service', function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
 
     const sdkClient = new SDKClient(
