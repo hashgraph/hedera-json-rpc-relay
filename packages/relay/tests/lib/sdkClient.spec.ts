@@ -30,10 +30,8 @@ import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
 import { register, Registry } from 'prom-client';
-import HbarLimit from '../../src/lib/hbarlimiter';
 import { RequestDetails } from '../../src/lib/types';
 import { formatTransactionId } from '../../src/formatters';
-import { predefined } from '../../src';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
@@ -67,6 +65,7 @@ import {
   FileDeleteTransaction,
   TransactionRecordQuery,
 } from '@hashgraph/sdk';
+import { Context } from 'mocha';
 
 config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
@@ -78,7 +77,6 @@ describe('SdkClient', async function () {
   let client: Client;
   let mock: MockAdapter;
   let sdkClient: SDKClient;
-  let hbarLimiter: HbarLimit;
   let instance: AxiosInstance;
   let eventEmitter: EventEmitter;
   let cacheService: CacheService;
@@ -118,8 +116,7 @@ describe('SdkClient', async function () {
       Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
-    hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     eventEmitter = new EventEmitter();
 
     cacheService = new CacheService(logger, registry);
@@ -132,13 +129,13 @@ describe('SdkClient', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
 
     sdkClient = new SDKClient(
       client,
       logger.child({ name: `consensus-node` }),
-      hbarLimiter,
       new CacheService(logger.child({ name: `cache` }), registry),
       eventEmitter,
       hbarLimitService,
@@ -314,7 +311,7 @@ describe('SdkClient', async function () {
 
     this.beforeEach(() => {
       initialOperatorKeyFormat = process.env.OPERATOR_KEY_FORMAT;
-      hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter, hbarLimitService);
+      hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
     });
 
     after(() => {
@@ -359,14 +356,7 @@ describe('SdkClient', async function () {
     withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'BAD_FORMAT' }, () => {
       it('It should throw an Error when an unexpected string is set', async () => {
         try {
-          new HAPIService(
-            logger,
-            registry,
-            hbarLimiter,
-            new CacheService(logger, registry),
-            eventEmitter,
-            hbarLimitService,
-          );
+          new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
           expect.fail(`Expected an error but nothing was thrown`);
         } catch (e: any) {
           expect(e.message).to.eq('Invalid OPERATOR_KEY_FORMAT provided: BAD_FORMAT');
@@ -2275,25 +2265,21 @@ describe('SdkClient', async function () {
     const mockedConstructorName = 'constructor_name';
     const mockedInteractingEntity = 'interacting_entity';
 
-    let hbarLimitMock: sinon.SinonMock;
     let hbarLimitServiceMock: sinon.SinonMock;
     let sdkClientMock: sinon.SinonMock;
 
     overrideEnvsInMochaDescribe({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' });
 
     beforeEach(() => {
-      hbarLimitMock = sinon.mock(hbarLimiter);
       hbarLimitServiceMock = sinon.mock(hbarLimitService);
       sdkClientMock = sinon.mock(sdkClient);
       mock = new MockAdapter(instance);
     });
 
     afterEach(() => {
-      hbarLimitMock.verify();
       hbarLimitServiceMock.verify();
       sinon.restore();
       sdkClientMock.restore();
-      hbarLimitMock.restore();
       hbarLimitServiceMock.restore();
     });
 
@@ -2302,9 +2288,15 @@ describe('SdkClient', async function () {
         .stub(EthereumTransaction.prototype, 'execute')
         .resolves(getMockedTransactionResponse(EthereumTransaction.name));
 
-      hbarLimitMock
+      hbarLimitServiceMock
         .expects('shouldLimit')
-        .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName, randomAccountAddress)
+        .withArgs(
+          constants.EXECUTION_MODE.TRANSACTION,
+          mockedCallerName,
+          FileCreateTransaction.name,
+          randomAccountAddress,
+          sinon.match.any,
+        )
         .once()
         .returns(true);
 
@@ -2354,7 +2346,7 @@ describe('SdkClient', async function () {
       // last transactionRecordStub call for EthereumTransaction
       transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(EthereumTransaction.name));
 
-      hbarLimitMock.expects('shouldLimit').thrice().returns(false);
+      hbarLimitServiceMock.expects('shouldLimit').thrice().returns(false);
       hbarLimitServiceMock.expects('addExpense').withArgs(fileCreateFee).once();
       hbarLimitServiceMock.expects('addExpense').withArgs(defaultTransactionFee).once();
       hbarLimitServiceMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
@@ -2403,7 +2395,7 @@ describe('SdkClient', async function () {
         transactionRecordStub.onCall(i).resolves(getMockedTransactionRecord(FileAppendTransaction.name));
       }
 
-      hbarLimitMock.expects('shouldLimit').twice().returns(false);
+      hbarLimitServiceMock.expects('shouldLimit').twice().returns(false);
       hbarLimitServiceMock.expects('addExpense').withArgs(fileCreateFee).once();
       hbarLimitServiceMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
       // addExpense for mockedTransactionRecordFee will be called for a total of:
@@ -2421,6 +2413,7 @@ describe('SdkClient', async function () {
         mockedCallerName,
         mockedInteractingEntity,
         randomAccountAddress,
+        mockedExchangeRateIncents,
       );
 
       expect(response).to.eq(fileId);
@@ -2433,6 +2426,7 @@ describe('SdkClient', async function () {
     it('should execute executeAllTransaction and add expenses to limiter', async () => {
       const callData = new Uint8Array(FILE_APPEND_CHUNK_SIZE * 2 + 1);
       const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(callData.length / FILE_APPEND_CHUNK_SIZE));
+      const estimatedFileAppendTxFee = mockedTransactionRecordFee * fileAppendChunks;
 
       const appendFileStub = sinon
         .stub(FileAppendTransaction.prototype, 'executeAll')
@@ -2444,7 +2438,7 @@ describe('SdkClient', async function () {
         .stub(TransactionRecordQuery.prototype, 'execute')
         .resolves(getMockedTransactionRecord(FileAppendTransaction.name));
 
-      hbarLimitMock.expects('shouldLimit').once().returns(false);
+      hbarLimitServiceMock.expects('shouldLimit').once().returns(false);
       hbarLimitServiceMock.expects('addExpense').withArgs(fileAppendFee).exactly(fileAppendChunks);
       // addExpense for mockedTransactionRecordFee will be called for a total of:
       //   - fileAppendChunks times for fileAppend transactions
@@ -2457,6 +2451,7 @@ describe('SdkClient', async function () {
         requestDetails,
         true,
         randomAccountAddress,
+        estimatedFileAppendTxFee,
       );
 
       expect(appendFileStub.called).to.be.true;
@@ -2466,6 +2461,7 @@ describe('SdkClient', async function () {
     it('should rate limit before executing executeAllTransaction', async () => {
       const callData = new Uint8Array(FILE_APPEND_CHUNK_SIZE * 2 + 1);
       const fileAppendChunks = Math.min(MAX_CHUNKS, Math.ceil(callData.length / FILE_APPEND_CHUNK_SIZE));
+      const estimatedFileAppendTxFee = mockedTransactionRecordFee * fileAppendChunks;
 
       const appendFileStub = sinon
         .stub(FileAppendTransaction.prototype, 'executeAll')
@@ -2473,7 +2469,7 @@ describe('SdkClient', async function () {
           Array.from({ length: fileAppendChunks }, () => getMockedTransactionResponse(FileAppendTransaction.name)),
         );
 
-      hbarLimitMock.expects('shouldLimit').once().returns(true);
+      hbarLimitServiceMock.expects('shouldLimit').once().returns(true);
 
       try {
         await sdkClient.executeAllTransaction(
@@ -2483,6 +2479,7 @@ describe('SdkClient', async function () {
           requestDetails,
           true,
           randomAccountAddress,
+          estimatedFileAppendTxFee,
         );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
@@ -2490,25 +2487,6 @@ describe('SdkClient', async function () {
       }
 
       expect(appendFileStub.called).to.be.false;
-    });
-
-    it('should preemptively rate limit before executing file transactions', async () => {
-      const expectedError = predefined.HBAR_RATE_LIMIT_PREEMPTIVE_EXCEEDED;
-      hbarLimitMock.expects('shouldPreemptivelyLimitFileTransactions').once().returns(true);
-
-      try {
-        await sdkClient.submitEthereumTransaction(
-          transactionBuffer,
-          mockedCallerName,
-          requestDetails,
-          randomAccountAddress,
-          mockedNetworkGasPrice,
-          mockedExchangeRateIncents,
-        );
-        expect.fail(`Expected an error but nothing was thrown`);
-      } catch (error: any) {
-        expect(error).to.deep.equal(expectedError);
-      }
     });
 
     it('should execute FileCreateTransaction with callData.length <= fileAppendChunkSize and add expenses to limiter', async () => {
@@ -2522,9 +2500,15 @@ describe('SdkClient', async function () {
         .stub(TransactionRecordQuery.prototype, 'execute')
         .resolves(getMockedTransactionRecord(FileCreateTransaction.name));
 
-      hbarLimitMock
+      hbarLimitServiceMock
         .expects('shouldLimit')
-        .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName)
+        .withArgs(
+          constants.EXECUTION_MODE.TRANSACTION,
+          mockedCallerName,
+          FileCreateTransaction.name,
+          randomAccountAddress,
+          sinon.match.any,
+        )
         .once()
         .returns(false);
 
@@ -2538,6 +2522,7 @@ describe('SdkClient', async function () {
         mockedCallerName,
         mockedInteractingEntity,
         randomAccountAddress,
+        mockedExchangeRateIncents,
       );
 
       expect(response).to.eq(fileId);
@@ -2557,7 +2542,7 @@ describe('SdkClient', async function () {
 
       hbarLimitServiceMock.expects('addExpense').withArgs(fileDeleteFee).once();
       hbarLimitServiceMock.expects('addExpense').withArgs(mockedTransactionRecordFee).once();
-      hbarLimitMock.expects('shouldLimit').never();
+      hbarLimitServiceMock.expects('shouldLimit').never();
 
       await sdkClient.deleteFile(
         fileId,
@@ -2617,9 +2602,15 @@ describe('SdkClient', async function () {
         .stub(TransactionRecordQuery.prototype, 'execute')
         .resolves(getMockedTransactionRecord(EthereumTransaction.name));
 
-      hbarLimitMock
+      hbarLimitServiceMock
         .expects('shouldLimit')
-        .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName)
+        .withArgs(
+          constants.EXECUTION_MODE.TRANSACTION,
+          mockedCallerName,
+          EthereumTransaction.name,
+          randomAccountAddress,
+          sinon.match.any,
+        )
         .once()
         .returns(false);
 
@@ -2672,9 +2663,15 @@ describe('SdkClient', async function () {
         const transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
 
         hbarLimitServiceMock.expects('addExpense').withArgs(defaultTransactionFee).once();
-        hbarLimitMock
+        hbarLimitServiceMock
           .expects('shouldLimit')
-          .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName)
+          .withArgs(
+            constants.EXECUTION_MODE.TRANSACTION,
+            mockedCallerName,
+            EthereumTransaction.name,
+            randomAccountAddress,
+            sinon.match.any,
+          )
           .once()
           .returns(false);
 

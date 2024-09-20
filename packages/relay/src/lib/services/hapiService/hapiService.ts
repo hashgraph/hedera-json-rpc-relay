@@ -18,19 +18,18 @@
  *
  */
 
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { Logger } from 'pino';
 import EventEmitter from 'events';
 import findConfig from 'find-config';
 import constants from '../../constants';
 import { Utils } from './../../../utils';
-import HbarLimit from '../../hbarlimiter';
-import { Counter, Registry } from 'prom-client';
+import { Registry, Counter } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import { HbarLimitService } from '../hbarLimitService';
 import { CacheService } from '../cacheService/cacheService';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
-import fs from 'fs';
 
 export default class HAPIService {
   /**
@@ -134,14 +133,6 @@ export default class HAPIService {
   private readonly logger: Logger;
 
   /**
-   * This limiter tracks hbar expenses and limits.
-   * @private
-   * @readonly
-   * @type {HbarLimit}
-   */
-  private readonly hbarLimiter: HbarLimit;
-
-  /**
    * An instance of the HbarLimitService that tracks hbar expenses and limits.
    * @private
    * @readonly
@@ -190,7 +181,6 @@ export default class HAPIService {
    *
    * @param {Logger} logger - The logger instance used for logging.
    * @param {Registry} register - The registry instance for metrics and other services.
-   * @param {HbarLimit} hbarLimiter - The Hbar rate limiter instance.
    * @param {CacheService} cacheService - The cache service instance.
    * @param {EventEmitter} eventEmitter - The event emitter instance used for emitting events.
    * @param {HbarLimitService} hbarLimitService - An HBAR Rate Limit service that tracks hbar expenses and limits.
@@ -198,7 +188,6 @@ export default class HAPIService {
   constructor(
     logger: Logger,
     register: Registry,
-    hbarLimiter: HbarLimit,
     cacheService: CacheService,
     eventEmitter: EventEmitter,
     hbarLimitService: HbarLimitService,
@@ -211,7 +200,6 @@ export default class HAPIService {
     }
 
     this.logger = logger;
-    this.hbarLimiter = hbarLimiter;
 
     this.hbarLimitService = hbarLimitService;
     this.eventEmitter = eventEmitter;
@@ -318,7 +306,6 @@ export default class HAPIService {
     return new SDKClient(
       this.clientMain,
       logger.child({ name: `consensus-node` }),
-      this.hbarLimiter,
       this.cacheService,
       this.eventEmitter,
       this.hbarLimitService,

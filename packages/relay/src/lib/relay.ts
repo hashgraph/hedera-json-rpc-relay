@@ -30,8 +30,7 @@ import { Poller } from './poller';
 import { Web3Impl } from './web3';
 import EventEmitter from 'events';
 import constants from './constants';
-import HbarLimit from './hbarlimiter';
-import { Client } from '@hashgraph/sdk';
+import { Client, Hbar } from '@hashgraph/sdk';
 import { RequestDetails } from './types';
 import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';
@@ -133,7 +132,7 @@ export class RelayImpl implements Relay {
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
 
     this.eventEmitter = new EventEmitter();
@@ -148,17 +147,11 @@ export class RelayImpl implements Relay {
       ipAddressHbarSpendingPlanRepository,
       logger.child({ name: 'hbar-rate-limit' }),
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
 
-    const hapiService = new HAPIService(
-      logger,
-      register,
-      hbarLimiter,
-      this.cacheService,
-      this.eventEmitter,
-      hbarLimitService,
-    );
+    const hapiService = new HAPIService(logger, register, this.cacheService, this.eventEmitter, hbarLimitService);
 
     this.clientMain = hapiService.getMainClientInstance();
 
