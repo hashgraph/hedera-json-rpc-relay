@@ -18,8 +18,10 @@
  *
  */
 
+import fs from 'fs';
 import { expect } from 'chai';
 import { resolve } from 'path';
+import { Logger } from 'pino';
 import dotenv, { config } from 'dotenv';
 import { BaseContract, ethers } from 'ethers';
 import { predefined } from '@hashgraph/json-rpc-relay';
@@ -28,7 +30,11 @@ import { predefined } from '@hashgraph/json-rpc-relay';
 import { Utils } from '../helpers/utils';
 import Assertions from '../helpers/assertions';
 import testConstants from '../helpers/constants';
+import RelayClient from '../clients/relayClient';
+import MirrorClient from '../clients/mirrorClient';
+import MetricsClient from '../clients/metricsClient';
 import { AliasAccount } from '../types/AliasAccount';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { estimateFileTransactionsFee } from '@hashgraph/json-rpc-relay/tests/helpers';
 
 // Contracts used in tests
@@ -36,12 +42,6 @@ import parentContractJson from '../contracts/Parent.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
-import fs from 'fs';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
-import MirrorClient from '../clients/mirrorClient';
-import RelayClient from '../clients/relayClient';
-import { Logger } from 'pino';
-import MetricsClient from '../clients/metricsClient';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
@@ -288,13 +288,13 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           );
 
           const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
-          const { esitmatedFileCreateTxFee, esitmatedFileAppendTxFee } = estimateFileTransactionsFee(
+          const estimatedTxFee = estimateFileTransactionsFee(
             contract.deploymentTransaction()!.data.length,
             fileChunkSize,
             exchangeRateInCents,
           );
 
-          const estimatedFileTransactionTotalFee = esitmatedFileCreateTxFee + esitmatedFileAppendTxFee;
+          const estimatedFileTransactionTotalFee = estimatedTxFee;
           const actualFileTransactionTotalFee = fileCreateTxFee + fileAppendTxFee;
 
           const tolerance = 0.003 * actualFileTransactionTotalFee; // 0.3% tolerance
@@ -303,15 +303,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('Rate Limit', () => {
-        let hbarRateLimitPreemptiveCheck: string | undefined;
-
-        beforeEach(() => {
-          hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK;
-        });
-        afterEach(() => {
-          process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = hbarRateLimitPreemptiveCheck;
-        });
-
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
           const TOLERANCE = 0.02;
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
@@ -337,37 +328,32 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
         });
 
-        it('Should preemptively check the rate limit before submitting EthereumTransaction', async function () {
-          process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = 'true';
-
-          try {
-            for (let i = 0; i < 50; i++) {
-              const largeContract = await Utils.deployContract(
-                largeContractJson.abi,
-                largeContractJson.bytecode,
-                accounts[0].wallet,
-              );
-              await largeContract.waitForDeployment();
-            }
-            expect.fail('Expected an error, but no error was thrown from the hbar rate limiter');
-          } catch (e) {
-            expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_PREEMPTIVE_EXCEEDED.message);
-          }
-        });
-
         it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
-          process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = 'false';
-
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          const lastRemainingHbars = remainingHbarsBefore;
+          const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+          let exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
+          const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
+
+          const factory = new ethers.ContractFactory(
+            largeContractJson.abi,
+            largeContractJson.bytecode,
+            accounts[0].wallet,
+          );
+          const deployedTransaction = await factory.getDeployTransaction();
+          const estimatedTxFee = estimateFileTransactionsFee(
+            deployedTransaction.data.length,
+            fileChunkSize,
+            exchangeRateInCents,
+          );
+
+          let lastRemainingHbars = remainingHbarsBefore;
           expect(remainingHbarsBefore).to.be.gt(0);
           try {
             for (let i = 0; i < 50; i++) {
               const contract = await deployContract(largeContractJson, accounts[0].wallet);
               await contract.waitForDeployment();
               const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-              // FIXME this check is very flaky, ideally it should be uncommented
-              // expect(remainingHbars).to.be.lt(lastRemainingHbars);
+              expect(remainingHbars).to.be.lt(lastRemainingHbars);
             }
             expect.fail(`Expected an error but nothing was thrown`);
           } catch (e: any) {
@@ -375,7 +361,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           }
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          expect(remainingHbarsAfter).to.be.lte(0);
+
+          // Explanation: A preemptive rate limit check triggers the HBAR_RATE_LIMIT_EXCEED error when (remainingBudget - estimatedTxFee) < 0.
+          //             In this scenario, the final remainingHbarsAfter is expected to be less than estimatedTxFee.
+          expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
         });
       });
     });

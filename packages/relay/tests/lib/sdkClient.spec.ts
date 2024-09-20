@@ -2264,8 +2264,6 @@ describe('SdkClient', async function () {
       hbarLimitServiceMock = sinon.mock(hbarLimitService);
       sdkClientMock = sinon.mock(sdkClient);
       mock = new MockAdapter(instance);
-      hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK;
-      process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = 'true';
     });
 
     afterEach(() => {
@@ -2273,7 +2271,6 @@ describe('SdkClient', async function () {
       sinon.restore();
       sdkClientMock.restore();
       hbarLimitServiceMock.restore();
-      process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = hbarRateLimitPreemptiveCheck;
     });
 
     it('should rate limit before creating file', async () => {
