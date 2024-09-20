@@ -30,7 +30,6 @@ import { Poller } from './poller';
 import { Web3Impl } from './web3';
 import EventEmitter from 'events';
 import constants from './constants';
-import HbarLimit from './hbarlimiter';
 import { Client } from '@hashgraph/sdk';
 import { RequestDetails } from './types';
 import { prepend0x } from '../formatters';
@@ -119,9 +118,7 @@ export class RelayImpl implements Relay {
     const configuredChainId = process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
-    const duration = constants.HBAR_RATE_LIMIT_DURATION();
     const total = constants.HBAR_RATE_LIMIT_TINYBAR();
-    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
 
     this.eventEmitter = new EventEmitter();
     this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);
@@ -138,14 +135,7 @@ export class RelayImpl implements Relay {
       total,
     );
 
-    const hapiService = new HAPIService(
-      logger,
-      register,
-      hbarLimiter,
-      this.cacheService,
-      this.eventEmitter,
-      hbarLimitService,
-    );
+    const hapiService = new HAPIService(logger, register, this.cacheService, this.eventEmitter, hbarLimitService);
 
     this.clientMain = hapiService.getMainClientInstance();
 
