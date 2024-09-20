@@ -50,7 +50,8 @@ import { AliasAccount } from '../types/AliasAccount';
 import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
 
 chai.use(chaiAsPromised);
-const DOT_ENV = dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -66,13 +67,13 @@ const testLogger = pino({
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
 // @ts-ignore
-const NETWORK = process.env.HEDERA_NETWORK || DOT_ENV.parsed.HEDERA_NETWORK || '';
+const NETWORK = process.env.HEDERA_NETWORK || DOT_ENV.HEDERA_NETWORK || '';
 // @ts-ignore
-const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || DOT_ENV.parsed.OPERATOR_KEY_MAIN || '';
+const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || DOT_ENV.OPERATOR_KEY_MAIN || '';
 // @ts-ignore
-const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || DOT_ENV.parsed.OPERATOR_ID_MAIN || '';
+const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
 // @ts-ignore
-const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || DOT_ENV.parsed.MIRROR_NODE_URL || '';
+const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || DOT_ENV.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
@@ -88,7 +89,7 @@ describe('RPC Server Acceptance Tests', function () {
 
   // TODO: This must be removed after diagnostics since it will leak secrets
   logger.info(`Utilizing Operator Credentials [ id = '${OPERATOR_ID}', key = '${OPERATOR_KEY}' ]`);
-  logger.info(`Display .env contents: ${DOT_ENV.parsed}`);
+  logger.info(`Display .env contents: ${JSON.stringify(DOT_ENV)}`);
 
   global.servicesNode = new ServicesClient(
     NETWORK,
