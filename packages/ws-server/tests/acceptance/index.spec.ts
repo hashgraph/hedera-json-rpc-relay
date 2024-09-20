@@ -35,8 +35,8 @@ import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer
 import ServicesClient from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../.env')));
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
