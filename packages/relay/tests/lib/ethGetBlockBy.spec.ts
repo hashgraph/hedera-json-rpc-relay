@@ -31,6 +31,7 @@ import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 import pino from 'pino';
 import { EventEmitter } from 'events';
+import { Hbar } from '@hashgraph/sdk';
 import constants from '../../src/lib/constants';
 import { Log, Transaction } from '../../src/lib/model';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
@@ -155,7 +156,8 @@ describe('eth_getBlockBy', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
 
     hapiServiceInstance = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);

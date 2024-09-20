@@ -30,11 +30,7 @@ import { Poller } from './poller';
 import { Web3Impl } from './web3';
 import EventEmitter from 'events';
 import constants from './constants';
-<<<<<<< HEAD
-import { Client } from '@hashgraph/sdk';
-=======
 import { Client, Hbar } from '@hashgraph/sdk';
->>>>>>> 391b7f28 (feat: removed hbarLimiter instance in SDKClient classes)
 import { RequestDetails } from './types';
 import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';
@@ -135,7 +131,8 @@ export class RelayImpl implements Relay {
     const configuredChainId = process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const duration = constants.HBAR_RATE_LIMIT_DURATION;
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
 
     this.eventEmitter = new EventEmitter();
     this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);

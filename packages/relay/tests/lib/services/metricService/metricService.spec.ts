@@ -29,8 +29,6 @@ import MockAdapter from 'axios-mock-adapter';
 import { Utils } from '../../../../src/utils';
 import { register, Registry } from 'prom-client';
 import constants from '../../../../src/lib/constants';
-import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
-import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import {
   calculateTxRecordChargeAmount,
   overrideEnvsInMochaDescribe,
