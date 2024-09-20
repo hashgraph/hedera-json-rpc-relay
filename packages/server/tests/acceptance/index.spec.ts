@@ -66,13 +66,9 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-// @ts-ignore
 const NETWORK = process.env.HEDERA_NETWORK || DOT_ENV.HEDERA_NETWORK || '';
-// @ts-ignore
 const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || DOT_ENV.OPERATOR_KEY_MAIN || '';
-// @ts-ignore
 const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
-// @ts-ignore
 const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || DOT_ENV.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
@@ -86,10 +82,6 @@ describe('RPC Server Acceptance Tests', function () {
 
   let relayServer; // Relay Server
   let socketServer;
-
-  // TODO: This must be removed after diagnostics since it will leak secrets
-  logger.info(`Utilizing Operator Credentials [ id = '${OPERATOR_ID}', key = '${OPERATOR_KEY}' ]`);
-  logger.info(`Display .env contents: ${JSON.stringify(DOT_ENV)}`);
 
   global.servicesNode = new ServicesClient(
     NETWORK,
