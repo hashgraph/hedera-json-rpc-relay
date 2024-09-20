@@ -143,16 +143,8 @@ export class LocalLRUCache implements ICacheClient {
     requestIdPrefix?: string,
   ): Promise<void> {
     const resolvedTtl = ttl ?? this.options.ttl;
-    this.logger.trace(
-      `${requestIdPrefix} caching ${key}:${JSON.stringify(value)} ${
-        resolvedTtl > 0 ? `for ${resolvedTtl} ms` : `without TTL`
-      } on ${callingMethod} call`,
-    );
-    if (resolvedTtl === -1) {
-      this.cache.set(key, value);
-    } else {
-      this.cache.set(key, value, { ttl: resolvedTtl });
-    }
+    this.logger.trace(`${requestIdPrefix} caching ${key}:${JSON.stringify(value)} for ${resolvedTtl} ms`);
+    this.cache.set(key, value, { ttl: resolvedTtl });
   }
 
   /**
