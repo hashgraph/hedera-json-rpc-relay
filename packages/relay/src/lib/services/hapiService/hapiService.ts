@@ -106,7 +106,11 @@ export default class HAPIService {
     eventEmitter: EventEmitter,
   ) {
     dotenv.config({ path: findConfig('.env') || '' });
-    this.config = dotenv.parse(fs.readFileSync(findConfig('.env') || ''));
+    if (fs.existsSync(findConfig('.env') || '')) {
+      this.config = dotenv.parse(fs.readFileSync(findConfig('.env') || ''));
+    } else {
+      this.config = {};
+    }
 
     this.logger = logger;
     this.hbarLimiter = hbarLimiter;
