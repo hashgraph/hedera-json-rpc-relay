@@ -48,6 +48,7 @@ import {
   hasOwnProperty,
 } from './lib/utils';
 import { IJsonRpcRequest } from './lib/IJsonRpcRequest';
+import { IJsonRpcResponse } from './lib/IJsonRpcResponse';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
@@ -119,7 +120,7 @@ export default class KoaJsonRpc {
         return;
       }
 
-      let body: any;
+      let body: IJsonRpcRequest | IJsonRpcRequest[];
       try {
         body = await parse.json(ctx, { limit: this.limit });
       } catch (err) {
@@ -135,7 +136,7 @@ export default class KoaJsonRpc {
     };
   }
 
-  private async handleSingleRequest(ctx: Koa.Context, body: any): Promise<void> {
+  private async handleSingleRequest(ctx: Koa.Context, body: IJsonRpcRequest): Promise<void> {
     ctx.state.methodName = body.method;
     const response = await this.getRequestResult(body, ctx.ip);
     ctx.body = response;
@@ -192,7 +193,7 @@ export default class KoaJsonRpc {
     ctx.state.status = responseSuccessStatusCode;
   }
 
-  async getRequestResult(request: any, ip: string): Promise<any> {
+  async getRequestResult(request: IJsonRpcRequest, ip: string): Promise<IJsonRpcResponse> {
     try {
       const methodName = request.method;
 

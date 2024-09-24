@@ -27,7 +27,6 @@ import websockify from 'koa-websocket';
 import { collectDefaultMetrics, Registry } from 'prom-client';
 import { getRequestResult } from './controllers';
 import { WS_CONSTANTS } from './utils/constants';
-import { formatIdMessage } from './utils/formatters';
 import WsMetricRegistry from './metrics/wsMetricRegistry';
 import ConnectionLimiter from './metrics/connectionLimiter';
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
@@ -35,6 +34,7 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
 import { JsonRpcError, predefined, type Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
 import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
@@ -72,18 +72,20 @@ app.ws.use(async (ctx: Koa.Context) => {
 
   ctx.websocket.limiter = limiter;
   ctx.websocket.wsMetricRegistry = wsMetricRegistry;
-  const connectionIdPrefix = formatIdMessage('Connection ID', ctx.websocket.id);
-  const requestDetails = new RequestDetails({ requestId: ctx.websocket.requestId, ipAddress: ctx.request.ip });
-  const requestIdPrefix = requestDetails.formattedRequestId;
+  const requestDetails = new RequestDetails({
+    requestId: ctx.websocket.requestId,
+    ipAddress: ctx.request.ip,
+    connectionId: ctx.websocket.id,
+  });
   logger.info(
     // @ts-ignore
-    `${connectionIdPrefix} ${requestIdPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
+    `${requestDetails.formattedLogPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
   );
 
   // Close event handle
   ctx.websocket.on('close', async (code, message) => {
     logger.info(
-      `${connectionIdPrefix} ${requestIdPrefix} Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`,
+      `${requestDetails.formattedLogPrefix} Closing connection ${ctx.websocket.id} | code: ${code}, message: ${message}`,
     );
     await handleConnectionClose(ctx, relay, limiter, wsMetricRegistry, startTime);
   });
@@ -106,13 +108,13 @@ app.ws.use(async (ctx: Koa.Context) => {
     limiter.resetInactivityTTLTimer(ctx.websocket);
 
     // parse the received message from the client into a JSON object
-    let request;
+    let request: IJsonRpcRequest | IJsonRpcRequest[];
     try {
       request = JSON.parse(msg.toString('ascii'));
     } catch (e) {
       // Log an error if the message cannot be decoded and send an invalid request error to the client
       logger.warn(
-        `${connectionIdPrefix} ${requestIdPrefix}: Could not decode message from connection, message: ${msg}, error: ${e}`,
+        `${requestDetails.formattedLogPrefix}: Could not decode message from connection, message: ${msg}, error: ${e}`,
       );
       ctx.websocket.send(JSON.stringify(new JsonRpcError(predefined.INVALID_REQUEST, undefined)));
       return;
@@ -120,7 +122,7 @@ app.ws.use(async (ctx: Koa.Context) => {
 
     // check if request is a batch request (array) or a signle request (JSON)
     if (Array.isArray(request)) {
-      logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Receive batch request=${JSON.stringify(request)}`);
+      logger.trace(`${requestDetails.formattedLogPrefix}: Receive batch request=${JSON.stringify(request)}`);
 
       // Increment metrics for batch_requests
       wsMetricRegistry.getCounter('methodsCounter').labels(WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME).inc();
@@ -132,7 +134,7 @@ app.ws.use(async (ctx: Koa.Context) => {
       // send error if batch request feature is not enabled
       if (!getWsBatchRequestsEnabled()) {
         const batchRequestDisabledError = predefined.WS_BATCH_REQUESTS_DISABLED;
-        logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: ${JSON.stringify(batchRequestDisabledError)}`);
+        logger.warn(`${requestDetails.formattedLogPrefix}: ${JSON.stringify(batchRequestDisabledError)}`);
         ctx.websocket.send(JSON.stringify([jsonResp(null, batchRequestDisabledError, undefined)]));
         return;
       }
@@ -143,33 +145,23 @@ app.ws.use(async (ctx: Koa.Context) => {
           request.length,
           getBatchRequestsMaxSize(),
         );
-        logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: ${JSON.stringify(batchRequestAmountMaxExceed)}`);
+        logger.warn(`${requestDetails.formattedLogPrefix}: ${JSON.stringify(batchRequestAmountMaxExceed)}`);
         ctx.websocket.send(JSON.stringify([jsonResp(null, batchRequestAmountMaxExceed, undefined)]));
         return;
       }
 
       // process requests
       const requestPromises = request.map((item: any) => {
-        return getRequestResult(
-          ctx,
-          relay,
-          logger,
-          item,
-          limiter,
-          connectionIdPrefix,
-          mirrorNodeClient,
-          wsMetricRegistry,
-          requestDetails,
-        );
+        return getRequestResult(ctx, relay, logger, item, limiter, mirrorNodeClient, wsMetricRegistry, requestDetails);
       });
 
       // resolve all promises
       const responses = await Promise.all(requestPromises);
 
       // send to client
-      sendToClient(ctx.websocket, request, responses, logger, requestIdPrefix, connectionIdPrefix);
+      sendToClient(ctx.websocket, request, responses, logger, requestDetails);
     } else {
-      logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Receive single request=${JSON.stringify(request)}`);
+      logger.trace(`${requestDetails.formattedLogPrefix}: Receive single request=${JSON.stringify(request)}`);
 
       // process requests
       const response = await getRequestResult(
@@ -178,14 +170,13 @@ app.ws.use(async (ctx: Koa.Context) => {
         logger,
         request,
         limiter,
-        connectionIdPrefix,
         mirrorNodeClient,
         wsMetricRegistry,
         requestDetails,
       );
 
       // send to client
-      sendToClient(ctx.websocket, request, response, logger, requestIdPrefix, connectionIdPrefix);
+      sendToClient(ctx.websocket, request, response, logger, requestDetails);
     }
 
     // Calculate the duration of the connection

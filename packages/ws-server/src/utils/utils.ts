@@ -22,6 +22,10 @@ import { WS_CONSTANTS } from './constants';
 import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
 import { predefined, Relay } from '@hashgraph/json-rpc-relay';
+import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
+import { IJsonRpcResponse } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcResponse';
+import { Logger } from 'pino';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 const hasOwnProperty = (obj: any, prop: any) => Object.prototype.hasOwnProperty.call(obj, prop);
 const getRequestIdIsOptional = () => {
@@ -67,22 +71,20 @@ export const handleConnectionClose = async (
  * Sends a JSON-RPC response message to the client WebSocket connection.
  * Resets the TTL timer for inactivity on the client connection.
  * @param {any} connection - The WebSocket connection object to the client.
- * @param {any} request - The request object received from the client.
- * @param {any} response - The response data to be sent back to the client.
- * @param {any} logger - The logger object used for logging messages.
- * @param {string} requestIdPrefix - The prefix added to the request ID for logging purposes.
- * @param {string} connectionIdPrefix - The prefix added to the connection ID for logging purposes.
+ * @param {IJsonRpcRequest | IJsonRpcRequest[]} request - The request object received from the client.
+ * @param {IJsonRpcResponse | IJsonRpcResponse[]} response - The response data to be sent back to the client.
+ * @param {Logger} logger - The logger object used for logging messages.
+ * @param {RequestDetails} requestDetails - The request details for logging and tracking.
  */
 export const sendToClient = (
   connection: any,
-  request: any,
-  response: any,
-  logger: any,
-  requestIdPrefix: string,
-  connectionIdPrefix: string,
+  request: IJsonRpcRequest | IJsonRpcRequest[],
+  response: IJsonRpcResponse | IJsonRpcResponse[],
+  logger: Logger,
+  requestDetails: RequestDetails,
 ) => {
   logger.trace(
-    `${connectionIdPrefix} ${requestIdPrefix}: Sending result=${JSON.stringify(
+    `${requestDetails.formattedLogPrefix}: Sending result=${JSON.stringify(
       response,
     )} to client for request=${JSON.stringify(request)}`,
   );
@@ -93,26 +95,24 @@ export const sendToClient = (
 
 /**
  * Validates a JSON-RPC request to ensure it has the correct JSON-RPC version, method, and id.
- * @param {any} request - The JSON-RPC request object.
- * @param {any} logger - The logger instance used for logging.
- * @param {string} requestIdPrefix - The prefix to use for the request ID.
- * @param {string} connectionIdPrefix - The prefix to use for the connection ID.
+ * @param {IJsonRpcRequest} request - The JSON-RPC request object.
+ * @param {Logger} logger - The logger instance used for logging.
+ * @param {RequestDetails} requestDetails - The request details for logging and tracking.
  * @returns {boolean} A boolean indicating whether the request is valid.
  */
 export const validateJsonRpcRequest = (
-  request: any,
-  logger: any,
-  requestIdPrefix: string,
-  connectionIdPrefix: string,
+  request: IJsonRpcRequest,
+  logger: Logger,
+  requestDetails: RequestDetails,
 ): boolean => {
   if (
     request.jsonrpc !== '2.0' ||
     !hasOwnProperty(request, 'method') ||
-    hasInvalidReqestId(request, logger, requestIdPrefix, connectionIdPrefix) ||
+    hasInvalidRequestId(request, logger, requestDetails) ||
     !hasOwnProperty(request, 'id')
   ) {
     logger.warn(
-      `${connectionIdPrefix} ${requestIdPrefix} Invalid request, request.jsonrpc: ${request.jsonrpc}, request.method: ${request.method}, request.id: ${request.id}, request.method: ${request.method}`,
+      `${requestDetails.formattedLogPrefix} Invalid request, request.jsonrpc: ${request.jsonrpc}, request.method: ${request.method}, request.id: ${request.id}, request.method: ${request.method}`,
     );
     return false;
   } else {
@@ -172,25 +172,19 @@ export const verifySupportedMethod = (method: string): boolean => {
 
 /**
  * Checks if the JSON-RPC request has an invalid ID.
- * @param {any} request - The JSON-RPC request object.
- * @param {any} logger - The logger instance used for logging.
- * @param {string} requestIdPrefix - The prefix to use for the request ID.
- * @param {string} connectionIdPrefix - The prefix to use for the connection ID.
+ * @param {IJsonRpcRequest} request - The JSON-RPC request object.
+ * @param {Logger} logger - The logger instance used for logging.
+ * @param {RequestDetails} requestDetails - The request details for logging and tracking.
  * @returns {boolean} A boolean indicating whether the request ID is invalid.
  */
-const hasInvalidReqestId = (
-  request: any,
-  logger: any,
-  requestIdPrefix: string,
-  connectionIdPrefix: string,
-): boolean => {
+const hasInvalidRequestId = (request: IJsonRpcRequest, logger: Logger, requestDetails: RequestDetails): boolean => {
   const hasId = hasOwnProperty(request, 'id');
 
   if (getRequestIdIsOptional() && !hasId) {
     // If the request is invalid, we still want to return a valid JSON-RPC response, default id to 0
     request.id = '0';
     logger.warn(
-      `${connectionIdPrefix} ${requestIdPrefix} Optional JSON-RPC 2.0 request id encountered. Will continue and default id to 0 in response`,
+      `${requestDetails.formattedLogPrefix} Optional JSON-RPC 2.0 request id encountered. Will continue and default id to 0 in response`,
     );
     return false;
   }

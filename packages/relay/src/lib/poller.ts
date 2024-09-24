@@ -136,7 +136,7 @@ export class Poller {
     }
   }
 
-  async add(tag: string, callback: Function) {
+  add(tag: string, callback: Function) {
     if (!this.hasPoll(tag)) {
       this.logger.info(`${LOGGER_PREFIX} Tag ${tag} added to polling list`);
       this.polls.push({

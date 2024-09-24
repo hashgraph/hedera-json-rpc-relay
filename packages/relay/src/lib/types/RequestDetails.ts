@@ -21,13 +21,28 @@
 export class RequestDetails {
   requestId: string;
   ipAddress: string;
+  connectionId?: string;
 
-  constructor(details: { requestId: string; ipAddress: string }) {
+  constructor(details: { requestId: string; ipAddress: string; connectionId?: string }) {
     this.requestId = details.requestId;
     this.ipAddress = details.ipAddress;
+    this.connectionId = details.connectionId;
   }
 
   get formattedRequestId(): string {
-    return `[Request ID: ${this.requestId}]`;
+    return this.requestId ? `[Request ID: ${this.requestId}]` : '';
+  }
+
+  get formattedConnectionId(): string | undefined {
+    return this.connectionId ? `[Connection ID: ${this.connectionId}]` : '';
+  }
+
+  get formattedLogPrefix(): string {
+    const connectionId = this.formattedConnectionId;
+    const requestId = this.formattedRequestId;
+    if (connectionId && requestId) {
+      return `${connectionId} ${requestId}`;
+    }
+    return connectionId || requestId;
   }
 }
