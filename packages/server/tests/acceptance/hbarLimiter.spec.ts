@@ -20,7 +20,7 @@
 
 import { expect } from 'chai';
 import { resolve } from 'path';
-import { config } from 'dotenv';
+import dotenv, { config } from 'dotenv';
 import { BaseContract, ethers } from 'ethers';
 import { predefined } from '@hashgraph/json-rpc-relay';
 
@@ -36,13 +36,15 @@ import parentContractJson from '../contracts/Parent.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
+import fs from 'fs';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
+const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
 
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   // @ts-ignore
   const { mirrorNode, relay, logger, initialBalance, metrics, relayIsLocal } = global;
-  const operatorAccount = process.env.OPERATOR_ID_MAIN || this.config.OPERATOR_ID_MAIN || '';
+  const operatorAccount = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
   const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
