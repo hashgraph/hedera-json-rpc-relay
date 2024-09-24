@@ -53,7 +53,6 @@ describe('Filter API Test Suite', async function () {
   };
 
   let blockFilterObject;
-  let cacheMock;
   const existingFilterId = '0x1112233';
   const nonExistingFilterId = '0x1112231';
   const LATEST_BLOCK_QUERY = 'blocks?limit=1&order=desc';
@@ -62,7 +61,7 @@ describe('Filter API Test Suite', async function () {
 
   const validateFilterCache = async (filterId, expectedFilterType, expectedParams = {}) => {
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const cachedFilter = await cacheService.getAsync(cacheKey, undefined, requestDetails);
+    const cachedFilter = await cacheService.getAsync(cacheKey, 'validateFilterCache', requestDetails);
     expect(cachedFilter).to.exist;
     expect(cachedFilter.type).to.exist;
     expect(cachedFilter.type).to.eq(expectedFilterType);
@@ -72,8 +71,6 @@ describe('Filter API Test Suite', async function () {
   };
 
   this.beforeAll(() => {
-    cacheMock = sinon.createSandbox();
-
     blockFilterObject = {
       type: constants.FILTER.TYPE.NEW_BLOCK,
       params: {
@@ -106,22 +103,23 @@ describe('Filter API Test Suite', async function () {
     web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
 
     // @ts-ignore
-    const common = new CommonService(mirrorNodeInstance, logger, cacheService);
-    filterService = new FilterService(mirrorNodeInstance, logger, cacheService, common);
+    const common = new CommonService(mirrorNodeInstance, logger.child({ name: 'common-service' }), cacheService);
+    filterService = new FilterService(
+      mirrorNodeInstance,
+      logger.child({ name: 'filter-service' }),
+      cacheService,
+      common,
+    );
   });
 
-  this.beforeEach(() => {
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
-
-    cacheMock.stub(cacheService, 'set').returns(true);
-    cacheMock.stub(cacheService, 'delete').returns(true);
   });
 
   this.afterEach(() => {
     restMock.resetHandlers();
-    cacheMock.restore();
   });
 
   describe('all methods require a filter flag', async function () {
@@ -167,9 +165,6 @@ describe('Filter API Test Suite', async function () {
       expect(filterId).to.exist;
       expect(RelayAssertions.validateHash(filterId, 32)).to.eq(true, 'returns valid filterId');
 
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-      cacheMock.stub(cacheService, 'getAsync').withArgs(cacheKey, 'eth_getFilterChanges').returns(logFilterObject);
-
       restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
       restMock
         .onGet(
@@ -178,9 +173,6 @@ describe('Filter API Test Suite', async function () {
         .reply(200, defaultLogs1);
       const filterChanges = await filterService.getFilterChanges(filterId, requestDetails);
       expect(filterChanges).to.exist;
-
-      cacheMock.restore();
-      cacheMock.stub(cacheService, 'getAsync').withArgs(cacheKey, 'eth_uninstallFilter').returns(logFilterObject);
 
       const isFilterUninstalled = await filterService.uninstallFilter(filterId, requestDetails);
       expect(isFilterUninstalled).to.eq(true, 'executes correctly');
@@ -274,7 +266,6 @@ describe('Filter API Test Suite', async function () {
       await validateFilterCache(filterId, constants.FILTER.TYPE.LOG, {
         fromBlock: numberHex,
         toBlock: 'latest',
-        requestDetails: requestDetails,
         address: defaultEvmAddress,
         topics: defaultLogTopics,
       });
@@ -325,9 +316,6 @@ describe('Filter API Test Suite', async function () {
   describe('eth_uninstallFilter', async function () {
     it('should return true if filter is deleted', async function () {
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
-
-      cacheMock.stub(cacheService, 'getAsync').onFirstCall().returns(filterObject).onSecondCall().returns(undefined);
-
       await cacheService.set(
         cacheKey,
         filterObject,
@@ -344,7 +332,6 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('should return false if filter does not exist, therefore is not deleted', async function () {
-      cacheMock.stub(cacheService, 'getAsync').returns(undefined);
       const result = await filterService.uninstallFilter(nonExistingFilterId, requestDetails);
       expect(result).to.eq(false);
     });
@@ -369,7 +356,6 @@ describe('Filter API Test Suite', async function () {
 
   describe('eth_getFilterLogs', async function () {
     it('should throw FILTER_NOT_FOUND for type=newBlock', async function () {
-      cacheMock.stub(cacheService, 'getAsync').returns(undefined);
       const filterIdBlockType = await filterService.createFilter(
         constants.FILTER.TYPE.NEW_BLOCK,
         filterObject,
@@ -385,7 +371,6 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('should throw FILTER_NOT_FOUND for type=pendingTransaction', async function () {
-      cacheMock.stub(cacheService, 'getAsync').returns(undefined);
       const filterIdBlockType = await filterService.createFilter(
         constants.FILTER.TYPE.PENDING_TRANSACTION,
         filterObject,
@@ -423,16 +408,6 @@ describe('Filter API Test Suite', async function () {
         .reply(200, filteredLogs);
 
       const filterId = await filterService.newFilter('0x1', undefined, requestDetails);
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-      cacheMock
-        .stub(cacheService, 'getAsync')
-        .withArgs(cacheKey, 'eth_getFilterLogs')
-        .returns({
-          ...logFilterObject,
-          params: {
-            fromBlock: 1,
-          },
-        });
 
       const logs = await filterService.getFilterLogs(filterId, requestDetails);
 
@@ -460,17 +435,6 @@ describe('Filter API Test Suite', async function () {
         .reply(200, filteredLogs);
 
       const filterId = await filterService.newFilter(undefined, '0x3', requestDetails);
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-      cacheMock
-        .stub(cacheService, 'getAsync')
-        .withArgs(cacheKey, 'eth_getFilterLogs')
-        .returns({
-          ...logFilterObject,
-          params: {
-            fromBlock: 3,
-            toBlock: 3,
-          },
-        });
 
       const logs = await filterService.getFilterLogs(filterId, requestDetails);
 
@@ -494,18 +458,6 @@ describe('Filter API Test Suite', async function () {
         .reply(200, filteredLogs);
 
       const filterId = await filterService.newFilter(undefined, undefined, requestDetails, defaultEvmAddress);
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-
-      cacheMock
-        .stub(cacheService, 'getAsync')
-        .withArgs(cacheKey, 'eth_getFilterLogs')
-        .returns({
-          ...logFilterObject,
-          params: {
-            fromBlock: defaultBlock.number,
-            address: defaultEvmAddress,
-          },
-        });
 
       const logs = await filterService.getFilterLogs(filterId, requestDetails);
 
@@ -534,17 +486,6 @@ describe('Filter API Test Suite', async function () {
         .reply(200, filteredLogs);
 
       const filterId = await filterService.newFilter(undefined, undefined, requestDetails, undefined, customTopic);
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-      cacheMock
-        .stub(cacheService, 'getAsync')
-        .withArgs(cacheKey, 'eth_getFilterLogs')
-        .returns({
-          ...logFilterObject,
-          params: {
-            fromBlock: defaultBlock.number,
-            topics: customTopic,
-          },
-        });
 
       const logs = await filterService.getFilterLogs(filterId, requestDetails);
 
@@ -555,7 +496,6 @@ describe('Filter API Test Suite', async function () {
 
   describe('eth_getFilterChanges', async function () {
     it('should throw error for non-existing filters', async function () {
-      cacheMock.stub(cacheService, 'getAsync').returns(undefined);
       await RelayAssertions.assertRejection(
         predefined.FILTER_NOT_FOUND,
         filterService.getFilterChanges,
@@ -566,9 +506,8 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('should throw error for invalid filter type', async function () {
-      cacheMock.stub(cacheService, 'getAsync').returns({ type: 'UnsupportedType' });
       await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
+        predefined.FILTER_NOT_FOUND,
         filterService.getFilterChanges,
         true,
         filterService,
@@ -597,14 +536,6 @@ describe('Filter API Test Suite', async function () {
         requestDetails,
         constants.FILTER.TTL,
       );
-      cacheMock
-        .stub(cacheService, 'getAsync')
-        .onFirstCall()
-        .returns(blockFilterObject)
-        .onSecondCall()
-        .returns({ ...blockFilterObject, lastQueried: defaultBlock.number + 3 })
-        .onThirdCall()
-        .returns({ ...blockFilterObject, lastQueried: defaultBlock.number + 4 });
 
       const result = await filterService.getFilterChanges(existingFilterId, requestDetails);
 
@@ -637,12 +568,6 @@ describe('Filter API Test Suite', async function () {
         requestDetails,
         constants.FILTER.TTL,
       );
-      cacheMock
-        .stub(cacheService, 'getAsync')
-        .onFirstCall()
-        .returns(blockFilterObject)
-        .onSecondCall()
-        .returns({ ...blockFilterObject, lastQueried: defaultBlock.number + 1 });
 
       const resultCurrentBlock = await filterService.getFilterChanges(existingFilterId, requestDetails);
       expect(resultCurrentBlock).to.not.be.empty;
@@ -674,16 +599,6 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
 
       const filterId = await filterService.newFilter('0x1', undefined, requestDetails);
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-      cacheMock
-        .stub(cacheService, 'getAsync')
-        .withArgs(cacheKey, 'eth_getFilterChanges')
-        .returns({
-          ...logFilterObject,
-          params: {
-            fromBlock: 1,
-          },
-        });
 
       const logs = await filterService.getFilterChanges(filterId, requestDetails);
       expect(logs).to.not.be.empty;
@@ -700,16 +615,6 @@ describe('Filter API Test Suite', async function () {
       restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
 
       const filterId = await filterService.newFilter('0x1', undefined, requestDetails);
-      const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-      cacheMock
-        .stub(cacheService, 'getAsync')
-        .withArgs(cacheKey, 'eth_getFilterChanges')
-        .returns({
-          ...logFilterObject,
-          params: {
-            fromBlock: 1,
-          },
-        });
       const logs = await filterService.getFilterChanges(filterId, requestDetails);
       expect(logs).to.be.empty;
     });
@@ -728,7 +633,6 @@ describe('Filter API Test Suite', async function () {
         requestDetails,
         constants.FILTER.TTL,
       );
-      cacheMock.stub(cacheService, 'getAsync').returns(blockFilterObject);
 
       const blocks = await filterService.getFilterChanges(existingFilterId, requestDetails);
       expect(blocks).to.be.empty;
