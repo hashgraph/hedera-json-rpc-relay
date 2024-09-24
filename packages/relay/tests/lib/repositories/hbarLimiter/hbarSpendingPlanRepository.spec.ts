@@ -32,7 +32,7 @@ import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hb
 
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 import { IDetailedHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingPlan';
-import { useInMemoryRedisServer } from '../../../helpers';
+import { overrideEnvs, useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
@@ -46,26 +46,21 @@ describe('HbarSpendingPlanRepository', function () {
 
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6380);
-
-      before(async () => {
-        cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
-        repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
-      });
-
-      after(async () => {
-        await cacheService.disconnectRedisClient();
-      });
     } else {
-      before(async () => {
-        process.env.TEST = 'true';
-        process.env.REDIS_ENABLED = 'false';
-        cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
-        repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
-      });
+      overrideEnvs({ REDIS_ENABLED: 'false' });
     }
+
+    before(async () => {
+      cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
+      repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
+    });
 
     afterEach(async () => {
       await cacheService.clear();
+    });
+
+    after(async () => {
+      await cacheService.disconnectRedisClient();
     });
 
     describe('create', () => {

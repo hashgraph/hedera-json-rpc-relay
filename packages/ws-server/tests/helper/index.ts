@@ -89,13 +89,30 @@ export class WsTestHelper {
     };
   }
 
-  static overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
-    if (value === undefined) {
-      delete object[key];
-    } else {
-      object[key] = value;
-    }
-  };
+  static overrideEnvs(envs: NodeJS.Dict<string>) {
+    let envsToReset: NodeJS.Dict<string> = {};
+
+    const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
+      if (value === undefined) {
+        delete object[key];
+      } else {
+        object[key] = value;
+      }
+    };
+
+    before(() => {
+      for (const key in envs) {
+        envsToReset[key] = process.env[key];
+        overrideEnv(process.env, key, envs[key]);
+      }
+    });
+
+    after(() => {
+      for (const key in envs) {
+        overrideEnv(process.env, key, envsToReset[key]);
+      }
+    });
+  }
 
   static withOverriddenEnvs(envs: NodeJS.Dict<string>, tests: () => void) {
     const overriddenEnvs = Object.entries(envs)
@@ -103,22 +120,9 @@ export class WsTestHelper {
       .join(', ');
 
     describe(`given ${overriddenEnvs} are set`, () => {
-      let envsToReset: NodeJS.Dict<string> = {};
-
-      before(() => {
-        for (const key in envs) {
-          envsToReset[key] = process.env[key];
-          WsTestHelper.overrideEnv(process.env, key, envs[key]);
-        }
-      });
+      WsTestHelper.overrideEnvs(envs);
 
       tests();
-
-      after(() => {
-        for (const key in envsToReset) {
-          WsTestHelper.overrideEnv(process.env, key, envsToReset[key]);
-        }
-      });
     });
   }
 }

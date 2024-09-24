@@ -22,6 +22,7 @@ import pino from 'pino';
 import { expect } from 'chai';
 import { WS_CONSTANTS } from '../../src/utils/constants';
 import { validateJsonRpcRequest, verifySupportedMethod } from '../../src/utils/utils';
+import { WsTestHelper } from '../helper';
 
 const logger = pino();
 
@@ -66,17 +67,16 @@ describe('validations unit test', async function () {
     });
   });
 
-  it('Should execute validateJsonRpcRequest() to validate JSON RPC request that has no id field but return true because REQUEST_ID_IS_OPTIONAL=true', () => {
-    process.env.REQUEST_ID_IS_OPTIONAL = 'true';
+  WsTestHelper.withOverriddenEnvs({ REQUEST_ID_IS_OPTIONAL: 'true' }, () => {
+    it('Should execute validateJsonRpcRequest() to validate JSON RPC request that has no id field but return true because REQUEST_ID_IS_OPTIONAL=true', () => {
+      const REQUEST = {
+        jsonrpc: '2.0',
+        method: 'eth_chainId',
+        params: [],
+      };
 
-    const REQUEST = {
-      jsonrpc: '2.0',
-      method: 'eth_chainId',
-      params: [],
-    };
-
-    expect(validateJsonRpcRequest(REQUEST, logger, FAKE_REQUEST_ID, FAKE_CONNECTION_ID)).to.be.true;
-    delete process.env.REQUEST_ID_IS_OPTIONAL;
+      expect(validateJsonRpcRequest(REQUEST, logger, FAKE_REQUEST_ID, FAKE_CONNECTION_ID)).to.be.true;
+    });
   });
 
   it("Should execute verifySupportedMethod() to validate requests' methods and return true if methods are supported", () => {

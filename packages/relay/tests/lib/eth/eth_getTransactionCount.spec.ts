@@ -29,7 +29,7 @@ import { SDKClient } from '../../../src/lib/clients';
 import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
-import { defaultDetailedContractResults, defaultEthereumTransactions, mockData } from '../../helpers';
+import { defaultDetailedContractResults, defaultEthereumTransactions, mockData, overrideEnvs } from '../../helpers';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
 
@@ -38,7 +38,6 @@ use(chaiAsPromised);
 
 let sdkClientStub;
 let getSdkClientStub;
-let currentMaxBlockRange: number;
 
 describe('@ethGetTransactionCount eth_getTransactionCount spec', async function () {
   this.timeout(10000);
@@ -60,6 +59,8 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     return `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
   }
 
+  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+
   this.beforeEach(() => {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     restMock.onGet(blockPath).reply(200, mockData.blocks.blocks[2]);
@@ -75,14 +76,11 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     restMock
       .onGet(transactionPath(mockData.account.evm_address, 2))
       .reply(200, { transactions: [{ transaction_id: transactionId }, {}] });
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
     // reset cache and restMock
     cacheService.clear();
     restMock.reset();

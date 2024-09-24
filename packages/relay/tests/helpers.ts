@@ -885,55 +885,52 @@ export const calculateTxRecordChargeAmount = (exchangeRateIncents: number) => {
 };
 
 export const useInMemoryRedisServer = (logger: Logger, port: number) => {
-  let envsToReset: { TEST?: string; REDIS_ENABLED?: string; REDIS_URL?: string };
+  overrideEnvs({ TEST: 'false', REDIS_ENABLED: 'true', REDIS_URL: `redis://127.0.0.1:${port}` });
+
   let redisInMemoryServer: RedisInMemoryServer;
 
   before(async () => {
-    ({ envsToReset, redisInMemoryServer } = await startRedisInMemoryServer(logger, port));
+    redisInMemoryServer = await startRedisInMemoryServer(logger, port);
   });
 
   after(async () => {
-    await stopRedisInMemoryServer(redisInMemoryServer, envsToReset);
+    await stopRedisInMemoryServer(redisInMemoryServer);
   });
 };
 
 export const startRedisInMemoryServer = async (logger: Logger, port: number) => {
   const redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: 'RedisInMemoryServer' }), port);
   await redisInMemoryServer.start();
-  const envsToReset = {
-    TEST: process.env.TEST,
-    REDIS_ENABLED: process.env.REDIS_ENABLED,
-    REDIS_URL: process.env.REDIS_URL,
-  };
-  process.env.TEST = 'false';
-  process.env.REDIS_ENABLED = 'true';
-  process.env.REDIS_URL = `redis://127.0.0.1:${port}`;
-  return { redisInMemoryServer, envsToReset };
+  return redisInMemoryServer;
 };
 
-export const stopRedisInMemoryServer = async (
-  redisInMemoryServer: RedisInMemoryServer,
-  envsToReset: { TEST?: string; REDIS_ENABLED?: string; REDIS_URL?: string },
-): Promise<void> => {
+export const stopRedisInMemoryServer = async (redisInMemoryServer: RedisInMemoryServer): Promise<void> => {
   await redisInMemoryServer.stop();
-  process.env.TEST = envsToReset.TEST;
-  process.env.REDIS_ENABLED = envsToReset.REDIS_ENABLED;
-  process.env.REDIS_URL = envsToReset.REDIS_URL;
 };
 
-/**
- * Overrides an environment variable in the provided {@link NodeJS.Dict} object.
- *
- * @param {NodeJS.Dict<string>} object - The object containing the environment variables.
- * @param {string} key - The key of the environment variable to override.
- * @param {string | undefined} value - The value to set the environment variable to.
- */
-export const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
-  if (value === undefined) {
-    delete object[key];
-  } else {
-    object[key] = value;
-  }
+export const overrideEnvs = (envs: NodeJS.Dict<string>) => {
+  let envsToReset: NodeJS.Dict<string> = {};
+
+  const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
+    if (value === undefined) {
+      delete object[key];
+    } else {
+      object[key] = value;
+    }
+  };
+
+  before(() => {
+    for (const key in envs) {
+      envsToReset[key] = process.env[key];
+      overrideEnv(process.env, key, envs[key]);
+    }
+  });
+
+  after(() => {
+    for (const key in envs) {
+      overrideEnv(process.env, key, envsToReset[key]);
+    }
+  });
 };
 
 /**
@@ -948,22 +945,9 @@ export const withOverriddenEnvs = (envs: NodeJS.Dict<string>, tests: () => void)
     .join(', ');
 
   describe(`given ${overriddenEnvs} are set`, () => {
-    let envsToReset: NodeJS.Dict<string> = {};
-
-    before(() => {
-      for (const key in envs) {
-        envsToReset[key] = process.env[key];
-        overrideEnv(process.env, key, envs[key]);
-      }
-    });
+    overrideEnvs(envs);
 
     tests();
-
-    after(() => {
-      for (const key in envsToReset) {
-        overrideEnv(process.env, key, envsToReset[key]);
-      }
-    });
   });
 };
 

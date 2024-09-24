@@ -27,22 +27,23 @@ import { RelayImpl } from '../../src/lib/relay';
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 import pino from 'pino';
+import { withOverriddenEnvs } from '../helpers';
 const logger = pino();
 
 const Relay = new RelayImpl(logger, new Registry());
 
 describe('Web3', function () {
-  it('should execute "web3_clientVersion"', async function () {
-    process.env.npm_package_version = '1.0.0';
-    const clientVersion = Relay.web3().clientVersion();
-
-    expect(clientVersion).to.be.equal('relay/' + process.env.npm_package_version);
+  withOverriddenEnvs({ npm_package_version: '1.0.0' }, () => {
+    it('should return "relay/1.0.0"', async function () {
+      const clientVersion = Relay.web3().clientVersion();
+      expect(clientVersion).to.be.equal('relay/' + process.env.npm_package_version);
+    });
   });
 
-  it('should return "relay/" when npm_package_version is not set', () => {
-    delete process.env.npm_package_version;
-    const version = Relay.web3().clientVersion();
-
-    expect(version).to.equal('relay/');
+  withOverriddenEnvs({ npm_package_version: undefined }, () => {
+    it('should return "relay/"', () => {
+      const version = Relay.web3().clientVersion();
+      expect(version).to.equal('relay/');
+    });
   });
 });

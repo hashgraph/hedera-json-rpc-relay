@@ -28,7 +28,7 @@ import { SDKClient } from '../../../src/lib/clients';
 import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
-import { getRequestId, mockData, signTransaction } from '../../helpers';
+import { getRequestId, mockData, overrideEnvs, signTransaction } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
 
@@ -37,11 +37,12 @@ use(chaiAsPromised);
 
 let sdkClientStub;
 let getSdkClientStub;
-let currentMaxBlockRange: number;
 
 describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+
+  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -51,14 +52,11 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
   describe('eth_sendRawTransaction', async function () {

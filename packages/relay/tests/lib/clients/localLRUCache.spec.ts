@@ -23,7 +23,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
 import pino from 'pino';
 import { LocalLRUCache } from '../../../src/lib/clients';
-import constants from '../../../src/lib/constants';
+import { overrideEnvs } from '../../helpers';
 
 const logger = pino();
 const registry = new Registry();
@@ -104,13 +104,9 @@ describe('LocalLRUCache Test Suite', async function () {
   });
 
   describe('verify cache management', async function () {
-    this.beforeEach(() => {
-      process.env.CACHE_MAX = constants.CACHE_MAX.toString();
-    });
+    overrideEnvs({ CACHE_MAX: '2' });
 
     it('verify cache size', async function () {
-      const cacheMaxSize = 2;
-      process.env.CACHE_MAX = `${cacheMaxSize}`;
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const keyValuePairs = {
         key1: 'value1',

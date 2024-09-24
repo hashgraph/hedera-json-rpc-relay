@@ -21,6 +21,7 @@
 import { expect } from 'chai';
 import { CacheService } from '../../../../packages/relay/src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
+import { withOverriddenEnvs } from '../../../relay/tests/helpers';
 const registry = new Registry();
 
 const DATA_LABEL_PREFIX = 'acceptance-test-';
@@ -78,20 +79,19 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     expect(deletedCacheFromService).to.eq(null, 'getAsync method cannot read expired cache');
   });
 
-  it('Fallsback to local cache for REDIS_ENABLED !== true', async () => {
-    const dataLabel = `${DATA_LABEL_PREFIX}3`;
+  withOverriddenEnvs({ REDIS_ENABLED: 'false' }, () => {
+    it('Falls back to local cache for REDIS_ENABLED !== true', async () => {
+      const dataLabel = `${DATA_LABEL_PREFIX}3`;
 
-    process.env.REDIS_ENABLED = 'false';
-    const serviceWithDisabledRedis = new CacheService(global.logger, registry);
-    await new Promise((r) => setTimeout(r, 1000));
-    expect(serviceWithDisabledRedis.isRedisEnabled()).to.eq(false, 'redis is disabled');
-    await serviceWithDisabledRedis.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
-    await new Promise((r) => setTimeout(r, 200));
+      const serviceWithDisabledRedis = new CacheService(global.logger, registry);
+      await new Promise((r) => setTimeout(r, 1000));
+      expect(serviceWithDisabledRedis.isRedisEnabled()).to.eq(false, 'redis is disabled');
+      await serviceWithDisabledRedis.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
+      await new Promise((r) => setTimeout(r, 200));
 
-    const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD);
-    expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
-
-    process.env.REDIS_ENABLED = 'true';
+      const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD);
+      expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
+    });
   });
 
   it('Cache set by one instance can be accessed by another', async () => {

@@ -27,7 +27,7 @@ import { IEthAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLi
 import { EthAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { randomBytes, uuidV4 } from 'ethers';
 import { Registry } from 'prom-client';
-import { useInMemoryRedisServer } from '../../../helpers';
+import { overrideEnvs, useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
@@ -41,29 +41,21 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
 
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6382);
-
-      this.beforeAll(async () => {
-        cacheService = new CacheService(logger.child({ name: 'CacheService' }), new Registry());
-        repository = new EthAddressHbarSpendingPlanRepository(
-          cacheService,
-          logger.child({ name: 'EthAddressHbarSpendingPlanRepository' }),
-        );
-      });
-
-      this.afterAll(async () => {
-        await cacheService.disconnectRedisClient();
-      });
     } else {
-      before(() => {
-        process.env.TEST = 'true';
-        process.env.REDIS_ENABLED = 'false';
-        cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
-        repository = new EthAddressHbarSpendingPlanRepository(
-          cacheService,
-          logger.child({ name: 'EthAddressHbarSpendingPlanRepository' }),
-        );
-      });
+      overrideEnvs({ REDIS_ENABLED: 'false' });
     }
+
+    before(() => {
+      cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
+      repository = new EthAddressHbarSpendingPlanRepository(
+        cacheService,
+        logger.child({ name: 'EthAddressHbarSpendingPlanRepository' }),
+      );
+    });
+
+    after(() => {
+      cacheService.disconnectRedisClient();
+    });
 
     describe('findByAddress', () => {
       it('retrieves an address plan by address', async () => {
