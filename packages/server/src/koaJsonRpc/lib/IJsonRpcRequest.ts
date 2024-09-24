@@ -19,7 +19,7 @@
  */
 
 export interface IJsonRpcRequest {
-  id: string;
+  id: string | number;
   jsonrpc: string;
   method: string;
   params?: any[];
