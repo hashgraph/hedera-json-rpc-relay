@@ -73,7 +73,7 @@
     "@ethereumjs/rlp": "^5.0.2",
     "@ethereumjs/trie": "^6.2.1",
     "@ethereumjs/util": "^9.1.0",
-    "@hashgraph/hedera-local": "^2.29.2",
+    "@hashgraph/hedera-local": "^2.29.3",
     "@open-rpc/schema-utils-js": "^1.16.1",
     "@types/find-config": "^1.0.4",
     "@types/sinon": "^10.0.20",
