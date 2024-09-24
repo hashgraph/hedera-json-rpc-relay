@@ -42,7 +42,7 @@ config({ path: resolve(__dirname, '../localAcceptance.env') });
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   // @ts-ignore
   const { mirrorNode, relay, logger, initialBalance, metrics, relayIsLocal } = global;
-  const operatorAccount = process.env.OPERATOR_ID_MAIN;
+  const operatorAccount = process.env.OPERATOR_ID_MAIN || this.config.OPERATOR_ID_MAIN || '';
   const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
