@@ -470,7 +470,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   describe('Connection TTL', async function () {
     let TEST_TTL = 5000;
 
-    WsTestHelper.overrideEnvs({ WS_MAX_INACTIVITY_TTL: '300000' });
+    WsTestHelper.overrideEnvs({ WS_MAX_INACTIVITY_TTL: TEST_TTL.toString() });
 
     it('Connection TTL is enforced, should close all connections', async function () {
       const wsConn2 = await new ethers.WebSocketProvider(WS_RELAY_URL);
