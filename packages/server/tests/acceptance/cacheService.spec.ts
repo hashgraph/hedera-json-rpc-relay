@@ -21,7 +21,7 @@
 import { expect } from 'chai';
 import { CacheService } from '../../../../packages/relay/src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
-import { withOverriddenEnvs } from '../../../relay/tests/helpers';
+import { overrideEnvs, withOverriddenEnvs } from '../../../relay/tests/helpers';
 const registry = new Registry();
 
 const DATA_LABEL_PREFIX = 'acceptance-test-';
@@ -41,7 +41,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   it('Correctly performs set, get and delete operations', async () => {
     const dataLabel = `${DATA_LABEL_PREFIX}1`;
 
-    await cacheService.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
+    await cacheService.set(dataLabel, DATA, CALLING_METHOD);
     await new Promise((r) => setTimeout(r, 200));
 
     const cache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
@@ -50,7 +50,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const cacheFromService = await cacheService.getAsync(dataLabel, CALLING_METHOD);
     expect(cacheFromService).to.deep.eq(DATA, 'getAsync method reads correctly from shared cache');
 
-    await cacheService.delete(dataLabel, CALLING_METHOD, undefined, true);
+    await cacheService.delete(dataLabel, CALLING_METHOD);
     await new Promise((r) => setTimeout(r, 200));
 
     const deletedCache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
@@ -64,7 +64,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const ttl = 1000;
     const dataLabel = `${DATA_LABEL_PREFIX}2`;
 
-    await cacheService.set(dataLabel, DATA, CALLING_METHOD, ttl, undefined, true);
+    await cacheService.set(dataLabel, DATA, CALLING_METHOD, ttl);
     await new Promise((r) => setTimeout(r, 200));
 
     const cache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
@@ -86,7 +86,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
       const serviceWithDisabledRedis = new CacheService(global.logger, registry);
       await new Promise((r) => setTimeout(r, 1000));
       expect(serviceWithDisabledRedis.isRedisEnabled()).to.eq(false, 'redis is disabled');
-      await serviceWithDisabledRedis.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
+      await serviceWithDisabledRedis.set(dataLabel, DATA, CALLING_METHOD);
       await new Promise((r) => setTimeout(r, 200));
 
       const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD);
@@ -97,7 +97,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   it('Cache set by one instance can be accessed by another', async () => {
     const dataLabel = `${DATA_LABEL_PREFIX}4`;
     const otherServiceInstance = new CacheService(global.logger, registry);
-    await cacheService.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
+    await cacheService.set(dataLabel, DATA, CALLING_METHOD);
     await new Promise((r) => setTimeout(r, 200));
 
     const cachedData = await otherServiceInstance.getAsync(dataLabel, CALLING_METHOD);
@@ -107,22 +107,16 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   describe('fallback to local cache in case of Redis error', async () => {
     const dataLabel = `${DATA_LABEL_PREFIX}_redis_error`;
 
-    let currentRedisEnabledEnv;
-    let cacheService;
+    let cacheService: CacheService;
+
+    overrideEnvs({ REDIS_ENABLED: 'true' });
 
     before(async () => {
-      currentRedisEnabledEnv = process.env.REDIS_ENABLED;
-
-      process.env.REDIS_ENABLED = 'true';
       cacheService = new CacheService(global.logger, registry);
 
       // disconnect redis client to simulate Redis error
       await cacheService.disconnectRedisClient();
       await new Promise((r) => setTimeout(r, 1000));
-    });
-
-    after(async () => {
-      process.env.REDIS_ENABLED = currentRedisEnabledEnv;
     });
 
     it('test getAsync operation', async () => {
