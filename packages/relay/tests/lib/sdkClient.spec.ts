@@ -239,19 +239,16 @@ describe('SdkClient', async function () {
       HEX_ECDSA: '0x08e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
     };
 
-    // @ts-ignore
-    withOverriddenEnvs({ OPERATOR_KEY_FORMAT: null }, () => {
-      it('Initialize the privateKey for default which is DER', async () => {
-        const hapiService = new HAPIService(
-          logger,
-          registry,
-          hbarLimiter,
-          new CacheService(logger, registry),
-          eventEmitter,
-        );
-        const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
-        expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
-      });
+    it('Initialize the privateKey for default which is DER', async () => {
+      const hapiService = new HAPIService(
+        logger,
+        registry,
+        hbarLimiter,
+        new CacheService(logger, registry),
+        eventEmitter,
+      );
+      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
+      expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
     });
 
     withOverriddenEnvs({ OPERATOR_KEY_FORMAT: undefined }, () => {

@@ -98,34 +98,32 @@ describe('@ethGasPrice Gas Price spec', async function () {
 
       let initialGasPrice: string;
 
-      before(async function () {
+      it('should return gas price without buffer', async function () {
+        await cacheService.clear();
         initialGasPrice = await ethImpl.gasPrice();
+        expect(initialGasPrice).to.equal(toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF));
       });
 
       for (let testCaseName in GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES) {
         const GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES[testCaseName];
 
-        const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);
-        const expectedGasPriceWithBuffer = toHex(
-          Number(expectedInitialGasPrice) +
-            Math.round(
-              (Number(expectedInitialGasPrice) / constants.TINYBAR_TO_WEIBAR_COEF) *
-                (Number(GAS_PRICE_PERCENTAGE_BUFFER || 0) / 100),
-            ) *
-              constants.TINYBAR_TO_WEIBAR_COEF,
-        );
-
         describe(testCaseName, async function () {
           overrideEnvs({ GAS_PRICE_PERCENTAGE_BUFFER: GAS_PRICE_PERCENTAGE_BUFFER });
 
           it(`should return gas price with buffer`, async function () {
-            await cacheService.clear();
+            const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);
+            const expectedGasPriceWithBuffer = toHex(
+              Number(expectedInitialGasPrice) +
+                Math.round(
+                  (Number(expectedInitialGasPrice) / constants.TINYBAR_TO_WEIBAR_COEF) *
+                    (Number(GAS_PRICE_PERCENTAGE_BUFFER || 0) / 100),
+                ) *
+                  constants.TINYBAR_TO_WEIBAR_COEF,
+            );
 
             const gasPriceWithBuffer = await ethImpl.gasPrice();
 
-            expect(expectedInitialGasPrice).to.not.equal(expectedGasPriceWithBuffer);
-            expect(initialGasPrice).to.not.equal(gasPriceWithBuffer);
-            expect(initialGasPrice).to.equal(expectedInitialGasPrice);
+            expect(gasPriceWithBuffer).to.not.equal(initialGasPrice);
             expect(gasPriceWithBuffer).to.equal(expectedGasPriceWithBuffer);
           });
         });

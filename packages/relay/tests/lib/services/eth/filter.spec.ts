@@ -133,7 +133,7 @@ describe('Filter API Test Suite', async function () {
 
   describe('all methods require a filter flag', async function () {
     withOverriddenEnvs({ FILTER_API_ENABLED: undefined }, () => {
-      it(`should throw UNSUPPORTED_METHOD for ${filterService.newFilter.name}`, async function () {
+      it(`should throw UNSUPPORTED_METHOD for newFilter`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           filterService.newFilter,
@@ -143,7 +143,7 @@ describe('Filter API Test Suite', async function () {
         );
       });
 
-      it(`should throw UNSUPPORTED_METHOD for ${filterService.uninstallFilter.name}`, async function () {
+      it(`should throw UNSUPPORTED_METHOD for uninstallFilter`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           filterService.uninstallFilter,
@@ -153,7 +153,7 @@ describe('Filter API Test Suite', async function () {
         );
       });
 
-      it(`should throw UNSUPPORTED_METHOD for ${filterService.getFilterChanges.name}`, async function () {
+      it(`should throw UNSUPPORTED_METHOD for getFilterChanges`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           filterService.getFilterChanges,
@@ -172,13 +172,12 @@ describe('Filter API Test Suite', async function () {
         filterId = await filterService.newFilter();
       });
 
-      it(`should call ${filterService.newFilter.name}`, async function () {
+      it(`should call newFilter`, async function () {
         expect(filterId).to.exist;
-        expect(filterId).instanceof(String);
-        expect(RelayAssertions.validateHash(filterId as string, 32)).to.eq(true, 'returns valid filterId');
+        expect(RelayAssertions.validateHash(filterId, 32)).to.eq(true, 'returns valid filterId');
       });
 
-      it(`should call ${filterService.getFilterChanges.name}`, async function () {
+      it(`should call getFilterChanges`, async function () {
         const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
         cacheMock.stub(cacheService, 'getAsync').withArgs(cacheKey, 'eth_getFilterChanges').returns(logFilterObject);
 
@@ -192,7 +191,7 @@ describe('Filter API Test Suite', async function () {
         expect(filterChanges).to.exist;
       });
 
-      it(`should call ${filterService.uninstallFilter.name}`, async function () {
+      it(`should call uninstallFilter`, async function () {
         const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
         cacheMock.stub(cacheService, 'getAsync').withArgs(cacheKey, 'eth_uninstallFilter').returns(logFilterObject);
 
@@ -202,7 +201,7 @@ describe('Filter API Test Suite', async function () {
     });
 
     withOverriddenEnvs({ FILTER_API_ENABLED: 'false' }, () => {
-      it(`should throw UNSUPPORTED_METHOD for ${filterService.newFilter.name}`, async function () {
+      it(`should throw UNSUPPORTED_METHOD for newFilter`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           filterService.newFilter,
@@ -212,7 +211,7 @@ describe('Filter API Test Suite', async function () {
         );
       });
 
-      it(`should throw UNSUPPORTED_METHOD for ${filterService.uninstallFilter.name}`, async function () {
+      it(`should throw UNSUPPORTED_METHOD for uninstallFilter`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           filterService.uninstallFilter,
@@ -222,7 +221,7 @@ describe('Filter API Test Suite', async function () {
         );
       });
 
-      it(`should throw UNSUPPORTED_METHOD for ${filterService.getFilterChanges.name}`, async function () {
+      it(`should throw UNSUPPORTED_METHOD for getFilterChanges`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           filterService.getFilterChanges,
