@@ -52,6 +52,7 @@ import TokenCreateJson from '../contracts/TokenCreateContract.json';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { TYPES } from '../../src/validator';
+import { overrideEnvs } from '../../../relay/tests/helpers';
 
 chai.use(chaiExclude);
 
@@ -786,20 +787,16 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       // This acceptance test ensures that the new force-to-consensus-by-selector logic correctly routes requests for `IHRC719.isAssociated()`
       // through the Consensus node rather than the Mirror node when using the `eth_call` endpoint.
 
-      let initialEthCallSelectorsAlwaysToConsensus: any, hrc719Contract: ethers.Contract;
+      let hrc719Contract: ethers.Contract;
+      let isAssociatedSelector: string;
 
       before(async () => {
-        initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
-
         hrc719Contract = await Utils.deployContract(
           HRC719ContractJson.abi,
           HRC719ContractJson.bytecode,
           accounts[0].wallet,
         );
-      });
-
-      after(() => {
-        process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
+        isAssociatedSelector = (await hrc719Contract.isAssociated.populateTransaction(tokenAddress)).data.slice(2, 10);
       });
 
       it('should NOT allow eth_call to process IHRC719.isAssociated() method', async () => {
@@ -813,16 +810,13 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         );
       });
 
-      it('should allow eth_call to successfully process IHRC719.isAssociated() method', async () => {
-        const isAssociatedSelector = (await hrc719Contract.isAssociated.populateTransaction(tokenAddress)).data.slice(
-          2,
-          10,
-        );
+      describe('with isAssociated selector in ETH_CALL_CONSENSUS_SELECTORS', async () => {
+        overrideEnvs({ ETH_CALL_CONSENSUS_SELECTORS: JSON.stringify([isAssociatedSelector]) });
 
-        // Add the selector for isAssociated to ETH_CALL_CONSENSUS_SELECTORS to ensure isAssociated() passes
-        process.env.ETH_CALL_CONSENSUS_SELECTORS = JSON.stringify([isAssociatedSelector]);
-        const isAssociatedResult = await hrc719Contract.isAssociated(tokenAddress);
-        expect(isAssociatedResult).to.be.false; // associate status of the token with the caller
+        it('should allow eth_call to successfully process IHRC719.isAssociated() method', async () => {
+          const isAssociatedResult = await hrc719Contract.isAssociated(tokenAddress);
+          expect(isAssociatedResult).to.be.false; // associate status of the token with the caller
+        });
       });
     });
   });
@@ -2015,16 +2009,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   });
 
   describe('Batch Request Test Suite BATCH_REQUESTS_ENABLED = true', async function () {
-    let PREV_BATCH_REQUESTS_ENABLED: string | undefined;
-
-    before(async () => {
-      PREV_BATCH_REQUESTS_ENABLED = process.env.BATCH_REQUESTS_ENABLED;
-      process.env.BATCH_REQUESTS_ENABLED = 'true';
-    });
-
-    after(async () => {
-      process.env.BATCH_REQUESTS_ENABLED = PREV_BATCH_REQUESTS_ENABLED;
-    });
+    overrideEnvs({ BATCH_REQUESTS_ENABLED: 'true' });
 
     it('Should return a batch of requests', async function () {
       const testAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId);

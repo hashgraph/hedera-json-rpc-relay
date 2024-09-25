@@ -34,7 +34,14 @@ import RelayCalls from '../../tests/helpers/constants';
 import * as Constants from '../../src/validator/constants';
 import { Utils } from '../helpers/utils';
 import { predefined } from '@hashgraph/json-rpc-relay';
-import { contractAddress1, contractAddress2, contractHash1, contractId1 } from '../../../relay/tests/helpers';
+import {
+  contractAddress1,
+  contractAddress2,
+  contractHash1,
+  contractId1,
+  overrideEnvs,
+  withOverriddenEnvs,
+} from '../../../relay/tests/helpers';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
@@ -89,35 +96,35 @@ describe('RPC Server', function () {
     }
   });
 
-  xit('supports optionality of request id when configured', async function () {
-    const app2 = require('../../src/server').default;
-    const port = `1${process.env.E2E_SERVER_PORT}`;
-    const testServer2 = app2.listen(port);
-    const testClient2 = BaseTest.createTestClient(port);
+  withOverriddenEnvs({ REQUEST_ID_IS_OPTIONAL: 'true' }, async function () {
+    xit('supports optionality of request id when configured', async function () {
+      const app2 = require('../../src/server').default;
+      const port = `1${process.env.E2E_SERVER_PORT}`;
+      const testServer2 = app2.listen(port);
 
-    try {
-      process.env.REQUEST_ID_IS_OPTIONAL = 'true';
-      const response = await testClient2.post('/', {
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-        params: [null],
-      });
+      try {
+        const testClient2 = BaseTest.createTestClient(port);
+        const response = await testClient2.post('/', {
+          jsonrpc: '2.0',
+          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
+          params: [null],
+        });
 
-      expect(response.status).to.eq(200);
-      expect(response.statusText).to.eq('OK');
-      expect(response, "Default response: Should have 'data' property").to.have.property('data');
-      expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
-      expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
-      expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
-      expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
-      expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
-      expect(response.data.result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
-    } catch (error: any) {
-      expect(true, `Unexpected error: ${error.message}`).to.eq(false);
-    }
-
-    process.env.REQUEST_ID_IS_OPTIONAL = 'false';
-    testServer2.close();
+        expect(response.status).to.eq(200);
+        expect(response.statusText).to.eq('OK');
+        expect(response, "Default response: Should have 'data' property").to.have.property('data');
+        expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
+        expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
+        expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
+        expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
+        expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
+        expect(response.data.result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+      } catch (error: any) {
+        expect(true, `Unexpected error: ${error.message}`).to.eq(false);
+      } finally {
+        testServer2.close();
+      }
+    });
   });
 
   it('should execute "eth_accounts"', async function () {
@@ -444,15 +451,7 @@ describe('RPC Server', function () {
   });
 
   describe('batchRequest Test Cases', async function () {
-    const batchRequestEnabledValue = process.env.BATCH_REQUESTS_ENABLED;
-
-    this.beforeAll(function () {
-      process.env.BATCH_REQUESTS_ENABLED = 'true';
-    });
-
-    this.afterAll(function () {
-      process.env.BATCH_REQUESTS_ENABLED = batchRequestEnabledValue;
-    });
+    overrideEnvs({ BATCH_REQUESTS_ENABLED: 'true' });
 
     function getEthChainIdRequest(id) {
       return {
@@ -618,36 +617,26 @@ describe('RPC Server', function () {
       }
     });
 
-    it('should not execute batch request when disabled', async function () {
-      // disable batch request
-      process.env.BATCH_REQUESTS_ENABLED = 'false';
-
-      // do batch request
-      try {
-        await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
-        Assertions.expectedError();
-      } catch (error: any) {
-        BaseTest.batchDisabledErrorCheck(error.response);
-      }
-
-      // enable batch request again
-      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    withOverriddenEnvs({ BATCH_REQUESTS_ENABLED: 'false' }, async function () {
+      it('should not execute batch request when disabled', async function () {
+        try {
+          await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.batchDisabledErrorCheck(error.response);
+        }
+      });
     });
 
-    it('batch request be disabled by default', async function () {
-      // disable batch request
-      process.env.BATCH_REQUESTS_ENABLED = undefined;
-
-      // do batch request
-      try {
-        await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
-        Assertions.expectedError();
-      } catch (error: any) {
-        BaseTest.batchDisabledErrorCheck(error.response);
-      }
-
-      // enable batch requests again
-      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    withOverriddenEnvs({ BATCH_REQUESTS_ENABLED: undefined }, async function () {
+      it('batch request be disabled by default', async function () {
+        try {
+          await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.batchDisabledErrorCheck(error.response);
+        }
+      });
     });
   });
 

@@ -25,7 +25,7 @@ import chaiAsPromised from 'chai-as-promised';
 
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
-import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults } from '../../helpers';
+import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults, overrideEnvs } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import { numberTo0x } from '../../../dist/formatters';
@@ -62,7 +62,6 @@ use(chaiAsPromised);
 
 let sdkClientStub;
 let getSdkClientStub;
-let currentMaxBlockRange: number;
 let ethImplLowTransactionCount: EthImpl;
 
 describe('@ethGetBlockByHash using MirrorNode', async function () {
@@ -71,6 +70,8 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     generateEthTestEnv(true);
   const results = defaultContractResults.results;
   const TOTAL_GAS_USED = numberTo0x(results[0].gas_used + results[1].gas_used);
+
+  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -88,8 +89,6 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       .onGet(contractByEvmAddress(CONTRACT_ADDRESS_2))
       .reply(200, { ...DEFAULT_CONTRACT, evmAddress: CONTRACT_ADDRESS_2 });
 
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
     ethImplLowTransactionCount = new EthImpl(
       hapiServiceInstance,
       mirrorNodeInstance,
@@ -103,7 +102,6 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
   it('eth_getBlockByHash with match', async function () {

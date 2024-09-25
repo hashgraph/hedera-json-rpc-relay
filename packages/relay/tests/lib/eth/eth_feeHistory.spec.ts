@@ -38,17 +38,19 @@ import {
 } from './eth-config';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
+import { overrideEnvs } from '../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub;
 let getSdkClientStub;
-let currentMaxBlockRange: number;
 
 describe('@ethFeeHistory using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+
+  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -58,18 +60,11 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
   describe('eth_feeHistory with ... param', function () {
@@ -235,18 +230,12 @@ describe('@ethFeeHistory using MirrorNode', async function () {
       return latestBlock;
     }
 
-    this.beforeAll(function () {
-      process.env.ETH_FEE_HISTORY_FIXED = 'true';
-    });
+    overrideEnvs({ ETH_FEE_HISTORY_FIXED: 'true' });
 
-    this.beforeEach(function () {
+    beforeEach(function () {
       cacheService.clear();
       restMock.reset();
       restMock.onGet(`network/fees`).reply(200, DEFAULT_NETWORK_FEES);
-    });
-
-    this.afterAll(function () {
-      process.env.ETH_FEE_HISTORY_FIXED = 'false';
     });
 
     it('eth_feeHistory with fixed fees', async function () {
