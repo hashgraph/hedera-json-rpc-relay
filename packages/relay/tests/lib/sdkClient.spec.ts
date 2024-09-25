@@ -2122,7 +2122,6 @@ describe('SdkClient', async function () {
     const mockedNetworkGasPrice = 710000;
 
     const randomAccountAddress = random20BytesAddress();
-    let hbarRateLimitPreemptiveCheck: string | undefined;
 
     const getMockedTransaction = (transactionType: string, toHbar: boolean) => {
       let transactionFee: any;
@@ -2227,13 +2226,13 @@ describe('SdkClient', async function () {
     let hbarLimitMock: sinon.SinonMock;
     let sdkClientMock: sinon.SinonMock;
 
+    overrideEnvs({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' });
+
     beforeEach(() => {
       requestId = uuid();
       hbarLimitMock = sinon.mock(hbarLimiter);
       sdkClientMock = sinon.mock(sdkClient);
       mock = new MockAdapter(instance);
-      hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK;
-      process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = 'true';
     });
 
     afterEach(() => {
@@ -2241,7 +2240,6 @@ describe('SdkClient', async function () {
       sinon.restore();
       sdkClientMock.restore();
       hbarLimitMock.restore();
-      process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = hbarRateLimitPreemptiveCheck;
     });
 
     it('should rate limit before creating file', async () => {
@@ -2581,55 +2579,56 @@ describe('SdkClient', async function () {
       expect(transactionRecordStub.called).to.be.true;
     });
 
-    it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'false'; // switch to mirror node mode
-      const mockedTransactionId = transactionId.toString();
-      const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);
-      const mockedMirrorNodeTransactionRecord = {
-        transactions: [
-          {
-            charged_tx_fee: defaultTransactionFee,
-            result: 'SUCCESS',
-            transaction_id: mockedTransactionIdFormatted,
-            transfers: [
-              {
-                account: '0.0.800',
-                amount: defaultTransactionFee,
-                is_approval: false,
-              },
-              {
-                account: process.env.OPERATOR_ID_MAIN,
-                amount: -1 * defaultTransactionFee,
-                is_approval: false,
-              },
-            ],
-          },
-        ],
-      };
-      mock.onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`).reply(200, mockedMirrorNodeTransactionRecord);
-      const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
-      const transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
+    withOverriddenEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+      it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
+        const mockedTransactionId = transactionId.toString();
+        const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);
+        const mockedMirrorNodeTransactionRecord = {
+          transactions: [
+            {
+              charged_tx_fee: defaultTransactionFee,
+              result: 'SUCCESS',
+              transaction_id: mockedTransactionIdFormatted,
+              transfers: [
+                {
+                  account: '0.0.800',
+                  amount: defaultTransactionFee,
+                  is_approval: false,
+                },
+                {
+                  account: process.env.OPERATOR_ID_MAIN,
+                  amount: -1 * defaultTransactionFee,
+                  is_approval: false,
+                },
+              ],
+            },
+          ],
+        };
+        mock
+          .onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`)
+          .reply(200, mockedMirrorNodeTransactionRecord);
+        const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
+        const transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
 
-      hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
-      hbarLimitMock
-        .expects('shouldLimit')
-        .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName)
-        .once()
-        .returns(false);
+        hbarLimitMock.expects('addExpense').withArgs(defaultTransactionFee).once();
+        hbarLimitMock
+          .expects('shouldLimit')
+          .withArgs(sinon.match.any, constants.EXECUTION_MODE.TRANSACTION, mockedCallerName)
+          .once()
+          .returns(false);
 
-      const response = await sdkClient.executeTransaction(
-        new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
-        mockedCallerName,
-        mockedInteractingEntity,
-        requestId,
-        true,
-        randomAccountAddress,
-      );
+        const response = await sdkClient.executeTransaction(
+          new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
+          mockedCallerName,
+          mockedInteractingEntity,
+          requestId,
+          true,
+          randomAccountAddress,
+        );
 
-      expect(response).to.eq(transactionResponse);
-      expect(transactionStub.called).to.be.true;
-
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true'; // switch back to consensus node
+        expect(response).to.eq(transactionResponse);
+        expect(transactionStub.called).to.be.true;
+      });
     });
 
     it('Should execute calculateTxRecordChargeAmount() to get the charge amount of transaction record', () => {
