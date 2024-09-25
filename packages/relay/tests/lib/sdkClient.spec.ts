@@ -24,7 +24,6 @@ import { expect } from 'chai';
 import { resolve } from 'path';
 import * as sinon from 'sinon';
 import { config } from 'dotenv';
-import { Context } from 'mocha';
 import { v4 as uuid } from 'uuid';
 import EventEmitter from 'events';
 import { Registry } from 'prom-client';
@@ -34,12 +33,12 @@ import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { formatTransactionId } from '../../src/formatters';
-import { predefined } from '../../src/lib/errors/JsonRpcError';
+import { predefined } from '../../src';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import MetricService from '../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { calculateTxRecordChargeAmount, random20BytesAddress, withOverriddenEnvs } from '../helpers';
+import { calculateTxRecordChargeAmount, overrideEnvs, random20BytesAddress, withOverriddenEnvs } from '../helpers';
 import {
   Hbar,
   Query,
@@ -93,6 +92,8 @@ describe('SdkClient', async function () {
     },
   } as unknown as FeeSchedules;
 
+  overrideEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
+
   before(() => {
     const hederaNetwork = process.env.HEDERA_NETWORK!;
     if (hederaNetwork in constants.CHAIN_IDS) {
@@ -116,8 +117,6 @@ describe('SdkClient', async function () {
       new CacheService(logger.child({ name: `cache` }), registry),
       eventEmitter,
     );
-
-    process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
 
     instance = axios.create({
       baseURL: 'https://localhost:5551/api/v1',
@@ -230,8 +229,6 @@ describe('SdkClient', async function () {
   });
 
   describe('HAPIService', async () => {
-    let originalEnv: NodeJS.ProcessEnv;
-
     const OPERATOR_KEY_ED25519 = {
       DER: '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
       HEX_ED25519: '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
@@ -242,41 +239,19 @@ describe('SdkClient', async function () {
       HEX_ECDSA: '0x08e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
     };
 
-    before(function (this: Context) {
-      // Store the original process.env
-      originalEnv = process.env;
-
-      if (
-        this.currentTest?.title ===
-        'Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is null'
-      ) {
-        process.env = new Proxy(process.env, {
-          get: (target, prop) => {
-            if (prop === 'OPERATOR_KEY_FORMAT') {
-              return null;
-            }
-            // @ts-ignore
-            return target[prop];
-          },
-        });
-      }
-    });
-
-    after(() => {
-      // Restore the original process.env after the test
-      process.env = originalEnv;
-    });
-
-    it('Initialize the privateKey for default which is DER', async () => {
-      const hapiService = new HAPIService(
-        logger,
-        registry,
-        hbarLimiter,
-        new CacheService(logger, registry),
-        eventEmitter,
-      );
-      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
-      expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
+    // @ts-ignore
+    withOverriddenEnvs({ OPERATOR_KEY_FORMAT: null }, () => {
+      it('Initialize the privateKey for default which is DER', async () => {
+        const hapiService = new HAPIService(
+          logger,
+          registry,
+          hbarLimiter,
+          new CacheService(logger, registry),
+          eventEmitter,
+        );
+        const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
+        expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
+      });
     });
 
     withOverriddenEnvs({ OPERATOR_KEY_FORMAT: undefined }, () => {
@@ -2472,9 +2447,10 @@ describe('SdkClient', async function () {
         await sdkClient.submitEthereumTransaction(
           transactionBuffer,
           mockedCallerName,
-          requestId,
           randomAccountAddress,
+          mockedNetworkGasPrice,
           mockedExchangeRateIncents,
+          requestId,
         );
         expect.fail(`Expected an error but nothing was thrown`);
       } catch (error: any) {
@@ -2701,7 +2677,7 @@ describe('SdkClient', async function () {
           accountId.toString(),
         );
         expect.fail('should have thrown an error');
-      } catch (error) {
+      } catch (error: any) {
         expect(error.status).to.eq(expectedError.status);
         expect(error.message).to.eq(expectedError.message);
       }

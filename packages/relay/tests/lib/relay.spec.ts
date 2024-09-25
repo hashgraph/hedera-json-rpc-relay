@@ -1,8 +1,29 @@
+/*
+ *
+ * Hedera JSON RPC Relay
+ *
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 import { expect } from 'chai';
 import sinon from 'sinon';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 import { RelayImpl } from '../../src';
+import { withOverriddenEnvs } from '../helpers';
 
 describe('RelayImpl', () => {
   const logger = pino();
@@ -36,19 +57,21 @@ describe('RelayImpl', () => {
     expect(eth).to.not.be.undefined;
   });
 
-  it('should return the correct subscription implementation when enabled', () => {
-    process.env.SUBSCRIPTIONS_ENABLED = 'true';
-    relay = new RelayImpl(logger, register);
+  withOverriddenEnvs({ SUBSCRIPTIONS_ENABLED: 'true' }, () => {
+    it('should return the correct subscription implementation when enabled', () => {
+      relay = new RelayImpl(logger, register);
 
-    const subs = relay.subs();
-    expect(subs).to.not.be.undefined;
+      const subs = relay.subs();
+      expect(subs).to.not.be.undefined;
+    });
   });
 
-  it('should return undefined subscription implementation when not enabled', () => {
-    process.env.SUBSCRIPTIONS_ENABLED = 'false';
-    relay = new RelayImpl(logger, register);
+  withOverriddenEnvs({ SUBSCRIPTIONS_ENABLED: 'false' }, () => {
+    it('should return undefined subscription implementation when not enabled', () => {
+      relay = new RelayImpl(logger, register);
 
-    const subs = relay.subs();
-    expect(subs).to.be.undefined;
+      const subs = relay.subs();
+      expect(subs).to.be.undefined;
+    });
   });
 });
