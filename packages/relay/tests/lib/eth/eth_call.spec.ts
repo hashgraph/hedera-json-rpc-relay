@@ -43,7 +43,7 @@ import {
   ONE_TINYBAR_IN_WEI_HEX,
   EXAMPLE_CONTRACT_BYTECODE,
 } from './eth-config';
-import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
+import { JsonRpcError, predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import constants from '../../../src/lib/constants';
 import {
@@ -53,17 +53,17 @@ import {
   defaultErrorMessageText,
   ethCallFailing,
   mockData,
+  overrideEnvs,
   withOverriddenEnvs,
 } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
-import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types/IMirrorNode';
+import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub;
 let getSdkClientStub;
-let currentMaxBlockRange: number;
 
 describe('@ethCall Eth Call spec', async function () {
   this.timeout(10000);
@@ -76,6 +76,8 @@ describe('@ethCall Eth Call spec', async function () {
     gas: MAX_GAS_LIMIT_HEX,
   };
 
+  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+
   this.beforeEach(() => {
     // reset cache and restMock
     cacheService.clear();
@@ -84,8 +86,6 @@ describe('@ethCall Eth Call spec', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
     restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
       account: '0.0.1723',
       evm_address: ACCOUNT_ADDRESS_1,
@@ -95,7 +95,6 @@ describe('@ethCall Eth Call spec', async function () {
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
   describe('eth_call precheck failures', async function () {
@@ -103,9 +102,7 @@ describe('@ethCall Eth Call spec', async function () {
     let callMirrorNodeSpy: sinon.SinonSpy;
     let sandbox: sinon.SinonSandbox;
 
-    this.beforeAll(() => {
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
-    });
+    overrideEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false' });
 
     beforeEach(() => {
       sandbox = sinon.createSandbox();
@@ -115,10 +112,6 @@ describe('@ethCall Eth Call spec', async function () {
 
     afterEach(() => {
       sandbox.restore();
-    });
-
-    this.afterAll(() => {
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
     });
 
     it('eth_call with incorrect `to` field length', async function () {
@@ -230,16 +223,7 @@ describe('@ethCall Eth Call spec', async function () {
   });
 
   describe('eth_call using consensus node', async function () {
-    let initialEthCallConesneusFF;
-
-    before(() => {
-      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'true';
-    });
-
-    after(() => {
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
-    });
+    overrideEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'true' });
 
     it('eth_call with no gas', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
@@ -451,16 +435,8 @@ describe('@ethCall Eth Call spec', async function () {
       gas: 400000,
       value: null,
     };
-    let initialEthCallConesneusFF;
 
-    before(() => {
-      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
-    });
-
-    after(() => {
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
-    });
+    overrideEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false' });
 
     //temporary workaround until precompiles are implemented in Mirror node evm module
     beforeEach(() => {
@@ -883,22 +859,15 @@ describe('@ethCall Eth Call spec', async function () {
   });
 
   describe('eth_call using consensus node because of redirect by selector', async function () {
-    let initialEthCallConesneusFF: any, initialEthCallSelectorsAlwaysToConsensus: any;
     const REDIRECTED_SELECTOR = '0x4d8fdd6d';
     const NON_REDIRECTED_SELECTOR = '0xaaaaaaaa';
     let callConsensusNodeSpy: sinon.SinonSpy;
     let callMirrorNodeSpy: sinon.SinonSpy;
     let sandbox: sinon.SinonSandbox;
 
-    before(() => {
-      initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
-      initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
-    });
-
-    after(() => {
-      process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
-      process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
+    overrideEnvs({
+      ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false',
+      ETH_CALL_CONSENSUS_SELECTORS: JSON.stringify([REDIRECTED_SELECTOR.slice(2)]),
     });
 
     beforeEach(() => {
@@ -912,8 +881,6 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with matched selector redirects to consensus', async function () {
-      process.env.ETH_CALL_CONSENSUS_SELECTORS = JSON.stringify([REDIRECTED_SELECTOR.slice(2)]);
-
       await ethImpl.call(
         {
           to: ACCOUNT_ADDRESS_1,

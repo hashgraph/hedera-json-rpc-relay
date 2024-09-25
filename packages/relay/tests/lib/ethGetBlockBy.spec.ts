@@ -36,7 +36,7 @@ import HbarLimit from '../../src/lib/hbarlimiter';
 import { Log, Transaction } from '../../src/lib/model';
 import { nullableNumberTo0x, numberTo0x, nanOrNumberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { defaultDetailedContractResults, useInMemoryRedisServer } from '../helpers';
+import { defaultDetailedContractResults, overrideEnvs, useInMemoryRedisServer } from '../helpers';
 import { EventEmitter } from 'events';
 
 use(chaiAsPromised);
@@ -119,6 +119,8 @@ describe('eth_getBlockBy', async function () {
 
   useInMemoryRedisServer(logger, 5031);
 
+  overrideEnvs({ ETH_FEE_HISTORY_FIXED: 'false' });
+
   this.beforeAll(async () => {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
 
@@ -138,8 +140,6 @@ describe('eth_getBlockBy', async function () {
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     const eventEmitter = new EventEmitter();
     hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
-
-    process.env.ETH_FEE_HISTORY_FIXED = 'false';
 
     // @ts-ignore
     ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
