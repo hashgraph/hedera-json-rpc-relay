@@ -25,7 +25,14 @@ const registry = new Registry();
 
 import pino from 'pino';
 import { Precheck } from '../../src/lib/precheck';
-import { blobVersionedHash, contractAddress1, expectedError, mockData, signTransaction } from '../helpers';
+import {
+  blobVersionedHash,
+  contractAddress1,
+  expectedError,
+  mockData,
+  overrideEnvs,
+  signTransaction,
+} from '../helpers';
 import { MirrorNodeClient } from '../../src/lib/clients';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
@@ -232,24 +239,14 @@ describe('Precheck', async function () {
   });
 
   describe('gas price', async function () {
-    let initialMinGasPriceBuffer;
-    before(async () => {
-      initialMinGasPriceBuffer = constants.GAS_PRICE_TINY_BAR_BUFFER;
-      process.env.GAS_PRICE_TINY_BAR_BUFFER = '10000000000'; // 1 tinybar
-    });
-
-    after(async () => {
-      process.env.GAS_PRICE_TINY_BAR_BUFFER = initialMinGasPriceBuffer;
-    });
+    overrideEnvs({ GAS_PRICE_TINY_BAR_BUFFER: '10000000000' }); // 1 tinybar
 
     it('should pass for gas price gt to required gas price', async function () {
-      const result = precheck.gasPrice(parsedTxWithMatchingChainId, 10);
-      expect(result).to.not.exist;
+      expect(() => precheck.gasPrice(parsedTxWithMatchingChainId, 10)).to.not.throw;
     });
 
     it('should pass for gas price equal to required gas price', async function () {
-      const result = precheck.gasPrice(parsedTxWithMatchingChainId, defaultGasPrice);
-      expect(result).to.not.exist;
+      expect(() => precheck.gasPrice(parsedTxWithMatchingChainId, defaultGasPrice)).to.not.throw;
     });
 
     it('should recognize if a signed raw transaction is the deterministic deployment transaction', async () => {
