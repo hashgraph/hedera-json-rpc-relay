@@ -31,7 +31,7 @@ import { Utils } from '../../../../src/utils';
 import constants from '../../../../src/lib/constants';
 import HbarLimit from '../../../../src/lib/hbarlimiter';
 import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
-import { calculateTxRecordChargeAmount, getRequestId } from '../../../helpers';
+import { calculateTxRecordChargeAmount, getRequestId, overrideEnvs, withOverriddenEnvs } from '../../../helpers';
 import MetricService from '../../../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../../../src/lib/types/events';
@@ -95,9 +95,9 @@ describe('Metric Service', function () {
     ],
   } as unknown as TransactionRecord;
 
-  before(() => {
-    process.env.OPERATOR_KEY_FORMAT = 'DER';
+  overrideEnvs({ OPERATOR_KEY_FORMAT: 'DER' });
 
+  before(() => {
     // consensus node client
     const hederaNetwork = process.env.HEDERA_NETWORK!;
     if (hederaNetwork in constants.CHAIN_IDS) {
@@ -163,151 +163,155 @@ describe('Metric Service', function () {
       interactingEntity: mockedInteractingEntity,
     };
 
-    it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
-      mock.onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`).reply(200, mockedMirrorNodeTransactionRecord);
+    withOverriddenEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+      it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
+        mock
+          .onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`)
+          .reply(200, mockedMirrorNodeTransactionRecord);
 
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'false';
+        const originalBudget = hbarLimiter.getRemainingBudget();
 
-      const originalBudget = hbarLimiter.getRemainingBudget();
+        // capture metrics
+        await metricService.captureTransactionMetrics(mockedExecuteTransactionEventPayload);
 
-      // capture metrics
-      await metricService.captureTransactionMetrics(mockedExecuteTransactionEventPayload);
+        // validate hbarLimiter
+        const updatedBudget = hbarLimiter.getRemainingBudget();
+        expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
 
-      // validate hbarLimiter
-      const updatedBudget = hbarLimiter.getRemainingBudget();
-      expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
-
-      // validate cost metrics
-      // @ts-ignore
-      const costMetricObject = (await metricService.getCostMetric().get()).values.find(
-        (metric) => metric.metricName === metricHistogramCostSumTitle,
-      )!;
-      expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
-      expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(costMetricObject.value).to.eq(mockedTxFee);
+        // validate cost metrics
+        // @ts-ignore
+        const costMetricObject = (await metricService.getCostMetric().get()).values.find(
+          (metric) => metric.metricName === metricHistogramCostSumTitle,
+        )!;
+        expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
+        expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
+        expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(costMetricObject.value).to.eq(mockedTxFee);
+      });
     });
 
-    it('Should execute captureTransactionMetrics() by retrieving transaction record from CONSENSUS NODE client', async () => {
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
-      const mockedExchangeRateInCents = 12;
-      const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
+    withOverriddenEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
+      it('Should execute captureTransactionMetrics() by retrieving transaction record from CONSENSUS NODE client', async () => {
+        const mockedExchangeRateInCents = 12;
+        const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
 
-      const transactionRecordStub = sinon
-        .stub(TransactionRecordQuery.prototype, 'execute')
-        .resolves(mockedConsensusNodeTransactionRecord);
+        const transactionRecordStub = sinon
+          .stub(TransactionRecordQuery.prototype, 'execute')
+          .resolves(mockedConsensusNodeTransactionRecord);
 
-      const originalBudget = hbarLimiter.getRemainingBudget();
+        const originalBudget = hbarLimiter.getRemainingBudget();
 
-      await metricService.captureTransactionMetrics(mockedExecuteTransactionEventPayload);
-      expect(transactionRecordStub.called).to.be.true;
+        await metricService.captureTransactionMetrics(mockedExecuteTransactionEventPayload);
+        expect(transactionRecordStub.called).to.be.true;
 
-      // validate hbarLimiter
-      // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
-      const updatedBudget = hbarLimiter.getRemainingBudget();
-      expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
+        // validate hbarLimiter
+        // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
+        const updatedBudget = hbarLimiter.getRemainingBudget();
+        expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
 
-      // validate cost metric
-      // @ts-ignore
-      const metricObjects = await metricService.getCostMetric().get();
-      const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
-        return (
-          metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
+        // validate cost metric
+        // @ts-ignore
+        const metricObjects = await metricService.getCostMetric().get();
+        const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
+          return (
+            metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
+          );
+        });
+        const transactionFeeMetricObject = metricObjects.values.find((metric) => {
+          return (
+            metric.labels.mode === constants.EXECUTION_MODE.TRANSACTION &&
+            metric.metricName === metricHistogramCostSumTitle
+          );
+        });
+
+        expect(txRecordFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+        expect(txRecordFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+        expect(txRecordFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(txRecordFeeMetricObject?.value).to.eq(expectedTxRecordFee);
+
+        expect(transactionFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+        expect(transactionFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+        expect(transactionFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
+
+        // validate gas metric
+        // @ts-ignore
+        const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
+          (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
+        )!;
+
+        expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
+        expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
+        expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(gasMetricObject.value).to.eq(
+          mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
         );
       });
-      const transactionFeeMetricObject = metricObjects.values.find((metric) => {
-        return (
-          metric.labels.mode === constants.EXECUTION_MODE.TRANSACTION &&
-          metric.metricName === metricHistogramCostSumTitle
-        );
-      });
-
-      expect(txRecordFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
-      expect(txRecordFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
-      expect(txRecordFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(txRecordFeeMetricObject?.value).to.eq(expectedTxRecordFee);
-
-      expect(transactionFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
-      expect(transactionFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
-      expect(transactionFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
-
-      // validate gas metric
-      // @ts-ignore
-      const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
-        (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
-      )!;
-
-      expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
-      expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(gasMetricObject.value).to.eq(
-        mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
-      );
     });
 
-    it('Should listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics()', async () => {
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
-      const mockedExchangeRateInCents = 12;
-      const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
+    withOverriddenEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
+      it('Should listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics()', async () => {
+        const mockedExchangeRateInCents = 12;
+        const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
 
-      const transactionRecordStub = sinon
-        .stub(TransactionRecordQuery.prototype, 'execute')
-        .resolves(mockedConsensusNodeTransactionRecord);
+        const transactionRecordStub = sinon
+          .stub(TransactionRecordQuery.prototype, 'execute')
+          .resolves(mockedConsensusNodeTransactionRecord);
 
-      const originalBudget = hbarLimiter.getRemainingBudget();
+        const originalBudget = hbarLimiter.getRemainingBudget();
 
-      // emitting an EXECUTE_TRANSACTION event to kick off capturing metrics process asynchronously
-      eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, mockedExecuteTransactionEventPayload);
+        // emitting an EXECUTE_TRANSACTION event to kick off capturing metrics process asynchronously
+        eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, mockedExecuteTransactionEventPayload);
 
-      // small wait for hbar rate limiter to settle
-      await new Promise((r) => setTimeout(r, 100));
+        // small wait for hbar rate limiter to settle
+        await new Promise((r) => setTimeout(r, 100));
 
-      expect(transactionRecordStub.called).to.be.true;
+        expect(transactionRecordStub.called).to.be.true;
 
-      // validate hbarLimiter
-      // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
-      const updatedBudget = hbarLimiter.getRemainingBudget();
+        // validate hbarLimiter
+        // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
+        const updatedBudget = hbarLimiter.getRemainingBudget();
 
-      expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
+        expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
 
-      // validate cost metric
-      // @ts-ignore
-      const metricObjects = await metricService.getCostMetric().get();
-      const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
-        return (
-          metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
+        // validate cost metric
+        // @ts-ignore
+        const metricObjects = await metricService.getCostMetric().get();
+        const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
+          return (
+            metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
+          );
+        });
+        const transactionFeeMetricObject = metricObjects.values.find((metric) => {
+          return (
+            metric.labels.mode === constants.EXECUTION_MODE.TRANSACTION &&
+            metric.metricName === metricHistogramCostSumTitle
+          );
+        });
+
+        expect(txRecordFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+        expect(txRecordFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+        expect(txRecordFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(txRecordFeeMetricObject?.value).to.eq(expectedTxRecordFee);
+
+        expect(transactionFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+        expect(transactionFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+        expect(transactionFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
+
+        // validate gas metric
+        // @ts-ignore
+        const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
+          (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
+        )!;
+
+        expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
+        expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
+        expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(gasMetricObject.value).to.eq(
+          mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
         );
       });
-      const transactionFeeMetricObject = metricObjects.values.find((metric) => {
-        return (
-          metric.labels.mode === constants.EXECUTION_MODE.TRANSACTION &&
-          metric.metricName === metricHistogramCostSumTitle
-        );
-      });
-
-      expect(txRecordFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
-      expect(txRecordFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
-      expect(txRecordFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(txRecordFeeMetricObject?.value).to.eq(expectedTxRecordFee);
-
-      expect(transactionFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
-      expect(transactionFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
-      expect(transactionFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
-
-      // validate gas metric
-      // @ts-ignore
-      const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
-        (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
-      )!;
-
-      expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
-      expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(gasMetricObject.value).to.eq(
-        mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
-      );
     });
   });
 
