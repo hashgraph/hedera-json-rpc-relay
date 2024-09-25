@@ -245,7 +245,7 @@ describe('HbarLimitService', function () {
       });
 
       it('should return true if amountSpent is exactly at the limit', async function () {
-        const spendingPlan = createSpendingPlan(mockPlanId, HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC]);
+        const spendingPlan = createSpendingPlan(mockPlanId, HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC]);
         ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ethAddress: mockEthAddress,
           planId: mockPlanId,
@@ -260,7 +260,7 @@ describe('HbarLimitService', function () {
       it('should return false if amountSpent is just below the limit', async function () {
         const spendingPlan = createSpendingPlan(
           mockPlanId,
-          HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC].toTinybars().sub(1),
+          HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC].toTinybars().sub(1),
         );
         ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ethAddress: mockEthAddress,
@@ -276,7 +276,7 @@ describe('HbarLimitService', function () {
       it('should return true if amountSpent is just above the limit', async function () {
         const spendingPlan = createSpendingPlan(
           mockPlanId,
-          HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC].toTinybars().add(1),
+          HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC].toTinybars().add(1),
         );
         ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ethAddress: mockEthAddress,
@@ -292,7 +292,7 @@ describe('HbarLimitService', function () {
       it('should return true if amountSpent + estimatedTxFee is above the limit', async function () {
         const spendingPlan = createSpendingPlan(
           mockPlanId,
-          HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee).add(1),
+          HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee).add(1),
         );
         ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ethAddress: mockEthAddress,
@@ -315,7 +315,7 @@ describe('HbarLimitService', function () {
       it('should return false if amountSpent + estimatedTxFee is below the limit', async function () {
         const spendingPlan = createSpendingPlan(
           mockPlanId,
-          HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee).sub(1),
+          HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee).sub(1),
         );
         ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ethAddress: mockEthAddress,
@@ -331,7 +331,7 @@ describe('HbarLimitService', function () {
       it('should return false if amountSpent + estimatedTxFee is at the limit', async function () {
         const spendingPlan = createSpendingPlan(
           mockPlanId,
-          HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee),
+          HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee),
         );
         ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ethAddress: mockEthAddress,
@@ -393,7 +393,7 @@ describe('HbarLimitService', function () {
       });
 
       it('should return true if amountSpent is exactly at the limit', async function () {
-        const spendingPlan = createSpendingPlan(mockPlanId, HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC]);
+        const spendingPlan = createSpendingPlan(mockPlanId, HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC]);
         ipAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ipAddress: mockIpAddress,
           planId: mockPlanId,
@@ -408,7 +408,7 @@ describe('HbarLimitService', function () {
       it('should return false if amountSpent is just below the limit', async function () {
         const spendingPlan = createSpendingPlan(
           mockPlanId,
-          HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC].toTinybars().sub(1),
+          HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC].toTinybars().sub(1),
         );
         ipAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ipAddress: mockIpAddress,
@@ -424,7 +424,7 @@ describe('HbarLimitService', function () {
       it('should return true if amountSpent is just above the limit', async function () {
         const spendingPlan = createSpendingPlan(
           mockPlanId,
-          HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC].toTinybars().add(1),
+          HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC].toTinybars().add(1),
         );
         ipAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ipAddress: mockIpAddress,
@@ -440,7 +440,7 @@ describe('HbarLimitService', function () {
       it('should return true if amountSpent + estimatedTxFee is above the limit', async function () {
         const spendingPlan = createSpendingPlan(
           mockPlanId,
-          HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee).add(1),
+          HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee).add(1),
         );
         ipAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ipAddress: mockIpAddress,
@@ -463,7 +463,7 @@ describe('HbarLimitService', function () {
       it('should return false if amountSpent + estimatedTxFee is below the limit', async function () {
         const spendingPlan = createSpendingPlan(
           mockPlanId,
-          HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee).sub(1),
+          HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee).sub(1),
         );
         ipAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ipAddress: mockIpAddress,
@@ -479,7 +479,7 @@ describe('HbarLimitService', function () {
       it('should return false if amountSpent + estimatedTxFee is at the limit', async function () {
         const spendingPlan = createSpendingPlan(
           mockPlanId,
-          HbarLimitService.DAILY_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee),
+          HbarLimitService.TIER_LIMITS[SubscriptionType.BASIC].toTinybars().sub(mockEstimatedTxFee),
         );
         ipAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
           ipAddress: mockIpAddress,

@@ -343,8 +343,13 @@ HBAR_RATE_LIMIT_PRIVILEGED=20000
 ### Total Budget and Limit Duration
 
 The total budget and the limit duration are defined as environment variables:
-- `HBAR_RATE_LIMIT_DURATION`: The time window (in milliseconds) for which both the total bud
-- `HBAR_RATE_LIMIT_TINYBAR`: The ceiling on the total amount of HBars that can be spent in the limit duration.
+- `HBAR_RATE_LIMIT_DURATION`: The time window (in milliseconds) for which both the total budget and the spending limits are applicable. 
+  - On initialization of `HbarLimitService`, a reset timestamp is calculated by adding the `HBAR_RATE_LIMIT_DURATION` to the current timestamp.
+  - The total budget and spending limits are reset when the current timestamp exceeds the reset timestamp. 
+  - **NOTE:** If the new reset timestamp falls on a different day, the time is set to midnight.
+- `HBAR_RATE_LIMIT_TINYBAR`: The ceiling on the total amount of HBars that can be spent in the limit duration. 
+  - This is the largest bucket from which others pull from.
+  - If the total amount spent exceeds this limit, all spending is paused until the next reset.
 
 Example configuration for a daily budget of 15,840,000,000,000 tinybars (15,840 HBars):
 ```dotenv

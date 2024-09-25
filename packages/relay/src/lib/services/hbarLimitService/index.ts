@@ -32,7 +32,7 @@ import { Hbar } from '@hashgraph/sdk';
 
 export class HbarLimitService implements IHbarLimitService {
   // TODO: Replace with actual values - https://github.com/hashgraph/hedera-json-rpc-relay/issues/2895
-  static readonly DAILY_LIMITS: Record<SubscriptionType, Hbar> = {
+  static readonly TIER_LIMITS: Record<SubscriptionType, Hbar> = {
     BASIC: constants.HBAR_RATE_LIMIT_BASIC,
     EXTENDED: constants.HBAR_RATE_LIMIT_EXTENDED,
     PRIVILEGED: constants.HBAR_RATE_LIMIT_PRIVILEGED,
@@ -195,7 +195,7 @@ export class HbarLimitService implements IHbarLimitService {
       spendingPlan = await this.createBasicSpendingPlan(ethAddress, ipAddress);
     }
 
-    const dailyLimit = HbarLimitService.DAILY_LIMITS[spendingPlan.subscriptionType].toTinybars();
+    const dailyLimit = HbarLimitService.TIER_LIMITS[spendingPlan.subscriptionType].toTinybars();
 
     const exceedsLimit =
       dailyLimit.lte(spendingPlan.amountSpent) || dailyLimit.lt(spendingPlan.amountSpent + estimatedTxFee);
