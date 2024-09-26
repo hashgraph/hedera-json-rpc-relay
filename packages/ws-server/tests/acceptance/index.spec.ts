@@ -35,11 +35,12 @@ import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer
 import ServicesClient from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
-const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { Server } from 'node:http';
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+import { setServerTimeout } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/utils';
+
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -174,6 +175,8 @@ describe('RPC Server Acceptance Tests', function () {
 
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
     const relayServer = app.listen({ port: constants.RELAY_PORT });
+    global.relayServer = relayServer;
+    setServerTimeout(relayServer);
 
     if (process.env.TEST_WS_SERVER === 'true') {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
