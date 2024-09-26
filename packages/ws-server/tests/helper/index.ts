@@ -89,6 +89,23 @@ export class WsTestHelper {
     };
   }
 
+  /**
+   * Temporarily overrides environment variables for the duration of the encapsulating describe block.
+   * @param envs - An object containing key-value pairs of environment variables to set.
+   *
+   * @example
+   * describe('given TEST is set to false', () => {
+   *   overrideEnvs({ TEST: 'false' });
+   *
+   *   it('should return false', () => {
+   *     expect(process.env.TEST).to.equal('false');
+   *   });
+   * });
+   *
+   * it('should return true', () => {
+   *   expect(process.env.TEST).to.equal('true');
+   * });
+   */
   static overrideEnvs(envs: NodeJS.Dict<string>) {
     let envsToReset: NodeJS.Dict<string> = {};
 
@@ -114,6 +131,23 @@ export class WsTestHelper {
     });
   }
 
+  /**
+   * Overrides environment variables for the duration of the provided tests.
+   *
+   * @param {NodeJS.Dict<string>} envs - An object containing key-value pairs of environment variables to set.
+   * @param {Function} tests - A function containing the tests to run with the overridden environment variables.
+   *
+   * @example
+   * withOverriddenEnvs({ TEST: 'false' }, () => {
+   *   it('should return false', () => {
+   *     expect(process.env.TEST).to.equal('false');
+   *   });
+   * });
+   *
+   * it('should return true', () => {
+   *   expect(process.env.TEST).to.equal('true');
+   * });
+   */
   static withOverriddenEnvs(envs: NodeJS.Dict<string>, tests: () => void) {
     const overriddenEnvs = Object.entries(envs)
       .map(([key, value]) => `${key}=${value}`)
