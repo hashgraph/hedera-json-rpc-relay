@@ -37,7 +37,7 @@ import {
 import Koa from 'koa';
 import { Histogram, Registry } from 'prom-client';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { IRequestDetails, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
 import {
   getBatchRequestsEnabled,
@@ -75,6 +75,7 @@ export default class KoaJsonRpc {
 
   private requestId: string;
   private requestIpAddress: string;
+  private connectionId?: string;
 
   constructor(logger: Logger, register: Registry, opts?: { limit: string | null }) {
     this.koaApp = new Koa();
@@ -109,8 +110,7 @@ export default class KoaJsonRpc {
 
   rpcApp(): (ctx: Koa.Context, _next: Koa.Next) => Promise<void> {
     return async (ctx: Koa.Context, _next: Koa.Next) => {
-      this.requestId = ctx.state.reqId;
-      this.requestIpAddress = ctx.request.ip;
+      this.updateRequestDetails({ requestId: ctx.state.reqId, ipAddress: ctx.request.ip });
       ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
 
       if (ctx.request.method !== 'POST') {
@@ -259,7 +259,17 @@ export default class KoaJsonRpc {
   }
 
   getRequestDetails(): RequestDetails {
-    return new RequestDetails({ requestId: this.requestId, ipAddress: this.requestIpAddress });
+    return new RequestDetails({
+      requestId: this.requestId,
+      ipAddress: this.requestIpAddress,
+      connectionId: this.connectionId,
+    });
+  }
+
+  updateRequestDetails(details: IRequestDetails): void {
+    this.requestId = details.requestId;
+    this.requestIpAddress = details.ipAddress;
+    this.connectionId = details.connectionId;
   }
 
   hasInvalidRequestId(body: IJsonRpcRequest): boolean {

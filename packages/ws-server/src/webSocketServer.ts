@@ -33,7 +33,6 @@ import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { JsonRpcError, predefined, type Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
 import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -69,14 +68,16 @@ app.ws.use(async (ctx: Koa.Context) => {
 
   ctx.websocket.id = relay.subs()?.generateId();
   ctx.websocket.requestId = uuid();
-
   ctx.websocket.limiter = limiter;
   ctx.websocket.wsMetricRegistry = wsMetricRegistry;
-  const requestDetails = new RequestDetails({
+
+  koaJsonRpc.updateRequestDetails({
     requestId: ctx.websocket.requestId,
     ipAddress: ctx.request.ip,
     connectionId: ctx.websocket.id,
   });
+  const requestDetails = koaJsonRpc.getRequestDetails();
+
   logger.info(
     // @ts-ignore
     `${requestDetails.formattedLogPrefix} New connection established. Current active connections: ${ctx.app.server._connections}`,
@@ -210,6 +211,7 @@ httpApp.use(async (ctx: Koa.Context, next: Koa.Next) => {
   } else if (ctx.url === '/health/readiness') {
     // readiness endpoint
     try {
+      koaJsonRpc.updateRequestDetails({ requestId: uuid(), ipAddress: ctx.request.ip });
       const result = relay.eth().chainId(koaJsonRpc.getRequestDetails());
       if (result.includes('0x12')) {
         ctx.status = 200;

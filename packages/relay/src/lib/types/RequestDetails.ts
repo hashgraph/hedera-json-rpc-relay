@@ -18,12 +18,18 @@
  *
  */
 
+export interface IRequestDetails {
+  requestId: string;
+  ipAddress: string;
+  connectionId?: string;
+}
+
 export class RequestDetails {
   requestId: string;
   ipAddress: string;
   connectionId?: string;
 
-  constructor(details: { requestId: string; ipAddress: string; connectionId?: string }) {
+  constructor(details: IRequestDetails) {
     this.requestId = details.requestId;
     this.ipAddress = details.ipAddress;
     this.connectionId = details.connectionId;
