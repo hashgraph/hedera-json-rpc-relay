@@ -56,6 +56,7 @@ jobs:
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: ratelimiter
+      test_ws_server: true
       networkTag: ${{inputs.networkNodeTag}}
       mirrorTag: ${{inputs.mirrorNodeTag}}
 
@@ -98,12 +99,30 @@ jobs:
       testfilter: precompile-calls
       networkTag: ${{inputs.networkNodeTag}}
       mirrorTag: ${{inputs.mirrorNodeTag}}
-      
-  websocket:
-    name: Websocket
+
+  websocket-batch-1:
+    name: Websocket Batch 1
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: ws
+      testfilter: ws_batch1
+      test_ws_server: true
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+
+  websocket-batch-2:
+    name: Websocket Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch2
+      test_ws_server: true
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+
+  websocket-batch-3:
+    name: Websocket Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch3
       test_ws_server: true
       networkTag: ${{inputs.networkNodeTag}}
       mirrorTag: ${{inputs.mirrorNodeTag}}
@@ -113,6 +132,14 @@ jobs:
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: cache-service
+      networkTag: ${{inputs.networkNodeTag}}
+      mirrorTag: ${{inputs.mirrorNodeTag}}
+
+  server-config:
+    name: Server Config
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: serverconfig
       networkTag: ${{inputs.networkNodeTag}}
       mirrorTag: ${{inputs.mirrorNodeTag}}
       

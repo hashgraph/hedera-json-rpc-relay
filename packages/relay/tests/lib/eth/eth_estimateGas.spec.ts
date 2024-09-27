@@ -251,7 +251,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       null,
     );
 
-    expect(hollowAccountGasCreation).to.equal(EthImpl.gasTxHollowAccountCreation);
+    expect(Number(hollowAccountGasCreation)).to.be.greaterThanOrEqual(Number(EthImpl.minGasTxHollowAccountCreation));
   });
 
   it('should eth_estimateGas transfer with 0 value', async function () {
