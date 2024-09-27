@@ -19,8 +19,7 @@
     "koa-websocket": "^7.0.0",
     "mocha": "^10.1.0",
     "pino": "^7.11.0",
-    "pino-pretty": "^7.6.1",
-    "pnpm": "8.15.9"
+    "pino-pretty": "^7.6.1"
   },
   "devDependencies": {
     "@hashgraph/hedera-local": "^2.29.2",
@@ -60,4 +59,3 @@
     "report-dir": "coverage"
   }
 }
-
