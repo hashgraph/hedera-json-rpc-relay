@@ -55,6 +55,7 @@ import {
   formatContractResult,
   weibarHexToTinyBarInt,
   isValidEthereumAddress,
+  formatRequestIdMessage,
   formatTransactionIdWithoutQueryParams,
   getFunctionSelector,
 } from '../formatters';
@@ -475,16 +476,18 @@ export class EthImpl implements Eth {
 
   private async getFeeWeibars(callerName: string, requestIdPrefix?: string, timestamp?: string): Promise<number> {
     let networkFees;
+
     try {
       networkFees = await this.mirrorNodeClient.getNetworkFees(timestamp, undefined, requestIdPrefix);
-      if (_.isNil(networkFees)) {
-        this.logger.debug(`${requestIdPrefix} Mirror Node returned no fees. Fallback to network`);
-      }
     } catch (e: any) {
-      this.logger.warn(e, `${requestIdPrefix} Mirror Node threw an error retrieving fees. Fallback to network`);
+      this.logger.warn(
+        e,
+        `${requestIdPrefix} Mirror Node threw an error while retrieving fees. Fallback to consensus node.`,
+      );
     }
 
     if (_.isNil(networkFees)) {
+      this.logger.debug(`${requestIdPrefix} Mirror Node returned no network fees. Fallback to consensus node.`);
       networkFees = {
         fees: [
           {
@@ -728,10 +731,14 @@ export class EthImpl implements Eth {
   }
 
   /**
-   * Gets the current gas price of the network.
+   * Retrieves the current network gas price in weibars.
+   *
+   * @param {string} [requestIdPrefix] - An optional prefix for the request ID used for logging purposes.
+   * @returns {Promise<string>} The current gas price in weibars as a hexadecimal string.
+   * @throws Will throw an error if unable to retrieve the gas price.
    */
   async gasPrice(requestIdPrefix?: string): Promise<string> {
-    this.logger.trace(`${requestIdPrefix} gasPrice()`);
+    this.logger.trace(`${requestIdPrefix} eth_gasPrice`);
     try {
       let gasPrice: number | undefined = await this.cacheService.getAsync(
         constants.CACHE_KEY.GAS_PRICE,
@@ -1438,7 +1445,11 @@ export class EthImpl implements Eth {
     return nonceCount;
   }
 
-  async parseRawTxAndPrecheck(transaction: string, requestIdPrefix?: string): Promise<EthersTransaction> {
+  async parseRawTxAndPrecheck(
+    transaction: string,
+    networkGasPriceInWeiBars: number,
+    requestIdPrefix?: string,
+  ): Promise<EthersTransaction> {
     let interactingEntity = '';
     let originatingAddress = '';
     try {
@@ -1450,8 +1461,7 @@ export class EthImpl implements Eth {
         `${requestIdPrefix} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`,
       );
 
-      const gasPrice = Number(await this.gasPrice(requestIdPrefix));
-      await this.precheck.sendRawTransactionCheck(parsedTx, gasPrice, requestIdPrefix);
+      await this.precheck.sendRawTransactionCheck(parsedTx, networkGasPriceInWeiBars, requestIdPrefix);
       return parsedTx;
     } catch (e: any) {
       this.logger.warn(
@@ -1500,7 +1510,7 @@ export class EthImpl implements Eth {
 
         if (!accountNonce) {
           this.logger.warn(`${requestIdPrefix} Cannot find updated account nonce.`);
-          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONT_NONCE error.`);
+          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONG_NONCE error.`);
         }
 
         if (parsedTx.nonce > accountNonce) {
@@ -1529,15 +1539,20 @@ export class EthImpl implements Eth {
    * Submits a transaction to the network for execution.
    *
    * @param transaction
-   * @param requestIdPrefix
+   * @param requestId
    */
-  async sendRawTransaction(transaction: string, requestIdPrefix: string): Promise<string | JsonRpcError> {
+  async sendRawTransaction(transaction: string, requestId: string): Promise<string | JsonRpcError> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
     if (transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
       this.ethExecutionsCounter
         .labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
         .inc();
 
-    const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestIdPrefix);
+    const networkGasPriceInWeiBars = Utils.addPercentageBufferToGasPrice(
+      await this.getFeeWeibars(EthImpl.ethGasPrice, requestIdPrefix),
+    );
+
+    const parsedTx = await this.parseRawTxAndPrecheck(transaction, networkGasPriceInWeiBars, requestIdPrefix);
     const originalCallerAddress = parsedTx.from?.toString() || '';
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
     let fileId: FileId | null = null;
@@ -1548,8 +1563,10 @@ export class EthImpl implements Eth {
         .submitEthereumTransaction(
           transactionBuffer,
           EthImpl.ethSendRawTransaction,
-          requestIdPrefix,
           originalCallerAddress,
+          networkGasPriceInWeiBars,
+          await this.getCurrentNetworkExchangeRateInCents(requestIdPrefix),
+          requestIdPrefix,
         );
 
       txSubmitted = true;
@@ -1643,9 +1660,12 @@ export class EthImpl implements Eth {
 
     const selector = getFunctionSelector(call.data!);
 
-    const shouldForceToConsensus =
-      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR == 'true' &&
-      constants.ETH_CALL_SELECTORS_ALWAYS_TO_CONSENSUS.indexOf(selector) !== -1;
+    // When eth_call is invoked with a selector listed in specialSelectors, it will be routed through the consensus node, regardless of ETH_CALL_DEFAULT_TO_CONSENSUS_NODE.
+    // note: this feature is a workaround for when a feature is supported by consensus node but not yet by mirror node.
+    // Follow this ticket https://github.com/hashgraph/hedera-json-rpc-relay/issues/2984 to revisit and remove special selectors.
+    const specialSelectors: string[] = JSON.parse(process.env.ETH_CALL_CONSENSUS_SELECTORS || '[]');
+
+    const shouldForceToConsensus = selector !== '' && specialSelectors.includes(selector);
 
     // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
     const shouldDefaultToConsensus = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'true';
@@ -1860,7 +1880,7 @@ export class EthImpl implements Eth {
         data = crypto.createHash('sha1').update(call.data).digest('hex'); // NOSONAR
       }
 
-      const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:.${call.to}.${data}`;
+      const cacheKey = `${constants.CACHE_KEY.ETH_CALL}:${call.from || ''}.${call.to}.${data}`;
       const cachedResponse = await this.cacheService.getAsync(cacheKey, EthImpl.ethCall, requestIdPrefix);
 
       if (cachedResponse != undefined) {
@@ -2179,11 +2199,11 @@ export class EthImpl implements Eth {
     // Gas limit for `eth_call` is 50_000_000, but the current Hedera network limit is 15_000_000
     // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
     const gas = Number.parseInt(gasString);
-    if (gas > constants.BLOCK_GAS_LIMIT) {
+    if (gas > constants.MAX_GAS_PER_SEC) {
       this.logger.trace(
-        `${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.BLOCK_GAS_LIMIT}`,
+        `${requestIdPrefix} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.MAX_GAS_PER_SEC}`,
       );
-      return constants.BLOCK_GAS_LIMIT;
+      return constants.MAX_GAS_PER_SEC;
     }
 
     return gas;
@@ -2241,7 +2261,6 @@ export class EthImpl implements Eth {
       undefined,
       requestIdPrefix,
     );
-    const maxGasLimit = constants.BLOCK_GAS_LIMIT;
     const gasUsed = blockResponse.gas_used;
     const params = { timestamp: timestampRangeParams };
 
@@ -2285,7 +2304,7 @@ export class EthImpl implements Eth {
       baseFeePerGas: await this.gasPrice(requestIdPrefix),
       difficulty: EthImpl.zeroHex,
       extraData: EthImpl.emptyHex,
-      gasLimit: numberTo0x(maxGasLimit),
+      gasLimit: numberTo0x(constants.BLOCK_GAS_LIMIT),
       gasUsed: numberTo0x(gasUsed),
       hash: blockHash,
       logsBloom: blockResponse.logs_bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : blockResponse.logs_bloom,
@@ -2497,5 +2516,28 @@ export class EthImpl implements Eth {
       .reduce((total, amount) => {
         return total + amount;
       }, 0);
+  }
+
+  /**
+   * Retrieves the current network exchange rate of HBAR to USD in cents.
+   *
+   * @param {string} requestId - The unique identifier for the request.
+   * @returns {Promise<number>} - A promise that resolves to the current exchange rate in cents.
+   */
+  private async getCurrentNetworkExchangeRateInCents(requestId: string): Promise<number> {
+    const requestIdPrefix = formatRequestIdMessage(requestId);
+    const cacheKey = constants.CACHE_KEY.CURRENT_NETWORK_EXCHANGE_RATE;
+    const callingMethod = this.getCurrentNetworkExchangeRateInCents.name;
+    const cacheTTL = 15 * 60 * 1000; // 15 minutes
+
+    let currentNetworkExchangeRate = await this.cacheService.getAsync(cacheKey, callingMethod, requestIdPrefix);
+
+    if (!currentNetworkExchangeRate) {
+      currentNetworkExchangeRate = (await this.mirrorNodeClient.getNetworkExchangeRate(requestId)).current_rate;
+      await this.cacheService.set(cacheKey, currentNetworkExchangeRate, callingMethod, cacheTTL, requestIdPrefix);
+    }
+
+    const exchangeRateInCents = currentNetworkExchangeRate.cent_equivalent / currentNetworkExchangeRate.hbar_equivalent;
+    return exchangeRateInCents;
   }
 }

@@ -45,6 +45,7 @@ import {
 } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
+import constants from '../../../src/lib/constants';
 import {
   defaultCallData,
   defaultContractResults,
@@ -540,6 +541,18 @@ describe('@ethCall Eth Call spec', async function () {
       expect(result).to.equal('0x00');
     });
 
+    it('eth_call with gas capping', async function () {
+      const callData = {
+        ...defaultCallData,
+        gas: 25_000_000,
+      };
+      await mockContractCall({ ...callData, gas: constants.MAX_GAS_PER_SEC, block: 'latest' }, false, 200, {
+        result: '0x00',
+      });
+      const res = await ethImpl.call(callData, 'latest');
+      expect(res).to.equal('0x00');
+    });
+
     it('eth_call with all fields and value', async function () {
       const callData = {
         ...defaultCallData,
@@ -869,8 +882,7 @@ describe('@ethCall Eth Call spec', async function () {
   });
 
   describe('eth_call using consensus node because of redirect by selector', async function () {
-    let initialForceToConsensusBySelectorFF;
-    let initialEthCallConesneusFF;
+    let initialEthCallConesneusFF: any, initialEthCallSelectorsAlwaysToConsensus: any;
     const REDIRECTED_SELECTOR = '0x4d8fdd6d';
     const NON_REDIRECTED_SELECTOR = '0xaaaaaaaa';
     let callConsensusNodeSpy: sinon.SinonSpy;
@@ -878,15 +890,14 @@ describe('@ethCall Eth Call spec', async function () {
     let sandbox: sinon.SinonSandbox;
 
     before(() => {
-      initialForceToConsensusBySelectorFF = process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR;
       initialEthCallConesneusFF = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE;
-      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = 'true';
+      initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = 'false';
     });
 
     after(() => {
-      process.env.ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR = initialForceToConsensusBySelectorFF;
       process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = initialEthCallConesneusFF;
+      process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
     });
 
     beforeEach(() => {
@@ -900,6 +911,8 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with matched selector redirects to consensus', async function () {
+      process.env.ETH_CALL_CONSENSUS_SELECTORS = JSON.stringify([REDIRECTED_SELECTOR.slice(2)]);
+
       await ethImpl.call(
         {
           to: ACCOUNT_ADDRESS_1,

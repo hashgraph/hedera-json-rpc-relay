@@ -82,7 +82,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
   const signSendAndConfirmTransaction = async (transaction, accounts, requestId) => {
     const signedTx = await accounts.wallet.signTransaction(transaction);
-    const txHash = await relay.sendRawTransaction(signedTx);
+    const txHash = await relay.sendRawTransaction(signedTx, requestId);
     await mirrorNode.get(`/contracts/results/${txHash}`, requestId);
     await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash]);
     await new Promise((r) => setTimeout(r, 2000));
@@ -152,7 +152,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   describe('eth_estimateGas', async function () {
-    it('@release should execute "eth_estimateGas"', async function () {
+    it('@release-light, @release should execute "eth_estimateGas"', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [{}], requestId);
       expect(res).to.contain('0x');
       expect(res).to.not.be.equal('0x');
@@ -459,7 +459,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.eq('0x0');
     });
 
-    it('@release should execute "eth_getBalance" for contract', async function () {
+    it('@release-light, @release should execute "eth_getBalance" for contract', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_BALANCE,
         [getBalanceContractAddress, 'latest'],
@@ -726,7 +726,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     async function createNftHTSToken(account) {
       const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
       const tx = await mainContract.createNonFungibleTokenPublic(account.wallet.address, {
-        value: BigInt('10000000000000000000'),
+        value: 30000000000000000000n,
         ...Helper.GAS.LIMIT_5_000_000,
       });
       const { tokenAddress } = (await tx.wait()).logs.filter(

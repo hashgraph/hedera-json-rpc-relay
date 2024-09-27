@@ -1,6 +1,7 @@
 # Hbar limiter service design
 
 ## Table of Contents
+
 - [Hbar limiter service design](#hbar-limiter-service-design)
   - [Table of Contents](#table-of-contents)
   - [Purpose](#purpose)
@@ -8,9 +9,16 @@
   - [Requirements](#requirements)
     - [Spending Tracking](#spending-tracking)
     - [Spending Limits](#spending-limits)
+    - [Early Detection and Prevention (Preemptive Rate Limit)](#early-detection-and-prevention-preemptive-rate-limit)
   - [Architecture](#architecture)
     - [High-Level Design](#high-level-design)
     - [Class Diagram](#class-diagram)
+      - [Service Layer](#service-layer)
+      - [Database Layer:](#database-layer)
+    - [Support flexible alerting mechanisms for spending thresholds](#support-flexible-alerting-mechanisms-for-spending-thresholds)
+      - [HBar Allocation Strategy](#hbar-allocation-strategy)
+        - [Metrics to Track](#metrics-to-track)
+        - [Allocation Algorithm](#allocation-algorithm)
   - [Additional Considerations](#additional-considerations)
     - [Performance](#performance)
     - [Monitoring and logging](#monitoring-and-logging)
@@ -29,6 +37,7 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
 5. Support flexible alerting mechanisms for spending thresholds.
 
 ## Requirements
+
 ### Spending Tracking
 
 1. Track HBar spending in real-time.
@@ -41,7 +50,7 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
 1. Compare current spending against:
    a. Total predefined limit
    b. Current operator balance
-2. Support limits based on transaction origin address (`tx.from`).  
+2. Support limits based on transaction origin address (`tx.from`).
    1. Limit based on `tx.from`
    2. Limit based on IP
 3. Support tiered spending limits, e.g.:
@@ -49,14 +58,45 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
    - **Tier 2**: Supported projects (higher limit)
    - **Tier 3**: General users (standard limit)
 
+### Early Detection and Prevention (Preemptive Rate Limit)
+
+**Preemptive Rate Limiting for HFS Transactions**
+
+1. Calculate the number of potential HFS transactions based on the size of the incoming call data:
+
+   - **File Create:** 1 transaction
+   - **File Append:** (size_of_call_data / file_chunk_size) transactions
+
+2. Use the [Hedera Fee Estimator](https://hedera.com/fees) to estimate the costs of each HFS transaction, based on the maximum chunk size configuration (currently set to 5 KB).
+
+3. Calculate the total estimated fee and compare it against the remaining budget to determine if a preemptive rate limit should be applied.
+
 ## Architecture
 
 ### High-Level Design
-The Hbar limiter will be implemented as a separate service, used by other services/classes that need it. It will have two main purposes - to capture the gas fees for different operation and to check if an operation needs to be paused, due to exceeded Hbar limit
+
+The HBar limiter will be implemented as a separate service, used by other services/classes that need it. It will have two main purposes - to capture the gas fees for different operation and to check if an operation needs to be paused, due to an exceeded HBar limit.
+
+```mermaid
+flowchart TD
+    A[User] -->|sends transaction| B[JSON-RPC Relay]
+    B --> C{HbarLimitService}
+    C -->|new user, i.e., who is not linked to a spending plan| D[Create a BASIC HbarSpendingPlan]
+    D --> E[Link user's ETH & IP addresses to plan]
+    E --> F[Estimate fees of any additional HFS transactions which need to be executed by the operator]
+    C -->|existing user, i.e., who is linked to a spending plan| G[Retrieve HbarSpendingPlan linked to user]
+    G --> F
+    F --> H{The plan exceeds its daily HBar allowance?}
+    H --> |yes| I[Limit request]
+    H --> |no| J[Execute transaction]
+    J --> K[Capture fees the operator has been charged]
+    K --> L[Update spending plan]
+```
 
 ### Class Diagram
 
 #### Service Layer
+
 ```mermaid
 classDiagram
     class SdkClient {
@@ -77,6 +117,7 @@ classDiagram
         -ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository
         -ipAddressHbarSpendingPlanRepository: IpAddressHbarSpendingPlanRepository
         +shouldLimit(txFrom: string, ip?: string) boolean
+        +shouldPreemtivelyLimitFileTransactions(callDataSize: number, fileChunkSize: number, currentNetworkExchangeRateInCents: number) boolean
         +resetLimiter() void
         +addExpense(amount: number, txFrom: string, ip?: string) void
         -getSpendingPlanOfEthAddress(address: string): HbarSpendingPlan
@@ -84,10 +125,11 @@ classDiagram
         -checkTotalSpent() boolean
         -shouldReset() boolean
     }
-    
+
     class IHBarLimitService
     <<interface>> IHBarLimitService
     IHBarLimitService : shouldLimit() boolean
+    IHBarLimitService : shouldPreemtivelyLimitFileTransactions() boolean
     IHBarLimitService : resetLimiter() void
     IHBarLimitService : addExpense() void
 
@@ -98,6 +140,7 @@ classDiagram
 ```
 
 #### Database Layer:
+
 ```mermaid
 classDiagram
     class HbarSpendingPlan {
@@ -118,7 +161,7 @@ classDiagram
         -ethAddress: string
         -planId: string
     }
-    
+
     class IpAddressHbarSpendingPlan {
         -ipAddress: string
         -planId: string
@@ -155,7 +198,7 @@ classDiagram
         +save(ethAddressPlan: EthAddressHbarSpendingPlan): Promise<void>
         +delete(ethAddress: string): Promise<void>
     }
-    
+
     class IpAddressHbarSpendingPlanRepository {
         -cache: CacheService
         +findByIp(ip: string): Promise<IpAddressHbarSpendingPlan>
@@ -178,16 +221,68 @@ classDiagram
     EthAddressHbarSpendingPlanRepository --> CacheService : uses
     IpAddressHbarSpendingPlanRepository --> CacheService : uses
 ```
+### Support flexible alerting mechanisms for spending thresholds
+The existing technical infrastructure, prometheus and grafana will be used to trigger alerts.  At the time of this writing 10K HBar is the maximum the relay operator can spend in one day, on HashIO.
+
+The rest of this section describes addtional metrics that will be added, with alerts later, to track critical balances, and how new values for those tiers in HashIO will
+be determined.
+
+The initial spending threshold of the Tier 3 General users will be a rough
+estimate based on the current daily spending of the Relay Operator.  In order
+to refine this over time a prometheus metric called the `basicSpendingPlanCounter`
+will be used to track the number of unique spending plans.  
+
+The metrics listed below will be added to help determine the best Tier 3 General users over time:
+
+1. Daily Unique Users Counter
+2. Average Daily Users
+3. Dynamic Per-User Limit - Daily budget for the Relay Operator (10K) divided by the average number of users
+4. Time-based Allocation - Allocating the Relay Operator's budget throughout the day to prevent early users from consuming all resources
+5. User History - Track individual user usage over time to identify and manage heavy users
+6. Flexible Limits - Implement a system that can adjust limits based on current usage and time of day
+   
+#### HBar Allocation Strategy
+##### Metrics to Track
+1. Daily Unique Users
+2. Total HBar Spent per Day
+3. Rolling Average of Daily Unique Users (e.g., over 7 or 30 days)
+4. Individual User Daily and Monthly Usage
+   
+##### Allocation Algorithm
+1. Base Allocation:
+   - Daily Budget / Rolling Average of Daily Unique Users = Base User Limit
+  
+2. Time-Based Adjustment:
+   - Divide the day into time slots (e.g., 6 4-hour slots)
+   - Allocate a portion of the daily budget to each slot
+   - Adjust user limits based on remaining budget in the current slot
+
+3. Dynamic User Limit:
+   - Start with the Base User Limit
+   - Adjust based on:
+a. User's historical usage (lower limit for consistently heavy users)
+b. Time of day (higher limits when usage is typically lower)
+c. Current day's usage (increase limits if overall usage is low)
+
+4. Flexible Ceiling:
+   - Implement a hard cap (e.g., 2x Base User Limit) to prevent single user from consuming too much
+
+5. Reserve Pool:
+   - Keep a small portion of the daily budget (e.g., 10%) as a reserve
+   - Use this to accommodate unexpected spikes or high-priority users
 
 ## Additional Considerations
-### Performance 
+
+### Performance
 
 1. Ensure minimal impact on transaction processing times. (Capturing of transaction fees should happen asynchronously behind the scenes)
 2. Design for high throughput to handle peak transaction volumes
 
 ### Monitoring and logging
+
 1. Use the existing logger in the relay
 2. Build on existing dashboards for system health and rate limiting statistics. Add any new metrics to the current dashboards.
 
 ## Future enhancements
+
 1. Machine learning-based anomaly detection for unusual spending patterns.

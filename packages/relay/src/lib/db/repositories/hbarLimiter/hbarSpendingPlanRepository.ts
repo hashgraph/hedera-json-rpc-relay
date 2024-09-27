@@ -77,7 +77,7 @@ export class HbarSpendingPlanRepository {
     const plan = await this.findById(id);
     return new HbarSpendingPlan({
       ...plan,
-      spendingHistory: await this.getSpendingHistory(id),
+      spendingHistory: [],
       spentToday: await this.getSpentToday(id),
     });
   }
@@ -157,6 +157,18 @@ export class HbarSpendingPlanRepository {
   }
 
   /**
+   * Resets the amount spent today for all hbar spending plans.
+   * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   */
+  async resetAllSpentTodayEntries(): Promise<void> {
+    this.logger.trace('Resetting the spentToday entries for all HbarSpendingPlans...');
+    const callerMethod = this.resetAllSpentTodayEntries.name;
+    const keys = await this.cache.keys(`${this.collectionKey}:*:spentToday`, callerMethod);
+    await Promise.all(keys.map((key) => this.cache.delete(key, callerMethod)));
+    this.logger.trace(`Successfully reset ${keys.length} spentToday entries for HbarSpendingPlans.`);
+  }
+
+  /**
    * Adds an amount to the amount spent today for a plan.
    * @param id - The ID of the plan.
    * @param amount - The amount to add.
@@ -173,6 +185,30 @@ export class HbarSpendingPlanRepository {
       this.logger.trace(`Adding ${amount} to spentToday for HbarSpendingPlan with ID ${id}...`);
       await this.cache.incrBy(key, amount, 'addAmountToSpentToday');
     }
+  }
+
+  /**
+   * Finds all active hbar spending plans by subscription type.
+   * @param {SubscriptionType} subscriptionType - The subscription type to filter by.
+   * @returns {Promise<IDetailedHbarSpendingPlan[]>} - A promise that resolves with the active spending plans.
+   */
+  async findAllActiveBySubscriptionType(subscriptionType: SubscriptionType): Promise<IDetailedHbarSpendingPlan[]> {
+    const callerMethod = this.findAllActiveBySubscriptionType.name;
+    const keys = await this.cache.keys(`${this.collectionKey}:*`, callerMethod);
+    const plans = await Promise.all(keys.map((key) => this.cache.getAsync<IHbarSpendingPlan>(key, callerMethod)));
+    return Promise.all(
+      plans
+        .filter((plan) => plan.subscriptionType === subscriptionType && plan.active)
+        .map(
+          async (plan) =>
+            new HbarSpendingPlan({
+              ...plan,
+              createdAt: new Date(plan.createdAt),
+              spendingHistory: [],
+              spentToday: await this.getSpentToday(plan.id),
+            }),
+        ),
+    );
   }
 
   /**

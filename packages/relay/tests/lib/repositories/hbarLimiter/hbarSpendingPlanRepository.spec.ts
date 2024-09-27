@@ -21,7 +21,6 @@
 import { pino } from 'pino';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { RedisInMemoryServer } from '../../../redisInMemoryServer';
 import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
@@ -32,6 +31,8 @@ import {
 import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingRecord';
 
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
+import { IDetailedHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingPlan';
+import { useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
@@ -44,30 +45,15 @@ describe('HbarSpendingPlanRepository', function () {
     let repository: HbarSpendingPlanRepository;
 
     if (isSharedCacheEnabled) {
-      let test: string | undefined;
-      let redisEnabled: string | undefined;
-      let redisUrl: string | undefined;
-      let redisInMemoryServer: RedisInMemoryServer;
+      useInMemoryRedisServer(logger, 6380);
 
-      this.beforeAll(async () => {
-        redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: `in-memory redis server` }), 6380);
-        await redisInMemoryServer.start();
-        test = process.env.TEST;
-        redisEnabled = process.env.REDIS_ENABLED;
-        redisUrl = process.env.REDIS_URL;
-        process.env.TEST = 'false';
-        process.env.REDIS_ENABLED = 'true';
-        process.env.REDIS_URL = 'redis://127.0.0.1:6380';
+      before(async () => {
         cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
         repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
       });
 
-      this.afterAll(async () => {
+      after(async () => {
         await cacheService.disconnectRedisClient();
-        await redisInMemoryServer.stop();
-        process.env.TEST = test;
-        process.env.REDIS_ENABLED = redisEnabled;
-        process.env.REDIS_URL = redisUrl;
       });
     } else {
       before(async () => {
@@ -77,6 +63,10 @@ describe('HbarSpendingPlanRepository', function () {
         repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
       });
     }
+
+    afterEach(async () => {
+      await cacheService.clear();
+    });
 
     describe('create', () => {
       it('creates a plan successfully', async () => {
@@ -159,12 +149,6 @@ describe('HbarSpendingPlanRepository', function () {
         expect(spendingHistory).to.have.lengthOf(1);
         expect(spendingHistory[0].amount).to.equal(amount);
         expect(spendingHistory[0].timestamp).to.be.a('Date');
-
-        const plan = await repository.findByIdWithDetails(createdPlan.id);
-        expect(plan).to.not.be.null;
-        expect(plan!.spendingHistory).to.have.lengthOf(1);
-        expect(plan!.spendingHistory[0].amount).to.equal(amount);
-        expect(plan!.spendingHistory[0].timestamp).to.be.a('Date');
       });
 
       it('adds multiple amounts to spending history', async () => {
@@ -180,11 +164,6 @@ describe('HbarSpendingPlanRepository', function () {
         const spendingHistory = await repository.getSpendingHistory(createdPlan.id);
         expect(spendingHistory).to.have.lengthOf(3);
         expect(spendingHistory.map((entry) => entry.amount)).to.deep.equal(amounts);
-
-        const plan = await repository.findByIdWithDetails(createdPlan.id);
-        expect(plan).to.not.be.null;
-        expect(plan!.spendingHistory).to.have.lengthOf(3);
-        expect(plan!.spendingHistory.map((entry) => entry.amount)).to.deep.equal(amounts);
       });
 
       it('throws error if plan not found when adding to spending history', async () => {
@@ -199,6 +178,7 @@ describe('HbarSpendingPlanRepository', function () {
     });
 
     describe('getSpentToday', () => {
+      const mockedOneDayInMillis: number = 200;
       let oneDayInMillis: number;
 
       beforeEach(() => {
@@ -206,7 +186,7 @@ describe('HbarSpendingPlanRepository', function () {
         oneDayInMillis = repository['oneDayInMillis'];
         // set oneDayInMillis to 1 second for testing
         // @ts-ignore
-        repository['oneDayInMillis'] = 1000;
+        repository['oneDayInMillis'] = mockedOneDayInMillis;
       });
 
       afterEach(() => {
@@ -242,9 +222,32 @@ describe('HbarSpendingPlanRepository', function () {
         await repository.addAmountToSpentToday(createdPlan.id, amount);
         await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(amount);
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, mockedOneDayInMillis + 100));
 
         await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(0);
+      });
+    });
+
+    describe('resetAllSpentTodayEntries', () => {
+      it('resets all spent today entries', async () => {
+        const plans: IDetailedHbarSpendingPlan[] = [];
+        for (const subscriptionType of Object.values(SubscriptionType)) {
+          const createdPlan = await repository.create(subscriptionType);
+          plans.push(createdPlan);
+          const amount = 50 * plans.length;
+          await repository.addAmountToSpentToday(createdPlan.id, amount);
+          await expect(repository.getSpentToday(createdPlan.id)).to.eventually.equal(amount);
+        }
+
+        await repository.resetAllSpentTodayEntries();
+
+        for (const plan of plans) {
+          await expect(repository.getSpentToday(plan.id)).to.eventually.equal(0);
+        }
+      });
+
+      it('does not throw an error if no spent today keys exist', async () => {
+        await expect(repository.resetAllSpentTodayEntries()).to.not.be.rejected;
       });
     });
 
@@ -316,6 +319,55 @@ describe('HbarSpendingPlanRepository', function () {
           HbarSpendingPlanNotActiveError,
           `HbarSpendingPlan with ID ${createdPlan.id} is not active`,
         );
+      });
+    });
+
+    describe('findAllActiveBySubscriptionType', () => {
+      it('returns an empty array if no active plans exist for the subscription type', async () => {
+        const subscriptionType = SubscriptionType.BASIC;
+        const activePlans = await repository.findAllActiveBySubscriptionType(subscriptionType);
+        expect(activePlans).to.deep.equal([]);
+      });
+
+      it('returns all active plans for the subscription type', async () => {
+        const subscriptionType = SubscriptionType.BASIC;
+        const createdPlan1 = await repository.create(subscriptionType);
+        const createdPlan2 = await repository.create(subscriptionType);
+
+        const activePlans = await repository.findAllActiveBySubscriptionType(subscriptionType);
+        expect(activePlans).to.have.lengthOf(2);
+        expect(activePlans.map((plan) => plan.id)).to.include.members([createdPlan1.id, createdPlan2.id]);
+      });
+
+      it('does not return inactive plans for the subscription type', async () => {
+        const subscriptionType = SubscriptionType.BASIC;
+        const activePlan = await repository.create(subscriptionType);
+        const inactivePlan = await repository.create(subscriptionType);
+
+        // Manually set the plan to inactive
+        const key = `${repository['collectionKey']}:${inactivePlan.id}`;
+        await cacheService.set(key, { ...inactivePlan, active: false }, 'test');
+
+        const activePlans = await repository.findAllActiveBySubscriptionType(subscriptionType);
+        expect(activePlans).to.deep.equal([activePlan]);
+      });
+
+      it('returns only active plans for the specified subscription type', async () => {
+        const basicPlan = await repository.create(SubscriptionType.BASIC);
+        const extendedPlan = await repository.create(SubscriptionType.EXTENDED);
+        const privilegedPlan = await repository.create(SubscriptionType.PRIVILEGED);
+
+        const activeBasicPlans = await repository.findAllActiveBySubscriptionType(SubscriptionType.BASIC);
+        expect(activeBasicPlans).to.have.lengthOf(1);
+        expect(activeBasicPlans[0].id).to.equal(basicPlan.id);
+
+        const activeExtendedPlans = await repository.findAllActiveBySubscriptionType(SubscriptionType.EXTENDED);
+        expect(activeExtendedPlans).to.have.lengthOf(1);
+        expect(activeExtendedPlans[0].id).to.equal(extendedPlan.id);
+
+        const activePrivilegedPlans = await repository.findAllActiveBySubscriptionType(SubscriptionType.PRIVILEGED);
+        expect(activePrivilegedPlans).to.have.lengthOf(1);
+        expect(activePrivilegedPlans[0].id).to.equal(privilegedPlan.id);
       });
     });
   };

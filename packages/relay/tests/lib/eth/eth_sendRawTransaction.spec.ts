@@ -69,9 +69,17 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     const transactionId = '0.0.902-1684375868-230217103';
     const value = '0x511617DE831B9E173';
     const contractResultEndpoint = `contracts/results/${transactionId}`;
+    const networkExchangeRateEndpoint = 'network/exchangerate';
     const ethereumHash = '0x6d20b034eecc8d455c4c040fb3763082d499353a8b7d318b1085ad8d7de15f7e';
+    const mockedExchangeRate = {
+      current_rate: {
+        cent_equivalent: 12,
+        expiration_time: 4102444800,
+        hbar_equivalent: 1,
+      },
+    };
     const transaction = {
-      chainId: 0x12a,
+      chainId: Number(process.env.CHAIN_ID || 0x12a),
       to: ACCOUNT_ADDRESS_1,
       from: accountAddress,
       value,
@@ -90,6 +98,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sdkClientStub = sinon.createStubInstance(SDKClient);
       sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
       restMock.onGet(accountEndpoint).reply(200, ACCOUNT_RES);
+      restMock.onGet(networkExchangeRateEndpoint).reply(200, mockedExchangeRate);
     });
 
     this.afterEach(() => {
@@ -105,7 +114,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         ethImpl.sendRawTransaction,
         false,
         ethImpl,
-        [txHash],
+        [txHash, getRequestId()],
       );
     });
 
