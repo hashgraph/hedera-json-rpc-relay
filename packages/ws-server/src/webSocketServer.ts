@@ -34,6 +34,7 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
 import { JsonRpcError, predefined, type Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
 import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
 import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
@@ -211,8 +212,7 @@ httpApp.use(async (ctx: Koa.Context, next: Koa.Next) => {
   } else if (ctx.url === '/health/readiness') {
     // readiness endpoint
     try {
-      koaJsonRpc.updateRequestDetails({ requestId: uuid(), ipAddress: ctx.request.ip });
-      const result = relay.eth().chainId(koaJsonRpc.getRequestDetails());
+      const result = relay.eth().chainId(new RequestDetails({ requestId: uuid(), ipAddress: ctx.request.ip }));
       if (result.includes('0x12')) {
         ctx.status = 200;
         ctx.body = 'OK';

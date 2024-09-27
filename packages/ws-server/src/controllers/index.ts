@@ -78,6 +78,7 @@ const handleSendingRequestsToRelay = async ({
 
     // Rearrange the parameters for certain methods, since not everywhere requestDetails is last aparameter
     const paramRearrangementMap: { [key: string]: (params: any[], requestDetails: RequestDetails) => any[] } = {
+      chainId: (_, requestDetails) => [requestDetails],
       estimateGas: (params, requestDetails) => [...params, null, requestDetails],
       getStorageAt: (params, requestDetails) => [params[0], params[1], requestDetails, params[2]],
       default: (params, requestDetails) => [...params, requestDetails],
