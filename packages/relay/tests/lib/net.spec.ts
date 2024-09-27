@@ -23,7 +23,7 @@ import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { RelayImpl } from '../../src/lib/relay';
 import constants from '../../src/lib/constants';
-import { withOverriddenEnvs } from '../helpers';
+import { withOverriddenEnvsInMochaTest } from '../helpers';
 
 const logger = pino();
 let Relay;
@@ -47,7 +47,7 @@ describe('Net', async function () {
     expect(actualNetVersion).to.eq(expectedNetVersion);
   });
 
-  withOverriddenEnvs({ CHAIN_ID: '123' }, () => {
+  withOverriddenEnvsInMochaTest({ CHAIN_ID: '123' }, () => {
     it('should set chainId from CHAIN_ID environment variable', () => {
       Relay = new RelayImpl(logger, new Registry());
       const actualNetVersion = Relay.net().version();
@@ -55,7 +55,7 @@ describe('Net', async function () {
     });
   });
 
-  withOverriddenEnvs({ CHAIN_ID: '0x1a' }, () => {
+  withOverriddenEnvsInMochaTest({ CHAIN_ID: '0x1a' }, () => {
     it('should set chainId from CHAIN_ID environment variable starting with 0x', () => {
       Relay = new RelayImpl(logger, new Registry());
       const actualNetVersion = Relay.net().version();
@@ -63,7 +63,7 @@ describe('Net', async function () {
     });
   });
 
-  withOverriddenEnvs({ HEDERA_NETWORK: undefined, CHAIN_ID: undefined }, () => {
+  withOverriddenEnvsInMochaTest({ HEDERA_NETWORK: undefined, CHAIN_ID: undefined }, () => {
     it('should default chainId to 298 when no environment variables are set', () => {
       Relay = new RelayImpl(logger, new Registry());
       const actualNetVersion = Relay.net().version();
@@ -71,7 +71,7 @@ describe('Net', async function () {
     });
   });
 
-  withOverriddenEnvs({ HEDERA_NETWORK: '', CHAIN_ID: undefined }, () => {
+  withOverriddenEnvsInMochaTest({ HEDERA_NETWORK: '', CHAIN_ID: undefined }, () => {
     it('should handle empty HEDERA_NETWORK and set chainId to default', () => {
       Relay = new RelayImpl(logger, new Registry());
       const actualNetVersion = Relay.net().version();
@@ -79,7 +79,7 @@ describe('Net', async function () {
     });
   });
 
-  withOverriddenEnvs({ HEDERA_NETWORK: 'mainnet', CHAIN_ID: '0x2' }, () => {
+  withOverriddenEnvsInMochaTest({ HEDERA_NETWORK: 'mainnet', CHAIN_ID: '0x2' }, () => {
     it('should prioritize CHAIN_ID over HEDERA_NETWORK', () => {
       Relay = new RelayImpl(logger, new Registry());
       const actualNetVersion = Relay.net().version();

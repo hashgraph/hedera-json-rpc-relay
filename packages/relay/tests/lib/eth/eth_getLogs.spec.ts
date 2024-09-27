@@ -34,8 +34,8 @@ import {
   expectLogData2,
   expectLogData3,
   expectLogData4,
-  overrideEnvs,
-  withOverriddenEnvs,
+  overrideEnvsInMochaDescribe,
+  withOverriddenEnvsInMochaTest,
 } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import {
@@ -82,7 +82,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1]],
   };
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -188,7 +188,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     });
   });
 
-  withOverriddenEnvs({ MIRROR_NODE_LIMIT_PARAM: '2' }, () => {
+  withOverriddenEnvsInMochaTest({ MIRROR_NODE_LIMIT_PARAM: '2' }, () => {
     it('should be able to return more than two logs with limit of two per request', async function () {
       const unfilteredLogs = {
         logs: [

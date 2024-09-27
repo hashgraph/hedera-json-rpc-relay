@@ -29,7 +29,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { Registry } from 'prom-client';
 import ConnectionLimiter from '@hashgraph/json-rpc-ws-server/src/metrics/connectionLimiter';
-import { overrideEnvs } from '../helpers';
+import { overrideEnvsInMochaDescribe } from '../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -268,7 +268,7 @@ describe('subscriptionController', async function () {
   describe('With WS_SAME_SUB_FOR_SAME_EVENT == `false`', async function () {
     let subscriptionController: SubscriptionController;
 
-    overrideEnvs({ WS_SAME_SUB_FOR_SAME_EVENT: 'false' });
+    overrideEnvsInMochaDescribe({ WS_SAME_SUB_FOR_SAME_EVENT: 'false' });
 
     before(() => {
       const registry = new Registry();

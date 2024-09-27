@@ -21,7 +21,7 @@
 import { expect } from 'chai';
 import { Utils } from '../../src/utils';
 import constants from '../../src/lib/constants';
-import { overrideEnvs } from '../helpers';
+import { overrideEnvsInMochaDescribe } from '../helpers';
 
 describe('Utils', () => {
   describe('addPercentageBufferToGasPrice', () => {
@@ -42,7 +42,7 @@ describe('Utils', () => {
 
     for (let i in TEST_CASES) {
       describe(`${TEST_CASES[i].testName}, ${gasFormat.format(TEST_CASES[i].input)} gas`, () => {
-        overrideEnvs({ GAS_PRICE_PERCENTAGE_BUFFER: TEST_CASES[i].buffer });
+        overrideEnvsInMochaDescribe({ GAS_PRICE_PERCENTAGE_BUFFER: TEST_CASES[i].buffer });
 
         it(`should return ${gasFormat.format(TEST_CASES[i].output)} gas`, () => {
           expect(Utils.addPercentageBufferToGasPrice(TEST_CASES[i].input)).to.equal(TEST_CASES[i].output);

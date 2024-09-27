@@ -32,7 +32,7 @@ import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hb
 
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 import { IDetailedHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingPlan';
-import { overrideEnvs, useInMemoryRedisServer } from '../../../helpers';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
@@ -47,7 +47,7 @@ describe('HbarSpendingPlanRepository', function () {
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6380);
     } else {
-      overrideEnvs({ REDIS_ENABLED: 'false' });
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
     }
 
     before(async () => {

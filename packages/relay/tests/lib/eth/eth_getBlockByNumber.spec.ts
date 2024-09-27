@@ -25,7 +25,12 @@ import chaiAsPromised from 'chai-as-promised';
 
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
-import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults, overrideEnvs } from '../../helpers';
+import {
+  blockLogsBloom,
+  defaultContractResults,
+  defaultDetailedContractResults,
+  overrideEnvsInMochaDescribe,
+} from '../../helpers';
 import { Block, Transaction } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
@@ -105,7 +110,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     expect(transactions[1].gas).equal(hashNumber(GAS_USED_2));
   }
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock

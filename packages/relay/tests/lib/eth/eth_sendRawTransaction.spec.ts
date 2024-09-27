@@ -28,7 +28,7 @@ import { SDKClient } from '../../../src/lib/clients';
 import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
-import { getRequestId, mockData, overrideEnvs, signTransaction } from '../../helpers';
+import { getRequestId, mockData, overrideEnvsInMochaDescribe, signTransaction } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
 
@@ -42,7 +42,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock

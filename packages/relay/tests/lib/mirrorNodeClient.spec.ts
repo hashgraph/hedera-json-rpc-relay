@@ -27,7 +27,7 @@ import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import constants from '../../src/lib/constants';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { getRequestId, mockData, random20BytesAddress, withOverriddenEnvs } from './../helpers';
+import { getRequestId, mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from './../helpers';
 const registry = new Registry();
 
 import pino from 'pino';
@@ -148,7 +148,7 @@ describe('MirrorNodeClient', async function () {
     expect(extractedEvmAddress).to.eq(evmAddress);
   });
 
-  withOverriddenEnvs({ MIRROR_NODE_URL_HEADER_X_API_KEY: 'abc123iAManAPIkey' }, () => {
+  withOverriddenEnvsInMochaTest({ MIRROR_NODE_URL_HEADER_X_API_KEY: 'abc123iAManAPIkey' }, () => {
     it('Can provide custom x-api-key header', async () => {
       const mirrorNodeInstanceOverridden = new MirrorNodeClient(
         process.env.MIRROR_NODE_URL || '',

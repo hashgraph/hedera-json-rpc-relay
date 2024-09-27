@@ -27,7 +27,7 @@ import { IIPAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLim
 import { IPAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { randomBytes, uuidV4 } from 'ethers';
 import { Registry } from 'prom-client';
-import { overrideEnvs, useInMemoryRedisServer } from '../../../helpers';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
@@ -44,7 +44,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6383);
     } else {
-      overrideEnvs({ REDIS_ENABLED: 'false' });
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
     }
 
     before(() => {

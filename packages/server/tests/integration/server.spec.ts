@@ -39,8 +39,8 @@ import {
   contractAddress2,
   contractHash1,
   contractId1,
-  overrideEnvs,
-  withOverriddenEnvs,
+  overrideEnvsInMochaDescribe,
+  withOverriddenEnvsInMochaTest,
 } from '../../../relay/tests/helpers';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 
@@ -96,7 +96,7 @@ describe('RPC Server', function () {
     }
   });
 
-  withOverriddenEnvs({ REQUEST_ID_IS_OPTIONAL: 'true' }, async function () {
+  withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: 'true' }, async function () {
     xit('supports optionality of request id when configured', async function () {
       const app2 = require('../../src/server').default;
       const port = `1${process.env.E2E_SERVER_PORT}`;
@@ -451,7 +451,7 @@ describe('RPC Server', function () {
   });
 
   describe('batchRequest Test Cases', async function () {
-    overrideEnvs({ BATCH_REQUESTS_ENABLED: 'true' });
+    overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: 'true' });
 
     function getEthChainIdRequest(id) {
       return {
@@ -617,7 +617,7 @@ describe('RPC Server', function () {
       }
     });
 
-    withOverriddenEnvs({ BATCH_REQUESTS_ENABLED: 'false' }, async function () {
+    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: 'false' }, async function () {
       it('should not execute batch request when disabled', async function () {
         try {
           await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
@@ -628,7 +628,7 @@ describe('RPC Server', function () {
       });
     });
 
-    withOverriddenEnvs({ BATCH_REQUESTS_ENABLED: undefined }, async function () {
+    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: undefined }, async function () {
       it('batch request be disabled by default', async function () {
         try {
           await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);

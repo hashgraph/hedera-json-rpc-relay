@@ -38,7 +38,12 @@ import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import MetricService from '../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { calculateTxRecordChargeAmount, overrideEnvs, random20BytesAddress, withOverriddenEnvs } from '../helpers';
+import {
+  calculateTxRecordChargeAmount,
+  overrideEnvsInMochaDescribe,
+  random20BytesAddress,
+  withOverriddenEnvsInMochaTest,
+} from '../helpers';
 import {
   Hbar,
   Query,
@@ -92,7 +97,7 @@ describe('SdkClient', async function () {
     },
   } as unknown as FeeSchedules;
 
-  overrideEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
+  overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
 
   before(() => {
     const hederaNetwork = process.env.HEDERA_NETWORK!;
@@ -251,7 +256,7 @@ describe('SdkClient', async function () {
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
     });
 
-    withOverriddenEnvs({ OPERATOR_KEY_FORMAT: undefined }, () => {
+    withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: undefined }, () => {
       it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is undefined', async () => {
         const hapiService = new HAPIService(
           logger,
@@ -265,7 +270,7 @@ describe('SdkClient', async function () {
       });
     });
 
-    withOverriddenEnvs({ OPERATOR_KEY_FORMAT: 'DER' }, () => {
+    withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'DER' }, () => {
       it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
         const hapiService = new HAPIService(
           logger,
@@ -279,7 +284,7 @@ describe('SdkClient', async function () {
       });
     });
 
-    withOverriddenEnvs({ OPERATOR_KEY_FORMAT: 'HEX_ED25519' }, () => {
+    withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'HEX_ED25519' }, () => {
       it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
         const hapiService = new HAPIService(
           logger,
@@ -293,7 +298,7 @@ describe('SdkClient', async function () {
       });
     });
 
-    withOverriddenEnvs({ OPERATOR_KEY_FORMAT: 'HEX_ECDSA' }, () => {
+    withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'HEX_ECDSA' }, () => {
       it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
         const hapiService = new HAPIService(
           logger,
@@ -307,7 +312,7 @@ describe('SdkClient', async function () {
       });
     });
 
-    withOverriddenEnvs({ OPERATOR_KEY_FORMAT: 'BAD_FORMAT' }, () => {
+    withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'BAD_FORMAT' }, () => {
       it('It should throw an Error when an unexpected string is set', async () => {
         try {
           new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter);
@@ -2223,7 +2228,7 @@ describe('SdkClient', async function () {
     let hbarLimitMock: sinon.SinonMock;
     let sdkClientMock: sinon.SinonMock;
 
-    overrideEnvs({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' });
+    overrideEnvsInMochaDescribe({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' });
 
     beforeEach(() => {
       requestId = uuid();
@@ -2576,7 +2581,7 @@ describe('SdkClient', async function () {
       expect(transactionRecordStub.called).to.be.true;
     });
 
-    withOverriddenEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
       it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
         const mockedTransactionId = transactionId.toString();
         const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);

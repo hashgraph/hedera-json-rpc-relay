@@ -38,7 +38,7 @@ import {
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 import { JsonRpcError, predefined } from '../../../src';
-import { overrideEnvs } from '../../helpers';
+import { overrideEnvsInMochaDescribe } from '../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -52,7 +52,7 @@ describe('@ethGetCode using MirrorNode', async function () {
   let validBlockParam = [null, 'earliest', 'latest', 'pending', 'finalized', 'safe', '0x0', '0x369ABF'];
   let invalidBlockParam = ['hedera', 'ethereum', '0xhbar', '0x369ABF369ABF369ABF369ABF'];
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock

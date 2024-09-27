@@ -22,7 +22,12 @@ import pino from 'pino';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import HbarLimit from '../../src/lib/hbarlimiter';
-import { estimateFileTransactionsFee, getRequestId, random20BytesAddress, withOverriddenEnvs } from '../helpers';
+import {
+  estimateFileTransactionsFee,
+  getRequestId,
+  random20BytesAddress,
+  withOverriddenEnvsInMochaTest,
+} from '../helpers';
 
 const registry = new Registry();
 const logger = pino();
@@ -49,7 +54,7 @@ describe('HBAR Rate Limiter', async function () {
     rateLimiterWithEmptyBudget = new HbarLimit(logger, currentDateNow, invalidTotal, validDuration, registry);
   });
 
-  withOverriddenEnvs({ HBAR_RATE_LIMIT_WHITELIST: `[${randomWhiteListedAccountAddress}]` }, () => {
+  withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_WHITELIST: `[${randomWhiteListedAccountAddress}]` }, () => {
     it('should be disabled, if we pass invalid total', async function () {
       const isEnabled = rateLimiterWithEmptyBudget.isEnabled();
       const limiterResetTime = rateLimiterWithEmptyBudget.getResetTime();

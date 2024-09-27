@@ -38,7 +38,7 @@ import {
 } from './eth-config';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
-import { overrideEnvs } from '../../helpers';
+import { overrideEnvsInMochaDescribe } from '../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
 use(chaiAsPromised);
@@ -50,7 +50,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -230,7 +230,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
       return latestBlock;
     }
 
-    overrideEnvs({ ETH_FEE_HISTORY_FIXED: 'true' });
+    overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: 'true' });
 
     beforeEach(function () {
       cacheService.clear();

@@ -28,7 +28,7 @@ import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
 import { TracerType } from '../../../../src/lib/constants';
 import { DebugService } from '../../../../src/lib/services/debugService';
-import { getQueryParams, getRequestId, withOverriddenEnvs } from '../../../helpers';
+import { getQueryParams, getRequestId, withOverriddenEnvsInMochaTest } from '../../../helpers';
 import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
@@ -319,7 +319,7 @@ describe('Debug API Test Suite', async function () {
       web3Mock.reset();
     });
 
-    withOverriddenEnvs({ DEBUG_API_ENABLED: undefined }, () => {
+    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: undefined }, () => {
       it('should throw UNSUPPORTED_METHOD', async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
@@ -331,7 +331,7 @@ describe('Debug API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvs({ DEBUG_API_ENABLED: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: 'false' }, () => {
       it('should throw UNSUPPORTED_METHOD', async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
@@ -343,7 +343,7 @@ describe('Debug API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvs({ DEBUG_API_ENABLED: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: 'true' }, () => {
       it('should successfully debug a transaction', async function () {
         const traceTransaction = await debugService.debug_traceTransaction(
           transactionHash,

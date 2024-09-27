@@ -29,7 +29,11 @@ import { Utils } from '../helpers/utils';
 import Assertions from '../helpers/assertions';
 import testConstants from '../helpers/constants';
 import { AliasAccount } from '../types/AliasAccount';
-import { estimateFileTransactionsFee, overrideEnvs, withOverriddenEnvs } from '@hashgraph/json-rpc-relay/tests/helpers';
+import {
+  estimateFileTransactionsFee,
+  overrideEnvsInMochaDescribe,
+  withOverriddenEnvsInMochaTest,
+} from '@hashgraph/json-rpc-relay/tests/helpers';
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';
@@ -187,7 +191,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('Remaining HBAR Limit', () => {
-        overrideEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
+        overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
 
         it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
           const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
@@ -304,7 +308,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
         });
 
-        withOverriddenEnvs({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' }, () => {
+        withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' }, () => {
           it('Should preemptively check the rate limit before submitting EthereumTransaction', async function () {
             try {
               for (let i = 0; i < 50; i++) {
@@ -322,7 +326,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
         });
 
-        withOverriddenEnvs({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'false' }, () => {
+        withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'false' }, () => {
           it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
             const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
             let lastRemainingHbars = remainingHbarsBefore;

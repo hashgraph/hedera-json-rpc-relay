@@ -29,7 +29,7 @@ import { SDKClient } from '../../src/lib/clients';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { overrideEnvs, withOverriddenEnvs } from '../helpers';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -53,7 +53,7 @@ describe('HAPI Service', async function () {
     hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
   });
 
-  overrideEnvs({
+  overrideEnvsInMochaDescribe({
     HAPI_CLIENT_TRANSACTION_RESET: '0',
     HAPI_CLIENT_DURATION_RESET: '0',
     HAPI_CLIENT_ERROR_RESET: '[50]',
@@ -68,7 +68,7 @@ describe('HAPI Service', async function () {
     expect(sdkClient).to.be.instanceof(SDKClient);
   });
 
-  withOverriddenEnvs({ HAPI_CLIENT_TRANSACTION_RESET: '2' }, () => {
+  withOverriddenEnvsInMochaTest({ HAPI_CLIENT_TRANSACTION_RESET: '2' }, () => {
     it('should be able to reinitialise SDK instance upon reaching transaction limit', async function () {
       hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
       expect(hapiService.getTransactionCount()).to.eq(parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!));
@@ -86,7 +86,7 @@ describe('HAPI Service', async function () {
     });
   });
 
-  withOverriddenEnvs({ HAPI_CLIENT_DURATION_RESET: '100' }, () => {
+  withOverriddenEnvsInMochaTest({ HAPI_CLIENT_DURATION_RESET: '100' }, () => {
     it('should be able to reinitialise SDK instance upon reaching time limit', async function () {
       hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
       expect(hapiService.getTimeUntilReset()).to.eq(parseInt(process.env.HAPI_CLIENT_DURATION_RESET!));
@@ -103,7 +103,7 @@ describe('HAPI Service', async function () {
     });
   });
 
-  withOverriddenEnvs({ HAPI_CLIENT_ERROR_RESET: '[50]' }, () => {
+  withOverriddenEnvsInMochaTest({ HAPI_CLIENT_ERROR_RESET: '[50]' }, () => {
     it('should be able to reinitialise SDK instance upon error status code encounter', async function () {
       hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
       expect(hapiService.getErrorCodes()[0]).to.eq(JSON.parse(process.env.HAPI_CLIENT_ERROR_RESET!)[0]);
@@ -120,7 +120,7 @@ describe('HAPI Service', async function () {
     });
   });
 
-  withOverriddenEnvs(
+  withOverriddenEnvsInMochaTest(
     {
       HAPI_CLIENT_ERROR_RESET: '[50]',
       HAPI_CLIENT_TRANSACTION_RESET: '50',
@@ -146,7 +146,7 @@ describe('HAPI Service', async function () {
     },
   );
 
-  withOverriddenEnvs(
+  withOverriddenEnvsInMochaTest(
     {
       HAPI_CLIENT_ERROR_RESET: '[50]',
       HAPI_CLIENT_TRANSACTION_RESET: '50',
@@ -175,7 +175,7 @@ describe('HAPI Service', async function () {
     },
   );
 
-  withOverriddenEnvs(
+  withOverriddenEnvsInMochaTest(
     {
       HAPI_CLIENT_TRANSACTION_RESET: '0',
       HAPI_CLIENT_DURATION_RESET: '0',

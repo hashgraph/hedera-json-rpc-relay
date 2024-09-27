@@ -885,7 +885,7 @@ export const calculateTxRecordChargeAmount = (exchangeRateIncents: number) => {
 };
 
 export const useInMemoryRedisServer = (logger: Logger, port: number) => {
-  overrideEnvs({ TEST: 'false', REDIS_ENABLED: 'true', REDIS_URL: `redis://127.0.0.1:${port}` });
+  overrideEnvsInMochaDescribe({ TEST: 'false', REDIS_ENABLED: 'true', REDIS_URL: `redis://127.0.0.1:${port}` });
 
   let redisInMemoryServer: RedisInMemoryServer;
 
@@ -914,7 +914,7 @@ export const stopRedisInMemoryServer = async (redisInMemoryServer: RedisInMemory
  *
  * @example
  * describe('given TEST is set to false', () => {
- *   overrideEnvs({ TEST: 'false' });
+ *   overrideEnvsInMochaDescribe({ TEST: 'false' });
  *
  *   it('should return false', () => {
  *     expect(process.env.TEST).to.equal('false');
@@ -925,7 +925,7 @@ export const stopRedisInMemoryServer = async (redisInMemoryServer: RedisInMemory
  *   expect(process.env.TEST).to.equal('true');
  * });
  */
-export const overrideEnvs = (envs: NodeJS.Dict<string>) => {
+export const overrideEnvsInMochaDescribe = (envs: NodeJS.Dict<string>) => {
   let envsToReset: NodeJS.Dict<string> = {};
 
   const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
@@ -957,7 +957,7 @@ export const overrideEnvs = (envs: NodeJS.Dict<string>) => {
  * @param {Function} tests - A function containing the tests to run with the overridden environment variables.
  *
  * @example
- * withOverriddenEnvs({ TEST: 'false' }, () => {
+ * withOverriddenEnvsInMochaTest({ TEST: 'false' }, () => {
  *   it('should return false', () => {
  *     expect(process.env.TEST).to.equal('false');
  *   });
@@ -967,13 +967,13 @@ export const overrideEnvs = (envs: NodeJS.Dict<string>) => {
  *   expect(process.env.TEST).to.equal('true');
  * });
  */
-export const withOverriddenEnvs = (envs: NodeJS.Dict<string>, tests: () => void) => {
+export const withOverriddenEnvsInMochaTest = (envs: NodeJS.Dict<string>, tests: () => void) => {
   const overriddenEnvs = Object.entries(envs)
     .map(([key, value]) => `${key}=${value}`)
     .join(', ');
 
   describe(`given ${overriddenEnvs} are set`, () => {
-    overrideEnvs(envs);
+    overrideEnvsInMochaDescribe(envs);
 
     tests();
   });

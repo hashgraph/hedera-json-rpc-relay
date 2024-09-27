@@ -39,7 +39,7 @@ import {
   ONE_TINYBAR_IN_WEI_HEX,
   RECEIVER_ADDRESS,
 } from './eth-config';
-import { overrideEnvs, withOverriddenEnvs } from '../../helpers';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -75,7 +75,10 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   const id = uuid();
   const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1', TX_DEFAULT_GAS: defaultGasOverride.toString() });
+  overrideEnvsInMochaDescribe({
+    ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1',
+    TX_DEFAULT_GAS: defaultGasOverride.toString(),
+  });
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -391,7 +394,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     expect(estimatedGas).to.equal(numberTo0x(Precheck.transactionIntrinsicGasCost(transaction.data!)));
   });
 
-  withOverriddenEnvs({ ESTIMATE_GAS_THROWS: 'false' }, () => {
+  withOverriddenEnvsInMochaTest({ ESTIMATE_GAS_THROWS: 'false' }, () => {
     it('should eth_estimateGas with contract revert and message does not equal executionReverted and ESTIMATE_GAS_THROWS is set to false', async function () {
       await mockContractCall(transaction, true, 400, {
         _status: {

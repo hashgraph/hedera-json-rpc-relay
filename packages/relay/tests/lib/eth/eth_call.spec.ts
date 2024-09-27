@@ -53,8 +53,8 @@ import {
   defaultErrorMessageText,
   ethCallFailing,
   mockData,
-  overrideEnvs,
-  withOverriddenEnvs,
+  overrideEnvsInMochaDescribe,
+  withOverriddenEnvsInMochaTest,
 } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { IContractCallRequest, IContractCallResponse } from '../../../src/lib/types';
@@ -76,7 +76,7 @@ describe('@ethCall Eth Call spec', async function () {
     gas: MAX_GAS_LIMIT_HEX,
   };
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -102,7 +102,7 @@ describe('@ethCall Eth Call spec', async function () {
     let callMirrorNodeSpy: sinon.SinonSpy;
     let sandbox: sinon.SinonSandbox;
 
-    overrideEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false' });
+    overrideEnvsInMochaDescribe({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false' });
 
     beforeEach(() => {
       sandbox = sinon.createSandbox();
@@ -132,7 +132,7 @@ describe('@ethCall Eth Call spec', async function () {
       );
     });
 
-    withOverriddenEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
       it('should execute "eth_call" against mirror node with a false ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
         web3Mock.onPost('contracts/call').reply(200);
         restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
@@ -149,7 +149,7 @@ describe('@ethCall Eth Call spec', async function () {
       });
     });
 
-    withOverriddenEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: undefined }, () => {
+    withOverriddenEnvsInMochaTest({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: undefined }, () => {
       it('should execute "eth_call" against mirror node with an undefined ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
         web3Mock.onPost('contracts/call').reply(200);
         restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
@@ -166,7 +166,7 @@ describe('@ethCall Eth Call spec', async function () {
       });
     });
 
-    withOverriddenEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
       it('should execute "eth_call" against consensus node with a ETH_CALL_DEFAULT_TO_CONSENSUS_NODE set to true', async function () {
         restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
         restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
@@ -223,7 +223,7 @@ describe('@ethCall Eth Call spec', async function () {
   });
 
   describe('eth_call using consensus node', async function () {
-    overrideEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'true' });
+    overrideEnvsInMochaDescribe({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'true' });
 
     it('eth_call with no gas', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
@@ -436,7 +436,7 @@ describe('@ethCall Eth Call spec', async function () {
       value: null,
     };
 
-    overrideEnvs({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false' });
+    overrideEnvsInMochaDescribe({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false' });
 
     //temporary workaround until precompiles are implemented in Mirror node evm module
     beforeEach(() => {
@@ -865,7 +865,7 @@ describe('@ethCall Eth Call spec', async function () {
     let callMirrorNodeSpy: sinon.SinonSpy;
     let sandbox: sinon.SinonSandbox;
 
-    overrideEnvs({
+    overrideEnvsInMochaDescribe({
       ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: 'false',
       ETH_CALL_CONSENSUS_SELECTORS: JSON.stringify([REDIRECTED_SELECTOR.slice(2)]),
     });

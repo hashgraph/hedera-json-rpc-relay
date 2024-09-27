@@ -23,7 +23,7 @@ import sinon from 'sinon';
 import { Registry } from 'prom-client';
 import pino, { Logger } from 'pino';
 import RateLimit from '../../src/rateLimit';
-import { overrideEnvs, withOverriddenEnvs } from '../../../relay/tests/helpers';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../../relay/tests/helpers';
 
 describe('RateLimit', () => {
   let logger: Logger;
@@ -36,7 +36,7 @@ describe('RateLimit', () => {
     registry = new Registry();
   });
 
-  overrideEnvs({ RATE_LIMIT_DISABLED: 'false' });
+  overrideEnvsInMochaDescribe({ RATE_LIMIT_DISABLED: 'false' });
 
   beforeEach(() => {
     rateLimit = new RateLimit(logger, registry, duration);
@@ -47,7 +47,7 @@ describe('RateLimit', () => {
     sinon.restore();
   });
 
-  withOverriddenEnvs({ RATE_LIMIT_DISABLED: 'true' }, () => {
+  withOverriddenEnvsInMochaTest({ RATE_LIMIT_DISABLED: 'true' }, () => {
     it('should not rate limit when RATE_LIMIT_DISABLED is true', () => {
       rateLimit = new RateLimit(logger, registry, duration);
       const shouldLimit = rateLimit.shouldRateLimit('127.0.0.1', 'method1', 10, 'requestId');
@@ -118,7 +118,7 @@ describe('RateLimit', () => {
     expect(counterSpy.calledOnce).to.be.true;
   });
 
-  withOverriddenEnvs({ RATE_LIMIT_DISABLED: 'true' }, () => {
+  withOverriddenEnvsInMochaTest({ RATE_LIMIT_DISABLED: 'true' }, () => {
     it('should prioritize environment variable RATE_LIMIT_DISABLED', () => {
       const logSpy = sinon.spy(logger, 'warn');
       const counterSpy = sinon.spy(rateLimit['ipRateLimitCounter'], 'inc');

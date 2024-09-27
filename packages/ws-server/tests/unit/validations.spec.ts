@@ -67,7 +67,7 @@ describe('validations unit test', async function () {
     });
   });
 
-  WsTestHelper.withOverriddenEnvs({ REQUEST_ID_IS_OPTIONAL: 'true' }, () => {
+  WsTestHelper.withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: 'true' }, () => {
     it('Should execute validateJsonRpcRequest() to validate JSON RPC request that has no id field but return true because REQUEST_ID_IS_OPTIONAL=true', () => {
       const REQUEST = {
         jsonrpc: '2.0',

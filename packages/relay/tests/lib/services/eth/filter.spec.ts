@@ -34,7 +34,7 @@ import {
   defaultBlock,
   defaultLogTopics,
   defaultLogs1,
-  withOverriddenEnvs,
+  withOverriddenEnvsInMochaTest,
 } from '../../../helpers';
 import RelayAssertions from '../../../assertions';
 import { JsonRpcError, predefined } from '../../../../src';
@@ -132,7 +132,7 @@ describe('Filter API Test Suite', async function () {
   });
 
   describe('all methods require a filter flag', async function () {
-    withOverriddenEnvs({ FILTER_API_ENABLED: undefined }, () => {
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: undefined }, () => {
       it(`should throw UNSUPPORTED_METHOD for newFilter`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
@@ -164,7 +164,7 @@ describe('Filter API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvs({ FILTER_API_ENABLED: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: 'true' }, () => {
       let filterId: string;
 
       beforeEach(async () => {
@@ -200,7 +200,7 @@ describe('Filter API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvs({ FILTER_API_ENABLED: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: 'false' }, () => {
       it(`should throw UNSUPPORTED_METHOD for newFilter`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,

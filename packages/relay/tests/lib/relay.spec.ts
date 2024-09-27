@@ -23,7 +23,7 @@ import sinon from 'sinon';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 import { RelayImpl } from '../../src';
-import { withOverriddenEnvs } from '../helpers';
+import { withOverriddenEnvsInMochaTest } from '../helpers';
 
 describe('RelayImpl', () => {
   const logger = pino();
@@ -57,7 +57,7 @@ describe('RelayImpl', () => {
     expect(eth).to.not.be.undefined;
   });
 
-  withOverriddenEnvs({ SUBSCRIPTIONS_ENABLED: 'true' }, () => {
+  withOverriddenEnvsInMochaTest({ SUBSCRIPTIONS_ENABLED: 'true' }, () => {
     it('should return the correct subscription implementation when enabled', () => {
       relay = new RelayImpl(logger, register);
 
@@ -66,7 +66,7 @@ describe('RelayImpl', () => {
     });
   });
 
-  withOverriddenEnvs({ SUBSCRIPTIONS_ENABLED: 'false' }, () => {
+  withOverriddenEnvsInMochaTest({ SUBSCRIPTIONS_ENABLED: 'false' }, () => {
     it('should return undefined subscription implementation when not enabled', () => {
       relay = new RelayImpl(logger, register);
 

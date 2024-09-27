@@ -95,7 +95,7 @@ export class WsTestHelper {
    *
    * @example
    * describe('given TEST is set to false', () => {
-   *   overrideEnvs({ TEST: 'false' });
+   *   overrideEnvsInMochaDescribe({ TEST: 'false' });
    *
    *   it('should return false', () => {
    *     expect(process.env.TEST).to.equal('false');
@@ -106,7 +106,7 @@ export class WsTestHelper {
    *   expect(process.env.TEST).to.equal('true');
    * });
    */
-  static overrideEnvs(envs: NodeJS.Dict<string>) {
+  static overrideEnvsInMochaDescribe(envs: NodeJS.Dict<string>) {
     let envsToReset: NodeJS.Dict<string> = {};
 
     const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
@@ -138,7 +138,7 @@ export class WsTestHelper {
    * @param {Function} tests - A function containing the tests to run with the overridden environment variables.
    *
    * @example
-   * withOverriddenEnvs({ TEST: 'false' }, () => {
+   * withOverriddenEnvsInMochaTest({ TEST: 'false' }, () => {
    *   it('should return false', () => {
    *     expect(process.env.TEST).to.equal('false');
    *   });
@@ -148,13 +148,13 @@ export class WsTestHelper {
    *   expect(process.env.TEST).to.equal('true');
    * });
    */
-  static withOverriddenEnvs(envs: NodeJS.Dict<string>, tests: () => void) {
+  static withOverriddenEnvsInMochaTest(envs: NodeJS.Dict<string>, tests: () => void) {
     const overriddenEnvs = Object.entries(envs)
       .map(([key, value]) => `${key}=${value}`)
       .join(', ');
 
     describe(`given ${overriddenEnvs} are set`, () => {
-      WsTestHelper.overrideEnvs(envs);
+      WsTestHelper.overrideEnvsInMochaDescribe(envs);
 
       tests();
     });

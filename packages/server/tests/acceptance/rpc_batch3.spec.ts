@@ -52,7 +52,7 @@ import TokenCreateJson from '../contracts/TokenCreateContract.json';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { TYPES } from '../../src/validator';
-import { overrideEnvs } from '../../../relay/tests/helpers';
+import { overrideEnvsInMochaDescribe } from '../../../relay/tests/helpers';
 
 chai.use(chaiExclude);
 
@@ -2016,7 +2016,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   });
 
   describe('Batch Request Test Suite BATCH_REQUESTS_ENABLED = true', async function () {
-    overrideEnvs({ BATCH_REQUESTS_ENABLED: 'true' });
+    overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: 'true' });
 
     it('Should return a batch of requests', async function () {
       const testAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId);

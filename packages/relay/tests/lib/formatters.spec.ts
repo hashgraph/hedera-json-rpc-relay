@@ -47,7 +47,7 @@ import {
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
 import { AbiCoder, keccak256 } from 'ethers';
-import { overrideEnvs } from '../helpers';
+import { overrideEnvsInMochaDescribe } from '../helpers';
 
 describe('Formatters', () => {
   describe('formatRequestIdMessage', () => {
@@ -140,7 +140,7 @@ describe('Formatters', () => {
   });
 
   describe('parseNumericEnvVar', () => {
-    overrideEnvs({
+    overrideEnvsInMochaDescribe({
       TEST_ONLY_ENV_VAR_EMPTYSTRING: '',
       TEST_ONLY_ENV_VAR_NONNUMERICSTRING: 'foobar',
       TEST_ONLY_ENV_VAR_NUMERICSTRING: '12345',

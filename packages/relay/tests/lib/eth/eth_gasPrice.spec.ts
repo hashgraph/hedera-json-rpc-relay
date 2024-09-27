@@ -30,7 +30,7 @@ import { DEFAULT_NETWORK_FEES, NOT_FOUND_RES } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
 import { generateEthTestEnv } from './eth-helpers';
-import { overrideEnvs, toHex, withOverriddenEnvs } from '../../helpers';
+import { overrideEnvsInMochaDescribe, toHex, withOverriddenEnvsInMochaTest } from '../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -42,7 +42,7 @@ describe('@ethGasPrice Gas Price spec', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock
@@ -108,7 +108,7 @@ describe('@ethGasPrice Gas Price spec', async function () {
         const GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES[testCaseName];
 
         describe(testCaseName, async function () {
-          overrideEnvs({ GAS_PRICE_PERCENTAGE_BUFFER: GAS_PRICE_PERCENTAGE_BUFFER });
+          overrideEnvsInMochaDescribe({ GAS_PRICE_PERCENTAGE_BUFFER: GAS_PRICE_PERCENTAGE_BUFFER });
 
           it(`should return gas price with buffer`, async function () {
             const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);

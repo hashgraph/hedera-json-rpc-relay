@@ -31,7 +31,12 @@ import { Utils } from '../../../../src/utils';
 import constants from '../../../../src/lib/constants';
 import HbarLimit from '../../../../src/lib/hbarlimiter';
 import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
-import { calculateTxRecordChargeAmount, getRequestId, overrideEnvs, withOverriddenEnvs } from '../../../helpers';
+import {
+  calculateTxRecordChargeAmount,
+  getRequestId,
+  overrideEnvsInMochaDescribe,
+  withOverriddenEnvsInMochaTest,
+} from '../../../helpers';
 import MetricService from '../../../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../../../src/lib/types/events';
@@ -95,7 +100,7 @@ describe('Metric Service', function () {
     ],
   } as unknown as TransactionRecord;
 
-  overrideEnvs({ OPERATOR_KEY_FORMAT: 'DER' });
+  overrideEnvsInMochaDescribe({ OPERATOR_KEY_FORMAT: 'DER' });
 
   before(() => {
     // consensus node client
@@ -163,7 +168,7 @@ describe('Metric Service', function () {
       interactingEntity: mockedInteractingEntity,
     };
 
-    withOverriddenEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
       it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
         mock
           .onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`)
@@ -190,7 +195,7 @@ describe('Metric Service', function () {
       });
     });
 
-    withOverriddenEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
       it('Should execute captureTransactionMetrics() by retrieving transaction record from CONSENSUS NODE client', async () => {
         const mockedExchangeRateInCents = 12;
         const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
@@ -249,7 +254,7 @@ describe('Metric Service', function () {
       });
     });
 
-    withOverriddenEnvs({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
       it('Should listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics()', async () => {
         const mockedExchangeRateInCents = 12;
         const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);

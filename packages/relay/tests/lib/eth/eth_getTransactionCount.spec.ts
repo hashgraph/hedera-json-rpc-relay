@@ -29,7 +29,12 @@ import { SDKClient } from '../../../src/lib/clients';
 import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
-import { defaultDetailedContractResults, defaultEthereumTransactions, mockData, overrideEnvs } from '../../helpers';
+import {
+  defaultDetailedContractResults,
+  defaultEthereumTransactions,
+  mockData,
+  overrideEnvsInMochaDescribe,
+} from '../../helpers';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
 
@@ -59,7 +64,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     return `accounts/${addresss}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
   }
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);

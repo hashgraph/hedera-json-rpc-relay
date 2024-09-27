@@ -252,19 +252,19 @@ describe('Utilities unit tests', async function () {
   });
 
   describe('getMultipleAddressesEnabled', () => {
-    WsTestHelper.withOverriddenEnvs({ WS_MULTIPLE_ADDRESSES_ENABLED: 'true' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: 'true' }, () => {
       it('should return true', () => {
         expect(getMultipleAddressesEnabled()).to.be.true;
       });
     });
 
-    WsTestHelper.withOverriddenEnvs({ WS_MULTIPLE_ADDRESSES_ENABLED: 'false' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: 'false' }, () => {
       it('should return false', () => {
         expect(getMultipleAddressesEnabled()).to.be.false;
       });
     });
 
-    WsTestHelper.withOverriddenEnvs({ WS_MULTIPLE_ADDRESSES_ENABLED: undefined }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: undefined }, () => {
       it('should return false', () => {
         expect(getMultipleAddressesEnabled()).to.be.false;
       });
@@ -272,19 +272,19 @@ describe('Utilities unit tests', async function () {
   });
 
   describe('getWsBatchRequestsEnabled', () => {
-    WsTestHelper.withOverriddenEnvs({ WS_BATCH_REQUESTS_ENABLED: 'true' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: 'true' }, () => {
       it('should return true', () => {
         expect(getWsBatchRequestsEnabled()).to.be.true;
       });
     });
 
-    WsTestHelper.withOverriddenEnvs({ WS_BATCH_REQUESTS_ENABLED: 'false' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: 'false' }, () => {
       it('should return false', () => {
         expect(getWsBatchRequestsEnabled()).to.be.false;
       });
     });
 
-    WsTestHelper.withOverriddenEnvs({ WS_BATCH_REQUESTS_ENABLED: undefined }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: undefined }, () => {
       it('should return true', () => {
         expect(getWsBatchRequestsEnabled()).to.be.true;
       });
@@ -292,19 +292,19 @@ describe('Utilities unit tests', async function () {
   });
 
   describe('getBatchRequestsMaxSize', () => {
-    WsTestHelper.withOverriddenEnvs({ WS_BATCH_REQUESTS_MAX_SIZE: '50' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: '50' }, () => {
       it('should return 50', () => {
         expect(getBatchRequestsMaxSize()).to.equal(50);
       });
     });
 
-    WsTestHelper.withOverriddenEnvs({ WS_BATCH_REQUESTS_MAX_SIZE: '0' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: '0' }, () => {
       it('should return 0', () => {
         expect(getBatchRequestsMaxSize()).to.equal(0);
       });
     });
 
-    WsTestHelper.withOverriddenEnvs({ WS_BATCH_REQUESTS_MAX_SIZE: undefined }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: undefined }, () => {
       it('should return 20', () => {
         expect(getBatchRequestsMaxSize()).to.equal(20);
       });

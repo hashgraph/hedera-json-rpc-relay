@@ -240,7 +240,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
     // skip this test if using a remote relay since updating the env vars would not affect it
     if (global.relayIsLocal) {
-      WsTestHelper.withOverriddenEnvs({ WS_MULTIPLE_ADDRESSES_ENABLED: 'true' }, () => {
+      WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: 'true' }, () => {
         it('Subscribe to multiple contracts on same subscription', async function () {
           await new Promise((resolve) => setTimeout(resolve, 10000));
 
@@ -308,7 +308,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       });
     }
 
-    WsTestHelper.withOverriddenEnvs({ WS_MULTIPLE_ADDRESSES_ENABLED: 'false' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: 'false' }, () => {
       it('Subscribe to multiple contracts on same subscription Should fail with INVALID_PARAMETER due to feature flag disabled', async function () {
         const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
         const addressCollection = [logContractSigner.target, logContractSigner2.target];
@@ -427,7 +427,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   describe('Connection limit', async function () {
     let providers: ethers.WebSocketProvider[] = [];
 
-    WsTestHelper.overrideEnvs({ WS_CONNECTION_LIMIT: '5' });
+    WsTestHelper.overrideEnvsInMochaDescribe({ WS_CONNECTION_LIMIT: '5' });
 
     beforeEach(async () => {
       // We already have one connection
@@ -470,7 +470,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   describe('Connection TTL', async function () {
     let TEST_TTL = 5000;
 
-    WsTestHelper.overrideEnvs({ WS_MAX_INACTIVITY_TTL: TEST_TTL.toString() });
+    WsTestHelper.overrideEnvsInMochaDescribe({ WS_MAX_INACTIVITY_TTL: TEST_TTL.toString() });
 
     it('Connection TTL is enforced, should close all connections', async function () {
       const wsConn2 = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -884,7 +884,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   // skip this test if using a remote relay since updating the env vars would not affect it
   if (global.relayIsLocal) {
     describe('IP connection limits', async function () {
-      WsTestHelper.overrideEnvs({ WS_CONNECTION_LIMIT_PER_IP: '3' });
+      WsTestHelper.overrideEnvsInMochaDescribe({ WS_CONNECTION_LIMIT_PER_IP: '3' });
 
       it('Does not allow more connections from the same IP than the specified limit', async function () {
         const providers = [];
@@ -924,7 +924,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     });
 
     describe('Connection subscription limits', async function () {
-      WsTestHelper.overrideEnvs({ WS_SUBSCRIPTION_LIMIT: '2' });
+      WsTestHelper.overrideEnvsInMochaDescribe({ WS_SUBSCRIPTION_LIMIT: '2' });
 
       it('Does not allow more subscriptions per connection than the specified limit', async function () {
         // Create different subscriptions

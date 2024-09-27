@@ -24,7 +24,7 @@ import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 
 import { EthImpl } from '../../../src/lib/eth';
-import { buildCryptoTransferTransaction, getRequestId, overrideEnvs } from '../../helpers';
+import { buildCryptoTransferTransaction, getRequestId, overrideEnvsInMochaDescribe } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import { numberTo0x } from '../../../dist/formatters';
 import {
@@ -55,7 +55,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock

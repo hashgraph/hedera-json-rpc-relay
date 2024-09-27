@@ -27,7 +27,7 @@ import { IEthAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLi
 import { EthAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { randomBytes, uuidV4 } from 'ethers';
 import { Registry } from 'prom-client';
-import { overrideEnvs, useInMemoryRedisServer } from '../../../helpers';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
@@ -42,7 +42,7 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6382);
     } else {
-      overrideEnvs({ REDIS_ENABLED: 'false' });
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
     }
 
     before(() => {

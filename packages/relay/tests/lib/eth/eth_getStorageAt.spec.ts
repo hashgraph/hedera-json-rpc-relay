@@ -42,7 +42,7 @@ import {
 } from './eth-config';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import RelayAssertions from '../../assertions';
-import { defaultDetailedContractResults, overrideEnvs } from '../../helpers';
+import { defaultDetailedContractResults, overrideEnvsInMochaDescribe } from '../../helpers';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
 
@@ -62,7 +62,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     expect(result).equal(DEFAULT_CURRENT_CONTRACT_STATE.state[0].value);
   }
 
-  overrideEnvs({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
   this.beforeEach(() => {
     // reset cache and restMock
