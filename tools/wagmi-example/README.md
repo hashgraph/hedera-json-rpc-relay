@@ -17,8 +17,6 @@ Example of using Wagmi with Hedera covers
 5. Write to contract
 
 ## Generate contract abi, bin
-If you want to compile the contract on your own, be aware of a known issue with the two latest versions of the Solc compiler. You should use version solc <= 0.8.24 because the most recent versions of Hedera do not support all the opcodes introduced in the latest releases.
-
 Using solc from [NPM](https://www.npmjs.com/package/solc)
 
 1. `solcjs contract/Greeter.sol --optimize --abi --bin -o contract/` or `npm run compile`
