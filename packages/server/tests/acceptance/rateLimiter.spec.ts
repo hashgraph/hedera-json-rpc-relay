@@ -22,7 +22,7 @@
 import Assertions from '../helpers/assertions';
 import testConstants from '../../tests/helpers/constants';
 import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds
@@ -34,11 +34,9 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   let requestId: string;
 
   const TIER_2_RATE_LIMIT =
-    (EnvProviderService.getInstance().get('TIER_2_RATE_LIMIT') as unknown as number) ||
-    relayConstants.DEFAULT_RATE_LIMIT.TIER_2;
+    (EnvProvider.get('TIER_2_RATE_LIMIT') as unknown as number) || relayConstants.DEFAULT_RATE_LIMIT.TIER_2;
   const LIMIT_DURATION =
-    (EnvProviderService.getInstance().get('LIMIT_DURATION') as unknown as number) ||
-    relayConstants.DEFAULT_RATE_LIMIT.DURATION;
+    (EnvProvider.get('LIMIT_DURATION') as unknown as number) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
   describe('RPC Rate Limiter Acceptance Tests', () => {
     const sendMultipleRequests = async (method: string, params: any[], threshold: number) => {

@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../../env-provider/tests/envTestHelper';
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -67,21 +67,18 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(EnvProviderService.getInstance().get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    EnvProviderService.getInstance().dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
+    currentMaxBlockRange = Number(EnvProvider.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
+    EnvTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
   });
 
   this.afterAll(() => {
-    EnvProviderService.getInstance().dynamicOverride('ETH_FEE_HISTORY_FIXED', ETH_FEE_HISTORY_VALUE);
+    EnvTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', ETH_FEE_HISTORY_VALUE);
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    EnvProviderService.getInstance().dynamicOverride(
-      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-      currentMaxBlockRange.toString(),
-    );
+    EnvTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', currentMaxBlockRange.toString());
   });
 
   describe('eth_feeHistory with ... param', function () {
@@ -248,7 +245,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     }
 
     this.beforeAll(function () {
-      EnvProviderService.getInstance().dynamicOverride('ETH_FEE_HISTORY_FIXED', 'true');
+      EnvTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', 'true');
     });
 
     this.beforeEach(function () {
@@ -258,7 +255,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     });
 
     this.afterAll(function () {
-      EnvProviderService.getInstance().dynamicOverride('ETH_FEE_HISTORY_FIXED', 'false');
+      EnvTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', 'false');
     });
 
     it('eth_feeHistory with fixed fees', async function () {

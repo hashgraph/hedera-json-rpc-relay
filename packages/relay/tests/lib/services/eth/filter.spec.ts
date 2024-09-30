@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../../../env-provider/tests/envTestHelper';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
@@ -89,7 +89,7 @@ describe('Filter API Test Suite', async function () {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      EnvProviderService.getInstance().get('MIRROR_NODE_URL'),
+      EnvProvider.get('MIRROR_NODE_URL'),
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -124,15 +124,15 @@ describe('Filter API Test Suite', async function () {
     let ffAtStart;
 
     before(function () {
-      ffAtStart = EnvProviderService.getInstance().get('FILTER_API_ENABLED');
+      ffAtStart = EnvProvider.get('FILTER_API_ENABLED');
     });
 
     after(function () {
-      EnvProviderService.getInstance().dynamicOverride('FILTER_API_ENABLED', ffAtStart);
+      EnvTestHelper.dynamicOverride('FILTER_API_ENABLED', ffAtStart);
     });
 
     it('FILTER_API_ENABLED is not specified', async function () {
-      EnvProviderService.getInstance().remove('FILTER_API_ENABLED');
+      EnvTestHelper.remove('FILTER_API_ENABLED');
       await RelayAssertions.assertRejection(
         predefined.UNSUPPORTED_METHOD,
         filterService.newFilter,
@@ -157,7 +157,7 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('FILTER_API_ENABLED=true', async function () {
-      EnvProviderService.getInstance().dynamicOverride('FILTER_API_ENABLED', 'true');
+      EnvTestHelper.dynamicOverride('FILTER_API_ENABLED', 'true');
       restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock }] });
       const filterId = await filterService.newFilter();
       expect(filterId).to.exist;
@@ -183,7 +183,7 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('FILTER_API_ENABLED=false', async function () {
-      EnvProviderService.getInstance().dynamicOverride('FILTER_API_ENABLED', 'false');
+      EnvTestHelper.dynamicOverride('FILTER_API_ENABLED', 'false');
       await RelayAssertions.assertRejection(
         predefined.UNSUPPORTED_METHOD,
         filterService.newFilter,

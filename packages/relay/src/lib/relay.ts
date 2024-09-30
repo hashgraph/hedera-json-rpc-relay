@@ -35,7 +35,7 @@ import HAPIService from './services/hapiService/hapiService';
 import { SubscriptionController } from './subscriptionController';
 import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 export class RelayImpl implements Relay {
   /**
@@ -113,9 +113,8 @@ export class RelayImpl implements Relay {
   constructor(logger: Logger, register: Registry) {
     logger.info('Configurations successfully loaded');
 
-    const hederaNetwork: string = (EnvProviderService.getInstance().get('HEDERA_NETWORK') || '{}').toLowerCase();
-    const configuredChainId =
-      EnvProviderService.getInstance().get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
+    const hederaNetwork: string = (EnvProvider.get('HEDERA_NETWORK') || '{}').toLowerCase();
+    const configuredChainId = EnvProvider.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
@@ -131,14 +130,12 @@ export class RelayImpl implements Relay {
     this.netImpl = new NetImpl(this.clientMain);
 
     this.mirrorNodeClient = new MirrorNodeClient(
-      EnvProviderService.getInstance().get('MIRROR_NODE_URL') || '',
+      EnvProvider.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       register,
       this.cacheService,
       undefined,
-      EnvProviderService.getInstance().get('MIRROR_NODE_URL_WEB3') ||
-        EnvProviderService.getInstance().get('MIRROR_NODE_URL') ||
-        '',
+      EnvProvider.get('MIRROR_NODE_URL_WEB3') || EnvProvider.get('MIRROR_NODE_URL') || '',
     );
 
     this.metricService = new MetricService(
@@ -159,10 +156,7 @@ export class RelayImpl implements Relay {
       this.cacheService,
     );
 
-    if (
-      EnvProviderService.getInstance().get('SUBSCRIPTIONS_ENABLED') &&
-      EnvProviderService.getInstance().get('SUBSCRIPTIONS_ENABLED') === 'true'
-    ) {
+    if (EnvProvider.get('SUBSCRIPTIONS_ENABLED') && EnvProvider.get('SUBSCRIPTIONS_ENABLED') === 'true') {
       const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
       this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }

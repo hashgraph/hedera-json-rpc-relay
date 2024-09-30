@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,49 +18,47 @@
  *
  */
 
-import { IEnvProviderService } from './IEnvProviderService';
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
 
-export class EnvProviderService implements IEnvProviderService {
+export class EnvProvider {
   /**
    * The singleton instance
    * @public
    */
-  private static instance: IEnvProviderService;
+  private static instance: EnvProvider;
 
   /**
    * Copied envs from process.env
    * @private
    */
-  private envs: JSON;
+  private readonly envs: Record<string, string | undefined>;
 
   /**
    * Fetches all envs from process.env and pushes them into the envs property
    * @private
    */
   private constructor() {
-    dotenv.config({ path: findConfig('.env') || '' });
-    this.envs = JSON.parse(JSON.stringify(process.env));
+    const configPath = findConfig('.env');
+
+    if (!configPath || configPath === '') {
+      throw new Error('No .env file is found. The relay can not operate without valid .env.');
+    }
+
+    dotenv.config({ path: configPath });
+    this.envs = { ...process.env };
   }
 
   /**
    * Get the singleton instance of the current service
    * @public
    */
-  public static getInstance(): IEnvProviderService {
+  private static getInstance(): EnvProvider {
     if (this.instance == null) {
-      this.instance = new EnvProviderService();
+      this.instance = new EnvProvider();
     }
 
     return this.instance;
-  }
-
-  /**
-   * Hot reload a new instance into the current one, used in test cases only
-   */
-  public static hotReload(): void {
-    this.instance = new EnvProviderService();
   }
 
   /**
@@ -68,40 +66,7 @@ export class EnvProviderService implements IEnvProviderService {
    * @param name string
    * @returns string | undefined
    */
-  public get(name: string): string | undefined {
-    return this.envs[name];
-  }
-
-  /**
-   * Override an env variable, used in test cases only
-   * @param name string
-   * @param value string
-   * @returns void
-   */
-  public dynamicOverride(name: string, value: string | undefined): void {
-    this.envs[name] = value;
-  }
-
-  /**
-   * Delete an env variable, used in test cases only
-   * @param name string
-   * @returns void
-   */
-  public remove(name: string): void {
-    delete this.envs[name];
-  }
-
-  /**
-   * Hot reload a new instance into the current one, used in test cases only
-   * @param configPath string
-   * @returns void
-   */
-  public appendEnvsFromPath(configPath: string): void {
-    dotenv.config({ path: configPath, override: true });
-
-    const envsToAppend = JSON.parse(JSON.stringify(process.env));
-    const merged = Object.assign(this.envs, envsToAppend);
-
-    this.envs = JSON.parse(JSON.stringify(merged));
+  public static get(name: string): string | undefined {
+    return this.getInstance().envs[name];
   }
 }

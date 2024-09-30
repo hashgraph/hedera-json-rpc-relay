@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
 import { expect } from 'chai';
 import { Utils } from '../../src/utils';
 import constants from '../../src/lib/constants';
@@ -27,7 +27,7 @@ import constants from '../../src/lib/constants';
 describe('Utils', () => {
   describe('addPercentageBufferToGasPrice', () => {
     afterEach(() => {
-      EnvProviderService.getInstance().dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', '0');
+      EnvTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', '0');
     });
 
     const TW_COEF = constants.TINYBAR_TO_WEIBAR_COEF;
@@ -42,7 +42,7 @@ describe('Utils', () => {
     ];
     for (let i in TEST_CASES) {
       it(TEST_CASES[i].testName, () => {
-        EnvProviderService.getInstance().dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', TEST_CASES[i].buffer);
+        EnvTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', TEST_CASES[i].buffer);
         expect(Utils.addPercentageBufferToGasPrice(TEST_CASES[i].input)).to.equal(TEST_CASES[i].output);
       });
     }

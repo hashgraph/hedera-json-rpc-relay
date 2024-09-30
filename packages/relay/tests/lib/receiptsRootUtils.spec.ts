@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
 import { expect } from 'chai';
 import { ReceiptsRootUtils } from '../../src/receiptsRootUtils';
 

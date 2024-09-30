@@ -18,8 +18,6 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
 import { pino } from 'pino';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';

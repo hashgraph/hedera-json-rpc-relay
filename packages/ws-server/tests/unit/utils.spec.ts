@@ -33,7 +33,7 @@ import { WS_CONSTANTS } from '../../src/utils/constants';
 import { Relay } from '@hashgraph/json-rpc-relay/dist';
 import ConnectionLimiter from '../../src/metrics/connectionLimiter';
 import WsMetricRegistry from '../../src/metrics/wsMetricRegistry';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
 
 describe('Utilities unit tests', async function () {
   describe('constructValidLogSubscriptionFilter tests', () => {
@@ -294,46 +294,46 @@ describe('Utilities unit tests', async function () {
 
   describe('getMultipleAddressesEnabled', () => {
     it('should return true when WS_MULTIPLE_ADDRESSES_ENABLED is set to "true"', () => {
-      EnvProviderService.getInstance().dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'true');
+      EnvTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'true');
       expect(getMultipleAddressesEnabled()).to.be.true;
     });
 
     it('should return false when WS_MULTIPLE_ADDRESSES_ENABLED is set to "false"', () => {
-      EnvProviderService.getInstance().dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'false');
+      EnvTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'false');
       expect(getMultipleAddressesEnabled()).to.be.false;
     });
 
     it('should return false when WS_MULTIPLE_ADDRESSES_ENABLED is undefined', () => {
-      EnvProviderService.getInstance().remove('WS_MULTIPLE_ADDRESSES_ENABLED');
+      EnvTestHelper.remove('WS_MULTIPLE_ADDRESSES_ENABLED');
       expect(getMultipleAddressesEnabled()).to.be.false;
     });
   });
 
   describe('getWsBatchRequestsEnabled', () => {
     it('should return true when WS_BATCH_REQUESTS_ENABLED is set to "true"', () => {
-      EnvProviderService.getInstance().dynamicOverride('WS_BATCH_REQUESTS_ENABLED', 'true');
+      EnvTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', 'true');
       expect(getWsBatchRequestsEnabled()).to.be.true;
     });
 
     it('should return false when WS_BATCH_REQUESTS_ENABLED is set to "false"', () => {
-      EnvProviderService.getInstance().dynamicOverride('WS_BATCH_REQUESTS_ENABLED', 'false');
+      EnvTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', 'false');
       expect(getWsBatchRequestsEnabled()).to.be.false;
     });
 
     it('should return true when WS_BATCH_REQUESTS_ENABLED is undefined', () => {
-      EnvProviderService.getInstance().remove('WS_BATCH_REQUESTS_ENABLED');
+      EnvTestHelper.remove('WS_BATCH_REQUESTS_ENABLED');
       expect(getWsBatchRequestsEnabled()).to.be.true;
     });
   });
 
   describe('getBatchRequestsMaxSize', () => {
     it('should return the value of WS_BATCH_REQUESTS_MAX_SIZE when it is set', () => {
-      EnvProviderService.getInstance().dynamicOverride('WS_BATCH_REQUESTS_MAX_SIZE', '50');
+      EnvTestHelper.dynamicOverride('WS_BATCH_REQUESTS_MAX_SIZE', '50');
       expect(getBatchRequestsMaxSize()).to.equal(50);
     });
 
     it('should return 20 when WS_BATCH_REQUESTS_MAX_SIZE is not set', () => {
-      EnvProviderService.getInstance().remove('WS_BATCH_REQUESTS_MAX_SIZE');
+      EnvTestHelper.remove('WS_BATCH_REQUESTS_MAX_SIZE');
       expect(getBatchRequestsMaxSize()).to.equal(20);
     });
   });

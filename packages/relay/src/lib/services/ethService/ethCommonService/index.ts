@@ -29,7 +29,7 @@ import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
 import { Log } from '../../../model';
 import * as _ from 'lodash';
 import { CacheService } from '../../cacheService/cacheService';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 /**
  * Create a new Common Service implementation.
@@ -64,7 +64,7 @@ export class CommonService implements ICommonService {
   static blockPending = 'pending';
   static blockSafe = 'safe';
   static blockFinalized = 'finalized';
-  static isDevMode = EnvProviderService.getInstance().get('DEV_MODE') === 'true';
+  static isDevMode = EnvProvider.get('DEV_MODE') === 'true';
 
   // function callerNames
   static latestBlockNumber = 'getLatestBlockNumber';

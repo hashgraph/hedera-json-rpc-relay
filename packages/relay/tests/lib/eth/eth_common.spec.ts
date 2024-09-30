@@ -18,8 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 import { expect, use } from 'chai';
 import { Registry } from 'prom-client';
 import pino from 'pino';
@@ -43,7 +42,7 @@ describe('@ethCommon', async function () {
     it('should execute "eth_chainId"', async function () {
       const chainId = Relay.eth().chainId();
 
-      expect(chainId).to.be.equal('0x' + Number(EnvProviderService.getInstance().get('CHAIN_ID')).toString(16));
+      expect(chainId).to.be.equal('0x' + Number(EnvProvider.get('CHAIN_ID')).toString(16));
     });
 
     it('should execute "eth_accounts"', async function () {

@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../../../env-provider/tests/envTestHelper';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import MockAdapter from 'axios-mock-adapter';
@@ -265,7 +265,7 @@ describe('Debug API Test Suite', async function () {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      EnvProviderService.getInstance().get('MIRROR_NODE_URL')!,
+      EnvProvider.get('MIRROR_NODE_URL')!,
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -322,15 +322,15 @@ describe('Debug API Test Suite', async function () {
       let ffAtStart;
 
       before(function () {
-        ffAtStart = EnvProviderService.getInstance().get('DEBUG_API_ENABLED');
+        ffAtStart = EnvProvider.get('DEBUG_API_ENABLED');
       });
 
       after(function () {
-        EnvProviderService.getInstance().dynamicOverride('DEBUG_API_ENABLED', ffAtStart);
+        EnvTestHelper.dynamicOverride('DEBUG_API_ENABLED', ffAtStart);
       });
 
       it('DEBUG_API_ENABLED is not specified', async function () {
-        EnvProviderService.getInstance().remove('DEBUG_API_ENABLED');
+        EnvTestHelper.remove('DEBUG_API_ENABLED');
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           debugService.debug_traceTransaction,
@@ -341,7 +341,7 @@ describe('Debug API Test Suite', async function () {
       });
 
       it('DEBUG_API_ENABLED=true', async function () {
-        EnvProviderService.getInstance().dynamicOverride('DEBUG_API_ENABLED', 'true');
+        EnvTestHelper.dynamicOverride('DEBUG_API_ENABLED', 'true');
 
         const traceTransaction = await debugService.debug_traceTransaction(
           transactionHash,
@@ -353,7 +353,7 @@ describe('Debug API Test Suite', async function () {
       });
 
       it('DEBUG_API_ENABLED=false', async function () {
-        EnvProviderService.getInstance().dynamicOverride('DEBUG_API_ENABLED', 'false');
+        EnvTestHelper.dynamicOverride('DEBUG_API_ENABLED', 'false');
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           debugService.debug_traceTransaction,
@@ -366,7 +366,7 @@ describe('Debug API Test Suite', async function () {
 
     describe('callTracer', async function () {
       before(() => {
-        EnvProviderService.getInstance().dynamicOverride('DEBUG_API_ENABLED', 'true');
+        EnvTestHelper.dynamicOverride('DEBUG_API_ENABLED', 'true');
       });
 
       it('Test call tracer with onlyTopCall false', async function () {
@@ -428,7 +428,7 @@ describe('Debug API Test Suite', async function () {
 
     describe('opcodeLogger', async function () {
       before(() => {
-        EnvProviderService.getInstance().dynamicOverride('DEBUG_API_ENABLED', 'true');
+        EnvTestHelper.dynamicOverride('DEBUG_API_ENABLED', 'true');
       });
 
       for (const config of opcodeLoggerConfigs) {
@@ -478,7 +478,7 @@ describe('Debug API Test Suite', async function () {
     describe('Invalid scenarios', async function () {
       let notFound;
       before(() => {
-        EnvProviderService.getInstance().dynamicOverride('DEBUG_API_ENABLED', 'true');
+        EnvTestHelper.dynamicOverride('DEBUG_API_ENABLED', 'true');
       });
 
       beforeEach(() => {

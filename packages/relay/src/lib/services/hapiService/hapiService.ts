@@ -27,7 +27,7 @@ import { Registry, Counter } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import { CacheService } from '../cacheService/cacheService';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -101,17 +101,16 @@ export default class HAPIService {
     this.hbarLimiter = hbarLimiter;
 
     this.eventEmitter = eventEmitter;
-    this.hederaNetwork = (EnvProviderService.getInstance().get('HEDERA_NETWORK') || '{}').toLowerCase();
+    this.hederaNetwork = (EnvProvider.get('HEDERA_NETWORK') || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
     this.cacheService = cacheService;
     this.client = this.initSDKClient(logger);
 
     const currentDateNow = Date.now();
-    this.initialTransactionCount =
-      parseInt(EnvProviderService.getInstance().get('HAPI_CLIENT_TRANSACTION_RESET')!) || 0;
-    this.initialResetDuration = parseInt(EnvProviderService.getInstance().get('HAPI_CLIENT_DURATION_RESET')!) || 0;
-    this.initialErrorCodes = JSON.parse(EnvProviderService.getInstance().get('HAPI_CLIENT_ERROR_RESET') || '[21, 50]');
+    this.initialTransactionCount = parseInt(EnvProvider.get('HAPI_CLIENT_TRANSACTION_RESET')!) || 0;
+    this.initialResetDuration = parseInt(EnvProvider.get('HAPI_CLIENT_DURATION_RESET')!) || 0;
+    this.initialErrorCodes = JSON.parse(EnvProvider.get('HAPI_CLIENT_ERROR_RESET') || '[21, 50]');
 
     this.transactionCount = this.initialTransactionCount;
     this.resetDuration = currentDateNow + this.initialResetDuration;
@@ -228,32 +227,29 @@ export default class HAPIService {
 
     if (type === 'eth_sendRawTransaction') {
       if (
-        EnvProviderService.getInstance().get('OPERATOR_ID_ETH_SENDRAWTRANSACTION') &&
-        EnvProviderService.getInstance().get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION')
+        EnvProvider.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION') &&
+        EnvProvider.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION')
       ) {
         privateKey = Utils.createPrivateKeyBasedOnFormat(
           // @ts-ignore
-          EnvProviderService.getInstance().get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION'),
+          EnvProvider.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION'),
         );
         // @ts-ignore
         client = client.setOperator(
           // @ts-ignore
-          AccountId.fromString(EnvProviderService.getInstance().get('OPERATOR_ID_ETH_SENDRAWTRANSACTION')),
+          AccountId.fromString(EnvProvider.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION')),
           privateKey,
         );
       } else {
         logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
       }
     } else {
-      if (
-        EnvProviderService.getInstance().get('OPERATOR_ID_MAIN') &&
-        EnvProviderService.getInstance().get('OPERATOR_KEY_MAIN')
-      ) {
+      if (EnvProvider.get('OPERATOR_ID_MAIN') && EnvProvider.get('OPERATOR_KEY_MAIN')) {
         // @ts-ignore
-        privateKey = Utils.createPrivateKeyBasedOnFormat(EnvProviderService.getInstance().get('OPERATOR_KEY_MAIN'));
+        privateKey = Utils.createPrivateKeyBasedOnFormat(EnvProvider.get('OPERATOR_KEY_MAIN'));
         client = client.setOperator(
           // @ts-ignore
-          AccountId.fromString(EnvProviderService.getInstance().get('OPERATOR_ID_MAIN').trim()),
+          AccountId.fromString(EnvProvider.get('OPERATOR_ID_MAIN').trim()),
           privateKey,
         );
       } else {
@@ -261,9 +257,9 @@ export default class HAPIService {
       }
     }
 
-    client.setTransportSecurity(EnvProviderService.getInstance().get('CLIENT_TRANSPORT_SECURITY') === 'true' || false);
+    client.setTransportSecurity(EnvProvider.get('CLIENT_TRANSPORT_SECURITY') === 'true' || false);
 
-    const SDK_REQUEST_TIMEOUT = parseInt(EnvProviderService.getInstance().get('SDK_REQUEST_TIMEOUT') || '10000');
+    const SDK_REQUEST_TIMEOUT = parseInt(EnvProvider.get('SDK_REQUEST_TIMEOUT') || '10000');
     client.setRequestTimeout(SDK_REQUEST_TIMEOUT);
 
     logger.info(

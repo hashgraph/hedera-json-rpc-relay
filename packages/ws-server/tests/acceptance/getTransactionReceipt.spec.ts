@@ -26,11 +26,11 @@ import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 describe('@web-socket-batch-2 eth_getTransactionReceipt', async function () {
   const METHOD_NAME = 'eth_getTransactionReceipt';
-  const CHAIN_ID = EnvProviderService.getInstance().get('CHAIN_ID') || '0x12a';
+  const CHAIN_ID = EnvProvider.get('CHAIN_ID') || '0x12a';
   const INVALID_PARAMS = [
     [],
     [''],

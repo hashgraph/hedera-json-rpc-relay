@@ -20,7 +20,7 @@
 
 import { PrivateKey } from '@hashgraph/sdk';
 import constants from './lib/constants';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 export class Utils {
   public static readonly addPercentageBufferToGasPrice = (gasPrice: number): number => {
@@ -33,7 +33,7 @@ export class Utils {
     gasPrice +=
       Math.round(
         (gasPrice / constants.TINYBAR_TO_WEIBAR_COEF) *
-          (Number(EnvProviderService.getInstance().get('GAS_PRICE_PERCENTAGE_BUFFER') || 0) / 100),
+          (Number(EnvProvider.get('GAS_PRICE_PERCENTAGE_BUFFER') || 0) / 100),
       ) * constants.TINYBAR_TO_WEIBAR_COEF;
 
     return gasPrice;
@@ -44,7 +44,7 @@ export class Utils {
    * @returns PrivateKey
    */
   public static createPrivateKeyBasedOnFormat(operatorMainKey: string): PrivateKey {
-    switch (EnvProviderService.getInstance().get('OPERATOR_KEY_FORMAT')) {
+    switch (EnvProvider.get('OPERATOR_KEY_FORMAT')) {
       case 'DER':
       case undefined:
       case null:
@@ -54,9 +54,7 @@ export class Utils {
       case 'HEX_ECDSA':
         return PrivateKey.fromStringECDSA(operatorMainKey);
       default:
-        throw new Error(
-          `Invalid OPERATOR_KEY_FORMAT provided: ${EnvProviderService.getInstance().get('OPERATOR_KEY_FORMAT')}`,
-        );
+        throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${EnvProvider.get('OPERATOR_KEY_FORMAT')}`);
     }
   }
 }

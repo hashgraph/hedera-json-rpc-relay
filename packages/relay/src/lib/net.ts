@@ -21,7 +21,7 @@
 import { Net } from '../index';
 import constants from './constants';
 import { Client } from '@hashgraph/sdk';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 export class NetImpl implements Net {
   private client: Client;
@@ -30,8 +30,8 @@ export class NetImpl implements Net {
   constructor(client: Client) {
     this.client = client;
 
-    const hederaNetwork: string = (EnvProviderService.getInstance().get('HEDERA_NETWORK') || '{}').toLowerCase();
-    this.chainId = EnvProviderService.getInstance().get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
+    const hederaNetwork: string = (EnvProvider.get('HEDERA_NETWORK') || '{}').toLowerCase();
+    this.chainId = EnvProvider.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
     if (this.chainId.startsWith('0x')) this.chainId = parseInt(this.chainId, 16).toString();
   }
 

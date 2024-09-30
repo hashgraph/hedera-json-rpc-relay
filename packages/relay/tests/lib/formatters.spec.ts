@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
 import { expect } from 'chai';
 import {
   decodeErrorMessage,
@@ -142,15 +142,15 @@ describe('Formatters', () => {
 
   describe('parseNumericEnvVar', () => {
     before(() => {
-      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_EMPTYSTRING', '');
-      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', 'foobar');
-      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_NUMERICSTRING', '12345');
+      EnvTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_EMPTYSTRING', '');
+      EnvTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', 'foobar');
+      EnvTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NUMERICSTRING', '12345');
     });
 
     after(() => {
-      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_EMPTYSTRING', undefined);
-      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', undefined);
-      EnvProviderService.getInstance().dynamicOverride('TEST_ONLY_ENV_VAR_NUMERICSTRING', undefined);
+      EnvTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_EMPTYSTRING', undefined);
+      EnvTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', undefined);
+      EnvTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NUMERICSTRING', undefined);
     });
 
     it('should use default value when env var is undefined', () => {

@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../../env-provider/tests/envTestHelper';
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -51,17 +51,14 @@ describe('@ethGasPrice Gas Price spec', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(EnvProviderService.getInstance().get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    EnvProviderService.getInstance().dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
+    currentMaxBlockRange = Number(EnvProvider.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
+    EnvTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    EnvProviderService.getInstance().dynamicOverride(
-      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-      currentMaxBlockRange.toString(),
-    );
+    EnvTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', currentMaxBlockRange.toString());
   });
 
   describe('@ethGasPrice', async function () {
@@ -105,12 +102,12 @@ describe('@ethGasPrice Gas Price spec', async function () {
         it(testCaseName, async function () {
           const GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES[testCaseName];
           const initialGasPrice = await ethImpl.gasPrice();
-          EnvProviderService.getInstance().dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', GAS_PRICE_PERCENTAGE_BUFFER);
+          EnvTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', GAS_PRICE_PERCENTAGE_BUFFER);
 
           await cacheService.clear();
 
           const gasPriceWithBuffer = await ethImpl.gasPrice();
-          EnvProviderService.getInstance().dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', '0');
+          EnvTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', '0');
 
           const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);
           const expectedGasPriceWithBuffer = toHex(

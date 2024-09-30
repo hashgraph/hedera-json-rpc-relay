@@ -18,8 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvTestHelper } from '../../../../../env-provider/tests/envTestHelper';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
@@ -57,8 +56,8 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
       });
     } else {
       before(() => {
-        EnvProviderService.getInstance().dynamicOverride('TEST', 'true');
-        EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'false');
+        EnvTestHelper.dynamicOverride('TEST', 'true');
+        EnvTestHelper.dynamicOverride('REDIS_ENABLED', 'false');
         cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
         repository = new EthAddressHbarSpendingPlanRepository(
           cacheService,

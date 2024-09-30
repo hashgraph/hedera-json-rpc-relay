@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../../../env-provider/tests/envTestHelper';
 import { pino } from 'pino';
 import { Registry } from 'prom-client';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
@@ -140,7 +140,7 @@ describe('CacheService Test Suite', async function () {
 
   describe('Internal Cache Test Suite', async function () {
     this.beforeAll(() => {
-      EnvProviderService.getInstance().dynamicOverride('REDIS_ENABLED', 'false');
+      EnvTestHelper.dynamicOverride('REDIS_ENABLED', 'false');
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
@@ -278,14 +278,14 @@ describe('CacheService Test Suite', async function () {
     let multiSet: string | undefined;
 
     this.beforeAll(async () => {
-      multiSet = EnvProviderService.getInstance().get('MULTI_SET');
-      EnvProviderService.getInstance().dynamicOverride('MULTI_SET', 'true');
+      multiSet = EnvProvider.get('MULTI_SET');
+      EnvTestHelper.dynamicOverride('MULTI_SET', 'true');
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
     this.afterAll(async () => {
       await cacheService.disconnectRedisClient();
-      EnvProviderService.getInstance().dynamicOverride('MULTI_SET', multiSet);
+      EnvTestHelper.dynamicOverride('MULTI_SET', multiSet);
     });
 
     this.beforeEach(async () => {

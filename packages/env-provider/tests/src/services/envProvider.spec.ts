@@ -1,8 +1,8 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,22 @@
  *
  */
 
-export interface IEnvProviderService {
-  get(name: string): string | undefined;
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import { EnvProvider } from '../../../src/services';
 
-  // used in test cases only
-  dynamicOverride(name: string, value: string | undefined): void;
-  // used in test cases only
-  remove(name: string): void;
-  // used in test cases only
-  appendEnvsFromPath(configPath: string): void;
-}
+chai.use(chaiAsPromised);
+
+describe('EnvProvider tests', async function () {
+  it('should be able to get existing env var', async () => {
+    const res = EnvProvider.get('CHAIN_ID');
+
+    expect(res).to.equal('0x12a');
+  });
+
+  it('should be able to get non-existing env var', async () => {
+    const res = EnvProvider.get('NON_EXISTING_VAR');
+
+    expect(res).to.equal(undefined);
+  });
+});

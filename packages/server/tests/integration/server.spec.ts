@@ -18,9 +18,9 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
-EnvProviderService.getInstance().appendEnvsFromPath(__dirname + '/test.env');
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+EnvTestHelper.appendEnvsFromPath(__dirname + '/test.env');
 import Axios, { AxiosInstance } from 'axios';
 import { expect } from 'chai';
 import sinon from 'sinon';
@@ -48,11 +48,11 @@ describe('RPC Server', function () {
   let testClient: AxiosInstance;
 
   before(function () {
-    testServer = app.listen(EnvProviderService.getInstance().get('E2E_SERVER_PORT'));
+    testServer = app.listen(EnvProvider.get('E2E_SERVER_PORT'));
     testClient = BaseTest.createTestClient();
 
     // leak detection middleware
-    if (EnvProviderService.getInstance().get('MEMWATCH_ENABLED') === 'true') {
+    if (EnvProvider.get('MEMWATCH_ENABLED') === 'true') {
       Utils.captureMemoryLeaks(new GCProfiler());
     }
   });
@@ -76,7 +76,7 @@ describe('RPC Server', function () {
     });
 
     BaseTest.defaultResponseChecks(res);
-    expect(res.data.result).to.be.equal('0x' + Number(EnvProviderService.getInstance().get('CHAIN_ID')).toString(16));
+    expect(res.data.result).to.be.equal('0x' + Number(EnvProvider.get('CHAIN_ID')).toString(16));
   });
 
   it('validates enforcement of request id', async function () {
@@ -95,12 +95,12 @@ describe('RPC Server', function () {
 
   xit('supports optionality of request id when configured', async function () {
     const app2 = require('../../src/server').default;
-    const port = `1${EnvProviderService.getInstance().get('E2E_SERVER_PORT')}`;
+    const port = `1${EnvProvider.get('E2E_SERVER_PORT')}`;
     const testServer2 = app2.listen(port);
     const testClient2 = BaseTest.createTestClient(port);
 
     try {
-      EnvProviderService.getInstance().dynamicOverride('REQUEST_ID_IS_OPTIONAL', 'true');
+      EnvTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', 'true');
       const response = await testClient2.post('/', {
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
@@ -115,14 +115,12 @@ describe('RPC Server', function () {
       expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
       expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
       expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
-      expect(response.data.result).to.be.equal(
-        '0x' + Number(EnvProviderService.getInstance().get('CHAIN_ID')).toString(16),
-      );
+      expect(response.data.result).to.be.equal('0x' + Number(EnvProvider.get('CHAIN_ID')).toString(16));
     } catch (error: any) {
       expect(true, `Unexpected error: ${error.message}`).to.eq(false);
     }
 
-    EnvProviderService.getInstance().dynamicOverride('REQUEST_ID_IS_OPTIONAL', 'false');
+    EnvTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', 'false');
     testServer2.close();
   });
 
@@ -148,7 +146,7 @@ describe('RPC Server', function () {
     });
 
     BaseTest.defaultResponseChecks(res);
-    expect(res.data.result).to.be.equal('relay/' + EnvProviderService.getInstance().get('npm_package_version'));
+    expect(res.data.result).to.be.equal('relay/' + EnvProvider.get('npm_package_version'));
   });
 
   it('should execute "eth_getTransactionByHash with missing transaction"', async function () {
@@ -450,14 +448,14 @@ describe('RPC Server', function () {
   });
 
   describe('batchRequest Test Cases', async function () {
-    const batchRequestEnabledValue = EnvProviderService.getInstance().get('BATCH_REQUESTS_ENABLED');
+    const batchRequestEnabledValue = EnvProvider.get('BATCH_REQUESTS_ENABLED');
 
     this.beforeAll(function () {
-      EnvProviderService.getInstance().dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
+      EnvTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
     });
 
     this.afterAll(function () {
-      EnvProviderService.getInstance().dynamicOverride('BATCH_REQUESTS_ENABLED', batchRequestEnabledValue);
+      EnvTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', batchRequestEnabledValue);
     });
 
     function getEthChainIdRequest(id) {
@@ -509,9 +507,7 @@ describe('RPC Server', function () {
       // verify response for each request
       for (let i = 0; i < response.data.length; i++) {
         expect(response.data[i].id).to.be.equal((i + 2).toString());
-        expect(response.data[i].result).to.be.equal(
-          '0x' + Number(EnvProviderService.getInstance().get('CHAIN_ID')).toString(16),
-        );
+        expect(response.data[i].result).to.be.equal('0x' + Number(EnvProvider.get('CHAIN_ID')).toString(16));
       }
     });
 
@@ -528,18 +524,14 @@ describe('RPC Server', function () {
 
       // verify response for each result
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal(
-        '0x' + Number(EnvProviderService.getInstance().get('CHAIN_ID')).toString(16),
-      );
+      expect(response.data[0].result).to.be.equal('0x' + Number(EnvProvider.get('CHAIN_ID')).toString(16));
       // verify eth_accounts result
       expect(response.data[1].id).to.be.equal('3');
       expect(response.data[1].result).to.be.an('Array');
       expect(response.data[1].result.length).to.be.equal(0);
       // verify eth_chainId result
       expect(response.data[2].id).to.be.equal('4');
-      expect(response.data[2].result).to.be.equal(
-        '0x' + Number(EnvProviderService.getInstance().get('CHAIN_ID')).toString(16),
-      );
+      expect(response.data[2].result).to.be.equal('0x' + Number(EnvProvider.get('CHAIN_ID')).toString(16));
     });
 
     it('should execute "eth_chainId" and "eth_accounts" in batch request with invalid request id', async function () {
@@ -550,9 +542,7 @@ describe('RPC Server', function () {
 
       // verify response for each result
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal(
-        '0x' + Number(EnvProviderService.getInstance().get('CHAIN_ID')).toString(16),
-      );
+      expect(response.data[0].result).to.be.equal('0x' + Number(EnvProvider.get('CHAIN_ID')).toString(16));
       // verify eth_accounts result
       expect(response.data[1].id).to.be.equal(null);
       expect(response.data[1].error).to.be.an('Object');
@@ -572,9 +562,7 @@ describe('RPC Server', function () {
 
       // verify eth_chainId result on position 0
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal(
-        '0x' + Number(EnvProviderService.getInstance().get('CHAIN_ID')).toString(16),
-      );
+      expect(response.data[0].result).to.be.equal('0x' + Number(EnvProvider.get('CHAIN_ID')).toString(16));
       // verify method not found error on position 1
       expect(response.data[1].id).to.be.equal('3');
       expect(response.data[1].error).to.be.an('Object');
@@ -582,9 +570,7 @@ describe('RPC Server', function () {
       expect(response.data[1].error.message).to.be.equal('Method non_existent_method not found');
       // verify eth_chainId result on position 2
       expect(response.data[2].id).to.be.equal('4');
-      expect(response.data[2].result).to.be.equal(
-        '0x' + Number(EnvProviderService.getInstance().get('CHAIN_ID')).toString(16),
-      );
+      expect(response.data[2].result).to.be.equal('0x' + Number(EnvProvider.get('CHAIN_ID')).toString(16));
     });
 
     it('should execute "eth_chainId" and method not found and params error in batch request', async function () {
@@ -604,9 +590,7 @@ describe('RPC Server', function () {
 
       // verify eth_chainId result on position 0
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal(
-        '0x' + Number(EnvProviderService.getInstance().get('CHAIN_ID')).toString(16),
-      );
+      expect(response.data[0].result).to.be.equal('0x' + Number(EnvProvider.get('CHAIN_ID')).toString(16));
       // verify method not found error on position 1
       expect(response.data[1].id).to.be.equal('3');
       expect(response.data[1].error).to.be.an('Object');
@@ -640,7 +624,7 @@ describe('RPC Server', function () {
 
     it('should not execute batch request when disabled', async function () {
       // disable batch request
-      EnvProviderService.getInstance().dynamicOverride('BATCH_REQUESTS_ENABLED', 'false');
+      EnvTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'false');
 
       // do batch request
       try {
@@ -651,12 +635,12 @@ describe('RPC Server', function () {
       }
 
       // enable batch request again
-      EnvProviderService.getInstance().dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
+      EnvTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
     });
 
     it('batch request be disabled by default', async function () {
       // disable batch request
-      EnvProviderService.getInstance().dynamicOverride('BATCH_REQUESTS_ENABLED', 'undefined');
+      EnvTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'undefined');
 
       // do batch request
       try {
@@ -667,7 +651,7 @@ describe('RPC Server', function () {
       }
 
       // enable batch requests again
-      EnvProviderService.getInstance().dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
+      EnvTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
     });
   });
 
@@ -2693,7 +2677,7 @@ describe('RPC Server', function () {
 });
 
 class BaseTest {
-  static createTestClient(port = EnvProviderService.getInstance().get('E2E_SERVER_PORT')) {
+  static createTestClient(port = EnvProvider.get('E2E_SERVER_PORT')) {
     return Axios.create({
       baseURL: 'http://localhost:' + port,
       responseType: 'json' as const,

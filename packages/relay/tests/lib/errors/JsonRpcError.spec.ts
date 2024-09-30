@@ -18,8 +18,6 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
 import { expect } from 'chai';
 import { JsonRpcError, predefined } from '../../../src';
 import { AbiCoder, keccak256 } from 'ethers';

@@ -37,7 +37,7 @@ import { Block, Log, Transaction, Transaction1559 } from './model';
 import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { CacheService } from './services/cacheService/cacheService';
 import { CommonService, FilterService } from './services/ethService';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 import { IDebugService } from './services/debugService/IDebugService';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
@@ -168,8 +168,8 @@ export class EthImpl implements Eth {
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
   );
-  private readonly estimateGasThrows = EnvProviderService.getInstance().get('ESTIMATE_GAS_THROWS')
-    ? EnvProviderService.getInstance().get('ESTIMATE_GAS_THROWS') === 'true'
+  private readonly estimateGasThrows = EnvProvider.get('ESTIMATE_GAS_THROWS')
+    ? EnvProvider.get('ESTIMATE_GAS_THROWS') === 'true'
     : true;
 
   private readonly ethGasPRiceCacheTtlMs = parseNumericEnvVar(
@@ -313,10 +313,10 @@ export class EthImpl implements Eth {
   }
 
   private getEthFeeHistoryFixedFee(): boolean {
-    if (EnvProviderService.getInstance().get('ETH_FEE_HISTORY_FIXED') === undefined) {
+    if (EnvProvider.get('ETH_FEE_HISTORY_FIXED') === undefined) {
       return true;
     }
-    return EnvProviderService.getInstance().get('ETH_FEE_HISTORY_FIXED') === 'true';
+    return EnvProvider.get('ETH_FEE_HISTORY_FIXED') === 'true';
   }
 
   /**
@@ -329,9 +329,9 @@ export class EthImpl implements Eth {
     requestIdPrefix?: string,
   ): Promise<IFeeHistory | JsonRpcError> {
     const maxResults =
-      EnvProviderService.getInstance().get('TEST') === 'true'
+      EnvProvider.get('TEST') === 'true'
         ? constants.DEFAULT_FEE_HISTORY_MAX_RESULTS
-        : Number(EnvProviderService.getInstance().get('FEE_HISTORY_MAX_RESULTS'));
+        : Number(EnvProvider.get('FEE_HISTORY_MAX_RESULTS'));
 
     this.logger.trace(
       `${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`,
@@ -709,7 +709,7 @@ export class EthImpl implements Eth {
       transaction.gas = parseInt(transaction.gas.toString());
     }
     if (!transaction.from && transaction.value && (transaction.value as number) > 0) {
-      if (EnvProviderService.getInstance().get('OPERATOR_KEY_FORMAT') === 'HEX_ECDSA') {
+      if (EnvProvider.get('OPERATOR_KEY_FORMAT') === 'HEX_ECDSA') {
         transaction.from = this.hapiService.getMainClientInstance().operatorPublicKey?.toEvmAddress();
       } else {
         const operatorId = this.hapiService.getMainClientInstance().operatorAccountId!.toString();
@@ -1664,12 +1664,11 @@ export class EthImpl implements Eth {
     // When eth_call is invoked with a selector listed in specialSelectors, it will be routed through the consensus node, regardless of ETH_CALL_DEFAULT_TO_CONSENSUS_NODE.
     // note: this feature is a workaround for when a feature is supported by consensus node but not yet by mirror node.
     // Follow this ticket https://github.com/hashgraph/hedera-json-rpc-relay/issues/2984 to revisit and remove special selectors.
-    const specialSelectors: string[] = JSON.parse(EnvProviderService.getInstance().get('ETH_CALL_CONSENSUS_SELECTORS') || '[]');
+    const specialSelectors: string[] = JSON.parse(EnvProvider.get('ETH_CALL_CONSENSUS_SELECTORS') || '[]');
     const shouldForceToConsensus = selector !== '' && specialSelectors.includes(selector);
 
     // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-    const shouldDefaultToConsensus =
-      EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') === 'true';
+    const shouldDefaultToConsensus = EnvProvider.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') === 'true';
 
     let result: string | JsonRpcError = '';
     try {

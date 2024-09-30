@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
 import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -121,7 +121,7 @@ describe('eth_getBlockBy', async function () {
 
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      EnvProviderService.getInstance().get('MIRROR_NODE_URL')?? '',
+      EnvProvider.get('MIRROR_NODE_URL') ?? '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -136,7 +136,7 @@ describe('eth_getBlockBy', async function () {
     const eventEmitter = new EventEmitter();
     hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
 
-    EnvProviderService.getInstance().dynamicOverride('ETH_FEE_HISTORY_FIXED', 'false');
+    EnvTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', 'false');
 
     // @ts-ignore
     ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);

@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 enum CACHE_KEY {
   ACCOUNT = 'account',
@@ -72,9 +72,9 @@ export default {
   HBAR_TO_TINYBAR_COEF: 100_000_000,
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
   // 131072 bytes are 128kbytes
-  SEND_RAW_TRANSACTION_SIZE_LIMIT: EnvProviderService.getInstance().get('SEND_RAW_TRANSACTION_SIZE_LIMIT')
+  SEND_RAW_TRANSACTION_SIZE_LIMIT: EnvProvider.get('SEND_RAW_TRANSACTION_SIZE_LIMIT')
     ? // @ts-ignore
-      parseInt(EnvProviderService.getInstance().get('SEND_RAW_TRANSACTION_SIZE_LIMIT'))
+      parseInt(EnvProvider.get('SEND_RAW_TRANSACTION_SIZE_LIMIT'))
     : 131072,
 
   CACHE_KEY,
@@ -139,15 +139,13 @@ export default {
     DURATION: 60000,
   },
 
-  HBAR_RATE_LIMIT_DURATION: parseInt(EnvProviderService.getInstance().get('HBAR_RATE_LIMIT_DURATION') || '80000'),
-  HBAR_RATE_LIMIT_TINYBAR: parseInt(EnvProviderService.getInstance().get('HBAR_RATE_LIMIT_TINYBAR') || '11000000000'),
-  GAS_PRICE_TINY_BAR_BUFFER: parseInt(
-    EnvProviderService.getInstance().get('GAS_PRICE_TINY_BAR_BUFFER') || '10000000000',
-  ),
-  WEB_SOCKET_PORT: EnvProviderService.getInstance().get('WEB_SOCKET_PORT') || 8546,
-  WEB_SOCKET_HTTP_PORT: EnvProviderService.getInstance().get('WEB_SOCKET_HTTP_PORT') || 8547,
+  HBAR_RATE_LIMIT_DURATION: parseInt(EnvProvider.get('HBAR_RATE_LIMIT_DURATION') || '80000'),
+  HBAR_RATE_LIMIT_TINYBAR: parseInt(EnvProvider.get('HBAR_RATE_LIMIT_TINYBAR') || '11000000000'),
+  GAS_PRICE_TINY_BAR_BUFFER: parseInt(EnvProvider.get('GAS_PRICE_TINY_BAR_BUFFER') || '10000000000'),
+  WEB_SOCKET_PORT: EnvProvider.get('WEB_SOCKET_PORT') || 8546,
+  WEB_SOCKET_HTTP_PORT: EnvProvider.get('WEB_SOCKET_HTTP_PORT') || 8547,
 
-  RELAY_PORT: EnvProviderService.getInstance().get('SERVER_PORT') || 7546,
+  RELAY_PORT: EnvProvider.get('SERVER_PORT') || 7546,
 
   FUNCTION_SELECTOR_CHAR_LENGTH: 10,
   MIRROR_NODE_RETRY_DELAY_DEFAULT: 2000,
@@ -169,7 +167,7 @@ export default {
       LOG: 'log',
       PENDING_TRANSACTION: 'pendingTransaction',
     },
-    TTL: parseInt(EnvProviderService.getInstance().get('FILTER_TTL') || '300000'), // default is 5 minutes
+    TTL: parseInt(EnvProvider.get('FILTER_TTL') || '300000'), // default is 5 minutes
   },
 
   METHODS: {

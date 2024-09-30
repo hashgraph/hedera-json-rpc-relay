@@ -22,7 +22,7 @@ import crypto from 'crypto';
 import constants from './lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 
 const EMPTY_HEX = '0x';
@@ -119,7 +119,7 @@ const formatTransactionIdWithoutQueryParams = (transactionId: string): string | 
  * @throws An error if both the env var and constant are invalid
  */
 const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): number => {
-  let value: number = Number.parseInt(EnvProviderService.getInstance().get(envVarName) ?? '', 10);
+  let value: number = Number.parseInt(EnvProvider.get(envVarName) ?? '', 10);
   if (!isNaN(value)) {
     return value;
   }

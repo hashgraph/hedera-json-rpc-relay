@@ -23,7 +23,7 @@ import { Counter, Registry } from 'prom-client';
 import { ICacheClient } from '../../clients/cache/ICacheClient';
 import { LocalLRUCache, RedisCache } from '../../clients';
 import { RedisCacheError } from '../../errors/RedisCacheError';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 /**
  * A service that manages caching using different cache implementations based on configuration.
@@ -96,8 +96,8 @@ export class CacheService {
 
     this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     this.sharedCache = this.internalCache;
-    this.isSharedCacheEnabled = EnvProviderService.getInstance().get('TEST') !== 'true' && this.isRedisEnabled();
-    this.shouldMultiSet = EnvProviderService.getInstance().get('MULTI_SET') === 'true';
+    this.isSharedCacheEnabled = EnvProvider.get('TEST') !== 'true' && this.isRedisEnabled();
+    this.shouldMultiSet = EnvProvider.get('MULTI_SET') === 'true';
 
     if (this.isSharedCacheEnabled) {
       this.sharedCache = new RedisCache(logger.child({ name: 'redisCache' }), register);
@@ -192,10 +192,7 @@ export class CacheService {
    * @returns {boolean} Returns true if Redis caching is enabled, otherwise false.
    */
   public isRedisEnabled(): boolean {
-    return (
-      EnvProviderService.getInstance().get('REDIS_ENABLED') === 'true' &&
-      !!EnvProviderService.getInstance().get('REDIS_URL')
-    );
+    return EnvProvider.get('REDIS_ENABLED') === 'true' && !!EnvProvider.get('REDIS_URL');
   }
 
   /**

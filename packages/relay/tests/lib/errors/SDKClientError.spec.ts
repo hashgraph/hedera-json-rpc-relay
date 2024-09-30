@@ -18,8 +18,6 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
 import { expect } from 'chai';
 import { Status } from '@hashgraph/sdk';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError'; // Update the path to point to the SDKClientError file

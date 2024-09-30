@@ -25,11 +25,11 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 describe('@release @web-socket-batch-2 eth_getTransactionCount', async function () {
   const METHOD_NAME = 'eth_getTransactionCount';
-  const CHAIN_ID = EnvProviderService.getInstance().get('CHAIN_ID') || '0x12a';
+  const CHAIN_ID = EnvProvider.get('CHAIN_ID') || '0x12a';
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   // @ts-ignore

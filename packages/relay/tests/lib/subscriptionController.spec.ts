@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
 import pino from 'pino';
 import { SubscriptionController } from '../../src/lib/subscriptionController';
 import { expect } from 'chai';
@@ -266,17 +266,17 @@ describe('subscriptionController', async function () {
     let originalSubscriptionController;
 
     before(() => {
-      originalEnv = EnvProviderService.getInstance().get('WS_SAME_SUB_FOR_SAME_EVENT');
+      originalEnv = EnvProvider.get('WS_SAME_SUB_FOR_SAME_EVENT');
       originalSubscriptionController = subscriptionController;
 
-      EnvProviderService.getInstance().dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', 'false');
+      EnvTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', 'false');
       const registry = new Registry();
       poller = new Poller(ethImpl, logger, registry);
       subscriptionController = new SubscriptionController(poller, logger, registry);
     });
 
     after(() => {
-      EnvProviderService.getInstance().dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', 'originalEnv');
+      EnvTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', 'originalEnv');
       subscriptionController = originalSubscriptionController;
     });
 

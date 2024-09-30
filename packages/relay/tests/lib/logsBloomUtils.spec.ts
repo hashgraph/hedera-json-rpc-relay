@@ -18,8 +18,6 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
-EnvProviderService.hotReload();
 import { expect } from 'chai';
 import { LogsBloomUtils } from '../../src/logsBloomUtils';
 import { keccak256, ZeroAddress } from 'ethers';

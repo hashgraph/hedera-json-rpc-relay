@@ -18,7 +18,8 @@
  *
  */
 
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { EnvTestHelper } from '../../../../env-provider/tests/envTestHelper';
 import { assert, expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -82,8 +83,8 @@ describe('@ethCall Eth Call spec', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(EnvProviderService.getInstance().get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    EnvProviderService.getInstance().dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
+    currentMaxBlockRange = Number(EnvProvider.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
+    EnvTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
     restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
       account: '0.0.1723',
       evm_address: ACCOUNT_ADDRESS_1,
@@ -93,10 +94,7 @@ describe('@ethCall Eth Call spec', async function () {
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    EnvProviderService.getInstance().dynamicOverride(
-      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-      currentMaxBlockRange.toString(),
-    );
+    EnvTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', currentMaxBlockRange.toString());
   });
 
   describe('eth_call precheck failures', async function () {
@@ -105,7 +103,7 @@ describe('@ethCall Eth Call spec', async function () {
     let sandbox: sinon.SinonSandbox;
 
     this.beforeAll(() => {
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
     });
 
     beforeEach(() => {
@@ -119,7 +117,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     this.afterAll(() => {
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'true');
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'true');
     });
 
     it('eth_call with incorrect `to` field length', async function () {
@@ -142,9 +140,9 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('should execute "eth_call" against mirror node with a false ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
       web3Mock.onPost('contracts/call').reply(200);
-      const initialEthCallConesneusFF = EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
+      const initialEthCallConesneusFF = EnvProvider.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
 
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
       restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
         account: '0.0.1723',
@@ -154,14 +152,14 @@ describe('@ethCall Eth Call spec', async function () {
       await ethImpl.call({ ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` }, 'latest');
 
       assert(callMirrorNodeSpy.calledOnce);
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
     });
 
     it('should execute "eth_call" against mirror node with an undefined ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
       web3Mock.onPost('contracts/call').reply(200);
-      const initialEthCallConesneusFF = EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
+      const initialEthCallConesneusFF = EnvProvider.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
 
-      EnvProviderService.getInstance().remove('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
+      EnvTestHelper.remove('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
       restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
         account: '0.0.1723',
@@ -171,13 +169,13 @@ describe('@ethCall Eth Call spec', async function () {
       await ethImpl.call({ ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` }, 'latest');
 
       assert(callMirrorNodeSpy.calledOnce);
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
     });
 
     it('should execute "eth_call" against mirror node with a ETH_CALL_DEFAULT_TO_CONSENSUS_NODE set to true', async function () {
-      const initialEthCallConesneusFF = EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
+      const initialEthCallConesneusFF = EnvProvider.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
 
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'true');
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'true');
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
       restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
         account: '0.0.1723',
@@ -187,7 +185,7 @@ describe('@ethCall Eth Call spec', async function () {
       await ethImpl.call({ ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` }, 'latest');
 
       assert(callConsensusNodeSpy.calledOnce);
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
     });
 
     it('to field is not a contract or token', async function () {
@@ -234,12 +232,12 @@ describe('@ethCall Eth Call spec', async function () {
     let initialEthCallConesneusFF;
 
     before(() => {
-      initialEthCallConesneusFF = EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'true');
+      initialEthCallConesneusFF = EnvProvider.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'true');
     });
 
     after(() => {
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
     });
 
     it('eth_call with no gas', async function () {
@@ -455,12 +453,12 @@ describe('@ethCall Eth Call spec', async function () {
     let initialEthCallConesneusFF;
 
     before(() => {
-      initialEthCallConesneusFF = EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      initialEthCallConesneusFF = EnvProvider.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
     });
 
     after(() => {
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
     });
 
     //temporary workaround until precompiles are implemented in Mirror node evm module
@@ -892,17 +890,14 @@ describe('@ethCall Eth Call spec', async function () {
     let sandbox: sinon.SinonSandbox;
 
     before(() => {
-      initialEthCallConesneusFF = EnvProviderService.getInstance().get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
-      initialEthCallSelectorsAlwaysToConsensus = EnvProviderService.getInstance().get('ETH_CALL_CONSENSUS_SELECTORS');
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      initialEthCallConesneusFF = EnvProvider.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
+      initialEthCallSelectorsAlwaysToConsensus = EnvProvider.get('ETH_CALL_CONSENSUS_SELECTORS');
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
     });
 
     after(() => {
-      EnvProviderService.getInstance().dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
-      EnvProviderService.getInstance().dynamicOverride(
-        'ETH_CALL_CONSENSUS_SELECTORS',
-        initialEthCallSelectorsAlwaysToConsensus,
-      );
+      EnvTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallConesneusFF);
+      EnvTestHelper.dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', initialEthCallSelectorsAlwaysToConsensus);
     });
 
     beforeEach(() => {
@@ -916,10 +911,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with matched selector redirects to consensus', async function () {
-      EnvProviderService.getInstance().dynamicOverride(
-        'ETH_CALL_CONSENSUS_SELECTORS',
-        JSON.stringify([REDIRECTED_SELECTOR.slice(2)]),
-      );
+      EnvTestHelper.dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', JSON.stringify([REDIRECTED_SELECTOR.slice(2)]));
 
       await ethImpl.call(
         {

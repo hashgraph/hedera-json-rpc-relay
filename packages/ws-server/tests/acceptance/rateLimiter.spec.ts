@@ -24,14 +24,11 @@ import { WsTestHelper } from '../helper';
 import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
-import { EnvProviderService } from '@hashgraph/env-provider/dist/services';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 
 describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
-  const rateLimitTier2 = Number(
-    EnvProviderService.getInstance().get('TIER_2_RATE_LIMIT') || relayConstants.DEFAULT_RATE_LIMIT.TIER_2,
-  );
-  const limitDuration =
-    Number(EnvProviderService.getInstance().get('LIMIT_DURATION')) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
+  const rateLimitTier2 = Number(EnvProvider.get('TIER_2_RATE_LIMIT') || relayConstants.DEFAULT_RATE_LIMIT.TIER_2);
+  const limitDuration = Number(EnvProvider.get('LIMIT_DURATION')) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
   const batchRequests = [
     {
