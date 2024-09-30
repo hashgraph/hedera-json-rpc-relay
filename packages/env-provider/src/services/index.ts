@@ -20,6 +20,19 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
+import pino from 'pino';
+
+const mainLogger = pino({
+  name: 'hedera-json-rpc-relay',
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: true,
+    },
+  },
+});
+const logger = mainLogger.child({ name: 'env-provider' });
 
 export class EnvProvider {
   /**
@@ -41,10 +54,11 @@ export class EnvProvider {
   private constructor() {
     const configPath = findConfig('.env');
 
-    if (!configPath || configPath === '') {
-      throw new Error('No .env file is found. The relay can not operate without valid .env.');
+    if (!configPath) {
+      logger.warn('No .env file is found. The relay can not operate without valid .env.');
     }
 
+    // @ts-ignore
     dotenv.config({ path: configPath });
     this.envs = { ...process.env };
   }
