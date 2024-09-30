@@ -50,7 +50,6 @@ describe('HBAR Rate Limit Service', function () {
   const totalBudgetInTinybars = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
   const limitDuration = constants.HBAR_RATE_LIMIT_DURATION;
   const mode = constants.EXECUTION_MODE.TRANSACTION;
-  const mockTxCost = 100;
   const methodName = 'testMethod';
   const txConstructorName = 'testConstructorName';
   const mockEthAddress = '0x123';
@@ -752,17 +751,6 @@ describe('HBAR Rate Limit Service', function () {
       await expect(hbarLimitService.addExpense(100, mockEthAddress, requestDetails)).to.be.eventually.rejectedWith(
         'Failed to add expense',
       );
-    });
-  });
-
-  describe('getRemainingBudget', () => {
-    it('Should correctly get the remaining budget', async () => {
-      const originalRemainingBudget = hbarLimitService.getRemainingBudget();
-      expect(originalRemainingBudget).to.eq(totalBudget);
-
-      await hbarLimitService.addExpense(mockTxCost, '', requestDetails);
-      const updatedRemainingBudget = hbarLimitService.getRemainingBudget();
-      expect(updatedRemainingBudget).to.eq(totalBudget.toTinybars().toNumber() - mockTxCost);
     });
   });
 
