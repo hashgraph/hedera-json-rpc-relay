@@ -35,12 +35,13 @@ import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer
 import ServicesClient from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
-  level: process.env.LOG_LEVEL || 'trace',
+  level: EnvProvider.get('LOG_LEVEL') || 'trace',
   transport: {
     target: 'pino-pretty',
     options: {
@@ -51,13 +52,13 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const NETWORK = process.env.HEDERA_NETWORK || DOT_ENV.HEDERA_NETWORK || '';
-const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || DOT_ENV.OPERATOR_KEY_MAIN || '';
-const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
-const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || DOT_ENV.MIRROR_NODE_URL || '';
+const NETWORK = EnvProvider.get('HEDERA_NETWORK') || DOT_ENV.HEDERA_NETWORK || '';
+const OPERATOR_KEY = EnvProvider.get('OPERATOR_KEY_MAIN') || DOT_ENV.OPERATOR_KEY_MAIN || '';
+const OPERATOR_ID = EnvProvider.get('OPERATOR_ID_MAIN') || DOT_ENV.OPERATOR_ID_MAIN || '';
+const MIRROR_NODE_URL = EnvProvider.get('MIRROR_NODE_URL') || DOT_ENV.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
-const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
-const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
+const RELAY_URL = EnvProvider.get('E2E_RELAY_HOST') || LOCAL_RELAY_URL;
+const CHAIN_ID = EnvProvider.get('CHAIN_ID') || '0x12a';
 let startOperatorBalance: Hbar;
 global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 
@@ -81,12 +82,12 @@ describe('RPC Server Acceptance Tests', function () {
   before(async () => {
     // configuration details
     logger.info('Acceptance Tests Configurations successfully loaded');
-    logger.info(`LOCAL_NODE: ${process.env.LOCAL_NODE}`);
-    logger.info(`CHAIN_ID: ${process.env.CHAIN_ID}`);
+    logger.info(`LOCAL_NODE: ${EnvProvider.get('LOCAL_NODE')}`);
+    logger.info(`CHAIN_ID: ${EnvProvider.get('CHAIN_ID')}`);
     logger.info(`HEDERA_NETWORK: ${NETWORK}`);
     logger.info(`OPERATOR_ID_MAIN: ${OPERATOR_ID}`);
     logger.info(`MIRROR_NODE_URL: ${MIRROR_NODE_URL}`);
-    logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
+    logger.info(`E2E_RELAY_HOST: ${EnvProvider.get('E2E_RELAY_HOST')}`);
 
     if (global.relayIsLocal) {
       runLocalRelay();
@@ -144,7 +145,7 @@ describe('RPC Server Acceptance Tests', function () {
       relayServer.close();
     }
 
-    if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
+    if (EnvProvider.get('TEST_WS_SERVER') === 'true' && socketServer !== undefined) {
       socketServer.close();
     }
   });
@@ -173,7 +174,7 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
     relayServer = app.listen({ port: constants.RELAY_PORT });
 
-    if (process.env.TEST_WS_SERVER === 'true') {
+    if (EnvProvider.get('TEST_WS_SERVER') === 'true') {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
       global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
     }

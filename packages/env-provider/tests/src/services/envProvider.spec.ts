@@ -31,7 +31,7 @@ describe('EnvProvider tests', async function () {
     expect(res).to.equal('0x12a');
   });
 
-  it('should be able to get non-existing env var', async () => {
+  it('should return undefined for non-existing variable', async () => {
     const res = EnvProvider.get('NON_EXISTING_VAR');
 
     expect(res).to.equal(undefined);

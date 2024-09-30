@@ -21,6 +21,12 @@
 import dotenv from 'dotenv';
 import { EnvProvider } from '../dist/services';
 
+/**
+ * There are many tests, both integration and acceptance that
+ * change the environment variables during their runtime. We added this helper
+ * in order to keep the main env provider as clean as possible but at the same
+ * time, we will be able to override, delete, or append environment variables.
+ */
 export class EnvTestHelper {
   /**
    * Override an env variable, used in test cases only
