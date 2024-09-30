@@ -51,9 +51,8 @@ export class EnvTestHelper {
   public static appendEnvsFromPath(configPath: string): void {
     dotenv.config({ path: configPath, override: true });
     // @ts-ignore
-    const instance = EnvProvider.getInstance();
     Object.entries(process.env).forEach(([key, value]) => {
-      instance.dynamicOverride(key, value);
+      this.dynamicOverride(key, value);
     });
   }
 }

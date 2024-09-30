@@ -32,7 +32,7 @@ export class EnvProvider {
    * Copied envs from process.env
    * @private
    */
-  private readonly envs: Record<string, string | undefined>;
+  private readonly envs: NodeJS.ReadOnlyDict<string>;
 
   /**
    * Fetches all envs from process.env and pushes them into the envs property
