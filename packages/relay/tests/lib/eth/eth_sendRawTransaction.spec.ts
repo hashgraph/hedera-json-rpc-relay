@@ -78,7 +78,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       },
     };
     const transaction = {
-      chainId: 0x12a,
+      chainId: Number(process.env.CHAIN_ID || 0x12a),
       to: ACCOUNT_ADDRESS_1,
       from: accountAddress,
       value,

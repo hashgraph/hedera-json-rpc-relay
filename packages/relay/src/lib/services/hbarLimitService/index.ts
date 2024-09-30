@@ -233,7 +233,6 @@ export class HbarLimitService implements IHbarLimitService {
     }
 
     await this.hbarSpendingPlanRepository.addAmountToSpentToday(spendingPlan.id, cost);
-    await this.hbarSpendingPlanRepository.addAmountToSpendingHistory(spendingPlan.id, cost);
     this.remainingBudget -= cost;
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
 

@@ -93,7 +93,7 @@ export class EthImpl implements Eth {
     '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
   static defaultTxGas = numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT);
   static gasTxBaseCost = numberTo0x(constants.TX_BASE_COST);
-  static gasTxHollowAccountCreation = numberTo0x(constants.TX_HOLLOW_ACCOUNT_CREATION_GAS);
+  static minGasTxHollowAccountCreation = numberTo0x(constants.MIN_TX_HOLLOW_ACCOUNT_CREATION_GAS);
   static ethTxType = 'EthereumTransaction';
   static defaultGasUsedRatio = 0.5;
   static feeHistoryZeroBlockCountResponse: IFeeHistory = {
@@ -647,9 +647,9 @@ export class EthImpl implements Eth {
       }
       // otherwise, return the minimum amount of gas for hollow account creation
       this.logger.warn(
-        `${requestIdPrefix} Returning predefined gas for hollow account creation: ${EthImpl.gasTxHollowAccountCreation}`,
+        `${requestIdPrefix} Returning predefined gas for hollow account creation: ${EthImpl.minGasTxHollowAccountCreation}`,
       );
-      return EthImpl.gasTxHollowAccountCreation;
+      return EthImpl.minGasTxHollowAccountCreation;
     } else if (isContractCreate) {
       // The size limit of the encoded contract posted to the mirror node can
       // cause contract deployment transactions to fail with a 400 response code.

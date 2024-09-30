@@ -63,8 +63,11 @@ const NONEXISTENT_TX_HASH = '0x0000000000000000000000000000000000000000000000000
 const ajv = new Ajv({ strict: false });
 addFormats(ajv);
 let execApisOpenRpcData;
+
+const chainId = Number(process.env.CHAIN_ID || 0x12a);
+
 let legacyTransaction = {
-  chainId: 0x12a,
+  chainId,
   to: receiveAccountAddress,
   from: sendAccountAddress,
   value,
@@ -74,7 +77,7 @@ let legacyTransaction = {
 };
 
 let transaction2930 = {
-  chainId: 0x12a,
+  chainId,
   to: receiveAccountAddress,
   from: sendAccountAddress,
   value,
@@ -84,7 +87,7 @@ let transaction2930 = {
 };
 
 let transaction1559 = {
-  chainId: 0x12a,
+  chainId,
   to: receiveAccountAddress,
   from: sendAccountAddress,
   value,
@@ -96,7 +99,7 @@ let transaction1559 = {
 };
 
 let createContractLegacyTransaction = {
-  chainId: 0x12a,
+  chainId,
   to: null,
   from: sendAccountAddress,
   gasLimit: gasLimit,
@@ -406,7 +409,7 @@ describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', as
     ).result;
 
     const deployLogsContractTx = await signAndSendRawTransaction({
-      chainId: 0x12a,
+      chainId,
       to: null,
       from: sendAccountAddress,
       maxPriorityFeePerGas: gasPrice,
@@ -588,7 +591,7 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
     before(async () => {
       contractAddress = (
         await signAndSendRawTransaction({
-          chainId: 0x12a,
+          chainId,
           to: null,
           from: sendAccountAddress,
           maxPriorityFeePerGas: gasPrice,

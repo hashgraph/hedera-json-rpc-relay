@@ -213,7 +213,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         requestId,
       );
       expect(res).to.contain('0x');
-      expect(res).to.equal(EthImpl.gasTxHollowAccountCreation);
+      expect(Number(res)).to.be.greaterThanOrEqual(Number(EthImpl.minGasTxHollowAccountCreation));
     });
 
     it('should execute "eth_estimateGas" with to, from, value and gas filed', async function () {
