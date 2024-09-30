@@ -31,11 +31,10 @@ import { RequestDetails } from '../../types/RequestDetails';
 export class HbarLimitService implements IHbarLimitService {
   static readonly ONE_DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
   // TODO: Replace with actual values
-  // tracking by https://github.com/hashgraph/hedera-json-rpc-relay/issues/2895
   static readonly DAILY_LIMITS: Record<SubscriptionType, number> = {
-    BASIC: parseInt(process.env.HBAR_DAILY_LIMIT_BASIC ?? '100000000000'),
-    EXTENDED: parseInt(process.env.HBAR_DAILY_LIMIT_EXTENDED ?? '1000000000000'),
-    PRIVILEGED: parseInt(process.env.HBAR_DAILY_LIMIT_PRIVILEGED ?? '10000000000000'),
+    BASIC: parseInt(process.env.HBAR_DAILY_LIMIT_BASIC ?? '1000'),
+    EXTENDED: parseInt(process.env.HBAR_DAILY_LIMIT_EXTENDED ?? '10000'),
+    PRIVILEGED: parseInt(process.env.HBAR_DAILY_LIMIT_PRIVILEGED ?? '100000'),
   };
 
   /**
