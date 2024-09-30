@@ -591,7 +591,6 @@ describe('HbarLimitService', function () {
       }
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(existingSpendingPlan);
       hbarSpendingPlanRepositoryStub.addAmountToSpentToday.resolves();
-      hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.resolves();
       hbarSpendingPlanRepositoryStub.findAllActiveBySubscriptionType.resolves([
         otherPlanUsedToday,
         {
@@ -616,7 +615,6 @@ describe('HbarLimitService', function () {
       await hbarLimitService.addExpense(expense, ethAddress, ipAddress);
 
       expect(hbarSpendingPlanRepositoryStub.addAmountToSpentToday.calledOnceWith(mockPlanId, expense)).to.be.true;
-      expect(hbarSpendingPlanRepositoryStub.addAmountToSpendingHistory.calledOnceWith(mockPlanId, expense)).to.be.true;
       // @ts-ignore
       expect(hbarLimitService.remainingBudget).to.equal(hbarLimitService.totalBudget - expense);
       // @ts-ignore

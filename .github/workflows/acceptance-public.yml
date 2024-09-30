@@ -27,6 +27,7 @@ jobs:
       testfilter: api_batch1
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   api_batch_2:
@@ -36,6 +37,7 @@ jobs:
       testfilter: api_batch2
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   api_batch_3:
@@ -45,6 +47,7 @@ jobs:
       testfilter: api_batch3
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   erc20:
@@ -54,6 +57,7 @@ jobs:
       testfilter: erc20
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   ratelimiter:
@@ -63,6 +67,7 @@ jobs:
       testfilter: ratelimiter
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   tokencreate:
@@ -72,6 +77,7 @@ jobs:
       testfilter: tokencreate
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   tokenmanagement:
@@ -81,6 +87,7 @@ jobs:
       testfilter: tokenmanagement
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   htsprecompilev1:
@@ -90,6 +97,7 @@ jobs:
       testfilter: htsprecompilev1
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   precompilecalls:
@@ -99,6 +107,7 @@ jobs:
       testfilter: precompile
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   websocket-batch-1:
@@ -109,6 +118,7 @@ jobs:
       test_ws_server: true
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   websocket-batch-2:
@@ -119,6 +129,7 @@ jobs:
       test_ws_server: true
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   websocket-batch-3:
@@ -129,6 +140,7 @@ jobs:
       test_ws_server: true
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
+    secrets:
       operator_key: ${{ inputs.operator_key }}
 
   publish_results:
