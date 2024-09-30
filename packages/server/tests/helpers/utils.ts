@@ -313,7 +313,7 @@ export class Utils {
     for (let i = 0; i < neededAccounts; i++) {
       const account = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId, initialAmountInTinyBar);
       global.logger.trace(
-        `${requestIdPrefix} Create new Eth compatible account w privateKey: ${account.privateKey}, alias: ${account.address} and balance ~${initialAmountInTinyBar} wei`,
+        `${requestIdPrefix} Create new Eth compatible account w alias: ${account.address} and balance ~${initialAmountInTinyBar} wei`,
       );
       accounts.push(account);
     }
