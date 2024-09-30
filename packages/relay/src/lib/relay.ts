@@ -145,9 +145,18 @@ export class RelayImpl implements Relay {
     this.eventEmitter = new EventEmitter();
     this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);
 
-    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(this.cacheService, logger);
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(this.cacheService, logger);
-    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(this.cacheService, logger);
+    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'hbar-spending-plan-repository' }),
+    );
+    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
+    );
+    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
+    );
     const hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepository,
       ethAddressHbarSpendingPlanRepository,
