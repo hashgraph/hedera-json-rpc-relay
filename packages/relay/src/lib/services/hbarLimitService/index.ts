@@ -31,7 +31,6 @@ import constants from '../../constants';
 import { Hbar } from '@hashgraph/sdk';
 
 export class HbarLimitService implements IHbarLimitService {
-  // TODO: Replace with actual values - https://github.com/hashgraph/hedera-json-rpc-relay/issues/2895
   static readonly TIER_LIMITS: Record<SubscriptionType, Hbar> = {
     BASIC: Hbar.fromTinybars(constants.HBAR_RATE_LIMIT_BASIC),
     EXTENDED: Hbar.fromTinybars(constants.HBAR_RATE_LIMIT_EXTENDED),
