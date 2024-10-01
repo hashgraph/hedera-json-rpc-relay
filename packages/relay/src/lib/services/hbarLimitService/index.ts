@@ -195,14 +195,14 @@ export class HbarLimitService implements IHbarLimitService {
       spendingPlan = await this.createBasicSpendingPlan(ethAddress, ipAddress);
     }
 
-    const dailyLimit = HbarLimitService.TIER_LIMITS[spendingPlan.subscriptionType].toTinybars();
+    const spendingLimit = HbarLimitService.TIER_LIMITS[spendingPlan.subscriptionType].toTinybars();
 
     const exceedsLimit =
-      dailyLimit.lte(spendingPlan.amountSpent) || dailyLimit.lt(spendingPlan.amountSpent + estimatedTxFee);
+      spendingLimit.lte(spendingPlan.amountSpent) || spendingLimit.lt(spendingPlan.amountSpent + estimatedTxFee);
     this.logger.trace(
       `${requestIdPrefix} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited: amountSpent=${
         spendingPlan.amountSpent
-      }, estimatedTxFee=${estimatedTxFee} tℏ, dailyLimit=${dailyLimit.toString()} tℏ`,
+      }, estimatedTxFee=${estimatedTxFee} tℏ, spendingLimit=${spendingLimit.toString()} tℏ`,
     );
     return exceedsLimit;
   }
@@ -324,21 +324,24 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Gets the new reset timestamp for the rate limiter.
+   * Calculates the next reset timestamp for the rate limiter.
    *
-   * If the new reset timestamp falls on a different day, the time is set to midnight.
+   * This method determines the next reset timestamp based on the current reset timestamp
+   * and the limit duration. If the current reset timestamp is not defined, it initializes
+   * the reset timestamp to midnight of the current day. It then iteratively adds the limit
+   * duration to the reset timestamp until it is in the future.
    *
-   * @returns {Date} - The new reset timestamp.
-   * @private
+   * @returns {Date} - The next reset timestamp.
    */
   private getResetTimestamp(): Date {
-    const now = new Date();
-    const resetDate = new Date(now.getTime() + this.limitDuration);
-    if (this.limitDuration >= this.oneDayInMillis) {
-      return new Date(resetDate.setHours(0, 0, 0, 0));
-    } else {
-      return resetDate;
+    const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
+
+    let newResetDate = this.reset !== undefined ? new Date(this.reset.getTime()) : new Date(todayAtMidnight);
+    while (newResetDate.getTime() < Date.now()) {
+      newResetDate = new Date(newResetDate.getTime() + this.limitDuration);
     }
+
+    return newResetDate;
   }
 
   /**

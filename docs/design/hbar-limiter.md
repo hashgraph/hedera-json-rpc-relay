@@ -81,20 +81,43 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
 
 The HBar limiter will be implemented as a separate service, used by other services/classes that need it. It will have two main purposes - to capture the gas fees for different operation and to check if an operation needs to be paused, due to an exceeded HBar limit.
 
+### General Users (BASIC tier):
+
+**NOTE:** Each general user will have a unique spending plan, linked both to their ETH and IP addresses. Each new user will be automatically assigned a BASIC spending plan when they send their first transaction and this plan will remain linked to them for any subsequent requests.
+
 ```mermaid
 flowchart TD
     A[User] -->|sends transaction| B[JSON-RPC Relay]
-    B --> C{HbarLimitService}
-    C -->|new user, i.e., who is not linked to a spending plan| D[Create a BASIC HbarSpendingPlan]
-    D --> E[Link user's ETH & IP addresses to plan]
-    E --> F[Estimate fees of any additional HFS transactions which need to be executed by the operator]
-    C -->|existing user, i.e., who is linked to a spending plan| G[Retrieve HbarSpendingPlan linked to user]
-    G --> F
-    F --> H{The plan exceeds its HBar allowance?}
-    H --> |yes| I[Limit request]
-    H --> |no| J[Execute transaction]
-    J --> K[Capture fees the operator has been charged]
-    K --> L[Update spending plan]
+    B --> C[Estimate fees which will be paid by the relay operator]
+    C --> D{HBAR Limiter}
+    D -->|new user, i.e., who is not linked to a spending plan| E[Create a new BASIC spending plan]
+    E --> F[Link user's ETH & IP addresses to plan]
+    D -->|existing user, i.e., who is linked to a spending plan| G[Retrieve spending plan linked to user]
+    F --> H{Plan has enough balance to cover fees}
+    G --> H
+    H --> |no| I[Limit request]
+    H --> |yes| J[Execute transaction]
+    J --> K[Capture all fees the operator has been charged during execution]
+    K --> L[Update the spending plan's remaining balance]
+```
+
+### Supported Projects (EXTENDED tier) and Trusted Partners (PRIVILEGED tier):
+
+**NOTE:** There will be one spending plan per project/partner with a total spending limit, shared amongst a group of users (IP and ETH addresses) linked to that plan. This means that they will share a common total spending limit for the project/partner.
+
+All users associated with a project/partner will be pre-configured in the relay as shown in the 
+
+```mermaid
+flowchart TD
+    A[User] -->|sends transaction| B[JSON-RPC Relay]
+    B --> C[Estimate fees which will be paid by the relay operator]
+    C --> D{HBAR Limiter}
+    D --> E[Retrieve spending plan linked to user's ETH and/or IP address]
+    E --> F{Plan has enough balance to cover fees}
+    F --> |no| G[Limit request]
+    F --> |yes| H[Execute transaction]
+    H --> I[Capture all fees the operator has been charged during execution]
+    I --> J[Update the spending plan's remaining balance]
 ```
 
 ### Class Diagram
@@ -329,15 +352,15 @@ The JSON file can also be updated over time to add new supported projects or par
 ### Spending Limits of Different Tiers
 
 The spending limits for different tiers are defined as environment variables:
-- `HBAR_RATE_LIMIT_BASIC`: The spending limit (in hbars) for general users (tier 3)
-- `HBAR_RATE_LIMIT_EXTENDED`: The spending limit (in hbars) for supported projects (tier 2)
-- `HBAR_RATE_LIMIT_PRIVILEGED`: The spending limit (in hbars) for trusted partners (tier 1)
+- `HBAR_RATE_LIMIT_BASIC`: The spending limit (in tinybars) for general users (tier 3)
+- `HBAR_RATE_LIMIT_EXTENDED`: The spending limit (in tinybars) for supported projects (tier 2)
+- `HBAR_RATE_LIMIT_PRIVILEGED`: The spending limit (in tinybars) for trusted partners (tier 1)
 
 Example configuration for tiered spending limits:
 ```dotenv
-HBAR_RATE_LIMIT_BASIC=1000
-HBAR_RATE_LIMIT_EXTENDED=10000
-HBAR_RATE_LIMIT_PRIVILEGED=20000
+HBAR_RATE_LIMIT_BASIC=92592592
+HBAR_RATE_LIMIT_EXTENDED=925925925
+HBAR_RATE_LIMIT_PRIVILEGED=1851851850
 ```
 
 ### Total Budget and Limit Duration
@@ -345,16 +368,15 @@ HBAR_RATE_LIMIT_PRIVILEGED=20000
 The total budget and the limit duration are defined as environment variables:
 - `HBAR_RATE_LIMIT_DURATION`: The time window (in milliseconds) for which both the total budget and the spending limits are applicable. 
   - On initialization of `HbarLimitService`, a reset timestamp is calculated by adding the `HBAR_RATE_LIMIT_DURATION` to the current timestamp.
-  - The total budget and spending limits are reset when the current timestamp exceeds the reset timestamp. 
-  - **NOTE:** If the new reset timestamp falls on a different day, the time is set to midnight.
-- `HBAR_RATE_LIMIT_TINYBAR`: The ceiling on the total amount of HBars that can be spent in the limit duration. 
+  - The total budget and spending limits are reset when the current timestamp exceeds the reset timestamp.
+- `HBAR_RATE_LIMIT_TINYBAR`: The ceiling (in tinybars) on the total amount of HBARs that can be spent in the limit duration. 
   - This is the largest bucket from which others pull from.
   - If the total amount spent exceeds this limit, all spending is paused until the next reset.
 
-Example configuration for a daily budget of 15,840,000,000,000 tinybars (15,840 HBars):
+Example configuration for a total budget of 110 HBARs (11_000_000_000 tinybars) per 80 seconds:
 ```dotenv
-HBAR_RATE_LIMIT_TINYBAR=15840000000000
-HBAR_RATE_LIMIT_DURATION=86400000
+HBAR_RATE_LIMIT_TINYBAR=11000000000
+HBAR_RATE_LIMIT_DURATION=8000
 ```
 
 ## Additional Considerations

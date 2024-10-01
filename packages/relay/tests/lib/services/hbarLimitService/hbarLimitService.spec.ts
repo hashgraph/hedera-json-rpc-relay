@@ -56,6 +56,7 @@ describe('HbarLimitService', function () {
   const mockEstimatedTxFee = 300;
   const mockRequestId = getRequestId();
   const mockPlanId = uuidV4(randomBytes(16));
+  const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
 
   let hbarLimitService: HbarLimitService;
   let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarSpendingPlanRepository>;
@@ -111,10 +112,11 @@ describe('HbarLimitService', function () {
     });
   });
 
-  it('should set the reset date to the next day at midnight', () => {
-    const expectedDate = new Date(Date.now() + hbarLimitService['limitDuration']);
+  it('should set the reset date properly', () => {
+    const times = Math.ceil((Date.now() - todayAtMidnight) / limitDuration);
+    const expectedDate = new Date(todayAtMidnight + limitDuration * times);
     const actualDate = hbarLimitService['reset'];
-    expect(new Date(actualDate.setMilliseconds(0))).to.deep.equal(new Date(expectedDate.setMilliseconds(0)));
+    expect(new Date(actualDate)).to.deep.equal(new Date(expectedDate));
   });
 
   it('should set an interval to reset the metrics every day at midnight', () => {
@@ -141,14 +143,17 @@ describe('HbarLimitService', function () {
 
   describe('getResetTimestamp', function () {
     it('should return the current timestamp plus the limit duration', function () {
-      const expectedDate = new Date(Date.now() + limitDuration);
+      const times = Math.ceil((Date.now() - todayAtMidnight) / limitDuration);
+      const expectedDate = new Date(todayAtMidnight + limitDuration * times);
+      const actualDate = hbarLimitService['reset'];
+      expect(new Date(actualDate)).to.deep.equal(new Date(expectedDate));
       expect(hbarLimitService['getResetTimestamp']()).to.deep.equal(expectedDate);
     });
 
-    describe('given a limit duration that is at least 24 hours', function () {
-      const oneDayInMillis = 24 * 60 * 60 * 1000;
+    describe('given a limit duration that is 1 day', function () {
+      const limitDuration = 24 * 60 * 60 * 1000; // one day
 
-      it('should return the resulting timestamp at midnight', function () {
+      it('should return tomorrow at midnight', function () {
         const hbarLimitService = new HbarLimitService(
           hbarSpendingPlanRepositoryStub,
           ethAddressHbarSpendingPlanRepositoryStub,
@@ -156,11 +161,11 @@ describe('HbarLimitService', function () {
           logger,
           register,
           totalBudget,
-          oneDayInMillis,
+          limitDuration,
         );
-        const tomorrow = new Date(Date.now() + oneDayInMillis);
-        const expectedDateAtMidnight = new Date(tomorrow.setHours(0, 0, 0, 0));
-        expect(hbarLimitService['getResetTimestamp']()).to.deep.equal(expectedDateAtMidnight);
+        const tomorrow = new Date(Date.now() + limitDuration);
+        const tomorrowAtMidnight = new Date(tomorrow.setHours(0, 0, 0, 0));
+        expect(hbarLimitService['getResetTimestamp']()).to.deep.equal(tomorrowAtMidnight);
       });
     });
   });
@@ -189,10 +194,11 @@ describe('HbarLimitService', function () {
     });
 
     it('should set the reset date to the current timestamp plus the limit duration', async function () {
-      const expectedDate = new Date(Date.now() + hbarLimitService['limitDuration']);
+      const times = Math.ceil((Date.now() - todayAtMidnight) / limitDuration);
+      const expectedDate = new Date(todayAtMidnight + limitDuration * times);
       await hbarLimitService.resetLimiter();
       const resetDate = hbarLimitService['reset'];
-      expect(new Date(resetDate.setMilliseconds(0))).to.deep.equal(new Date(expectedDate.setMilliseconds(0)));
+      expect(new Date(resetDate)).to.deep.equal(new Date(expectedDate));
     });
   });
 
