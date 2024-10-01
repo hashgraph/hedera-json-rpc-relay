@@ -20,7 +20,7 @@
         - [Metrics to Track](#metrics-to-track)
         - [Allocation Algorithm](#allocation-algorithm)
   - [Configurations](#configurations)
-    - [Pre-populating the Redis Cache with Spending Plans for Supported Projects and Partner Projects](#pre-populating-the-redis-cache-with-spending-plans-for-supported-projects-and-partner-projects)
+    - [Pre-populating the Cache with Spending Plans for Supported Projects and Partner Projects](#pre-populating-the-cache-with-spending-plans-for-supported-projects-and-partner-projects)
     - [Spending Limits of Different Tiers](#spending-limits-of-different-tiers)
     - [Total Budget and Limit Duration](#total-budget-and-limit-duration)
   - [Additional Considerations](#additional-considerations)
@@ -300,9 +300,9 @@ c. Current day's usage (increase limits if overall usage is low)
 
 ## Configurations
 
-### Pre-populating the Redis Cache with Spending Plans for Supported Projects and Partner Projects
+### Pre-populating the Cache with Spending Plans for Supported Projects and Partner Projects
 
-The following configurations will be used to automatically populate the Redis cache with `HbarSpendingPlan`, `EthAddressHbarSpendingPlan`, and `IPAddressHbarSpendingPlan` entries for the outlined supported projects and partner projects on every start-up of the relay.
+The following configurations will be used to automatically populate the cache with `HbarSpendingPlan`, `EthAddressHbarSpendingPlan`, and `IPAddressHbarSpendingPlan` entries for the outlined supported projects and partner projects on every start-up of the relay.
 
 All other users (ETH and IP addresses which are not specified in the configuration file) will be treated as "general users" and will be assigned a basic `HbarSpendingPlan` on their first request and their ETH address and IP address will be linked to that plan for all subsequent requests.
 
@@ -333,7 +333,7 @@ All other users (ETH and IP addresses which are not specified in the configurati
 ]
 ```
 
-On every start-up, the relay will check if these entries are already populated in the Redis cache. If not, it will populate them accordingly. 
+On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly. 
 
 The JSON file can also be updated over time to add new supported projects or partner projects and it will populated only the new entries on the next start-up.
 
