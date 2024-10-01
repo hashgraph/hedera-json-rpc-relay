@@ -126,10 +126,26 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
       cacheService,
     );
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    restMock.onGet(`accounts/${defaultContractResults.results[0].from}?transactions=false`).reply(200);
-    restMock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
-    restMock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
-    restMock.onGet(`accounts/${defaultContractResults.results[1].to}?transactions=false`).reply(200);
+    restMock
+      .onGet(
+        `accounts/${defaultContractResults.results[0].from}?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&transactions=false`,
+      )
+      .reply(200);
+    restMock
+      .onGet(
+        `accounts/${defaultContractResults.results[1].from}?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&transactions=false`,
+      )
+      .reply(200);
+    restMock
+      .onGet(
+        `accounts/${defaultContractResults.results[0].to}?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&transactions=false`,
+      )
+      .reply(200);
+    restMock
+      .onGet(
+        `accounts/${defaultContractResults.results[1].to}?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&transactions=false`,
+      )
+      .reply(200);
     restMock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, NOT_FOUND_RES);
     restMock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, NOT_FOUND_RES);
     restMock.onGet(`contracts/${defaultContractResults.results[0].to}`).reply(200);

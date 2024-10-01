@@ -25,12 +25,16 @@ import chaiAsPromised from 'chai-as-promised';
 
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
-import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults } from '../../helpers';
+import {
+  blockLogsBloom,
+  defaultContractResults,
+  defaultDetailedContractResults,
+  LONG_ZERO_ADDRESS,
+} from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import { numberTo0x } from '../../../dist/formatters';
 import {
-  ACCOUNT_WITHOUT_TRANSACTIONS,
   BLOCK_HASH,
   BLOCK_HASH_PREV_TRIMMED,
   BLOCK_HASH_TRIMMED,
@@ -80,7 +84,11 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    restMock.onGet(ACCOUNT_WITHOUT_TRANSACTIONS).reply(200, MOCK_ACCOUNT_WITHOUT_TRANSACTIONS);
+    restMock
+      .onGet(
+        `accounts/${LONG_ZERO_ADDRESS}?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&transactions=false`,
+      )
+      .reply(200, MOCK_ACCOUNT_WITHOUT_TRANSACTIONS);
     restMock
       .onGet(contractByEvmAddress(CONTRACT_ADDRESS_1))
       .reply(200, { ...DEFAULT_CONTRACT, evmAddress: CONTRACT_ADDRESS_1 });
