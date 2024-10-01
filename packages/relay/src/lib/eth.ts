@@ -26,7 +26,7 @@ import constants from './constants';
 import { Precheck } from './precheck';
 import { MirrorNodeClient } from './clients';
 import { Counter, Registry } from 'prom-client';
-import { IAccountInfo } from './types/mirrorNode';
+import { IAccountInfo, IMirrorNodeTransactionRecord } from './types/mirrorNode';
 import { LogsBloomUtils } from './../logsBloomUtils';
 import { DebugService } from './services/debugService';
 import { SDKClientError } from './errors/SDKClientError';
@@ -1969,11 +1969,20 @@ export class EthImpl implements Eth {
 
     const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
     if (contractResult === null || contractResult.hash === undefined) {
+      const tx = await this.mirrorNodeClient.getTransactionByHash(hash, requestIdPrefix);
+
+      let timestamp: string | undefined;
+      if (tx?.transactions.length > 0) {
+        const transaction: IMirrorNodeTransactionRecord = tx.transactions[0];
+        timestamp = transaction.consensus_timestamp;
+      }
+
       // handle synthetic transactions
       const syntheticLogs = await this.common.getLogsWithParams(
         null,
         {
           'transaction.hash': hash,
+          timestamp,
         },
         requestIdPrefix,
       );

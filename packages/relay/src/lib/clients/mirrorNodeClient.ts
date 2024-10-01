@@ -62,6 +62,7 @@ export class MirrorNodeClient {
   private static readonly GET_NETWORK_FEES_ENDPOINT = 'network/fees';
   private static readonly GET_TRANSACTIONS_ENDPOINT = 'transactions';
   private static readonly TRANSACTION_ID_PLACEHOLDER = '{transactionId}';
+  private static readonly TRANSACTION_HASH_PLACEHOLDER = '{transactionHash}';
   private static readonly GET_CONTRACT_RESULT_ENDPOINT = 'contracts/results/';
   private static readonly GET_CONTRACT_RESULTS_ENDPOINT = 'contracts/results';
   private static readonly ACCOUNT_TRANSACTION_TYPE_PROPERTY = 'transactiontype';
@@ -70,6 +71,7 @@ export class MirrorNodeClient {
   private static readonly CONTRACT_ADDRESS_STATE_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/state`;
   private static readonly GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
   private static readonly GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID = `transactions/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}`;
+  private static readonly GET_TRANSACTIONS_ENDPOINT_TRANSACTION_HASH = `transactions/hash/${MirrorNodeClient.TRANSACTION_HASH_PLACEHOLDER}`;
   private static readonly GET_CONTRACTS_RESULTS_ACTIONS = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/actions`;
   private static readonly GET_CONTRACTS_RESULTS_OPCODES = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/opcodes`;
   private static readonly GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
@@ -1035,6 +1037,14 @@ export class MirrorNodeClient {
       requestIdPrefix,
       1, // historical blocks might need 1 retry due to possible timeout from mirror node
     );
+  }
+
+  public async getTransactionByHash(transactionHash: string, requestIdPrefix?: string) {
+    const apiEndpoint = MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT_TRANSACTION_HASH.replace(
+      MirrorNodeClient.TRANSACTION_HASH_PLACEHOLDER,
+      transactionHash,
+    );
+    return this.get(apiEndpoint, MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, requestIdPrefix);
   }
 
   public async getTransactionById(transactionId: string, nonce: number | undefined, requestIdPrefix?: string) {
