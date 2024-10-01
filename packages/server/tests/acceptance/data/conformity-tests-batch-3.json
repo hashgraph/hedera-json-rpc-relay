@@ -1,0 +1,55 @@
+{
+  "server": {
+    "eth_submitWork": {
+      "request": "{\"jsonrpc\":\"2.0\", \"method\":\"eth_submitWork\",\"params\":[\"0x0000000000000001\",\"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\"0xD1FE5700000000000000000000000000D1FE5700000000000000000000000000\"],\"id\":1}",
+      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":false}"
+    },
+    "net_listening": {
+      "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"net_listening\",\"params\":[]}",
+      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"false\"}"
+    },
+    "net_version": {
+      "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"net_version\",\"params\":[]}",
+      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"298\"}"
+    },
+    "web3_clientVersion": {
+      "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"web3_clientVersion\",\"params\":[]}",
+      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"relay/0.55.0-SNAPSHOT\"}"
+    },
+    "debug_traceTransaction - existing tx": {
+      "request": "{\"jsonrpc\":\"2.0\",\"method\":\"debug_traceTransaction\",\"params\":[\"0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8\",{\"tracer\":\"callTracer\",\"tracerConfig\":{\"onlyTopCall\":true}}],\"id\":1}",
+      "response": "{\"result\":{\"type\":\"CALL\",\"from\":\"0xc37f417fa09933335240fca72dd257bfbde9c275\",\"to\":\"0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69\",\"value\":\"0x14\",\"gas\":\"0x3d090\",\"gasUsed\":\"0x30d40\",\"input\":\"0x\",\"output\":\"0x\"},\"jsonrpc\":\"2.0\",\"id\":1}"
+    },
+    "debug_traceTransaction - no existing tx": {
+      "status": 400,
+      "request": "{\"jsonrpc\":\"2.0\",\"method\":\"debug_traceTransaction\",\"params\":[\"0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8\",{\"tracer\":\"callTracer\",\"tracerConfig\":{\"onlyTopCall\":true}}],\"id\":1}",
+      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32001}}"
+    }
+  },
+  "ws-server": {
+    "eth_newFilter": {
+      "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_newFilter\",\"params\":[{\"fromBlock\": \"0x2\",\"toBlock\": \"0x5644\",\"address\": \"0x68c281b97b214deae198043c15a92e7096ca2546\"}]}",
+      "response": "{\"result\":\"0x5cd8adcbc637551d4b5959c732d0ad67\",\"jsonrpc\":\"2.0\",\"id\":1}"
+    },
+    "eth_subscribe - newPendingTransactions": {
+      "request": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_subscribe\",\"params\":[\"newPendingTransactions\"],\"id\":1}",
+      "response": "{\"error\":{\"code\":-32601,\"message\":\"Unsupported JSON-RPC method\"},\"jsonrpc\":\"2.0\",\"id\":1}"
+    },
+    "eth_subscribe - non existing contract": {
+      "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_subscribe\",\"params\":[\"logs\",{\"address\":\"0x678d3e4c7b6b8e9617e9b3487352ec63c54dbf81\"}]}",
+      "response": "{\"error\":{\"code\":-32602},\"jsonrpc\":\"2.0\",\"id\":1}"
+    },
+    "eth_subscribe - existing contract": {
+      "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_subscribe\",\"params\":[\"logs\",{\"address\":\"0x12833e4c7a6b1e9512e9a32873321c13cb4dbfef\"}]}",
+      "response": "{\"result\":\"0xa4e1803ab025341ed7668eb13ca71f3c\",\"jsonrpc\":\"2.0\",\"id\":1}"
+    },
+    "eth_unsubscribe - non existing filter": {
+      "request": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_unsubscribe\",\"params\":[\"0x2c9c38d1200d30208fcdad52ed71fbff\"],\"id\":1}",
+      "response": "{\"result\":false,\"jsonrpc\":\"2.0\",\"id\":1}"
+    },
+    "eth_unsubscribe - existing filter": {
+      "request": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_unsubscribe\",\"params\":[\"0x2c9c38d1200d30208fcdad52ed71fbff\"],\"id\":1}",
+      "response": "{\"result\":true,\"jsonrpc\":\"2.0\",\"id\":1}"
+    }
+  }
+}

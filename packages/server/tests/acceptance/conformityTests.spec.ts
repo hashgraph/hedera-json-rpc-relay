@@ -440,73 +440,7 @@ describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', as
     ).result;
   });
 
-  const TEST_CASES = {
-    eth_submitHashrate: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_submitHashrate"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_sign: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_sign"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_signTransaction: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_signTransaction"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_sendTransaction: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_sendTransaction"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_protocolVersion: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_protocolVersion"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_newPendingTransactionFilter: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_newPendingTransactionFilter"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_newBlockFilter: {
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_newBlockFilter"}',
-      response: '{"jsonrpc":"2.0","id":1,"result":"0x33f5c9d2974eea142909a19906ef0548"}',
-    },
-    'eth_getFilterChanges - existing filter': {
-      request:
-        '{"jsonrpc":"2.0","id":1,"method":"eth_getFilterChanges","params":["0xb5c45fa0ece1ff79b115fc7cc490655b"]}',
-      response:
-        '{"jsonrpc":"2.0","id":1,"result":["0xc926f266c4a93e01cf6df220b5902b032adb38d70626835d8f53c9f8a648d747dd651af5e9c64201aad121a93c2304c4"]}',
-    },
-    'eth_getFilterChanges - no existing filter': {
-      status: 400,
-      request:
-        '{"jsonrpc":"2.0","id":1,"method":"eth_getFilterChanges","params":["0x275220eef57cfbc06e932e043535d492"]}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32001}}',
-    },
-    eth_uninstallFilter: {
-      request:
-        '{"jsonrpc":"2.0","id":1,"method":"eth_uninstallFilter","params":["0x275220eef57cfbc06e932e043535d492"]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":false}',
-    },
-    eth_newFilter: {
-      request:
-        '{"jsonrpc":"2.0","id":1,"method":"eth_newFilter","params":[{"fromBlock": "0x1","toBlock": "0x160c","address": "0x281723C907113cbdEe8785F3480dD7496315312c"}]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":"0xd569b8fad2873edebd3033831f790dee"}',
-    },
-    'eth_getFilterLogs - existing filter': {
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_getFilterLogs","params":["0x65d84e9904db339e6a85340b9f7c3d3e"]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":[]}',
-    },
-    'eth_getFilterLogs - no existing filter': {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_getFilterLogs","params":["0xb567d26e162027d80fd434e3bc3d6897"]}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32001}}',
-    },
-  };
+  const TEST_CASES_BATCH_2 = require('./data/conformity-tests-batch-2.json');
 
   const updateParamIfNeeded = (testName, request) => {
     switch (testName) {
@@ -521,7 +455,7 @@ describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', as
     return request;
   };
 
-  synthesizeTestCases(TEST_CASES, updateParamIfNeeded);
+  synthesizeTestCases(TEST_CASES_BATCH_2, updateParamIfNeeded);
 });
 
 describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', async function () {
@@ -533,37 +467,7 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
     txHash = (await signAndSendRawTransaction(transaction1559)).transactionHash;
   });
 
-  const TEST_CASES = {
-    eth_submitWork: {
-      request:
-        '{"jsonrpc":"2.0", "method":"eth_submitWork","params":["0x0000000000000001","0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef","0xD1FE5700000000000000000000000000D1FE5700000000000000000000000000"],"id":1}',
-      response: '{"jsonrpc":"2.0","id":1,"result":false}',
-    },
-    net_listening: {
-      request: '{"jsonrpc":"2.0","id":1,"method":"net_listening","params":[]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":"false"}',
-    },
-    net_version: {
-      request: '{"jsonrpc":"2.0","id":1,"method":"net_version","params":[]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":"298"}',
-    },
-    web3_clientVersion: {
-      request: '{"jsonrpc":"2.0","id":1,"method":"web3_clientVersion","params":[]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":"relay/0.55.0-SNAPSHOT"}',
-    },
-    'debug_traceTransaction - existing tx': {
-      request:
-        '{"jsonrpc":"2.0","method":"debug_traceTransaction","params":["0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8",{"tracer":"callTracer","tracerConfig":{"onlyTopCall":true}}],"id":1}',
-      response:
-        '{"result":{"type":"CALL","from":"0xc37f417fa09933335240fca72dd257bfbde9c275","to":"0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69","value":"0x14","gas":"0x3d090","gasUsed":"0x30d40","input":"0x","output":"0x"},"jsonrpc":"2.0","id":1}',
-    },
-    'debug_traceTransaction - no existing tx': {
-      status: 400,
-      request:
-        '{"jsonrpc":"2.0","method":"debug_traceTransaction","params":["0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8",{"tracer":"callTracer","tracerConfig":{"onlyTopCall":true}}],"id":1}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32001}}',
-    },
-  };
+  const TEST_CASES_BATCH_3 = require('./data/conformity-tests-batch-3.json');
 
   const updateParamIfNeeded = (testName, request) => {
     switch (testName) {
@@ -583,7 +487,7 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
     return request;
   };
 
-  synthesizeTestCases(TEST_CASES, updateParamIfNeeded);
+  synthesizeTestCases(TEST_CASES_BATCH_3['server'], updateParamIfNeeded);
 
   describe('ws related rpc methods', async function () {
     let webSocket: WebSocket;
@@ -631,36 +535,6 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
       webSocket.close();
     });
 
-    const TEST_CASES = {
-      eth_newFilter: {
-        request:
-          '{"jsonrpc":"2.0","id":1,"method":"eth_newFilter","params":[{"fromBlock": "0x2","toBlock": "0x5644","address": "0x68c281b97b214deae198043c15a92e7096ca2546"}]}',
-        response: '{"result":"0x5cd8adcbc637551d4b5959c732d0ad67","jsonrpc":"2.0","id":1}',
-      },
-      'eth_subscribe - newPendingTransactions': {
-        request: '{"jsonrpc":"2.0","method":"eth_subscribe","params":["newPendingTransactions"],"id":1}',
-        response: '{"error":{"code":-32601,"message":"Unsupported JSON-RPC method"},"jsonrpc":"2.0","id":1}',
-      },
-      'eth_subscribe - non existing contract': {
-        request:
-          '{"jsonrpc":"2.0","id":1,"method":"eth_subscribe","params":["logs",{"address":"0x678d3e4c7b6b8e9617e9b3487352ec63c54dbf81"}]}',
-        response: '{"error":{"code":-32602},"jsonrpc":"2.0","id":1}',
-      },
-      'eth_subscribe - existing contract': {
-        request:
-          '{"jsonrpc":"2.0","id":1,"method":"eth_subscribe","params":["logs",{"address":"0x12833e4c7a6b1e9512e9a32873321c13cb4dbfef"}]}',
-        response: '{"result":"0xa4e1803ab025341ed7668eb13ca71f3c","jsonrpc":"2.0","id":1}',
-      },
-      'eth_unsubscribe - non existing filter': {
-        request: '{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x2c9c38d1200d30208fcdad52ed71fbff"],"id":1}',
-        response: '{"result":false,"jsonrpc":"2.0","id":1}',
-      },
-      'eth_unsubscribe - existing filter': {
-        request: '{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x2c9c38d1200d30208fcdad52ed71fbff"],"id":1}',
-        response: '{"result":true,"jsonrpc":"2.0","id":1}',
-      },
-    };
-
     const updateParamIfNeeded = (testName, request) => {
       switch (testName) {
         case 'eth_subscribe - existing contract':
@@ -699,7 +573,7 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
       }
     };
 
-    synthesizeWsTestCases(TEST_CASES, updateParamIfNeeded);
+    synthesizeWsTestCases(TEST_CASES_BATCH_3['ws-server'], updateParamIfNeeded);
   });
 });
 
@@ -750,99 +624,7 @@ describe('@api-conformity @conformity-batch-4 Ethereum execution apis tests', as
     fromBlockForLogs = log0ContractCall.blockNumber;
   });
 
-  const TEST_CASES = {
-    'eth_call - non existing contract': {
-      request:
-        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response: '{"result":"0x","jsonrpc":"2.0","id":1}',
-    },
-    'eth_call - existing contract view function and existing from': {
-      request:
-        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response:
-        '{"result":"0x0000000000000000000000000000000000000000000000000000000000000004","jsonrpc":"2.0","id":1}',
-    },
-    'eth_call - existing contract tx and existing from': {
-      request:
-        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response:
-        '{"result":"0x0000000000000000000000000000000000000000000000000000000000000000","jsonrpc":"2.0","id":1}',
-    },
-    'eth_call - existing contract tx, existing from and positive value': {
-      request:
-        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE","value":"0x2540be400"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response:
-        '{"result":"0x0000000000000000000000000000000000000000000000000000000000000001","jsonrpc":"2.0","id":1}',
-    },
-    'eth_call - existing contract view function and non-existing from': {
-      request:
-        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response:
-        '{"result":"0x0000000000000000000000000000000000000000000000000000000000000004","jsonrpc":"2.0","id":1}',
-    },
-    'eth_call - existing contract tx and non-existing from': {
-      request:
-        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response:
-        '{"result":"0x0000000000000000000000000000000000000000000000000000000000000000","jsonrpc":"2.0","id":1}',
-    },
-    'eth_call - existing contract tx, non-existing from and positive value': {
-      request:
-        '{"method":"eth_call","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE","value":"0x2540be400"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response: '{"jsonrpc":"2.0","id":1,"result":[]}', // insufficient balance error expected, blocked until https://github.com/hashgraph/hedera-mirror-node/issues/9301 is resolved
-    },
-    'eth_estimateGas - non existing contract': {
-      request:
-        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response: '{"result":"0x5adc","jsonrpc":"2.0","id":1}',
-    },
-    'eth_estimateGas - existing contract view function and existing from': {
-      request:
-        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response: '{"result":"0x5aa7","jsonrpc":"2.0","id":1}',
-    },
-    'eth_estimateGas - existing contract tx and existing from': {
-      request:
-        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response: '{"result":"0x5ad0","jsonrpc":"2.0","id":1}',
-    },
-    'eth_estimateGas - existing contract tx, existing from and positive value': {
-      request:
-        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE","value":"0x2540be400"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response: '{"result":"0x5ad0","jsonrpc":"2.0","id":1}',
-    },
-    'eth_estimateGas - existing contract view function and non-existing from': {
-      request:
-        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response: '{"result":"0x5ad0","jsonrpc":"2.0","id":1}',
-    },
-    'eth_estimateGas - existing contract tx and non-existing from': {
-      request:
-        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response: '{"jsonrpc":"2.0","id":1,"result":[]}',
-    },
-    'eth_estimateGas - existing contract tx, non-existing from and positive value': {
-      request:
-        '{"method":"eth_estimateGas","params":[{"from":"0x6b175474e89094c44da98b954eedeac495271d0f","to":"0x6b175474e89094c44da98b954eedeac495271d0f","data":"0x70a082310000000000000000000000006E0d01A76C3Cf4288372a29124A26D4353EE51BE","value":"0x2540be400"},"latest"],"id":1,"jsonrpc":"2.0"}',
-      response: '{"result":"0x7a120","jsonrpc":"2.0","id":1}', // returns predefined 500_000, blocked until https://github.com/hashgraph/hedera-mirror-node/issues/9301 is resolved
-    },
-    'eth_getLogs - non-existing contract': {
-      request:
-        '{"method":"eth_getLogs","params":[{"address":"0x6b175474e89094c44da98b954eedeac495271d0f"}],"id":1,"jsonrpc":"2.0"}',
-      response: '{"result":[],"jsonrpc":"2.0","id":1}',
-    },
-    'eth_getLogs - existing contract': {
-      request:
-        '{"method":"eth_getLogs","params":[{"address":"0x6b175474e89094c44da98b954eedeac495271d0f"}],"id":1,"jsonrpc":"2.0"}',
-      response: '{"result":[],"jsonrpc":"2.0","id":1}',
-    },
-    'eth_getLogs - existing contract and from/to block': {
-      request:
-        '{"method":"eth_getLogs","params":[{"fromBlock":"0x1","toBlock":"latest","address":"0x6b175474e89094c44da98b954eedeac495271d0f"}],"id":1,"jsonrpc":"2.0"}',
-      response:
-        '{"result":[{"address":"0x7402f907cb2f494acdf7080cffa4f70c939486a1","blockHash":"0xd0c2b09c0c60f1e70cbbd7b09df931286b332db705725d2f073e0e46530d5b4d","blockNumber":"0x39c","data":"0x000000000000000000000000000000000000000000000000000000000000160c","logIndex":"0x0","removed":false,"topics":[],"transactionHash":"0xab2529089e736c8c3b6bf69bb2fd32d52bc3497412566d874cc692c5fe08c91d","transactionIndex":"0x7"}],"jsonrpc":"2.0","id":1}',
-    },
-  };
+  const TEST_CASES_BATCH_4 = require('./data/conformity-tests-batch-4.json');
 
   const updateParamIfNeeded = (testName, request) => {
     switch (testName) {
@@ -991,5 +773,5 @@ describe('@api-conformity @conformity-batch-4 Ethereum execution apis tests', as
     return request;
   };
 
-  synthesizeTestCases(TEST_CASES, updateParamIfNeeded);
+  synthesizeTestCases(TEST_CASES_BATCH_4, updateParamIfNeeded);
 });
