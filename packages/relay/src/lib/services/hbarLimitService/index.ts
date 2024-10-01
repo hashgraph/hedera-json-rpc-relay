@@ -335,12 +335,16 @@ export class HbarLimitService implements IHbarLimitService {
   private getResetTimestamp(): Date {
     const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
 
-    let newResetDate = this.reset !== undefined ? new Date(this.reset.getTime()) : new Date(todayAtMidnight);
-    while (newResetDate.getTime() < Date.now()) {
-      newResetDate = new Date(newResetDate.getTime() + this.limitDuration);
+    let resetDate = this.reset ? new Date(this.reset.getTime()) : new Date(todayAtMidnight);
+    if (resetDate.getTime() < Date.now()) {
+      // 1. Calculate the difference between the current time and the reset time.
+      // 2. Determine how many intervals of size `limitDuration` have passed since the last reset.
+      // 3. Calculate the new reset date by adding the required intervals to the original reset date.
+      const intervalsPassed = Math.ceil((Date.now() - resetDate.getTime()) / this.limitDuration);
+      resetDate = new Date(resetDate.getTime() + intervalsPassed * this.limitDuration);
     }
 
-    return newResetDate;
+    return resetDate;
   }
 
   /**
