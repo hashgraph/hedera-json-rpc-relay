@@ -99,7 +99,7 @@ export default class ServicesClient {
     const address = wallet.address;
 
     this.logger.trace(
-      `${requestIdPrefix} Create new Eth compatible account w privateKey: ${privateKey}, alias: ${address} and balance ~${initialBalance} HBar`,
+      `${requestIdPrefix} Create new Eth compatible account w alias: ${address} and balance ~${initialBalance} HBar`,
     );
 
     const aliasCreationResponse = await this.executeTransaction(
@@ -424,7 +424,7 @@ export default class ServicesClient {
     const aliasAccountId = publicKey.toAccountId(0, 0);
 
     this.logger.trace(
-      `${requestIdPrefix} Create new Eth compatible account w privateKey: ${privateKey}, alias: ${aliasAccountId.toString()} and balance ~${initialBalance} hb`,
+      `${requestIdPrefix} Create new Eth compatible account w alias: ${aliasAccountId.toString()} and balance ~${initialBalance} hb`,
     );
 
     const aliasCreationResponse = await this.executeTransaction(
