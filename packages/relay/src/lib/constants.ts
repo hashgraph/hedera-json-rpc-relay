@@ -18,7 +18,6 @@
  *
  */
 
-import { Hbar, HbarUnit } from '@hashgraph/sdk';
 import { BigNumber } from 'bignumber.js';
 
 enum CACHE_KEY {
