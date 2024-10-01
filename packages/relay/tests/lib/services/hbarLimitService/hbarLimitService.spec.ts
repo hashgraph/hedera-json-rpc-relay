@@ -46,8 +46,8 @@ chai.use(chaiAsPromised);
 describe('HbarLimitService', function () {
   const logger = pino();
   const register = new Registry();
-  const totalBudget = constants.HBAR_RATE_LIMIT_TOTAL;
-  const totalBudgetInTinyBars = totalBudget.toTinybars().toNumber();
+  const totalBudget = Hbar.fromTinybars(constants.HBAR_RATE_LIMIT_TOTAL);
+  const totalBudgetInTinybars = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
   const limitDuration = constants.HBAR_RATE_LIMIT_DURATION;
   const mode = constants.EXECUTION_MODE.TRANSACTION;
   const methodName = 'testMethod';
@@ -189,8 +189,8 @@ describe('HbarLimitService', function () {
       hbarLimitService.remainingBudget = Hbar.fromTinybars(1000);
       const setSpy = sinon.spy(hbarLimitService['hbarLimitRemainingGauge'], 'set');
       await hbarLimitService.resetLimiter();
-      expect(hbarLimitService['remainingBudget'].toTinybars().toNumber()).to.eq(totalBudgetInTinyBars);
-      expect(setSpy.calledOnceWith(totalBudgetInTinyBars)).to.be.true;
+      expect(hbarLimitService['remainingBudget'].toTinybars().toNumber()).to.eq(totalBudgetInTinybars);
+      expect(setSpy.calledOnceWith(totalBudgetInTinybars)).to.be.true;
     });
 
     it('should set the reset date to the current timestamp plus the limit duration', async function () {
