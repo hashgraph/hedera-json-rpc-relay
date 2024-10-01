@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { validateOpenRPCDocument, parseOpenRPCDocument } from '@open-rpc/schema-utils-js';
 import Ajv from 'ajv';
@@ -90,7 +90,7 @@ describe('Open RPC Specification', function () {
   let ethImpl: EthImpl;
 
   before(() => {
-    EnvTestHelper.dynamicOverride('npm_package_version', 'relay/0.0.1-SNAPSHOT');
+    configServiceTestHelper.dynamicOverride('npm_package_version', 'relay/0.0.1-SNAPSHOT');
   });
 
   this.beforeAll(async () => {
@@ -118,7 +118,7 @@ describe('Open RPC Specification', function () {
     const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      EnvProvider.get('MIRROR_NODE_URL') || '',
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

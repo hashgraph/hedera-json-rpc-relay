@@ -26,7 +26,7 @@ import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import { formatRequestIdMessage } from '../../../formatters';
 import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../types';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 export default class MetricService {
   /**
@@ -313,7 +313,7 @@ export default class MetricService {
     operatorAccountId: string,
   ): Promise<ITransactionRecordMetric | undefined> {
     const formattedRequestId = formatRequestIdMessage(requestId);
-    const defaultToConsensusNode = EnvProvider.get('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE') === 'true';
+    const defaultToConsensusNode = ConfigService.get('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE') === 'true';
 
     // retrieve transaction metrics
     try {

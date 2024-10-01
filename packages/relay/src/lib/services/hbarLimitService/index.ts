@@ -27,15 +27,15 @@ import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendi
 import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 export class HbarLimitService implements IHbarLimitService {
   static readonly ONE_DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
   // TODO: Replace with actual values
   static readonly DAILY_LIMITS: Record<SubscriptionType, number> = {
-    BASIC: parseInt(EnvProvider.get('HBAR_DAILY_LIMIT_BASIC') ?? '1000'),
-    EXTENDED: parseInt(EnvProvider.get('HBAR_DAILY_LIMIT_EXTENDED') ?? '10000'),
-    PRIVILEGED: parseInt(EnvProvider.get('HBAR_DAILY_LIMIT_PRIVILEGED') ?? '100000'),
+    BASIC: parseInt(ConfigService.get('HBAR_DAILY_LIMIT_BASIC') ?? '1000'),
+    EXTENDED: parseInt(ConfigService.get('HBAR_DAILY_LIMIT_EXTENDED') ?? '10000'),
+    PRIVILEGED: parseInt(ConfigService.get('HBAR_DAILY_LIMIT_PRIVILEGED') ?? '100000'),
   };
 
   /**

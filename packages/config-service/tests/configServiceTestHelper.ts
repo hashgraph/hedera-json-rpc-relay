@@ -19,7 +19,7 @@
  */
 
 import dotenv from 'dotenv';
-import { EnvProvider } from '../dist/services';
+import { ConfigService } from '../dist/services';
 
 /**
  * There are many tests, both integration and acceptance that
@@ -27,7 +27,7 @@ import { EnvProvider } from '../dist/services';
  * in order to keep the main env provider as clean as possible but at the same
  * time, we will be able to override, delete, or append environment variables.
  */
-export class EnvTestHelper {
+export class configServiceTestHelper {
   /**
    * Override an env variable, used in test cases only
    * @param name string
@@ -36,7 +36,7 @@ export class EnvTestHelper {
    */
   public static dynamicOverride(name: string, value: string | undefined): void {
     // @ts-ignore
-    EnvProvider.getInstance().envs[name] = value;
+    ConfigService.getInstance().envs[name] = value;
   }
 
   /**
@@ -46,7 +46,7 @@ export class EnvTestHelper {
    */
   public static remove(name: string): void {
     // @ts-ignore
-    delete EnvProvider.getInstance().envs[name];
+    delete ConfigService.getInstance().envs[name];
   }
 
   /**

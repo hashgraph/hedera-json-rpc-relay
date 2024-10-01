@@ -28,11 +28,11 @@ import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
   const METHOD_NAME = 'eth_sendRawTransaction';
-  const CHAIN_ID = EnvProvider.get('CHAIN_ID') || '0x12a';
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
   const INVALID_PARAMS = [
     [],
     [''],

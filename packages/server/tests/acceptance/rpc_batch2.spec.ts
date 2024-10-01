@@ -27,7 +27,7 @@ import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { ContractId, Hbar, HbarUnit } from '@hashgraph/sdk';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 // Assertions from local resources
 import Assertions from '../helpers/assertions';
@@ -65,7 +65,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   let createChildTx: ethers.ContractTransactionResponse;
   let accounts0StartBalance: bigint;
 
-  const CHAIN_ID = EnvProvider.get('CHAIN_ID') || 0;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
   const ONE_WEIBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 18)));
 
@@ -417,7 +417,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('@release should call eth_gasPrice', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestId);
       expect(res).to.exist;
-      if (EnvProvider.get('LOCAL_NODE') && EnvProvider.get('LOCAL_NODE') !== 'false') {
+      if (ConfigService.get('LOCAL_NODE') && ConfigService.get('LOCAL_NODE') !== 'false') {
         expect(res).be.equal(expectedGasPrice);
       } else {
         expect(Number(res)).to.be.gt(0);
@@ -1062,7 +1062,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   // Only run the following tests against a local node since they only work with the genesis account
-  if (EnvProvider.get('LOCAL_NODE') && EnvProvider.get('LOCAL_NODE') !== 'false') {
+  if (ConfigService.get('LOCAL_NODE') && ConfigService.get('LOCAL_NODE') !== 'false') {
     describe('Gas Price related RPC endpoints', () => {
       let lastBlockBeforeUpdate;
       let lastBlockAfterUpdate;

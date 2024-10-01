@@ -20,19 +20,19 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { EnvProvider } from '../../../src/services';
+import { ConfigService } from '../../../src/services';
 
 chai.use(chaiAsPromised);
 
-describe('EnvProvider tests', async function () {
+describe('ConfigService tests', async function () {
   it('should be able to get existing env var', async () => {
-    const res = EnvProvider.get('CHAIN_ID');
+    const res = ConfigService.get('CHAIN_ID');
 
     expect(res).to.equal('0x12a');
   });
 
   it('should return undefined for non-existing variable', async () => {
-    const res = EnvProvider.get('NON_EXISTING_VAR');
+    const res = ConfigService.get('NON_EXISTING_VAR');
 
     expect(res).to.equal(undefined);
   });

@@ -23,8 +23,8 @@ import sinon from 'sinon';
 import { Registry } from 'prom-client';
 import pino, { Logger } from 'pino';
 import RateLimit from '../../src/rateLimit';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 describe('RateLimit', () => {
   let logger: Logger;
@@ -38,7 +38,7 @@ describe('RateLimit', () => {
   });
 
   beforeEach(() => {
-    EnvTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', 'false');
+    configServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', 'false');
     // Create a new instance of RateLimit
     rateLimit = new RateLimit(logger, registry, duration);
   });
@@ -49,7 +49,7 @@ describe('RateLimit', () => {
   });
 
   it('should not rate limit when RATE_LIMIT_DISABLED is true', () => {
-    EnvTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', 'true');
+    configServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', 'true');
     rateLimit = new RateLimit(logger, registry, duration);
     const shouldLimit = rateLimit.shouldRateLimit('127.0.0.1', 'method1', 10, 'requestId');
 
@@ -119,7 +119,7 @@ describe('RateLimit', () => {
   });
 
   it('should prioritize environment variable RATE_LIMIT_DISABLED', () => {
-    EnvTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', 'true');
+    configServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', 'true');
 
     const logSpy = sinon.spy(logger, 'warn');
     const counterSpy = sinon.spy(rateLimit['ipRateLimitCounter'], 'inc');

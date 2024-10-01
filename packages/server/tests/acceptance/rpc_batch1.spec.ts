@@ -35,8 +35,8 @@ import basicContract from '../../tests/contracts/Basic.json';
 
 // Errors and constants from local resources
 import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 
@@ -59,7 +59,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let account2Address: string;
   let expectedGasPrice: string;
 
-  const CHAIN_ID = EnvProvider.get('CHAIN_ID') || '0x12a';
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
   const INCORRECT_CHAIN_ID = 999;
   const GAS_PRICE_TOO_LOW = '0x1';
   const GAS_PRICE_REF = '0x123456';
@@ -412,7 +412,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
         //for the purpose of the test, we are settings limit to 2, and fetching all.
         //setting mirror node limit to 2 for this test only
-        EnvTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
+        configServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
         // calculate blocks behind latest, so we can fetch logs from the past.
         // if current block is less than 10, we will fetch logs from the beginning otherwise we will fetch logs from 10 blocks behind latest
         const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestId));
@@ -723,7 +723,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         type: 1,
       };
 
-      const gasPriceDeviation = parseFloat(EnvProvider.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2');
+      const gasPriceDeviation = parseFloat(ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2');
 
       it('@release should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
         const response = await relay.call(

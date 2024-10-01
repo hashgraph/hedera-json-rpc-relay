@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { EthImpl } from '../../src/lib/eth';
 import { expect } from 'chai';
 import pino from 'pino';
@@ -192,7 +192,7 @@ describe('Polling', async function () {
         ),
       ).to.equal(true);
       expect(
-        loggerSpy.calledWith(`Poller: Starting polling with interval=${EnvProvider.get('WS_POLLING_INTERVAL')}`),
+        loggerSpy.calledWith(`Poller: Starting polling with interval=${ConfigService.get('WS_POLLING_INTERVAL')}`),
       ).to.equal(true);
     });
 

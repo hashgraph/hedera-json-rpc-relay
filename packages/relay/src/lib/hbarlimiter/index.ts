@@ -23,7 +23,7 @@ import constants from '../constants';
 import { predefined } from '../errors/JsonRpcError';
 import { Registry, Counter, Gauge } from 'prom-client';
 import { formatRequestIdMessage } from '../../formatters';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 export default class HbarLimit {
   private enabled: boolean = false;
@@ -198,7 +198,7 @@ export default class HbarLimit {
    * @returns {boolean} - Returns `true` if the account is whitelisted, otherwise `false`.
    */
   isAccountWhiteListed(originalCallerAddress: string): boolean {
-    const whiteListedAccountIDs = EnvProvider.get('HBAR_RATE_LIMIT_WHITELIST') ?? [''];
+    const whiteListedAccountIDs = ConfigService.get('HBAR_RATE_LIMIT_WHITELIST') ?? [''];
     return (whiteListedAccountIDs as string[]).includes(originalCallerAddress);
   }
 

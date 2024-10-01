@@ -32,14 +32,14 @@ const mainLogger = pino({
     },
   },
 });
-const logger = mainLogger.child({ name: 'env-provider' });
+const logger = mainLogger.child({ name: 'config-service' });
 
-export class EnvProvider {
+export class ConfigService {
   /**
    * The singleton instance
    * @public
    */
-  private static instance: EnvProvider;
+  private static instance: ConfigService;
 
   /**
    * Copied envs from process.env
@@ -67,9 +67,9 @@ export class EnvProvider {
    * Get the singleton instance of the current service
    * @public
    */
-  private static getInstance(): EnvProvider {
+  private static getInstance(): ConfigService {
     if (this.instance == null) {
-      this.instance = new EnvProvider();
+      this.instance = new ConfigService();
     }
 
     return this.instance;

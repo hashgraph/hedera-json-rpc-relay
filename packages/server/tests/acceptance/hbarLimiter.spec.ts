@@ -30,8 +30,8 @@ import Assertions from '../helpers/assertions';
 import testConstants from '../helpers/constants';
 import { AliasAccount } from '../types/AliasAccount';
 import { estimateFileTransactionsFee } from '@hashgraph/json-rpc-relay/tests/helpers';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';
@@ -46,8 +46,8 @@ const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAccepta
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   // @ts-ignore
   const { mirrorNode, relay, logger, initialBalance, metrics, relayIsLocal } = global;
-  const operatorAccount = EnvProvider.get('OPERATOR_ID_MAIN') || DOT_ENV.OPERATOR_ID_MAIN || '';
-  const fileAppendChunkSize = Number(EnvProvider.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+  const operatorAccount = ConfigService.get('OPERATOR_ID_MAIN') || DOT_ENV.OPERATOR_ID_MAIN || '';
+  const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
   if (relayIsLocal) {
@@ -146,7 +146,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       const accounts: AliasAccount[] = [];
       const defaultLondonTransactionData = {
         value: Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10))), // 1 tinybar
-        chainId: Number(EnvProvider.get('CHAIN_ID') || 0),
+        chainId: Number(ConfigService.get('CHAIN_ID') || 0),
         maxPriorityFeePerGas: Assertions.defaultGasPrice,
         maxFeePerGas: Assertions.defaultGasPrice,
         gasLimit: 3_000_000,
@@ -165,7 +165,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
         logger.info(`${requestIdPrefix} Creating accounts`);
-        logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${EnvProvider.get('HBAR_RATE_LIMIT_TINYBAR')}`);
+        logger.info(`${requestIdPrefix} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get('HBAR_RATE_LIMIT_TINYBAR')}`);
 
         const initialAccount: AliasAccount = global.accounts[0];
 
@@ -190,7 +190,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       describe('Remaining HBAR Limit', () => {
         before(() => {
-          EnvTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
+          configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
         });
 
         it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
@@ -267,7 +267,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             contract.deploymentTransaction()!.data,
           );
 
-          const fileChunkSize = Number(EnvProvider.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+          const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
           const estimatedTxFee = estimateFileTransactionsFee(
             contract.deploymentTransaction()!.data.length,
             fileChunkSize,
@@ -286,10 +286,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         let hbarRateLimitPreemptiveCheck: string | undefined;
 
         beforeEach(() => {
-          hbarRateLimitPreemptiveCheck = EnvProvider.get('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK');
+          hbarRateLimitPreemptiveCheck = ConfigService.get('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK');
         });
         afterEach(() => {
-          EnvTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', hbarRateLimitPreemptiveCheck);
+          configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', hbarRateLimitPreemptiveCheck);
         });
 
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
@@ -318,7 +318,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('Should preemptively check the rate limit before submitting EthereumTransaction', async function () {
-          EnvTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', 'true');
+          configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', 'true');
 
           try {
             for (let i = 0; i < 50; i++) {
@@ -336,7 +336,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
-          EnvTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', 'false');
+          configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', 'false');
 
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           let lastRemainingHbars = remainingHbarsBefore;

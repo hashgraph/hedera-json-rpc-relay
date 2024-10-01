@@ -6,7 +6,7 @@
   "keywords": [],
   "author": "Hedera Smart Contracts Team",
   "dependencies": {
-    "@hashgraph/json-rpc-env-provider": "file:../env-provider",
+    "@hashgraph/json-rpc-config-service": "file:../config-service",
     "@hashgraph/json-rpc-relay": "file:../relay",
     "@hashgraph/json-rpc-server": "file:../server",
     "axios": "^1.4.0",

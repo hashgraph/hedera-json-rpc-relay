@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { RelayImpl } from '../../src/lib/relay';
@@ -30,14 +30,14 @@ const Relay = new RelayImpl(logger, new Registry());
 
 describe('Web3', function () {
   it('should execute "web3_clientVersion"', async function () {
-    EnvTestHelper.dynamicOverride('npm_package_version', '1.0.0');
+    configServiceTestHelper.dynamicOverride('npm_package_version', '1.0.0');
     const clientVersion = Relay.web3().clientVersion();
 
-    expect(clientVersion).to.be.equal('relay/' + EnvProvider.get('npm_package_version'));
+    expect(clientVersion).to.be.equal('relay/' + ConfigService.get('npm_package_version'));
   });
 
   it('should return "relay/" when npm_package_version is not set', () => {
-    EnvTestHelper.remove('npm_package_version');
+    configServiceTestHelper.remove('npm_package_version');
     const version = Relay.web3().clientVersion();
 
     expect(version).to.equal('relay/');

@@ -35,7 +35,7 @@ import HAPIService from './services/hapiService/hapiService';
 import { SubscriptionController } from './subscriptionController';
 import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 export class RelayImpl implements Relay {
   /**
@@ -113,8 +113,8 @@ export class RelayImpl implements Relay {
   constructor(logger: Logger, register: Registry) {
     logger.info('Configurations successfully loaded');
 
-    const hederaNetwork: string = (EnvProvider.get('HEDERA_NETWORK') || '{}').toLowerCase();
-    const configuredChainId = EnvProvider.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
+    const hederaNetwork: string = (ConfigService.get('HEDERA_NETWORK') || '{}').toLowerCase();
+    const configuredChainId = ConfigService.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
@@ -130,12 +130,12 @@ export class RelayImpl implements Relay {
     this.netImpl = new NetImpl(this.clientMain);
 
     this.mirrorNodeClient = new MirrorNodeClient(
-      EnvProvider.get('MIRROR_NODE_URL') || '',
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       register,
       this.cacheService,
       undefined,
-      EnvProvider.get('MIRROR_NODE_URL_WEB3') || EnvProvider.get('MIRROR_NODE_URL') || '',
+      ConfigService.get('MIRROR_NODE_URL_WEB3') || ConfigService.get('MIRROR_NODE_URL') || '',
     );
 
     this.metricService = new MetricService(
@@ -156,7 +156,7 @@ export class RelayImpl implements Relay {
       this.cacheService,
     );
 
-    if (EnvProvider.get('SUBSCRIPTIONS_ENABLED') && EnvProvider.get('SUBSCRIPTIONS_ENABLED') === 'true') {
+    if (ConfigService.get('SUBSCRIPTIONS_ENABLED') && ConfigService.get('SUBSCRIPTIONS_ENABLED') === 'true') {
       const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
       this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }

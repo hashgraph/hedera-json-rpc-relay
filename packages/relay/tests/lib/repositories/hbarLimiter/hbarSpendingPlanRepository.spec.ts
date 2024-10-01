@@ -18,7 +18,7 @@
  *
  */
 
-import { EnvTestHelper } from '../../../../../env-provider/tests/envTestHelper';
+import { configServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
 import { pino } from 'pino';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -57,8 +57,8 @@ describe('HbarSpendingPlanRepository', function () {
       });
     } else {
       before(async () => {
-        EnvTestHelper.dynamicOverride('TEST', 'true');
-        EnvTestHelper.dynamicOverride('REDIS_ENABLED', 'false');
+        configServiceTestHelper.dynamicOverride('TEST', 'true');
+        configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'false');
         cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
         repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
       });

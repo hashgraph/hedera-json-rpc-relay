@@ -21,8 +21,8 @@
 import { expect } from 'chai';
 import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 const registry = new Registry();
 
@@ -84,7 +84,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   it('Fallsback to local cache for REDIS_ENABLED !== true', async () => {
     const dataLabel = `${DATA_LABEL_PREFIX}3`;
 
-    EnvTestHelper.dynamicOverride('REDIS_ENABLED', 'false');
+    configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'false');
     const serviceWithDisabledRedis = new CacheService(global.logger, registry);
     await new Promise((r) => setTimeout(r, 1000));
     expect(serviceWithDisabledRedis.isRedisEnabled()).to.eq(false, 'redis is disabled');
@@ -94,7 +94,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD);
     expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
 
-    EnvTestHelper.dynamicOverride('REDIS_ENABLED', 'true');
+    configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'true');
   });
 
   it('Cache set by one instance can be accessed by another', async () => {
@@ -114,9 +114,9 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     let cacheService;
 
     before(async () => {
-      currentRedisEnabledEnv = EnvProvider.get('REDIS_ENABLED');
+      currentRedisEnabledEnv = ConfigService.get('REDIS_ENABLED');
 
-      EnvTestHelper.dynamicOverride('REDIS_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'true');
       cacheService = new CacheService(global.logger, registry);
 
       // disconnect redis client to simulate Redis error
@@ -125,7 +125,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     });
 
     after(async () => {
-      EnvTestHelper.dynamicOverride('REDIS_ENABLED', currentRedisEnabledEnv);
+      configServiceTestHelper.dynamicOverride('REDIS_ENABLED', currentRedisEnabledEnv);
     });
 
     it('test getAsync operation', async () => {

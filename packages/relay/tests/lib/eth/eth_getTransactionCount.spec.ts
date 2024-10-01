@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -74,14 +74,17 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     restMock
       .onGet(transactionPath(mockData.account.evm_address, 2))
       .reply(200, { transactions: [{ transaction_id: transactionId }, {}] });
-    currentMaxBlockRange = Number(EnvProvider.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    EnvTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
+    currentMaxBlockRange = Number(ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
+    configServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    EnvTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', currentMaxBlockRange.toString());
+    configServiceTestHelper.dynamicOverride(
+      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
+      currentMaxBlockRange.toString(),
+    );
     // reset cache and restMock
     cacheService.clear();
     restMock.reset();

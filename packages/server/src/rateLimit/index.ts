@@ -21,7 +21,7 @@
 import { Logger } from 'pino';
 import { formatRequestIdMessage } from '../formatters';
 import { Counter, Registry } from 'prom-client';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 export default class RateLimit {
   private duration: number;
@@ -45,7 +45,7 @@ export default class RateLimit {
   }
 
   shouldRateLimit(ip: string, methodName: string, total: number, requestId: string): boolean {
-    if (EnvProvider.get('RATE_LIMIT_DISABLED') && EnvProvider.get('RATE_LIMIT_DISABLED') === 'true') {
+    if (ConfigService.get('RATE_LIMIT_DISABLED') && ConfigService.get('RATE_LIMIT_DISABLED') === 'true') {
       return false;
     }
 

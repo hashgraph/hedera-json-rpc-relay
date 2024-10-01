@@ -20,33 +20,33 @@
 
 import type { Server } from 'http';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 export function hasOwnProperty(obj: any, prop: PropertyKey): boolean {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
 export function setServerTimeout(server: Server): void {
-  const requestTimeoutMs = parseInt(EnvProvider.get('SERVER_REQUEST_TIMEOUT_MS') ?? '60000');
+  const requestTimeoutMs = parseInt(ConfigService.get('SERVER_REQUEST_TIMEOUT_MS') ?? '60000');
   server.setTimeout(requestTimeoutMs);
 }
 
 export function getBatchRequestsMaxSize(): number {
-  return parseInt(EnvProvider.get('BATCH_REQUESTS_MAX_SIZE') ?? '100');
+  return parseInt(ConfigService.get('BATCH_REQUESTS_MAX_SIZE') ?? '100');
 }
 
 export function getLimitDuration(): number {
-  return parseInt(EnvProvider.get('LIMIT_DURATION') ?? constants.DEFAULT_RATE_LIMIT.DURATION.toString());
+  return parseInt(ConfigService.get('LIMIT_DURATION') ?? constants.DEFAULT_RATE_LIMIT.DURATION.toString());
 }
 
 export function getDefaultRateLimit(): number {
-  return parseInt(EnvProvider.get('DEFAULT_RATE_LIMIT') ?? '200');
+  return parseInt(ConfigService.get('DEFAULT_RATE_LIMIT') ?? '200');
 }
 
 export function getRequestIdIsOptional(): boolean {
-  return EnvProvider.get('REQUEST_ID_IS_OPTIONAL') == 'true';
+  return ConfigService.get('REQUEST_ID_IS_OPTIONAL') == 'true';
 }
 
 export function getBatchRequestsEnabled(): boolean {
-  return EnvProvider.get('BATCH_REQUESTS_ENABLED') == 'true';
+  return ConfigService.get('BATCH_REQUESTS_ENABLED') == 'true';
 }

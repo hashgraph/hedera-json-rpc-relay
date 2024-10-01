@@ -20,7 +20,7 @@
 
 import { Web3 } from '../index';
 import { Client } from '@hashgraph/sdk';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 export class Web3Impl implements Web3 {
   private client: Client;
@@ -30,6 +30,6 @@ export class Web3Impl implements Web3 {
   }
 
   clientVersion(): string {
-    return 'relay/' + (EnvProvider.get('npm_package_version') ?? '');
+    return 'relay/' + (ConfigService.get('npm_package_version') ?? '');
   }
 }

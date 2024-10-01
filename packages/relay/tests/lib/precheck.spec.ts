@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
@@ -93,7 +93,7 @@ describe('Precheck', async function () {
 
     // @ts-ignore
     const mirrorNodeInstance = new MirrorNodeClient(
-      EnvProvider.get('MIRROR_NODE_URL')!,
+      ConfigService.get('MIRROR_NODE_URL')!,
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -236,11 +236,11 @@ describe('Precheck', async function () {
     let initialMinGasPriceBuffer;
     before(async () => {
       initialMinGasPriceBuffer = constants.GAS_PRICE_TINY_BAR_BUFFER;
-      EnvTestHelper.dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', '10000000000'); // 1 tinybar
+      configServiceTestHelper.dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', '10000000000'); // 1 tinybar
     });
 
     after(async () => {
-      EnvTestHelper.dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', initialMinGasPriceBuffer);
+      configServiceTestHelper.dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', initialMinGasPriceBuffer);
     });
 
     it('should pass for gas price gt to required gas price', async function () {

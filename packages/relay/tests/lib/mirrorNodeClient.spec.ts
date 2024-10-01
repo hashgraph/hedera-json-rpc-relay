@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
@@ -55,7 +55,7 @@ describe('MirrorNodeClient', async function () {
     });
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
-      EnvProvider.get('MIRROR_NODE_URL') || '',
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -123,7 +123,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`restUrl` is exposed and correct', async () => {
-    const domain = (EnvProvider.get('MIRROR_NODE_URL') || '').replace(/^https?:\/\//, '');
+    const domain = (ConfigService.get('MIRROR_NODE_URL') || '').replace(/^https?:\/\//, '');
     const prodMirrorNodeInstance = new MirrorNodeClient(
       domain,
       logger.child({ name: `mirror-node` }),
@@ -149,9 +149,9 @@ describe('MirrorNodeClient', async function () {
 
   it('Can provide custom x-api-key header', async () => {
     const exampleApiKey = 'abc123iAManAPIkey';
-    EnvTestHelper.dynamicOverride('MIRROR_NODE_URL_HEADER_X_API_KEY', exampleApiKey);
+    configServiceTestHelper.dynamicOverride('MIRROR_NODE_URL_HEADER_X_API_KEY', exampleApiKey);
     const mirrorNodeInstanceOverridden = new MirrorNodeClient(
-      EnvProvider.get('MIRROR_NODE_URL') || '',
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

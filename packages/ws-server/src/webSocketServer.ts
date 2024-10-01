@@ -32,11 +32,11 @@ import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { JsonRpcError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
 import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
-  level: EnvProvider.get('LOG_LEVEL') || 'trace',
+  level: ConfigService.get('LOG_LEVEL') || 'trace',
   transport: {
     target: 'pino-pretty',
     options: {
@@ -53,7 +53,7 @@ const mirrorNodeClient = relay.mirrorClient();
 const limiter = new ConnectionLimiter(logger, register);
 const wsMetricRegistry = new WsMetricRegistry(register);
 
-const pingInterval = Number(EnvProvider.get('WS_PING_INTERVAL') || 100000);
+const pingInterval = Number(ConfigService.get('WS_PING_INTERVAL') || 100000);
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx) => {

@@ -19,8 +19,8 @@
  */
 
 // External resources
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { BaseContract, ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
@@ -67,7 +67,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   let mirrorPrimaryAccount: ethers.Wallet;
   let mirrorSecondaryAccount: ethers.Wallet;
 
-  const CHAIN_ID = EnvProvider.get('CHAIN_ID') || 0x12a;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0x12a;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let reverterContract: ethers.Contract;
@@ -539,8 +539,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           // value is processed only when eth_call goes through the mirror node
           if (
-            EnvProvider.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') &&
-            EnvProvider.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') === 'false'
+            ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') &&
+            ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') === 'false'
           ) {
             it('010 Should call msgValue', async function () {
               const callData = {
@@ -605,7 +605,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       };
 
       // Since we want the http status code, we need to perform the call using a client http request instead of using the relay instance directly
-      const testClientPort = EnvProvider.get('E2E_SERVER_PORT') || '7546';
+      const testClientPort = ConfigService.get('E2E_SERVER_PORT') || '7546';
       const testClient = Axios.create({
         baseURL: 'http://localhost:' + testClientPort,
         responseType: 'json' as const,
@@ -791,7 +791,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       let initialEthCallSelectorsAlwaysToConsensus: any, hrc719Contract: ethers.Contract;
 
       before(async () => {
-        initialEthCallSelectorsAlwaysToConsensus = EnvProvider.get('ETH_CALL_CONSENSUS_SELECTORS');
+        initialEthCallSelectorsAlwaysToConsensus = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS');
 
         hrc719Contract = await Utils.deployContract(
           HRC719ContractJson.abi,
@@ -801,11 +801,14 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       });
 
       after(() => {
-        EnvTestHelper.dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', initialEthCallSelectorsAlwaysToConsensus);
+        configServiceTestHelper.dynamicOverride(
+          'ETH_CALL_CONSENSUS_SELECTORS',
+          initialEthCallSelectorsAlwaysToConsensus,
+        );
       });
 
       it('should NOT allow eth_call to process IHRC719.isAssociated() method', async () => {
-        const selectorsList = EnvProvider.get('ETH_CALL_CONSENSUS_SELECTORS');
+        const selectorsList = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS');
         expect(selectorsList).to.be.undefined;
 
         // If the selector for `isAssociated` is not included in `ETH_CALL_CONSENSUS_SELECTORS`, the request will fail with a `CALL_EXCEPTION` error code.
@@ -822,7 +825,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         );
 
         // Add the selector for isAssociated to ETH_CALL_CONSENSUS_SELECTORS to ensure isAssociated() passes
-        EnvTestHelper.dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', JSON.stringify([isAssociatedSelector]));
+        configServiceTestHelper.dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', JSON.stringify([isAssociatedSelector]));
         const isAssociatedResult = await hrc719Contract.isAssociated(tokenAddress);
         expect(isAssociatedResult).to.be.false; // associate status of the token with the caller
       });
@@ -2020,12 +2023,12 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     let PREV_BATCH_REQUESTS_ENABLED: string | undefined;
 
     before(async () => {
-      PREV_BATCH_REQUESTS_ENABLED = EnvProvider.get('BATCH_REQUESTS_ENABLED');
-      EnvTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
+      PREV_BATCH_REQUESTS_ENABLED = ConfigService.get('BATCH_REQUESTS_ENABLED');
+      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
     });
 
     after(async () => {
-      EnvTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', PREV_BATCH_REQUESTS_ENABLED);
+      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', PREV_BATCH_REQUESTS_ENABLED);
     });
 
     it('Should return a batch of requests', async function () {

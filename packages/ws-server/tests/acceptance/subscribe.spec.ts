@@ -32,12 +32,12 @@ import assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import LogContractJson from '@hashgraph/json-rpc-server/tests/contracts/Logs.json';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import IERC20Json from '@hashgraph/json-rpc-server/tests/contracts/openzeppelin/IERC20.json';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 chai.use(solidity);
 
-const WS_RELAY_URL = `${EnvProvider.get('WS_RELAY_URL')}`;
+const WS_RELAY_URL = `${ConfigService.get('WS_RELAY_URL')}`;
 
 const establishConnection = async () => {
   const provider = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -74,7 +74,7 @@ const createLogs = async (contract: ethers.Contract, requestId) => {
 
 describe('@web-socket-batch-3 eth_subscribe', async function () {
   this.timeout(240 * 1000); // 240 seconds
-  const CHAIN_ID = EnvProvider.get('CHAIN_ID') || 0;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0;
   let server;
   // @ts-ignore
   const { servicesNode, relay, mirrorNode } = global;
@@ -118,12 +118,12 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     logContractSigner = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
 
     // cache original ENV values
-    originalWsMultipleAddressesEnabledValue = EnvProvider.get('WS_MULTIPLE_ADDRESSES_ENABLED');
+    originalWsMultipleAddressesEnabledValue = ConfigService.get('WS_MULTIPLE_ADDRESSES_ENABLED');
   });
 
   beforeEach(async () => {
     // restore original ENV value
-    EnvProvider.get('WS_MULTIPLE_ADDRESSES_ENABLED', originalWsMultipleAddressesEnabledValue);
+    ConfigService.get('WS_MULTIPLE_ADDRESSES_ENABLED', originalWsMultipleAddressesEnabledValue);
 
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
     requestId = Utils.generateRequestId();
@@ -253,7 +253,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     // skip this test if using a remote relay since updating the env vars would not affect it
     if (global.relayIsLocal) {
       it('Subscribe to multiple contracts on same subscription', async function () {
-        EnvTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'true');
+        configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'true');
         await new Promise((resolve) => setTimeout(resolve, 10000));
 
         const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
@@ -316,12 +316,15 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
         // wait for the connections to be closed
         await new Promise((resolve) => setTimeout(resolve, 500));
-        EnvTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', originalWsMultipleAddressesEnabledValue);
+        configServiceTestHelper.dynamicOverride(
+          'WS_MULTIPLE_ADDRESSES_ENABLED',
+          originalWsMultipleAddressesEnabledValue,
+        );
       });
     }
 
     it('Subscribe to multiple contracts on same subscription Should fail with INVALID_PARAMETER due to feature flag disabled', async function () {
-      EnvTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'false');
+      configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'false');
       const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
       const addressCollection = [logContractSigner.target, logContractSigner2.target];
       const webSocket = new WebSocket(WS_RELAY_URL);
@@ -441,25 +444,25 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
     beforeEach(async () => {
       // cache original ENV values
-      originalWsMaxConnectionLimit = EnvProvider.get('WS_CONNECTION_LIMIT');
-      EnvTestHelper.dynamicOverride('WS_CONNECTION_LIMIT', '5');
+      originalWsMaxConnectionLimit = ConfigService.get('WS_CONNECTION_LIMIT');
+      configServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT', '5');
 
       // We already have one connection
       expect(server._connections).to.equal(1);
 
       // @ts-ignore
-      for (let i = 1; i < parseInt(EnvProvider.get('WS_CONNECTION_LIMIT')); i++) {
+      for (let i = 1; i < parseInt(ConfigService.get('WS_CONNECTION_LIMIT')); i++) {
         providers.push(await establishConnection());
       }
 
       // Server is at max connections
       // @ts-ignore
-      expect(server._connections).to.equal(parseInt(EnvProvider.get('WS_CONNECTION_LIMIT')));
+      expect(server._connections).to.equal(parseInt(ConfigService.get('WS_CONNECTION_LIMIT')));
     });
 
     afterEach(async () => {
       // Return ENV variables to their original value
-      EnvTestHelper.dynamicOverride('WS_CONNECTION_LIMIT', originalWsMaxConnectionLimit);
+      configServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT', originalWsMaxConnectionLimit);
 
       for (const provider of providers) {
         await provider.destroy();
@@ -492,12 +495,12 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
     this.beforeAll(async () => {
       // cache original ENV values
-      originalWsMaxInactivityTtl = EnvProvider.get('WS_MAX_INACTIVITY_TTL') || '300000';
-      EnvTestHelper.dynamicOverride('WS_MAX_INACTIVITY_TTL', TEST_TTL.toString());
+      originalWsMaxInactivityTtl = ConfigService.get('WS_MAX_INACTIVITY_TTL') || '300000';
+      configServiceTestHelper.dynamicOverride('WS_MAX_INACTIVITY_TTL', TEST_TTL.toString());
     });
     this.afterAll(async () => {
       // Return ENV variables to their original value
-      EnvTestHelper.dynamicOverride('WS_MAX_INACTIVITY_TTL', originalWsMaxInactivityTtl);
+      configServiceTestHelper.dynamicOverride('WS_MAX_INACTIVITY_TTL', originalWsMaxInactivityTtl);
     });
 
     it('Connection TTL is enforced, should close all connections', async function () {
@@ -524,7 +527,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
         expect(message.toString('utf8')).to.equal(WebSocketError.TTL_EXPIRED.message);
       });
 
-      await new Promise((resolve) => setTimeout(resolve, parseInt(EnvProvider.get('WS_MAX_INACTIVITY_TTL')) + 1000));
+      await new Promise((resolve) => setTimeout(resolve, parseInt(ConfigService.get('WS_MAX_INACTIVITY_TTL')) + 1000));
 
       expect(closeEventHandled2).to.eq(true);
       expect(closeEventHandled3).to.eq(true);
@@ -917,12 +920,12 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       let originalConnectionLimitPerIp;
 
       before(() => {
-        originalConnectionLimitPerIp = EnvProvider.get('WS_CONNECTION_LIMIT_PER_IP');
-        EnvTestHelper.dynamicOverride('WS_CONNECTION_LIMIT_PER_IP', '3');
+        originalConnectionLimitPerIp = ConfigService.get('WS_CONNECTION_LIMIT_PER_IP');
+        configServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT_PER_IP', '3');
       });
 
       after(() => {
-        EnvTestHelper.dynamicOverride('WS_CONNECTION_LIMIT_PER_IP', originalConnectionLimitPerIp);
+        configServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT_PER_IP', originalConnectionLimitPerIp);
       });
 
       it('Does not allow more connections from the same IP than the specified limit', async function () {
@@ -930,7 +933,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
         // Creates the maximum allowed connections
         // @ts-ignore
-        for (let i = 1; i < parseInt(EnvProvider.get('WS_CONNECTION_LIMIT_PER_IP')); i++) {
+        for (let i = 1; i < parseInt(ConfigService.get('WS_CONNECTION_LIMIT_PER_IP')); i++) {
           // @ts-ignore
           providers.push(await new ethers.WebSocketProvider(WS_RELAY_URL));
         }
@@ -940,7 +943,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
         // Repeat the following several times to make sure the internal counters are consistently correct
         for (let i = 0; i < 3; i++) {
           // @ts-ignore
-          expect(server._connections).to.equal(parseInt(EnvProvider.get('WS_CONNECTION_LIMIT_PER_IP')));
+          expect(server._connections).to.equal(parseInt(ConfigService.get('WS_CONNECTION_LIMIT_PER_IP')));
 
           // The next connection should be closed by the server
           const provider = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -955,7 +958,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
           await new Promise((resolve) => setTimeout(resolve, 1000));
           // @ts-ignore
-          expect(server._connections).to.equal(parseInt(EnvProvider.get('WS_CONNECTION_LIMIT_PER_IP')));
+          expect(server._connections).to.equal(parseInt(ConfigService.get('WS_CONNECTION_LIMIT_PER_IP')));
           expect(closeEventHandled).to.eq(true);
 
           await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -972,12 +975,12 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       let originalSubsPerConnection;
 
       before(() => {
-        originalSubsPerConnection = EnvProvider.get('WS_SUBSCRIPTION_LIMIT');
-        EnvTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', '2');
+        originalSubsPerConnection = ConfigService.get('WS_SUBSCRIPTION_LIMIT');
+        configServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', '2');
       });
 
       after(() => {
-        EnvTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', originalSubsPerConnection);
+        configServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', originalSubsPerConnection);
       });
 
       it('Does not allow more subscriptions per connection than the specified limit', async function () {

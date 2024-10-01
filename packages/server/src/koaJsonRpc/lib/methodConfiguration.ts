@@ -18,12 +18,18 @@
  *
  */
 
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import CONSTANTS from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
-const tier1rateLimit = parseInt(EnvProvider.get('TIER_1_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_1.toString());
-const tier2rateLimit = parseInt(EnvProvider.get('TIER_2_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_2.toString());
-const tier3rateLimit = parseInt(EnvProvider.get('TIER_3_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_3.toString());
+const tier1rateLimit = parseInt(
+  ConfigService.get('TIER_1_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_1.toString(),
+);
+const tier2rateLimit = parseInt(
+  ConfigService.get('TIER_2_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_2.toString(),
+);
+const tier3rateLimit = parseInt(
+  ConfigService.get('TIER_3_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_3.toString(),
+);
 
 export interface IMethodRateLimit {
   total: number;

@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
 import pino from 'pino';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
@@ -95,18 +95,18 @@ describe('Metric Service', function () {
   } as unknown as TransactionRecord;
 
   before(() => {
-    EnvTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'DER');
+    configServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'DER');
 
     // consensus node client
-    const hederaNetwork = EnvProvider.get('HEDERA_NETWORK')!;
+    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
     client = client.setOperator(
-      AccountId.fromString(EnvProvider.get('OPERATOR_ID_MAIN')!),
-      Utils.createPrivateKeyBasedOnFormat(EnvProvider.get('OPERATOR_KEY_MAIN')!),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')!),
+      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')!),
     );
 
     // mirror node client
@@ -119,7 +119,7 @@ describe('Metric Service', function () {
       timeout: 20 * 1000,
     });
     mirrorNodeClient = new MirrorNodeClient(
-      EnvProvider.get('MIRROR_NODE_URL') || '',
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -165,7 +165,7 @@ describe('Metric Service', function () {
     it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
       mock.onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`).reply(200, mockedMirrorNodeTransactionRecord);
 
-      EnvTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'false');
 
       const originalBudget = hbarLimiter.getRemainingBudget();
 
@@ -188,7 +188,7 @@ describe('Metric Service', function () {
     });
 
     it('Should execute captureTransactionMetrics() by retrieving transaction record from CONSENSUS NODE client', async () => {
-      EnvTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
+      configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
       const mockedExchangeRateInCents = 12;
       const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
 
@@ -246,7 +246,7 @@ describe('Metric Service', function () {
     });
 
     it('Should listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics()', async () => {
-      EnvTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
+      configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
       const mockedExchangeRateInCents = 12;
       const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
 

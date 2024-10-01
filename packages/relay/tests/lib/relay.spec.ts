@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import pino from 'pino';
@@ -59,7 +59,7 @@ describe('RelayImpl', () => {
   });
 
   it('should return the correct subscription implementation when enabled', () => {
-    EnvTestHelper.dynamicOverride('SUBSCRIPTIONS_ENABLED', 'true');
+    configServiceTestHelper.dynamicOverride('SUBSCRIPTIONS_ENABLED', 'true');
     relay = new RelayImpl(logger, register);
 
     const subs = relay.subs();
@@ -67,7 +67,7 @@ describe('RelayImpl', () => {
   });
 
   it('should return undefined subscription implementation when not enabled', () => {
-    EnvTestHelper.dynamicOverride('SUBSCRIPTIONS_ENABLED', 'false');
+    configServiceTestHelper.dynamicOverride('SUBSCRIPTIONS_ENABLED', 'false');
     relay = new RelayImpl(logger, register);
 
     const subs = relay.subs();

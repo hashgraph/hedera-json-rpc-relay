@@ -18,8 +18,8 @@
  *
  */
 
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -88,8 +88,8 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       .onGet(contractByEvmAddress(CONTRACT_ADDRESS_2))
       .reply(200, { ...DEFAULT_CONTRACT, evmAddress: CONTRACT_ADDRESS_2 });
 
-    currentMaxBlockRange = Number(EnvProvider.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    EnvTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
+    currentMaxBlockRange = Number(ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
+    configServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
     ethImplLowTransactionCount = new EthImpl(
       hapiServiceInstance,
       mirrorNodeInstance,
@@ -103,7 +103,10 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    EnvTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', currentMaxBlockRange.toString());
+    configServiceTestHelper.dynamicOverride(
+      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
+      currentMaxBlockRange.toString(),
+    );
   });
 
   it('eth_getBlockByHash with match', async function () {

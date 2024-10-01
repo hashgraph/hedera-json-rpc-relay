@@ -27,8 +27,8 @@ import { Hbar, HbarUnit } from '@hashgraph/sdk';
 import { formatRequestIdMessage, numberTo0x, toHash32 } from '../src/formatters';
 import { RedisInMemoryServer } from './redisInMemoryServer';
 import { Logger } from 'pino';
-import { EnvProvider } from '@hashgraph/json-rpc-env-provider/dist/services';
-import { EnvTestHelper } from '../../env-provider/tests/envTestHelper';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { configServiceTestHelper } from '../../config-service/tests/configServiceTestHelper';
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -903,13 +903,13 @@ export const startRedisInMemoryServer = async (logger: Logger, port: number) => 
   const redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: 'RedisInMemoryServer' }), port);
   await redisInMemoryServer.start();
   const envsToReset = {
-    TEST: EnvProvider.get('TEST'),
-    REDIS_ENABLED: EnvProvider.get('REDIS_ENABLED'),
-    REDIS_URL: EnvProvider.get('REDIS_URL'),
+    TEST: ConfigService.get('TEST'),
+    REDIS_ENABLED: ConfigService.get('REDIS_ENABLED'),
+    REDIS_URL: ConfigService.get('REDIS_URL'),
   };
-  EnvTestHelper.dynamicOverride('TEST', 'false');
-  EnvTestHelper.dynamicOverride('REDIS_ENABLED', 'true');
-  EnvTestHelper.dynamicOverride('REDIS_URL', `redis://127.0.0.1:${port}`);
+  configServiceTestHelper.dynamicOverride('TEST', 'false');
+  configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'true');
+  configServiceTestHelper.dynamicOverride('REDIS_URL', `redis://127.0.0.1:${port}`);
   return { redisInMemoryServer, envsToReset };
 };
 
@@ -918,9 +918,9 @@ export const stopRedisInMemoryServer = async (
   envsToReset: { TEST?: string; REDIS_ENABLED?: string; REDIS_URL?: string },
 ): Promise<void> => {
   await redisInMemoryServer.stop();
-  EnvTestHelper.dynamicOverride('TEST', envsToReset.TEST);
-  EnvTestHelper.dynamicOverride('REDIS_ENABLED', envsToReset.REDIS_ENABLED);
-  EnvTestHelper.dynamicOverride('REDIS_URL', envsToReset.REDIS_URL);
+  configServiceTestHelper.dynamicOverride('TEST', envsToReset.TEST);
+  configServiceTestHelper.dynamicOverride('REDIS_ENABLED', envsToReset.REDIS_ENABLED);
+  configServiceTestHelper.dynamicOverride('REDIS_URL', envsToReset.REDIS_URL);
 };
 
 export const estimateFileTransactionsFee = (
