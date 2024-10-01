@@ -29,6 +29,7 @@ import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
 import { Log } from '../../../model';
 import * as _ from 'lodash';
 import { CacheService } from '../../cacheService/cacheService';
+import { IContractLogsResultsParams } from '../../../types';
 
 /**
  * Create a new Common Service implementation.
@@ -99,7 +100,7 @@ export class CommonService implements ICommonService {
   };
 
   public async validateBlockRangeAndAddTimestampToParams(
-    params: any,
+    params: IContractLogsResultsParams,
     fromBlock: string,
     toBlock: string,
     requestIdPrefix?: string,
@@ -253,7 +254,11 @@ export class CommonService implements ICommonService {
     throw predefined.INTERNAL_ERROR(error.message.toString());
   }
 
-  public async validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestIdPrefix?: string) {
+  public async validateBlockHashAndAddTimestampToParams(
+    params: IContractLogsResultsParams,
+    blockHash: string,
+    requestIdPrefix?: string,
+  ) {
     try {
       const block = await this.mirrorNodeClient.getBlock(blockHash, requestIdPrefix);
       if (block) {
@@ -272,7 +277,7 @@ export class CommonService implements ICommonService {
     return true;
   }
 
-  public addTopicsToParams(params: any, topics: any[] | null) {
+  public addTopicsToParams(params: IContractLogsResultsParams, topics: any[] | null) {
     if (topics) {
       for (let i = 0; i < topics.length; i++) {
         if (!_.isNil(topics[i])) {
@@ -282,7 +287,7 @@ export class CommonService implements ICommonService {
     }
   }
 
-  public async getLogsByAddress(address: string | string[], params: any, requestIdPrefix) {
+  public async getLogsByAddress(address: string | string[], params: IContractLogsResultsParams, requestIdPrefix) {
     const addresses = Array.isArray(address) ? address : [address];
     const logPromises = addresses.map((addr) =>
       this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestIdPrefix),
@@ -297,10 +302,14 @@ export class CommonService implements ICommonService {
     return logs;
   }
 
-  public async getLogsWithParams(address: string | string[] | null, params, requestIdPrefix?: string): Promise<Log[]> {
+  public async getLogsWithParams(
+    address: string | string[] | null,
+    params: IContractLogsResultsParams,
+    requestIdPrefix?: string,
+  ): Promise<Log[]> {
     const EMPTY_RESPONSE = [];
 
-    let logResults;
+    let logResults: any[];
     if (address) {
       logResults = await this.getLogsByAddress(address, params, requestIdPrefix);
     } else {
@@ -340,7 +349,7 @@ export class CommonService implements ICommonService {
     requestIdPrefix?: string,
   ): Promise<Log[]> {
     const EMPTY_RESPONSE = [];
-    const params: any = {};
+    const params: IContractLogsResultsParams = {};
 
     if (blockHash) {
       if (!(await this.validateBlockHashAndAddTimestampToParams(params, blockHash, requestIdPrefix))) {

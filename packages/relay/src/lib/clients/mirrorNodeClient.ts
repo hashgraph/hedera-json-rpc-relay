@@ -43,6 +43,7 @@ import {
   MirrorNodeTransactionRecord,
   IMirrorNodeTransactionRecord,
 } from '../types';
+import { ITimestampParams } from '../types/mirrorNode';
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
@@ -57,6 +58,7 @@ export class MirrorNodeClient {
   private static readonly CONTRACT_RESULT_LOGS_PROPERTY = 'logs';
   private static readonly CONTRACT_ID_PLACEHOLDER = '{contractId}';
   private static readonly ACCOUNT_TIMESTAMP_PROPERTY = 'timestamp';
+  private static readonly ACCOUNT_TRANSACTIONS_PROPERTY = 'transactions';
   private static readonly CONTRACT_CALL_ENDPOINT = 'contracts/call';
   private static readonly GET_ACCOUNTS_BY_ID_ENDPOINT = 'accounts/';
   private static readonly GET_NETWORK_FEES_ENDPOINT = 'network/fees';
@@ -452,9 +454,18 @@ export class MirrorNodeClient {
     }
   }
 
-  public async getAccount(idOrAliasOrEvmAddress: string, requestIdPrefix?: string, retries?: number) {
+  public async getAccount(
+    idOrAliasOrEvmAddress: string,
+    requestIdPrefix?: string,
+    retries?: number,
+    params?: ITimestampParams,
+  ) {
+    const queryParamObject = {};
+    this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_TIMESTAMP_PROPERTY, params?.timestamp);
+    this.setQueryParam(queryParamObject, MirrorNodeClient.ACCOUNT_TRANSACTIONS_PROPERTY, false);
+
     return this.get(
-      `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}?transactions=false`,
+      `${MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT}${idOrAliasOrEvmAddress}${this.getQueryParams(queryParamObject)}`,
       MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT,
       requestIdPrefix,
       retries,
@@ -1138,6 +1149,7 @@ export class MirrorNodeClient {
    * @param callerName calling method name
    * @param requestIdPrefix the request id prefix message
    * @param retries the number of retries
+   * @param params optional params which include the timestamp
    * @returns entity object or null if not found
    */
   public async resolveEntityType(
@@ -1146,6 +1158,7 @@ export class MirrorNodeClient {
     callerName: string,
     requestIdPrefix?: string,
     retries?: number,
+    params?: ITimestampParams,
   ) {
     const cachedLabel = `${constants.CACHE_KEY.RESOLVE_ENTITY_TYPE}_${entityIdentifier}`;
     const cachedResponse: { type: string; entity: any } | undefined = await this.cacheService.getAsync(
@@ -1184,7 +1197,7 @@ export class MirrorNodeClient {
       const promises = [
         searchableTypes.find((t) => t === constants.TYPE_ACCOUNT)
           ? buildPromise(
-              this.getAccount(entityIdentifier, requestIdPrefix, retries).catch(() => {
+              this.getAccount(entityIdentifier, requestIdPrefix, retries, params).catch(() => {
                 return null;
               }),
             )

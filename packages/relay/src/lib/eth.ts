@@ -26,7 +26,7 @@ import constants from './constants';
 import { Precheck } from './precheck';
 import { MirrorNodeClient } from './clients';
 import { Counter, Registry } from 'prom-client';
-import { IAccountInfo } from './types/mirrorNode';
+import { IAccountInfo, ITimestampParams } from './types/mirrorNode';
 import { LogsBloomUtils } from './../logsBloomUtils';
 import { DebugService } from './services/debugService';
 import { SDKClientError } from './errors/SDKClientError';
@@ -1936,6 +1936,7 @@ export class EthImpl implements Eth {
     address: string,
     requestIdPrefix?: string,
     searchableTypes = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+    params?: ITimestampParams,
   ): Promise<string> {
     if (!address) return address;
 
@@ -1945,6 +1946,7 @@ export class EthImpl implements Eth {
       EthImpl.ethGetCode,
       requestIdPrefix,
       0,
+      params,
     );
     let resolvedAddress = address;
     if (
@@ -2262,10 +2264,9 @@ export class EthImpl implements Eth {
       requestIdPrefix,
     );
     const gasUsed = blockResponse.gas_used;
-    const params = { timestamp: timestampRangeParams };
 
     // get contract results logs using block timestamp range
-    const logs = await this.common.getLogsWithParams(null, params, requestIdPrefix);
+    const logs = await this.common.getLogsWithParams(null, { timestamp: timestampRangeParams }, requestIdPrefix);
 
     if (contractResults == null && logs.length == 0) {
       // contract result not found
@@ -2281,10 +2282,18 @@ export class EthImpl implements Eth {
     // prepare transactionArray
     let transactionArray: any[] = [];
     for (const contractResult of contractResults) {
-      contractResult.from = await this.resolveEvmAddress(contractResult.from, requestIdPrefix, [
-        constants.TYPE_ACCOUNT,
-      ]);
-      contractResult.to = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
+      contractResult.from = await this.resolveEvmAddress(
+        contractResult.from,
+        requestIdPrefix,
+        [constants.TYPE_ACCOUNT],
+        { timestamp: timestampRangeParams },
+      );
+      contractResult.to = await this.resolveEvmAddress(
+        contractResult.to,
+        requestIdPrefix,
+        [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
+        { timestamp: timestampRangeParams },
+      );
       contractResult.chain_id = contractResult.chain_id || this.chain;
 
       transactionArray.push(showDetails ? formatContractResult(contractResult) : contractResult.hash);
