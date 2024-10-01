@@ -247,8 +247,8 @@ export default class HAPIService {
       ) {
         // @ts-ignore
         privateKey = Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION'));
-        // @ts-ignore
         client = client.setOperator(
+          // @ts-ignore
           AccountId.fromString(ConfigService.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION')),
           privateKey,
         );
