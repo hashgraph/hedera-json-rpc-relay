@@ -58,7 +58,7 @@ export class IPAddressHbarSpendingPlanRepository {
     if (!addressPlan) {
       throw new IPAddressHbarSpendingPlanNotFoundError(ipAddress);
     }
-    this.logger.trace(`Retrieved IPAddressHbarSpendingPlan with address ${ipAddress}`);
+    this.logger.trace(`Retrieved IPAddressHbarSpendingPlan with ID ${addressPlan.planId}`);
     return new IPAddressHbarSpendingPlan(addressPlan);
   }
 
@@ -71,7 +71,7 @@ export class IPAddressHbarSpendingPlanRepository {
   async save(addressPlan: IIPAddressHbarSpendingPlan, requestDetails: RequestDetails): Promise<void> {
     const key = this.getKey(addressPlan.ipAddress);
     await this.cache.set(key, addressPlan, 'save', requestDetails, this.threeMonthsInMillis);
-    this.logger.trace(`Saved IPAddressHbarSpendingPlan with address ${addressPlan.ipAddress}`);
+    this.logger.trace(`Saved IPAddressHbarSpendingPlan with ID ${addressPlan.planId}`);
   }
 
   /**
@@ -82,8 +82,9 @@ export class IPAddressHbarSpendingPlanRepository {
    */
   async delete(ipAddress: string, requestDetails: RequestDetails): Promise<void> {
     const key = this.getKey(ipAddress);
+    const spendingPlan = await this.findByAddress(ipAddress, requestDetails);
     await this.cache.delete(key, 'delete', requestDetails);
-    this.logger.trace(`Deleted IPAddressHbarSpendingPlan with address ${ipAddress}`);
+    this.logger.trace(`Deleted IPAddressHbarSpendingPlan with ID ${spendingPlan.planId}`);
   }
 
   /**

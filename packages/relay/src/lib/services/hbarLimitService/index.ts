@@ -179,7 +179,7 @@ export class HbarLimitService implements IHbarLimitService {
       this.logger.warn('No eth address or ip address provided, cannot check if address should be limited');
       return false;
     }
-    const user = `(ethAddress=${ethAddress}, ipAddress=${ipAddress})`;
+    const user = `(ethAddress=${ethAddress})`;
     this.logger.trace(`${requestDetails.formattedRequestId} Checking if ${user} should be limited...`);
     let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
     if (!spendingPlan) {
@@ -358,7 +358,9 @@ export class HbarLimitService implements IHbarLimitService {
       try {
         return await this.getSpendingPlanByIPAddress(requestDetails);
       } catch (error) {
-        this.logger.warn(error, `Failed to get spending plan for IP address '${ipAddress}'`);
+        const spendingPlanId = (await this.ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress, requestDetails))
+          .planId;
+        this.logger.warn(error, `Failed to get spending plan with ID ${spendingPlanId}`);
       }
     }
     return null;
