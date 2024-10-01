@@ -1707,10 +1707,16 @@ export class EthImpl implements Eth {
     transactionIndex: string,
     requestIdPrefix?: string,
   ): Promise<Transaction | null> {
+    const block = await this.mirrorNodeClient.getBlock(blockParam.value, requestIdPrefix);
+    if (!block) {
+      return null;
+    }
+
     const contractResults = await this.mirrorNodeClient.getContractResults(
       {
         [blockParam.title]: blockParam.value,
         transactionIndex: Number(transactionIndex),
+        timestamp: [`gte:${block.timestamp.from}`, `lte:${block.timestamp.to}`],
       },
       undefined,
       requestIdPrefix,
