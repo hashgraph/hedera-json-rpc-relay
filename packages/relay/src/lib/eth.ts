@@ -2037,11 +2037,20 @@ export class EthImpl implements Eth {
 
     const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
     if (receiptResponse === null || receiptResponse.hash === undefined) {
+      const tx = await this.mirrorNodeClient.getTransactionByHash(hash, requestIdPrefix);
+
+      let timestamp: string | undefined;
+      if (tx?.transactions.length > 0) {
+        const transaction: IMirrorNodeTransactionRecord = tx.transactions[0];
+        timestamp = transaction.consensus_timestamp;
+      }
+
       // handle synthetic transactions
       const syntheticLogs = await this.common.getLogsWithParams(
         null,
         {
           'transaction.hash': hash,
+          timestamp,
         },
         requestIdPrefix,
       );
