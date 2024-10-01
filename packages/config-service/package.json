@@ -11,7 +11,8 @@
     "compile": "tsc -b tsconfig.json",
     "lint": "npx eslint --ext .js,.ts .",
     "format": "npx prettier --ignore-path ../../.gitignore --write \"**/*.+(js|ts|json)\"",
-    "test": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' --exit"
+    "test": "nyc ts-mocha --recursive './tests/**/*.spec.ts' './tests/**/**/*.spec.ts' --exit",
+    "print-env": "node src/commands/printEnvs.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

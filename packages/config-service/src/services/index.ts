@@ -21,6 +21,8 @@
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
 import pino from 'pino';
+import { LoggerService } from './loggerService';
+import { ValidationService } from './validationService';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -60,7 +62,22 @@ export class ConfigService {
 
     // @ts-ignore
     dotenv.config({ path: configPath });
-    this.envs = { ...process.env };
+
+    // TODO: start-up validations and exit on fail
+    // Make sure that CHAIN_ID, HEDERA_NETWORK, MIRROR_NODE_URL, OPERATOR_ID_MAIN, OPERATOR_KEY_MAIN, SERVER_PORT are non-empty and in the expected format
+    // Make sure that if OPERATOR_KEY_FORMAT is not specified, the provided OPERATOR_KEY_MAIN is in the DER format
+    // Make sure that HBAR_RATE_LIMIT_TINYBAR is more than HBAR_RATE_LIMIT_BASIC, HBAR_RATE_LIMIT_EXTENDED, HBAR_RATE_LIMIT_PRIVILEGED
+    ValidationService.startUp(process.env);
+
+    // transform string values to typed envs, we'll get rid off things like that:
+    // - ConfigService.get('MY_CUSTOM_VAR_1') === 'true';
+    // - Number(ConfigService.get('MY_CUSTOM_VAR_2')) == 10;
+    this.envs = ValidationService.typeCasting(process.env);
+
+    // TODO: is this the right place for printing the envs?
+    for (let i in this.envs) {
+      console.log(LoggerService.maskUpEnv(i, this.envs[i]));
+    }
   }
 
   /**
