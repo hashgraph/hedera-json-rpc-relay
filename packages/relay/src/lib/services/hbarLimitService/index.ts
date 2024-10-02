@@ -173,9 +173,6 @@ export class HbarLimitService implements IHbarLimitService {
     estimatedTxFee: number = 0,
   ): Promise<boolean> {
     const ipAddress = requestDetails.ipAddress;
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} Initiating HBAR rate limit assessment process: txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
-    );
 
     if (await this.isDailyBudgetExceeded(mode, methodName, txConstructorName, estimatedTxFee, requestDetails)) {
       return true;
