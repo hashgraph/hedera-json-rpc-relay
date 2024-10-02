@@ -63,20 +63,15 @@ export class ConfigService {
     // @ts-ignore
     dotenv.config({ path: configPath });
 
-    // TODO: start-up validations and exit on fail
-    // Make sure that CHAIN_ID, HEDERA_NETWORK, MIRROR_NODE_URL, OPERATOR_ID_MAIN, OPERATOR_KEY_MAIN, SERVER_PORT are non-empty and in the expected format
-    // Make sure that if OPERATOR_KEY_FORMAT is not specified, the provided OPERATOR_KEY_MAIN is in the DER format
-    // Make sure that HBAR_RATE_LIMIT_TINYBAR is more than HBAR_RATE_LIMIT_BASIC, HBAR_RATE_LIMIT_EXTENDED, HBAR_RATE_LIMIT_PRIVILEGED
+    // validate mandatory fields
     ValidationService.startUp(process.env);
 
-    // transform string values to typed envs, we'll get rid off things like that:
-    // - ConfigService.get('MY_CUSTOM_VAR_1') === 'true';
-    // - Number(ConfigService.get('MY_CUSTOM_VAR_2')) == 10;
+    // transform string representations of env vars into proper types
     this.envs = ValidationService.typeCasting(process.env);
 
-    // TODO: is this the right place for printing the envs?
+    // printing current env variables, masking up sensitive information
     for (let i in this.envs) {
-      console.log(LoggerService.maskUpEnv(i, this.envs[i]));
+      logger.info(LoggerService.maskUpEnv(i, this.envs[i]));
     }
   }
 

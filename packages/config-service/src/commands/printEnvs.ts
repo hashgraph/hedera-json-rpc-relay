@@ -1,5 +1,6 @@
-const { LoggerService } = require('../../dist/services/loggerService');
+const { ConfigService } = require('../../dist/services');
 
-LoggerService.printEnvs();
+// @ts-ignore
+ConfigService.getInstance();
 
 process.exit();

@@ -1,19 +1,14 @@
-import { RelayEnvs } from './relayConfigs';
-import { ConfigService } from './';
+import { GlobalConfig } from './globalConfig';
 
-// TODO:
-//  - use pino as a logger
-//  - mask up the private keys and other sensitive information
-//  - use TS types
 export class LoggerService {
-  static printEnvs() {
-    for (let obj in RelayEnvs) {
-      if (ConfigService.get(obj) === undefined) continue;
-      console.log(this.maskUpEnv(obj, ConfigService.get(obj)));
-    }
-  }
-
   static maskUpEnv(envName, envValue) {
+    if (
+      envName == GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName ||
+      envName == GlobalConfig.ENTRIES.OPERATOR_KEY_ETH_SENDRAWTRANSACTION.envName
+    ) {
+      return `${envName} = **********${envValue.slice(-4)}`;
+    }
+
     return `${envName} = ${envValue}`;
   }
 }
