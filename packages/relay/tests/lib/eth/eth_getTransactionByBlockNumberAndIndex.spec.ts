@@ -24,7 +24,7 @@ import sinon from 'sinon';
 import * as _ from 'lodash';
 import chaiAsPromised from 'chai-as-promised';
 
-import { predefined } from '../../../src/lib/errors/JsonRpcError';
+import { predefined } from '../../../src';
 import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Transaction } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
@@ -47,8 +47,8 @@ import { contractResultsByNumberByIndexURL, generateEthTestEnv } from './eth-hel
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub<[], SDKClient>;
 
 function verifyAggregatedInfo(result: Transaction | null) {
   // verify aggregated info
@@ -74,6 +74,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(`blocks/${DEFAULT_BLOCK.number}`).reply(200, DEFAULT_BLOCK);
     restMock.onGet(`accounts/${defaultContractResults.results[0].from}?transactions=false`).reply(200);
     restMock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
     restMock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
@@ -94,7 +95,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
   it('eth_getTransactionByBlockNumberAndIndex with match', async function () {
     // mirror node request mocks
     restMock
-      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count, DEFAULT_BLOCK.timestamp))
       .reply(200, defaultContractResults);
     restMock
       .onGet(`contracts/${CONTRACT_ADDRESS_1}/results/${CONTRACT_TIMESTAMP_1}`)
@@ -112,12 +113,14 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     const randomBlock = {
       number: 1009,
       count: 37,
+      timestamp: DEFAULT_BLOCK.timestamp,
     };
     const nullableDefaultContractResults = _.cloneDeep(defaultContractResults);
     // @ts-ignore
     nullableDefaultContractResults.results[0].amount = null;
+    restMock.onGet(`blocks/${randomBlock.number}`).reply(200, randomBlock);
     restMock
-      .onGet(contractResultsByNumberByIndexURL(randomBlock.number, randomBlock.count))
+      .onGet(contractResultsByNumberByIndexURL(randomBlock.number, randomBlock.count, randomBlock.timestamp))
       .reply(200, nullableDefaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(
@@ -135,7 +138,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
 
   it('eth_getTransactionByBlockNumberAndIndex with no contract result match', async function () {
     restMock
-      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count, DEFAULT_BLOCK.timestamp))
       .reply(404, NO_SUCH_CONTRACT_RESULT);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(
@@ -151,9 +154,11 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     const randomBlock = {
       number: 5644,
       count: 33,
+      timestamp: DEFAULT_BLOCK.timestamp,
     };
+    restMock.onGet(`blocks/${randomBlock.number}`).reply(200, randomBlock);
     restMock
-      .onGet(contractResultsByNumberByIndexURL(randomBlock.number, randomBlock.count))
+      .onGet(contractResultsByNumberByIndexURL(randomBlock.number, randomBlock.count, randomBlock.timestamp))
       .reply(200, defaultContractResultsWithNullableFrom);
 
     const args = [numberTo0x(randomBlock.number), numberTo0x(randomBlock.count)];
@@ -170,7 +175,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
 
   it('eth_getTransactionByBlockNumberAndIndex with no contract results', async function () {
     restMock
-      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count, DEFAULT_BLOCK.timestamp))
       .reply(200, { results: [] });
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(
@@ -184,7 +189,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     // mirror node request mocks
     restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);
     restMock
-      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count, DEFAULT_BLOCK.timestamp))
       .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('latest', numberTo0x(DEFAULT_BLOCK.count));
@@ -195,7 +200,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     // mirror node request mocks
     restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);
     restMock
-      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count, DEFAULT_BLOCK.timestamp))
       .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('finalized', numberTo0x(DEFAULT_BLOCK.count));
@@ -206,7 +211,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     // mirror node request mocks
     restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);
     restMock
-      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count, DEFAULT_BLOCK.timestamp))
       .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('safe', numberTo0x(DEFAULT_BLOCK.count));
@@ -217,7 +222,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     // mirror node request mocks
     restMock.onGet('blocks?limit=1&order=desc').reply(200, DEFAULT_BLOCKS_RES);
     restMock
-      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(DEFAULT_BLOCK.number, DEFAULT_BLOCK.count, DEFAULT_BLOCK.timestamp))
       .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('pending', numberTo0x(DEFAULT_BLOCK.count));
@@ -225,20 +230,25 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
   });
 
   it('eth_getTransactionByBlockNumberAndIndex with earliest tag', async function () {
-    // mirror node request mocks
-    restMock.onGet(contractResultsByNumberByIndexURL(0, DEFAULT_BLOCK.count)).reply(200, defaultContractResults);
+    const number = 0;
+    restMock.onGet(`blocks/${number}`).reply(200, { ...DEFAULT_BLOCK, number });
+    restMock
+      .onGet(contractResultsByNumberByIndexURL(number, DEFAULT_BLOCK.count, DEFAULT_BLOCK.timestamp))
+      .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex('earliest', numberTo0x(DEFAULT_BLOCK.count));
     verifyAggregatedInfo(result);
   });
 
   it('eth_getTransactionByBlockNumberAndIndex with hex number', async function () {
+    const number = 3735929054;
+    restMock.onGet(`blocks/${number}`).reply(200, { ...DEFAULT_BLOCK, number });
     restMock
-      .onGet(contractResultsByNumberByIndexURL(3735929054, DEFAULT_BLOCK.count))
+      .onGet(contractResultsByNumberByIndexURL(number, DEFAULT_BLOCK.count, DEFAULT_BLOCK.timestamp))
       .reply(200, defaultContractResults);
 
     const result = await ethImpl.getTransactionByBlockNumberAndIndex(
-      '0xdeadc0de' + '',
+      numberTo0x(number),
       numberTo0x(DEFAULT_BLOCK.count),
     );
     verifyAggregatedInfo(result);

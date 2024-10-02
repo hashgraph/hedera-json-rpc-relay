@@ -25,15 +25,52 @@ import constants from '../../../src/lib/constants';
 import HbarLimit from '../../../src/lib/hbarlimiter';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import MockAdapter from 'axios-mock-adapter';
-import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
+import { MirrorNodeClient } from '../../../src/lib/clients';
 import { EthImpl } from '../../../src/lib/eth';
+import EventEmitter from 'events';
 
-export function contractResultsByNumberByIndexURL(number: number, index: number): string {
-  return `contracts/results?block.number=${number}&transaction.index=${index}&limit=100&order=asc`;
+export function getQueryParams(params: object) {
+  let paramString = '';
+  for (const [key, value] of Object.entries(params)) {
+    let additionalString = '';
+    if (Array.isArray(value)) {
+      additionalString = value.map((v) => `${key}=${v}`).join('&');
+    } else if (value !== undefined) {
+      additionalString = `${key}=${value}`;
+    }
+    paramString += paramString === '' ? `?${additionalString}` : `&${additionalString}`;
+  }
+  return paramString;
 }
 
-export function contractResultsByHashByIndexURL(hash: string, index: number): string {
-  return `contracts/results?block.hash=${hash}&transaction.index=${index}&limit=100&order=asc`;
+export function contractResultsByNumberByIndexURL(
+  number: number,
+  index: number,
+  timestamp: { from: string; to: string },
+): string {
+  const params = {
+    'block.number': number,
+    timestamp: [`gte:${timestamp.from}`, `lte:${timestamp.to}`],
+    'transaction.index': index,
+    limit: process.env['MIRROR_NODE_LIMIT_PARAM'],
+    order: 'asc',
+  };
+  return `contracts/results${getQueryParams(params)}`;
+}
+
+export function contractResultsByHashByIndexURL(
+  hash: string,
+  index: number,
+  timestamp: { from: string; to: string },
+): string {
+  const params = {
+    'block.hash': hash,
+    timestamp: [`gte:${timestamp.from}`, `lte:${timestamp.to}`],
+    'transaction.index': index,
+    limit: process.env['MIRROR_NODE_LIMIT_PARAM'],
+    order: 'asc',
+  };
+  return `contracts/results${getQueryParams(params)}`;
 }
 
 export function balancesByAccountIdByTimestampURL(id: string, timestamp?: string): string {
@@ -62,8 +99,9 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
   const duration = constants.HBAR_RATE_LIMIT_DURATION;
   const total = constants.HBAR_RATE_LIMIT_TINYBAR;
   const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+  const eventEmitter = new EventEmitter();
 
-  const hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService);
+  const hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
 
   // @ts-ignore
   const ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
