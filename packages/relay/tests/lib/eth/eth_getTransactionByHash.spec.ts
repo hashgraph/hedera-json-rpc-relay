@@ -87,10 +87,16 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     restMock.onGet(`accounts/${from}?transactions=false`).reply(200, {
       evm_address: evm_address,
     });
+    restMock.onGet(`transactions/${contractResultMock.hash}`).reply(200, {
+      consensus_timestamp: contractResultMock.timestamp,
+    });
   });
 
   it('returns 155 transaction for type 0', async function () {
     const uniqueTxHash = '0x27cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+    restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
+      consensus_timestamp: contractResultMock.timestamp,
+    });
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {
       ...contractResultMock,
       type: 0,
@@ -102,6 +108,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
   it('returns 2930 transaction for type 1', async function () {
     const uniqueTxHash = '0x28cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+    restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
+      consensus_timestamp: contractResultMock.timestamp,
+    });
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {
       ...contractResultMock,
       type: 1,
@@ -128,6 +137,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
   it('returns `null` for non-existing hash', async function () {
     const uniqueTxHash = '0x27cAd7b838375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+    restMock.onGet(`transactions/${uniqueTxHash}`).reply(404);
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(404, DETAILD_CONTRACT_RESULT_NOT_FOUND);
     restMock
       .onGet(`contracts/results/logs?transaction.hash=${uniqueTxHash}&limit=100&order=asc`)
@@ -138,6 +148,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   });
 
   it('account should be cached', async function () {
+    restMock.onGet(`transactions/${DEFAULT_TX_HASH}`).reply(200, {
+      consensus_timestamp: defaultDetailedContractResultByHash.timestamp,
+    });
     restMock.onGet(`contracts/results/${DEFAULT_TX_HASH}`).reply(200, defaultDetailedContractResultByHash);
     const resBeforeCache = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH);
     restMock.onGet(`accounts/${defaultFromLongZeroAddress}${NO_TRANSACTIONS}`).reply(404);
@@ -146,6 +159,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   });
 
   it('returns correct transaction for existing hash', async function () {
+    restMock.onGet(`transactions/${DEFAULT_TX_HASH}`).reply(200, {
+      consensus_timestamp: defaultDetailedContractResultByHash.timestamp,
+    });
     restMock.onGet(`contracts/results/${DEFAULT_TX_HASH}`).reply(200, defaultDetailedContractResultByHash);
     const result = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH);
     RelayAssertions.assertTransaction(result, {
@@ -164,6 +180,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
     const uniqueTxHash = '0x97cad7b827375d12d73af57b6a3f84353645fd31305ea58ff52dda53ec640533';
 
+    restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
+      consensus_timestamp: detailedResultsWithZeroXZeroValues.timestamp,
+    });
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithZeroXZeroValues);
     const result = await ethImpl.getTransactionByHash(uniqueTxHash);
     RelayAssertions.assertTransaction(result, {
@@ -182,6 +201,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     };
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
+    restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
+      consensus_timestamp: detailedResultsWithNullNullableValues.timestamp,
+    });
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
     const result = await ethImpl.getTransactionByHash(uniqueTxHash);
     expect(result).to.not.be.null;
@@ -197,6 +219,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     };
     const uniqueTxHash = '0x0aaad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
+    restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
+      consensus_timestamp: detailedResultsWithNullNullableValues.timestamp,
+    });
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
     const result = await ethImpl.getTransactionByHash(uniqueTxHash);
     expect(result).to.not.be.null;
@@ -213,6 +238,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     };
     const uniqueTxHash = '0xb4cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
+    restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
+      consensus_timestamp: detailedResultsWithNullNullableValues.timestamp,
+    });
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
     const result = await ethImpl.getTransactionByHash(uniqueTxHash);
     expect(result).to.not.be.null;
@@ -228,6 +256,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     };
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640534';
 
+    restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
+      consensus_timestamp: detailedResultsWithNullNullableValues.timestamp,
+    });
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
     const result = await ethImpl.getTransactionByHash(uniqueTxHash);
     expect(result).to.not.be.null;
@@ -243,6 +274,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     };
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640511';
 
+    restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
+      consensus_timestamp: detailedResultsWithNullNullableValues.timestamp,
+    });
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
     const result = await ethImpl.getTransactionByHash(uniqueTxHash);
     expect(result).to.not.be.null;
@@ -260,6 +294,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52d1a53ec640511';
 
+    restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
+      consensus_timestamp: detailedResultsWithNullNullableValues.timestamp,
+    });
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
     const result = await ethImpl.getTransactionByHash(uniqueTxHash);
     expect(result).to.not.be.null;
@@ -272,6 +309,9 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   });
 
   it('returns reverted transactions', async function () {
+    restMock.onGet(`transactions/${DEFAULT_TX_HASH}`).reply(200, {
+      consensus_timestamp: DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED.timestamp,
+    });
     restMock
       .onGet(`contracts/results/${DEFAULT_TX_HASH}`)
       .reply(200, DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED);

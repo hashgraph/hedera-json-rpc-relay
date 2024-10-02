@@ -71,7 +71,7 @@ export class MirrorNodeClient {
   private static readonly CONTRACT_ADDRESS_STATE_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/state`;
   private static readonly GET_CONTRACT_RESULTS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results`;
   private static readonly GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID = `transactions/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}`;
-  private static readonly GET_TRANSACTIONS_ENDPOINT_TRANSACTION_HASH = `transactions/hash/${MirrorNodeClient.TRANSACTION_HASH_PLACEHOLDER}`;
+  private static readonly GET_TRANSACTIONS_ENDPOINT_TRANSACTION_HASH = `transactions/${MirrorNodeClient.TRANSACTION_HASH_PLACEHOLDER}`;
   private static readonly GET_CONTRACTS_RESULTS_ACTIONS = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/actions`;
   private static readonly GET_CONTRACTS_RESULTS_OPCODES = `contracts/results/${MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER}/opcodes`;
   private static readonly GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/logs`;
