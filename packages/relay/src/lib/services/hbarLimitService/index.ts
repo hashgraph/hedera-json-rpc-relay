@@ -207,15 +207,13 @@ export class HbarLimitService implements IHbarLimitService {
     //      In such cases, it should still be true if spendingPlan.spentToday === dailyLimit.
     const exceedsLimit = spendingPlan.spentToday >= dailyLimit || spendingPlan.spentToday + estimatedTxFee > dailyLimit;
 
-    if (exceedsLimit) {
-      this.logger.warn(
-        `${requestDetails.formattedRequestId} User has exceeded HBAR rate limit threshold: user=${user}, spentToday=${spendingPlan.spentToday}, estimatedTxFee=${estimatedTxFee}, dailyLimit=${dailyLimit}, txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
-      );
-    } else {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} User has NOT exceeded HBAR rate limit threshold: user=${user}, spentToday=${spendingPlan.spentToday}, estimatedTxFee=${estimatedTxFee}, dailyLimit=${dailyLimit}, txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
-      );
-    }
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} User ${
+        exceedsLimit ? 'has' : 'has NOT'
+      } exceeded HBAR rate limit threshold: user=${user}, spentToday=${
+        spendingPlan.spentToday
+      }, estimatedTxFee=${estimatedTxFee}, dailyLimit=${dailyLimit}, txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
+    );
 
     return exceedsLimit;
   }
@@ -290,7 +288,7 @@ export class HbarLimitService implements IHbarLimitService {
     if (this.remainingBudget <= 0 || this.remainingBudget - estimatedTxFee < 0) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
-        `${requestDetails.formattedRequestId} Daily HBAR rate limit incoming call: remainingBudget=${
+        `${requestDetails.formattedRequestId} Total HBAR rate limit reached: remainingBudget=${
           this.remainingBudget
         }, totalBudget=${
           this.totalBudget
@@ -299,7 +297,7 @@ export class HbarLimitService implements IHbarLimitService {
       return true;
     } else {
       this.logger.trace(
-        `${requestDetails.formattedRequestId} Daily HBAR rate limit not reached: remainingBudget=${
+        `${requestDetails.formattedRequestId} Total HBAR rate limit NOT reached: remainingBudget=${
           this.remainingBudget
         }, totalBudget=${
           this.totalBudget
