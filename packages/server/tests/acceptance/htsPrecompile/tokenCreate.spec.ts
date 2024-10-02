@@ -244,7 +244,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
 
   it('should associate to a token with custom fees', async function () {
     //delay for hbar rate limiter to reset
-    await new Promise((r) => setTimeout(r, relayConstants.HBAR_RATE_LIMIT_DURATION()));
+    await new Promise((r) => setTimeout(r, relayConstants.HBAR_RATE_LIMIT_DURATION));
 
     const mainContractOwner = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
     const txCO = await mainContractOwner.associateTokenPublic(
