@@ -21,22 +21,17 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-
-import { EthImpl } from '../../../src/lib/eth';
-import { Log, Transaction, Transaction2930, Transaction1559 } from '../../../src/lib/model';
-import constants from '../../../src/lib/constants';
+import { Transaction, Transaction1559, Transaction2930 } from '../../../src/lib/model';
 import RelayAssertions from '../../assertions';
-import { nullableNumberTo0x, numberTo0x, toHash32 } from '../../../src/formatters';
+import { prepend0x, trimPrecedingZeros } from '../../../src/formatters';
 import {
   DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED,
   DEFAULT_TRANSACTION,
   DEFAULT_TX_HASH,
   DETAILD_CONTRACT_RESULT_NOT_FOUND,
   EMPTY_LOGS_RESPONSE,
-  NO_TRANSACTIONS,
 } from './eth-config';
-import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress, defaultLogs1 } from '../../helpers';
-import { predefined } from '../../../src';
+import { defaultDetailedContractResultByHash, random20BytesAddress } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -44,8 +39,9 @@ use(chaiAsPromised);
 
 describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async function () {
   let { restMock, ethImpl, cacheService } = generateEthTestEnv();
-  const from = '0x00000000000000000000000000000000000003f7';
-  const evm_address = '0xc37f417fa09933335240fca72dd257bfbde9c275';
+  const uniqueTxHash = '0x27cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
+  const evm_address_from = random20BytesAddress();
+  const evm_address_to = random20BytesAddress();
   const contractResultMock = {
     address: '0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69',
     amount: 20,
@@ -81,19 +77,33 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
   this.beforeEach(function () {
     restMock.reset();
-    restMock.onGet(`accounts/${defaultFromLongZeroAddress}${NO_TRANSACTIONS}`).reply(200, {
-      evm_address: `${DEFAULT_TRANSACTION.from}`,
-    });
-    restMock.onGet(`accounts/${from}?transactions=false`).reply(200, {
-      evm_address: evm_address,
-    });
-    restMock.onGet(`transactions/${contractResultMock.hash}`).reply(200, {
-      consensus_timestamp: contractResultMock.timestamp,
-    });
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, contractResultMock);
+    restMock
+      .onGet(`accounts/${contractResultMock.from}?transactions=false`)
+      .reply(200, { evm_address: evm_address_from });
+    restMock.onGet(`accounts/${contractResultMock.to}?transactions=false`).reply(200, { evm_address: evm_address_to });
+    restMock.onGet(`contracts/${contractResultMock.to}`).reply(200, { evm_address: evm_address_to });
+    restMock
+      .onGet(`transactions/${contractResultMock.hash}`)
+      .reply(200, { consensus_timestamp: contractResultMock.timestamp });
+    restMock.onGet(`contracts/results/${DEFAULT_TX_HASH}`).reply(200, defaultDetailedContractResultByHash);
+    restMock
+      .onGet(`accounts/${defaultDetailedContractResultByHash.from}?transactions=false`)
+      .reply(200, { evm_address: evm_address_from });
+    restMock
+      .onGet(`accounts/${defaultDetailedContractResultByHash.to}?transactions=false`)
+      .reply(200, { evm_address: evm_address_to });
+    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.to}`).reply(200, { evm_address: evm_address_to });
+    restMock
+      .onGet(`transactions/${DEFAULT_TX_HASH}`)
+      .reply(200, { consensus_timestamp: defaultDetailedContractResultByHash.timestamp });
+  });
+
+  this.afterEach(async function () {
+    await cacheService.clear();
   });
 
   it('returns 155 transaction for type 0', async function () {
-    const uniqueTxHash = '0x27cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
     restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
       consensus_timestamp: contractResultMock.timestamp,
     });
@@ -148,24 +158,20 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   });
 
   it('account should be cached', async function () {
-    restMock.onGet(`transactions/${DEFAULT_TX_HASH}`).reply(200, {
-      consensus_timestamp: defaultDetailedContractResultByHash.timestamp,
-    });
-    restMock.onGet(`contracts/results/${DEFAULT_TX_HASH}`).reply(200, defaultDetailedContractResultByHash);
     const resBeforeCache = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH);
-    restMock.onGet(`accounts/${defaultFromLongZeroAddress}${NO_TRANSACTIONS}`).reply(404);
+    const callsExecutedBeforeCache = restMock.history.get.length;
     const resAfterCache = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH);
+    const callsExecutedAfterCache = restMock.history.get.length;
     expect(resBeforeCache).to.deep.equal(resAfterCache);
+    expect(callsExecutedAfterCache).to.equal(callsExecutedBeforeCache);
   });
 
   it('returns correct transaction for existing hash', async function () {
-    restMock.onGet(`transactions/${DEFAULT_TX_HASH}`).reply(200, {
-      consensus_timestamp: defaultDetailedContractResultByHash.timestamp,
-    });
-    restMock.onGet(`contracts/results/${DEFAULT_TX_HASH}`).reply(200, defaultDetailedContractResultByHash);
     const result = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH);
     RelayAssertions.assertTransaction(result, {
       ...DEFAULT_TRANSACTION,
+      from: evm_address_from,
+      to: evm_address_to,
       maxFeePerGas: '0x55',
       maxPriorityFeePerGas: '0x43',
     });
@@ -187,6 +193,8 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     const result = await ethImpl.getTransactionByHash(uniqueTxHash);
     RelayAssertions.assertTransaction(result, {
       ...DEFAULT_TRANSACTION,
+      from: evm_address_from,
+      to: evm_address_to,
       maxFeePerGas: '0x55',
       maxPriorityFeePerGas: '0x43',
       r: '0x0',
@@ -309,9 +317,6 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   });
 
   it('returns reverted transactions', async function () {
-    restMock.onGet(`transactions/${DEFAULT_TX_HASH}`).reply(200, {
-      consensus_timestamp: DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED.timestamp,
-    });
     restMock
       .onGet(`contracts/results/${DEFAULT_TX_HASH}`)
       .reply(200, DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED);
@@ -319,8 +324,16 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     const result = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH);
     RelayAssertions.assertTransaction(result, {
       ...DEFAULT_TRANSACTION,
-      maxFeePerGas: '0x55',
-      maxPriorityFeePerGas: '0x43',
+      from: evm_address_from,
+      to: evm_address_to,
+      maxFeePerGas:
+        DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED.max_fee_per_gas === '0x'
+          ? '0x0'
+          : prepend0x(trimPrecedingZeros(DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED.max_fee_per_gas)),
+      maxPriorityFeePerGas:
+        DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED.max_priority_fee_per_gas === '0x'
+          ? '0x0'
+          : prepend0x(trimPrecedingZeros(DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED.max_priority_fee_per_gas)),
     });
   });
 });
