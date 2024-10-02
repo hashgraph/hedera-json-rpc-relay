@@ -137,6 +137,15 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     sandbox.stub(ethImpl, <any>'getFeeWeibars').resolves(gasPrice);
   };
 
+  this.beforeEach(() => {
+    restMock.onGet(`accounts/${defaultDetailedContractResultByHash.from}?transactions=false`).reply(200);
+    restMock.onGet(`accounts/${defaultDetailedContractResultByHash.to}?transactions=false`).reply(200);
+    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.from}`).reply(200);
+    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.to}`).reply(200);
+    restMock.onGet(`tokens/0.0.${parseInt(defaultDetailedContractResultByHash.from, 16)}`).reply(404);
+    restMock.onGet(`tokens/${defaultDetailedContractResultByHash.contract_id}`).reply(200);
+  });
+
   this.afterEach(() => {
     restMock.resetHandlers();
     sandbox.restore();
@@ -145,6 +154,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
 
   it('returns `null` for non-existent hash', async function () {
     const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
+    restMock.onGet(`transactions/${txHash}`).reply(404);
     restMock.onGet(`contracts/results/${txHash}`).reply(404, {
       _status: {
         messages: [
@@ -162,14 +172,6 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
   });
 
   it('valid receipt on match', async function () {
-    restMock.onGet(`accounts/${defaultDetailedContractResultByHash.from}?transactions=false`).reply(200);
-    restMock.onGet(`accounts/${defaultDetailedContractResultByHash.from}?transactions=false`).reply(200);
-    restMock.onGet(`accounts/${defaultDetailedContractResultByHash.to}?transactions=false`).reply(200);
-    restMock.onGet(`accounts/${defaultDetailedContractResultByHash.to}?transactions=false`).reply(200);
-    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.to}`).reply(200);
-    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.to}`).reply(200);
-    restMock.onGet(`tokens/${defaultDetailedContractResultByHash.contract_id}`).reply(200);
-    restMock.onGet(`tokens/${defaultDetailedContractResultByHash.contract_id}`).reply(200);
     // mirror node request mocks
     restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
