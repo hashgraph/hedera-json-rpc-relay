@@ -134,6 +134,15 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     );
   });
 
+  it('eth_getTransactionByBlockHashAndIndex with no block found for given hash', async function () {
+    restMock.onGet(`blocks/${DEFAULT_BLOCK.hash}`).reply(404, NOT_FOUND_RES);
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(
+      DEFAULT_BLOCK.hash.toString(),
+      numberTo0x(DEFAULT_BLOCK.count),
+    );
+    expect(result).to.be.null;
+  });
+
   it('eth_getTransactionByBlockHashAndIndex with no contract result match', async function () {
     // mirror node request mocks
     restMock
