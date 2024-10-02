@@ -118,6 +118,10 @@ export interface ITransfer {
   is_approval: boolean;
 }
 
+export interface ITransactionResult {
+  transactions: IMirrorNodeTransactionRecord[];
+}
+
 export interface IMirrorNodeTransactionRecord {
   assessed_custom_fees: IAssessedCustomFee[];
   bytes: string | null;

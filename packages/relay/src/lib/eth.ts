@@ -1969,13 +1969,8 @@ export class EthImpl implements Eth {
 
     const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
     if (contractResult === null || contractResult.hash === undefined) {
-      const tx = await this.mirrorNodeClient.getTransactionByHash(hash, requestIdPrefix);
-
-      let timestamp: string | undefined;
-      if (tx?.transactions.length > 0) {
-        const transaction: IMirrorNodeTransactionRecord = tx.transactions[0];
-        timestamp = transaction.consensus_timestamp;
-      }
+      const transactionResult = await this.mirrorNodeClient.getTransactionByHash(hash, requestIdPrefix);
+      const timestamp = transactionResult?.transactions[0]?.consensus_timestamp;
 
       // handle synthetic transactions
       const syntheticLogs = await this.common.getLogsWithParams(
@@ -2037,13 +2032,8 @@ export class EthImpl implements Eth {
 
     const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
     if (receiptResponse === null || receiptResponse.hash === undefined) {
-      const tx = await this.mirrorNodeClient.getTransactionByHash(hash, requestIdPrefix);
-
-      let timestamp: string | undefined;
-      if (tx?.transactions.length > 0) {
-        const transaction: IMirrorNodeTransactionRecord = tx.transactions[0];
-        timestamp = transaction.consensus_timestamp;
-      }
+      const transactionResult = await this.mirrorNodeClient.getTransactionByHash(hash, requestIdPrefix);
+      const timestamp = transactionResult?.transactions[0]?.consensus_timestamp;
 
       // handle synthetic transactions
       const syntheticLogs = await this.common.getLogsWithParams(

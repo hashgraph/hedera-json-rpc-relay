@@ -41,7 +41,7 @@ import {
   ITransactionRecordMetric,
   IContractLogsResultsParams,
   MirrorNodeTransactionRecord,
-  IMirrorNodeTransactionRecord,
+  ITransactionResult,
 } from '../types';
 
 type REQUEST_METHODS = 'GET' | 'POST';
@@ -1044,7 +1044,7 @@ export class MirrorNodeClient {
       MirrorNodeClient.TRANSACTION_HASH_PLACEHOLDER,
       transactionHash,
     );
-    return this.get(apiEndpoint, MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, requestIdPrefix);
+    return this.get<ITransactionResult>(apiEndpoint, MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT, requestIdPrefix);
   }
 
   public async getTransactionById(transactionId: string, nonce: number | undefined, requestIdPrefix?: string) {
@@ -1059,7 +1059,7 @@ export class MirrorNodeClient {
       MirrorNodeClient.TRANSACTION_ID_PLACEHOLDER,
       formattedId,
     );
-    return this.get(
+    return this.get<ITransactionResult>(
       `${apiEndpoint}${queryParams}`,
       MirrorNodeClient.GET_TRANSACTIONS_ENDPOINT_TRANSACTION_ID,
       requestIdPrefix,
@@ -1081,7 +1081,7 @@ export class MirrorNodeClient {
         if (tx === null) {
           this.logger.error(`${requestIdPrefix} Transaction failed with null result`);
           return null;
-        } else if (tx.length === 0) {
+        } else if (tx?.transactions.length === 0) {
           this.logger.error(`${requestIdPrefix} Transaction failed with empty result`);
           return null;
         } else if (tx?.transactions.length > 1) {
@@ -1263,7 +1263,12 @@ export class MirrorNodeClient {
    * enough time for the expected data to be propagated to the Mirror node.
    * It provides a way to have an extended retry logic only in specific places
    */
-  public async repeatedRequest(methodName: string, args: any[], repeatCount: number, requestId?: string) {
+  public async repeatedRequest<T = any>(
+    methodName: string,
+    args: any[],
+    repeatCount: number,
+    requestId?: string,
+  ): Promise<T | null> {
     let result;
     for (let i = 0; i < repeatCount; i++) {
       try {
@@ -1322,21 +1327,21 @@ export class MirrorNodeClient {
       `${formattedRequestId} Get transaction record via mirror node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
     );
 
-    const transactionRecords = await this.repeatedRequest(
+    const transactionResult = await this.repeatedRequest<ITransactionResult>(
       this.getTransactionById.name,
       [transactionId, 0],
       this.MIRROR_NODE_REQUEST_RETRY_COUNT,
       formattedRequestId,
     );
 
-    if (!transactionRecords) {
+    const transactionRecord = transactionResult?.transactions.find(
+      (transaction) => transaction.transaction_id === formatTransactionId(transactionId),
+    );
+
+    if (!transactionRecord) {
       const notFoundMessage = `No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}.`;
       throw new MirrorNodeClientError({ message: notFoundMessage }, MirrorNodeClientError.statusCodes.NOT_FOUND);
     }
-
-    const transactionRecord: IMirrorNodeTransactionRecord = transactionRecords.transactions.find(
-      (tx: any) => tx.transaction_id === formatTransactionId(transactionId),
-    );
 
     const mirrorNodeTxRecord = new MirrorNodeTransactionRecord(transactionRecord);
 

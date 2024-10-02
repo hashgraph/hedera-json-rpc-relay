@@ -1031,7 +1031,7 @@ describe('MirrorNodeClient', async function () {
         status: { _code: 33 },
         message: 'Error: receipt for transaction 0.0.902@1684375868.230217103 contained error status',
       });
-      mock.onGet(`transactions/${transactionId}`).reply(200, []);
+      mock.onGet(`transactions/${transactionId}`).reply(200, { transactions: [] });
 
       const result = await mirrorNodeInstance.getContractRevertReasonFromTransaction(error, getRequestId());
       expect(result).to.be.null;

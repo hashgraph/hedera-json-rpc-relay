@@ -37,6 +37,7 @@ import {
   IContractLogsResultsParams,
   MirrorNodeTransactionRecord,
   IMirrorNodeTransactionRecord,
+  ITransactionResult,
 } from './mirrorNode';
 
 export {
@@ -60,5 +61,6 @@ export {
   IContractLogsResultsParams,
   MirrorNodeTransactionRecord,
   IMirrorNodeTransactionRecord,
+  ITransactionResult,
   IExecuteTransactionEventPayload,
 };
