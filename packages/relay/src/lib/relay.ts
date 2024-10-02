@@ -106,6 +106,13 @@ export class RelayImpl implements Relay {
   private readonly hbarSpendingPlanConfigService: HbarSpendingPlanConfigService;
 
   /**
+   * @private
+   * @readonly
+   * @property {MetricService} metricService - The service responsible for capturing and reporting metrics.
+   */
+  private readonly metricService: MetricService;
+
+  /**
    * An instance of EventEmitter used for emitting and handling events within the class.
    *
    * @private
@@ -175,9 +182,7 @@ export class RelayImpl implements Relay {
       process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
     );
 
-    // Note: Since the main capturing metric logic of the `MetricService` class works by listening to specific events,
-    //       this class does not need an instance but must still be initiated.
-    new MetricService(
+    this.metricService = new MetricService(
       logger,
       hapiService.getSDKClient(),
       this.mirrorNodeClient,
