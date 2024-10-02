@@ -118,7 +118,7 @@ export class RelayImpl implements Relay {
     const configuredChainId = process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR();
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
 
     this.eventEmitter = new EventEmitter();
     this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);

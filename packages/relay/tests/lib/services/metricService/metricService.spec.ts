@@ -136,7 +136,7 @@ describe('Metric Service', function () {
   beforeEach(() => {
     mock = new MockAdapter(instance);
 
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR();
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
 
     eventEmitter = new EventEmitter();
 

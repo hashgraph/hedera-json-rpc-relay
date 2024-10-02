@@ -129,7 +129,7 @@ describe('Open RPC Specification', function () {
       cacheService,
       instance,
     );
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR();
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const eventEmitter = new EventEmitter();
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);

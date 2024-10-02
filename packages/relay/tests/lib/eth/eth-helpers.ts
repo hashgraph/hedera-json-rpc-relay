@@ -63,7 +63,7 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
   // @ts-ignore
   const web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
 
-  const total = constants.HBAR_RATE_LIMIT_TINYBAR();
+  const total = constants.HBAR_RATE_LIMIT_TINYBAR;
   const eventEmitter = new EventEmitter();
 
   const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);

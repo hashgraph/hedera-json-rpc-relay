@@ -109,7 +109,7 @@ describe('SdkClient', async function () {
       AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
       Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
     );
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR();
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     eventEmitter = new EventEmitter();
 
     cacheService = new CacheService(logger, registry);

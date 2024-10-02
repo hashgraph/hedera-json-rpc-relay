@@ -138,7 +138,7 @@ describe('eth_getBlockBy', async function () {
     // @ts-ignore
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
 
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR();
+    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
     const eventEmitter = new EventEmitter();
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
