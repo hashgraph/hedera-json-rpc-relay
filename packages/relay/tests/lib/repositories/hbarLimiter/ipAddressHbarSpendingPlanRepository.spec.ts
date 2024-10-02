@@ -71,7 +71,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
       it('throws an error if address plan is not found', async () => {
         await expect(repository.findByAddress(nonExistingIpAddress, requestDetails)).to.be.eventually.rejectedWith(
           IPAddressHbarSpendingPlanNotFoundError,
-          `IPAddressHbarSpendingPlan with address ${nonExistingIpAddress} not found`,
+          `IPAddressHbarSpendingPlan not found`,
         );
       });
     });

@@ -1080,7 +1080,7 @@ export class EthImpl implements Eth {
 
       // save in cache the current balance for the account and blockNumberOrTag
       cachedBalance = numberTo0x(weibars);
-      this.logger.trace('Value cached balance', cachedBalance);
+      this.logger.trace(`${requestIdPrefix} Value cached balance ${cachedBalance}`);
       await this.cacheService.set(
         cacheKey,
         cachedBalance,

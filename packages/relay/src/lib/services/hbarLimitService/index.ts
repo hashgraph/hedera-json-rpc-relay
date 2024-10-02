@@ -358,9 +358,7 @@ export class HbarLimitService implements IHbarLimitService {
       try {
         return await this.getSpendingPlanByIPAddress(requestDetails);
       } catch (error) {
-        const spendingPlanId = (await this.ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress, requestDetails))
-          .planId;
-        this.logger.warn(error, `Failed to get spending plan with ID ${spendingPlanId}`);
+        this.logger.warn(error, `${requestDetails.formattedRequestId} Failed to get spending plan`);
       }
     }
     return null;

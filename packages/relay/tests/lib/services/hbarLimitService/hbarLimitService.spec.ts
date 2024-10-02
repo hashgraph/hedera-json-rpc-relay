@@ -322,7 +322,7 @@ describe('HbarLimitService', function () {
         expect(
           loggerSpy.warn.calledWithMatch(
             sinon.match.instanceOf(IPAddressHbarSpendingPlanNotFoundError),
-            `Failed to get spending plan for IP address '${mockIpAddress}'`,
+            `${requestDetails.formattedRequestId} Failed to get spending plan`,
           ),
         ).to.be.true;
       });
