@@ -2282,18 +2282,10 @@ export class EthImpl implements Eth {
     // prepare transactionArray
     let transactionArray: any[] = [];
     for (const contractResult of contractResults) {
-      contractResult.from = await this.resolveEvmAddress(
-        contractResult.from,
-        requestIdPrefix,
-        [constants.TYPE_ACCOUNT],
-        { timestamp: timestampRangeParams },
-      );
-      contractResult.to = await this.resolveEvmAddress(
-        contractResult.to,
-        requestIdPrefix,
-        [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-        { timestamp: timestampRangeParams },
-      );
+      contractResult.from = await this.resolveEvmAddress(contractResult.from, requestIdPrefix, [
+        constants.TYPE_ACCOUNT,
+      ]);
+      contractResult.to = await this.resolveEvmAddress(contractResult.to, requestIdPrefix);
       contractResult.chain_id = contractResult.chain_id || this.chain;
 
       transactionArray.push(showDetails ? formatContractResult(contractResult) : contractResult.hash);

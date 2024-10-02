@@ -84,11 +84,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    restMock
-      .onGet(
-        `accounts/${LONG_ZERO_ADDRESS}?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&transactions=false`,
-      )
-      .reply(200, MOCK_ACCOUNT_WITHOUT_TRANSACTIONS);
+    restMock.onGet(`accounts/${LONG_ZERO_ADDRESS}?transactions=false`).reply(200, MOCK_ACCOUNT_WITHOUT_TRANSACTIONS);
     restMock
       .onGet(contractByEvmAddress(CONTRACT_ADDRESS_1))
       .reply(200, { ...DEFAULT_CONTRACT, evmAddress: CONTRACT_ADDRESS_1 });
