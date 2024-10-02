@@ -39,7 +39,6 @@ use(chaiAsPromised);
 
 describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async function () {
   let { restMock, ethImpl, cacheService } = generateEthTestEnv();
-  const uniqueTxHash = '0x27cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
   const evm_address_from = random20BytesAddress();
   const evm_address_to = random20BytesAddress();
   const contractResultMock = {
@@ -77,7 +76,6 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
   this.beforeEach(function () {
     restMock.reset();
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, contractResultMock);
     restMock
       .onGet(`accounts/${contractResultMock.from}?transactions=false`)
       .reply(200, { evm_address: evm_address_from });
@@ -104,6 +102,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   });
 
   it('returns 155 transaction for type 0', async function () {
+    const uniqueTxHash = '0x27cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
     restMock.onGet(`transactions/${uniqueTxHash}`).reply(200, {
       consensus_timestamp: contractResultMock.timestamp,
     });
