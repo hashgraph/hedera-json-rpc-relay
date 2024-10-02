@@ -81,9 +81,6 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
       .reply(200, { evm_address: evm_address_from });
     restMock.onGet(`accounts/${contractResultMock.to}?transactions=false`).reply(200, { evm_address: evm_address_to });
     restMock.onGet(`contracts/${contractResultMock.to}`).reply(200, { evm_address: evm_address_to });
-    restMock
-      .onGet(`transactions/${contractResultMock.hash}`)
-      .reply(200, { consensus_timestamp: contractResultMock.timestamp });
     restMock.onGet(`contracts/results/${DEFAULT_TX_HASH}`).reply(200, defaultDetailedContractResultByHash);
     restMock
       .onGet(`accounts/${defaultDetailedContractResultByHash.from}?transactions=false`)
