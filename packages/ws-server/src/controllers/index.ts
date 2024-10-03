@@ -22,16 +22,33 @@ import { WS_CONSTANTS } from '../utils/constants';
 import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
 import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
-import { handleEthSubsribe, handleEthUnsubscribe } from './eth_subscribe';
+import { handleEthSubscribe, handleEthUnsubscribe } from './eth_subscribe';
 import { JsonRpcError, predefined, Relay } from '@hashgraph/json-rpc-relay';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { resolveParams, validateJsonRpcRequest, verifySupportedMethod } from '../utils/utils';
 import {
   InvalidRequest,
-  MethodNotFound,
   IPRateLimitExceeded,
+  MethodNotFound,
 } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { Logger } from 'pino';
+import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
+import Koa from 'koa';
+import { IJsonRpcResponse } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcResponse';
+
+export type ISharedParams = {
+  request: IJsonRpcRequest;
+  method: string;
+  params: any[];
+  relay: Relay;
+  logger: Logger;
+  limiter: ConnectionLimiter;
+  mirrorNodeClient: MirrorNodeClient;
+  ctx: Koa.Context;
+  requestDetails: RequestDetails;
+};
 
 /**
  * Handles sending requests to a Relay by calling a specified method with given parameters.
@@ -43,8 +60,7 @@ import {
  * @param {any} args.params - The parameters for the method call.
  * @param {Relay} args.relay - The relay object.
  * @param {any} args.logger - The logger object used for tracing.
- * @param {string} args.requestIdPrefix - Prefix for request ID used for logging.
- * @param {string} args.connectionIdPrefix - Prefix for connection ID used for logging.
+ * @param {RequestDetails} args.requestDetails - The request details for logging and tracking.
  * @returns {Promise<any>} A promise that resolves to the result of the request.
  */
 const handleSendingRequestsToRelay = async ({
@@ -53,14 +69,23 @@ const handleSendingRequestsToRelay = async ({
   params,
   relay,
   logger,
-  requestIdPrefix,
-  connectionIdPrefix,
-}): Promise<any> => {
-  logger.trace(`${connectionIdPrefix} ${requestIdPrefix}: Submitting request=${JSON.stringify(request)} to relay.`);
-
+  requestDetails,
+}: ISharedParams): Promise<IJsonRpcResponse> => {
+  logger.trace(`${requestDetails.formattedLogPrefix}: Submitting request=${JSON.stringify(request)} to relay.`);
   try {
     const resolvedParams = resolveParams(method, params);
     const [service, methodName] = method.split('_');
+
+    // Rearrange the parameters for certain methods, since not everywhere requestDetails is last aparameter
+    const paramRearrangementMap: { [key: string]: (params: any[], requestDetails: RequestDetails) => any[] } = {
+      chainId: (_, requestDetails) => [requestDetails],
+      estimateGas: (params, requestDetails) => [...params, null, requestDetails],
+      getStorageAt: (params, requestDetails) => [params[0], params[1], requestDetails, params[2]],
+      default: (params, requestDetails) => [...params, requestDetails],
+    };
+
+    const rearrangeParams = paramRearrangementMap[methodName] || paramRearrangementMap['default'];
+    const rearrangedParams = rearrangeParams(resolvedParams, requestDetails);
 
     // Call the relay method with the resolved parameters.
     // Method will be validated by "verifySupportedMethod" before reaching this point.
@@ -69,14 +94,14 @@ const handleSendingRequestsToRelay = async ({
       txRes = await relay
         .eth()
         .filterService()
-        [methodName](...resolvedParams, requestIdPrefix);
+        [methodName](...rearrangedParams);
     } else {
-      txRes = await relay[service]()[methodName](...resolvedParams, requestIdPrefix);
+      txRes = await relay[service]()[methodName](...rearrangedParams);
     }
 
     if (!txRes) {
       logger.trace(
-        `${connectionIdPrefix} ${requestIdPrefix}: Fail to retrieve result for request=${JSON.stringify(
+        `${requestDetails.formattedLogPrefix}: Fail to retrieve result for request=${JSON.stringify(
           request,
         )}. Result=${txRes}`,
       );
@@ -100,22 +125,20 @@ const handleSendingRequestsToRelay = async ({
  * @param {any} logger - The logger object.
  * @param {any} request - The request object.
  * @param {ConnectionLimiter} limiter - The connection limiter object.
- * @param {string} requestIdPrefix - Prefix for request ID.
- * @param {string} connectionIdPrefix - Prefix for connection ID.
  * @param {MirrorNodeClient} mirrorNodeClient - The MirrorNodeClient object.
  * @param {WsMetricRegistry} wsMetricRegistry - The WsMetricRegistry object.
+ * @param {RequestDetails} requestDetails - The request details for logging and tracking.
  * @returns {Promise<any>} A promise that resolves to the response of the request.
  */
 export const getRequestResult = async (
-  ctx: any,
+  ctx: Koa.Context,
   relay: Relay,
-  logger: any,
-  request: any,
+  logger: Logger,
+  request: IJsonRpcRequest,
   limiter: ConnectionLimiter,
-  requestIdPrefix: string,
-  connectionIdPrefix: string,
   mirrorNodeClient: MirrorNodeClient,
   wsMetricRegistry: WsMetricRegistry,
+  requestDetails: RequestDetails,
 ): Promise<any> => {
   // Extract the method and parameters from the received request
   let { method, params } = request;
@@ -128,13 +151,13 @@ export const getRequestResult = async (
   wsMetricRegistry.getCounter('methodsCounterByIp').labels(ctx.request.ip, method).inc();
 
   // validate request's jsonrpc object
-  if (!validateJsonRpcRequest(request, logger, requestIdPrefix, connectionIdPrefix)) {
+  if (!validateJsonRpcRequest(request, logger, requestDetails)) {
     return jsonResp(request.id || null, new InvalidRequest(), undefined);
   }
 
   // verify supported method
   if (!verifySupportedMethod(request.method)) {
-    logger.warn(`${connectionIdPrefix} ${requestIdPrefix}: Method not supported: ${request.method}`);
+    logger.warn(`${requestDetails.formattedLogPrefix}: Method not supported: ${request.method}`);
     return jsonResp(request.id || null, new MethodNotFound(request.method), undefined);
   }
 
@@ -150,25 +173,33 @@ export const getRequestResult = async (
     if (methodValidations) {
       Validator.validateParams(params, methodValidations);
     }
-  } catch (error) {
+  } catch (error: any) {
     logger.warn(
       error,
-      `${connectionIdPrefix} ${requestIdPrefix} Error in parameter validation. Method: ${method}, params: ${JSON.stringify(
+      `${requestDetails.formattedLogPrefix} Error in parameter validation. Method: ${method}, params: ${JSON.stringify(
         params,
       )}.`,
     );
-    return jsonResp(request.id, error, undefined);
+
+    let jsonRpcError: JsonRpcError;
+    if (error instanceof JsonRpcError) {
+      jsonRpcError = error;
+    } else {
+      jsonRpcError = predefined.INTERNAL_ERROR(JSON.stringify(error.message || error));
+    }
+
+    return jsonResp(request.id, jsonRpcError, undefined);
   }
 
   // Check if the subscription limit is exceeded for ETH_SUBSCRIBE method
-  let response: any;
+  let response: IJsonRpcResponse;
   if (method === WS_CONSTANTS.METHODS.ETH_SUBSCRIBE && !limiter.validateSubscriptionLimit(ctx)) {
     return jsonResp(request.id, predefined.MAX_SUBSCRIPTIONS, undefined);
   }
 
   // processing method
   try {
-    const sharedParams = {
+    const sharedParams: ISharedParams = {
       ctx,
       params,
       logger,
@@ -176,14 +207,13 @@ export const getRequestResult = async (
       request,
       method,
       limiter,
-      requestIdPrefix,
       mirrorNodeClient,
-      connectionIdPrefix,
+      requestDetails,
     };
 
     switch (method) {
       case WS_CONSTANTS.METHODS.ETH_SUBSCRIBE:
-        response = await handleEthSubsribe({ ...sharedParams });
+        response = await handleEthSubscribe({ ...sharedParams });
         break;
       case WS_CONSTANTS.METHODS.ETH_UNSUBSCRIBE:
         response = handleEthUnsubscribe({ ...sharedParams });
@@ -192,14 +222,22 @@ export const getRequestResult = async (
         // since unsupported methods have already been captured, the methods fall into this default block will always be valid and supported methods.
         response = await handleSendingRequestsToRelay({ ...sharedParams });
     }
-  } catch (error) {
+  } catch (error: any) {
     logger.warn(
       error,
-      `${connectionIdPrefix} ${requestIdPrefix} Encountered error on connectionID: ${
+      `${requestDetails.formattedLogPrefix} Encountered error on connectionID: ${
         ctx.websocket.id
       }, method: ${method}, params: ${JSON.stringify(params)}`,
     );
-    response = jsonResp(request.id, error, undefined);
+
+    let jsonRpcError: JsonRpcError;
+    if (error instanceof JsonRpcError) {
+      jsonRpcError = error;
+    } else {
+      jsonRpcError = predefined.INTERNAL_ERROR(JSON.stringify(error.message || error));
+    }
+
+    response = jsonResp(request.id, jsonRpcError, undefined);
   }
 
   return response;

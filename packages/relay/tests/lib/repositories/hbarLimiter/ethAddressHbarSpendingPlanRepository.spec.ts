@@ -28,12 +28,17 @@ import { EthAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/
 import { randomBytes, uuidV4 } from 'ethers';
 import { Registry } from 'prom-client';
 import { useInMemoryRedisServer } from '../../../helpers';
+import { RequestDetails } from '../../../../dist/lib/types';
 
 chai.use(chaiAsPromised);
 
 describe('EthAddressHbarSpendingPlanRepository', function () {
   const logger = pino();
   const registry = new Registry();
+  const requestDetails = new RequestDetails({
+    requestId: 'ethAddressHbarSpendingPlanRepositoryTest',
+    ipAddress: '0.0.0.0',
+  });
 
   const tests = (isSharedCacheEnabled: boolean) => {
     let cacheService: CacheService;
@@ -69,15 +74,15 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
       it('retrieves an address plan by address', async () => {
         const ethAddress = '0x123';
         const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
-        await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test');
+        await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test', requestDetails);
 
-        const result = await repository.findByAddress(ethAddress);
+        const result = await repository.findByAddress(ethAddress, requestDetails);
         expect(result).to.deep.equal(addressPlan);
       });
 
       it('throws an error if address plan is not found', async () => {
         const ethAddress = '0xnonexistent';
-        await expect(repository.findByAddress(ethAddress)).to.be.eventually.rejectedWith(
+        await expect(repository.findByAddress(ethAddress, requestDetails)).to.be.eventually.rejectedWith(
           EthAddressHbarSpendingPlanNotFoundError,
           `EthAddressHbarSpendingPlan with address ${ethAddress} not found`,
         );
@@ -89,10 +94,11 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
         const ethAddress = '0x123';
         const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
 
-        await repository.save(addressPlan);
+        await repository.save(addressPlan, requestDetails);
         const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
           `${repository['collectionKey']}:${ethAddress}`,
           'test',
+          requestDetails,
         );
         expect(result).to.deep.equal(addressPlan);
       });
@@ -100,14 +106,15 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
       it('overwrites an existing address plan', async () => {
         const ethAddress = '0x123';
         const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
-        await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test');
+        await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test', requestDetails);
 
         const newPlanId = uuidV4(randomBytes(16));
         const newAddressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: newPlanId };
-        await repository.save(newAddressPlan);
+        await repository.save(newAddressPlan, requestDetails);
         const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
           `${repository['collectionKey']}:${ethAddress}`,
           'test',
+          requestDetails,
         );
         expect(result).to.deep.equal(newAddressPlan);
       });
@@ -117,19 +124,20 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
       it('deletes an address plan successfully', async () => {
         const ethAddress = '0x123';
         const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
-        await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test');
+        await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test', requestDetails);
 
-        await repository.delete(ethAddress);
+        await repository.delete(ethAddress, requestDetails);
         const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
           `${repository['collectionKey']}:${ethAddress}`,
           'test',
+          requestDetails,
         );
         expect(result).to.be.null;
       });
 
       it('does not throw an error if address plan to delete does not exist', async () => {
         const ethAddress = '0xnonexistent';
-        await expect(repository.delete(ethAddress)).to.be.fulfilled;
+        await expect(repository.delete(ethAddress, requestDetails)).to.be.fulfilled;
       });
     });
   };

@@ -32,6 +32,7 @@ import assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import LogContractJson from '@hashgraph/json-rpc-server/tests/contracts/Logs.json';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import IERC20Json from '@hashgraph/json-rpc-server/tests/contracts/openzeppelin/IERC20.json';
+
 chai.use(solidity);
 
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;

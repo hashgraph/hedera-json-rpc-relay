@@ -37,33 +37,38 @@ import {
 } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import {
-  BLOCKS_LIMIT_ORDER_URL,
   BLOCK_HASH,
-  CONTRACTS_LOGS_WITH_FILTER,
+  BLOCKS_LIMIT_ORDER_URL,
   CONTRACT_ADDRESS_1,
   CONTRACT_ADDRESS_2,
   CONTRACT_RESULTS_LOGS_WITH_FILTER_URL,
+  CONTRACTS_LOGS_WITH_FILTER,
   DEFAULT_BLOCK,
   DEFAULT_BLOCKS_RES,
   DEFAULT_CONTRACT,
   DEFAULT_CONTRACT_2,
+  DEFAULT_LOG_TOPICS,
+  DEFAULT_LOG_TOPICS_1,
   DEFAULT_LOGS,
   DEFAULT_LOGS_3,
   DEFAULT_LOGS_4,
-  DEFAULT_LOG_TOPICS,
-  DEFAULT_LOG_TOPICS_1,
   DEFAULT_NETWORK_FEES,
   DEFAULT_NULL_LOG_TOPICS,
   NOT_FOUND_RES,
 } from './eth-config';
 import { ethers } from 'ethers';
 import { generateEthTestEnv } from './eth-helpers';
+import { RequestDetails } from '../../../src/lib/types';
+import MockAdapter from 'axios-mock-adapter';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { Eth } from '../../../src';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
 
 describe('@ethGetLogs using MirrorNode', async function () {
@@ -76,14 +81,22 @@ describe('@ethGetLogs using MirrorNode', async function () {
       to: '1651560395.060890949',
     },
   };
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  const {
+    restMock,
+    hapiServiceInstance,
+    ethImpl,
+    cacheService,
+  }: { restMock: MockAdapter; hapiServiceInstance: HAPIService; ethImpl: Eth; cacheService: CacheService } =
+    generateEthTestEnv();
   const filteredLogs = {
     logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1]],
   };
 
-  this.beforeEach(() => {
+  const requestDetails = new RequestDetails({ requestId: 'eth_getLogsTest', ipAddress: '0.0.0.0' });
+
+  beforeEach(() => {
     // reset cache and restMock
-    cacheService.clear();
+    cacheService.clear(requestDetails);
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
@@ -93,13 +106,13 @@ describe('@ethGetLogs using MirrorNode', async function () {
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
   });
 
-  this.afterEach(() => {
+  afterEach(() => {
     getSdkClientStub.restore();
     process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
   describe('timeout', async function () {
-    this.beforeEach(() => {
+    beforeEach(() => {
       restMock.onGet(`blocks/${BLOCK_HASH}`).timeout();
       restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
       restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).timeout();
@@ -107,14 +120,14 @@ describe('@ethGetLogs using MirrorNode', async function () {
     });
 
     it('BLOCK_HASH filter timeouts and throws the expected error', async () => {
-      await ethGetLogsFailing(ethImpl, [BLOCK_HASH, null, null, null, null], (error) => {
+      await ethGetLogsFailing(ethImpl, [BLOCK_HASH, null, null, null, null, requestDetails], (error: any) => {
         expect(error.statusCode).to.equal(504);
         expect(error.message).to.eq('timeout of 10000ms exceeded');
       });
     });
 
     it('address filter timeouts and throws the expected error', async () => {
-      await ethGetLogsFailing(ethImpl, [null, null, null, CONTRACT_ADDRESS_1, null], (error) => {
+      await ethGetLogsFailing(ethImpl, [null, null, null, CONTRACT_ADDRESS_1, null, requestDetails], (error: any) => {
         expect(error.statusCode).to.equal(504);
         expect(error.message).to.eq('timeout of 10000ms exceeded');
       });
@@ -129,8 +142,8 @@ describe('@ethGetLogs using MirrorNode', async function () {
 
     let errorReceived = false;
     try {
-      await ethImpl.getLogs(null, null, null, null, null);
-    } catch (error) {
+      await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
+    } catch (error: any) {
       errorReceived = true;
       expect(error.statusCode).to.equal(400);
       expect(error.message).to.eq('Mocked error');
@@ -154,7 +167,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
     });
 
-    const result = await ethImpl.getLogs(null, null, null, null, null);
+    const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
     expect(result).to.exist;
 
     expect(result.length).to.eq(4);
@@ -179,11 +192,11 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
     });
 
-    const result = await ethImpl.getLogs(null, null, null, null, null);
+    const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
     expect(result).to.exist;
 
     expect(result.length).to.eq(4);
-    result.forEach((log, index) => {
+    result.forEach((log, _index) => {
       expect(log.transactionIndex).to.be.null;
     });
   });
@@ -227,7 +240,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     });
     //setting mirror node limit to 2 for this test only
     process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
-    const result = await ethImpl.getLogs(null, null, null, null, null);
+    const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
     //resetting mirror node limit to 100
     process.env['MIRROR_NODE_LIMIT_PARAM'] = '100';
     expect(result).to.exist;
@@ -255,7 +268,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       .onGet(`contracts/${filteredLogs.logs[0].address}`)
       .reply(200, { ...DEFAULT_CONTRACT, evm_address: defaultEvmAddress });
 
-    const result = await ethImpl.getLogs(null, null, null, null, null);
+    const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
     expect(result).to.exist;
 
     expect(result.length).to.eq(1);
@@ -272,7 +285,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
     }
 
-    const result = await ethImpl.getLogs(null, null, null, CONTRACT_ADDRESS_1, null);
+    const result = await ethImpl.getLogs(null, 'latest', 'latest', CONTRACT_ADDRESS_1, null, requestDetails);
 
     expect(result).to.exist;
 
@@ -310,7 +323,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet('blocks/1').reply(200, fromBlock);
       restMock.onGet('blocks/1003').reply(200, toBlock);
 
-      const result = await ethImpl.getLogs(null, '0x1', '0x3eb', address, null);
+      const result = await ethImpl.getLogs(null, '0x1', '0x3eb', address, null, requestDetails);
 
       expect(result).to.exist;
 
@@ -340,7 +353,14 @@ describe('@ethGetLogs using MirrorNode', async function () {
     }
     restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
 
-    const result = await ethImpl.getLogs(null, null, null, [CONTRACT_ADDRESS_1, CONTRACT_ADDRESS_2], null);
+    const result = await ethImpl.getLogs(
+      null,
+      'latest',
+      'latest',
+      [CONTRACT_ADDRESS_1, CONTRACT_ADDRESS_2],
+      null,
+      requestDetails,
+    );
 
     expect(result).to.exist;
 
@@ -362,7 +382,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
     }
 
-    const result = await ethImpl.getLogs(BLOCK_HASH, null, null, null, null);
+    const result = await ethImpl.getLogs(BLOCK_HASH, 'latest', 'latest', null, null, requestDetails);
 
     expect(result).to.exist;
     expectLogData1(result[0]);
@@ -394,7 +414,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
     }
 
-    const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null);
+    const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null, requestDetails);
 
     expect(result).to.exist;
     expectLogData1(result[0]);
@@ -407,7 +427,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCK);
     restMock.onGet('blocks/16').reply(404, NOT_FOUND_RES);
 
-    const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null);
+    const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null, requestDetails);
 
     expect(result).to.exist;
     expect(result).to.be.empty;
@@ -426,7 +446,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       .reply(200, filteredLogs);
     restMock.onGet(`contracts/${filteredLogs.logs[0].address}`).reply(200, DEFAULT_CONTRACT);
 
-    const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null);
+    const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null, requestDetails);
 
     expect(result).to.exist;
     expectLogData1(result[0]);
@@ -445,7 +465,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
     restMock.onGet('blocks/16').reply(200, fromBlock);
     restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCK);
-    const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null);
+    const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null, requestDetails);
 
     expect(result).to.exist;
     expect(result).to.be.empty;
@@ -455,7 +475,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
     restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCKS_RES);
 
-    await ethGetLogsFailing(ethImpl, [null, null, '0x5', null, null], (error) => {
+    await ethGetLogsFailing(ethImpl, [null, null, '0x5', null, null, requestDetails], (error: any) => {
       expect(error.code).to.equal(-32011);
       expect(error.message).to.equal('Provided toBlock parameter without specifying fromBlock');
     });
@@ -472,7 +492,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
     }
 
-    const result = await ethImpl.getLogs(null, 'latest', null, null, null);
+    const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
 
     expect(result).to.exist;
     expectLogData1(result[0]);
@@ -498,7 +518,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet('blocks/1').reply(200, fromBlock);
       restMock.onGet('blocks/1003').reply(200, toBlock);
 
-      await ethGetLogsFailing(ethImpl, [null, '0x1', '0x3eb', address, null], (error) => {
+      await ethGetLogsFailing(ethImpl, [null, '0x1', '0x3eb', address, null, requestDetails], (error: any) => {
         expect(error.message).to.equal('Exceeded maximum block range: 1000');
       });
     });
@@ -523,7 +543,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
     }
 
-    const result = await ethImpl.getLogs(null, null, null, null, DEFAULT_LOG_TOPICS);
+    const result = await ethImpl.getLogs(null, 'latest', 'latest', null, DEFAULT_LOG_TOPICS, requestDetails);
 
     expect(result).to.exist;
     expectLogData1(result[0]);
@@ -547,7 +567,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     for (const log of filteredLogs.logs) {
       restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
     }
-    const result = await ethImpl.getLogs(null, null, null, null, DEFAULT_NULL_LOG_TOPICS);
+    const result = await ethImpl.getLogs(null, 'latest', 'latest', null, DEFAULT_NULL_LOG_TOPICS, requestDetails);
 
     expect(result).to.exist;
     expect(result[0].topics.length).to.eq(DEFAULT_LOGS_4[0].topics.length);
@@ -577,7 +597,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
     }
 
-    const result = await ethImpl.getLogs(null, '0x5', '0x10', null, DEFAULT_LOG_TOPICS);
+    const result = await ethImpl.getLogs(null, '0x5', '0x10', null, DEFAULT_LOG_TOPICS, requestDetails);
 
     expectLogData1(result[0]);
     expectLogData2(result[1]);
@@ -587,7 +607,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
     restMock.onGet('blocks/0').reply(200, DEFAULT_BLOCK);
     restMock.onGet('blocks/latest').reply(200, DEFAULT_BLOCK);
-    const result = await ethImpl.getLogs(null, '0x0', 'latest', ethers.ZeroAddress, DEFAULT_LOG_TOPICS);
+    const result = await ethImpl.getLogs(null, '0x0', 'latest', ethers.ZeroAddress, DEFAULT_LOG_TOPICS, requestDetails);
     expect(result.length).to.eq(0);
     expect(result).to.deep.equal([]);
   });

@@ -26,6 +26,9 @@ import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@web-socket-batch-2 eth_getTransactionByHash', async function () {
   const METHOD_NAME = 'eth_getTransactionByHash';
@@ -45,15 +48,16 @@ describe('@web-socket-batch-2 eth_getTransactionByHash', async function () {
   ];
 
   // @ts-ignore
-  const { mirrorNode, relay, initialBalance } = global;
+  const { mirrorNode, relay, initialBalance }: { mirrorNode: MirrorClient; relay: RelayClient } = global;
+  const requestId = 'getTransactionByHash_ws-server';
+  const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
+
   let txHash: string,
     expectedTxReceipt: any,
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
-  let requestId: string;
 
   before(async () => {
-    requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
 
     const neededAccounts: number = 2;
@@ -63,7 +67,7 @@ describe('@web-socket-batch-2 eth_getTransactionByHash', async function () {
         initialAccount,
         neededAccounts,
         initialBalance,
-        requestId,
+        requestDetails,
       )),
     );
     global.accounts.push(...accounts);
@@ -73,12 +77,12 @@ describe('@web-socket-batch-2 eth_getTransactionByHash', async function () {
       gasLimit: numberTo0x(30000),
       chainId: Number(CHAIN_ID),
       to: accounts[1].address,
-      nonce: await relay.getAccountNonce(accounts[0].address),
-      maxFeePerGas: await relay.gasPrice(),
+      nonce: await relay.getAccountNonce(accounts[0].address, requestId),
+      maxFeePerGas: await relay.gasPrice(requestId),
     };
     const signedTx = await accounts[0].wallet.signTransaction(tx);
-    txHash = await relay.sendRawTransaction(signedTx);
-    expectedTxReceipt = await mirrorNode.get(`/contracts/results/${txHash}`);
+    txHash = await relay.sendRawTransaction(signedTx, requestId);
+    expectedTxReceipt = await mirrorNode.get(`/contracts/results/${txHash}`, requestDetails);
   });
 
   beforeEach(async () => {

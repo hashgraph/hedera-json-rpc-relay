@@ -23,10 +23,10 @@ import dotenv from 'dotenv';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { RelayImpl } from '../../src/lib/relay';
+import pino from 'pino';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
-import pino from 'pino';
 const logger = pino();
 
 const Relay = new RelayImpl(logger, new Registry());

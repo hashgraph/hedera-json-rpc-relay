@@ -21,10 +21,10 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { expect, use } from 'chai';
 import sinon from 'sinon';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import chaiAsPromised from 'chai-as-promised';
 
-import { predefined } from '../../../src';
+import { Eth, predefined } from '../../../src';
 import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Transaction, Transaction1559, Transaction2930 } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
@@ -43,6 +43,10 @@ import {
   NOT_FOUND_RES,
 } from './eth-config';
 import { contractResultsByHashByIndexURL, generateEthTestEnv } from './eth-helpers';
+import { RequestDetails } from '../../../src/lib/types';
+import MockAdapter from 'axios-mock-adapter';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -62,11 +66,22 @@ function verifyAggregatedInfo(result: Transaction | null) {
 
 describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  const {
+    restMock,
+    hapiServiceInstance,
+    ethImpl,
+    cacheService,
+  }: { restMock: MockAdapter; hapiServiceInstance: HAPIService; ethImpl: Eth; cacheService: CacheService } =
+    generateEthTestEnv();
 
-  this.beforeEach(() => {
+  const requestDetails = new RequestDetails({
+    requestId: 'eth_getTransactionByBlockHashAndIndexTest',
+    ipAddress: '0.0.0.0',
+  });
+
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
@@ -102,7 +117,11 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     restMock
       .onGet(`contracts/${CONTRACT_ADDRESS_1}/results/${CONTRACT_TIMESTAMP_1}`)
       .reply(200, defaultDetailedContractResults);
-    const result = await ethImpl.getTransactionByBlockHashAndIndex(DEFAULT_BLOCK.hash, numberTo0x(DEFAULT_BLOCK.count));
+    const result = await ethImpl.getTransactionByBlockHashAndIndex(
+      DEFAULT_BLOCK.hash,
+      numberTo0x(DEFAULT_BLOCK.count),
+      requestDetails,
+    );
     expect(result).to.exist;
     expect(result).to.not.be.null;
 
@@ -122,7 +141,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
       .onGet(contractResultsByHashByIndexURL(randomBlock.hash, randomBlock.count, DEFAULT_BLOCK.timestamp))
       .reply(200, defaultContractResultsWithNullableFrom);
 
-    const args = [randomBlock.hash, numberTo0x(randomBlock.count)];
+    const args = [randomBlock.hash, numberTo0x(randomBlock.count), requestDetails];
     const errMessage = "Cannot read properties of null (reading 'substring')";
 
     await RelayAssertions.assertRejection(
@@ -143,6 +162,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
+      requestDetails,
     );
     expect(result).to.equal(null);
   });
@@ -155,6 +175,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
+      requestDetails,
     );
     expect(result).to.equal(null);
   });
@@ -174,6 +195,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
+      requestDetails,
     );
     expect(result).to.be.an.instanceOf(Transaction);
   });
@@ -194,6 +216,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
+      requestDetails,
     );
     expect(result).to.be.an.instanceOf(Transaction2930);
   });
@@ -216,6 +239,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     const result = await ethImpl.getTransactionByBlockHashAndIndex(
       DEFAULT_BLOCK.hash.toString(),
       numberTo0x(DEFAULT_BLOCK.count),
+      requestDetails,
     );
     expect(result).to.be.an.instanceOf(Transaction1559);
   });

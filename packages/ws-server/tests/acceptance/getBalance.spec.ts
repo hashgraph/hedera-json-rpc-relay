@@ -24,6 +24,8 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@web-socket-batch-1 eth_getBalance', async function () {
   const METHOD_NAME = 'eth_getBalance';
@@ -38,13 +40,14 @@ describe('@web-socket-batch-1 eth_getBalance', async function () {
     [WsTestConstant.FAKE_TX_HASH, '0xhbar', 36],
   ];
   // @ts-ignore
-  const { mirrorNode } = global;
+  const { mirrorNode }: { mirrorNode: MirrorClient } = global;
+  const requestId = 'getBalanceTest_ws-server';
+  const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
+
   let accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
-  let requestId: string;
 
   before(async () => {
-    requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '2500000000'; //25 Hbar
 
@@ -55,7 +58,7 @@ describe('@web-socket-batch-1 eth_getBalance', async function () {
         initialAccount,
         neededAccounts,
         initialAmount,
-        requestId,
+        requestDetails,
       )),
     );
     global.accounts.push(...accounts);
