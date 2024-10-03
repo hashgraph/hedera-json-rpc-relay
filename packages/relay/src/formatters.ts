@@ -176,7 +176,7 @@ const formatContractResult = (cr: any) => {
     transactionIndex: nullableNumberTo0x(cr.transaction_index),
     type: cr.type === null ? '0x0' : nanOrNumberTo0x(cr.type),
     v: cr.v === null ? '0x0' : nanOrNumberTo0x(cr.v),
-    value: nanOrNumberTo0x(cr.amount),
+    value: nanOrNumberTo0x(cr.amount * constants.TINYBAR_TO_WEIBAR_COEF),
     // for legacy EIP155 with tx.chainId=0x0, mirror-node will return a '0x' (EMPTY_HEX) value for contract result's chain_id
     //   which is incompatibile with certain tools (i.e. foundry). By setting this field, chainId, to undefined, the end jsonrpc
     //   object will leave out this field, which is the proper behavior for other tools to be compatible with.
