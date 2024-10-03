@@ -36,8 +36,6 @@ import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { defaultDetailedContractResults, useInMemoryRedisServer } from '../helpers';
 import { EventEmitter } from 'events';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
 use(chaiAsPromised);
 
 const logger = pino();

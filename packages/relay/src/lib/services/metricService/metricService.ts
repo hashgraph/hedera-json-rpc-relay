@@ -24,7 +24,6 @@ import constants from '../../constants';
 import HbarLimit from '../../hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
-import { formatRequestIdMessage } from '../../../formatters';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import {
   IExecuteQueryEventPayload,
@@ -298,7 +297,7 @@ export default class MetricService {
     operatorAccountId: string,
     requestDetails: RequestDetails,
   ): Promise<ITransactionRecordMetric | undefined> {
-    const defaultToConsensusNode = process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE === 'true';
+    const defaultToConsensusNode = ConfigService.get('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE') === 'true';
 
     // retrieve transaction metrics
     try {

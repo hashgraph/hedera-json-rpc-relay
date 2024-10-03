@@ -131,7 +131,7 @@ describe('RPC Server Acceptance Tests', function () {
       RELAY_URL,
       CHAIN_ID,
       Utils.generateRequestId(),
-      Number(process.env.TEST_INITIAL_ACCOUNT_STARTING_BALANCE || 2000),
+      Number(ConfigService.get('TEST_INITIAL_ACCOUNT_STARTING_BALANCE') || 2000),
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);

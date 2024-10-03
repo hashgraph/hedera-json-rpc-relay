@@ -20,7 +20,6 @@
 
 import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ITracerConfig } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { ITracerConfig, RequestDetails } from '@hashgraph/json-rpc-relay/src/lib/types';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import KoaJsonRpc from './koaJsonRpc';

@@ -413,7 +413,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
 
   it('should eth_estimateGas with contract revert and message does not equal executionReverted and ESTIMATE_GAS_THROWS is set to false', async function () {
     const estimateGasThrows = ConfigService.get('ESTIMATE_GAS_THROWS');
-    ConfigService.dynamicOverride('ESTIMATE_GAS_THROWS', 'false');
+    configServiceTestHelper.dynamicOverride('ESTIMATE_GAS_THROWS', 'false');
     await mockContractCall(
       transaction,
       true,

@@ -109,12 +109,12 @@ describe('@ethGasPrice Gas Price spec', async function () {
         it(testCaseName, async function () {
           const GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES[testCaseName];
           const initialGasPrice = await ethImpl.gasPrice(requestDetails);
-          ConfigService.dynamicOverrider('GAS_PRICE_PERCENTAGE_BUFFER', GAS_PRICE_PERCENTAGE_BUFFER);
+          configServiceTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', GAS_PRICE_PERCENTAGE_BUFFER);
 
           await cacheService.clear(requestDetails);
 
           const gasPriceWithBuffer = await ethImpl.gasPrice(requestDetails);
-          ConfigService.dynamicOverrider('GAS_PRICE_PERCENTAGE_BUFFER', '0');
+          configServiceTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', '0');
 
           const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);
           const expectedGasPriceWithBuffer = toHex(

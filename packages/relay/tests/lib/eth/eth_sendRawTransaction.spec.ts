@@ -32,6 +32,7 @@ import { getRequestId, mockData, signTransaction } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
 import { RequestDetails } from '../../../src/lib/types';
+import { Conf } from 'lerna/dist/libs/core/src';
 
 use(chaiAsPromised);
 
@@ -83,7 +84,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       },
     };
     const transaction = {
-      chainId: Number(process.env.CHAIN_ID || 0x12a),
+      chainId: Number(ConfigService.get('CHAIN_ID') || 0x12a),
       to: ACCOUNT_ADDRESS_1,
       from: accountAddress,
       value,

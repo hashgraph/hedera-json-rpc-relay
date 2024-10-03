@@ -41,8 +41,6 @@ import {
 } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 
-dotenv.config({ path: path.resolve(__dirname, './test.env') });
-
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 
 describe('RPC Server', function () {

@@ -23,7 +23,6 @@ import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
 import { Relay } from '@hashgraph/json-rpc-relay/dist';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { Relay } from '@hashgraph/json-rpc-relay';
 import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
 import { IJsonRpcResponse } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcResponse';
 import { Logger } from 'pino';

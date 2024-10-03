@@ -31,14 +31,11 @@ import pino from 'pino';
 import { ethers } from 'ethers';
 import { MirrorNodeClientError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { MirrorNodeClientError } from '../../src/lib/errors/MirrorNodeClientError';
 
 const registry = new Registry();
 import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { BigNumber } from 'bignumber.js';
-
-const registry = new Registry();
 
 const logger = pino();
 const noTransactions = '?transactions=false';

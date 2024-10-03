@@ -18,6 +18,7 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { configServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -109,7 +110,7 @@ describe('LocalLRUCache Test Suite', async function () {
 
   describe('verify cache management', async function () {
     beforeEach(() => {
-      ConfigService.dynamicOverrider(CACHE_MAX, constants.CACHE_MAX.toString());
+      configServiceTestHelper.dynamicOverride('CACHE_MAX', constants.CACHE_MAX.toString());
     });
 
     it('verify cache size', async function () {

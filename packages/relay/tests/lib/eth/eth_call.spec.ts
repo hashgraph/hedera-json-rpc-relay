@@ -944,13 +944,16 @@ describe('@ethCall Eth Call spec', async function () {
     before(() => {
       initialForceToConsensusBySelector = ConfigService.get('ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR');
       initialEthCallDefaultsToConsensus = ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
-      ConfigService.dynamicOverrider('ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR', 'true');
-      ConfigService.dynamicOverrider('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      configServiceTestHelper.dynamicOverride('ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR', 'true');
+      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
     });
 
     after(() => {
-      ConfigService.dynamicOverrider('ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR', initialForceToConsensusBySelector);
-      ConfigService.dynamicOverrider('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallDefaultsToConsensus);
+      configServiceTestHelper.dynamicOverride(
+        'ETH_CALL_FORCE_TO_CONSENSUS_BY_SELECTOR',
+        initialForceToConsensusBySelector,
+      );
+      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', initialEthCallDefaultsToConsensus);
     });
 
     beforeEach(() => {

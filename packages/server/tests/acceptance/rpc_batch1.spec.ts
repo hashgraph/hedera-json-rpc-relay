@@ -72,7 +72,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   const requestId = 'rpc_batch1Test';
   const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
   const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
-  const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const INCORRECT_CHAIN_ID = 999;
   const GAS_PRICE_TOO_LOW = '0x1';
   const GAS_PRICE_REF = '0x123456';

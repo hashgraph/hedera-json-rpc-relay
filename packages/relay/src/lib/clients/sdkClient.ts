@@ -61,7 +61,6 @@ import { SDKClientError } from '../errors/SDKClientError';
 import { JsonRpcError, predefined } from '../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { formatRequestIdMessage, weibarHexToTinyBarInt } from '../../formatters';
 import { weibarHexToTinyBarInt } from '../../formatters';
 import {
   IExecuteQueryEventPayload,

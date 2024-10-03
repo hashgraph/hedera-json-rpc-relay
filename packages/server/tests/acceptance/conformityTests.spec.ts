@@ -30,6 +30,7 @@ import { expect } from 'chai';
 import WebSocket from 'ws';
 import LogsContract from '../contracts/Logs.json';
 import CallerContract from '../contracts/Caller.json';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
 
@@ -65,7 +66,7 @@ const ajv = new Ajv({ strict: false });
 addFormats(ajv);
 let execApisOpenRpcData;
 
-const chainId = Number(process.env.CHAIN_ID || 0x12a);
+const chainId = Number(ConfigService.get('CHAIN_ID') || 0x12a);
 
 let legacyTransaction = {
   chainId,

@@ -241,7 +241,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
     });
     //setting mirror node limit to 2 for this test only
-    ConfigService.dynamicOverrider('MIRROR_NODE_LIMIT_PARAM', '2');
+    configServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
     const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
     //resetting mirror node limit to 100
     configServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '100');

@@ -177,7 +177,8 @@ export class MirrorNodeClient {
     const mirrorNodeRetryDelay = this.MIRROR_NODE_RETRY_DELAY;
     const mirrorNodeRetryDelayDevMode = parseInt(ConfigService.get('MIRROR_NODE_RETRY_DELAY_DEVMODE') || '200');
     const mirrorNodeRetryErrorCodes: Array<number> = ConfigService.get('MIRROR_NODE_RETRY_CODES')
-      ? JSON.parse(ConfigService.get('MIRROR_NODE_RETRY_CODES'))
+      ? // @ts-ignore
+        JSON.parse(ConfigService.get('MIRROR_NODE_RETRY_CODES'))
       : []; // we are in the process of deprecating this feature
     // by default will be true, unless explicitly set to false.
     const useCacheableDnsLookup: boolean = ConfigService.get('MIRROR_NODE_AGENT_CACHEABLE_DNS') !== 'false';
