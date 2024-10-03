@@ -82,7 +82,7 @@ export class IPAddressHbarSpendingPlanRepository {
    */
   async delete(ipAddress: string, requestDetails: RequestDetails): Promise<void> {
     const key = this.getKey(ipAddress);
-    const spendingPlan = await this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, 'findByAddress', requestDetails);
+    const ipAddressSpendingPlan = await this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, 'delete', requestDetails);
     await this.cache.delete(key, 'delete', requestDetails);
     const errorMessage = spendingPlan
       ? `Deleted IPAddressHbarSpendingPlan with ID ${spendingPlan.planId}`
