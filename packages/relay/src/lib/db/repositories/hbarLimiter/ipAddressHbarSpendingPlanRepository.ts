@@ -58,7 +58,7 @@ export class IPAddressHbarSpendingPlanRepository {
     if (!addressPlan) {
       throw new IPAddressHbarSpendingPlanNotFoundError(ipAddress);
     }
-    this.logger.trace(`Retrieved IPAddressHbarSpendingPlan with ID ${addressPlan.planId}`);
+    this.logger.trace(`Retrieved link between IP address and HbarSpendingPlan with ID ${addressPlan.planId}`);
     return new IPAddressHbarSpendingPlan(addressPlan);
   }
 
@@ -71,7 +71,7 @@ export class IPAddressHbarSpendingPlanRepository {
   async save(addressPlan: IIPAddressHbarSpendingPlan, requestDetails: RequestDetails): Promise<void> {
     const key = this.getKey(addressPlan.ipAddress);
     await this.cache.set(key, addressPlan, 'save', requestDetails, this.threeMonthsInMillis);
-    this.logger.trace(`Saved IPAddressHbarSpendingPlan with ID ${addressPlan.planId}`);
+    this.logger.trace(`Linked new IP address to HbarSpendingPlan with ID ${addressPlan.planId}`);
   }
 
   /**
@@ -85,8 +85,8 @@ export class IPAddressHbarSpendingPlanRepository {
     const ipAddressSpendingPlan = await this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, 'delete', requestDetails);
     await this.cache.delete(key, 'delete', requestDetails);
     const errorMessage = ipAddressSpendingPlan
-      ? `Deleted IPAddressHbarSpendingPlan with ID ${ipAddressSpendingPlan.planId}`
-      : `Trying to delete non-existent plan`;
+      ? `Removed IP address from HbarSpendingPlan with ID ${ipAddressSpendingPlan.planId}`
+      : `Trying to remove an IP address, which is not linked to a spending plan`;
     this.logger.trace(errorMessage);
   }
 
