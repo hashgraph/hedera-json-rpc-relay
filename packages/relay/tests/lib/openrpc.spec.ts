@@ -19,7 +19,7 @@
  */
 
 import { expect } from 'chai';
-import { validateOpenRPCDocument, parseOpenRPCDocument } from '@open-rpc/schema-utils-js';
+import { parseOpenRPCDocument, validateOpenRPCDocument } from '@open-rpc/schema-utils-js';
 
 import Ajv from 'ajv';
 
@@ -70,12 +70,11 @@ import { NOT_FOUND_RES } from './eth/eth-config';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
 import constants from '../../src/lib/constants';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import EventEmitter from 'events';
+
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 process.env.npm_package_version = 'relay/0.0.1-SNAPSHOT';
 
@@ -157,12 +156,12 @@ describe('Open RPC Specification', function () {
     mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
     mock
       .onGet(
-        `contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`,
+        `contracts/results?block.hash=${defaultBlock.hash}&timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&transaction.index=${defaultBlock.count}&limit=100&order=asc`,
       )
       .reply(200, defaultContractResults);
     mock
       .onGet(
-        `contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`,
+        `contracts/results?block.number=${defaultBlock.number}&timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&transaction.index=${defaultBlock.count}&limit=100&order=asc`,
       )
       .reply(200, defaultContractResults);
     mock
