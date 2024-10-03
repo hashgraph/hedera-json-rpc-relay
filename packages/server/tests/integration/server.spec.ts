@@ -640,7 +640,7 @@ describe('RPC Server', function () {
 
     it('batch request be disabled by default', async function () {
       // disable batch request
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'undefined');
+      configServiceTestHelper.remove('BATCH_REQUESTS_ENABLED');
 
       // do batch request
       try {

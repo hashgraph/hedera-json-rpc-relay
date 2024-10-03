@@ -527,7 +527,7 @@ export class GlobalConfig {
       envName: 'REQUEST_ID_IS_OPTIONAL',
       type: 'boolean',
       required: false,
-      defaultValue: true,
+      defaultValue: false,
     },
     SDK_REQUEST_TIMEOUT: {
       envName: 'SDK_REQUEST_TIMEOUT',

@@ -271,7 +271,7 @@ export default class HAPIService {
     }
 
     // @ts-ignore
-    client.setTransportSecurity(ConfigService.get('CLIENT_TRANSPORT_SECURITY'));
+    client.setTransportSecurity(ConfigService.get('CLIENT_TRANSPORT_SECURITY') ?? false);
 
     // @ts-ignore
     const SDK_REQUEST_TIMEOUT = parseInt(ConfigService.get('SDK_REQUEST_TIMEOUT') || '10000');

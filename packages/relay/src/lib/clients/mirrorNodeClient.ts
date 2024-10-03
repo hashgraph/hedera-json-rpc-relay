@@ -196,7 +196,7 @@ export class MirrorNodeClient {
       : []; // we are in the process of deprecating this feature
     // by default will be true, unless explicitly set to false.
     // @ts-ignore
-    const useCacheableDnsLookup: boolean = ConfigService.get('MIRROR_NODE_AGENT_CACHEABLE_DNS');
+    const useCacheableDnsLookup: boolean = ConfigService.get('MIRROR_NODE_AGENT_CACHEABLE_DNS') ?? true;
 
     const httpAgent = new http.Agent({
       // @ts-ignore

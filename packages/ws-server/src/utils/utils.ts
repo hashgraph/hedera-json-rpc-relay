@@ -144,7 +144,7 @@ export const resolveParams = (method: string, params: any): any[] => {
  */
 export const getMultipleAddressesEnabled = (): boolean => {
   // @ts-ignore
-  return ConfigService.get('WS_MULTIPLE_ADDRESSES_ENABLED');
+  return ConfigService.get('WS_MULTIPLE_ADDRESSES_ENABLED') ?? false;
 };
 
 /**
@@ -153,7 +153,7 @@ export const getMultipleAddressesEnabled = (): boolean => {
  */
 export const getWsBatchRequestsEnabled = (): boolean => {
   // @ts-ignore
-  return ConfigService.get('WS_BATCH_REQUESTS_ENABLED');
+  return ConfigService.get('WS_BATCH_REQUESTS_ENABLED') ?? true;
 };
 
 /**

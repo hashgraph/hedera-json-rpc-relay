@@ -314,7 +314,7 @@ export class EthImpl implements Eth {
 
   private getEthFeeHistoryFixedFee(): boolean {
     // @ts-ignore
-    return ConfigService.get('ETH_FEE_HISTORY_FIXED');
+    return ConfigService.get('ETH_FEE_HISTORY_FIXED') ?? true;
   }
 
   /**

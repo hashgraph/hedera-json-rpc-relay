@@ -54,5 +54,5 @@ export function getRequestIdIsOptional(): boolean {
 
 export function getBatchRequestsEnabled(): boolean {
   // @ts-ignore
-  return ConfigService.get('BATCH_REQUESTS_ENABLED');
+  return ConfigService.get('BATCH_REQUESTS_ENABLED') ?? false;
 }
