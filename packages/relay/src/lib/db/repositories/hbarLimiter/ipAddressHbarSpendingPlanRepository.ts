@@ -47,9 +47,23 @@ export class IPAddressHbarSpendingPlanRepository {
   }
 
   /**
+   * Checks if an {@link IPAddressHbarSpendingPlan} exists for an IP address.
+   *
+   * @param {string} ipAddress - The IP address to check for.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @returns {Promise<boolean>} - A promise that resolves with a boolean indicating if the plan exists.
+   */
+  async existsByAddress(ipAddress: string, requestDetails: RequestDetails): Promise<boolean> {
+    const key = this.getKey(ipAddress);
+    const addressPlan = await this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, 'existsByAddress', requestDetails);
+    return !!addressPlan;
+  }
+
+  /**
    * Finds an {@link IPAddressHbarSpendingPlan} for an IP address.
    *
    * @param {string} ipAddress - The IP address to search for.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IPAddressHbarSpendingPlan>} - The associated plan for the IP address.
    */
   async findByAddress(ipAddress: string, requestDetails: RequestDetails): Promise<IPAddressHbarSpendingPlan> {

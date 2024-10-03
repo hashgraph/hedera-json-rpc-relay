@@ -39,6 +39,10 @@ import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
 import { RequestDetails } from './types';
 import { Utils } from '../utils';
+import { populatePreconfiguredSpendingPlans } from './config/preconfiguredSpendingPlans';
+import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 
 dotenv.config({ path: findConfig('.env') || '' });
 
@@ -91,6 +95,27 @@ export class RelayImpl implements Relay {
    * @property {CacheService} cacheService - The service responsible for caching data to improve performance.
    */
   private readonly cacheService: CacheService;
+
+  /**
+   * @private
+   * @readonly
+   * @property {HbarSpendingPlanRepository} hbarSpendingPlanRepository - The repository used for managing HBAR spending plans.
+   */
+  private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository;
+
+  /**
+   * @private
+   * @readonly
+   * @property {EthAddressHbarSpendingPlanRepository} ethAddressHbarSpendingPlanRepository - The repository used for managing links between ETH addresses and HBAR spending plans.
+   */
+  private readonly ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository;
+
+  /**
+   * @private
+   * @readonly
+   * @property {IPAddressHbarSpendingPlanRepository} ipAddressHbarSpendingPlanRepository - The repository used for managing links between IP addresses and HBAR spending plans.
+   */
+  private readonly ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository;
 
   /**
    * @private
@@ -167,6 +192,29 @@ export class RelayImpl implements Relay {
     }
 
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
+
+    this.hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'hbar-spending-plan-repository' }),
+    );
+    this.ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
+    );
+    this.ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
+    );
+
+    populatePreconfiguredSpendingPlans(
+      logger,
+      this.hbarSpendingPlanRepository,
+      this.ethAddressHbarSpendingPlanRepository,
+      this.ipAddressHbarSpendingPlanRepository,
+    )
+      .then(() => logger.info('Pre-configured spending plans populated successfully'))
+      .catch((e) => logger.warn(`Failed to load pre-configured spending plans: ${e.message}`));
+
     logger.info('Relay running with chainId=%s', chainId);
   }
 

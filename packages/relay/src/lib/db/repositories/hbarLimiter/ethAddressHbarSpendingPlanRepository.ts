@@ -47,6 +47,19 @@ export class EthAddressHbarSpendingPlanRepository {
   }
 
   /**
+   * Checks if an {@link EthAddressHbarSpendingPlan} exists for an ETH address.
+   *
+   * @param {string} ethAddress - The ETH address to check for.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @returns {Promise<boolean>} - A promise that resolves with a boolean indicating if the plan exists.
+   */
+  async existsByAddress(ethAddress: string, requestDetails: RequestDetails): Promise<boolean> {
+    const key = this.getKey(ethAddress);
+    const addressPlan = await this.cache.getAsync<IEthAddressHbarSpendingPlan>(key, 'existsByAddress', requestDetails);
+    return !!addressPlan;
+  }
+
+  /**
    * Finds an {@link EthAddressHbarSpendingPlan} for an ETH address.
    *
    * @param {string} ethAddress - The ETH address to search for.
