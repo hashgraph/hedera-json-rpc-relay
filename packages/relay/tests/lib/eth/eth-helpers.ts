@@ -28,20 +28,7 @@ import MockAdapter from 'axios-mock-adapter';
 import { MirrorNodeClient } from '../../../src/lib/clients';
 import { EthImpl } from '../../../src/lib/eth';
 import EventEmitter from 'events';
-
-export function getQueryParams(params: object) {
-  let paramString = '';
-  for (const [key, value] of Object.entries(params)) {
-    let additionalString = '';
-    if (Array.isArray(value)) {
-      additionalString = value.map((v) => `${key}=${v}`).join('&');
-    } else if (value !== undefined) {
-      additionalString = `${key}=${value}`;
-    }
-    paramString += paramString === '' ? `?${additionalString}` : `&${additionalString}`;
-  }
-  return paramString;
-}
+import { getQueryParams } from '../../helpers';
 
 export function contractResultsByNumberByIndexURL(
   number: number,

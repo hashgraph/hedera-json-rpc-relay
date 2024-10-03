@@ -38,7 +38,12 @@ const getQueryParams = (params: object) => {
 
   return '?'.concat(
     Object.entries(params)
-      .map(([key, value]) => `${key}=${value}`)
+      .map(([key, value]) => {
+        if (Array.isArray(value)) {
+          return value.map((v) => `${key}=${v}`).join('&');
+        }
+        return `${key}=${value}`;
+      })
       .join('&'),
   );
 };

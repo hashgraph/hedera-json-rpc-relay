@@ -1721,7 +1721,7 @@ export class EthImpl implements Eth {
     transactionIndex: string,
     requestDetails: RequestDetails,
   ): Promise<Transaction | null> {
-    const block = await this.mirrorNodeClient.getBlock(blockParam.value, requestIdPrefix);
+    const block = await this.mirrorNodeClient.getBlock(blockParam.value, requestDetails);
     const timestampRangeParams = block ? [`gte:${block.timestamp.from}`, `lte:${block.timestamp.to}`] : undefined;
 
     const contractResults = await this.mirrorNodeClient.getContractResults(
