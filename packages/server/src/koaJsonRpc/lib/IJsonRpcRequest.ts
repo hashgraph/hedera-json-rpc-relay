@@ -1,6 +1,6 @@
 /*-
  *
- * Hedera JSON RPC Relay - Hardhat Example
+ * Hedera JSON RPC Relay
  *
  * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
@@ -19,7 +19,7 @@
  */
 
 export interface IJsonRpcRequest {
-  id: string;
+  id: string | number;
   jsonrpc: string;
   method: string;
   params?: any[];

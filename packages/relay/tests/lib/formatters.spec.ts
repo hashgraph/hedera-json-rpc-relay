@@ -20,11 +20,15 @@
 
 import { expect } from 'chai';
 import {
+  ASCIIToHex,
   decodeErrorMessage,
   formatContractResult,
+  formatRequestIdMessage,
   formatTransactionId,
   formatTransactionIdWithoutQueryParams,
+  getFunctionSelector,
   hexToASCII,
+  isHex,
   isValidEthereumAddress,
   mapKeysAndValues,
   nanOrNumberTo0x,
@@ -32,16 +36,12 @@ import {
   numberTo0x,
   parseNumericEnvVar,
   prepend0x,
+  strip0x,
   toHash32,
+  toHexString,
   toNullableBigNumber,
   toNullIfEmptyHex,
   trimPrecedingZeros,
-  isHex,
-  ASCIIToHex,
-  formatRequestIdMessage,
-  strip0x,
-  getFunctionSelector,
-  toHexString,
   weibarHexToTinyBarInt,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
