@@ -306,6 +306,9 @@ The following configurations will be used to automatically populate the cache wi
 
 All other users (ETH and IP addresses which are not specified in the configuration file) will be treated as "general users" and will be assigned a basic `HbarSpendingPlan` on their first request and their ETH address and IP address will be linked to that plan for all subsequent requests.
 
+The default filename for the configuration file is `spendingPlansConfig.json`, but it could also be specified by the ENV variables:
+- `HBAR_SPENDING_PLANS_CONFIG_FILE`: The path to the JSON file containing the pre-configured spending plans for supported projects and partner projects.
+
 ```json
 [
   {

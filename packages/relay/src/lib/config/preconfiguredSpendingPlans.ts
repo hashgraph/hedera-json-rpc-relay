@@ -28,23 +28,23 @@ import { RequestDetails } from '../types';
 import { Logger } from 'pino';
 
 const PRE_CONFIGURED_SPENDING_PLANS_TTL = -1; // Never expire
-const SPENDING_PLANS_CONFIG_FILE = 'spendingPlansConfig.json';
+const DEFAULT_SPENDING_PLANS_CONFIG_FILE = 'spendingPlansConfig.json';
 
 /**
  * Loads the pre-configured spending plans from a JSON file.
  * @returns {SpendingPlanConfig[]} An array of spending plan configurations.
  * @throws {Error} If the configuration file is not found or cannot be read.
  */
-const loadSpendingPlansConfig = (): SpendingPlanConfig[] => {
-  const path = findConfig(SPENDING_PLANS_CONFIG_FILE);
-  if (!path || !fs.existsSync(path)) {
-    throw new Error(`Configuration file not found at path: ${path || SPENDING_PLANS_CONFIG_FILE}`);
+const loadSpendingPlansConfig = (filename?: string): SpendingPlanConfig[] => {
+  const configPath = findConfig(filename || DEFAULT_SPENDING_PLANS_CONFIG_FILE);
+  if (!configPath || !fs.existsSync(configPath)) {
+    throw new Error(`Configuration file not found at path: ${configPath || DEFAULT_SPENDING_PLANS_CONFIG_FILE}`);
   }
   try {
-    const rawData = fs.readFileSync(path, 'utf-8');
+    const rawData = fs.readFileSync(configPath, 'utf-8');
     return JSON.parse(rawData) as SpendingPlanConfig[];
   } catch (error: any) {
-    throw new Error(`Failed to parse JSON from ${path}: ${error.message}`);
+    throw new Error(`Failed to parse JSON from ${configPath}: ${error.message}`);
   }
 };
 
@@ -80,7 +80,7 @@ export const populatePreconfiguredSpendingPlans = async (
   const requestDetails = new RequestDetails({ requestId: '', ipAddress: '' });
   const ttl = PRE_CONFIGURED_SPENDING_PLANS_TTL;
 
-  const spendingPlans = loadSpendingPlansConfig();
+  const spendingPlans = loadSpendingPlansConfig(process.env.HBAR_SPENDING_PLANS_CONFIG_FILE);
   validateSpendingPlanConfig(spendingPlans);
 
   for (const plan of spendingPlans) {
