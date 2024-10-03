@@ -83,7 +83,7 @@ export class GlobalConfig {
       envName: 'E2E_RELAY_HOST',
       type: 'string',
       required: false,
-      defaultValue: 'http://127.0.0.1:7546',
+      defaultValue: 'http://localhost:7546',
     },
     E2E_SERVER_PORT: {
       envName: 'E2E_SERVER_PORT',
