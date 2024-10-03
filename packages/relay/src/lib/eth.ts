@@ -26,7 +26,7 @@ import constants from './constants';
 import { Precheck } from './precheck';
 import { MirrorNodeClient } from './clients';
 import { Counter, Registry } from 'prom-client';
-import { IAccountInfo, IMirrorNodeTransactionRecord } from './types/mirrorNode';
+import { IAccountInfo } from './types/mirrorNode';
 import { LogsBloomUtils } from './../logsBloomUtils';
 import { DebugService } from './services/debugService';
 import { SDKClientError } from './errors/SDKClientError';
@@ -41,23 +41,23 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
 import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
-import { IFeeHistory, IContractCallRequest, IContractCallResponse, ITransactionReceipt } from './types';
+import { IContractCallRequest, IContractCallResponse, IFeeHistory, ITransactionReceipt } from './types';
 import {
-  isHex,
-  toHash32,
-  prepend0x,
   ASCIIToHex,
-  numberTo0x,
-  nanOrNumberTo0x,
-  parseNumericEnvVar,
-  nullableNumberTo0x,
-  trimPrecedingZeros,
   formatContractResult,
-  weibarHexToTinyBarInt,
-  isValidEthereumAddress,
   formatRequestIdMessage,
   formatTransactionIdWithoutQueryParams,
   getFunctionSelector,
+  isHex,
+  isValidEthereumAddress,
+  nanOrNumberTo0x,
+  nullableNumberTo0x,
+  numberTo0x,
+  parseNumericEnvVar,
+  prepend0x,
+  toHash32,
+  trimPrecedingZeros,
+  weibarHexToTinyBarInt,
 } from '../formatters';
 
 const _ = require('lodash');
@@ -1969,8 +1969,14 @@ export class EthImpl implements Eth {
 
     const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
     if (contractResult === null || contractResult.hash === undefined) {
-      const transactionResult = await this.mirrorNodeClient.getTransactionByHash(hash, requestIdPrefix);
-      const timestamp = transactionResult?.transactions[0]?.consensus_timestamp;
+      const timestamp = await this.mirrorNodeClient
+        .getTransactionByHash(hash, requestIdPrefix)
+        .then((response) => response?.transactions[0]?.consensus_timestamp)
+        .catch((e) => {
+          this.logger.warn(e, `${requestIdPrefix} Failed to retrieve transaction with hash ${hash}`);
+          this.logger.trace(`${requestIdPrefix} Calling '/contracts/results/logs' without a timestamp parameter...`);
+          return undefined;
+        });
 
       // handle synthetic transactions
       const syntheticLogs = await this.common.getLogsWithParams(
@@ -2032,8 +2038,14 @@ export class EthImpl implements Eth {
 
     const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestIdPrefix);
     if (receiptResponse === null || receiptResponse.hash === undefined) {
-      const transactionResult = await this.mirrorNodeClient.getTransactionByHash(hash, requestIdPrefix);
-      const timestamp = transactionResult?.transactions[0]?.consensus_timestamp;
+      const timestamp = await this.mirrorNodeClient
+        .getTransactionByHash(hash, requestIdPrefix)
+        .then((response) => response?.transactions[0]?.consensus_timestamp)
+        .catch((e) => {
+          this.logger.warn(e, `${requestIdPrefix} Failed to retrieve transaction with hash ${hash}`);
+          this.logger.trace(`${requestIdPrefix} Calling '/contracts/results/logs' without a timestamp parameter...`);
+          return undefined;
+        });
 
       // handle synthetic transactions
       const syntheticLogs = await this.common.getLogsWithParams(
