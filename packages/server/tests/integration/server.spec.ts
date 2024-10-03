@@ -52,7 +52,7 @@ describe('RPC Server', function () {
     testClient = BaseTest.createTestClient();
 
     // leak detection middleware
-    if (ConfigService.get('MEMWATCH_ENABLED') === 'true') {
+    if (ConfigService.get('MEMWATCH_ENABLED')) {
       Utils.captureMemoryLeaks(new GCProfiler());
     }
   });
@@ -100,7 +100,7 @@ describe('RPC Server', function () {
     const testClient2 = BaseTest.createTestClient(port);
 
     try {
-      configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', 'true');
+      configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', true);
       const response = await testClient2.post('/', {
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
@@ -120,7 +120,7 @@ describe('RPC Server', function () {
       expect(true, `Unexpected error: ${error.message}`).to.eq(false);
     }
 
-    configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', 'false');
+    configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', false);
     testServer2.close();
   });
 
@@ -451,7 +451,7 @@ describe('RPC Server', function () {
     const batchRequestEnabledValue = ConfigService.get('BATCH_REQUESTS_ENABLED');
 
     this.beforeAll(function () {
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
     });
 
     this.afterAll(function () {
@@ -624,7 +624,7 @@ describe('RPC Server', function () {
 
     it('should not execute batch request when disabled', async function () {
       // disable batch request
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'false');
+      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', false);
 
       // do batch request
       try {
@@ -635,7 +635,7 @@ describe('RPC Server', function () {
       }
 
       // enable batch request again
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
     });
 
     it('batch request be disabled by default', async function () {
@@ -651,7 +651,7 @@ describe('RPC Server', function () {
       }
 
       // enable batch requests again
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
     });
   });
 

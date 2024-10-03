@@ -136,7 +136,7 @@ describe('eth_getBlockBy', async function () {
     const eventEmitter = new EventEmitter();
     hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
 
-    configServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', 'false');
+    configServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', false);
 
     // @ts-ignore
     ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);

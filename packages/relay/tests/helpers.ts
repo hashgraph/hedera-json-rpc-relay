@@ -907,8 +907,8 @@ export const startRedisInMemoryServer = async (logger: Logger, port: number) => 
     REDIS_ENABLED: ConfigService.get('REDIS_ENABLED'),
     REDIS_URL: ConfigService.get('REDIS_URL'),
   };
-  configServiceTestHelper.dynamicOverride('TEST', 'false');
-  configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'true');
+  configServiceTestHelper.dynamicOverride('TEST', false);
+  configServiceTestHelper.dynamicOverride('REDIS_ENABLED', true);
   configServiceTestHelper.dynamicOverride('REDIS_URL', `redis://127.0.0.1:${port}`);
   return { redisInMemoryServer, envsToReset };
 };

@@ -113,6 +113,7 @@ export class RelayImpl implements Relay {
   constructor(logger: Logger, register: Registry) {
     logger.info('Configurations successfully loaded');
 
+    // @ts-ignore
     const hederaNetwork: string = (ConfigService.get('HEDERA_NETWORK') || '{}').toLowerCase();
     const configuredChainId = ConfigService.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = prepend0x(Number(configuredChainId).toString(16));
@@ -130,6 +131,7 @@ export class RelayImpl implements Relay {
     this.netImpl = new NetImpl(this.clientMain);
 
     this.mirrorNodeClient = new MirrorNodeClient(
+      // @ts-ignore
       ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       register,
@@ -156,7 +158,7 @@ export class RelayImpl implements Relay {
       this.cacheService,
     );
 
-    if (ConfigService.get('SUBSCRIPTIONS_ENABLED') && ConfigService.get('SUBSCRIPTIONS_ENABLED') === 'true') {
+    if (ConfigService.get('SUBSCRIPTIONS_ENABLED')) {
       const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
       this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }

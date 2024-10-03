@@ -45,7 +45,7 @@ export default class RateLimit {
   }
 
   shouldRateLimit(ip: string, methodName: string, total: number, requestId: string): boolean {
-    if (ConfigService.get('RATE_LIMIT_DISABLED') && ConfigService.get('RATE_LIMIT_DISABLED') === 'true') {
+    if (ConfigService.get('RATE_LIMIT_DISABLED')) {
       return false;
     }
 

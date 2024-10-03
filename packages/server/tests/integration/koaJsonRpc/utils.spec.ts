@@ -118,14 +118,14 @@ describe('utils.ts', () => {
 
   describe('getRequestIdIsOptional', () => {
     it('should return true when REQUEST_ID_IS_OPTIONAL is set to true', () => {
-      configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', 'true');
+      configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', true);
 
       const result = utils.getRequestIdIsOptional();
       expect(result).to.be.true;
     });
 
     it('should return false when REQUEST_ID_IS_OPTIONAL is not set to true', () => {
-      configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', 'false');
+      configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', false);
 
       const result = utils.getRequestIdIsOptional();
       expect(result).to.be.false;
@@ -134,14 +134,14 @@ describe('utils.ts', () => {
 
   describe('getBatchRequestsEnabled', () => {
     it('should return true when BATCH_REQUESTS_ENABLED is set to true', () => {
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
 
       const result = utils.getBatchRequestsEnabled();
       expect(result).to.be.true;
     });
 
     it('should return false when BATCH_REQUESTS_ENABLED is not set to true', () => {
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'false');
+      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', false);
 
       const result = utils.getBatchRequestsEnabled();
       expect(result).to.be.false;

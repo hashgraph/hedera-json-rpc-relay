@@ -36,6 +36,7 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
+  // @ts-ignore
   level: ConfigService.get('LOG_LEVEL') || 'trace',
   transport: {
     target: 'pino-pretty',

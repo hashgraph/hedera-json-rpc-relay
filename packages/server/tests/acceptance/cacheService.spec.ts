@@ -84,7 +84,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   it('Fallsback to local cache for REDIS_ENABLED !== true', async () => {
     const dataLabel = `${DATA_LABEL_PREFIX}3`;
 
-    configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'false');
+    configServiceTestHelper.dynamicOverride('REDIS_ENABLED', false);
     const serviceWithDisabledRedis = new CacheService(global.logger, registry);
     await new Promise((r) => setTimeout(r, 1000));
     expect(serviceWithDisabledRedis.isRedisEnabled()).to.eq(false, 'redis is disabled');
@@ -94,7 +94,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD);
     expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
 
-    configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'true');
+    configServiceTestHelper.dynamicOverride('REDIS_ENABLED', true);
   });
 
   it('Cache set by one instance can be accessed by another', async () => {
@@ -116,7 +116,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     before(async () => {
       currentRedisEnabledEnv = ConfigService.get('REDIS_ENABLED');
 
-      configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('REDIS_ENABLED', true);
       cacheService = new CacheService(global.logger, registry);
 
       // disconnect redis client to simulate Redis error

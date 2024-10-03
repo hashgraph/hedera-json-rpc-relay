@@ -248,7 +248,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     }
 
     this.beforeAll(function () {
-      configServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', 'true');
+      configServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', true);
     });
 
     this.beforeEach(function () {
@@ -258,7 +258,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     });
 
     this.afterAll(function () {
-      configServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', 'false');
+      configServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', false);
     });
 
     it('eth_feeHistory with fixed fees', async function () {

@@ -538,10 +538,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           });
 
           // value is processed only when eth_call goes through the mirror node
-          if (
-            ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') &&
-            ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') === 'false'
-          ) {
+          if (!ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE')) {
             it('010 Should call msgValue', async function () {
               const callData = {
                 ...defaultCallData,
@@ -2024,7 +2021,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
     before(async () => {
       PREV_BATCH_REQUESTS_ENABLED = ConfigService.get('BATCH_REQUESTS_ENABLED');
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
     });
 
     after(async () => {

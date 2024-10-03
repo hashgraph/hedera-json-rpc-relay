@@ -140,7 +140,7 @@ describe('CacheService Test Suite', async function () {
 
   describe('Internal Cache Test Suite', async function () {
     this.beforeAll(() => {
-      configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'false');
+      configServiceTestHelper.dynamicOverride('REDIS_ENABLED', false);
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
@@ -279,7 +279,7 @@ describe('CacheService Test Suite', async function () {
 
     this.beforeAll(async () => {
       multiSet = ConfigService.get('MULTI_SET');
-      configServiceTestHelper.dynamicOverride('MULTI_SET', 'true');
+      configServiceTestHelper.dynamicOverride('MULTI_SET', true);
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 

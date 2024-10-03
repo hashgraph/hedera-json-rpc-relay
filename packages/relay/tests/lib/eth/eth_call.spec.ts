@@ -106,7 +106,7 @@ describe('@ethCall Eth Call spec', async function () {
     let sandbox: sinon.SinonSandbox;
 
     this.beforeAll(() => {
-      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', false);
     });
 
     beforeEach(() => {
@@ -120,7 +120,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     this.afterAll(() => {
-      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'true');
+      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', true);
     });
 
     it('eth_call with incorrect `to` field length', async function () {
@@ -145,7 +145,7 @@ describe('@ethCall Eth Call spec', async function () {
       web3Mock.onPost('contracts/call').reply(200);
       const initialEthCallConesneusFF = ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
 
-      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', false);
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
       restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
         account: '0.0.1723',
@@ -178,7 +178,7 @@ describe('@ethCall Eth Call spec', async function () {
     it('should execute "eth_call" against mirror node with a ETH_CALL_DEFAULT_TO_CONSENSUS_NODE set to true', async function () {
       const initialEthCallConesneusFF = ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
 
-      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'true');
+      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', true);
       restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
       restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
         account: '0.0.1723',
@@ -236,7 +236,7 @@ describe('@ethCall Eth Call spec', async function () {
 
     before(() => {
       initialEthCallConesneusFF = ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
-      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'true');
+      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', true);
     });
 
     after(() => {
@@ -457,7 +457,7 @@ describe('@ethCall Eth Call spec', async function () {
 
     before(() => {
       initialEthCallConesneusFF = ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
-      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', false);
     });
 
     after(() => {
@@ -895,7 +895,7 @@ describe('@ethCall Eth Call spec', async function () {
     before(() => {
       initialEthCallConesneusFF = ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
       initialEthCallSelectorsAlwaysToConsensus = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS');
-      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', 'false');
+      configServiceTestHelper.dynamicOverride('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', false);
     });
 
     after(() => {

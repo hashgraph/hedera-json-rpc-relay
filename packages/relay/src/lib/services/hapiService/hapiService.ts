@@ -123,8 +123,11 @@ export default class HAPIService {
     this.client = this.initSDKClient(logger);
 
     const currentDateNow = Date.now();
+    // @ts-ignore
     this.initialTransactionCount = parseInt(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')!) || 0;
+    // @ts-ignore
     this.initialResetDuration = parseInt(ConfigService.get('HAPI_CLIENT_DURATION_RESET')!) || 0;
+    // @ts-ignore
     this.initialErrorCodes = JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET') || '[21, 50]');
 
     this.transactionCount = this.initialTransactionCount;
@@ -267,8 +270,10 @@ export default class HAPIService {
       }
     }
 
-    client.setTransportSecurity(ConfigService.get('CLIENT_TRANSPORT_SECURITY') === 'true' || false);
+    // @ts-ignore
+    client.setTransportSecurity(ConfigService.get('CLIENT_TRANSPORT_SECURITY'));
 
+    // @ts-ignore
     const SDK_REQUEST_TIMEOUT = parseInt(ConfigService.get('SDK_REQUEST_TIMEOUT') || '10000');
     client.setRequestTimeout(SDK_REQUEST_TIMEOUT);
 

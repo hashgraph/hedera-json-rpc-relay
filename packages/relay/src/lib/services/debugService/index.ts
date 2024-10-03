@@ -77,7 +77,7 @@ export class DebugService implements IDebugService {
   public static readonly isDebugAPIEnabled = ConfigService.get('DEBUG_API_ENABLED');
 
   static requireDebugAPIEnabled(): void {
-    if (!ConfigService.get('DEBUG_API_ENABLED') || ConfigService.get('DEBUG_API_ENABLED') !== 'true') {
+    if (!ConfigService.get('DEBUG_API_ENABLED')) {
       throw predefined.UNSUPPORTED_METHOD;
     }
   }

@@ -157,7 +157,7 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('FILTER_API_ENABLED=true', async function () {
-      configServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', true);
       restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock }] });
       const filterId = await filterService.newFilter();
       expect(filterId).to.exist;
@@ -183,7 +183,7 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('FILTER_API_ENABLED=false', async function () {
-      configServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', 'false');
+      configServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', false);
       await RelayAssertions.assertRejection(
         predefined.UNSUPPORTED_METHOD,
         filterService.newFilter,

@@ -38,8 +38,10 @@ export class LocalLRUCache implements ICacheClient {
    */
   private readonly options: LimitedByCount & LimitedByTTL = {
     // The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
+    // @ts-ignore
     max: Number.parseInt(ConfigService.get('CACHE_MAX') ?? constants.CACHE_MAX.toString()),
     // Max time to live in ms, for items before they are considered stale.
+    // @ts-ignore
     ttl: Number.parseInt(ConfigService.get('CACHE_TTL') ?? constants.CACHE_TTL.ONE_HOUR.toString()),
   };
 

@@ -33,8 +33,11 @@ export class HbarLimitService implements IHbarLimitService {
   static readonly ONE_DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
   // TODO: Replace with actual values
   static readonly DAILY_LIMITS: Record<SubscriptionType, number> = {
+    // @ts-ignore
     BASIC: parseInt(ConfigService.get('HBAR_DAILY_LIMIT_BASIC') ?? '1000'),
+    // @ts-ignore
     EXTENDED: parseInt(ConfigService.get('HBAR_DAILY_LIMIT_EXTENDED') ?? '10000'),
+    // @ts-ignore
     PRIVILEGED: parseInt(ConfigService.get('HBAR_DAILY_LIMIT_PRIVILEGED') ?? '100000'),
   };
 

@@ -190,7 +190,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       describe('Remaining HBAR Limit', () => {
         before(() => {
-          configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', 'true');
+          configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
         });
 
         it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
@@ -318,7 +318,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('Should preemptively check the rate limit before submitting EthereumTransaction', async function () {
-          configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', 'true');
+          configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', true);
 
           try {
             for (let i = 0; i < 50; i++) {
@@ -336,7 +336,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
-          configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', 'false');
+          configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', false);
 
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           let lastRemainingHbars = remainingHbarsBefore;

@@ -44,7 +44,7 @@ export function balancesByAccountIdByTimestampURL(id: string, timestamp?: string
 }
 
 export function generateEthTestEnv(fixedFeeHistory = false) {
-  configServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', fixedFeeHistory.toString());
+  configServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', fixedFeeHistory);
   const logger = pino();
   const registry = new Registry();
   const cacheService = new CacheService(logger.child({ name: `cache` }), registry);

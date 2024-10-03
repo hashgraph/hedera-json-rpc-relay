@@ -42,7 +42,6 @@ export class SubscriptionController {
   private cache;
   private activeSubscriptionHistogram: Histogram;
   private resultsSentToSubscribersCounter: Counter;
-  private useTheSameSubscriptionForTheSameEvent: boolean;
 
   constructor(poller: Poller, logger: Logger, register: Registry) {
     this.poller = poller;
@@ -78,9 +77,6 @@ export class SubscriptionController {
       registers: [register],
       labelNames: ['subId', 'tag'],
     });
-
-    // Default: true
-    this.useTheSameSubscriptionForTheSameEvent = ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT') !== 'false';
   }
 
   createHash(data) {
@@ -104,7 +100,7 @@ export class SubscriptionController {
       this.subscriptions[tag] = [];
     }
 
-    if (this.useTheSameSubscriptionForTheSameEvent) {
+    if (ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT')) {
       // Check if the connection is already subscribed to this event
       const existingSub = this.subscriptions[tag].find((sub) => sub.connection.id === connection.id);
       if (existingSub) {

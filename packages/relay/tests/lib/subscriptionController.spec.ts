@@ -269,14 +269,14 @@ describe('subscriptionController', async function () {
       originalEnv = ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT');
       originalSubscriptionController = subscriptionController;
 
-      configServiceTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', 'false');
+      configServiceTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', false);
       const registry = new Registry();
       poller = new Poller(ethImpl, logger, registry);
       subscriptionController = new SubscriptionController(poller, logger, registry);
     });
 
     after(() => {
-      configServiceTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', 'originalEnv');
+      configServiceTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', originalEnv);
       subscriptionController = originalSubscriptionController;
     });
 

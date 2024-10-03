@@ -26,7 +26,7 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 
 const hasOwnProperty = (obj: any, prop: any) => Object.prototype.hasOwnProperty.call(obj, prop);
 const getRequestIdIsOptional = () => {
-  return ConfigService.get('REQUEST_ID_IS_OPTIONAL') === 'true';
+  return ConfigService.get('REQUEST_ID_IS_OPTIONAL');
 };
 
 /**
@@ -143,7 +143,8 @@ export const resolveParams = (method: string, params: any): any[] => {
  * @returns {boolean} Returns true if multiple addresses are enabled, otherwise returns false.
  */
 export const getMultipleAddressesEnabled = (): boolean => {
-  return ConfigService.get('WS_MULTIPLE_ADDRESSES_ENABLED') === 'true';
+  // @ts-ignore
+  return ConfigService.get('WS_MULTIPLE_ADDRESSES_ENABLED');
 };
 
 /**
@@ -151,9 +152,8 @@ export const getMultipleAddressesEnabled = (): boolean => {
  * @returns {boolean} A boolean indicating whether WebSocket batch requests are enabled.
  */
 export const getWsBatchRequestsEnabled = (): boolean => {
-  return ConfigService.get('WS_BATCH_REQUESTS_ENABLED')
-    ? ConfigService.get('WS_BATCH_REQUESTS_ENABLED') === 'true'
-    : true;
+  // @ts-ignore
+  return ConfigService.get('WS_BATCH_REQUESTS_ENABLED');
 };
 
 /**

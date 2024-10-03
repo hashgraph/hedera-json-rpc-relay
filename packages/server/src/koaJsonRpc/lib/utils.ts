@@ -27,26 +27,32 @@ export function hasOwnProperty(obj: any, prop: PropertyKey): boolean {
 }
 
 export function setServerTimeout(server: Server): void {
+  // @ts-ignore
   const requestTimeoutMs = parseInt(ConfigService.get('SERVER_REQUEST_TIMEOUT_MS') ?? '60000');
   server.setTimeout(requestTimeoutMs);
 }
 
 export function getBatchRequestsMaxSize(): number {
+  // @ts-ignore
   return parseInt(ConfigService.get('BATCH_REQUESTS_MAX_SIZE') ?? '100');
 }
 
 export function getLimitDuration(): number {
+  // @ts-ignore
   return parseInt(ConfigService.get('LIMIT_DURATION') ?? constants.DEFAULT_RATE_LIMIT.DURATION.toString());
 }
 
 export function getDefaultRateLimit(): number {
+  // @ts-ignore
   return parseInt(ConfigService.get('DEFAULT_RATE_LIMIT') ?? '200');
 }
 
 export function getRequestIdIsOptional(): boolean {
-  return ConfigService.get('REQUEST_ID_IS_OPTIONAL') == 'true';
+  // @ts-ignore
+  return ConfigService.get('REQUEST_ID_IS_OPTIONAL');
 }
 
 export function getBatchRequestsEnabled(): boolean {
-  return ConfigService.get('BATCH_REQUESTS_ENABLED') == 'true';
+  // @ts-ignore
+  return ConfigService.get('BATCH_REQUESTS_ENABLED');
 }

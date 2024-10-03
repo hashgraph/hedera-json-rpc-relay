@@ -59,20 +59,20 @@ export class ValidationService {
 
     Object.entries(GlobalConfig.ENTRIES).forEach(([entryName, entryInfo]) => {
       if (!envs.hasOwnProperty(entryName)) {
-        // typeCastedEnvs[entryName] = entryInfo.defaultValue;
+        typeCastedEnvs[entryName] = entryInfo.defaultValue;
         return;
       }
 
       switch (entryInfo.type) {
-        case 'string':
-          typeCastedEnvs[entryName] = envs[entryName];
-          break;
         case 'number':
           typeCastedEnvs[entryName] = Number(envs[entryName]);
           break;
         case 'boolean':
           typeCastedEnvs[entryName] = envs[entryName] === 'true';
           break;
+        default:
+          // handle "string" and stringified array type
+          typeCastedEnvs[entryName] = envs[entryName];
       }
     });
 

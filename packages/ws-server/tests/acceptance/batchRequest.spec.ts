@@ -67,7 +67,7 @@ describe('@web-socket-batch-1 Batch Requests', async function () {
   });
 
   beforeEach(async () => {
-    configServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', 'true');
+    configServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', true);
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
@@ -100,7 +100,7 @@ describe('@web-socket-batch-1 Batch Requests', async function () {
   });
 
   it('Should submit batch requests to WS server and get batchRequestDisabledError if WS_BATCH_REQUESTS_DISABLED=false ', async () => {
-    configServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', 'false');
+    configServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', false);
     const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 
     const expectedError = predefined.WS_BATCH_REQUESTS_DISABLED;

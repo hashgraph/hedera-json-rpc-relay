@@ -59,7 +59,7 @@ describe('RelayImpl', () => {
   });
 
   it('should return the correct subscription implementation when enabled', () => {
-    configServiceTestHelper.dynamicOverride('SUBSCRIPTIONS_ENABLED', 'true');
+    configServiceTestHelper.dynamicOverride('SUBSCRIPTIONS_ENABLED', true);
     relay = new RelayImpl(logger, register);
 
     const subs = relay.subs();
@@ -67,7 +67,7 @@ describe('RelayImpl', () => {
   });
 
   it('should return undefined subscription implementation when not enabled', () => {
-    configServiceTestHelper.dynamicOverride('SUBSCRIPTIONS_ENABLED', 'false');
+    configServiceTestHelper.dynamicOverride('SUBSCRIPTIONS_ENABLED', false);
     relay = new RelayImpl(logger, register);
 
     const subs = relay.subs();

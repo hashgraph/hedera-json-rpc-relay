@@ -38,6 +38,7 @@ export class RedisCache implements IRedisCacheClient {
    */
   private readonly options = {
     // Max time to live in ms, for items before they are considered stale.
+    // @ts-ignore
     ttl: Number.parseInt(ConfigService.get('CACHE_TTL') ?? constants.CACHE_TTL.ONE_HOUR.toString()),
   };
 
@@ -76,8 +77,10 @@ export class RedisCache implements IRedisCacheClient {
     this.register = register;
 
     const redisUrl = ConfigService.get('REDIS_URL')!;
+    // @ts-ignore
     const reconnectDelay = parseInt(ConfigService.get('REDIS_RECONNECT_DELAY_MS') || '1000');
     this.client = createClient({
+      // @ts-ignore
       url: redisUrl,
       socket: {
         reconnectStrategy: (retries: number) => {

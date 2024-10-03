@@ -96,8 +96,10 @@ export class CacheService {
 
     this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     this.sharedCache = this.internalCache;
-    this.isSharedCacheEnabled = ConfigService.get('TEST') !== 'true' && this.isRedisEnabled();
-    this.shouldMultiSet = ConfigService.get('MULTI_SET') === 'true';
+    // @ts-ignore
+    this.isSharedCacheEnabled = !ConfigService.get('TEST') && this.isRedisEnabled();
+    // @ts-ignore
+    this.shouldMultiSet = ConfigService.get('MULTI_SET');
 
     if (this.isSharedCacheEnabled) {
       this.sharedCache = new RedisCache(logger.child({ name: 'redisCache' }), register);
@@ -192,7 +194,8 @@ export class CacheService {
    * @returns {boolean} Returns true if Redis caching is enabled, otherwise false.
    */
   public isRedisEnabled(): boolean {
-    return ConfigService.get('REDIS_ENABLED') === 'true' && !!ConfigService.get('REDIS_URL');
+    // @ts-ignore
+    return ConfigService.get('REDIS_ENABLED') && !!ConfigService.get('REDIS_URL');
   }
 
   /**

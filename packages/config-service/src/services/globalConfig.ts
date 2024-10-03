@@ -29,7 +29,7 @@ export class GlobalConfig {
       envName: 'CACHE_TTL',
       type: 'number',
       required: false,
-      defaultValue: 3600000,
+      defaultValue: 20000,
     },
     CHAIN_ID: {
       envName: 'CHAIN_ID',
@@ -53,7 +53,7 @@ export class GlobalConfig {
       envName: 'CONTRACT_CALL_GAS_LIMIT',
       type: 'number',
       required: false,
-      defaultValue: 10,
+      defaultValue: 50000000,
     },
     CONTRACT_QUERY_TIMEOUT_RETRIES: {
       envName: 'CONTRACT_QUERY_TIMEOUT_RETRIES',
@@ -101,13 +101,13 @@ export class GlobalConfig {
       envName: 'ETH_BLOCK_NUMBER_CACHE_TTL_MS',
       type: 'number',
       required: false,
-      defaultValue: 10,
+      defaultValue: 1000,
     },
     ETH_CALL_ACCEPTED_ERRORS: {
       envName: 'ETH_CALL_ACCEPTED_ERRORS',
-      type: 'string',
+      type: 'array',
       required: false,
-      defaultValue: '[]',
+      defaultValue: null,
     },
     ETH_CALL_CACHE_TTL: {
       envName: 'ETH_CALL_CACHE_TTL',
@@ -117,9 +117,9 @@ export class GlobalConfig {
     },
     ETH_CALL_CONSENSUS_SELECTORS: {
       envName: 'ETH_CALL_CONSENSUS_SELECTORS',
-      type: 'string',
+      type: 'array',
       required: false,
-      defaultValue: '[]',
+      defaultValue: null,
     },
     ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: {
       envName: 'ETH_CALL_DEFAULT_TO_CONSENSUS_NODE',
@@ -129,33 +129,33 @@ export class GlobalConfig {
     },
     ETH_FEE_HISTORY_FIXED: {
       envName: 'ETH_FEE_HISTORY_FIXED',
-      type: 'string',
+      type: 'boolean',
       required: false,
-      defaultValue: 'true',
+      defaultValue: true,
     },
     ETH_GET_BALANCE_CACHE_TTL_MS: {
       envName: 'ETH_GET_BALANCE_CACHE_TTL_MS',
       type: 'number',
       required: false,
-      defaultValue: 10,
+      defaultValue: 1000,
     },
     ETH_GET_GAS_PRICE_CACHE_TTL_MS: {
       envName: 'ETH_GET_GAS_PRICE_CACHE_TTL_MS',
       type: 'number',
       required: false,
-      defaultValue: 10,
+      defaultValue: 1800000,
     },
     ETH_GET_LOGS_BLOCK_RANGE_LIMIT: {
       envName: 'ETH_GET_LOGS_BLOCK_RANGE_LIMIT',
       type: 'number',
       required: false,
-      defaultValue: 10,
+      defaultValue: 1000,
     },
     ETH_GET_TRANSACTION_COUNT_CACHE_TTL: {
       envName: 'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
       type: 'number',
       required: false,
-      defaultValue: 10,
+      defaultValue: 500,
     },
     ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: {
       envName: 'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
@@ -183,9 +183,9 @@ export class GlobalConfig {
     },
     FILTER_API_ENABLED: {
       envName: 'FILTER_API_ENABLED',
-      type: 'string',
+      type: 'boolean',
       required: false,
-      defaultValue: 'true',
+      defaultValue: true,
     },
     FILTER_TTL: {
       envName: 'FILTER_TTL',
@@ -237,9 +237,9 @@ export class GlobalConfig {
     },
     HAPI_CLIENT_ERROR_RESET: {
       envName: 'HAPI_CLIENT_ERROR_RESET',
-      type: 'string',
+      type: 'array',
       required: false,
-      defaultValue: '[]',
+      defaultValue: null,
     },
     HAPI_CLIENT_TRANSACTION_RESET: {
       envName: 'HAPI_CLIENT_TRANSACTION_RESET',
@@ -285,9 +285,9 @@ export class GlobalConfig {
     },
     HBAR_RATE_LIMIT_WHITELIST: {
       envName: 'HBAR_RATE_LIMIT_WHITELIST',
-      type: 'string',
+      type: 'array',
       required: false,
-      defaultValue: '[]',
+      defaultValue: null,
     },
     HEDERA_NETWORK: {
       envName: 'HEDERA_NETWORK',
@@ -329,7 +329,7 @@ export class GlobalConfig {
       envName: 'MAX_BLOCK_RANGE',
       type: 'number',
       required: false,
-      defaultValue: 10,
+      defaultValue: 5,
     },
     MEMWATCH_ENABLED: {
       envName: 'MEMWATCH_ENABLED',
@@ -411,9 +411,9 @@ export class GlobalConfig {
     },
     MIRROR_NODE_RETRY_CODES: {
       envName: 'MIRROR_NODE_RETRY_CODES',
-      type: 'string',
+      type: 'array',
       required: false,
-      defaultValue: '[]',
+      defaultValue: null,
     },
     MIRROR_NODE_RETRY_DELAY: {
       envName: 'MIRROR_NODE_RETRY_DELAY',
@@ -447,9 +447,9 @@ export class GlobalConfig {
     },
     MIRROR_NODE_URL_HEADER_X_API_KEY: {
       envName: 'MIRROR_NODE_URL_HEADER_X_API_KEY',
-      type: 'string',
+      type: 'array',
       required: false,
-      defaultValue: '[]',
+      defaultValue: null,
     },
     MIRROR_NODE_URL_WEB3: {
       envName: 'MIRROR_NODE_URL_WEB3',
@@ -561,9 +561,9 @@ export class GlobalConfig {
     },
     TEST: {
       envName: 'TEST',
-      type: 'string',
+      type: 'boolean',
       required: false,
-      defaultValue: 'false',
+      defaultValue: false,
     },
     TEST_GAS_PRICE_DEVIATION: {
       envName: 'TEST_GAS_PRICE_DEVIATION',

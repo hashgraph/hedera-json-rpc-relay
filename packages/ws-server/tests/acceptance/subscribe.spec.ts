@@ -253,7 +253,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     // skip this test if using a remote relay since updating the env vars would not affect it
     if (global.relayIsLocal) {
       it('Subscribe to multiple contracts on same subscription', async function () {
-        configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'true');
+        configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', true);
         await new Promise((resolve) => setTimeout(resolve, 10000));
 
         const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
@@ -324,7 +324,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     }
 
     it('Subscribe to multiple contracts on same subscription Should fail with INVALID_PARAMETER due to feature flag disabled', async function () {
-      configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'false');
+      configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', false);
       const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
       const addressCollection = [logContractSigner.target, logContractSigner2.target];
       const webSocket = new WebSocket(WS_RELAY_URL);

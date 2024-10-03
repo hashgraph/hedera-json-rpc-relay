@@ -145,7 +145,7 @@ describe('RPC Server Acceptance Tests', function () {
       relayServer.close();
     }
 
-    if (ConfigService.get('TEST_WS_SERVER') === 'true' && socketServer !== undefined) {
+    if (ConfigService.get('TEST_WS_SERVER') && socketServer !== undefined) {
       socketServer.close();
     }
   });
@@ -174,7 +174,7 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
     relayServer = app.listen({ port: constants.RELAY_PORT });
 
-    if (ConfigService.get('TEST_WS_SERVER') === 'true') {
+    if (ConfigService.get('TEST_WS_SERVER')) {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
       global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
     }

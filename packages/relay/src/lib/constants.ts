@@ -139,8 +139,11 @@ export default {
     DURATION: 60000,
   },
 
+  // @ts-ignore
   HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION') || '80000'),
+  // @ts-ignore
   HBAR_RATE_LIMIT_TINYBAR: parseInt(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR') || '11000000000'),
+  // @ts-ignore
   GAS_PRICE_TINY_BAR_BUFFER: parseInt(ConfigService.get('GAS_PRICE_TINY_BAR_BUFFER') || '10000000000'),
   WEB_SOCKET_PORT: ConfigService.get('WEB_SOCKET_PORT') || 8546,
   WEB_SOCKET_HTTP_PORT: ConfigService.get('WEB_SOCKET_HTTP_PORT') || 8547,
@@ -167,6 +170,7 @@ export default {
       LOG: 'log',
       PENDING_TRANSACTION: 'pendingTransaction',
     },
+    // @ts-ignore
     TTL: parseInt(ConfigService.get('FILTER_TTL') || '300000'), // default is 5 minutes
   },
 

@@ -152,7 +152,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   describe('Configuration', async function () {
     it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
       const webSocket = new WebSocket(WS_RELAY_URL);
-      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', 'false');
+      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', false);
       const messagePromise = new Promise<void>((resolve, reject) => {
         webSocket.on('message', function incoming(data) {
           try {
@@ -183,7 +183,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
 
     it('Does not allow more subscriptions per connection than the specified limit with newHeads', async function () {
       configServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', '2');
-      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', true);
       // Create different subscriptions
       for (let i = 0; i < 3; i++) {
         if (i === 2) {
@@ -235,7 +235,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
 
   describe('Subscriptions for newHeads', async function () {
     this.beforeEach(() => {
-      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', true);
     });
 
     it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {

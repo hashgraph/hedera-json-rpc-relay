@@ -56,8 +56,8 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
       });
     } else {
       before(() => {
-        configServiceTestHelper.dynamicOverride('TEST', 'true');
-        configServiceTestHelper.dynamicOverride('REDIS_ENABLED', 'false');
+        configServiceTestHelper.dynamicOverride('TEST', true);
+        configServiceTestHelper.dynamicOverride('REDIS_ENABLED', false);
         cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
         repository = new EthAddressHbarSpendingPlanRepository(
           cacheService,

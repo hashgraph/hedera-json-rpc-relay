@@ -55,6 +55,7 @@ describe('MirrorNodeClient', async function () {
     });
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
+      // @ts-ignore
       ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
@@ -123,6 +124,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`restUrl` is exposed and correct', async () => {
+    // @ts-ignore
     const domain = (ConfigService.get('MIRROR_NODE_URL') || '').replace(/^https?:\/\//, '');
     const prodMirrorNodeInstance = new MirrorNodeClient(
       domain,
@@ -148,9 +150,10 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('Can provide custom x-api-key header', async () => {
-    const exampleApiKey = 'abc123iAManAPIkey';
+    const exampleApiKey = '["abc123iAManAPIkey"]';
     configServiceTestHelper.dynamicOverride('MIRROR_NODE_URL_HEADER_X_API_KEY', exampleApiKey);
     const mirrorNodeInstanceOverridden = new MirrorNodeClient(
+      // @ts-ignore
       ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
@@ -1104,7 +1107,7 @@ describe('MirrorNodeClient', async function () {
       try {
         await mirrorNodeInstance.getPaginatedResults('results?page=0', 'results', 'genericResults');
         expect.fail('should have thrown an error');
-      } catch (e) {
+      } catch (e: any) {
         const errorRef = predefined.PAGINATION_MAX(0); // reference error for all properties except message
         expect(e.message).to.equal(
           `Exceeded maximum mirror node pagination count: ${constants.MAX_MIRROR_NODE_PAGINATION}`,

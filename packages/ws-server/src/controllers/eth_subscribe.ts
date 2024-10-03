@@ -76,10 +76,7 @@ const handleEthSubscribeNewHeads = (
   connectionIdPrefix: string,
   requestIdPrefix: string,
 ): { response: any; subscriptionId: any } => {
-  const wsNewHeadsEnabled =
-    typeof ConfigService.get('WS_NEW_HEADS_ENABLED') !== 'undefined'
-      ? ConfigService.get('WS_NEW_HEADS_ENABLED') === 'true'
-      : true;
+  const wsNewHeadsEnabled = ConfigService.get('WS_NEW_HEADS_ENABLED');
 
   if (wsNewHeadsEnabled) {
     ({ response, subscriptionId } = subscribeToNewHeads(filters, response, subscriptionId, ctx, event, relay, logger));

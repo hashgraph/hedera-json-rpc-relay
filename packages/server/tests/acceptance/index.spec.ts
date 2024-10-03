@@ -108,7 +108,7 @@ describe('RPC Server Acceptance Tests', function () {
   };
 
   // leak detection middleware
-  if (ConfigService.get('MEMWATCH_ENABLED') === 'true') {
+  if (ConfigService.get('MEMWATCH_ENABLED')) {
     Utils.captureMemoryLeaks(new GCProfiler());
   }
 
@@ -201,7 +201,7 @@ describe('RPC Server Acceptance Tests', function () {
       relayServer.close();
     }
 
-    if (ConfigService.get('TEST_WS_SERVER') === 'true' && global.socketServer !== undefined) {
+    if (ConfigService.get('TEST_WS_SERVER') && global.socketServer !== undefined) {
       global.socketServer.close();
     }
   }
@@ -213,7 +213,7 @@ describe('RPC Server Acceptance Tests', function () {
     relayServer = app.listen({ port: constants.RELAY_PORT });
     setServerTimeout(relayServer);
 
-    if (ConfigService.get('TEST_WS_SERVER') === 'true') {
+    if (ConfigService.get('TEST_WS_SERVER')) {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
       global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
     }

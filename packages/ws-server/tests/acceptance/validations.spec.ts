@@ -54,7 +54,8 @@ describe('@release @web-socket-batch-1 JSON-RPC requests validation', async func
   let ethersWsProvider: WebSocketProvider;
 
   beforeEach(async () => {
-    configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', 'true');
+    configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', true);
+    // @ts-ignore
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 

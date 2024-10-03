@@ -101,7 +101,7 @@ export class FilterService implements IFilterService {
    * Checks if the Filter API is enabled
    */
   static requireFiltersEnabled(): void {
-    if (!ConfigService.get('FILTER_API_ENABLED') || ConfigService.get('FILTER_API_ENABLED') !== 'true') {
+    if (!ConfigService.get('FILTER_API_ENABLED')) {
       throw predefined.UNSUPPORTED_METHOD;
     }
   }

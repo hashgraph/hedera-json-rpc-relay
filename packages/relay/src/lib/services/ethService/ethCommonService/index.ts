@@ -64,7 +64,7 @@ export class CommonService implements ICommonService {
   static blockPending = 'pending';
   static blockSafe = 'safe';
   static blockFinalized = 'finalized';
-  static isDevMode = ConfigService.get('DEV_MODE') === 'true';
+  static isDevMode = ConfigService.get('DEV_MODE');
 
   // function callerNames
   static latestBlockNumber = 'getLatestBlockNumber';

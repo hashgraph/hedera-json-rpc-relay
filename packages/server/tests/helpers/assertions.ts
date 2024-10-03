@@ -79,7 +79,7 @@ export default class Assertions {
     // Assert static values
     expect(relayResponse.baseFeePerGas).to.exist;
 
-    if (ConfigService.get('LOCAL_NODE') && ConfigService.get('LOCAL_NODE') !== 'false') {
+    if (ConfigService.get('LOCAL_NODE')) {
       expect(relayResponse.baseFeePerGas).to.be.equal(expectedGasPrice);
     } else {
       expect(Number(relayResponse.baseFeePerGas)).to.be.gt(0);

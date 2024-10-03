@@ -92,7 +92,7 @@ export class ConfigService {
    * @param name string
    * @returns string | undefined
    */
-  public static get(name: string): string | undefined {
+  public static get(name: string): string | number | boolean | null | undefined {
     return this.getInstance().envs[name];
   }
 }

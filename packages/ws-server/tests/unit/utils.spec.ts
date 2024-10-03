@@ -294,12 +294,12 @@ describe('Utilities unit tests', async function () {
 
   describe('getMultipleAddressesEnabled', () => {
     it('should return true when WS_MULTIPLE_ADDRESSES_ENABLED is set to "true"', () => {
-      configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', true);
       expect(getMultipleAddressesEnabled()).to.be.true;
     });
 
     it('should return false when WS_MULTIPLE_ADDRESSES_ENABLED is set to "false"', () => {
-      configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', 'false');
+      configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', false);
       expect(getMultipleAddressesEnabled()).to.be.false;
     });
 
@@ -311,12 +311,12 @@ describe('Utilities unit tests', async function () {
 
   describe('getWsBatchRequestsEnabled', () => {
     it('should return true when WS_BATCH_REQUESTS_ENABLED is set to "true"', () => {
-      configServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', 'true');
+      configServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', true);
       expect(getWsBatchRequestsEnabled()).to.be.true;
     });
 
     it('should return false when WS_BATCH_REQUESTS_ENABLED is set to "false"', () => {
-      configServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', 'false');
+      configServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', false);
       expect(getWsBatchRequestsEnabled()).to.be.false;
     });
 

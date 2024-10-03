@@ -49,10 +49,8 @@ export class Poller {
     this.logger = logger;
     this.polls = [];
     this.pollingInterval = Number(ConfigService.get('WS_POLLING_INTERVAL')) || 500;
-    this.newHeadsEnabled =
-      typeof ConfigService.get('WS_NEW_HEADS_ENABLED') !== 'undefined'
-        ? ConfigService.get('WS_NEW_HEADS_ENABLED') === 'true'
-        : true;
+    // @ts-ignore
+    this.newHeadsEnabled = ConfigService.get('WS_NEW_HEADS_ENABLED');
 
     const activePollsGaugeName = 'rpc_websocket_active_polls';
     register.removeSingleMetric(activePollsGaugeName);

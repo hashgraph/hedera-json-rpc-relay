@@ -400,7 +400,7 @@ export class SDKClient {
     if (ethereumTransactionData.callData.length <= this.fileAppendChunkSize) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
-      const isPreemptiveCheckOn = ConfigService.get('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK') === 'true';
+      const isPreemptiveCheckOn = ConfigService.get('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK');
 
       if (isPreemptiveCheckOn) {
         const hexCallDataLength = Buffer.from(ethereumTransactionData.callData).toString('hex').length;
@@ -515,6 +515,7 @@ export class SDKClient {
     const requestIdPrefix = formatRequestIdMessage(requestId);
     let retries = 0;
     let resp;
+    // @ts-ignore
     while (parseInt(ConfigService.get('CONTRACT_QUERY_TIMEOUT_RETRIES') || '1') > retries) {
       try {
         resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestId);

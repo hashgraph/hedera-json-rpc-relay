@@ -169,7 +169,7 @@ export class EthImpl implements Eth {
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
   );
   private readonly estimateGasThrows = ConfigService.get('ESTIMATE_GAS_THROWS')
-    ? ConfigService.get('ESTIMATE_GAS_THROWS') === 'true'
+    ? ConfigService.get('ESTIMATE_GAS_THROWS')
     : true;
 
   private readonly ethGasPRiceCacheTtlMs = parseNumericEnvVar(
@@ -313,10 +313,8 @@ export class EthImpl implements Eth {
   }
 
   private getEthFeeHistoryFixedFee(): boolean {
-    if (ConfigService.get('ETH_FEE_HISTORY_FIXED') === undefined) {
-      return true;
-    }
-    return ConfigService.get('ETH_FEE_HISTORY_FIXED') === 'true';
+    // @ts-ignore
+    return ConfigService.get('ETH_FEE_HISTORY_FIXED');
   }
 
   /**
@@ -328,10 +326,9 @@ export class EthImpl implements Eth {
     rewardPercentiles: Array<number> | null,
     requestIdPrefix?: string,
   ): Promise<IFeeHistory | JsonRpcError> {
-    const maxResults =
-      ConfigService.get('TEST') === 'true'
-        ? constants.DEFAULT_FEE_HISTORY_MAX_RESULTS
-        : Number(ConfigService.get('FEE_HISTORY_MAX_RESULTS'));
+    const maxResults = ConfigService.get('TEST')
+      ? constants.DEFAULT_FEE_HISTORY_MAX_RESULTS
+      : Number(ConfigService.get('FEE_HISTORY_MAX_RESULTS'));
 
     this.logger.trace(
       `${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`,
@@ -1664,11 +1661,12 @@ export class EthImpl implements Eth {
     // When eth_call is invoked with a selector listed in specialSelectors, it will be routed through the consensus node, regardless of ETH_CALL_DEFAULT_TO_CONSENSUS_NODE.
     // note: this feature is a workaround for when a feature is supported by consensus node but not yet by mirror node.
     // Follow this ticket https://github.com/hashgraph/hedera-json-rpc-relay/issues/2984 to revisit and remove special selectors.
+    // @ts-ignore
     const specialSelectors: string[] = JSON.parse(ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS') || '[]');
     const shouldForceToConsensus = selector !== '' && specialSelectors.includes(selector);
 
     // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-    const shouldDefaultToConsensus = ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE') === 'true';
+    const shouldDefaultToConsensus = ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
 
     let result: string | JsonRpcError = '';
     try {

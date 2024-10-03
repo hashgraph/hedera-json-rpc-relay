@@ -119,6 +119,7 @@ const formatTransactionIdWithoutQueryParams = (transactionId: string): string | 
  * @throws An error if both the env var and constant are invalid
  */
 const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): number => {
+  // @ts-ignore
   let value: number = Number.parseInt(ConfigService.get(envVarName) ?? '', 10);
   if (!isNaN(value)) {
     return value;
