@@ -84,8 +84,8 @@ export class IPAddressHbarSpendingPlanRepository {
     const key = this.getKey(ipAddress);
     const ipAddressSpendingPlan = await this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, 'delete', requestDetails);
     await this.cache.delete(key, 'delete', requestDetails);
-    const errorMessage = spendingPlan
-      ? `Deleted IPAddressHbarSpendingPlan with ID ${spendingPlan.planId}`
+    const errorMessage = ipAddressSpendingPlan
+      ? `Deleted IPAddressHbarSpendingPlan with ID ${ipAddressSpendingPlan.planId}`
       : `Trying to delete non-existent plan`;
     this.logger.trace(errorMessage);
   }
