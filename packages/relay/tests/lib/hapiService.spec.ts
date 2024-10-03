@@ -176,7 +176,7 @@ describe('HAPI Service', async function () {
         const oldClientInstance = hapiService.getMainClientInstance();
         const oldSDKInstance = hapiService.getSDKClient();
 
-        hbarLimitService.addExpense(costAmount, '', requestDetails);
+        await hbarLimitService.addExpense(costAmount, '', requestDetails);
         hapiService.decrementErrorCounter(errorStatus);
 
         const newSDKInstance = hapiService.getSDKClient();
