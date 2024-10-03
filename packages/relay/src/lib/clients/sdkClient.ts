@@ -492,7 +492,7 @@ export class SDKClient {
       contractCallQuery.setPaymentTransactionId(TransactionId.generate(this.clientMain.operatorAccountId));
     }
 
-    return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestDetails);
+    return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestDetails, from);
   }
 
   /**
@@ -963,6 +963,7 @@ export class SDKClient {
         callerName,
         interactingEntity,
         requestDetails,
+        originalCallerAddress,
       );
 
       if (fileInfo.isDeleted) {
