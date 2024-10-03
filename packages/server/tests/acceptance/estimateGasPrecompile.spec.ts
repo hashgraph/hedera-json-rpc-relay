@@ -37,6 +37,9 @@ import RelayCalls from '../../../../packages/server/tests/helpers/constants';
 
 // Other imports
 import { numberTo0x } from '../../../../packages/relay/src/formatters';
+import RelayClient from '../clients/relayClient';
+import ServicesClient from '../clients/servicesClient';
+import MirrorClient from '../clients/mirrorClient';
 
 describe('EstimatePrecompileContract tests', function () {
   const signers: AliasAccount[] = [];
@@ -72,7 +75,13 @@ describe('EstimatePrecompileContract tests', function () {
   const usdFee1 = 1;
   const usdFee2 = 2;
   const accounts: AliasAccount[] = [];
-  const { servicesNode, mirrorNode, relay }: any = global;
+
+  // @ts-ignore
+  const {
+    servicesNode,
+    mirrorNode,
+    relay,
+  }: { servicesNode: ServicesClient; mirrorNode: MirrorClient; relay: RelayClient } = global;
 
   async function createFungibleToken() {
     estimateContract = new ethers.Contract(
@@ -2369,7 +2378,7 @@ describe('EstimatePrecompileContract tests', function () {
     let estimateGasResponse;
     try {
       estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [tx]);
-    } catch (e) {
+    } catch (e: any) {
       expect(e.code).to.eq(errorMessage);
       failed = true;
     }

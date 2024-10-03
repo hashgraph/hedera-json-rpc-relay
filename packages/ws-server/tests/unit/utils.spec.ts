@@ -33,6 +33,7 @@ import { WS_CONSTANTS } from '../../src/utils/constants';
 import { Relay } from '@hashgraph/json-rpc-relay/src';
 import ConnectionLimiter from '../../src/metrics/connectionLimiter';
 import WsMetricRegistry from '../../src/metrics/wsMetricRegistry';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('Utilities unit tests', async function () {
   describe('constructValidLogSubscriptionFilter tests', () => {
@@ -86,8 +87,11 @@ describe('Utilities unit tests', async function () {
     let loggerMock: any;
     let request: any;
     let response: any;
-    const requestIdPrefix = 'req-123';
-    const connectionIdPrefix = 'conn-456';
+    const requestDetails = new RequestDetails({
+      requestId: 'req-123',
+      ipAddress: '0.0.0.0',
+      connectionId: 'conn-456',
+    });
 
     beforeEach(() => {
       connectionMock = {
@@ -110,9 +114,9 @@ describe('Utilities unit tests', async function () {
     });
 
     it('should log the response being sent to the client', () => {
-      sendToClient(connectionMock, request, response, loggerMock, requestIdPrefix, connectionIdPrefix);
+      sendToClient(connectionMock, request, response, loggerMock, requestDetails);
 
-      const expectedLogMessage = `${connectionIdPrefix} ${requestIdPrefix}: Sending result=${JSON.stringify(
+      const expectedLogMessage = `${requestDetails.formattedLogPrefix}: Sending result=${JSON.stringify(
         response,
       )} to client for request=${JSON.stringify(request)}`;
 
@@ -121,14 +125,14 @@ describe('Utilities unit tests', async function () {
     });
 
     it('should send the response to the client connection', () => {
-      sendToClient(connectionMock, request, response, loggerMock, requestIdPrefix, connectionIdPrefix);
+      sendToClient(connectionMock, request, response, loggerMock, requestDetails);
 
       expect(connectionMock.send.calledOnce).to.be.true;
       expect(connectionMock.send.calledWith(JSON.stringify(response))).to.be.true;
     });
 
     it('should reset the inactivity TTL timer for the client connection', () => {
-      sendToClient(connectionMock, request, response, loggerMock, requestIdPrefix, connectionIdPrefix);
+      sendToClient(connectionMock, request, response, loggerMock, requestDetails);
 
       expect(connectionMock.limiter.resetInactivityTTLTimer.calledOnce).to.be.true;
       expect(connectionMock.limiter.resetInactivityTTLTimer.calledWith(connectionMock)).to.be.true;

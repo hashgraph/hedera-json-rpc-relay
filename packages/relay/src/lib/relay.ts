@@ -39,6 +39,8 @@ import HAPIService from './services/hapiService/hapiService';
 import { SubscriptionController } from './subscriptionController';
 import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
+import { RequestDetails } from './types';
+import { Utils } from '../utils';
 
 export class RelayImpl implements Relay {
   /**
@@ -181,7 +183,7 @@ export class RelayImpl implements Relay {
     mirrorNodeClient: MirrorNodeClient,
     logger: Logger,
     register: Registry,
-  ) {
+  ): Gauge {
     const metricGaugeName = 'rpc_relay_operator_balance';
     register.removeSingleMetric(metricGaugeName);
     return new Gauge({
@@ -193,7 +195,10 @@ export class RelayImpl implements Relay {
         // Invoked when the registry collects its metrics' values.
         // Allows for updated account balance tracking
         try {
-          const account = await mirrorNodeClient.getAccount(clientMain.operatorAccountId!.toString());
+          const account = await mirrorNodeClient.getAccount(
+            clientMain.operatorAccountId!.toString(),
+            new RequestDetails({ requestId: Utils.generateRequestId(), ipAddress: '' }),
+          );
           const accountBalance = account.balance?.balance;
           this.labels({ accountId: clientMain.operatorAccountId?.toString() }).set(accountBalance);
         } catch (e: any) {

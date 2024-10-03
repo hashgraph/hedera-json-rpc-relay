@@ -24,13 +24,10 @@ import {
   AccountId,
   AccountInfoQuery,
   Client,
-  ContractCreateTransaction,
   ContractExecuteTransaction,
   ContractFunctionParameters,
   ContractId,
-  FileCreateTransaction,
   Hbar,
-  Key,
   KeyList,
   PrivateKey,
   Query,
@@ -43,7 +40,6 @@ import {
   FileUpdateTransaction,
   TransactionId,
   AccountAllowanceApproveTransaction,
-  AccountBalance,
   FileContentsQuery,
   TokenType,
   TokenSupplyType,
@@ -53,19 +49,46 @@ import {
   CustomFractionalFee,
   CustomRoyaltyFee,
   EvmAddress,
+  CustomFee,
+  TokenId,
+  Key,
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
-import { ethers } from 'ethers';
+import { ethers, JsonRpcProvider } from 'ethers';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils as relayUtils } from '@hashgraph/json-rpc-relay/dist/utils';
+import { Long } from 'long';
 
 const supportedEnvs = ['previewnet', 'testnet', 'mainnet'];
+
+type CreateHTSParams = {
+  tokenName: string;
+  symbol: string;
+  treasuryAccountId: string;
+  initialSupply: number;
+  adminPrivateKey: PrivateKey;
+  kyc?: Key;
+  freeze?: Key;
+  customHbarFees?: number;
+  customTokenFees?: number;
+  customRoyaltyFees?: number;
+  customFractionalFees?: number;
+};
+
+type CreateNFTParams = {
+  tokenName: string;
+  symbol: string;
+  treasuryAccountId: string;
+  maxSupply: number;
+  adminPrivateKey: PrivateKey;
+  customRoyaltyFees?: number;
+};
 
 export default class ServicesClient {
   static TINYBAR_TO_WEIBAR_COEF = 10_000_000_000;
 
-  private readonly DEFAULT_KEY = new Key();
+  private readonly DEFAULT_KEY = PrivateKey.generateECDSA();
   private readonly logger: Logger;
   private readonly network: string;
 
@@ -89,7 +112,12 @@ export default class ServicesClient {
     return this.logger;
   }
 
-  async createInitialAliasAccount(providerUrl, chainId, requestId, initialBalance = 2000): Promise<AliasAccount> {
+  async createInitialAliasAccount(
+    providerUrl: string,
+    chainId: ethers.BigNumberish,
+    requestId?: string,
+    initialBalance: number = 2000,
+  ): Promise<AliasAccount> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const privateKey = PrivateKey.generateECDSA();
     const wallet = new ethers.Wallet(
@@ -114,7 +142,7 @@ export default class ServicesClient {
     const accountId = receipt?.transfers[1].accountId!;
     accountId.evmAddress = EvmAddress.fromString(address);
 
-    const aliasAccount: AliasAccount = {
+    return {
       alias: accountId,
       accountId,
       address,
@@ -123,11 +151,9 @@ export default class ServicesClient {
       wallet,
       keyList: KeyList.from([privateKey]),
     };
-
-    return aliasAccount;
   }
 
-  async executeQuery(query: Query<any>, requestId?: string) {
+  async executeQuery<T>(query: Query<T>, requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     try {
       this.logger.info(`${requestIdPrefix} Execute ${query.constructor.name} query`);
@@ -174,7 +200,7 @@ export default class ServicesClient {
     return { executedTimestamp, executedTransactionId };
   }
 
-  async createToken(initialSupply = 1000, requestId?: string) {
+  async createToken(initialSupply: number = 1000, requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const symbol = Math.random().toString(36).slice(2, 6).toUpperCase();
     this.logger.trace(`${requestIdPrefix} symbol = ${symbol}`);
@@ -192,13 +218,13 @@ export default class ServicesClient {
     this.logger.trace(`${requestIdPrefix} get token id from receipt`);
     const tokenId = resp?.tokenId;
     this.logger.info(`${requestIdPrefix} token id = ${tokenId?.toString()}`);
-    return tokenId;
+    return tokenId!;
   }
 
-  async associateToken(tokenId, requestId?: string) {
+  async associateToken(tokenId: string | TokenId, requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     await this.executeAndGetTransactionReceipt(
-      await new TokenAssociateTransaction()
+      new TokenAssociateTransaction()
         .setAccountId(this._thisAccountId())
         .setTokenIds([tokenId])
         .setTransactionMemo('Relay test token association'),
@@ -210,7 +236,7 @@ export default class ServicesClient {
     );
   }
 
-  async transferToken(tokenId, recipient: AccountId, amount = 10, requestId?: string) {
+  async transferToken(tokenId: string | TokenId, recipient: AccountId, amount = 10, requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const receipt = await this.executeAndGetTransactionReceipt(
       new TransferTransaction()
@@ -227,54 +253,17 @@ export default class ServicesClient {
     const balances = await this.executeQuery(new AccountBalanceQuery().setAccountId(recipient), requestId);
 
     this.logger.debug(
-      `${requestIdPrefix} Token balances for ${recipient.toString()} are ${balances.tokens.toString().toString()}`,
+      `${requestIdPrefix} Token balances for ${recipient.toString()} are ${balances?.tokens?.toString()}`,
     );
 
     return receipt;
   }
 
-  async createParentContract(contractJson, requestId?: string) {
-    const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-    const contractByteCode = contractJson.deployedBytecode.replace('0x', '');
-
-    const fileReceipt = await this.executeAndGetTransactionReceipt(
-      new FileCreateTransaction()
-        .setKeys([this.client.operatorPublicKey || this.DEFAULT_KEY])
-        .setContents(contractByteCode)
-        .setTransactionMemo('Relay test file create'),
-      requestId,
-    );
-
-    // Fetch the receipt for transaction that created the file
-    // The file ID is located on the transaction receipt
-    const fileId = fileReceipt?.fileId;
-    this.logger.info(`${requestIdPrefix} contract bytecode file: ${fileId?.toString()}`);
-
-    // Create the contract
-    const contractReceipt = await this.executeAndGetTransactionReceipt(
-      new ContractCreateTransaction()
-        .setConstructorParameters(new ContractFunctionParameters())
-        .setGas(75000)
-        .setInitialBalance(1)
-        .setBytecodeFileId(fileId || '')
-        .setAdminKey(this.client.operatorPublicKey || this.DEFAULT_KEY)
-        .setTransactionMemo('Relay test contract create'),
-      requestId,
-    );
-
-    // The contract ID is located on the transaction receipt
-    const contractId = contractReceipt?.contractId;
-
-    this.logger.info(`${requestIdPrefix} new contract ID: ${contractId?.toString()}`);
-
-    return contractId;
-  }
-
   async executeContractCall(
-    contractId,
+    contractId: string | ContractId,
     functionName: string,
     params: ContractFunctionParameters,
-    gasLimit = 75000,
+    gasLimit: number | Long = 75000,
     requestId?: string,
   ) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
@@ -297,7 +286,7 @@ export default class ServicesClient {
   }
 
   async executeContractCallWithAmount(
-    contractId,
+    contractId: string | ContractId,
     functionName: string,
     params: ContractFunctionParameters,
     gasLimit = 500_000,
@@ -316,7 +305,7 @@ export default class ServicesClient {
     if (amount > 0) {
       tx.setPayableAmount(Hbar.fromTinybars(amount));
     }
-    let contractExecTransactionResponse;
+    let contractExecTransactionResponse: TransactionResponse;
 
     try {
       contractExecTransactionResponse = await this.executeTransaction(tx, requestId);
@@ -333,20 +322,18 @@ export default class ServicesClient {
   }
 
   async getAliasAccountInfo(
-    accountId,
+    accountId: AccountId,
     privateKey: PrivateKey,
-    provider = null,
+    provider: JsonRpcProvider | null = null,
     requestId?: string,
-    keyList?: null | KeyList,
+    keyList?: KeyList,
   ): Promise<AliasAccount> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
 
-    //@ts-ignore
-    const balance = await this.executeQuery(new AccountBalanceQuery().setAccountId(accountId), requestId);
+    const balance = (await this.executeQuery(new AccountBalanceQuery().setAccountId(accountId), requestId))!;
     this.logger.info(`${requestIdPrefix} Balance of the new account: ${balance.toString()}`);
 
-    //@ts-ignore
-    const accountInfo = await this.executeQuery(new AccountInfoQuery().setAccountId(accountId), requestId);
+    const accountInfo = (await this.executeQuery(new AccountInfoQuery().setAccountId(accountId), requestId))!;
     this.logger.info(
       `${requestIdPrefix} New account Info - accountId: ${accountInfo.accountId.toString()}, evmAddress: ${
         accountInfo.contractAccountId
@@ -359,39 +346,40 @@ export default class ServicesClient {
       this.logger.child({ name: `services-client` }),
     );
 
-    let wallet;
+    let wallet: ethers.Wallet;
     if (provider) {
       wallet = new ethers.Wallet(privateKey.toStringRaw(), provider);
     } else {
       wallet = new ethers.Wallet(privateKey.toStringRaw());
     }
 
-    const account: AliasAccount = {
+    return {
       alias: accountId,
       accountId: accountInfo.accountId,
-      address: Utils.add0xPrefix(accountInfo.contractAccountId),
+      address: Utils.add0xPrefix(accountInfo.contractAccountId!),
       client: servicesClient,
       privateKey,
       wallet,
       keyList,
     };
-
-    return account;
   }
 
   // Creates an account that has 2 keys - ECDSA and a contractId. This is required for calling contract methods that create HTS tokens.
   // The contractId should be the id of the contract.
   // The account should be created after the contract has been deployed.
   async createAccountWithContractIdKey(
-    contractIdString: string,
+    contractId: string | ContractId,
     initialBalance = 10,
-    provider = null,
+    provider: JsonRpcProvider | null = null,
     requestId?: string,
   ) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const privateKey = PrivateKey.generateECDSA();
     const publicKey = privateKey.publicKey;
-    const contractId = ContractId.fromString(contractIdString);
+
+    if (typeof contractId === 'string') {
+      contractId = ContractId.fromString(contractId);
+    }
 
     const keys = [publicKey, contractId];
 
@@ -399,25 +387,28 @@ export default class ServicesClient {
     const keyList = new KeyList(keys, 1);
 
     this.logger.trace(
-      `${requestIdPrefix} Create new Eth compatible account w ContractId key: ${contractIdString}, privateKey: ${privateKey}, alias: ${publicKey.toEvmAddress()} and balance ~${initialBalance} hb`,
+      `${requestIdPrefix} Create new Eth compatible account w ContractId key: ${contractId}, privateKey: ${privateKey}, alias: ${publicKey.toEvmAddress()} and balance ~${initialBalance} hb`,
     );
 
-    const accountCreateTx = await (
-      await new AccountCreateTransaction()
-        .setInitialBalance(new Hbar(initialBalance))
-        .setKey(keyList)
-        .setAlias(publicKey.toEvmAddress())
-        .freezeWith(this.client)
-    ).sign(privateKey);
+    const accountCreateTx = await new AccountCreateTransaction()
+      .setInitialBalance(new Hbar(initialBalance))
+      .setKey(keyList)
+      .setAlias(publicKey.toEvmAddress())
+      .freezeWith(this.client)
+      .sign(privateKey);
 
     const txResult = await accountCreateTx.execute(this.client);
     const receipt = await txResult.getReceipt(this.client);
-    const accountId = receipt.accountId;
+    const accountId = receipt.accountId!;
 
     return this.getAliasAccountInfo(accountId, privateKey, provider, requestId, keyList);
   }
 
-  async createAliasAccount(initialBalance = 10, provider = null, requestId?: string): Promise<AliasAccount> {
+  async createAliasAccount(
+    initialBalance = 10,
+    provider: JsonRpcProvider | null = null,
+    requestId?: string,
+  ): Promise<AliasAccount> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const privateKey = PrivateKey.generateECDSA();
     const publicKey = privateKey.publicKey;
@@ -442,7 +433,7 @@ export default class ServicesClient {
   }
 
   async deployContract(
-    contract,
+    contract: { bytecode: string | Uint8Array },
     gas = 100_000,
     constructorParameters: Uint8Array = new Uint8Array(),
     initialBalance = 0,
@@ -485,41 +476,23 @@ export default class ServicesClient {
     this.logger.info(`${requestIdPrefix} File ${fileId} updated with status: ${receipt.status.toString()}`);
   }
 
-  async getAccountBalance(account: string | AccountId, requestId?: string): Promise<AccountBalance> {
-    const accountId = typeof account === 'string' ? AccountId.fromString(account) : account;
-    return this.executeQuery(new AccountBalanceQuery().setAccountId(accountId), requestId);
-  }
-
-  async getAccountBalanceInWeiBars(account: string | AccountId, requestId?: string) {
-    const balance = await this.getAccountBalance(account, requestId);
-
-    return BigInt(balance.hbars.toTinybars().toString()) * BigInt(ServicesClient.TINYBAR_TO_WEIBAR_COEF);
-  }
-
   getClient() {
-    let network = this.network;
     try {
-      network = JSON.parse(this.network);
+      const network = JSON.parse(this.network);
+      return Client.forNetwork(network);
     } catch (e) {
       // network config is a string and not a valid JSON
+      return Client.forName(this.network);
     }
-
-    return Client.forNetwork(network);
   }
 
   async createHTS(
-    args = {
+    args: CreateHTSParams = {
       tokenName: 'Default Name',
       symbol: 'HTS',
       treasuryAccountId: '0.0.2',
       initialSupply: 5000,
       adminPrivateKey: this.DEFAULT_KEY,
-      kyc: null,
-      freeze: null,
-      customHbarFees: false,
-      customTokenFees: false,
-      customRoyaltyFees: false,
-      customFractionalFees: false,
     },
   ) {
     const {} = args;
@@ -549,11 +522,11 @@ export default class ServicesClient {
       transaction.setFreezeKey(args.freeze);
     }
 
-    const customFees = [];
+    const customFees: CustomFee[] = [];
     if (args.customHbarFees) {
       customFees.push(
         new CustomFixedFee()
-          .setHbarAmount(Hbar.from(args.customHbarFees))
+          .setHbarAmount(Hbar.fromTinybars(args.customHbarFees))
           .setFeeCollectorAccountId(AccountId.fromString(args.treasuryAccountId)),
       );
     }
@@ -579,7 +552,7 @@ export default class ServicesClient {
       transaction.setCustomFees(customFees);
     }
 
-    const tokenCreate = await (await transaction).execute(htsClient);
+    const tokenCreate = await transaction.execute(htsClient);
 
     const receipt = await tokenCreate.getReceipt(this.client);
     this.logger.info(`Created HTS token ${receipt.tokenId?.toString()}`);
@@ -590,13 +563,12 @@ export default class ServicesClient {
   }
 
   async createNFT(
-    args = {
+    args: CreateNFTParams = {
       tokenName: 'Default Name',
       symbol: 'HTS',
       treasuryAccountId: '0.0.2',
       maxSupply: 5000,
       adminPrivateKey: this.DEFAULT_KEY,
-      customRoyaltyFees: false,
     },
   ) {
     const {} = args;
@@ -627,7 +599,7 @@ export default class ServicesClient {
       ]);
     }
 
-    let nftCreate = await (await transaction).execute(htsClient);
+    let nftCreate = await transaction.execute(htsClient);
 
     const receipt = await nftCreate.getReceipt(this.client);
     this.logger.info(`Created NFT token ${receipt.tokenId?.toString()}`);
@@ -649,9 +621,10 @@ export default class ServicesClient {
     htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
 
     // Mint new NFT
-    let mintTx = await (
-      await new TokenMintTransaction().setTokenId(args.tokenId).setMetadata([Buffer.from(args.metadata)])
-    ).execute(htsClient);
+    let mintTx = await new TokenMintTransaction()
+      .setTokenId(args.tokenId)
+      .setMetadata([Buffer.from(args.metadata)])
+      .execute(htsClient);
 
     const receipt = await mintTx.getReceipt(this.client);
     return {
@@ -672,9 +645,10 @@ export default class ServicesClient {
     htsClient.setOperator(AccountId.fromString(args.treasuryAccountId), args.adminPrivateKey);
 
     //Enable KYC flag on account and freeze the transaction for manual signing
-    const transaction = await (
-      await new TokenGrantKycTransaction().setAccountId(args.accountId).setTokenId(args.tokenId)
-    ).execute(htsClient);
+    const transaction = await new TokenGrantKycTransaction()
+      .setAccountId(args.accountId)
+      .setTokenId(args.tokenId)
+      .execute(htsClient);
 
     //Request the receipt of the transaction
     const receipt = await transaction.getReceipt(htsClient);
@@ -685,7 +659,13 @@ export default class ServicesClient {
     };
   }
 
-  async associateHTSToken(accountId, tokenId, privateKey, htsClient, requestId?: string) {
+  async associateHTSToken(
+    accountId: string | AccountId,
+    tokenId: string | TokenId,
+    privateKey: PrivateKey,
+    htsClient: Client,
+    requestId?: string,
+  ) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const tokenAssociate = await (
       await new TokenAssociateTransaction()
@@ -699,7 +679,12 @@ export default class ServicesClient {
     this.logger.info(`${requestIdPrefix} HTS Token ${tokenId} associated to : ${accountId}`);
   }
 
-  async approveHTSToken(spenderId, tokenId, htsClient, requestId?: string) {
+  async approveHTSToken(
+    spenderId: string | AccountId,
+    tokenId: string | TokenId,
+    htsClient: Client,
+    requestId?: string,
+  ) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const amount = 10000;
     const tokenApprove = await new AccountAllowanceApproveTransaction()
@@ -710,14 +695,19 @@ export default class ServicesClient {
     this.logger.info(`${requestIdPrefix} ${amount} of HTS Token ${tokenId} can be spent by ${spenderId}`);
   }
 
-  async transferHTSToken(accountId, tokenId, amount, fromId = this.client.operatorAccountId, requestId?: string) {
+  async transferHTSToken(
+    accountId: string | AccountId,
+    tokenId: string | TokenId,
+    amount: number | Long,
+    fromId: string | AccountId = this.client.operatorAccountId!,
+    requestId?: string,
+  ) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     try {
-      const tokenTransfer = await (
-        await new TransferTransaction()
-          .addTokenTransfer(tokenId, fromId, -amount)
-          .addTokenTransfer(tokenId, accountId, amount)
-      ).execute(this.client);
+      const tokenTransfer = await new TransferTransaction()
+        .addTokenTransfer(tokenId, fromId, -amount)
+        .addTokenTransfer(tokenId, accountId, amount)
+        .execute(this.client);
 
       const rec = await tokenTransfer.getReceipt(this.client);
       this.logger.info(`${requestIdPrefix} ${amount} of HTS Token ${tokenId} can be spent by ${accountId}`);
@@ -725,11 +715,5 @@ export default class ServicesClient {
     } catch (e) {
       this.logger.error(e, `${requestIdPrefix} TransferTransaction failed`);
     }
-  }
-
-  async getAccountNonce(accountId) {
-    const query = new AccountInfoQuery().setAccountId(accountId);
-    const accountInfo = await query.execute(this.client);
-    return accountInfo.ethereumNonce;
   }
 }

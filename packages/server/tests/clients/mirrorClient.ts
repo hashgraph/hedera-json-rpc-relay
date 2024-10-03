@@ -21,6 +21,7 @@
 import Axios, { AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
 import { Logger } from 'pino';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { Utils } from '../helpers/utils';
 
 export default class MirrorClient {

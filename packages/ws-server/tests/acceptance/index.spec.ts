@@ -35,6 +35,10 @@ import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer
 import ServicesClient from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { Server } from 'node:http';
+import { setServerTimeout } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/utils';
+
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
 
@@ -64,8 +68,7 @@ global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 describe('RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
-  let relayServer; // Relay Server
-  let socketServer;
+  const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
   global.servicesNode = new ServicesClient(
     NETWORK,
     OPERATOR_ID,
@@ -74,8 +77,6 @@ describe('RPC Server Acceptance Tests', function () {
   );
   global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
   global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
-  global.relayServer = relayServer;
-  global.socketServer = socketServer;
   global.logger = logger;
 
   before(async () => {
@@ -101,7 +102,7 @@ describe('RPC Server Acceptance Tests', function () {
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
-    await global.mirrorNode.get(`/accounts/${initialAccount.address}`);
+    await global.mirrorNode.get(`/accounts/${initialAccount.address}`, requestDetails);
   });
 
   after(async function () {
@@ -140,10 +141,12 @@ describe('RPC Server Acceptance Tests', function () {
 
     //stop relay
     logger.info('Stop relay');
+    const relayServer: Server = global.relayServer;
     if (relayServer !== undefined) {
       relayServer.close();
     }
 
+    const socketServer: Server = global.socketServer;
     if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
       socketServer.close();
     }
@@ -171,7 +174,9 @@ describe('RPC Server Acceptance Tests', function () {
     // start local relay, relay instance in local should not be running
 
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
-    relayServer = app.listen({ port: constants.RELAY_PORT });
+    const relayServer = app.listen({ port: constants.RELAY_PORT });
+    global.relayServer = relayServer;
+    setServerTimeout(relayServer);
 
     if (process.env.TEST_WS_SERVER === 'true') {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);

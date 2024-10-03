@@ -38,6 +38,7 @@ import {
   MirrorNodeTransactionRecord,
   IMirrorNodeTransactionRecord,
 } from './mirrorNode';
+import { IRequestDetails, RequestDetails } from './RequestDetails';
 
 export {
   ITransfer,
@@ -61,4 +62,6 @@ export {
   MirrorNodeTransactionRecord,
   IMirrorNodeTransactionRecord,
   IExecuteTransactionEventPayload,
+  IRequestDetails,
+  RequestDetails,
 };

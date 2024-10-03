@@ -25,6 +25,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@web-socket-batch-1 eth_estimateGas', async function () {
   const METHOD_NAME = 'eth_estimateGas';
@@ -38,22 +39,22 @@ describe('@web-socket-batch-1 eth_estimateGas', async function () {
     currentPrice: number,
     expectedGas: number,
     gasPriceDeviation: number,
-    ethersWsProvider: WebSocketProvider,
-    requestId = 'eth_estimateGas';
+    ethersWsProvider: WebSocketProvider;
+
+  const requestDetails = new RequestDetails({ requestId: 'ws_estimateGasTest', ipAddress: '0.0.0.0' });
 
   before(async () => {
-    requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '2500000000'; //25 Hbar
-
     const neededAccounts: number = 1;
+
     accounts.push(
       ...(await Utils.createMultipleAliasAccounts(
         mirrorNode,
         initialAccount,
         neededAccounts,
         initialAmount,
-        requestId,
+        requestDetails,
       )),
     );
     global.accounts.push(...accounts);
