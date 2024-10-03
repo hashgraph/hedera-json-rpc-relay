@@ -20,7 +20,7 @@
 
 import { Eth } from '../index';
 import { Logger } from 'pino';
-import { Registry, Gauge } from 'prom-client';
+import { Gauge, Registry } from 'prom-client';
 import { RequestDetails } from './types';
 import { Utils } from '../utils';
 

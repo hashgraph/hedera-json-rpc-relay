@@ -19,7 +19,7 @@
  */
 
 import { expect } from 'chai';
-import { validateOpenRPCDocument, parseOpenRPCDocument } from '@open-rpc/schema-utils-js';
+import { parseOpenRPCDocument, validateOpenRPCDocument } from '@open-rpc/schema-utils-js';
 
 import Ajv from 'ajv';
 
@@ -34,7 +34,7 @@ import { BigNumber } from 'bignumber.js';
 
 import { RelayImpl } from '../../src';
 import { EthImpl } from '../../src/lib/eth';
-import { SDKClient, MirrorNodeClient } from '../../src/lib/clients';
+import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import { RequestDetails } from '../../src/lib/types';
 
 import openRpcSchema from '../../../../docs/openrpc.json';
@@ -70,14 +70,13 @@ import { NOT_FOUND_RES } from './eth/eth-config';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { numberTo0x } from '../../src/formatters';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
 import constants from '../../src/lib/constants';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import EventEmitter from 'events';
 import Long from 'long';
 import { AccountInfo } from '@hashgraph/sdk';
+
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 process.env.npm_package_version = 'relay/0.0.1-SNAPSHOT';
 

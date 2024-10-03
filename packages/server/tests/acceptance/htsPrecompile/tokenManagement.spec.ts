@@ -22,9 +22,6 @@
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
 import Constants from '../../helpers/constants';
-
-chai.use(solidity);
-
 import Assertions from '../../helpers/assertions';
 import { ethers } from 'ethers';
 import ERC20MockJson from '../../contracts/ERC20Mock.json';
@@ -32,6 +29,8 @@ import TokenManagementJson from '../../contracts/TokenManagementContract.json';
 import { Utils } from '../../helpers/utils';
 import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { AliasAccount } from '../../types/AliasAccount';
+
+chai.use(solidity);
 
 /**
  * Tests for:

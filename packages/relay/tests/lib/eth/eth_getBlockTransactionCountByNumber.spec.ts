@@ -26,9 +26,9 @@ import chaiAsPromised from 'chai-as-promised';
 import { SDKClient } from '../../../src/lib/clients';
 import { numberTo0x } from '../../../dist/formatters';
 import {
-  BLOCKS_LIMIT_ORDER_URL,
   BLOCK_NUMBER,
   BLOCK_TRANSACTION_COUNT,
+  BLOCKS_LIMIT_ORDER_URL,
   DEFAULT_BLOCK,
   DEFAULT_BLOCKS_RES,
   DEFAULT_NETWORK_FEES,

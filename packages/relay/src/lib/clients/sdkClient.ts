@@ -19,38 +19,38 @@
  */
 
 import {
-  Hbar,
-  Query,
-  Client,
-  Status,
-  FileId,
-  HbarUnit,
+  AccountBalance,
+  AccountBalanceQuery,
   AccountId,
-  ContractId,
   AccountInfo,
-  Transaction,
-  FeeSchedules,
+  AccountInfoQuery,
+  Client,
+  ContractByteCodeQuery,
+  ContractCallQuery,
+  ContractFunctionResult,
+  ContractId,
+  EthereumTransaction,
+  EthereumTransactionData,
   ExchangeRate,
-  FileInfoQuery,
-  TransactionId,
   ExchangeRates,
   FeeComponents,
-  AccountBalance,
-  AccountInfoQuery,
-  ContractCallQuery,
-  FileContentsQuery,
-  TransactionRecord,
-  AccountBalanceQuery,
-  EthereumTransaction,
-  PrecheckStatusError,
-  TransactionResponse,
+  FeeSchedules,
   FileAppendTransaction,
+  FileContentsQuery,
   FileCreateTransaction,
   FileDeleteTransaction,
-  ContractByteCodeQuery,
-  ContractFunctionResult,
+  FileId,
+  FileInfoQuery,
+  Hbar,
+  HbarUnit,
+  PrecheckStatusError,
+  Query,
+  Status,
+  Transaction,
+  TransactionId,
+  TransactionRecord,
   TransactionRecordQuery,
-  EthereumTransactionData,
+  TransactionResponse,
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { EventEmitter } from 'events';
@@ -60,9 +60,13 @@ import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { SDKClientError } from '../errors/SDKClientError';
 import { JsonRpcError, predefined } from '../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
-import { formatRequestIdMessage, weibarHexToTinyBarInt } from '../../formatters';
-import { ITransactionRecordMetric, IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../types';
-import { RequestDetails } from '../types';
+import { weibarHexToTinyBarInt } from '../../formatters';
+import {
+  IExecuteQueryEventPayload,
+  IExecuteTransactionEventPayload,
+  ITransactionRecordMetric,
+  RequestDetails,
+} from '../types';
 
 const _ = require('lodash');
 

@@ -48,7 +48,7 @@ import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
 import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
-import { Server, IncomingMessage, ServerResponse } from 'http';
+import { Server } from 'http';
 
 chai.use(chaiAsPromised);
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });

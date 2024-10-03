@@ -29,8 +29,8 @@ import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse
 import { resolveParams, validateJsonRpcRequest, verifySupportedMethod } from '../utils/utils';
 import {
   InvalidRequest,
-  MethodNotFound,
   IPRateLimitExceeded,
+  MethodNotFound,
 } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { Logger } from 'pino';

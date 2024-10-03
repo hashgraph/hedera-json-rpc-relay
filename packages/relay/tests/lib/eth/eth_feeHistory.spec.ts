@@ -27,9 +27,9 @@ import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import {
   BASE_FEE_PER_GAS_HEX,
-  BLOCKS_LIMIT_ORDER_URL,
   BLOCK_NUMBER_2,
   BLOCK_NUMBER_3,
+  BLOCKS_LIMIT_ORDER_URL,
   DEFAULT_BLOCK,
   DEFAULT_NETWORK_FEES,
   ETH_FEE_HISTORY_VALUE,

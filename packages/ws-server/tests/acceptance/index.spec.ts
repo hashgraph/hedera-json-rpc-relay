@@ -22,9 +22,6 @@ import path from 'path';
 import pino from 'pino';
 import dotenv from 'dotenv';
 import chaiAsPromised from 'chai-as-promised';
-
-chai.use(chaiAsPromised);
-
 import fs from 'fs';
 import { AccountId, Hbar } from '@hashgraph/sdk';
 import app from '@hashgraph/json-rpc-server/dist/server';
@@ -38,6 +35,8 @@ import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccoun
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { Server } from 'node:http';
 import { setServerTimeout } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/utils';
+
+chai.use(chaiAsPromised);
 
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));

@@ -21,7 +21,7 @@
 import { WS_CONSTANTS } from './constants';
 import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
-import { predefined, Relay } from '@hashgraph/json-rpc-relay';
+import { Relay } from '@hashgraph/json-rpc-relay';
 import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
 import { IJsonRpcResponse } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcResponse';
 import { Logger } from 'pino';

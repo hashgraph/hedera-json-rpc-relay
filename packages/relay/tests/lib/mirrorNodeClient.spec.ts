@@ -22,22 +22,22 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { getRequestId, mockData, random20BytesAddress } from '../helpers';
-
-const registry = new Registry();
-
 import pino from 'pino';
 import { ethers } from 'ethers';
-import { predefined, MirrorNodeClientError } from '../../src';
+import { MirrorNodeClientError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { BigNumber } from 'bignumber.js';
+
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+
+const registry = new Registry();
 
 const logger = pino();
 const noTransactions = '?transactions=false';

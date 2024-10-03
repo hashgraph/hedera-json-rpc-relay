@@ -21,7 +21,6 @@
 import fs from 'fs';
 import { bytecode } from '../contracts/Basic.json';
 import path from 'path';
-const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
 import axios from 'axios';
 import openRpcData from '../../../../docs/openrpc.json';
 import Ajv from 'ajv';
@@ -32,6 +31,8 @@ import { config } from 'dotenv';
 import WebSocket from 'ws';
 import LogsContract from '../contracts/Logs.json';
 import CallerContract from '../contracts/Caller.json';
+
+const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
 config();
 
 let currentBlockHash;
