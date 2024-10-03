@@ -25,8 +25,6 @@ import path from 'path';
 import sinon from 'sinon';
 import { Server } from 'http';
 import { GCProfiler } from 'v8';
-dotenv.config({ path: path.resolve(__dirname, './test.env') });
-
 import Assertions from '../helpers/assertions';
 import app from '../../src/server';
 import { TracerType, Validator } from '../../src/validator';
@@ -36,6 +34,8 @@ import { Utils } from '../helpers/utils';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { contractAddress1, contractAddress2, contractHash1, contractId1 } from '../../../relay/tests/helpers';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
+
+dotenv.config({ path: path.resolve(__dirname, './test.env') });
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 

@@ -20,7 +20,6 @@
 
 import { RedisMemoryServer } from 'redis-memory-server';
 import { Logger } from 'pino';
-import { RedisInstanceDataT } from 'redis-memory-server/lib/RedisMemoryServer';
 
 export class RedisInMemoryServer {
   /**

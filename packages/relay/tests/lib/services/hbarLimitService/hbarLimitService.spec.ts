@@ -33,9 +33,9 @@ import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/
 import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import {
-  HbarSpendingPlanNotFoundError,
-  HbarSpendingPlanNotActiveError,
   EthAddressHbarSpendingPlanNotFoundError,
+  HbarSpendingPlanNotActiveError,
+  HbarSpendingPlanNotFoundError,
   IPAddressHbarSpendingPlanNotFoundError,
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { RequestDetails } from '../../../../src/lib/types';
