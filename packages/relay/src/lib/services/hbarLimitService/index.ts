@@ -221,11 +221,11 @@ export class HbarLimitService implements IHbarLimitService {
   /**
    * Add expense to the remaining budget and update the spending plan if applicable.
    * @param {number} cost - The cost of the expense.
-   * @param {string} [ethAddress] - The optional Ethereum address associated with the expense.
+   * @param {string} ethAddress - The optional Ethereum address associated with the expense.
    * @param {RequestDetails} requestDetails - The details of the request, including IP address and formatted request ID.
    * @returns {Promise<void>} - A promise that resolves when the expense has been added and all updates are complete.
    */
-  async addExpense(cost: number, ethAddress: string | undefined, requestDetails: RequestDetails): Promise<void> {
+  async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails): Promise<void> {
     const ipAddress = requestDetails.ipAddress;
 
     if (ethAddress || ipAddress) {
@@ -367,13 +367,13 @@ export class HbarLimitService implements IHbarLimitService {
 
   /**
    * Gets the spending plan for the given eth address or IP address.
-   * @param {string | undefined} ethAddress - The eth address to get the spending plan for.
+   * @param {string} ethAddress - The eth address to get the spending plan for.
    * @param {RequestDetails} requestDetails - The request details containing IP address, formatted request ID, and other tracking information.
    * @returns {Promise<IDetailedHbarSpendingPlan | null>} - A promise that resolves with the spending plan or null if none exists.
    * @private
    */
   private async getSpendingPlan(
-    ethAddress: string | undefined,
+    ethAddress: string,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan | null> {
     const ipAddress = requestDetails.ipAddress;
@@ -432,14 +432,14 @@ export class HbarLimitService implements IHbarLimitService {
 
   /**
    * Creates a basic spending plan for the given eth address or IP address.
-   * @param {string | undefined} ethAddress - The eth address to create the spending plan for (optional).
+   * @param {string} ethAddress - The eth address to create the spending plan for (optional).
    * @param {RequestDetails} requestDetails - The request details for logging, tracking, and containing the IP address.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
    * @throws {Error} - If neither eth address nor IP address is provided.
    * @private
    */
   private async createBasicSpendingPlan(
-    ethAddress: string | undefined,
+    ethAddress: string,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan> {
     const ipAddress = requestDetails.ipAddress;
