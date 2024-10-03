@@ -34,9 +34,8 @@ import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import { calculateTxRecordChargeAmount } from '../../../helpers';
 import MetricService from '../../../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../../../src/lib/types';
-import { Hbar, Long, Status, Client, AccountId, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
-import { RequestDetails } from '../../../../src/lib/types';
+import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload, RequestDetails } from '../../../../src/lib/types';
+import { AccountId, Client, Hbar, Long, Status, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
 
 config({ path: resolve(__dirname, '../../../test.env') });
 const registry = new Registry();

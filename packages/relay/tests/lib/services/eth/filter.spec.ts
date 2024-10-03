@@ -26,14 +26,14 @@ import { Registry } from 'prom-client';
 import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
 import constants from '../../../../src/lib/constants';
-import { FilterService, CommonService } from '../../../../src/lib/services/ethService';
-import { defaultEvmAddress, toHex, defaultBlock, defaultLogTopics, defaultLogs1 } from '../../../helpers';
+import { CommonService, FilterService } from '../../../../src/lib/services/ethService';
+import { defaultBlock, defaultEvmAddress, defaultLogs1, defaultLogTopics, toHex } from '../../../helpers';
 import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import * as sinon from 'sinon';
 import { RequestDetails } from '../../../../src/lib/types';
 import { v4 as uuid } from 'uuid';
+
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();

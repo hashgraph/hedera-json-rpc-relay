@@ -27,8 +27,9 @@ import chaiAsPromised from 'chai-as-promised';
 import { EthImpl } from '../../../src/lib/eth';
 import { SDKClient } from '../../../src/lib/clients';
 import {
-  BLOCKS_LIMIT_ORDER_URL,
+  BLOCK_HASH,
   BLOCK_NUMBER,
+  BLOCKS_LIMIT_ORDER_URL,
   CONTRACT_ADDRESS_1,
   DEFAULT_BLOCK,
   DEFAULT_CONTRACT_STATE_EMPTY_ARRAY,
@@ -38,7 +39,6 @@ import {
   DETAILD_CONTRACT_RESULT_NOT_FOUND,
   MOST_RECENT_BLOCK,
   OLDER_BLOCK,
-  BLOCK_HASH,
 } from './eth-config';
 import { Eth, predefined } from '../../../src';
 import RelayAssertions from '../../assertions';

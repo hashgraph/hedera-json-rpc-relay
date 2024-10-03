@@ -21,9 +21,10 @@
 // external resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
-import { Hbar, ContractId } from '@hashgraph/sdk';
+import { ContractId } from '@hashgraph/sdk';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../helpers/constants';
+import RelayCall from '../../helpers/constants';
 
 import { AliasAccount } from '../../types/AliasAccount';
 import { ethers } from 'ethers';
@@ -38,7 +39,6 @@ import TokenManagementContractJson from '../../contracts/TokenManagementContract
 
 import { predefined } from '../../../../relay/src/lib/errors/JsonRpcError';
 import { Utils } from '../../helpers/utils';
-import RelayCall from '../../helpers/constants';
 import { numberTo0x } from '../../../../../packages/relay/src/formatters';
 
 chai.use(solidity);

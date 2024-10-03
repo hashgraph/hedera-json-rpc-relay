@@ -41,23 +41,22 @@ import { IDebugService } from './services/debugService/IDebugService';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
 import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
-import { IFeeHistory, IContractCallRequest, IContractCallResponse, ITransactionReceipt, RequestDetails } from './types';
+import { IContractCallRequest, IContractCallResponse, IFeeHistory, ITransactionReceipt, RequestDetails } from './types';
 import {
-  isHex,
-  toHash32,
-  prepend0x,
   ASCIIToHex,
-  numberTo0x,
-  nanOrNumberTo0x,
-  parseNumericEnvVar,
-  nullableNumberTo0x,
-  trimPrecedingZeros,
   formatContractResult,
-  weibarHexToTinyBarInt,
-  isValidEthereumAddress,
-  formatRequestIdMessage,
   formatTransactionIdWithoutQueryParams,
   getFunctionSelector,
+  isHex,
+  isValidEthereumAddress,
+  nanOrNumberTo0x,
+  nullableNumberTo0x,
+  numberTo0x,
+  parseNumericEnvVar,
+  prepend0x,
+  toHash32,
+  trimPrecedingZeros,
+  weibarHexToTinyBarInt,
 } from '../formatters';
 
 const _ = require('lodash');

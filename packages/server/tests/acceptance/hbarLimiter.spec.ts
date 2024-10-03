@@ -37,8 +37,6 @@ import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
 import fs from 'fs';
-import { resolve } from 'path';
-import { config } from 'dotenv';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';

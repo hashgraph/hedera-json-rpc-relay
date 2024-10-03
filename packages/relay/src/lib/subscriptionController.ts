@@ -24,7 +24,7 @@ import crypto from 'crypto';
 import constants from './constants';
 import { Poller } from './poller';
 import { generateRandomHex } from '../formatters';
-import { Registry, Histogram, Counter } from 'prom-client';
+import { Counter, Histogram, Registry } from 'prom-client';
 import { Subs } from '../index';
 
 export interface Subscriber {

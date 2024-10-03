@@ -36,11 +36,11 @@ import basicContract from '../../tests/contracts/Basic.json';
 // Errors and constants from local resources
 import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
 import Constants from '../../../relay/src/lib/constants';
+import constants from '../../../relay/src/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 
 // Other imports
 import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
-import constants from '../../../relay/src/lib/constants';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import RelayClient from '../clients/relayClient';
 import ServicesClient from '../clients/servicesClient';

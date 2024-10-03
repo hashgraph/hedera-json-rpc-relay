@@ -21,20 +21,21 @@
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
-const registry = new Registry();
-
 import pino from 'pino';
 import { Precheck } from '../../src/lib/precheck';
 import { blobVersionedHash, contractAddress1, expectedError, mockData, signTransaction } from '../helpers';
 import { MirrorNodeClient } from '../../src/lib/clients';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { Transaction, ethers } from 'ethers';
+import { ethers, Transaction } from 'ethers';
 import constants from '../../src/lib/constants';
 import { JsonRpcError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { ONE_TINYBAR_IN_WEI_HEX } from './eth/eth-config';
 import { RequestDetails } from '../../src/lib/types';
+
+const registry = new Registry();
+
 const logger = pino();
 
 const limitOrderPostFix = '?order=desc&limit=1';
