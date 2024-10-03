@@ -123,7 +123,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
   beforeEach(async () => {
     // restore original ENV value
-    ConfigService.get('WS_MULTIPLE_ADDRESSES_ENABLED', originalWsMultipleAddressesEnabledValue);
+    configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', originalWsMultipleAddressesEnabledValue);
 
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
     requestId = Utils.generateRequestId();

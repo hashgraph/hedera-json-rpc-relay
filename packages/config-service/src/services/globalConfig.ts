@@ -49,6 +49,12 @@ export class GlobalConfig {
       required: false,
       defaultValue: 15000,
     },
+    CONTRACT_CALL_GAS_LIMIT: {
+      envName: 'CONTRACT_CALL_GAS_LIMIT',
+      type: 'number',
+      required: false,
+      defaultValue: 10,
+    },
     CONTRACT_QUERY_TIMEOUT_RETRIES: {
       envName: 'CONTRACT_QUERY_TIMEOUT_RETRIES',
       type: 'number',
@@ -91,11 +97,23 @@ export class GlobalConfig {
       required: false,
       defaultValue: true,
     },
+    ETH_BLOCK_NUMBER_CACHE_TTL_MS: {
+      envName: 'ETH_BLOCK_NUMBER_CACHE_TTL_MS',
+      type: 'number',
+      required: false,
+      defaultValue: 10,
+    },
     ETH_CALL_ACCEPTED_ERRORS: {
       envName: 'ETH_CALL_ACCEPTED_ERRORS',
       type: 'string',
       required: false,
       defaultValue: '[]',
+    },
+    ETH_CALL_CACHE_TTL: {
+      envName: 'ETH_CALL_CACHE_TTL',
+      type: 'number',
+      required: false,
+      defaultValue: 200,
     },
     ETH_CALL_CONSENSUS_SELECTORS: {
       envName: 'ETH_CALL_CONSENSUS_SELECTORS',
@@ -111,9 +129,33 @@ export class GlobalConfig {
     },
     ETH_FEE_HISTORY_FIXED: {
       envName: 'ETH_FEE_HISTORY_FIXED',
-      type: 'boolean',
+      type: 'string',
       required: false,
-      defaultValue: true,
+      defaultValue: 'true',
+    },
+    ETH_GET_BALANCE_CACHE_TTL_MS: {
+      envName: 'ETH_GET_BALANCE_CACHE_TTL_MS',
+      type: 'number',
+      required: false,
+      defaultValue: 10,
+    },
+    ETH_GET_GAS_PRICE_CACHE_TTL_MS: {
+      envName: 'ETH_GET_GAS_PRICE_CACHE_TTL_MS',
+      type: 'number',
+      required: false,
+      defaultValue: 10,
+    },
+    ETH_GET_LOGS_BLOCK_RANGE_LIMIT: {
+      envName: 'ETH_GET_LOGS_BLOCK_RANGE_LIMIT',
+      type: 'number',
+      required: false,
+      defaultValue: 10,
+    },
+    ETH_GET_TRANSACTION_COUNT_CACHE_TTL: {
+      envName: 'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
+      type: 'number',
+      required: false,
+      defaultValue: 10,
     },
     ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: {
       envName: 'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
@@ -141,9 +183,9 @@ export class GlobalConfig {
     },
     FILTER_API_ENABLED: {
       envName: 'FILTER_API_ENABLED',
-      type: 'boolean',
+      type: 'string',
       required: false,
-      defaultValue: true,
+      defaultValue: 'true',
     },
     FILTER_TTL: {
       envName: 'FILTER_TTL',
@@ -283,6 +325,12 @@ export class GlobalConfig {
       required: false,
       defaultValue: '',
     },
+    MAX_BLOCK_RANGE: {
+      envName: 'MAX_BLOCK_RANGE',
+      type: 'number',
+      required: false,
+      defaultValue: 10,
+    },
     MEMWATCH_ENABLED: {
       envName: 'MEMWATCH_ENABLED',
       type: 'boolean',
@@ -367,11 +415,23 @@ export class GlobalConfig {
       required: false,
       defaultValue: '[]',
     },
+    MIRROR_NODE_RETRY_DELAY: {
+      envName: 'MIRROR_NODE_RETRY_DELAY',
+      type: 'number',
+      required: false,
+      defaultValue: 250,
+    },
     MIRROR_NODE_RETRY_DELAY_DEVMODE: {
       envName: 'MIRROR_NODE_RETRY_DELAY_DEVMODE',
       type: 'number',
       required: false,
       defaultValue: 200,
+    },
+    MIRROR_NODE_REQUEST_RETRY_COUNT: {
+      envName: 'MIRROR_NODE_REQUEST_RETRY_COUNT',
+      type: 'number',
+      required: false,
+      defaultValue: 10,
     },
     MIRROR_NODE_TIMEOUT: {
       envName: 'MIRROR_NODE_TIMEOUT',
@@ -497,13 +557,13 @@ export class GlobalConfig {
       envName: 'SUBSCRIPTIONS_ENABLED',
       type: 'boolean',
       required: false,
-      defaultValue: true,
+      defaultValue: false,
     },
     TEST: {
       envName: 'TEST',
-      type: 'boolean',
+      type: 'string',
       required: false,
-      defaultValue: false,
+      defaultValue: 'false',
     },
     TEST_GAS_PRICE_DEVIATION: {
       envName: 'TEST_GAS_PRICE_DEVIATION',
@@ -521,19 +581,25 @@ export class GlobalConfig {
       envName: 'TIER_1_RATE_LIMIT',
       type: 'number',
       required: false,
-      defaultValue: '100',
+      defaultValue: 100,
     },
     TIER_2_RATE_LIMIT: {
       envName: 'TIER_2_RATE_LIMIT',
       type: 'number',
       required: false,
-      defaultValue: '200',
+      defaultValue: 200,
     },
     TIER_3_RATE_LIMIT: {
       envName: 'TIER_3_RATE_LIMIT',
       type: 'number',
       required: false,
-      defaultValue: '400',
+      defaultValue: 400,
+    },
+    TX_DEFAULT_GAS: {
+      envName: 'TX_DEFAULT_GAS',
+      type: 'number',
+      required: false,
+      defaultValue: 400000,
     },
     WEB_SOCKET_HTTP_PORT: {
       envName: 'WEB_SOCKET_HTTP_PORT',

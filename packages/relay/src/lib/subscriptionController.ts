@@ -80,8 +80,7 @@ export class SubscriptionController {
     });
 
     // Default: true
-    this.useTheSameSubscriptionForTheSameEvent =
-      ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT')?.toLowerCase() !== 'false';
+    this.useTheSameSubscriptionForTheSameEvent = ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT') !== 'false';
   }
 
   createHash(data) {
