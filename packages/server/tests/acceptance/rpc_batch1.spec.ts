@@ -980,7 +980,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const sendHbarTx = {
           ...defaultLegacyTransactionData,
           value: TEN_HBAR, // 10hbar - the gasPrice to deploy the deterministic proxy contract
-          to: constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
+          to: Constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
           nonce: await relay.getAccountNonce(accounts[0].address, requestId),
           gasPrice: await relay.gasPrice(requestId),
         };
