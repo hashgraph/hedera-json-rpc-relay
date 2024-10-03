@@ -20,7 +20,7 @@
 
 import fs from 'fs';
 import findConfig from 'find-config';
-import { SpendingPlanConfig } from '../types/spendingPlanConfig';
+import { isValidSpendingPlanConfig, SpendingPlanConfig } from '../types/spendingPlanConfig';
 import { HbarSpendingPlanRepository } from '../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
@@ -40,8 +40,25 @@ const loadSpendingPlansConfig = (): SpendingPlanConfig[] => {
   if (!path || !fs.existsSync(path)) {
     throw new Error(`Configuration file not found at path: ${path || SPENDING_PLANS_CONFIG_FILE}`);
   }
-  const rawData = fs.readFileSync(path, 'utf-8');
-  return JSON.parse(rawData) as SpendingPlanConfig[];
+  try {
+    const rawData = fs.readFileSync(path, 'utf-8');
+    return JSON.parse(rawData) as SpendingPlanConfig[];
+  } catch (error: any) {
+    throw new Error(`Failed to parse JSON from ${path}: ${error.message}`);
+  }
+};
+
+/**
+ * Validates the spending plan configuration.
+ * @param {SpendingPlanConfig[]} spendingPlans - The spending plan configurations to validate.
+ * @throws {Error} If any spending plan configuration is invalid.
+ */
+const validateSpendingPlanConfig = (spendingPlans: SpendingPlanConfig[]): void => {
+  for (const plan of spendingPlans) {
+    if (!isValidSpendingPlanConfig(plan)) {
+      throw new Error(`Invalid spending plan configuration: ${JSON.stringify(plan)}`);
+    }
+  }
 };
 
 /**
@@ -64,6 +81,7 @@ export const populatePreconfiguredSpendingPlans = async (
   const ttl = PRE_CONFIGURED_SPENDING_PLANS_TTL;
 
   const spendingPlans = loadSpendingPlansConfig();
+  validateSpendingPlanConfig(spendingPlans);
 
   for (const plan of spendingPlans) {
     const { name, ethAddresses, ipAddresses, subscriptionTier } = plan;

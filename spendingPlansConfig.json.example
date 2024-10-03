@@ -3,12 +3,12 @@
     "name": "partner name",
     "ethAddresses": ["0x123", "0x124"],
     "ipAddresses": ["127.0.0.1", "128.0.0.1"],
-    "subscriptionTier": "ADVANCED"
+    "subscriptionTier": "PRIVILEGED"
   },
   {
     "name": "some other partner that has given us only eth addresses",
     "ethAddresses": ["0x125", "0x126"],
-    "subscriptionTier": "ADVANCED"
+    "subscriptionTier": "PRIVILEGED"
   },
   {
     "name": "supported project name",

@@ -52,3 +52,13 @@ export interface SpendingPlanConfig {
    */
   subscriptionTier: SubscriptionType;
 }
+
+export function isValidSpendingPlanConfig(plan: any): plan is SpendingPlanConfig {
+  return (
+    plan &&
+    typeof plan.name === 'string' &&
+    typeof plan.subscriptionTier === 'string' &&
+    SubscriptionType[plan.subscriptionTier] !== undefined &&
+    (Array.isArray(plan.ethAddresses) || Array.isArray(plan.ipAddresses))
+  );
+}

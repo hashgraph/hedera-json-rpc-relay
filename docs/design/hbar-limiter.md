@@ -312,12 +312,12 @@ All other users (ETH and IP addresses which are not specified in the configurati
     "name": "partner name",
     "ethAddresses": ["0x123", "0x124"],
     "ipAddresses": ["127.0.0.1", "128.0.0.1"],
-    "subscriptionTier": "ADVANCED"
+    "subscriptionTier": "PRIVILEGED"
   },
   {
     "name": "some other partner that has given us only eth addresses",
     "ethAddresses": ["0x125", "0x126"],
-    "subscriptionTier": "ADVANCED"
+    "subscriptionTier": "PRIVILEGED"
   },
   {
     "name": "supported project name",
@@ -344,7 +344,7 @@ The JSON file can also be updated over time to add new supported projects or par
     "name": "new partner name",
     "ethAddresses": ["0x129", "0x130"],
     "ipAddresses": ["133.0.0.1"],
-    "subscriptionTier": "ADVANCED"
+    "subscriptionTier": "PRIVILEGED"
   }
 ]
 ```
