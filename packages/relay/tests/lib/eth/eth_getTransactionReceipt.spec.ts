@@ -29,6 +29,7 @@ import RelayAssertions from '../../assertions';
 import { DEFAULT_BLOCK, EMPTY_LOGS_RESPONSE } from './eth-config';
 import { defaultErrorMessageHex } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
+import { RequestDetails } from '../../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -37,6 +38,8 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
   this.timeout(10000);
   let { restMock, ethImpl, cacheService } = generateEthTestEnv();
   let sandbox: sinon.SinonSandbox;
+
+  const requestDetails = new RequestDetails({ requestId: 'eth_getTransactionReceiptTest', ipAddress: '0.0.0.0' });
 
   this.beforeAll(() => {
     // @ts-ignore
@@ -140,7 +143,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
   this.afterEach(() => {
     restMock.resetHandlers();
     sandbox.restore();
-    cacheService.clear();
+    cacheService.clear(requestDetails);
   });
 
   it('returns `null` for non-existent hash', async function () {
@@ -157,7 +160,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     restMock
       .onGet(`contracts/results/logs?transaction.hash=${txHash}&limit=100&order=asc`)
       .reply(200, EMPTY_LOGS_RESPONSE);
-    const receipt = await ethImpl.getTransactionReceipt(txHash);
+    const receipt = await ethImpl.getTransactionReceipt(txHash, requestDetails);
     expect(receipt).to.be.null;
   });
 
@@ -174,9 +177,9 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
     stubBlockAndFeesFunc(sandbox);
-    const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+    const receipt = await ethImpl.getTransactionReceipt(defaultTxHash, requestDetails);
 
-    const currentGasPrice = await ethImpl.gasPrice('valid receipt on match TEST');
+    const currentGasPrice = await ethImpl.gasPrice(requestDetails);
 
     // Assert the data format
     RelayAssertions.assertTransactionReceipt(receipt, defaultReceipt, {
@@ -189,7 +192,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).replyOnce(404);
     stubBlockAndFeesFunc(sandbox);
     for (let i = 0; i < 3; i++) {
-      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+      const receipt = await ethImpl.getTransactionReceipt(defaultTxHash, requestDetails);
       expect(receipt).to.exist;
       if (receipt == null) return;
       expect(RelayAssertions.validateHash(receipt.transactionHash, 64)).to.eq(true);
@@ -207,7 +210,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
       evm_address: contractEvmAddress,
     });
     stubBlockAndFeesFunc(sandbox);
-    const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+    const receipt = await ethImpl.getTransactionReceipt(defaultTxHash, requestDetails);
 
     expect(receipt).to.exist;
     if (receipt == null) return;
@@ -230,7 +233,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, contractResult);
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
     stubBlockAndFeesFunc(sandbox);
-    const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
+    const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash, requestDetails);
 
     expect(receipt).to.exist;
     if (receipt == null) return;
@@ -247,7 +250,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWith0xBloom);
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
     stubBlockAndFeesFunc(sandbox);
-    const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+    const receipt = await ethImpl.getTransactionReceipt(defaultTxHash, requestDetails);
 
     expect(receipt).to.exist;
     if (receipt == null) return;
@@ -267,7 +270,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, receiptWithErrorMessage);
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
     stubBlockAndFeesFunc(sandbox);
-    const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
+    const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash, requestDetails);
 
     expect(receipt).to.exist;
     expect(receipt.revertReason).to.eq(defaultErrorMessageHex);
@@ -284,7 +287,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, receiptWithNullGasUsed);
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
     stubBlockAndFeesFunc(sandbox);
-    const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
+    const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash, requestDetails);
 
     expect(receipt).to.exist;
     if (receipt == null) return;
@@ -306,7 +309,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
       evm_address: contractEvmAddress,
     });
     stubBlockAndFeesFunc(sandbox);
-    const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash);
+    const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash, requestDetails);
 
     expect(receipt).to.exist;
 
@@ -332,10 +335,10 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
       type: defaultDetailedContractResultByHash.type,
     };
 
-    cacheService.set(cacheKey, cacheReceipt, EthImpl.ethGetTransactionReceipt);
+    await cacheService.set(cacheKey, cacheReceipt, EthImpl.ethGetTransactionReceipt, requestDetails);
 
     // w no mirror node requests
-    const receipt = await ethImpl.getTransactionReceipt(defaultTxHash);
+    const receipt = await ethImpl.getTransactionReceipt(defaultTxHash, requestDetails);
 
     // Assert the matching reciept
     expect(receipt.blockHash).to.eq(cacheReceipt.blockHash);

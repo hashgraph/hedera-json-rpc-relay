@@ -22,11 +22,12 @@ import { Logger } from 'pino';
 import { MirrorNodeClient } from '../../../clients';
 import constants from '../../../constants';
 import { IFilterService } from './IFilterService';
-import { CommonService } from './../ethCommonService';
+import { CommonService } from '../ethCommonService';
 import { generateRandomHex } from '../../../../formatters';
 import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
 import { CacheService } from '../../cacheService/cacheService';
+import { RequestDetails } from '../../../types';
 
 /**
  * Create a new Filter Service implementation.
@@ -61,7 +62,7 @@ export class FilterService implements IFilterService {
   public readonly ethGetFilterChanges = 'eth_getFilterChanges';
 
   private readonly common: CommonService;
-  private readonly supportedTypes;
+  private readonly supportedTypes: string[];
 
   constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService, common: CommonService) {
     this.mirrorNodeClient = mirrorNodeClient;
@@ -76,9 +77,9 @@ export class FilterService implements IFilterService {
    * Creates a new filter with the specified type and parameters
    * @param type
    * @param params
-   * @param requestIdPrefix
+   * @param requestDetails
    */
-  async createFilter(type: string, params: any, requestIdPrefix?: string): Promise<string> {
+  async createFilter(type: string, params: any, requestDetails: RequestDetails): Promise<string> {
     const filterId = generateRandomHex();
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
     await this.cacheService.set(
@@ -89,10 +90,10 @@ export class FilterService implements IFilterService {
         lastQueried: null,
       },
       this.ethNewFilter,
+      requestDetails,
       constants.FILTER.TTL,
-      requestIdPrefix,
     );
-    this.logger.trace(`${requestIdPrefix} created filter with TYPE=${type}, params: ${params}`);
+    this.logger.trace(`${requestDetails.formattedRequestId} created filter with TYPE=${type}, params: ${params}`);
     return filterId;
   }
 
@@ -111,15 +112,16 @@ export class FilterService implements IFilterService {
    * @param toBlock
    * @param address
    * @param topics
-   * @param requestIdPrefix
+   * @param requestDetails
    */
   async newFilter(
     fromBlock: string = 'latest',
     toBlock: string = 'latest',
+    requestDetails: RequestDetails,
     address?: string,
     topics?: any[],
-    requestIdPrefix?: string,
-  ): Promise<string | JsonRpcError> {
+  ): Promise<string> {
+    const requestIdPrefix = requestDetails.formattedRequestId;
     this.logger.trace(
       `${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`,
     );
@@ -127,7 +129,7 @@ export class FilterService implements IFilterService {
       FilterService.requireFiltersEnabled();
 
       if (
-        !(await this.common.validateBlockRangeAndAddTimestampToParams({}, fromBlock, toBlock, requestIdPrefix, address))
+        !(await this.common.validateBlockRangeAndAddTimestampToParams({}, fromBlock, toBlock, requestDetails, address))
       ) {
         throw predefined.INVALID_BLOCK_RANGE;
       }
@@ -135,60 +137,62 @@ export class FilterService implements IFilterService {
       return await this.createFilter(
         constants.FILTER.TYPE.LOG,
         {
-          fromBlock: fromBlock === 'latest' ? await this.common.getLatestBlockNumber(requestIdPrefix) : fromBlock,
+          fromBlock: fromBlock === 'latest' ? await this.common.getLatestBlockNumber(requestDetails) : fromBlock,
           toBlock,
           address,
           topics,
         },
-        requestIdPrefix,
+        requestDetails,
       );
     } catch (e) {
       throw this.common.genericErrorHandler(e);
     }
   }
 
-  async newBlockFilter(requestIdPrefix?: string): Promise<string | JsonRpcError> {
+  async newBlockFilter(requestDetails: RequestDetails): Promise<string> {
+    const requestIdPrefix = requestDetails.formattedRequestId;
     this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
     try {
       FilterService.requireFiltersEnabled();
       return await this.createFilter(
         constants.FILTER.TYPE.NEW_BLOCK,
         {
-          blockAtCreation: await this.common.getLatestBlockNumber(requestIdPrefix),
+          blockAtCreation: await this.common.getLatestBlockNumber(requestDetails),
         },
-        requestIdPrefix,
+        requestDetails,
       );
     } catch (e) {
       throw this.common.genericErrorHandler(e);
     }
   }
 
-  public async uninstallFilter(filterId: string, requestIdPrefix?: string | undefined): Promise<boolean> {
+  public async uninstallFilter(filterId: string, requestDetails: RequestDetails): Promise<boolean> {
+    const requestIdPrefix = requestDetails.formattedRequestId;
     this.logger.trace(`${requestIdPrefix} uninstallFilter(${filterId})`);
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.getAsync(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethUninstallFilter, requestDetails);
 
     if (filter) {
-      await this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestIdPrefix);
+      await this.cacheService.delete(cacheKey, this.ethUninstallFilter, requestDetails);
       return true;
     }
 
     return false;
   }
 
-  public newPendingTransactionFilter(requestIdPrefix?: string | undefined): JsonRpcError {
-    this.logger.trace(`${requestIdPrefix} newPendingTransactionFilter()`);
+  public newPendingTransactionFilter(requestDetails: RequestDetails): JsonRpcError {
+    this.logger.trace(`${requestDetails.formattedRequestId} newPendingTransactionFilter()`);
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  public async getFilterLogs(filterId: string, requestIdPrefix?: string | undefined): Promise<any> {
-    this.logger.trace(`${requestIdPrefix} getFilterLogs(${filterId})`);
+  public async getFilterLogs(filterId: string, requestDetails: RequestDetails): Promise<any> {
+    this.logger.trace(`${requestDetails.formattedRequestId} getFilterLogs(${filterId})`);
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterLogs, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterLogs, requestDetails);
     if (filter?.type != constants.FILTER.TYPE.LOG) {
       throw predefined.FILTER_NOT_FOUND;
     }
@@ -199,16 +203,16 @@ export class FilterService implements IFilterService {
       filter?.params.toBlock,
       filter?.params.address,
       filter?.params.topics,
-      requestIdPrefix,
+      requestDetails,
     );
   }
 
-  public async getFilterChanges(filterId: string, requestIdPrefix?: string): Promise<string[] | Log[] | JsonRpcError> {
-    this.logger.trace(`${requestIdPrefix} getFilterChanges(${filterId})`);
+  public async getFilterChanges(filterId: string, requestDetails: RequestDetails): Promise<string[] | Log[]> {
+    this.logger.trace(`${requestDetails.formattedRequestId} getFilterChanges(${filterId})`);
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
-    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterChanges, requestIdPrefix);
+    const filter = await this.cacheService.getAsync(cacheKey, this.ethGetFilterChanges, requestDetails);
 
     if (!filter) {
       throw predefined.FILTER_NOT_FOUND;
@@ -222,7 +226,7 @@ export class FilterService implements IFilterService {
         filter?.params.toBlock,
         filter?.params.address,
         filter?.params.topics,
-        requestIdPrefix,
+        requestDetails,
       );
 
       // get the latest block number and add 1 to exclude current results from the next response because
@@ -231,10 +235,11 @@ export class FilterService implements IFilterService {
         Number(
           result.length
             ? result[result.length - 1].blockNumber
-            : await this.common.getLatestBlockNumber(requestIdPrefix),
+            : await this.common.getLatestBlockNumber(requestDetails),
         ) + 1;
     } else if (filter.type === constants.FILTER.TYPE.NEW_BLOCK) {
       result = await this.mirrorNodeClient.getBlocks(
+        requestDetails,
         [`gt:${filter.lastQueried || filter.params.blockAtCreation}`],
         undefined,
         {
@@ -245,7 +250,7 @@ export class FilterService implements IFilterService {
       latestBlockNumber = Number(
         result?.blocks?.length
           ? result.blocks[result.blocks.length - 1].number
-          : await this.common.getLatestBlockNumber(requestIdPrefix),
+          : await this.common.getLatestBlockNumber(requestDetails),
       );
 
       result = result?.blocks?.map((r) => r.hash) || [];
@@ -262,8 +267,8 @@ export class FilterService implements IFilterService {
         lastQueried: latestBlockNumber,
       },
       this.ethGetFilterChanges,
+      requestDetails,
       constants.FILTER.TTL,
-      requestIdPrefix,
     );
 
     return result;

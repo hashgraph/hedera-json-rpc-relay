@@ -43,6 +43,10 @@ import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import constants from '../../tests/helpers/constants';
+import RelayClient from '../clients/relayClient';
+import ServicesClient from '../clients/servicesClient';
+import MirrorClient from '../clients/mirrorClient';
+import { Logger } from 'pino';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -50,7 +54,19 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   const accounts: AliasAccount[] = [];
 
   // @ts-ignore
-  const { servicesNode, mirrorNode, relay, logger, initialBalance } = global;
+  const {
+    servicesNode,
+    mirrorNode,
+    relay,
+    logger,
+    initialBalance,
+  }: {
+    servicesNode: ServicesClient;
+    mirrorNode: MirrorClient;
+    relay: RelayClient;
+    logger: Logger;
+    initialBalance: string;
+  } = global;
 
   // cached entities
   let tokenId;
@@ -84,14 +100,18 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     const signedTx = await accounts.wallet.signTransaction(transaction);
     const txHash = await relay.sendRawTransaction(signedTx, requestId);
     await mirrorNode.get(`/contracts/results/${txHash}`, requestId);
-    await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [txHash]);
+    await relay.call(
+      RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
+      [txHash],
+      Utils.formatRequestIdMessage(requestId),
+    );
     await new Promise((r) => setTimeout(r, 2000));
   };
 
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-    expectedGasPrice = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestId);
+    expectedGasPrice = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestIdPrefix);
 
     const initialAccount: AliasAccount = global.accounts[0];
 
@@ -212,7 +232,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         requestId,
       );
       expect(res).to.contain('0x');
-      expect(res).to.equal(EthImpl.gasTxHollowAccountCreation);
+      expect(Number(res)).to.be.greaterThanOrEqual(Number(EthImpl.minGasTxHollowAccountCreation));
     });
 
     it('should execute "eth_estimateGas" with to, from, value and gas filed', async function () {
@@ -546,7 +566,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         requestId,
       );
       const acc3Nonce = await relay.getAccountNonce(accounts[3].address);
-      const gasPrice = await relay.gasPrice();
+      const gasPrice = await relay.gasPrice(requestId);
 
       const transaction = {
         value: ONE_TINYBAR,
@@ -726,7 +746,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     async function createNftHTSToken(account) {
       const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
       const tx = await mainContract.createNonFungibleTokenPublic(account.wallet.address, {
-        value: 30000000000000000000n,
+        value: BigInt('30000000000000000000'),
         ...Helper.GAS.LIMIT_5_000_000,
       });
       const { tokenAddress } = (await tx.wait()).logs.filter(
@@ -831,7 +851,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       );
       expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
 
-      const gasPrice = await relay.gasPrice();
+      const gasPrice = await relay.gasPrice(requestId);
       const transaction = {
         value: 0,
         gasLimit: 50000,
@@ -868,7 +888,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         requestId,
       );
 
-      const gasPrice = await relay.gasPrice();
+      const gasPrice = await relay.gasPrice(requestId);
       const transaction = {
         value: 0,
         gasLimit: 50000,
@@ -925,7 +945,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       );
       expect(beginStorageVal).to.eq(BEGIN_EXPECTED_STORAGE_VAL);
 
-      const gasPrice = await relay.gasPrice();
+      const gasPrice = await relay.gasPrice(requestId);
       const transaction = {
         value: 0,
         gasLimit: 50000,
@@ -956,7 +976,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('should execute "eth_getStorageAt" request to get current state changes with passing specific block', async function () {
       const EXPECTED_STORAGE_VAL = '0x0000000000000000000000000000000000000000000000000000000000000008';
 
-      const gasPrice = await relay.gasPrice();
+      const gasPrice = await relay.gasPrice(requestId);
       const transaction = {
         value: 0,
         gasLimit: 50000,
@@ -1002,7 +1022,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('should execute "eth_getStorageAt" request to get current state changes with passing specific block hash', async function () {
       const EXPECTED_STORAGE_VAL = '0x0000000000000000000000000000000000000000000000000000000000000008';
 
-      const gasPrice = await relay.gasPrice();
+      const gasPrice = await relay.gasPrice(requestId);
       const transaction = {
         value: 0,
         gasLimit: 50000,
@@ -1157,7 +1177,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     const getTxData = async (hash) => {
       const txByHash = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH, [hash], requestId);
       const receipt = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [hash], requestId);
-      let mirrorResult = await mirrorNode.get(`/contracts/results/${hash}`, requestId);
+      const mirrorResult = await mirrorNode.get(`/contracts/results/${hash}`, requestId);
 
       return { txByHash, receipt, mirrorResult };
     };
@@ -1170,7 +1190,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       await tx.wait();
 
-      let { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
+      const { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
 
       mirrorResult.from = accounts[0].wallet.address;
       mirrorResult.to = accounts[1].wallet.address;
@@ -1195,7 +1215,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       await tx.wait();
 
-      let { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
+      const { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
 
       mirrorResult.from = accounts[0].wallet.address;
       mirrorResult.to = relayContract.target;
@@ -1219,7 +1239,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       await tx.wait();
 
-      let { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
+      const { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
 
       mirrorResult.from = accounts[0].wallet.address;
       mirrorResult.to = parentContractLongZeroAddress;
@@ -1240,7 +1260,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       await tx.wait();
 
-      let { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
+      const { txByHash, receipt, mirrorResult } = await getTxData(tx.hash);
 
       mirrorResult.from = accounts[0].wallet.address;
 
