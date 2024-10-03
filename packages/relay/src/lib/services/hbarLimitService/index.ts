@@ -218,7 +218,7 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the expense has been added.
    */
-  async addExpense(cost: number, ethAddress: string | undefined, requestDetails: RequestDetails): Promise<void> {
+  async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails): Promise<void> {
     const ipAddress = requestDetails.ipAddress;
 
     if (!ethAddress && !ipAddress) {
@@ -379,7 +379,7 @@ export class HbarLimitService implements IHbarLimitService {
    * @private
    */
   private async getSpendingPlan(
-    ethAddress: string | undefined,
+    ethAddress: string,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan | null> {
     const ipAddress = requestDetails.ipAddress;
@@ -445,7 +445,7 @@ export class HbarLimitService implements IHbarLimitService {
    * @private
    */
   private async createBasicSpendingPlan(
-    ethAddress: string | undefined,
+    ethAddress: string,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan> {
     const ipAddress = requestDetails.ipAddress;
