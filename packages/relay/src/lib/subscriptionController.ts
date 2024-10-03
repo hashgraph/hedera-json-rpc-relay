@@ -24,8 +24,9 @@ import crypto from 'crypto';
 import constants from './constants';
 import { Poller } from './poller';
 import { generateRandomHex } from '../formatters';
-import { Registry, Histogram, Counter } from 'prom-client';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { Counter, Histogram, Registry } from 'prom-client';
+import { Subs } from '../index';
 
 export interface Subscriber {
   connection: any;
@@ -35,7 +36,7 @@ export interface Subscriber {
 
 const CACHE_TTL = Number(ConfigService.get('WS_CACHE_TTL')) || 20000;
 
-export class SubscriptionController {
+export class SubscriptionController implements Subs {
   private poller: Poller;
   private logger: Logger;
   private subscriptions: { [key: string]: Subscriber[] };

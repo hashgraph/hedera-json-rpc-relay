@@ -22,25 +22,26 @@ import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay/dist';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import { EthSubscribeLogsParamsObject } from '@hashgraph/json-rpc-server/dist/validator';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 /**
  * Validates whether the provided address corresponds to a contract or token type.
  * Throws an error if the address is not a valid contract or token type or does not exist.
  * @param {string} address - The address to validate.
- * @param {string} requestId - The unique identifier for the request.
  * @param {MirrorNodeClient} mirrorNodeClient - The client for interacting with the MirrorNode API.
+ * @param {RequestDetails} requestDetails - The request details for logging and tracking.
  * @throws {JsonRpcError} Throws a JsonRpcError if the address is not a valid contract or token type or does not exist.
  */
 const validateIsContractOrTokenAddress = async (
   address: string,
-  requestId: string,
   mirrorNodeClient: MirrorNodeClient,
+  requestDetails: RequestDetails,
 ) => {
   const isContractOrToken = await mirrorNodeClient.resolveEntityType(
     address,
-    [constants.TYPE_CONTRACT, constants.TYPE_TOKEN],
     constants.METHODS.ETH_SUBSCRIBE,
-    requestId,
+    requestDetails,
+    [constants.TYPE_CONTRACT, constants.TYPE_TOKEN],
   );
   if (!isContractOrToken) {
     throw new JsonRpcError(
@@ -48,7 +49,7 @@ const validateIsContractOrTokenAddress = async (
         'filters.address',
         `${address} is not a valid contract or token type or does not exists`,
       ),
-      requestId,
+      requestDetails.formattedRequestId,
     );
   }
 };
@@ -56,13 +57,13 @@ const validateIsContractOrTokenAddress = async (
 /**
  * Validates the parameters for subscribing to ETH logs.
  * @param {any} filters - The filters object containing parameters for subscribing to ETH logs.
- * @param {string} requestId - The unique identifier for the request.
  * @param {MirrorNodeClient} mirrorNodeClient - The client for interacting with the MirrorNode API.
+ * @param {RequestDetails} requestDetails - The request details for logging and tracking.
  */
 export const validateSubscribeEthLogsParams = async (
   filters: any,
-  requestId: string,
   mirrorNodeClient: MirrorNodeClient,
+  requestDetails: RequestDetails,
 ) => {
   // validate address exists and is correct length and type
   // validate topics if exists and is array and each one is correct length and type
@@ -73,10 +74,10 @@ export const validateSubscribeEthLogsParams = async (
   if (ethSubscribeLogsParams.object.address) {
     if (Array.isArray(ethSubscribeLogsParams.object.address)) {
       for (const address of ethSubscribeLogsParams.object.address) {
-        await validateIsContractOrTokenAddress(address, requestId, mirrorNodeClient);
+        await validateIsContractOrTokenAddress(address, mirrorNodeClient, requestDetails);
       }
     } else {
-      await validateIsContractOrTokenAddress(ethSubscribeLogsParams.object.address, requestId, mirrorNodeClient);
+      await validateIsContractOrTokenAddress(ethSubscribeLogsParams.object.address, mirrorNodeClient, requestDetails);
     }
   }
 };

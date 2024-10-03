@@ -31,10 +31,12 @@ import constants from '../../src/lib/constants';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { Log, Transaction } from '../../src/lib/model';
-import { nullableNumberTo0x, numberTo0x, nanOrNumberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
+import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { defaultDetailedContractResults, useInMemoryRedisServer } from '../helpers';
 import { EventEmitter } from 'events';
+
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 use(chaiAsPromised);
 

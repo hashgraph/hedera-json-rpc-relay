@@ -18,8 +18,15 @@
  *
  */
 
-export default function jsonResp(id, error, result) {
-  const response: any = {};
+import { JsonRpcError } from '@hashgraph/json-rpc-relay';
+import { IJsonRpcResponse } from './IJsonRpcResponse';
+
+export default function jsonResp(
+  id: string | number | null,
+  error: JsonRpcError | null,
+  result: any,
+): IJsonRpcResponse {
+  const response: IJsonRpcResponse = {} as IJsonRpcResponse;
 
   if (error && result) {
     throw new Error('Mutually exclusive error and result exist');

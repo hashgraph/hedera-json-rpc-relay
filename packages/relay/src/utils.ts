@@ -21,6 +21,7 @@
 import { PrivateKey } from '@hashgraph/sdk';
 import constants from './lib/constants';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import crypto from 'crypto';
 
 export class Utils {
   public static readonly addPercentageBufferToGasPrice = (gasPrice: number): number => {
@@ -57,4 +58,13 @@ export class Utils {
         throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${ConfigService.get('OPERATOR_KEY_FORMAT')}`);
     }
   }
+
+  /**
+   * Generates a random trace ID for requests.
+   *
+   * @returns {string} The generated random trace ID.
+   */
+  public static generateRequestId = (): string => {
+    return crypto.randomUUID();
+  };
 }

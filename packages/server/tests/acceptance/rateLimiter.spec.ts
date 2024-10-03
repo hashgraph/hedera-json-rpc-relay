@@ -23,12 +23,13 @@ import Assertions from '../helpers/assertions';
 import testConstants from '../../tests/helpers/constants';
 import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import RelayClient from '../clients/relayClient';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds
 
   // @ts-ignore
-  const { relay } = global;
+  const { relay }: { relay: RelayClient } = global;
 
   // cached entities
   let requestId: string;

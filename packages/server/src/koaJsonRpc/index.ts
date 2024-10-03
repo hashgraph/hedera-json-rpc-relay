@@ -33,6 +33,7 @@ import {
 } from './lib/RpcError';
 import Koa from 'koa';
 import { Histogram, Registry } from 'prom-client';
+import { IRequestDetails, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay/dist';
 import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
 import {
@@ -44,6 +45,7 @@ import {
   hasOwnProperty,
 } from './lib/utils';
 import { IJsonRpcRequest } from './lib/IJsonRpcRequest';
+import { IJsonRpcResponse } from './lib/IJsonRpcResponse';
 
 const INVALID_REQUEST = 'INVALID REQUEST';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';
@@ -67,10 +69,13 @@ export default class KoaJsonRpc {
   private readonly methodResponseHistogram: Histogram;
 
   private requestId: string;
+  private requestIpAddress: string;
+  private connectionId?: string;
 
   constructor(logger: Logger, register: Registry, opts?: { limit: string | null }) {
     this.koaApp = new Koa();
     this.requestId = '';
+    this.requestIpAddress = '';
     this.registry = Object.create(null);
     this.registryTotal = Object.create(null);
     this.methodConfig = methodConfiguration;
@@ -100,7 +105,7 @@ export default class KoaJsonRpc {
 
   rpcApp(): (ctx: Koa.Context, _next: Koa.Next) => Promise<void> {
     return async (ctx: Koa.Context, _next: Koa.Next) => {
-      this.requestId = ctx.state.reqId;
+      this.updateRequestDetails({ requestId: ctx.state.reqId, ipAddress: ctx.request.ip });
       ctx.set(REQUEST_ID_HEADER_NAME, this.requestId);
 
       if (ctx.request.method !== 'POST') {
@@ -110,7 +115,7 @@ export default class KoaJsonRpc {
         return;
       }
 
-      let body: any;
+      let body: IJsonRpcRequest | IJsonRpcRequest[];
       try {
         body = await parse.json(ctx, { limit: this.limit });
       } catch (err) {
@@ -126,7 +131,7 @@ export default class KoaJsonRpc {
     };
   }
 
-  private async handleSingleRequest(ctx: Koa.Context, body: any): Promise<void> {
+  private async handleSingleRequest(ctx: Koa.Context, body: IJsonRpcRequest): Promise<void> {
     ctx.state.methodName = body.method;
     const response = await this.getRequestResult(body, ctx.ip);
     ctx.body = response;
@@ -183,7 +188,7 @@ export default class KoaJsonRpc {
     ctx.state.status = responseSuccessStatusCode;
   }
 
-  async getRequestResult(request: any, ip: string): Promise<any> {
+  async getRequestResult(request: IJsonRpcRequest, ip: string): Promise<IJsonRpcResponse> {
     try {
       const methodName = request.method;
 
@@ -225,7 +230,7 @@ export default class KoaJsonRpc {
       !hasOwnProperty(body, 'id')
     ) {
       this.logger.warn(
-        `[${this.getRequestId()}] Invalid request, body.jsonrpc: ${body.jsonrpc}, body[method]: ${
+        `${this.getFormattedLogPrefix()} Invalid request, body.jsonrpc: ${body.jsonrpc}, body[method]: ${
           body.method
         }, body[id]: ${body.id}, ctx.request.method: ${body.method}`,
       );
@@ -240,7 +245,7 @@ export default class KoaJsonRpc {
       return true;
     }
 
-    this.logger.warn(`[${this.getRequestId()}] Method not found: ${methodName}`);
+    this.logger.warn(`${this.getFormattedLogPrefix()} Method not found: ${methodName}`);
     return false;
   }
 
@@ -248,8 +253,18 @@ export default class KoaJsonRpc {
     return this.koaApp;
   }
 
-  getRequestId(): string {
-    return this.requestId;
+  getRequestDetails(): RequestDetails {
+    return new RequestDetails({
+      requestId: this.requestId,
+      ipAddress: this.requestIpAddress,
+      connectionId: this.connectionId,
+    });
+  }
+
+  updateRequestDetails(details: IRequestDetails): void {
+    this.requestId = details.requestId;
+    this.requestIpAddress = details.ipAddress;
+    this.connectionId = details.connectionId;
   }
 
   hasInvalidRequestId(body: IJsonRpcRequest): boolean {
@@ -258,11 +273,15 @@ export default class KoaJsonRpc {
       // If the request is invalid, we still want to return a valid JSON-RPC response, default id to 0
       body.id = '0';
       this.logger.warn(
-        `[${this.getRequestId()}] Optional JSON-RPC 2.0 request id encountered. Will continue and default id to 0 in response`,
+        `${this.getFormattedLogPrefix()} Optional JSON-RPC 2.0 request id encountered. Will continue and default id to 0 in response`,
       );
       return false;
     }
 
     return !hasId;
+  }
+
+  private getFormattedLogPrefix(): string {
+    return this.getRequestDetails().formattedLogPrefix;
   }
 }

@@ -29,18 +29,21 @@ import { blobVersionedHash, contractAddress1, expectedError, mockData, signTrans
 import { MirrorNodeClient } from '../../src/lib/clients';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { Transaction, ethers } from 'ethers';
+import { ethers, Transaction } from 'ethers';
 import constants from '../../src/lib/constants';
 import { JsonRpcError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { ONE_TINYBAR_IN_WEI_HEX } from './eth/eth-config';
 
 const registry = new Registry();
+import { RequestDetails } from '../../src/lib/types';
+
 const logger = pino();
 const limitOrderPostFix = '?order=desc&limit=1';
 const transactionsPostFix = '?transactions=false';
 
 describe('Precheck', async function () {
+  const requestDetails = new RequestDetails({ requestId: 'precheckTest', ipAddress: '0.0.0.0' });
   const txWithMatchingChainId =
     '0x02f87482012a0485a7a358200085a7a3582000832dc6c09400000000000000000000000000000000000003f78502540be40080c001a006f4cd8e6f84b76a05a5c1542a08682c928108ef7163d9c1bf1f3b636b1cd1fba032097cbf2dda17a2dcc40f62c97964d9d930cdce2e8a9df9a8ba023cda28e4ad';
   const parsedTxWithMatchingChainId = ethers.Transaction.from(txWithMatchingChainId);
@@ -142,7 +145,7 @@ describe('Precheck', async function () {
   describe('chainId', async function () {
     it('should pass for matching chainId', async function () {
       try {
-        precheck.chainId(parsedTxWithMatchingChainId);
+        precheck.chainId(parsedTxWithMatchingChainId, requestDetails);
       } catch (e: any) {
         expect(e).to.not.exist;
       }
@@ -150,7 +153,7 @@ describe('Precheck', async function () {
 
     it('should pass when chainId=0x0', async function () {
       try {
-        precheck.chainId(parsedtxWithChainId0x0);
+        precheck.chainId(parsedtxWithChainId0x0, requestDetails);
       } catch (e: any) {
         expect(e).to.not.exist;
       }
@@ -158,7 +161,7 @@ describe('Precheck', async function () {
 
     it('should not pass for non-matching chainId', async function () {
       try {
-        precheck.chainId(parsedTxWithNonMatchingChainId);
+        precheck.chainId(parsedTxWithNonMatchingChainId, requestDetails);
         expectedError();
       } catch (e: any) {
         expect(e).to.exist;
@@ -192,7 +195,7 @@ describe('Precheck', async function () {
               ? `Transaction gas limit '${gasLimit}' exceeds max gas per sec limit '${constants.MAX_GAS_PER_SEC}'`
               : `Transaction gas limit provided '${gasLimit}' is insufficient of intrinsic gas required `;
           try {
-            await precheck.gasLimit(parsedTx);
+            await precheck.gasLimit(parsedTx, requestDetails);
             expectedError();
           } catch (e: any) {
             console.log(e);
@@ -215,7 +218,7 @@ describe('Precheck', async function () {
           const parsedTx = ethers.Transaction.from(signed);
 
           try {
-            await precheck.gasLimit(parsedTx);
+            precheck.gasLimit(parsedTx, requestDetails);
           } catch (e: any) {
             expect(e).to.not.exist;
           }
@@ -244,12 +247,12 @@ describe('Precheck', async function () {
     });
 
     it('should pass for gas price gt to required gas price', async function () {
-      const result = precheck.gasPrice(parsedTxWithMatchingChainId, 10);
+      const result = precheck.gasPrice(parsedTxWithMatchingChainId, 10, requestDetails);
       expect(result).to.not.exist;
     });
 
     it('should pass for gas price equal to required gas price', async function () {
-      const result = precheck.gasPrice(parsedTxWithMatchingChainId, defaultGasPrice);
+      const result = precheck.gasPrice(parsedTxWithMatchingChainId, defaultGasPrice, requestDetails);
       expect(result).to.not.exist;
     });
 
@@ -274,6 +277,7 @@ describe('Precheck', async function () {
       const result = precheck.gasPrice(
         parsedDeterministicDeploymentTransaction,
         100 * constants.TINYBAR_TO_WEIBAR_COEF,
+        requestDetails,
       );
       expect(result).to.not.exist;
     });
@@ -281,7 +285,7 @@ describe('Precheck', async function () {
     it('should not pass for gas price not enough', async function () {
       const minGasPrice = 1000 * constants.TINYBAR_TO_WEIBAR_COEF;
       try {
-        precheck.gasPrice(parsedTxWithMatchingChainId, minGasPrice);
+        precheck.gasPrice(parsedTxWithMatchingChainId, minGasPrice, requestDetails);
         expectedError();
       } catch (e: any) {
         expect(e).to.exist;
@@ -293,7 +297,7 @@ describe('Precheck', async function () {
 
     it('should pass for gas price not enough but within buffer', async function () {
       const adjustedGasPrice = parsedTxGasPrice + Number(constants.GAS_PRICE_TINY_BAR_BUFFER);
-      precheck.gasPrice(parsedTxWithMatchingChainId, adjustedGasPrice);
+      precheck.gasPrice(parsedTxWithMatchingChainId, adjustedGasPrice, requestDetails);
     });
   });
 
@@ -313,7 +317,7 @@ describe('Precheck', async function () {
       };
 
       try {
-        await precheck.balance(parsedTransaction, account);
+        precheck.balance(parsedTransaction, account, requestDetails);
         expectedError();
       } catch (e: any) {
         expect(e).to.exist;
@@ -326,7 +330,7 @@ describe('Precheck', async function () {
       const account = null;
 
       try {
-        await precheck.balance(parsedTransaction, account);
+        precheck.balance(parsedTransaction, account, requestDetails);
         expectedError();
       } catch (e: any) {
         expect(e).to.exist;
@@ -343,7 +347,7 @@ describe('Precheck', async function () {
         },
       };
 
-      const result = await precheck.balance(parsedTransaction, account);
+      const result = precheck.balance(parsedTransaction, account, requestDetails);
       expect(result).to.not.exist;
     });
 
@@ -355,7 +359,7 @@ describe('Precheck', async function () {
         },
       };
 
-      const result = await precheck.balance(parsedTransaction, account);
+      const result = precheck.balance(parsedTransaction, account, requestDetails);
       expect(result).to.not.exist;
     });
 
@@ -367,7 +371,7 @@ describe('Precheck', async function () {
         },
       };
 
-      const result = await precheck.balance(parsedTransaction, account);
+      const result = precheck.balance(parsedTransaction, account, requestDetails);
       expect(result).to.not.exist;
     });
 
@@ -379,7 +383,7 @@ describe('Precheck', async function () {
         },
       };
 
-      const result = await precheck.balance(parsedTransaction, account);
+      const result = precheck.balance(parsedTransaction, account, requestDetails);
       expect(result).to.not.exist;
     });
 
@@ -391,7 +395,7 @@ describe('Precheck', async function () {
         },
       };
 
-      const result = await precheck.balance(parsedTransaction, account);
+      const result = precheck.balance(parsedTransaction, account, requestDetails);
       expect(result).to.not.exist;
     });
   });
@@ -413,7 +417,7 @@ describe('Precheck', async function () {
       mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
 
       try {
-        await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
+        precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce, requestDetails);
         expectedError();
       } catch (e: any) {
         expect(e).to.eql(predefined.NONCE_TOO_LOW(parsedTx.nonce, mirrorAccount.ethereum_nonce));
@@ -430,7 +434,7 @@ describe('Precheck', async function () {
 
       mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
 
-      await precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce);
+      precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce, requestDetails);
     });
   });
 
@@ -451,9 +455,8 @@ describe('Precheck', async function () {
 
     it(`should fail for missing account`, async function () {
       mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(404, mockData.notFound);
-
       try {
-        await precheck.verifyAccount(parsedTx);
+        await precheck.verifyAccount(parsedTx, requestDetails);
         expectedError();
       } catch (e: any) {
         expect(e).to.exist;
@@ -464,7 +467,7 @@ describe('Precheck', async function () {
 
     it(`should not fail for matched account`, async function () {
       mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(200, mirrorAccount);
-      const account = await precheck.verifyAccount(parsedTx);
+      const account = await precheck.verifyAccount(parsedTx, requestDetails);
 
       expect(account.ethereum_nonce).to.eq(defaultNonce);
     });
@@ -574,7 +577,7 @@ describe('Precheck', async function () {
 
     it('should accept legacy transactions', async () => {
       const signedLegacy = await signTransaction(defaultTx);
-      expect(precheck.transactionType(ethers.Transaction.from(signedLegacy))).not.to.throw;
+      expect(() => precheck.transactionType(ethers.Transaction.from(signedLegacy), requestDetails)).not.to.throw;
     });
 
     it('should accept London transactions', async () => {
@@ -584,7 +587,7 @@ describe('Precheck', async function () {
         maxPriorityFeePerGas: defaultGasPrice,
         maxFeePerGas: defaultGasPrice,
       });
-      expect(precheck.transactionType(ethers.Transaction.from(signedLondon))).not.to.throw;
+      expect(() => precheck.transactionType(ethers.Transaction.from(signedLondon), requestDetails)).not.to.throw;
     });
 
     it('should reject Cancun transactions', async () => {
@@ -596,7 +599,7 @@ describe('Precheck', async function () {
           maxFeePerBlobGas: defaultGasPrice,
           blobVersionedHashes: [blobVersionedHash],
         });
-        precheck.transactionType(ethers.Transaction.from(signedCancun));
+        precheck.transactionType(ethers.Transaction.from(signedCancun), requestDetails);
       } catch (e) {
         error = e;
       }

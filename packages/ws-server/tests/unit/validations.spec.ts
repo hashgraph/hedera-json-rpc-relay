@@ -24,12 +24,18 @@ import { WS_CONSTANTS } from '../../src/utils/constants';
 import { validateJsonRpcRequest, verifySupportedMethod } from '../../src/utils/utils';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 const logger = pino();
 
 describe('validations unit test', async function () {
   const FAKE_REQUEST_ID = '3';
   const FAKE_CONNECTION_ID = '9';
+  const requestDetails = new RequestDetails({
+    requestId: FAKE_REQUEST_ID,
+    ipAddress: '0.0.0.0',
+    connectionId: FAKE_CONNECTION_ID,
+  });
 
   it('Should execute validateJsonRpcRequest() to validate valid JSON RPC request and return true', () => {
     const VALID_REQEST = {
@@ -39,7 +45,7 @@ describe('validations unit test', async function () {
       params: [],
     };
 
-    expect(validateJsonRpcRequest(VALID_REQEST, logger, FAKE_REQUEST_ID, FAKE_CONNECTION_ID)).to.be.true;
+    expect(validateJsonRpcRequest(VALID_REQEST, logger, requestDetails)).to.be.true;
   });
 
   it('Should execute validateJsonRpcRequest() to validate invalid JSON RPC requests and return false', () => {
@@ -63,8 +69,8 @@ describe('validations unit test', async function () {
 
     INVALID_REQUESTS.forEach((request) => {
       console.log(request);
-
-      expect(validateJsonRpcRequest(request, logger, FAKE_REQUEST_ID, FAKE_CONNECTION_ID)).to.be.false;
+      // @ts-ignore
+      expect(validateJsonRpcRequest(request, logger, requestDetails)).to.be.false;
     });
   });
 
@@ -76,8 +82,8 @@ describe('validations unit test', async function () {
       method: 'eth_chainId',
       params: [],
     };
-
-    expect(validateJsonRpcRequest(REQUEST, logger, FAKE_REQUEST_ID, FAKE_CONNECTION_ID)).to.be.true;
+    // @ts-ignore
+    expect(validateJsonRpcRequest(REQUEST, logger, requestDetails)).to.be.true;
     configServiceTestHelper.remove('REQUEST_ID_IS_OPTIONAL');
   });
 
