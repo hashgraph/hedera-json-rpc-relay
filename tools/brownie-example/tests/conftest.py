@@ -2,15 +2,16 @@
 
 import pytest
 
-# You can also run your tests in isolation mode. In order to do so you have to connect to the forked network of
-# the Hedera chain you want to run this tests on (snapshot method will be used during tests)
-#@pytest.fixture(scope="function", autouse=True)
-#def isolate(fn_isolation):
-    # perform a chain rewind after completing each test, to ensure proper isolation
-    # https://eth-brownie.readthedocs.io/en/v1.10.3/tests-pytest-intro.html#isolation-fixtures
+# You can run your tests in isolation mode by connecting to a forked network of the Hedera chain.
+# This will enable the snapshot method during testing, ensuring that each test starts with a clean state.
+# @pytest.fixture(scope="function", autouse=True)
+# def isolate(fn_isolation):
+#     Rewinds the chain after each test to maintain proper isolation.
+#     More information can be found here:
+#     https://eth-brownie.readthedocs.io/en/v1.10.3/tests-pytest-intro.html#isolation-fixtures
 #    pass
 
-# This setup will not be needed for forked networks, which pre-created accounts
+# This setup is not required for forked networks with pre-funded accounts.
 @pytest.fixture(scope="module", autouse=True)
 def shared_setup(accounts):
     accounts.load('bob')

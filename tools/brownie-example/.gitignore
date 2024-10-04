@@ -1,5 +1,5 @@
 __pycache__
-.history
-.hypothesis/
+.pytest_cache/
 build/
 reports/
+
