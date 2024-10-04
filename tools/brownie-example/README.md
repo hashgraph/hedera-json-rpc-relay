@@ -110,6 +110,74 @@ brownie console --network hedera-test
 >>> t = Token.deploy("Test Token", "TST", 18, 1e23, {'from': accounts[0]})
 ```
 
+## Using fixtures and forking
+
+Brownie can connect to any network or its fork and is designed to work seamlessly with a ganache-cli script. However, if an alternative script is used in the configuration process to start the fork, Brownie may fail with the following error:
+```shell
+INTERNALERROR> ValueError: could not read ganache version: b'2.31.0\n'
+```
+
+To run your tests on forked networks, which allows the use of true fixtures (with snapshots created before each test and reverted after each test), you simply need to register an additional network in the Brownie configuration.
+
+### Debugging Transactions and Working with Events in Brownie
+
+Brownie provides tools for debugging transactions and working with events during development and testing:
+
+1. **Transaction Debugging**:
+   - Brownie allows you to inspect transactions in detail. After sending a transaction, you can call `tx.info()` on the transaction object to see its gas usage, logs, and status.
+
+   Example:
+   ```python
+   tx = contract.someFunction({'from': accounts[0]})
+   tx.info()  # View transaction details
+   ```
+
+2. **Accessing Events**:
+   - Events emitted by contracts during a transaction can be easily accessed through the transaction object. You can retrieve all events or filter for specific ones.
+
+   Example:
+   ```python
+   tx = contract.someFunction({'from': accounts[0]})
+   print(tx.events)  # Print all emitted events
+   ```
+
+   To access a specific event, you can reference it by name:
+   ```python
+   transfer_event = tx.events['Transfer']
+   print(transfer_event)
+   ```
+
+3. **Real-Time Event Monitoring**:
+   - You can set up filters to watch for specific events in real time. This is useful when you want to monitor certain actions as they happen on the network.
+
+   Example:
+   ```python
+   event_filter = contract.events.Transfer.createFilter(fromBlock='latest')
+   events = event_filter.get_all_entries()
+   print(events)
+   ```
+
+4. **Reverting and Snapshotting**:
+   - When testing on forked networks, you can create a snapshot of the current blockchain state, perform tests, and then revert back to the snapshot for repeated testing.
+
+   Example:
+   ```python
+   network.snapshot()
+   tx = contract.someFunction({'from': accounts[0]})
+   network.revert()  # Revert to the snapshot
+   ```
+
+   You can configure Brownie to automatically isolate each test by adding the following code to your conftest.py file:
+   ```python
+   @pytest.fixture(scope="function", autouse=True)
+   def isolate(fn_isolation):
+     pass
+   ```
+   This ensures that each test runs in an isolated environment, preventing any side effects from one test affecting another.
+
+5. **Revert Reasons**:
+   - If a transaction fails or reverts, Brownie provides detailed error messages and stack traces, including revert reasons, making it easier to identify and fix issues in your contract logic.
+
 # Brownie usage example
 
 Simple scripts for basic operations like hbars transfer, balance fetching, and contract interactions (deployment and calls).
