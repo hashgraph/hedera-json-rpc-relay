@@ -39,7 +39,7 @@ import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
 import { RequestDetails } from './types';
 import { Utils } from '../utils';
-import { populatePreconfiguredSpendingPlans } from './config/preconfiguredSpendingPlans';
+import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigService';
 import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
@@ -120,6 +120,13 @@ export class RelayImpl implements Relay {
   /**
    * @private
    * @readonly
+   * @property {HbarSpendingPlanConfigService} hbarSpendingPlanConfigService - The service responsible for managing HBAR spending plans.
+   */
+  private readonly hbarSpendingPlanConfigService: HbarSpendingPlanConfigService;
+
+  /**
+   * @private
+   * @readonly
    * @property {MetricService} metricService - The service responsible for capturing and reporting metrics.
    */
   private readonly metricService: MetricService;
@@ -186,6 +193,28 @@ export class RelayImpl implements Relay {
       this.cacheService,
     );
 
+    this.hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'hbar-spending-plan-repository' }),
+    );
+
+    this.ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
+    );
+
+    this.ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
+    );
+
+    this.hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
+      logger.child({ name: 'hbar-spending-plan-config-service' }),
+      this.hbarSpendingPlanRepository,
+      this.ethAddressHbarSpendingPlanRepository,
+      this.ipAddressHbarSpendingPlanRepository,
+    );
+
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
       const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
       this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
@@ -193,25 +222,8 @@ export class RelayImpl implements Relay {
 
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
 
-    this.hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'hbar-spending-plan-repository' }),
-    );
-    this.ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
-    );
-    this.ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
-    );
-
-    populatePreconfiguredSpendingPlans(
-      logger,
-      this.hbarSpendingPlanRepository,
-      this.ethAddressHbarSpendingPlanRepository,
-      this.ipAddressHbarSpendingPlanRepository,
-    )
+    this.hbarSpendingPlanConfigService
+      .populatePreconfiguredSpendingPlans()
       .then(() => logger.info('Pre-configured spending plans populated successfully'))
       .catch((e) => logger.warn(`Failed to load pre-configured spending plans: ${e.message}`));
 
