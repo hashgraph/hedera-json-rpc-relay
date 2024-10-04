@@ -26,6 +26,7 @@ export class ValidationService {
 
     // make sure that if OPERATOR_KEY_FORMAT is not specified, the provided OPERATOR_KEY_MAIN is in the DER format
     if (
+      envs[GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName] &&
       !envs[GlobalConfig.ENTRIES.OPERATOR_KEY_FORMAT.envName] &&
       // @ts-ignore
       !envs[GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName].match(/^[0-9a-f]{96}$/)
