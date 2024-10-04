@@ -184,7 +184,11 @@ Simple scripts for basic operations like hbars transfer, balance fetching, and c
 
 ## Setup & Install
 
-Follow the instructions from the installation section above.
+Follow this instruction from the installation section above:
+
+```Shell
+pip install eth-brownie
+```
 
 ## Running tests
 
