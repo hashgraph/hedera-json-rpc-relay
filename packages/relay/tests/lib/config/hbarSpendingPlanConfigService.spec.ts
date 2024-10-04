@@ -101,7 +101,7 @@ describe('HbarSpendingPlanConfigService', function () {
     it('should throw an error if the configuration file is not found', async function () {
       sinon.stub(fs, 'existsSync').returns(false);
       await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-        `Configuration file not found at path: ${hbarSpendingPlanConfigService['DEFAULT_SPENDING_PLANS_CONFIG_FILE']}`,
+        `Configuration file not found at path "${hbarSpendingPlanConfigService['DEFAULT_SPENDING_PLANS_CONFIG_FILE']}"`,
       );
     });
 

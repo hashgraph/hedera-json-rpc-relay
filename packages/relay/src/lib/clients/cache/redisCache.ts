@@ -133,10 +133,9 @@ export class RedisCache implements IRedisCacheClient {
     const client = await this.getConnectedClient();
     const result = await client.get(key);
     if (result) {
+      const censoredValue = result.replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
       this.logger.trace(
-        `${requestDetails.formattedRequestId} returning cached value ${key}:${JSON.stringify(
-          result,
-        )} on ${callingMethod} call`,
+        `${requestDetails.formattedRequestId} Returning cached value ${key}:${censoredValue} on ${callingMethod} call`,
       );
       // TODO: add metrics
       return JSON.parse(result);
@@ -169,8 +168,10 @@ export class RedisCache implements IRedisCacheClient {
     } else {
       await client.set(key, serializedValue);
     }
+
+    const censoredValue = serializedValue.replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
     this.logger.trace(
-      `${requestDetails.formattedRequestId} caching ${key}: ${serializedValue} on ${callingMethod} for ${
+      `${requestDetails.formattedRequestId} caching ${key}: ${censoredValue} on ${callingMethod} for ${
         resolvedTtl > 0 ? `${resolvedTtl} ms` : 'indefinite time'
       }`,
     );

@@ -49,7 +49,7 @@ export class HbarSpendingPlanConfigService {
     const filename = process.env.HBAR_SPENDING_PLANS_CONFIG_FILE || this.DEFAULT_SPENDING_PLANS_CONFIG_FILE;
     const configPath = findConfig(filename);
     if (!configPath || !fs.existsSync(configPath)) {
-      throw new Error(`Configuration file not found at path: ${configPath ?? filename}`);
+      throw new Error(`Configuration file not found at path "${configPath ?? filename}"`);
     }
     try {
       const rawData = fs.readFileSync(configPath, 'utf-8');

@@ -105,10 +105,9 @@ export class LocalLRUCache implements ICacheClient {
   public async get(key: string, callingMethod: string, requestDetails: RequestDetails): Promise<any> {
     const value = this.cache.get(key);
     if (value !== undefined) {
+      const censoredValue = JSON.stringify(value).replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
       this.logger.trace(
-        `${requestDetails.formattedRequestId} returning cached value ${key}:${JSON.stringify(
-          value,
-        )} on ${callingMethod} call`,
+        `${requestDetails.formattedRequestId} returning cached value ${key}:${censoredValue} on ${callingMethod} call`,
       );
       return value;
     }
@@ -153,8 +152,9 @@ export class LocalLRUCache implements ICacheClient {
     } else {
       this.cache.set(key, value);
     }
+    const censoredValue = JSON.stringify(value).replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
     this.logger.trace(
-      `${requestDetails.formattedRequestId} caching ${key}:${JSON.stringify(value)} on ${callingMethod} for ${
+      `${requestDetails.formattedRequestId} caching ${key}:${censoredValue} on ${callingMethod} for ${
         resolvedTtl > 0 ? `${resolvedTtl} ms` : 'indefinite time'
       }`,
     );
