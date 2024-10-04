@@ -33,15 +33,7 @@ import { RequestDetails } from '../../../../src/lib/types';
 chai.use(chaiAsPromised);
 
 describe('IPAddressHbarSpendingPlanRepository', function () {
-  const logger = pino({
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
-        translateTime: true,
-      },
-    },
-  });
+  const logger = pino();
   const registry = new Registry();
   const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });
 

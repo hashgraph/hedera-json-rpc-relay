@@ -33,15 +33,7 @@ import { RequestDetails } from '../../../../dist/lib/types';
 chai.use(chaiAsPromised);
 
 describe('EthAddressHbarSpendingPlanRepository', function () {
-  const logger = pino({
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
-        translateTime: true,
-      },
-    },
-  });
+  const logger = pino();
   const registry = new Registry();
   const requestDetails = new RequestDetails({
     requestId: 'ethAddressHbarSpendingPlanRepositoryTest',

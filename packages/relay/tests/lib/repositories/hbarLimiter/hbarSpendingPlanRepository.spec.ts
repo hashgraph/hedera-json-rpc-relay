@@ -38,15 +38,7 @@ import { RequestDetails } from '../../../../src/lib/types';
 chai.use(chaiAsPromised);
 
 describe('HbarSpendingPlanRepository', function () {
-  const logger = pino({
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
-        translateTime: true,
-      },
-    },
-  });
+  const logger = pino();
   const registry = new Registry();
   const requestDetails = new RequestDetails({ requestId: 'hbarSpendingPlanRepositoryTest', ipAddress: '0.0.0.0' });
 

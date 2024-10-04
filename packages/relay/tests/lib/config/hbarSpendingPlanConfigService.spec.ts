@@ -39,6 +39,7 @@ import { IIPAddressHbarSpendingPlan } from '../../../src/lib/db/types/hbarLimite
 chai.use(chaiAsPromised);
 
 describe('HbarSpendingPlanConfigService', function () {
+  const logger = pino();
   const neverExpireTtl = -1;
   const emptyRequestDetails = new RequestDetails({ requestId: '', ipAddress: '' });
   const path = findConfig('spendingPlansConfig.json', { dir: __dirname });
@@ -51,22 +52,12 @@ describe('HbarSpendingPlanConfigService', function () {
   let hbarSpendingPlanConfigService: HbarSpendingPlanConfigService;
 
   beforeEach(function () {
-    loggerSpy = sinon.spy(
-      pino({
-        transport: {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: true,
-          },
-        },
-      }),
-    );
+    loggerSpy = sinon.spy(logger);
     hbarSpendingPlanRepositoryStub = sinon.createStubInstance(HbarSpendingPlanRepository);
     ethAddressHbarSpendingPlanRepositoryStub = sinon.createStubInstance(EthAddressHbarSpendingPlanRepository);
     ipAddressHbarSpendingPlanRepositoryStub = sinon.createStubInstance(IPAddressHbarSpendingPlanRepository);
     hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
-      loggerSpy as Logger,
+      logger,
       hbarSpendingPlanRepositoryStub,
       ethAddressHbarSpendingPlanRepositoryStub,
       ipAddressHbarSpendingPlanRepositoryStub,
