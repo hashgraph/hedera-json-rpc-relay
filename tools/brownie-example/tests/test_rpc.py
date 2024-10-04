@@ -3,15 +3,15 @@
 import pytest
 
 def test_account_balance(accounts):
-    assert accounts[0].balance() == 10**21
+    assert accounts[0].balance() > 0 # We need non empty account to test the transfer method...
 
-@pytest.mark.parametrize("idx", range(5))
-def test_hbar_transfer(accounts, idx):
-    assert accounts[0].balance() == 10**21
-    assert accounts[idx + 1].balance() == 10**21
-    accounts[0].transfer(accounts[idx + 1], 10**20)
-    assert accounts[0].balance() == 9 * 10**20
-    assert accounts[idx + 1].balance() == 11 * 10**20
+def test_hbar_transfer(accounts):
+    transfer_amount = 100
+    initial_alice_balance = accounts[0].balance()
+    initial_bob_balance = accounts[1].balance()
+    accounts[0].transfer(accounts[1], transfer_amount)
+    assert accounts[0].balance() == initial_alice_balance - transfer_amount
+    assert accounts[1].balance() == initial_bob_balance + transfer_amount
 
 def test_deploy(Greeter, accounts):
     deployed = Greeter.deploy("another_instance", {'from': accounts[0]})

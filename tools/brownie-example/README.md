@@ -122,8 +122,26 @@ Follow the instructions from the installation section above.
 
 After installing brownie you can go to your project directory and run following script:
 
-1. Run `brownie test --network hedera-test`
+1. Run a fork of the network of your choose (snapshot method is required for tests).
+
+   In order to run the tests on the non-forked (no snapshot method available) network 
+   you need to have 2 accounts configured in brownie
+   
+   Bob's account can not be empty:
+   
+   ```shell
+   brownie accounts new bob
+   brownie accounts new alice
+   ```
+   Since the transfer of hbars is performed during the tests it is adviced to connect to the forked network instead of
+   the actual remote network.
+   
+   In order to run the tests on the forked network add the fork config to the brownie networks list:
+   ```bash
+   brownie networks add development hedera-test-fork cmd=ganache-cli host=http://127.0.0.1 chain_id=296 fork='https://testnet.hashio.io/api' accounts=10 mnemonic=brownie port=8545
+   ```
+2.  Run `brownie test --network hedera-test-fork`
 
 ## Deploying your Smart Contract
 
-1. Run `brownie run deploy --network hedera-test`
+1. Run brownie run deploy --network hedera-test
