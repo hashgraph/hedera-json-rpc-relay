@@ -75,7 +75,7 @@ describe('validations unit test', async function () {
   });
 
   it('Should execute validateJsonRpcRequest() to validate JSON RPC request that has no id field but return true because REQUEST_ID_IS_OPTIONAL=true', () => {
-    configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', true);
+    ConfigServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', true);
 
     const REQUEST = {
       jsonrpc: '2.0',
@@ -84,7 +84,7 @@ describe('validations unit test', async function () {
     };
     // @ts-ignore
     expect(validateJsonRpcRequest(REQUEST, logger, requestDetails)).to.be.true;
-    configServiceTestHelper.remove('REQUEST_ID_IS_OPTIONAL');
+    ConfigServiceTestHelper.remove('REQUEST_ID_IS_OPTIONAL');
   });
 
   it("Should execute verifySupportedMethod() to validate requests' methods and return true if methods are supported", () => {

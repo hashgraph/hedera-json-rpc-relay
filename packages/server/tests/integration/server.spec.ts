@@ -19,8 +19,8 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
-configServiceTestHelper.appendEnvsFromPath(__dirname + '/test.env');
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+ConfigServiceTestHelper.appendEnvsFromPath(__dirname + '/test.env');
 import Axios, { AxiosInstance } from 'axios';
 import { expect } from 'chai';
 import sinon from 'sinon';
@@ -100,7 +100,7 @@ describe('RPC Server', function () {
     const testClient2 = BaseTest.createTestClient(port);
 
     try {
-      configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', true);
+      ConfigServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', true);
       const response = await testClient2.post('/', {
         jsonrpc: '2.0',
         method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
@@ -120,7 +120,7 @@ describe('RPC Server', function () {
       expect(true, `Unexpected error: ${error.message}`).to.eq(false);
     }
 
-    configServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', false);
+    ConfigServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', false);
     testServer2.close();
   });
 
@@ -451,11 +451,11 @@ describe('RPC Server', function () {
     const batchRequestEnabledValue = ConfigService.get('BATCH_REQUESTS_ENABLED');
 
     this.beforeAll(function () {
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
+      ConfigServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
     });
 
     this.afterAll(function () {
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', batchRequestEnabledValue);
+      ConfigServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', batchRequestEnabledValue);
     });
 
     function getEthChainIdRequest(id) {
@@ -624,7 +624,7 @@ describe('RPC Server', function () {
 
     it('should not execute batch request when disabled', async function () {
       // disable batch request
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', false);
+      ConfigServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', false);
 
       // do batch request
       try {
@@ -635,12 +635,12 @@ describe('RPC Server', function () {
       }
 
       // enable batch request again
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
+      ConfigServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
     });
 
     it('batch request be disabled by default', async function () {
       // disable batch request
-      configServiceTestHelper.remove('BATCH_REQUESTS_ENABLED');
+      ConfigServiceTestHelper.remove('BATCH_REQUESTS_ENABLED');
 
       // do batch request
       try {
@@ -651,7 +651,7 @@ describe('RPC Server', function () {
       }
 
       // enable batch requests again
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
+      ConfigServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
     });
   });
 

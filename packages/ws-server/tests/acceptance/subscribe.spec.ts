@@ -123,7 +123,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
   beforeEach(async () => {
     // restore original ENV value
-    configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', originalWsMultipleAddressesEnabledValue);
+    ConfigServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', originalWsMultipleAddressesEnabledValue);
 
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
     requestId = Utils.generateRequestId();
@@ -253,7 +253,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     // skip this test if using a remote relay since updating the env vars would not affect it
     if (global.relayIsLocal) {
       it('Subscribe to multiple contracts on same subscription', async function () {
-        configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', true);
+        ConfigServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', true);
         await new Promise((resolve) => setTimeout(resolve, 10000));
 
         const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
@@ -316,7 +316,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
         // wait for the connections to be closed
         await new Promise((resolve) => setTimeout(resolve, 500));
-        configServiceTestHelper.dynamicOverride(
+        ConfigServiceTestHelper.dynamicOverride(
           'WS_MULTIPLE_ADDRESSES_ENABLED',
           originalWsMultipleAddressesEnabledValue,
         );
@@ -324,7 +324,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     }
 
     it('Subscribe to multiple contracts on same subscription Should fail with INVALID_PARAMETER due to feature flag disabled', async function () {
-      configServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', false);
+      ConfigServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', false);
       const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
       const addressCollection = [logContractSigner.target, logContractSigner2.target];
       const webSocket = new WebSocket(WS_RELAY_URL);
@@ -445,7 +445,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     beforeEach(async () => {
       // cache original ENV values
       originalWsMaxConnectionLimit = ConfigService.get('WS_CONNECTION_LIMIT');
-      configServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT', '5');
+      ConfigServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT', '5');
 
       // We already have one connection
       expect(server._connections).to.equal(1);
@@ -462,7 +462,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
     afterEach(async () => {
       // Return ENV variables to their original value
-      configServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT', originalWsMaxConnectionLimit);
+      ConfigServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT', originalWsMaxConnectionLimit);
 
       for (const provider of providers) {
         await provider.destroy();
@@ -496,11 +496,11 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     this.beforeAll(async () => {
       // cache original ENV values
       originalWsMaxInactivityTtl = ConfigService.get('WS_MAX_INACTIVITY_TTL') || '300000';
-      configServiceTestHelper.dynamicOverride('WS_MAX_INACTIVITY_TTL', TEST_TTL.toString());
+      ConfigServiceTestHelper.dynamicOverride('WS_MAX_INACTIVITY_TTL', TEST_TTL.toString());
     });
     this.afterAll(async () => {
       // Return ENV variables to their original value
-      configServiceTestHelper.dynamicOverride('WS_MAX_INACTIVITY_TTL', originalWsMaxInactivityTtl);
+      ConfigServiceTestHelper.dynamicOverride('WS_MAX_INACTIVITY_TTL', originalWsMaxInactivityTtl);
     });
 
     it('Connection TTL is enforced, should close all connections', async function () {
@@ -921,11 +921,11 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
       before(() => {
         originalConnectionLimitPerIp = ConfigService.get('WS_CONNECTION_LIMIT_PER_IP');
-        configServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT_PER_IP', '3');
+        ConfigServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT_PER_IP', '3');
       });
 
       after(() => {
-        configServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT_PER_IP', originalConnectionLimitPerIp);
+        ConfigServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT_PER_IP', originalConnectionLimitPerIp);
       });
 
       it('Does not allow more connections from the same IP than the specified limit', async function () {
@@ -976,11 +976,11 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
       before(() => {
         originalSubsPerConnection = ConfigService.get('WS_SUBSCRIPTION_LIMIT');
-        configServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', '2');
+        ConfigServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', '2');
       });
 
       after(() => {
-        configServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', originalSubsPerConnection);
+        ConfigServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', originalSubsPerConnection);
       });
 
       it('Does not allow more subscriptions per connection than the specified limit', async function () {

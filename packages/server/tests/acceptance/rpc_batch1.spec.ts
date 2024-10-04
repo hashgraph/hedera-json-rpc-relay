@@ -427,7 +427,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
         //for the purpose of the test, we are settings limit to 2, and fetching all.
         //setting mirror node limit to 2 for this test only
-        configServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
+        ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
         // calculate blocks behind latest, so we can fetch logs from the past.
         // if current block is less than 10, we will fetch logs from the beginning otherwise we will fetch logs from 10 blocks behind latest
         const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestIdPrefix));

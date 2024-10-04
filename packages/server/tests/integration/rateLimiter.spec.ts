@@ -38,7 +38,7 @@ describe('RateLimit', () => {
   });
 
   beforeEach(() => {
-    configServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', false);
+    ConfigServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', false);
     // Create a new instance of RateLimit
     rateLimit = new RateLimit(logger, registry, duration);
   });
@@ -49,7 +49,7 @@ describe('RateLimit', () => {
   });
 
   it('should not rate limit when RATE_LIMIT_DISABLED is true', () => {
-    configServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', true);
+    ConfigServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', true);
     rateLimit = new RateLimit(logger, registry, duration);
     const shouldLimit = rateLimit.shouldRateLimit('127.0.0.1', 'method1', 10, 'requestId');
 
@@ -119,7 +119,7 @@ describe('RateLimit', () => {
   });
 
   it('should prioritize environment variable RATE_LIMIT_DISABLED', () => {
-    configServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', true);
+    ConfigServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', true);
 
     const logSpy = sinon.spy(logger, 'warn');
     const counterSpy = sinon.spy(rateLimit['ipRateLimitCounter'], 'inc');

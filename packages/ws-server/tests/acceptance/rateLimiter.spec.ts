@@ -47,11 +47,11 @@ describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
   ];
 
   before(async () => {
-    configServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', true);
+    ConfigServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', true);
   });
 
   after(async () => {
-    configServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', false);
+    ConfigServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', false);
     // expect all the connections to the WS server to be closed after all
     if (global && global.socketServer) {
       expect(global.socketServer._connections).to.eq(0);

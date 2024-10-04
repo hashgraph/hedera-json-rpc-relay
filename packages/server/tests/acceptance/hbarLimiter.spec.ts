@@ -180,7 +180,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
         logger.info(
-          `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get('HBAR_RATE_LIMIT_TINYBAR')}`,
+          `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get(
+            'HBAR_RATE_LIMIT_TINYBAR',
+          )}`,
         );
 
         const initialAccount: AliasAccount = global.accounts[0];
@@ -204,7 +206,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       describe('Remaining HBAR Limit', () => {
         before(() => {
-          configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
+          ConfigServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
         });
 
         it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
@@ -311,7 +313,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           hbarRateLimitPreemptiveCheck = ConfigService.get('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK');
         });
         afterEach(() => {
-          configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', hbarRateLimitPreemptiveCheck);
+          ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', hbarRateLimitPreemptiveCheck);
         });
 
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
@@ -340,7 +342,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('Should preemptively check the rate limit before submitting EthereumTransaction', async function () {
-          configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', true);
+          ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', true);
 
           try {
             for (let i = 0; i < 50; i++) {
@@ -358,7 +360,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
-          configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', false);
+          ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', false);
 
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const lastRemainingHbars = remainingHbarsBefore;

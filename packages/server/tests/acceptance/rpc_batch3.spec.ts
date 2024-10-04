@@ -806,7 +806,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       });
 
       after(() => {
-        configServiceTestHelper.dynamicOverride(
+        ConfigServiceTestHelper.dynamicOverride(
           'ETH_CALL_CONSENSUS_SELECTORS',
           initialEthCallSelectorsAlwaysToConsensus,
         );
@@ -830,7 +830,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         );
 
         // Add the selector for isAssociated to ETH_CALL_CONSENSUS_SELECTORS to ensure isAssociated() passes
-        configServiceTestHelper.dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', JSON.stringify([isAssociatedSelector]));
+        ConfigServiceTestHelper.dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', JSON.stringify([isAssociatedSelector]));
         const isAssociatedResult = await hrc719Contract.isAssociated(tokenAddress);
         expect(isAssociatedResult).to.be.false; // associate status of the token with the caller
       });
@@ -2029,11 +2029,11 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
     before(async () => {
       PREV_BATCH_REQUESTS_ENABLED = ConfigService.get('BATCH_REQUESTS_ENABLED');
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
+      ConfigServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
     });
 
     after(async () => {
-      configServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', PREV_BATCH_REQUESTS_ENABLED);
+      ConfigServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', PREV_BATCH_REQUESTS_ENABLED);
     });
 
     it('Should return a batch of requests', async function () {

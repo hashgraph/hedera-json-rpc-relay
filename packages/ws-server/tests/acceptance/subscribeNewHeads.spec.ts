@@ -137,8 +137,8 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   });
 
   beforeEach(async () => {
-    configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', originalWsNewHeadsEnabledValue);
-    configServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', ' 10');
+    ConfigServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', originalWsNewHeadsEnabledValue);
+    ConfigServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', ' 10');
 
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -150,13 +150,13 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    configServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', originalWsSubcriptionLimitValue);
+    ConfigServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', originalWsSubcriptionLimitValue);
   });
 
   describe('Configuration', async function () {
     it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
       const webSocket = new WebSocket(WS_RELAY_URL);
-      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', false);
+      ConfigServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', false);
       const messagePromise = new Promise<void>((resolve, reject) => {
         webSocket.on('message', function incoming(data) {
           try {
@@ -182,12 +182,12 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       await messagePromise;
 
       webSocket.close();
-      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', originalWsNewHeadsEnabledValue);
+      ConfigServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', originalWsNewHeadsEnabledValue);
     });
 
     it('Does not allow more subscriptions per connection than the specified limit with newHeads', async function () {
-      configServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', '2');
-      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', true);
+      ConfigServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', '2');
+      ConfigServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', true);
       // Create different subscriptions
       for (let i = 0; i < 3; i++) {
         if (i === 2) {
@@ -202,11 +202,11 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
-      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', originalWsNewHeadsEnabledValue);
+      ConfigServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', originalWsNewHeadsEnabledValue);
     });
 
     it('@release should subscribe to newHeads even when WS_NEW_HEADS_ENABLED=undefined, and receive a valid JSON RPC response', async (done) => {
-      configServiceTestHelper.remove('WS_NEW_HEADS_ENABLED');
+      ConfigServiceTestHelper.remove('WS_NEW_HEADS_ENABLED');
       expect(ConfigService.get('WS_NEW_HEADS_ENABLED')).to.be.undefined;
 
       const webSocket = new WebSocket(WS_RELAY_URL);
@@ -239,7 +239,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
 
   describe('Subscriptions for newHeads', async function () {
     this.beforeEach(() => {
-      configServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', true);
+      ConfigServiceTestHelper.dynamicOverride('WS_NEW_HEADS_ENABLED', true);
     });
 
     it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
