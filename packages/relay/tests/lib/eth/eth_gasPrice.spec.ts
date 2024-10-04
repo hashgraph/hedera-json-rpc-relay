@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -54,13 +54,13 @@ describe('@ethGasPrice Gas Price spec', async function () {
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    configServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
+    ConfigServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    configServiceTestHelper.dynamicOverride(
+    ConfigServiceTestHelper.dynamicOverride(
       'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
       currentMaxBlockRange.toString(),
     );
@@ -109,12 +109,12 @@ describe('@ethGasPrice Gas Price spec', async function () {
         it(testCaseName, async function () {
           const GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES[testCaseName];
           const initialGasPrice = await ethImpl.gasPrice(requestDetails);
-          configServiceTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', GAS_PRICE_PERCENTAGE_BUFFER);
+          ConfigServiceTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', GAS_PRICE_PERCENTAGE_BUFFER);
 
           await cacheService.clear(requestDetails);
 
           const gasPriceWithBuffer = await ethImpl.gasPrice(requestDetails);
-          configServiceTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', '0');
+          ConfigServiceTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', '0');
 
           const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);
           const expectedGasPriceWithBuffer = toHex(

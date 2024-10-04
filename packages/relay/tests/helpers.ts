@@ -28,7 +28,7 @@ import { formatRequestIdMessage, numberTo0x, toHash32 } from '../src/formatters'
 import { RedisInMemoryServer } from './redisInMemoryServer';
 import { Logger } from 'pino';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../config-service/tests/configServiceTestHelper';
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -907,9 +907,9 @@ export const startRedisInMemoryServer = async (logger: Logger, port: number) => 
     REDIS_ENABLED: ConfigService.get('REDIS_ENABLED'),
     REDIS_URL: ConfigService.get('REDIS_URL'),
   };
-  configServiceTestHelper.dynamicOverride('TEST', false);
-  configServiceTestHelper.dynamicOverride('REDIS_ENABLED', true);
-  configServiceTestHelper.dynamicOverride('REDIS_URL', `redis://127.0.0.1:${port}`);
+  ConfigServiceTestHelper.dynamicOverride('TEST', false);
+  ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', true);
+  ConfigServiceTestHelper.dynamicOverride('REDIS_URL', `redis://127.0.0.1:${port}`);
   return { redisInMemoryServer, envsToReset };
 };
 
@@ -918,9 +918,9 @@ export const stopRedisInMemoryServer = async (
   envsToReset: { TEST?: string; REDIS_ENABLED?: string; REDIS_URL?: string },
 ): Promise<void> => {
   await redisInMemoryServer.stop();
-  configServiceTestHelper.dynamicOverride('TEST', envsToReset.TEST);
-  configServiceTestHelper.dynamicOverride('REDIS_ENABLED', envsToReset.REDIS_ENABLED);
-  configServiceTestHelper.dynamicOverride('REDIS_URL', envsToReset.REDIS_URL);
+  ConfigServiceTestHelper.dynamicOverride('TEST', envsToReset.TEST);
+  ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', envsToReset.REDIS_ENABLED);
+  ConfigServiceTestHelper.dynamicOverride('REDIS_URL', envsToReset.REDIS_URL);
 };
 
 export const estimateFileTransactionsFee = (

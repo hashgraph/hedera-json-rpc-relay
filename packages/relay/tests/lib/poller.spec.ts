@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { EthImpl } from '../../src/lib/eth';
 import { expect } from 'chai';
 import pino from 'pino';

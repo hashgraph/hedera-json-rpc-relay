@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import {
   ASCIIToHex,
@@ -142,15 +142,15 @@ describe('Formatters', () => {
 
   describe('parseNumericEnvVar', () => {
     before(() => {
-      configServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_EMPTYSTRING', '');
-      configServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', 'foobar');
-      configServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NUMERICSTRING', '12345');
+      ConfigServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_EMPTYSTRING', '');
+      ConfigServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', 'foobar');
+      ConfigServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NUMERICSTRING', '12345');
     });
 
     after(() => {
-      configServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_EMPTYSTRING', undefined);
-      configServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', undefined);
-      configServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NUMERICSTRING', undefined);
+      ConfigServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_EMPTYSTRING', undefined);
+      ConfigServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NONNUMERICSTRING', undefined);
+      ConfigServiceTestHelper.dynamicOverride('TEST_ONLY_ENV_VAR_NUMERICSTRING', undefined);
     });
 
     it('should use default value when env var is undefined', () => {

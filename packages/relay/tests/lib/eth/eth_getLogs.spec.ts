@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -102,12 +102,12 @@ describe('@ethGetLogs using MirrorNode', async function () {
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    configServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
+    ConfigServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
   });
 
   afterEach(() => {
     getSdkClientStub.restore();
-    configServiceTestHelper.dynamicOverride(
+    ConfigServiceTestHelper.dynamicOverride(
       'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
       currentMaxBlockRange.toString(),
     );
@@ -241,10 +241,10 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
     });
     //setting mirror node limit to 2 for this test only
-    configServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
+    ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
     const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
     //resetting mirror node limit to 100
-    configServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '100');
+    ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '100');
     expect(result).to.exist;
 
     expect(result.length).to.eq(4);

@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
 import { pino } from 'pino';
 import { Registry } from 'prom-client';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
@@ -141,7 +141,7 @@ describe('CacheService Test Suite', async function () {
 
   describe('Internal Cache Test Suite', async function () {
     this.beforeAll(() => {
-      configServiceTestHelper.dynamicOverride('REDIS_ENABLED', false);
+      ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', false);
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
@@ -280,13 +280,13 @@ describe('CacheService Test Suite', async function () {
 
     this.beforeAll(async () => {
       multiSet = ConfigService.get('MULTI_SET');
-      configServiceTestHelper.dynamicOverride('MULTI_SET', true);
+      ConfigServiceTestHelper.dynamicOverride('MULTI_SET', true);
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
     this.afterAll(async () => {
       await cacheService.disconnectRedisClient();
-      configServiceTestHelper.dynamicOverride('MULTI_SET', multiSet);
+      ConfigServiceTestHelper.dynamicOverride('MULTI_SET', multiSet);
     });
 
     this.beforeEach(async () => {

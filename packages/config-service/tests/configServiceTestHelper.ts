@@ -27,7 +27,7 @@ import { ConfigService } from '../dist/services';
  * in order to keep the main env provider as clean as possible but at the same
  * time, we will be able to override, delete, or append environment variables.
  */
-export class configServiceTestHelper {
+export class ConfigServiceTestHelper {
   /**
    * Override an env variable, used in test cases only
    * @param name string

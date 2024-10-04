@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { validateOpenRPCDocument, parseOpenRPCDocument } from '@open-rpc/schema-utils-js';
 import Ajv from 'ajv';
@@ -91,7 +91,7 @@ describe('Open RPC Specification', function () {
   let ethImpl: EthImpl;
 
   before(() => {
-    configServiceTestHelper.dynamicOverride('npm_package_version', 'relay/0.0.1-SNAPSHOT');
+    ConfigServiceTestHelper.dynamicOverride('npm_package_version', 'relay/0.0.1-SNAPSHOT');
   });
 
   const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });

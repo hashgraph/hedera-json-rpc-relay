@@ -37,7 +37,7 @@ import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import MetricService from '../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { calculateTxRecordChargeAmount, random20BytesAddress } from '../helpers';
 import {
   AccountId,
@@ -117,7 +117,7 @@ describe('SdkClient', async function () {
       eventEmitter,
     );
 
-    configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
+    ConfigServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
 
     instance = axios.create({
       baseURL: 'https://localhost:5551/api/v1',
@@ -276,7 +276,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is undefined', async () => {
-      configServiceTestHelper.remove('OPERATOR_KEY_FORMAT');
+      ConfigServiceTestHelper.remove('OPERATOR_KEY_FORMAT');
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -289,7 +289,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
-      configServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'DER');
+      ConfigServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'DER');
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -302,7 +302,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
-      configServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'HEX_ED25519');
+      ConfigServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'HEX_ED25519');
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -315,7 +315,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
-      configServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'HEX_ECDSA');
+      ConfigServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'HEX_ECDSA');
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -328,7 +328,7 @@ describe('SdkClient', async function () {
     });
 
     it('It should throw an Error when an unexpected string is set', async () => {
-      configServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'BAD_FORMAT');
+      ConfigServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'BAD_FORMAT');
       try {
         new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter);
         expect.fail(`Expected an error but nothing was thrown`);
@@ -2248,7 +2248,7 @@ describe('SdkClient', async function () {
       mock = new MockAdapter(instance);
       // @ts-ignore
       hbarRateLimitPreemptiveCheck = ConfigService.get('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK');
-      configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', true);
+      ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', true);
     });
 
     afterEach(() => {
@@ -2256,7 +2256,7 @@ describe('SdkClient', async function () {
       sinon.restore();
       sdkClientMock.restore();
       hbarLimitMock.restore();
-      configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', hbarRateLimitPreemptiveCheck);
+      ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', hbarRateLimitPreemptiveCheck);
     });
 
     it('should rate limit before creating file', async () => {
@@ -2603,7 +2603,7 @@ describe('SdkClient', async function () {
     });
 
     it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
-      configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', false);
+      ConfigServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', false);
       const mockedTransactionId = transactionId.toString();
       const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);
       const mockedMirrorNodeTransactionRecord = {
@@ -2650,7 +2650,7 @@ describe('SdkClient', async function () {
       expect(response).to.eq(transactionResponse);
       expect(transactionStub.called).to.be.true;
 
-      configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
+      ConfigServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
     });
 
     it('Should execute calculateTxRecordChargeAmount() to get the charge amount of transaction record', () => {

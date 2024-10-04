@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { MirrorNodeClient } from '../../src/lib/clients';
@@ -162,7 +162,7 @@ describe('MirrorNodeClient', async function () {
 
   it('Can provide custom x-api-key header', async () => {
     const exampleApiKey = '["abc123iAManAPIkey"]';
-    configServiceTestHelper.dynamicOverride('MIRROR_NODE_URL_HEADER_X_API_KEY', exampleApiKey);
+    ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_URL_HEADER_X_API_KEY', exampleApiKey);
     const mirrorNodeInstanceOverridden = new MirrorNodeClient(
       // @ts-ignore
       ConfigService.get('MIRROR_NODE_URL') || '',

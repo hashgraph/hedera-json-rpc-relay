@@ -18,7 +18,7 @@
  *
  */
 
-import { configServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
@@ -61,8 +61,8 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
       });
     } else {
       before(() => {
-        configServiceTestHelper.dynamicOverride('TEST', true);
-        configServiceTestHelper.dynamicOverride('REDIS_ENABLED', false);
+        ConfigServiceTestHelper.dynamicOverride('TEST', true);
+        ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', false);
         cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
         repository = new EthAddressHbarSpendingPlanRepository(
           cacheService,

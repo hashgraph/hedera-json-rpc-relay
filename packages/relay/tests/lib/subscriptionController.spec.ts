@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import pino from 'pino';
 import { SubscriptionController } from '../../src/lib/subscriptionController';
 import { expect } from 'chai';
@@ -269,14 +269,14 @@ describe('subscriptionController', async function () {
       originalEnv = ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT');
       originalSubscriptionController = subscriptionController;
 
-      configServiceTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', false);
+      ConfigServiceTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', false);
       const registry = new Registry();
       poller = new Poller(ethImpl, logger, registry);
       subscriptionController = new SubscriptionController(poller, logger, registry);
     });
 
     after(() => {
-      configServiceTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', originalEnv);
+      ConfigServiceTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', originalEnv);
       subscriptionController = originalSubscriptionController;
     });
 

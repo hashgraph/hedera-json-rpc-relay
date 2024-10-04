@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
@@ -239,11 +239,11 @@ describe('Precheck', async function () {
     let initialMinGasPriceBuffer;
     before(async () => {
       initialMinGasPriceBuffer = constants.GAS_PRICE_TINY_BAR_BUFFER;
-      configServiceTestHelper.dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', '10000000000'); // 1 tinybar
+      ConfigServiceTestHelper.dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', '10000000000'); // 1 tinybar
     });
 
     after(async () => {
-      configServiceTestHelper.dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', initialMinGasPriceBuffer);
+      ConfigServiceTestHelper.dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', initialMinGasPriceBuffer);
     });
 
     it('should pass for gas price gt to required gas price', async function () {

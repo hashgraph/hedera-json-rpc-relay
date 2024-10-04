@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import MockAdapter from 'axios-mock-adapter';
@@ -328,11 +328,11 @@ describe('Debug API Test Suite', async function () {
       });
 
       after(function () {
-        configServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', ffAtStart);
+        ConfigServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', ffAtStart);
       });
 
       it('DEBUG_API_ENABLED is not specified', async function () {
-        configServiceTestHelper.remove('DEBUG_API_ENABLED');
+        ConfigServiceTestHelper.remove('DEBUG_API_ENABLED');
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           debugService.debug_traceTransaction,
@@ -343,7 +343,7 @@ describe('Debug API Test Suite', async function () {
       });
 
       it('DEBUG_API_ENABLED=true', async function () {
-        configServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', true);
+        ConfigServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', true);
 
         const traceTransaction = await debugService.debug_traceTransaction(
           transactionHash,
@@ -355,7 +355,7 @@ describe('Debug API Test Suite', async function () {
       });
 
       it('DEBUG_API_ENABLED=false', async function () {
-        configServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', false);
+        ConfigServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', false);
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
           debugService.debug_traceTransaction,
@@ -368,7 +368,7 @@ describe('Debug API Test Suite', async function () {
 
     describe('callTracer', async function () {
       before(() => {
-        configServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', true);
+        ConfigServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', true);
       });
 
       it('Test call tracer with onlyTopCall false', async function () {
@@ -430,7 +430,7 @@ describe('Debug API Test Suite', async function () {
 
     describe('opcodeLogger', async function () {
       before(() => {
-        configServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', true);
+        ConfigServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', true);
       });
 
       for (const config of opcodeLoggerConfigs) {
@@ -480,7 +480,7 @@ describe('Debug API Test Suite', async function () {
     describe('Invalid scenarios', async function () {
       let notFound;
       before(() => {
-        configServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', true);
+        ConfigServiceTestHelper.dynamicOverride('DEBUG_API_ENABLED', true);
       });
 
       beforeEach(() => {

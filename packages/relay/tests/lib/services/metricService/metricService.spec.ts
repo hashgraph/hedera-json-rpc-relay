@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
 import pino from 'pino';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
@@ -96,7 +96,7 @@ describe('Metric Service', function () {
   } as unknown as TransactionRecord;
 
   before(() => {
-    configServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'DER');
+    ConfigServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'DER');
 
     // consensus node client
     const hederaNetwork = ConfigService.get('HEDERA_NETWORK')!;
@@ -166,7 +166,7 @@ describe('Metric Service', function () {
     it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
       mock.onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`).reply(200, mockedMirrorNodeTransactionRecord);
 
-      configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', false);
+      ConfigServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', false);
 
       const originalBudget = hbarLimiter.getRemainingBudget();
 
@@ -189,7 +189,7 @@ describe('Metric Service', function () {
     });
 
     it('Should execute captureTransactionMetrics() by retrieving transaction record from CONSENSUS NODE client', async () => {
-      configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
+      ConfigServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
       const mockedExchangeRateInCents = 12;
       const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
 
@@ -247,7 +247,7 @@ describe('Metric Service', function () {
     });
 
     it('Should listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics()', async () => {
-      configServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
+      ConfigServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
       const mockedExchangeRateInCents = 12;
       const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
 

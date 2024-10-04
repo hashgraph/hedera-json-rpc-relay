@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import pino from 'pino';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
@@ -49,17 +49,17 @@ describe('HBAR Rate Limiter', async function () {
 
   this.beforeEach(() => {
     currentDateNow = Date.now();
-    configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_WHITELIST', `[${randomWhiteListedAccountAddress}]`);
+    ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_WHITELIST', `[${randomWhiteListedAccountAddress}]`);
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
     rateLimiterWithEmptyBudget = new HbarLimit(logger, currentDateNow, invalidTotal, validDuration, registry);
   });
 
   this.beforeAll(() => {
-    configServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_WHITELIST', `[${randomWhiteListedAccountAddress}]`);
+    ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_WHITELIST', `[${randomWhiteListedAccountAddress}]`);
   });
 
   this.afterAll(() => {
-    configServiceTestHelper.remove('HBAR_RATE_LIMIT_WHITELIST');
+    ConfigServiceTestHelper.remove('HBAR_RATE_LIMIT_WHITELIST');
   });
 
   it('should be disabled, if we pass invalid total', async function () {

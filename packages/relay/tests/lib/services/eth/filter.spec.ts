@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
@@ -129,11 +129,11 @@ describe('Filter API Test Suite', async function () {
     });
 
     after(function () {
-      configServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', ffAtStart);
+      ConfigServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', ffAtStart);
     });
 
     it('FILTER_API_ENABLED is not specified', async function () {
-      configServiceTestHelper.remove('FILTER_API_ENABLED');
+      ConfigServiceTestHelper.remove('FILTER_API_ENABLED');
       await RelayAssertions.assertRejection(
         predefined.UNSUPPORTED_METHOD,
         filterService.newFilter,
@@ -158,7 +158,7 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('FILTER_API_ENABLED=true', async function () {
-      configServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', true);
+      ConfigServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', true);
       restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock }] });
       const filterId = await filterService.newFilter(undefined, undefined, requestDetails);
       expect(filterId).to.exist;
@@ -178,7 +178,7 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('FILTER_API_ENABLED=false', async function () {
-      configServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', false);
+      ConfigServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', false);
       await RelayAssertions.assertRejection(
         predefined.UNSUPPORTED_METHOD,
         filterService.newFilter,

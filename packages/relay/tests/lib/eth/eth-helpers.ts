@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import pino from 'pino';
 import { Registry } from 'prom-client';
@@ -44,7 +44,7 @@ export function balancesByAccountIdByTimestampURL(id: string, timestamp?: string
 }
 
 export function generateEthTestEnv(fixedFeeHistory = false) {
-  configServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', fixedFeeHistory);
+  ConfigServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', fixedFeeHistory);
   const logger = pino();
   const registry = new Registry();
   const cacheService = new CacheService(logger.child({ name: `cache` }), registry);

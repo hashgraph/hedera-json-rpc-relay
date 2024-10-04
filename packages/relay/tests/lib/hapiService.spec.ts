@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import pino from 'pino';
 import { expect } from 'chai';
 import EventEmitter from 'events';
@@ -53,9 +53,9 @@ describe('HAPI Service', async function () {
   });
 
   this.beforeEach(() => {
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '0');
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '0');
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[50]');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '0');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '0');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[50]');
   });
 
   it('should be able to initialize SDK instance', async function () {
@@ -68,7 +68,7 @@ describe('HAPI Service', async function () {
   });
 
   it('should be able to reinitialise SDK instance upon reaching transaction limit', async function () {
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '2');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '2');
     hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
     expect(hapiService.getTransactionCount()).to.eq(parseInt(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')!));
 
@@ -85,7 +85,7 @@ describe('HAPI Service', async function () {
   });
 
   it('should be able to reinitialise SDK instance upon reaching time limit', async function () {
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '100');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '100');
     hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
     expect(hapiService.getTimeUntilReset()).to.eq(parseInt(ConfigService.get('HAPI_CLIENT_DURATION_RESET')!));
 
@@ -101,7 +101,7 @@ describe('HAPI Service', async function () {
   });
 
   it('should be able to reinitialise SDK instance upon error status code encounter', async function () {
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[50]');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[50]');
     hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
     expect(hapiService.getErrorCodes()[0]).to.eq(JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET')!)[0]);
 
@@ -117,9 +117,9 @@ describe('HAPI Service', async function () {
   });
 
   it('should be able to reset all counter upon reinitialization of the SDK Client', async function () {
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[50]');
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '50');
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '36000');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[50]');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '50');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '36000');
     hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
 
     expect(hapiService.getErrorCodes()[0]).to.eq(JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET')!)[0]);
@@ -137,9 +137,9 @@ describe('HAPI Service', async function () {
   });
 
   it('should keep the same instance of hbar limiter and not reset the budget', async function () {
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[50]');
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '50');
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '36000');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[50]');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '50');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '36000');
     const costAmount = 10000;
     hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
 
@@ -160,9 +160,9 @@ describe('HAPI Service', async function () {
   });
 
   it('should not be able to reinitialise and decrement counters, if it is disabled', async function () {
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '0');
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '0');
-    configServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[]');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '0');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '0');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[]');
 
     hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
     expect(hapiService.getTransactionCount()).to.eq(parseInt(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')!));

@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -136,7 +136,7 @@ describe('eth_getBlockBy', async function () {
     const eventEmitter = new EventEmitter();
     hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
 
-    configServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', false);
+    ConfigServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', false);
 
     // @ts-ignore
     ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);

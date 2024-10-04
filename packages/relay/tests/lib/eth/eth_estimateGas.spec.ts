@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { expect, use } from 'chai';
 import { v4 as uuid } from 'uuid';
 import { AbiCoder, keccak256 } from 'ethers';
@@ -79,7 +79,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   const id = uuid();
 
   before(() => {
-    configServiceTestHelper.dynamicOverride('TX_DEFAULT_GAS', defaultGasOverride.toString());
+    ConfigServiceTestHelper.dynamicOverride('TX_DEFAULT_GAS', defaultGasOverride.toString());
   });
 
   this.beforeEach(() => {
@@ -91,7 +91,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     ethImplOverridden = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     currentMaxBlockRange = Number(ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    configServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
+    ConfigServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
     restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
     mockGetAccount(hapiServiceInstance.getMainClientInstance().operatorAccountId!.toString(), 200, {
       evm_address: ACCOUNT_ADDRESS_1,
@@ -101,7 +101,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    configServiceTestHelper.dynamicOverride(
+    ConfigServiceTestHelper.dynamicOverride(
       'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
       currentMaxBlockRange.toString(),
     );
@@ -413,7 +413,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
 
   it('should eth_estimateGas with contract revert and message does not equal executionReverted and ESTIMATE_GAS_THROWS is set to false', async function () {
     const estimateGasThrows = ConfigService.get('ESTIMATE_GAS_THROWS');
-    configServiceTestHelper.dynamicOverride('ESTIMATE_GAS_THROWS', false);
+    ConfigServiceTestHelper.dynamicOverride('ESTIMATE_GAS_THROWS', false);
     await mockContractCall(
       transaction,
       true,
@@ -435,7 +435,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     const result: any = await ethImpl.estimateGas(transaction, id, requestDetails);
 
     expect(result).to.equal(numberTo0x(Precheck.transactionIntrinsicGasCost(transaction.data!)));
-    configServiceTestHelper.dynamicOverride('ESTIMATE_GAS_THROWS', estimateGasThrows);
+    ConfigServiceTestHelper.dynamicOverride('ESTIMATE_GAS_THROWS', estimateGasThrows);
   });
 
   it('should eth_estimateGas with contract revert and message equals "execution reverted: Invalid number of recipients"', async function () {
