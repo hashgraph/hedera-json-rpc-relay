@@ -1,12 +1,14 @@
 import { GlobalConfig } from './globalConfig';
 
 export class LoggerService {
+  static sensitiveFields = [
+    GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName,
+    GlobalConfig.ENTRIES.OPERATOR_KEY_ETH_SENDRAWTRANSACTION.envName,
+    GlobalConfig.ENTRIES.GITHUB_TOKEN.envName,
+  ];
+
   static maskUpEnv(envName, envValue) {
-    if (
-      envName == GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName ||
-      envName == GlobalConfig.ENTRIES.OPERATOR_KEY_ETH_SENDRAWTRANSACTION.envName ||
-      envName == GlobalConfig.ENTRIES.GITHUB_TOKEN
-    ) {
+    if (this.sensitiveFields.indexOf(envName) > -1) {
       return `${envName} = **********${envValue.slice(-4)}`;
     }
 
