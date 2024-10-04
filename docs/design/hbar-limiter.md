@@ -336,7 +336,7 @@ The default filename for the configuration file is `spendingPlansConfig.json`, b
 ]
 ```
 
-On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly. 
+On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly.
 
 The JSON file can also be updated over time to add new supported projects or partner projects, and it will populate only the new entries on the next start-up.
 
