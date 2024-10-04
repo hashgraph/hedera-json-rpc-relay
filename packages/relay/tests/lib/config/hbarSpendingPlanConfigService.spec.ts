@@ -34,6 +34,7 @@ import { IEthAddressHbarSpendingPlan } from '../../../src/lib/db/types/hbarLimit
 import { EthAddressHbarSpendingPlan } from '../../../src/lib/db/entities/hbarLimiter/ethAddressHbarSpendingPlan';
 import findConfig from 'find-config';
 import { HbarSpendingPlanConfigService } from '../../../src/lib/config/hbarSpendingPlanConfigService';
+import { IIPAddressHbarSpendingPlan } from '../../../src/lib/db/types/hbarLimiter/ipAddressHbarSpendingPlan';
 
 chai.use(chaiAsPromised);
 
@@ -134,11 +135,11 @@ describe('HbarSpendingPlanConfigService', function () {
           amountSpent: 0,
         },
       ];
-      const obsoleteEthAddressPlans = [
-        { ethAddress: '0x123', planId: 'plan-extended' } as IEthAddressHbarSpendingPlan,
-        { ethAddress: '0x456', planId: 'plan-privileged' } as IEthAddressHbarSpendingPlan,
+      const obsoleteEthAddressPlans: IEthAddressHbarSpendingPlan[] = [
+        { ethAddress: '0x123', planId: 'plan-extended' },
+        { ethAddress: '0x456', planId: 'plan-privileged' },
       ];
-      const obsoloteIpAddressPlans = [
+      const obsoleteIpAddressPlans: IIPAddressHbarSpendingPlan[] = [
         { ipAddress: '0.0.0.1', planId: 'plan-extended' },
         { ipAddress: '0.0.0.2', planId: 'plan-privileged' },
       ];
@@ -147,7 +148,7 @@ describe('HbarSpendingPlanConfigService', function () {
         Promise.resolve(obsoleteEthAddressPlans.filter((addressPlan) => addressPlan.planId === id)),
       );
       ipAddressHbarSpendingPlanRepositoryStub.findAllByPlanId.callsFake((id) =>
-        Promise.resolve(obsoloteIpAddressPlans.filter((addressPlan) => addressPlan.planId === id)),
+        Promise.resolve(obsoleteIpAddressPlans.filter((addressPlan) => addressPlan.planId === id)),
       );
       hbarSpendingPlanRepositoryStub.delete.resolves();
       ethAddressHbarSpendingPlanRepositoryStub.delete.resolves();
