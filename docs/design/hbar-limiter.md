@@ -312,30 +312,30 @@ All other users (ETH and IP addresses which are not specified in the configurati
     "name": "partner name",
     "ethAddresses": ["0x123", "0x124"],
     "ipAddresses": ["127.0.0.1", "128.0.0.1"],
-    "subscriptionTier": "ADVANCED"
+    "subscriptionType": "PRIVILEGED"
   },
   {
     "name": "some other partner that has given us only eth addresses",
     "ethAddresses": ["0x125", "0x126"],
-    "subscriptionTier": "ADVANCED"
+    "subscriptionType": "PRIVILEGED"
   },
   {
     "name": "supported project name",
     "ethAddresses": ["0x127", "0x128"],
     "ipAddresses": ["129.0.0.1", "130.0.0.1"],
-    "subscriptionTier": "EXTENDED"
+    "subscriptionType": "EXTENDED"
   },
   {
     "name": "some other supported project that has given us only ip addresses",
     "ipAddresses": ["131.0.0.1", "132.0.0.1"],
-    "subscriptionTier": "EXTENDED"
+    "subscriptionType": "EXTENDED"
   }
 ]
 ```
 
-On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly. 
+On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly.
 
-The JSON file can also be updated over time to add new supported projects or partner projects and it will populated only the new entries on the next start-up.
+The JSON file can also be updated over time to add new supported projects or partner projects, and it will populate only the new entries on the next start-up.
 
 ```json
 [
@@ -344,7 +344,7 @@ The JSON file can also be updated over time to add new supported projects or par
     "name": "new partner name",
     "ethAddresses": ["0x129", "0x130"],
     "ipAddresses": ["133.0.0.1"],
-    "subscriptionTier": "ADVANCED"
+    "subscriptionType": "PRIVILEGED"
   }
 ]
 ```
