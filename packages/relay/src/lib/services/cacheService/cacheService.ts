@@ -98,7 +98,7 @@ export class CacheService {
     this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
     this.sharedCache = this.internalCache;
     // @ts-ignore
-    this.isSharedCacheEnabled = !ConfigService.get('TEST') && this.isRedisEnabled();
+    this.isSharedCacheEnabled = ConfigService.get('TEST')! && this.isRedisEnabled();
     // @ts-ignore
     this.shouldMultiSet = ConfigService.get('MULTI_SET');
 
