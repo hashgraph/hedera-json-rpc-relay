@@ -297,7 +297,7 @@ export default class MetricService {
     operatorAccountId: string,
     requestDetails: RequestDetails,
   ): Promise<ITransactionRecordMetric | undefined> {
-    const defaultToConsensusNode = ConfigService.get('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE') === 'true';
+    const defaultToConsensusNode = ConfigService.get('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE');
 
     // retrieve transaction metrics
     try {
