@@ -87,12 +87,12 @@ describe('HbarSpendingPlanConfigService', function () {
     });
 
     it('should populate the database with pre-configured spending plans', async function () {
-      sinon.stub(hbarSpendingPlanConfigService, <any>'loadSpendingPlansConfig').returns(spendingPlansConfig);
+      sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(spendingPlansConfig);
 
       await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
       spendingPlansConfig.forEach(({ id, name, subscriptionType }) => {
-        sinon.assert.calledWithMatch(
+        sinon.assert.calledWith(
           hbarSpendingPlanRepositoryStub.create,
           subscriptionType,
           emptyRequestDetails,
@@ -114,7 +114,7 @@ describe('HbarSpendingPlanConfigService', function () {
     });
 
     it('should delete obsolete EXTENDED and PRIVILEGED plans from the database', async function () {
-      sinon.stub(hbarSpendingPlanConfigService, <any>'loadSpendingPlansConfig').returns(spendingPlansConfig);
+      sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(spendingPlansConfig);
 
       const obsoletePlans = [
         {
@@ -157,13 +157,16 @@ describe('HbarSpendingPlanConfigService', function () {
 
       expect(hbarSpendingPlanRepositoryStub.delete.calledTwice).to.be.true;
       obsoletePlans.forEach(({ id }) => {
-        sinon.assert.calledWithMatch(hbarSpendingPlanRepositoryStub.delete, id, emptyRequestDetails);
-        sinon.assert.calledWithMatch(loggerSpy.info, `Deleting HBAR spending plan with ID "${id}"`);
+        sinon.assert.calledWith(hbarSpendingPlanRepositoryStub.delete, id, emptyRequestDetails);
+        sinon.assert.calledWith(
+          loggerSpy.info,
+          `Deleting HBAR spending plan with ID "${id}", as it is no longer in the spending plan configuration...`,
+        );
       });
     });
 
     it('should not duplicate already existing spending plans', async function () {
-      sinon.stub(hbarSpendingPlanConfigService, <any>'loadSpendingPlansConfig').returns(spendingPlansConfig);
+      sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(spendingPlansConfig);
       hbarSpendingPlanRepositoryStub.findAllActiveBySubscriptionType.resolves(
         spendingPlansConfig.map((plan) => ({
           id: plan.id,
@@ -181,7 +184,7 @@ describe('HbarSpendingPlanConfigService', function () {
     });
 
     it('should update new associations for ETH addresses', async function () {
-      sinon.stub(hbarSpendingPlanConfigService, <any>'loadSpendingPlansConfig').returns(
+      sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
         spendingPlansConfig.map((plan, index) => ({
           id: plan.id,
           name: plan.name,
@@ -213,24 +216,21 @@ describe('HbarSpendingPlanConfigService', function () {
       await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
       spendingPlansConfig.forEach((config, index) => {
-        // Check that the new ethAddresses are added
-        sinon.assert.calledWithMatch(
+        sinon.assert.calledWith(
           ethAddressHbarSpendingPlanRepositoryStub.save,
           { ethAddress: toHex(index), planId: config.id },
           emptyRequestDetails,
           neverExpireTtl,
         );
-        // Check that the old ethAddresses are not removed, nor added again
         if (config.ethAddresses) {
           config.ethAddresses.forEach((ethAddress) => {
-            sinon.assert.neverCalledWithMatch(
+            sinon.assert.neverCalledWith(
               ethAddressHbarSpendingPlanRepositoryStub.save,
               { ethAddress, planId: config.id },
               emptyRequestDetails,
               neverExpireTtl,
             );
-
-            sinon.assert.neverCalledWithMatch(
+            sinon.assert.neverCalledWith(
               ethAddressHbarSpendingPlanRepositoryStub.delete,
               ethAddress,
               emptyRequestDetails,
@@ -241,7 +241,7 @@ describe('HbarSpendingPlanConfigService', function () {
     });
 
     it('should update associations for IP addresses', async function () {
-      sinon.stub(hbarSpendingPlanConfigService, <any>'loadSpendingPlansConfig').returns(
+      sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
         spendingPlansConfig.map((plan, index) => ({
           id: plan.id,
           name: plan.name,
@@ -272,20 +272,17 @@ describe('HbarSpendingPlanConfigService', function () {
       await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
       spendingPlansConfig.forEach((config, index) => {
-        // Check that the new ipAddresses are added
-        sinon.assert.calledWithMatch(ipAddressHbarSpendingPlanRepositoryStub.save, {
+        sinon.assert.calledWith(ipAddressHbarSpendingPlanRepositoryStub.save, {
           ipAddress: toHex(index),
           planId: config.id,
         });
-        // Check that the old ipAddresses are not removed, nor added again
         if (config.ipAddresses) {
           config.ipAddresses.forEach((ipAddress) => {
-            sinon.assert.neverCalledWithMatch(ipAddressHbarSpendingPlanRepositoryStub.save, {
+            sinon.assert.neverCalledWith(ipAddressHbarSpendingPlanRepositoryStub.save, {
               ipAddress,
               planId: config.id,
             });
-
-            sinon.assert.neverCalledWithMatch(
+            sinon.assert.neverCalledWith(
               ipAddressHbarSpendingPlanRepositoryStub.delete,
               ipAddress,
               emptyRequestDetails,
