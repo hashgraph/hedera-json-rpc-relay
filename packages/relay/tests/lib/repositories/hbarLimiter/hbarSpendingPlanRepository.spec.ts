@@ -189,7 +189,7 @@ describe('HbarSpendingPlanRepository', function () {
       let createdPlan: IDetailedHbarSpendingPlan;
 
       beforeEach(async () => {
-        createdPlan = await repository.create(SubscriptionType.BASIC);
+        createdPlan = await repository.create(SubscriptionType.BASIC, requestDetails);
         oneDayInMillis = repository['oneDayInMillis'];
         // mock the oneDayInMillis value to speed up the test
         // @ts-ignore
