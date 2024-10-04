@@ -24,6 +24,7 @@ import { ICacheClient } from './ICacheClient';
 import constants from '../../constants';
 import LRUCache, { LimitedByCount, LimitedByTTL } from 'lru-cache';
 import { RequestDetails } from '../../types';
+import { Utils } from '../../../utils';
 
 /**
  * Represents a LocalLRUCache instance that uses an LRU (Least Recently Used) caching strategy
@@ -105,10 +106,10 @@ export class LocalLRUCache implements ICacheClient {
   public async get(key: string, callingMethod: string, requestDetails: RequestDetails): Promise<any> {
     const value = this.cache.get(key);
     if (value !== undefined) {
+      const censoredKey = key.replace(Utils.IP_ADDRESS_REGEX, '<REDACTED>');
       const censoredValue = JSON.stringify(value).replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} returning cached value ${key}:${censoredValue} on ${callingMethod} call`,
-      );
+      const message = `Returning cached value ${censoredKey}:${censoredValue} on ${callingMethod} call`;
+      this.logger.trace(`${requestDetails.formattedRequestId} ${message}`);
       return value;
     }
 
@@ -152,11 +153,13 @@ export class LocalLRUCache implements ICacheClient {
     } else {
       this.cache.set(key, value);
     }
+    const censoredKey = key.replace(Utils.IP_ADDRESS_REGEX, '<REDACTED>');
     const censoredValue = JSON.stringify(value).replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
+    const message = `Caching ${censoredKey}:${censoredValue} on ${callingMethod} for ${
+      resolvedTtl > 0 ? `${resolvedTtl} ms` : 'indefinite time'
+    }`;
     this.logger.trace(
-      `${requestDetails.formattedRequestId} caching ${key}:${censoredValue} on ${callingMethod} for ${
-        resolvedTtl > 0 ? `${resolvedTtl} ms` : 'indefinite time'
-      }`,
+      `${requestDetails.formattedRequestId} ${message} (cache size: ${this.cache.size}, max: ${this.options.max})`,
     );
   }
 

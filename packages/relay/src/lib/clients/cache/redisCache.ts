@@ -26,6 +26,7 @@ import { RedisCacheError } from '../../errors/RedisCacheError';
 import constants from '../../constants';
 import { IRedisCacheClient } from './IRedisCacheClient';
 import { RequestDetails } from '../../types';
+import { Utils } from '../../../utils';
 
 /**
  * A class that provides caching functionality using Redis.
@@ -133,10 +134,10 @@ export class RedisCache implements IRedisCacheClient {
     const client = await this.getConnectedClient();
     const result = await client.get(key);
     if (result) {
+      const censoredKey = key.replace(Utils.IP_ADDRESS_REGEX, '<REDACTED>');
       const censoredValue = result.replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Returning cached value ${key}:${censoredValue} on ${callingMethod} call`,
-      );
+      const message = `Returning cached value ${censoredKey}:${censoredValue} on ${callingMethod} call`;
+      this.logger.trace(`${requestDetails.formattedRequestId} ${message}`);
       // TODO: add metrics
       return JSON.parse(result);
     }
@@ -169,12 +170,12 @@ export class RedisCache implements IRedisCacheClient {
       await client.set(key, serializedValue);
     }
 
+    const censoredKey = key.replace(Utils.IP_ADDRESS_REGEX, '<REDACTED>');
     const censoredValue = serializedValue.replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} caching ${key}: ${censoredValue} on ${callingMethod} for ${
-        resolvedTtl > 0 ? `${resolvedTtl} ms` : 'indefinite time'
-      }`,
-    );
+    const message = `Caching ${censoredKey}:${censoredValue} on ${callingMethod} for ${
+      resolvedTtl > 0 ? `${resolvedTtl} ms` : 'indefinite time'
+    }`;
+    this.logger.trace(`${requestDetails.formattedRequestId} ${message}`);
     // TODO: add metrics
   }
 
