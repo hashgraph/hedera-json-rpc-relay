@@ -23,7 +23,7 @@ import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheS
 import { Registry } from 'prom-client';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 const registry = new Registry();
 

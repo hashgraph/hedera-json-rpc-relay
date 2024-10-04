@@ -31,7 +31,7 @@ import testConstants from '../helpers/constants';
 import { AliasAccount } from '../types/AliasAccount';
 import { estimateFileTransactionsFee } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';

@@ -33,7 +33,7 @@ import LogContractJson from '@hashgraph/json-rpc-server/tests/contracts/Logs.jso
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import IERC20Json from '@hashgraph/json-rpc-server/tests/contracts/openzeppelin/IERC20.json';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 chai.use(solidity);
 

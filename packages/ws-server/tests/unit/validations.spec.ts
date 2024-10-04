@@ -23,7 +23,7 @@ import { expect } from 'chai';
 import { WS_CONSTANTS } from '../../src/utils/constants';
 import { validateJsonRpcRequest, verifySupportedMethod } from '../../src/utils/utils';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 const logger = pino();

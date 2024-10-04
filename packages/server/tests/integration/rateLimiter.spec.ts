@@ -24,7 +24,7 @@ import { Registry } from 'prom-client';
 import pino, { Logger } from 'pino';
 import RateLimit from '../../src/rateLimit';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 describe('RateLimit', () => {
   let logger: Logger;

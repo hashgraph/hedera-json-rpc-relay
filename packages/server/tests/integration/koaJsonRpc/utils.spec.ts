@@ -24,7 +24,7 @@ import { Server } from 'http';
 import * as utils from '../../../src/koaJsonRpc/lib/utils';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { configServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
+import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 
 describe('utils.ts', () => {
   describe('hasOwnProperty', () => {
