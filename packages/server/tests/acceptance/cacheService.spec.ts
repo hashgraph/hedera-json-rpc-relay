@@ -114,21 +114,25 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const dataLabel = `${DATA_LABEL_PREFIX}_redis_error`;
 
     let currentRedisEnabledEnv;
+    let currentMultiSetEnv;
     let cacheService: CacheService;
 
     before(async () => {
       currentRedisEnabledEnv = ConfigService.get('REDIS_ENABLED');
+      currentMultiSetEnv = ConfigService.get('MULTI_SET');
 
       ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', true);
+      ConfigServiceTestHelper.dynamicOverride('MULTI_SET', false);
       cacheService = new CacheService(global.logger, registry);
 
       // disconnect redis client to simulate Redis error
       await cacheService.disconnectRedisClient();
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 700));
     });
 
     after(async () => {
       ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', currentRedisEnabledEnv);
+      ConfigServiceTestHelper.dynamicOverride('MULTI_SET', currentMultiSetEnv);
     });
 
     it('test getAsync operation', async () => {
