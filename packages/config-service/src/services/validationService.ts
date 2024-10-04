@@ -16,7 +16,7 @@ export class ValidationService {
             }
             break;
           case 'boolean':
-            if (envs[entryName] !== 'true' || envs[entryName] !== 'false') {
+            if (envs[entryName] !== 'true' && envs[entryName] !== 'false') {
               throw new Error(`${entryName} must be a valid boolean.`);
             }
             break;
