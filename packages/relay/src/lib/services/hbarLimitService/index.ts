@@ -290,7 +290,7 @@ export class HbarLimitService implements IHbarLimitService {
     requestDetails: RequestDetails,
   ): Promise<void> {
     const plans = await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionType(
-      subscriptionType,
+      [subscriptionType],
       requestDetails,
     );
     const totalUsage = plans.reduce((total, plan) => total + plan.amountSpent, 0);

@@ -307,7 +307,7 @@ The following configurations will be used to automatically populate the cache wi
 All other users (ETH and IP addresses which are not specified in the configuration file) will be treated as "general users" and will be assigned a basic `HbarSpendingPlan` on their first request and their ETH address and IP address will be linked to that plan for all subsequent requests.
 
 The default filename for the configuration file is `spendingPlansConfig.json`, but it could also be specified by the ENV variables:
-- `HBAR_SPENDING_PLANS_CONFIG_FILE`: The path to the JSON file containing the pre-configured spending plans for supported projects and partner projects.
+- `HBAR_SPENDING_PLANS_CONFIG_FILE`: The name of the JSON file containing the pre-configured spending plans for supported projects and partner projects.
 
 ```json
 [
@@ -315,30 +315,30 @@ The default filename for the configuration file is `spendingPlansConfig.json`, b
     "name": "partner name",
     "ethAddresses": ["0x123", "0x124"],
     "ipAddresses": ["127.0.0.1", "128.0.0.1"],
-    "subscriptionTier": "PRIVILEGED"
+    "subscriptionType": "PRIVILEGED"
   },
   {
     "name": "some other partner that has given us only eth addresses",
     "ethAddresses": ["0x125", "0x126"],
-    "subscriptionTier": "PRIVILEGED"
+    "subscriptionType": "PRIVILEGED"
   },
   {
     "name": "supported project name",
     "ethAddresses": ["0x127", "0x128"],
     "ipAddresses": ["129.0.0.1", "130.0.0.1"],
-    "subscriptionTier": "EXTENDED"
+    "subscriptionType": "EXTENDED"
   },
   {
     "name": "some other supported project that has given us only ip addresses",
     "ipAddresses": ["131.0.0.1", "132.0.0.1"],
-    "subscriptionTier": "EXTENDED"
+    "subscriptionType": "EXTENDED"
   }
 ]
 ```
 
 On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly. 
 
-The JSON file can also be updated over time to add new supported projects or partner projects and it will populated only the new entries on the next start-up.
+The JSON file can also be updated over time to add new supported projects or partner projects, and it will populate only the new entries on the next start-up.
 
 ```json
 [
@@ -347,7 +347,7 @@ The JSON file can also be updated over time to add new supported projects or par
     "name": "new partner name",
     "ethAddresses": ["0x129", "0x130"],
     "ipAddresses": ["133.0.0.1"],
-    "subscriptionTier": "PRIVILEGED"
+    "subscriptionType": "PRIVILEGED"
   }
 ]
 ```

@@ -27,6 +27,11 @@ import { SubscriptionType } from '../db/types/hbarLimiter/subscriptionType';
  */
 export interface SpendingPlanConfig {
   /**
+   * The unique identifier for the spending plan.
+   */
+  id: string;
+
+  /**
    * The name of the spending plan.
    * @type {string}
    */
@@ -47,18 +52,25 @@ export interface SpendingPlanConfig {
   ipAddresses?: string[];
 
   /**
-   * The spending plan tier.
+   * The subscription tier associated with the spending plan.
    * @type {SubscriptionType}
    */
-  subscriptionTier: SubscriptionType;
+  subscriptionType: SubscriptionType;
 }
 
+/**
+ * Determines if the provided object is a valid spending plan configuration.
+ * @param plan - The object to validate.
+ * @returns {boolean} - True if the object is a valid {@link SpendingPlanConfig}, false otherwise.
+ */
 export function isValidSpendingPlanConfig(plan: any): plan is SpendingPlanConfig {
   return (
     plan &&
+    typeof plan.id === 'string' &&
     typeof plan.name === 'string' &&
-    typeof plan.subscriptionTier === 'string' &&
-    SubscriptionType[plan.subscriptionTier] !== undefined &&
-    (Array.isArray(plan.ethAddresses) || Array.isArray(plan.ipAddresses))
+    typeof plan.subscriptionType === 'string' &&
+    Object.values(SubscriptionType).includes(plan.subscriptionType) &&
+    ((Array.isArray(plan.ethAddresses) && plan.ethAddresses.length > 0) ||
+      (Array.isArray(plan.ipAddresses) && plan.ipAddresses.length > 0))
   );
 }

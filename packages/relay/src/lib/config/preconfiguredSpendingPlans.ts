@@ -26,14 +26,17 @@ import { EthAddressHbarSpendingPlanRepository } from '../db/repositories/hbarLim
 import { IPAddressHbarSpendingPlanRepository } from '../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { RequestDetails } from '../types';
 import { Logger } from 'pino';
+import { SubscriptionType } from '../db/types/hbarLimiter/subscriptionType';
+import { IDetailedHbarSpendingPlan } from '../db/types/hbarLimiter/hbarSpendingPlan';
 
-const PRE_CONFIGURED_SPENDING_PLANS_TTL = -1; // Never expire
+const TTL = -1; // -1 means no TTL, i.e. the data will not expire
 const DEFAULT_SPENDING_PLANS_CONFIG_FILE = 'spendingPlansConfig.json';
 
 /**
  * Loads the pre-configured spending plans from a JSON file.
+ * @param {string} [filename] - (Optional) The name of the spending plans configuration file.
  * @returns {SpendingPlanConfig[]} An array of spending plan configurations.
- * @throws {Error} If the configuration file is not found or cannot be read.
+ * @throws {Error} If the configuration file is not found or cannot be read or parsed.
  */
 const loadSpendingPlansConfig = (filename?: string): SpendingPlanConfig[] => {
   const configPath = findConfig(filename || DEFAULT_SPENDING_PLANS_CONFIG_FILE);
@@ -78,50 +81,201 @@ export const populatePreconfiguredSpendingPlans = async (
   ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
 ): Promise<void> => {
   const requestDetails = new RequestDetails({ requestId: '', ipAddress: '' });
-  const ttl = PRE_CONFIGURED_SPENDING_PLANS_TTL;
 
-  const spendingPlans = loadSpendingPlansConfig(process.env.HBAR_SPENDING_PLANS_CONFIG_FILE);
-  validateSpendingPlanConfig(spendingPlans);
+  const spendingPlanConfigs = loadSpendingPlansConfig(process.env.HBAR_SPENDING_PLANS_CONFIG_FILE);
+  validateSpendingPlanConfig(spendingPlanConfigs);
 
-  for (const plan of spendingPlans) {
-    const { name, ethAddresses, ipAddresses, subscriptionTier } = plan;
+  const existingPlans: IDetailedHbarSpendingPlan[] = await hbarSpendingPlanRepository.findAllActiveBySubscriptionType(
+    [SubscriptionType.EXTENDED, SubscriptionType.PRIVILEGED],
+    requestDetails,
+  );
 
-    if (!ethAddresses?.length && !ipAddresses?.length) {
-      logger.warn(
-        `${requestDetails.formattedRequestId} Skipping HBAR spending plan '${name}' as it has no ethAddresses or ipAddresses`,
-      );
-      continue;
-    }
+  await deleteObsoletePlans(
+    existingPlans,
+    spendingPlanConfigs,
+    hbarSpendingPlanRepository,
+    ethAddressHbarSpendingPlanRepository,
+    ipAddressHbarSpendingPlanRepository,
+    requestDetails,
+    logger,
+  );
+  await addNewPlans(spendingPlanConfigs, existingPlans, hbarSpendingPlanRepository, requestDetails, logger);
+  await updatePlanAssociations(
+    spendingPlanConfigs,
+    ethAddressHbarSpendingPlanRepository,
+    ipAddressHbarSpendingPlanRepository,
+    requestDetails,
+    logger,
+  );
+};
 
-    const spendingPlan = await hbarSpendingPlanRepository.create(subscriptionTier, requestDetails, ttl);
-    logger.info(`${requestDetails.formattedRequestId} Created HBAR spending plan '${name}' with ID ${spendingPlan.id}`);
-
-    if (ethAddresses) {
-      for (const ethAddress of ethAddresses) {
-        if (!(await ethAddressHbarSpendingPlanRepository.existsByAddress(ethAddress, requestDetails))) {
-          await ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id }, requestDetails, ttl);
-          logger.info(
-            `${requestDetails.formattedRequestId} Associated HBAR spending plan '${name}' with ETH address ${ethAddress}`,
-          );
-        } else {
-          logger.warn(
-            `${requestDetails.formattedRequestId} Skipping ETH address ${ethAddress} as it already has an HBAR spending plan associated with it`,
-          );
-        }
-      }
-    }
-
-    if (ipAddresses) {
-      for (const ipAddress of ipAddresses) {
-        if (!(await ipAddressHbarSpendingPlanRepository.existsByAddress(ipAddress, requestDetails))) {
-          await ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: spendingPlan.id }, requestDetails, ttl);
-          logger.info(`${requestDetails.formattedRequestId} Associated HBAR spending plan '${name}' with IP address`);
-        } else {
-          logger.warn(
-            `${requestDetails.formattedRequestId} Skipping IP address as it already has an HBAR spending plan associated with it`,
-          );
-        }
-      }
-    }
+/**
+ * Deletes obsolete HBAR spending plans from the database.
+ *
+ * @param {IDetailedHbarSpendingPlan[]} existingPlans - The existing HBAR spending plans in the database.
+ * @param {SpendingPlanConfig[]} spendingPlanConfigs - The current spending plan configurations.
+ * @param {HbarSpendingPlanRepository} hbarSpendingPlanRepository - The repository for HBAR spending plans.
+ * @param {EthAddressHbarSpendingPlanRepository} ethAddressHbarSpendingPlanRepository - The repository for ETH address HBAR spending plans.
+ * @param {IPAddressHbarSpendingPlanRepository} ipAddressHbarSpendingPlanRepository - The repository for IP address HBAR spending plans.
+ * @param {RequestDetails} requestDetails - The details of the current request.
+ * @param {Logger} logger - The logger instance.
+ * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+ */
+const deleteObsoletePlans = async (
+  existingPlans: IDetailedHbarSpendingPlan[],
+  spendingPlanConfigs: SpendingPlanConfig[],
+  hbarSpendingPlanRepository: HbarSpendingPlanRepository,
+  ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
+  ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
+  requestDetails: RequestDetails,
+  logger: Logger,
+): Promise<void> => {
+  const plansToDelete = existingPlans.filter((plan) => !spendingPlanConfigs.some((spc) => spc.id === plan.id));
+  for (const { id } of plansToDelete) {
+    logger.info(
+      `Deleting HBAR spending plan with ID "${id}", as it is no longer in the spending plan configuration...`,
+    );
+    await hbarSpendingPlanRepository.delete(id, requestDetails);
+    await ethAddressHbarSpendingPlanRepository.deleteAllByPlanId(
+      id,
+      'populatePreconfiguredSpendingPlans',
+      requestDetails,
+    );
+    await ipAddressHbarSpendingPlanRepository.deleteAllByPlanId(
+      id,
+      'populatePreconfiguredSpendingPlans',
+      requestDetails,
+    );
   }
+};
+
+/**
+ * Adds new HBAR spending plans to the database.
+ *
+ * @param {SpendingPlanConfig[]} spendingPlanConfigs - The current spending plan configurations.
+ * @param {IDetailedHbarSpendingPlan[]} existingPlans - The existing HBAR spending plans in the database.
+ * @param {HbarSpendingPlanRepository} hbarSpendingPlanRepository - The repository for HBAR spending plans.
+ * @param {RequestDetails} requestDetails - The details of the current request.
+ * @param {Logger} logger - The logger instance.
+ * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+ */
+const addNewPlans = async (
+  spendingPlanConfigs: SpendingPlanConfig[],
+  existingPlans: IDetailedHbarSpendingPlan[],
+  hbarSpendingPlanRepository: HbarSpendingPlanRepository,
+  requestDetails: RequestDetails,
+  logger: Logger,
+): Promise<void> => {
+  const plansToAdd = spendingPlanConfigs.filter((spc) => !existingPlans.some((plan) => plan.id === spc.id));
+  for (const { id, name, subscriptionType } of plansToAdd) {
+    await hbarSpendingPlanRepository.create(subscriptionType, requestDetails, TTL, id);
+    logger.info(`Created HBAR spending plan "${name}" with ID "${id}" and subscriptionType "${subscriptionType}"`);
+  }
+};
+
+/**
+ * Updates the associations of HBAR spending plans with ETH and IP addresses.
+ *
+ * @param {SpendingPlanConfig[]} spendingPlanConfigs - The current spending plan configurations.
+ * @param {EthAddressHbarSpendingPlanRepository} ethAddressHbarSpendingPlanRepository - The repository for ETH address HBAR spending plans.
+ * @param {IPAddressHbarSpendingPlanRepository} ipAddressHbarSpendingPlanRepository - The repository for IP address HBAR spending plans.
+ * @param {RequestDetails} requestDetails - The details of the current request.
+ * @param {Logger} logger - The logger instance.
+ * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+ */
+const updatePlanAssociations = async (
+  spendingPlanConfigs: SpendingPlanConfig[],
+  ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
+  ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
+  requestDetails: RequestDetails,
+  logger: Logger,
+): Promise<void> => {
+  for (const planConfig of spendingPlanConfigs) {
+    logger.trace(`Updating associations for HBAR spending plan '${planConfig.name}' with ID ${planConfig.id}...`);
+    await updateEthAddressAssociations(planConfig, ethAddressHbarSpendingPlanRepository, requestDetails, logger);
+    await updateIpAddressAssociations(planConfig, ipAddressHbarSpendingPlanRepository, requestDetails, logger);
+  }
+};
+
+/**
+ * Updates the associations of an HBAR spending plan with ETH addresses.
+ *
+ * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
+ * @param {EthAddressHbarSpendingPlanRepository} ethAddressHbarSpendingPlanRepository - The repository for ETH address HBAR spending plans.
+ * @param {RequestDetails} requestDetails - The details of the current request.
+ * @param {Logger} logger - The logger instance.
+ * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+ */
+const updateEthAddressAssociations = async (
+  planConfig: SpendingPlanConfig,
+  ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
+  requestDetails: RequestDetails,
+  logger: Logger,
+): Promise<void> => {
+  const currentEthAddresses = await ethAddressHbarSpendingPlanRepository
+    .findAllByPlanId(planConfig.id, 'populatePreconfiguredSpendingPlans', requestDetails)
+    .then((ethAddressPlans) => ethAddressPlans.map((plan) => plan.ethAddress));
+
+  const addressesToDelete = currentEthAddresses.filter((ethAddress) => !planConfig.ethAddresses?.includes(ethAddress));
+  await Promise.all(
+    addressesToDelete.map(async (ethAddress) => {
+      await ethAddressHbarSpendingPlanRepository.delete(ethAddress, requestDetails);
+      logger.info(`Removed association between ETH address ${ethAddress} and HBAR spending plan '${planConfig.name}'`);
+    }),
+  );
+
+  const addressesToAdd =
+    planConfig.ethAddresses?.filter((ethAddress) => !currentEthAddresses.includes(ethAddress)) || [];
+  await Promise.all(
+    addressesToAdd.map(async (ethAddress) => {
+      const existsInCache = await ethAddressHbarSpendingPlanRepository.existsByAddress(ethAddress, requestDetails);
+      if (!existsInCache) {
+        await ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: planConfig.id }, requestDetails, TTL);
+        logger.info(`Associated HBAR spending plan '${planConfig.name}' with ETH address ${ethAddress}`);
+      } else {
+        logger.trace(`Skipping ETH address ${ethAddress} as it already has an HBAR spending plan associated with it`);
+      }
+    }),
+  );
+};
+
+/**
+ * Updates the associations of an HBAR spending plan with IP addresses.
+ *
+ * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
+ * @param {IPAddressHbarSpendingPlanRepository} ipAddressHbarSpendingPlanRepository - The repository for IP address HBAR spending plans.
+ * @param {RequestDetails} requestDetails - The details of the current request.
+ * @param {Logger} logger - The logger instance.
+ * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+ */
+const updateIpAddressAssociations = async (
+  planConfig: SpendingPlanConfig,
+  ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
+  requestDetails: RequestDetails,
+  logger: Logger,
+): Promise<void> => {
+  const currentIpAddresses = await ipAddressHbarSpendingPlanRepository
+    .findAllByPlanId(planConfig.id, 'populatePreconfiguredSpendingPlans', requestDetails)
+    .then((ipAddressPlans) => ipAddressPlans.map((plan) => plan.ipAddress));
+
+  const addressesToDelete = currentIpAddresses.filter((ipAddress) => !planConfig.ipAddresses?.includes(ipAddress));
+  await Promise.all(
+    addressesToDelete.map(async (ipAddress) => {
+      await ipAddressHbarSpendingPlanRepository.delete(ipAddress, requestDetails);
+      logger.info(`Removed association between IP address and HBAR spending plan '${planConfig.name}'`);
+    }),
+  );
+
+  const addressesToAdd = planConfig.ipAddresses?.filter((ipAddress) => !currentIpAddresses.includes(ipAddress)) || [];
+  await Promise.all(
+    addressesToAdd.map(async (ipAddress) => {
+      const existsInCache = await ipAddressHbarSpendingPlanRepository.existsByAddress(ipAddress, requestDetails);
+      if (!existsInCache) {
+        await ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: planConfig.id }, requestDetails, TTL);
+        logger.info(`Associated HBAR spending plan '${planConfig.name}' with IP address`);
+      } else {
+        logger.trace(`Skipping IP address as it already has an HBAR spending plan associated with it`);
+      }
+    }),
+  );
 };

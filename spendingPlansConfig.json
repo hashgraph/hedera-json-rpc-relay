@@ -3,22 +3,22 @@
     "name": "partner name",
     "ethAddresses": ["0x123", "0x124"],
     "ipAddresses": ["127.0.0.1", "128.0.0.1"],
-    "subscriptionTier": "PRIVILEGED"
+    "subscriptionType": "PRIVILEGED"
   },
   {
     "name": "some other partner that has given us only eth addresses",
     "ethAddresses": ["0x125", "0x126"],
-    "subscriptionTier": "PRIVILEGED"
+    "subscriptionType": "PRIVILEGED"
   },
   {
     "name": "supported project name",
     "ethAddresses": ["0x127", "0x128"],
     "ipAddresses": ["129.0.0.1", "130.0.0.1"],
-    "subscriptionTier": "EXTENDED"
+    "subscriptionType": "EXTENDED"
   },
   {
     "name": "some other supported project that has given us only ip addresses",
     "ipAddresses": ["131.0.0.1", "132.0.0.1"],
-    "subscriptionTier": "EXTENDED"
+    "subscriptionType": "EXTENDED"
   }
 ]

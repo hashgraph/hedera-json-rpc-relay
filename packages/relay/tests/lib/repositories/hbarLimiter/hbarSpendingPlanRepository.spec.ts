@@ -38,7 +38,15 @@ import { RequestDetails } from '../../../../src/lib/types';
 chai.use(chaiAsPromised);
 
 describe('HbarSpendingPlanRepository', function () {
-  const logger = pino();
+  const logger = pino({
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: true,
+      },
+    },
+  });
   const registry = new Registry();
   const requestDetails = new RequestDetails({ requestId: 'hbarSpendingPlanRepositoryTest', ipAddress: '0.0.0.0' });
 
@@ -46,23 +54,16 @@ describe('HbarSpendingPlanRepository', function () {
     let cacheService: CacheService;
     let repository: HbarSpendingPlanRepository;
 
+    before(async () => {
+      cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
+      repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
+    });
+
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6380);
 
-      before(async () => {
-        cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
-        repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
-      });
-
       after(async () => {
         await cacheService.disconnectRedisClient();
-      });
-    } else {
-      before(async () => {
-        process.env.TEST = 'true';
-        process.env.REDIS_ENABLED = 'false';
-        cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
-        repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
       });
     }
 
@@ -189,7 +190,7 @@ describe('HbarSpendingPlanRepository', function () {
       let createdPlan: IDetailedHbarSpendingPlan;
 
       beforeEach(async () => {
-        createdPlan = await repository.create(SubscriptionType.BASIC);
+        createdPlan = await repository.create(SubscriptionType.BASIC, requestDetails);
         oneDayInMillis = repository['oneDayInMillis'];
         // mock the oneDayInMillis value to speed up the test
         // @ts-ignore
@@ -320,7 +321,7 @@ describe('HbarSpendingPlanRepository', function () {
     describe('findAllActiveBySubscriptionType', () => {
       it('returns an empty array if no active plans exist for the subscription type', async () => {
         const subscriptionType = SubscriptionType.BASIC;
-        const activePlans = await repository.findAllActiveBySubscriptionType(subscriptionType, requestDetails);
+        const activePlans = await repository.findAllActiveBySubscriptionType([subscriptionType], requestDetails);
         expect(activePlans).to.deep.equal([]);
       });
 
@@ -329,7 +330,7 @@ describe('HbarSpendingPlanRepository', function () {
         const createdPlan1 = await repository.create(subscriptionType, requestDetails);
         const createdPlan2 = await repository.create(subscriptionType, requestDetails);
 
-        const activePlans = await repository.findAllActiveBySubscriptionType(subscriptionType, requestDetails);
+        const activePlans = await repository.findAllActiveBySubscriptionType([subscriptionType], requestDetails);
         expect(activePlans).to.have.lengthOf(2);
         expect(activePlans.map((plan) => plan.id)).to.include.members([createdPlan1.id, createdPlan2.id]);
       });
@@ -343,7 +344,7 @@ describe('HbarSpendingPlanRepository', function () {
         const key = `${repository['collectionKey']}:${inactivePlan.id}`;
         await cacheService.set(key, { ...inactivePlan, active: false }, 'test', requestDetails);
 
-        const activePlans = await repository.findAllActiveBySubscriptionType(subscriptionType, requestDetails);
+        const activePlans = await repository.findAllActiveBySubscriptionType([subscriptionType], requestDetails);
         expect(activePlans).to.deep.equal([activePlan]);
       });
 
@@ -353,25 +354,32 @@ describe('HbarSpendingPlanRepository', function () {
         const privilegedPlan = await repository.create(SubscriptionType.PRIVILEGED, requestDetails);
 
         const activeBasicPlans = await repository.findAllActiveBySubscriptionType(
-          SubscriptionType.BASIC,
+          [SubscriptionType.BASIC],
           requestDetails,
         );
         expect(activeBasicPlans).to.have.lengthOf(1);
         expect(activeBasicPlans[0].id).to.equal(basicPlan.id);
 
         const activeExtendedPlans = await repository.findAllActiveBySubscriptionType(
-          SubscriptionType.EXTENDED,
+          [SubscriptionType.EXTENDED],
           requestDetails,
         );
         expect(activeExtendedPlans).to.have.lengthOf(1);
         expect(activeExtendedPlans[0].id).to.equal(extendedPlan.id);
 
         const activePrivilegedPlans = await repository.findAllActiveBySubscriptionType(
-          SubscriptionType.PRIVILEGED,
+          [SubscriptionType.PRIVILEGED],
           requestDetails,
         );
         expect(activePrivilegedPlans).to.have.lengthOf(1);
         expect(activePrivilegedPlans[0].id).to.equal(privilegedPlan.id);
+
+        const activeBasicAndExtendedPlans = await repository.findAllActiveBySubscriptionType(
+          [SubscriptionType.BASIC, SubscriptionType.EXTENDED],
+          requestDetails,
+        );
+        expect(activeBasicAndExtendedPlans).to.have.lengthOf(2);
+        expect(activeBasicAndExtendedPlans.map((plan) => plan.id)).to.include.members([basicPlan.id, extendedPlan.id]);
       });
     });
   };

@@ -62,7 +62,7 @@ export class HbarSpendingPlanRepository {
     if (!plan) {
       throw new HbarSpendingPlanNotFoundError(id);
     }
-    this.logger.trace(`Retrieved subscription with ID ${id}`);
+    this.logger.trace(`${requestDetails.formattedRequestId} Retrieved subscription with ID ${id}`);
     return {
       ...plan,
       createdAt: new Date(plan.createdAt),
@@ -89,25 +89,33 @@ export class HbarSpendingPlanRepository {
    * @param {SubscriptionType} subscriptionType - The subscription type of the plan to create.
    @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @param [ttl] - The time-to-live for the plan in milliseconds. (default: 1 day)
+   * @param [planId] - The ID to assign to the plan. (default: generated UUID)
    * @returns {Promise<IDetailedHbarSpendingPlan>} - The created HBar spending plan object.
    */
   async create(
     subscriptionType: SubscriptionType,
     requestDetails: RequestDetails,
     ttl: number = this.oneDayInMillis,
+    planId?: string,
   ): Promise<IDetailedHbarSpendingPlan> {
     const plan: IDetailedHbarSpendingPlan = {
-      id: uuidV4(randomBytes(16)),
+      id: planId ?? uuidV4(randomBytes(16)),
       subscriptionType,
       createdAt: new Date(),
       active: true,
       spendingHistory: [],
       amountSpent: 0,
     };
-    this.logger.trace(`Creating HbarSpendingPlan with ID ${plan.id}...`);
+    this.logger.trace(`${requestDetails.formattedRequestId} Creating HbarSpendingPlan with ID ${plan.id}...`);
     const key = this.getKey(plan.id);
     await this.cache.set(key, plan, 'create', requestDetails, ttl);
     return new HbarSpendingPlan(plan);
+  }
+
+  async delete(id: string, requestDetails: RequestDetails): Promise<void> {
+    this.logger.trace(`${requestDetails.formattedRequestId} Deleting HbarSpendingPlan with ID ${id}...`);
+    const key = this.getKey(id);
+    await this.cache.delete(key, 'delete', requestDetails);
   }
 
   /**
@@ -132,7 +140,9 @@ export class HbarSpendingPlanRepository {
   async getSpendingHistory(id: string, requestDetails: RequestDetails): Promise<IHbarSpendingRecord[]> {
     await this.checkExistsAndActive(id, requestDetails);
 
-    this.logger.trace(`Retrieving spending history for HbarSpendingPlan with ID ${id}...`);
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} Retrieving spending history for HbarSpendingPlan with ID ${id}...`,
+    );
     const key = this.getSpendingHistoryKey(id);
     const spendingHistory = await this.cache.lRange<IHbarSpendingRecord>(
       key,
@@ -154,7 +164,9 @@ export class HbarSpendingPlanRepository {
   async addAmountToSpendingHistory(id: string, amount: number, requestDetails: RequestDetails): Promise<number> {
     await this.checkExistsAndActive(id, requestDetails);
 
-    this.logger.trace(`Adding ${amount} to spending history for HbarSpendingPlan with ID ${id}...`);
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} Adding ${amount} to spending history for HbarSpendingPlan with ID ${id}...`,
+    );
     const key = this.getSpendingHistoryKey(id);
     const entry: IHbarSpendingRecord = { amount, timestamp: new Date() };
     return this.cache.rPush(key, entry, 'addAmountToSpendingHistory', requestDetails);
@@ -169,7 +181,9 @@ export class HbarSpendingPlanRepository {
   async getAmountSpent(id: string, requestDetails: RequestDetails): Promise<number> {
     await this.checkExistsAndActive(id, requestDetails);
 
-    this.logger.trace(`Retrieving amountSpent for HbarSpendingPlan with ID ${id}...`);
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} Retrieving amountSpent for HbarSpendingPlan with ID ${id}...`,
+    );
     const key = this.getAmountSpentKey(id);
     return this.cache
       .getAsync(key, 'getAmountSpent', requestDetails)
@@ -181,11 +195,15 @@ export class HbarSpendingPlanRepository {
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
   async resetAmountSpentOfAllPlans(requestDetails: RequestDetails): Promise<void> {
-    this.logger.trace('Resetting the `amountSpent` entries for all HbarSpendingPlans...');
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} Resetting the \`amountSpent\` entries for all HbarSpendingPlans...`,
+    );
     const callerMethod = this.resetAmountSpentOfAllPlans.name;
     const keys = await this.cache.keys(this.getAmountSpentKey('*'), callerMethod, requestDetails);
     await Promise.all(keys.map((key) => this.cache.delete(key, callerMethod, requestDetails)));
-    this.logger.trace(`Successfully reset ${keys.length} "amountSpent" entries for HbarSpendingPlans.`);
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} Successfully reset ${keys.length} "amountSpent" entries for HbarSpendingPlans.`,
+    );
   }
 
   /**
@@ -206,22 +224,26 @@ export class HbarSpendingPlanRepository {
 
     const key = this.getAmountSpentKey(id);
     if (!(await this.cache.getAsync(key, 'addAmountToamountSpent', requestDetails))) {
-      this.logger.trace(`No spending yet for HbarSpendingPlan with ID ${id}, setting amountSpent to ${amount}...`);
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} No spending yet for HbarSpendingPlan with ID ${id}, setting amountSpent to ${amount}...`,
+      );
       await this.cache.set(key, amount, 'addAmountToamountSpent', requestDetails, ttl);
     } else {
-      this.logger.trace(`Adding ${amount} to amountSpent for HbarSpendingPlan with ID ${id}...`);
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Adding ${amount} to amountSpent for HbarSpendingPlan with ID ${id}...`,
+      );
       await this.cache.incrBy(key, amount, 'addAmountToamountSpent', requestDetails);
     }
   }
 
   /**
    * Finds all active HBar spending plans by subscription type.
-   * @param {SubscriptionType} subscriptionType - The subscription type to filter by.
+   * @param {SubscriptionType[]} subscriptionTypes - The subscription types to filter by.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan[]>} - A promise that resolves with the active spending plans.
    */
   async findAllActiveBySubscriptionType(
-    subscriptionType: SubscriptionType,
+    subscriptionTypes: SubscriptionType[],
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan[]> {
     const callerMethod = this.findAllActiveBySubscriptionType.name;
@@ -231,7 +253,7 @@ export class HbarSpendingPlanRepository {
     );
     return Promise.all(
       plans
-        .filter((plan) => plan.subscriptionType === subscriptionType && plan.active)
+        .filter((plan) => subscriptionTypes.includes(plan.subscriptionType) && plan.active)
         .map(
           async (plan) =>
             new HbarSpendingPlan({
