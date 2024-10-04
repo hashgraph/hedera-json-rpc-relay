@@ -21,7 +21,6 @@
 import fs from 'fs';
 import { bytecode } from '../contracts/Basic.json';
 import path from 'path';
-const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
 import axios from 'axios';
 import openRpcData from '../../../../docs/openrpc.json';
 import Ajv from 'ajv';
@@ -31,6 +30,9 @@ import { expect } from 'chai';
 import WebSocket from 'ws';
 import LogsContract from '../contracts/Logs.json';
 import CallerContract from '../contracts/Caller.json';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+
+const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
 
 let currentBlockHash;
 let legacyTransactionAndBlockHash;
@@ -64,7 +66,7 @@ const ajv = new Ajv({ strict: false });
 addFormats(ajv);
 let execApisOpenRpcData;
 
-const chainId = Number(process.env.CHAIN_ID || 0x12a);
+const chainId = Number(ConfigService.get('CHAIN_ID') || 0x12a);
 
 let legacyTransaction = {
   chainId,
@@ -438,73 +440,7 @@ describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', as
     ).result;
   });
 
-  const TEST_CASES = {
-    eth_submitHashrate: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_submitHashrate"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_sign: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_sign"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_signTransaction: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_signTransaction"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_sendTransaction: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_sendTransaction"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_protocolVersion: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_protocolVersion"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_newPendingTransactionFilter: {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_newPendingTransactionFilter"}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32601}}',
-    },
-    eth_newBlockFilter: {
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_newBlockFilter"}',
-      response: '{"jsonrpc":"2.0","id":1,"result":"0x33f5c9d2974eea142909a19906ef0548"}',
-    },
-    'eth_getFilterChanges - existing filter': {
-      request:
-        '{"jsonrpc":"2.0","id":1,"method":"eth_getFilterChanges","params":["0xb5c45fa0ece1ff79b115fc7cc490655b"]}',
-      response:
-        '{"jsonrpc":"2.0","id":1,"result":["0xc926f266c4a93e01cf6df220b5902b032adb38d70626835d8f53c9f8a648d747dd651af5e9c64201aad121a93c2304c4"]}',
-    },
-    'eth_getFilterChanges - no existing filter': {
-      status: 400,
-      request:
-        '{"jsonrpc":"2.0","id":1,"method":"eth_getFilterChanges","params":["0x275220eef57cfbc06e932e043535d492"]}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32001}}',
-    },
-    eth_uninstallFilter: {
-      request:
-        '{"jsonrpc":"2.0","id":1,"method":"eth_uninstallFilter","params":["0x275220eef57cfbc06e932e043535d492"]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":false}',
-    },
-    eth_newFilter: {
-      request:
-        '{"jsonrpc":"2.0","id":1,"method":"eth_newFilter","params":[{"fromBlock": "0x1","toBlock": "0x160c","address": "0x281723C907113cbdEe8785F3480dD7496315312c"}]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":"0xd569b8fad2873edebd3033831f790dee"}',
-    },
-    'eth_getFilterLogs - existing filter': {
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_getFilterLogs","params":["0x65d84e9904db339e6a85340b9f7c3d3e"]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":[]}',
-    },
-    'eth_getFilterLogs - no existing filter': {
-      status: 400,
-      request: '{"jsonrpc":"2.0","id":1,"method":"eth_getFilterLogs","params":["0xb567d26e162027d80fd434e3bc3d6897"]}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32001}}',
-    },
-  };
+  const TEST_CASES_BATCH_2 = require('./data/conformity-tests-batch-2.json');
 
   const updateParamIfNeeded = (testName, request) => {
     switch (testName) {
@@ -519,7 +455,7 @@ describe('@api-conformity @conformity-batch-2 Ethereum execution apis tests', as
     return request;
   };
 
-  synthesizeTestCases(TEST_CASES, updateParamIfNeeded);
+  synthesizeTestCases(TEST_CASES_BATCH_2, updateParamIfNeeded);
 });
 
 describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', async function () {
@@ -531,37 +467,7 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
     txHash = (await signAndSendRawTransaction(transaction1559)).transactionHash;
   });
 
-  const TEST_CASES = {
-    eth_submitWork: {
-      request:
-        '{"jsonrpc":"2.0", "method":"eth_submitWork","params":["0x0000000000000001","0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef","0xD1FE5700000000000000000000000000D1FE5700000000000000000000000000"],"id":1}',
-      response: '{"jsonrpc":"2.0","id":1,"result":false}',
-    },
-    net_listening: {
-      request: '{"jsonrpc":"2.0","id":1,"method":"net_listening","params":[]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":"false"}',
-    },
-    net_version: {
-      request: '{"jsonrpc":"2.0","id":1,"method":"net_version","params":[]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":"298"}',
-    },
-    web3_clientVersion: {
-      request: '{"jsonrpc":"2.0","id":1,"method":"web3_clientVersion","params":[]}',
-      response: '{"jsonrpc":"2.0","id":1,"result":"relay/0.55.0-SNAPSHOT"}',
-    },
-    'debug_traceTransaction - existing tx': {
-      request:
-        '{"jsonrpc":"2.0","method":"debug_traceTransaction","params":["0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8",{"tracer":"callTracer","tracerConfig":{"onlyTopCall":true}}],"id":1}',
-      response:
-        '{"result":{"type":"CALL","from":"0xc37f417fa09933335240fca72dd257bfbde9c275","to":"0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69","value":"0x14","gas":"0x3d090","gasUsed":"0x30d40","input":"0x","output":"0x"},"jsonrpc":"2.0","id":1}',
-    },
-    'debug_traceTransaction - no existing tx': {
-      status: 400,
-      request:
-        '{"jsonrpc":"2.0","method":"debug_traceTransaction","params":["0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8",{"tracer":"callTracer","tracerConfig":{"onlyTopCall":true}}],"id":1}',
-      response: '{"jsonrpc":"2.0","id":1,"error":{"code":-32001}}',
-    },
-  };
+  const TEST_CASES_BATCH_3 = require('./data/conformity-tests-batch-3.json');
 
   const updateParamIfNeeded = (testName, request) => {
     switch (testName) {
@@ -581,7 +487,7 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
     return request;
   };
 
-  synthesizeTestCases(TEST_CASES, updateParamIfNeeded);
+  synthesizeTestCases(TEST_CASES_BATCH_3['server'], updateParamIfNeeded);
 
   describe('ws related rpc methods', async function () {
     let webSocket: WebSocket;
@@ -629,36 +535,6 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
       webSocket.close();
     });
 
-    const TEST_CASES = {
-      eth_newFilter: {
-        request:
-          '{"jsonrpc":"2.0","id":1,"method":"eth_newFilter","params":[{"fromBlock": "0x2","toBlock": "0x5644","address": "0x68c281b97b214deae198043c15a92e7096ca2546"}]}',
-        response: '{"result":"0x5cd8adcbc637551d4b5959c732d0ad67","jsonrpc":"2.0","id":1}',
-      },
-      'eth_subscribe - newPendingTransactions': {
-        request: '{"jsonrpc":"2.0","method":"eth_subscribe","params":["newPendingTransactions"],"id":1}',
-        response: '{"error":{"code":-32601,"message":"Unsupported JSON-RPC method"},"jsonrpc":"2.0","id":1}',
-      },
-      'eth_subscribe - non existing contract': {
-        request:
-          '{"jsonrpc":"2.0","id":1,"method":"eth_subscribe","params":["logs",{"address":"0x678d3e4c7b6b8e9617e9b3487352ec63c54dbf81"}]}',
-        response: '{"error":{"code":-32602},"jsonrpc":"2.0","id":1}',
-      },
-      'eth_subscribe - existing contract': {
-        request:
-          '{"jsonrpc":"2.0","id":1,"method":"eth_subscribe","params":["logs",{"address":"0x12833e4c7a6b1e9512e9a32873321c13cb4dbfef"}]}',
-        response: '{"result":"0xa4e1803ab025341ed7668eb13ca71f3c","jsonrpc":"2.0","id":1}',
-      },
-      'eth_unsubscribe - non existing filter': {
-        request: '{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x2c9c38d1200d30208fcdad52ed71fbff"],"id":1}',
-        response: '{"result":false,"jsonrpc":"2.0","id":1}',
-      },
-      'eth_unsubscribe - existing filter': {
-        request: '{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x2c9c38d1200d30208fcdad52ed71fbff"],"id":1}',
-        response: '{"result":true,"jsonrpc":"2.0","id":1}',
-      },
-    };
-
     const updateParamIfNeeded = (testName, request) => {
       switch (testName) {
         case 'eth_subscribe - existing contract':
@@ -697,6 +573,205 @@ describe('@api-conformity @conformity-batch-3 Ethereum execution apis tests', as
       }
     };
 
-    synthesizeWsTestCases(TEST_CASES, updateParamIfNeeded);
+    synthesizeWsTestCases(TEST_CASES_BATCH_3['ws-server'], updateParamIfNeeded);
   });
+});
+
+describe('@api-conformity @conformity-batch-4 Ethereum execution apis tests', async function () {
+  this.timeout(240 * 1000);
+
+  let existingCallerContractAddress: string;
+  let existingLogsContractAddress: string;
+  let fromBlockForLogs: string;
+
+  before(async () => {
+    const deployCallerContractTx = await signAndSendRawTransaction({
+      chainId: 0x12a,
+      to: null,
+      from: sendAccountAddress,
+      maxPriorityFeePerGas: gasPrice,
+      maxFeePerGas: gasPrice,
+      gasLimit: gasLimit,
+      type: 2,
+      data: CallerContract.bytecode,
+    });
+
+    const deployLogsContractTx = await signAndSendRawTransaction({
+      chainId: 0x12a,
+      to: null,
+      from: sendAccountAddress,
+      maxPriorityFeePerGas: gasPrice,
+      maxFeePerGas: gasPrice,
+      gasLimit: gasLimit,
+      type: 2,
+      data: LogsContract.bytecode,
+    });
+
+    existingCallerContractAddress = deployCallerContractTx.contractAddress;
+    existingLogsContractAddress = deployLogsContractTx.contractAddress;
+
+    const log0ContractCall = await signAndSendRawTransaction({
+      chainId: 0x12a,
+      to: existingLogsContractAddress,
+      from: sendAccountAddress,
+      maxPriorityFeePerGas: gasPrice,
+      maxFeePerGas: gasPrice,
+      gasLimit: gasLimit,
+      type: 2,
+      data: '0xd05285d4000000000000000000000000000000000000000000000000000000000000160c',
+    });
+
+    fromBlockForLogs = log0ContractCall.blockNumber;
+  });
+
+  const TEST_CASES_BATCH_4 = require('./data/conformity-tests-batch-4.json');
+
+  const updateParamIfNeeded = (testName, request) => {
+    switch (testName) {
+      case 'eth_call - existing contract view function and existing from':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0x0ec1551d',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_call - existing contract tx and existing from':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_call - existing contract tx, existing from and positive value':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+            value: '0x2540be400',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_call - existing contract view function and non-existing from':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0x0ec1551d',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_call - existing contract tx and non-existing from':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_call - existing contract tx, non-existing from and positive value':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+            value: '0x2540be400',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract view function and existing from':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0x0ec1551d',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract tx and existing from':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract tx, existing from and positive value':
+        request.params = [
+          {
+            from: sendAccountAddress,
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+            value: '0x2540be400',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract view function and non-existing from':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0x0ec1551d',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract tx and non-existing from':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_estimateGas - existing contract tx, non-existing from and positive value':
+        request.params = [
+          {
+            from: '0x6b175474e89094c44da98b954eedeac495271d0f',
+            to: existingCallerContractAddress,
+            data: '0xddf363d7',
+            value: '0x2540be400',
+          },
+          'latest',
+        ];
+        break;
+      case 'eth_getLogs - existing contract':
+        request.params = [
+          {
+            address: existingLogsContractAddress,
+          },
+        ];
+        break;
+      case 'eth_getLogs - existing contract and from/to block':
+        request.params = [
+          {
+            fromBlock: fromBlockForLogs,
+            toBlock: 'latest',
+            address: existingLogsContractAddress,
+          },
+        ];
+        break;
+    }
+
+    return request;
+  };
+
+  synthesizeTestCases(TEST_CASES_BATCH_4, updateParamIfNeeded);
 });

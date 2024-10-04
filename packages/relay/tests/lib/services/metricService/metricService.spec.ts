@@ -31,11 +31,11 @@ import { Utils } from '../../../../src/utils';
 import constants from '../../../../src/lib/constants';
 import HbarLimit from '../../../../src/lib/hbarlimiter';
 import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
-import { calculateTxRecordChargeAmount, getRequestId } from '../../../helpers';
+import { calculateTxRecordChargeAmount } from '../../../helpers';
 import MetricService from '../../../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from '../../../../src/lib/types/events';
-import { Hbar, Long, Status, Client, AccountId, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
+import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload, RequestDetails } from '../../../../src/lib/types';
+import { AccountId, Client, Hbar, Long, Status, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
 
 const registry = new Registry();
 const logger = pino();
@@ -49,6 +49,7 @@ describe('Metric Service', function () {
   let metricService: MetricService;
   let mirrorNodeClient: MirrorNodeClient;
 
+  const requestDetails = new RequestDetails({ requestId: 'metricServiceTest', ipAddress: '0.0.0.0' });
   const mockedTxFee = 36900000;
   const operatorAccountId = `0.0.1022`;
   const mockedCallerName = 'caller_name';
@@ -156,10 +157,10 @@ describe('Metric Service', function () {
     const mockedExecuteTransactionEventPayload: IExecuteTransactionEventPayload = {
       transactionId: mockedTransactionId,
       callerName: mockedCallerName,
-      requestId: getRequestId(),
       txConstructorName: mockedConstructorName,
       operatorAccountId,
       interactingEntity: mockedInteractingEntity,
+      requestDetails,
     };
 
     it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
@@ -177,14 +178,14 @@ describe('Metric Service', function () {
       expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
 
       // validate cost metrics
-      // @ts-ignore
-      const costMetricObject = (await metricService.getCostMetric().get()).values.find(
+      const costMetricObject = (await metricService['consensusNodeClientHistogramCost'].get()).values.find(
         (metric) => metric.metricName === metricHistogramCostSumTitle,
-      )!;
-      expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
-      expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
-      expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(costMetricObject.value).to.eq(mockedTxFee);
+      );
+      expect(costMetricObject).to.not.be.undefined;
+      expect(costMetricObject!.metricName).to.eq(metricHistogramCostSumTitle);
+      expect(costMetricObject!.labels.caller).to.eq(mockedCallerName);
+      expect(costMetricObject!.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(costMetricObject!.value).to.eq(mockedTxFee);
     });
 
     it('Should execute captureTransactionMetrics() by retrieving transaction record from CONSENSUS NODE client', async () => {
@@ -208,7 +209,7 @@ describe('Metric Service', function () {
 
       // validate cost metric
       // @ts-ignore
-      const metricObjects = await metricService.getCostMetric().get();
+      const metricObjects = await metricService['consensusNodeClientHistogramCost'].get();
       const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
         return (
           metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
@@ -233,7 +234,7 @@ describe('Metric Service', function () {
 
       // validate gas metric
       // @ts-ignore
-      const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
+      const gasMetricObject = (await metricService['consensusNodeClientHistogramGasFee'].get()).values.find(
         (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
       )!;
 
@@ -272,7 +273,7 @@ describe('Metric Service', function () {
 
       // validate cost metric
       // @ts-ignore
-      const metricObjects = await metricService.getCostMetric().get();
+      const metricObjects = await metricService['consensusNodeClientHistogramCost'].get();
       const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
         return (
           metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
@@ -297,7 +298,7 @@ describe('Metric Service', function () {
 
       // validate gas metric
       // @ts-ignore
-      const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
+      const gasMetricObject = (await metricService['consensusNodeClientHistogramGasFee'].get()).values.find(
         (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
       )!;
 
@@ -321,7 +322,7 @@ describe('Metric Service', function () {
       gasUsed: mockedGasUsed,
       interactingEntity: mockedInteractingEntity,
       status: 'SUCCESS',
-      requestId: getRequestId(),
+      requestDetails,
     };
     it('should execute addExpenseAndCaptureMetrics() to capture metrics in HBAR limiter and metric registry', async () => {
       const originalBudget = hbarLimiter.getRemainingBudget();
@@ -335,7 +336,7 @@ describe('Metric Service', function () {
 
       // validate cost metrics
       // @ts-ignore
-      const costMetricObject = (await metricService.getCostMetric().get()).values.find(
+      const costMetricObject = (await metricService['consensusNodeClientHistogramCost'].get()).values.find(
         (metric) => metric.metricName === metricHistogramCostSumTitle,
       )!;
       expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
@@ -345,7 +346,7 @@ describe('Metric Service', function () {
 
       // validate gas metric
       // @ts-ignore
-      const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
+      const gasMetricObject = (await metricService['consensusNodeClientHistogramGasFee'].get()).values.find(
         (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
       )!;
 
@@ -372,7 +373,7 @@ describe('Metric Service', function () {
 
       // validate cost metrics
       // @ts-ignore
-      const costMetricObject = (await metricService.getCostMetric().get()).values.find(
+      const costMetricObject = (await metricService['consensusNodeClientHistogramCost'].get()).values.find(
         (metric) => metric.metricName === metricHistogramCostSumTitle,
       )!;
       expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
@@ -382,7 +383,7 @@ describe('Metric Service', function () {
 
       // validate gas metric
       // @ts-ignore
-      const gasMetricObject = (await metricService.getGasFeeMetric().get()).values.find(
+      const gasMetricObject = (await metricService['consensusNodeClientHistogramGasFee'].get()).values.find(
         (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
       )!;
 

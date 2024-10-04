@@ -26,6 +26,9 @@ import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@release @web-socket-batch-2 eth_getTransactionCount', async function () {
   const METHOD_NAME = 'eth_getTransactionCount';
@@ -33,14 +36,14 @@ describe('@release @web-socket-batch-2 eth_getTransactionCount', async function 
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   // @ts-ignore
-  const { mirrorNode, relay } = global;
+  const { mirrorNode, relay }: { mirrorNode: MirrorClient; relay: RelayClient } = global;
+  const requestId = 'getTransactionCount_ws-server';
+  const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
 
-  let requestId: string,
-    accounts: AliasAccount[] = [],
+  let accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
 
   before(async () => {
-    requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
     const initialAmount: string = '100000000'; //1 Hbar
 
@@ -51,7 +54,7 @@ describe('@release @web-socket-batch-2 eth_getTransactionCount', async function 
         initialAccount,
         neededAccounts,
         initialAmount,
-        requestId,
+        requestDetails,
       )),
     );
     global.accounts.push(...accounts);
@@ -86,7 +89,7 @@ describe('@release @web-socket-batch-2 eth_getTransactionCount', async function 
       'latest',
     ]);
     WsTestHelper.assertJsonRpcObject(beforeSendRawTransactionCountResponse);
-    const transactionCountBefore = await relay.getAccountNonce(accounts[0].address);
+    const transactionCountBefore = await relay.getAccountNonce(accounts[0].address, requestId);
     expect(Number(beforeSendRawTransactionCountResponse.result)).to.eq(transactionCountBefore);
 
     const transaction = {
@@ -95,7 +98,7 @@ describe('@release @web-socket-batch-2 eth_getTransactionCount', async function 
       chainId: Number(CHAIN_ID),
       to: accounts[1].address,
       maxFeePerGas: defaultGasPrice,
-      nonce: await relay.getAccountNonce(accounts[0].address),
+      nonce: await relay.getAccountNonce(accounts[0].address, requestId),
     };
     const signedTx = await accounts[0].wallet.signTransaction(transaction);
     // @notice submit a transaction to increase transaction count
@@ -106,7 +109,7 @@ describe('@release @web-socket-batch-2 eth_getTransactionCount', async function 
       'latest',
     ]);
     WsTestHelper.assertJsonRpcObject(afterSendRawTransactionCountResponse);
-    const transactionCountAfter = await relay.getAccountNonce(accounts[0].address);
+    const transactionCountAfter = await relay.getAccountNonce(accounts[0].address, requestId);
     expect(Number(afterSendRawTransactionCountResponse.result)).to.eq(transactionCountAfter);
   });
 });

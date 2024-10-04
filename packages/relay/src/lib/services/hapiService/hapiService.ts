@@ -25,7 +25,7 @@ import findConfig from 'find-config';
 import constants from '../../constants';
 import { Utils } from './../../../utils';
 import HbarLimit from '../../hbarlimiter';
-import { Registry, Counter } from 'prom-client';
+import { Counter, Registry } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import { CacheService } from '../cacheService/cacheService';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';

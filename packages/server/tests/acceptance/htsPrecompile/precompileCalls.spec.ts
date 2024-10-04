@@ -21,9 +21,10 @@
 // external resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
-import { Hbar, ContractId } from '@hashgraph/sdk';
+import { ContractId } from '@hashgraph/sdk';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../helpers/constants';
+import RelayCall from '../../helpers/constants';
 
 import { AliasAccount } from '../../types/AliasAccount';
 import { ethers } from 'ethers';
@@ -38,7 +39,6 @@ import TokenManagementContractJson from '../../contracts/TokenManagementContract
 
 import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { Utils } from '../../helpers/utils';
-import RelayCall from '../../helpers/constants';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 
 chai.use(solidity);
@@ -391,7 +391,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         expect(customFees.fixedFees).to.exist;
         expect(customFees.fixedFees.length).to.eq(1);
         expect(customFees.fixedFees[0].amount).to.exist;
-        expect(customFees.fixedFees[0].amount.toString()).to.eq(Hbar.from(1).toTinybars().toString());
+        expect(customFees.fixedFees[0].amount.toString()).to.eq('1');
         expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
         expect(customFees.fixedFees[0].feeCollector).to.exist;
         expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());
@@ -473,7 +473,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         expect(customFees.fixedFees.length).to.eq(2);
 
         expect(customFees.fixedFees[0].amount).to.exist;
-        expect(customFees.fixedFees[0].amount.toString()).to.eq(Hbar.from(1).toTinybars().toString());
+        expect(customFees.fixedFees[0].amount.toString()).to.eq('1');
         expect(customFees.fixedFees[0].tokenId).to.eq(ZERO_HEX);
         expect(customFees.fixedFees[0].feeCollector).to.exist;
         expect(customFees.fixedFees[0].feeCollector.toLowerCase()).to.eq(accounts[0].address.toLowerCase());

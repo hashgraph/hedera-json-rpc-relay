@@ -49,6 +49,7 @@ import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
 import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { Server } from 'http';
 
 chai.use(chaiAsPromised);
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
@@ -93,8 +94,6 @@ describe('RPC Server Acceptance Tests', function () {
   global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
   global.metrics = new MetricsClient(RELAY_URL, logger.child({ name: `metrics-test-client` }));
   global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
-  global.relayServer = relayServer;
-  global.socketServer = socketServer;
   global.logger = logger;
   global.initialBalance = INITIAL_BALANCE;
 
@@ -132,11 +131,11 @@ describe('RPC Server Acceptance Tests', function () {
       RELAY_URL,
       CHAIN_ID,
       Utils.generateRequestId(),
-      Number(process.env.TEST_INITIAL_ACCOUNT_STARTING_BALANCE || 2000),
+      Number(ConfigService.get('TEST_INITIAL_ACCOUNT_STARTING_BALANCE') || 2000),
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
-    await global.mirrorNode.get(`/accounts/${initialAccount.address}`);
+    await global.mirrorNode.get(`/accounts/${initialAccount.address}`, Utils.generateRequestId());
   });
 
   after(async function () {
@@ -197,6 +196,8 @@ describe('RPC Server Acceptance Tests', function () {
   function stopRelay() {
     //stop relay
     logger.info('Stop relay');
+
+    const relayServer: Server = global.relayServer;
     if (relayServer !== undefined) {
       relayServer.close();
     }
@@ -210,7 +211,8 @@ describe('RPC Server Acceptance Tests', function () {
     // start local relay, relay instance in local should not be running
 
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
-    relayServer = app.listen({ port: constants.RELAY_PORT });
+    const relayServer = app.listen({ port: constants.RELAY_PORT });
+    global.relayServer = relayServer;
     setServerTimeout(relayServer);
 
     if (ConfigService.get('TEST_WS_SERVER')) {

@@ -30,6 +30,9 @@ import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccoun
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
+import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
+
 chai.use(solidity);
 
 const WS_RELAY_URL = `${ConfigService.get('WS_RELAY_URL')}`;
@@ -106,7 +109,8 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
 
   before(async () => {
     // @ts-ignore
-    const { socketServer, mirrorNode, relay } = global;
+    const { socketServer, mirrorNode, relay }: { socketServer: any; mirrorNode: MirrorClient; relay: RelayClient } =
+      global;
     mirrorNodeServer = mirrorNode;
     rpcServer = relay;
     wsServer = socketServer;

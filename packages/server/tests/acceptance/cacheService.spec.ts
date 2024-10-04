@@ -21,6 +21,7 @@
 import { expect } from 'chai';
 import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { configServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
@@ -35,6 +36,8 @@ const CALLING_METHOD = 'AcceptanceTest';
 describe('@cache-service Acceptance Tests for shared cache', function () {
   let cacheService: CacheService;
 
+  const requestDetails = new RequestDetails({ requestId: 'cacheServiceTest', ipAddress: '0.0.0.0' });
+
   before(async () => {
     cacheService = new CacheService(global.logger, registry);
     await new Promise((r) => setTimeout(r, 1000));
@@ -43,22 +46,22 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   it('Correctly performs set, get and delete operations', async () => {
     const dataLabel = `${DATA_LABEL_PREFIX}1`;
 
-    await cacheService.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
+    await cacheService.set(dataLabel, DATA, CALLING_METHOD, requestDetails);
     await new Promise((r) => setTimeout(r, 200));
 
-    const cache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+    const cache = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(cache).to.deep.eq(DATA, 'set method saves to shared cache');
 
-    const cacheFromService = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+    const cacheFromService = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(cacheFromService).to.deep.eq(DATA, 'getAsync method reads correctly from shared cache');
 
-    await cacheService.delete(dataLabel, CALLING_METHOD, undefined, true);
+    await cacheService.delete(dataLabel, CALLING_METHOD, requestDetails);
     await new Promise((r) => setTimeout(r, 200));
 
-    const deletedCache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+    const deletedCache = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(deletedCache).to.eq(null, 'the delete method correctly deletes from shared cache');
 
-    const deletedCacheFromService = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+    const deletedCacheFromService = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(deletedCacheFromService).to.eq(null, 'getAsync method cannot read deleted cache');
   });
 
@@ -66,18 +69,18 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const ttl = 1000;
     const dataLabel = `${DATA_LABEL_PREFIX}2`;
 
-    await cacheService.set(dataLabel, DATA, CALLING_METHOD, ttl, undefined, true);
+    await cacheService.set(dataLabel, DATA, CALLING_METHOD, requestDetails, ttl);
     await new Promise((r) => setTimeout(r, 200));
 
-    const cache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+    const cache = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(cache).to.deep.eq(DATA, 'data is stored with TTL');
 
     await new Promise((r) => setTimeout(r, ttl));
 
-    const expiredCache = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+    const expiredCache = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(expiredCache).to.eq(null, 'cache expires after TTL period');
 
-    const deletedCacheFromService = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+    const deletedCacheFromService = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(deletedCacheFromService).to.eq(null, 'getAsync method cannot read expired cache');
   });
 
@@ -88,10 +91,10 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const serviceWithDisabledRedis = new CacheService(global.logger, registry);
     await new Promise((r) => setTimeout(r, 1000));
     expect(serviceWithDisabledRedis.isRedisEnabled()).to.eq(false, 'redis is disabled');
-    await serviceWithDisabledRedis.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
+    await serviceWithDisabledRedis.set(dataLabel, DATA, CALLING_METHOD, requestDetails);
     await new Promise((r) => setTimeout(r, 200));
 
-    const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD);
+    const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
 
     configServiceTestHelper.dynamicOverride('REDIS_ENABLED', true);
@@ -100,10 +103,10 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   it('Cache set by one instance can be accessed by another', async () => {
     const dataLabel = `${DATA_LABEL_PREFIX}4`;
     const otherServiceInstance = new CacheService(global.logger, registry);
-    await cacheService.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined, true);
+    await cacheService.set(dataLabel, DATA, CALLING_METHOD, requestDetails);
     await new Promise((r) => setTimeout(r, 200));
 
-    const cachedData = await otherServiceInstance.getAsync(dataLabel, CALLING_METHOD);
+    const cachedData = await otherServiceInstance.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(cachedData).to.deep.eq(DATA, 'cached data is read correctly by other service instance');
   });
 
@@ -111,7 +114,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const dataLabel = `${DATA_LABEL_PREFIX}_redis_error`;
 
     let currentRedisEnabledEnv;
-    let cacheService;
+    let cacheService: CacheService;
 
     before(async () => {
       currentRedisEnabledEnv = ConfigService.get('REDIS_ENABLED');
@@ -129,10 +132,10 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     });
 
     it('test getAsync operation', async () => {
-      await cacheService.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined);
+      await cacheService.set(dataLabel, DATA, CALLING_METHOD, requestDetails);
       await new Promise((r) => setTimeout(r, 200));
 
-      const dataInLRU = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+      const dataInLRU = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
       expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
     });
 
@@ -143,21 +146,21 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
         string: '5644',
       };
 
-      await cacheService.multiSet(pairs, CALLING_METHOD, undefined, undefined);
+      await cacheService.multiSet(pairs, CALLING_METHOD, requestDetails);
       await new Promise((r) => setTimeout(r, 200));
 
       for (const key in pairs) {
-        const cachedValue = await cacheService.getAsync(key, CALLING_METHOD);
+        const cachedValue = await cacheService.getAsync(key, CALLING_METHOD, requestDetails);
         expect(cachedValue).deep.equal(pairs[key]);
       }
     });
 
     it('test delete operation', async () => {
-      await cacheService.set(dataLabel, DATA, CALLING_METHOD, undefined, undefined);
+      await cacheService.set(dataLabel, DATA, CALLING_METHOD, requestDetails);
       await new Promise((r) => setTimeout(r, 200));
 
-      await cacheService.delete(dataLabel, CALLING_METHOD);
-      const dataInLRU = await cacheService.getAsync(dataLabel, CALLING_METHOD);
+      await cacheService.delete(dataLabel, CALLING_METHOD, requestDetails);
+      const dataInLRU = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
       expect(dataInLRU).to.be.null;
     });
   });

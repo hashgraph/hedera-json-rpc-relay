@@ -29,6 +29,9 @@ import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
   const METHOD_NAME = 'eth_sendRawTransaction';
@@ -48,16 +51,17 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
   ];
 
   // @ts-ignore
-  const { mirrorNode, relay } = global;
+  const { mirrorNode, relay }: { mirrorNode: MirrorClient; relay: RelayClient } = global;
   const initialBalance = '5000000000'; // 50hbar
+  const requestId = 'sendRawTransactionTest_ws-server';
+  const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
 
   let tx: any,
     sendHbarToProxyContractDeployerTx: any,
     accounts: AliasAccount[] = [],
     ethersWsProvider: WebSocketProvider;
-  let requestId: string;
+
   before(async () => {
-    requestId = Utils.generateRequestId();
     const initialAccount: AliasAccount = global.accounts[0];
 
     const neededAccounts: number = 3;
@@ -67,7 +71,7 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
         initialAccount,
         neededAccounts,
         initialBalance,
-        requestId,
+        requestDetails,
       )),
     );
     global.accounts.push(...accounts);
@@ -77,7 +81,7 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
       gasLimit: numberTo0x(30000),
       chainId: Number(CHAIN_ID),
       to: accounts[2].address,
-      maxFeePerGas: await relay.gasPrice(),
+      maxFeePerGas: await relay.gasPrice(requestId),
     };
 
     sendHbarToProxyContractDeployerTx = {
@@ -111,15 +115,15 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
     }
 
     it(`@release Should execute eth_sendRawTransaction on Standard Web Socket and handle valid requests correctly`, async () => {
-      tx.nonce = await relay.getAccountNonce(accounts[0].address);
+      tx.nonce = await relay.getAccountNonce(accounts[0].address, requestId);
       const signedTx = await accounts[0].wallet.signTransaction(tx);
 
       const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [signedTx], 1000);
       WsTestHelper.assertJsonRpcObject(response);
 
       const txHash = response.result;
-      const txReceipt = await mirrorNode.get(`/contracts/results/${txHash}`);
-      const fromAccountInfo = await mirrorNode.get(`/accounts/${txReceipt.from}`);
+      const txReceipt = await mirrorNode.get(`/contracts/results/${txHash}`, requestDetails);
+      const fromAccountInfo = await mirrorNode.get(`/accounts/${txReceipt.from}`, requestDetails);
 
       expect(txReceipt.to).to.eq(accounts[2].address.toLowerCase());
       expect(fromAccountInfo.evm_address).to.eq(accounts[0].address.toLowerCase());
@@ -179,13 +183,13 @@ describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
     }
 
     it(`@release Should execute eth_sendRawTransaction on Ethers Web Socket Provider and handle valid requests correctly`, async () => {
-      tx.nonce = await relay.getAccountNonce(accounts[1].address);
+      tx.nonce = await relay.getAccountNonce(accounts[1].address, requestId);
       const signedTx = await accounts[1].wallet.signTransaction(tx); // const signedTx = await accounts[0].wallet.signTransaction(tx);
 
       const txHash = await ethersWsProvider.send(METHOD_NAME, [signedTx]);
 
-      const txReceipt = await mirrorNode.get(`/contracts/results/${txHash}`);
-      const fromAccountInfo = await mirrorNode.get(`/accounts/${txReceipt.from}`);
+      const txReceipt = await mirrorNode.get(`/contracts/results/${txHash}`, requestDetails);
+      const fromAccountInfo = await mirrorNode.get(`/accounts/${txReceipt.from}`, requestDetails);
 
       expect(txReceipt.to).to.eq(accounts[2].address.toLowerCase());
       expect(fromAccountInfo.evm_address).to.eq(accounts[1].address.toLowerCase());

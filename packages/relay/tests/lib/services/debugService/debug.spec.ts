@@ -28,13 +28,14 @@ import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
 import { TracerType } from '../../../../src/lib/constants';
 import { DebugService } from '../../../../src/lib/services/debugService';
-import { getQueryParams, getRequestId } from '../../../helpers';
+import { getQueryParams } from '../../../helpers';
 import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { CommonService } from '../../../../src/lib/services/ethService';
 import { IOpcodesResponse } from '../../../../src/lib/clients/models/IOpcodesResponse';
 import { strip0x } from '../../../../src/formatters';
+import { RequestDetails } from '../../../../src/lib/types';
 
 chai.use(chaiAsPromised);
 
@@ -50,6 +51,7 @@ let cacheService: CacheService;
 describe('Debug API Test Suite', async function () {
   this.timeout(10000);
 
+  const requestDetails = new RequestDetails({ requestId: 'debugTest', ipAddress: '0.0.0.0' });
   const transactionHash = '0xb7a433b014684558d4154c73de3ed360bd5867725239938c2143acb7a76bca82';
   const nonExistentTransactionHash = '0xb8a433b014684558d4154c73de3ed360bd5867725239938c2143acb7a76bca82';
   const contractAddress = '0x0000000000000000000000000000000000000409';
@@ -336,7 +338,7 @@ describe('Debug API Test Suite', async function () {
           debugService.debug_traceTransaction,
           true,
           debugService,
-          [transactionHash, callTracer, tracerConfigFalse, getRequestId()],
+          [transactionHash, callTracer, tracerConfigFalse, requestDetails],
         );
       });
 
@@ -347,7 +349,7 @@ describe('Debug API Test Suite', async function () {
           transactionHash,
           callTracer,
           tracerConfigFalse,
-          getRequestId(),
+          requestDetails,
         );
         expect(traceTransaction).to.exist;
       });
@@ -359,7 +361,7 @@ describe('Debug API Test Suite', async function () {
           debugService.debug_traceTransaction,
           true,
           debugService,
-          [transactionHash, callTracer, tracerConfigFalse, getRequestId()],
+          [transactionHash, callTracer, tracerConfigFalse, requestDetails],
         );
       });
     });
@@ -397,7 +399,7 @@ describe('Debug API Test Suite', async function () {
           transactionHash,
           callTracer,
           tracerConfigFalse,
-          getRequestId(),
+          requestDetails,
         );
 
         expect(result).to.deep.equal(expectedResult);
@@ -419,7 +421,7 @@ describe('Debug API Test Suite', async function () {
           transactionHash,
           callTracer,
           tracerConfigTrue,
-          getRequestId(),
+          requestDetails,
         );
 
         expect(result).to.deep.equal(expectedResult);
@@ -466,7 +468,7 @@ describe('Debug API Test Suite', async function () {
               transactionHash,
               opcodeLogger,
               config,
-              getRequestId(),
+              requestDetails,
             );
 
             expect(result).to.deep.equal(expectedResult);
@@ -508,7 +510,7 @@ describe('Debug API Test Suite', async function () {
           nonExistentTransactionHash,
           callTracer,
           tracerConfigTrue,
-          getRequestId(),
+          requestDetails,
         ]);
       });
 
@@ -526,13 +528,13 @@ describe('Debug API Test Suite', async function () {
 
       describe('resolveAddress', async function () {
         it('should return null address with invalid parameters in resolveAddress', async function () {
-          const address = await debugService.resolveAddress(null!);
+          const address = await debugService.resolveAddress(null!, requestDetails);
           expect(address).to.be.null;
         });
 
         it('should return passed address on notFound entity from the mirror node', async function () {
           restMock.onGet(ACCOUNT_BY_ADDRESS).reply(404, notFound);
-          const address = await debugService.resolveAddress(accountAddress);
+          const address = await debugService.resolveAddress(accountAddress, requestDetails);
           expect(address).to.eq(accountAddress);
         });
       });

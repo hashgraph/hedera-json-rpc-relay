@@ -25,6 +25,7 @@ import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { estimateFileTransactionsFee, getRequestId, random20BytesAddress } from '../helpers';
+import { RequestDetails } from '../../src/lib/types';
 
 const registry = new Registry();
 const logger = pino();
@@ -44,6 +45,7 @@ describe('HBAR Rate Limiter', async function () {
   const randomAccountAddress = random20BytesAddress();
   const randomWhiteListedAccountAddress = random20BytesAddress();
   const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+  const requestDetails = new RequestDetails({ requestId: getRequestId(), ipAddress: '0.0.0.0' });
 
   this.beforeEach(() => {
     currentDateNow = Date.now();
@@ -69,8 +71,9 @@ describe('HBAR Rate Limiter', async function () {
       'QUERY',
       'eth_call',
       randomAccountAddress,
+      requestDetails,
     );
-    rateLimiterWithEmptyBudget.addExpense(validTotal, currentDateNow);
+    rateLimiterWithEmptyBudget.addExpense(validTotal, currentDateNow, requestDetails);
 
     expect(isEnabled).to.equal(false);
     expect(shouldRateLimit).to.equal(false);
@@ -84,8 +87,14 @@ describe('HBAR Rate Limiter', async function () {
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();
     const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call', randomAccountAddress);
-    rateLimiter.addExpense(validTotal, currentDateNow);
+    const shouldRateLimit = rateLimiter.shouldLimit(
+      currentDateNow,
+      'QUERY',
+      'eth_call',
+      randomAccountAddress,
+      requestDetails,
+    );
+    rateLimiter.addExpense(validTotal, currentDateNow, requestDetails);
 
     expect(isEnabled).to.equal(false);
     expect(shouldRateLimit).to.equal(false);
@@ -99,8 +108,14 @@ describe('HBAR Rate Limiter', async function () {
     const isEnabled = invalidRateLimiter.isEnabled();
     const limiterResetTime = invalidRateLimiter.getResetTime();
     const limiterRemainingBudget = invalidRateLimiter.getRemainingBudget();
-    const shouldRateLimit = invalidRateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call', randomAccountAddress);
-    invalidRateLimiter.addExpense(validTotal, currentDateNow);
+    const shouldRateLimit = invalidRateLimiter.shouldLimit(
+      currentDateNow,
+      'QUERY',
+      'eth_call',
+      randomAccountAddress,
+      requestDetails,
+    );
+    invalidRateLimiter.addExpense(validTotal, currentDateNow, requestDetails);
 
     expect(isEnabled).to.equal(false);
     expect(shouldRateLimit).to.equal(false);
@@ -112,7 +127,13 @@ describe('HBAR Rate Limiter', async function () {
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();
     const limiterRemainingBudget = rateLimiter.getRemainingBudget();
-    const shouldRateLimit = rateLimiter.shouldLimit(currentDateNow, 'QUERY', 'eth_call', randomAccountAddress);
+    const shouldRateLimit = rateLimiter.shouldLimit(
+      currentDateNow,
+      'QUERY',
+      'eth_call',
+      randomAccountAddress,
+      requestDetails,
+    );
 
     expect(isEnabled).to.equal(true);
     expect(shouldRateLimit).to.equal(false);
@@ -123,7 +144,7 @@ describe('HBAR Rate Limiter', async function () {
   it('should not rate limit', async function () {
     const cost = 10000000;
 
-    rateLimiter.addExpense(cost, currentDateNow);
+    rateLimiter.addExpense(cost, currentDateNow, requestDetails);
 
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();
@@ -133,6 +154,7 @@ describe('HBAR Rate Limiter', async function () {
       'TRANSACTION',
       'eth_sendRawTransaction',
       randomAccountAddress,
+      requestDetails,
     );
 
     expect(isEnabled).to.equal(true);
@@ -144,7 +166,7 @@ describe('HBAR Rate Limiter', async function () {
   it('should rate limit', async function () {
     const cost = 1000000000;
 
-    rateLimiter.addExpense(cost, currentDateNow);
+    rateLimiter.addExpense(cost, currentDateNow, requestDetails);
 
     const isEnabled = rateLimiter.isEnabled();
     const limiterResetTime = rateLimiter.getResetTime();
@@ -154,6 +176,7 @@ describe('HBAR Rate Limiter', async function () {
       'TRANSACTION',
       'eth_sendRawTransaction',
       randomAccountAddress,
+      requestDetails,
     );
 
     expect(isEnabled).to.equal(true);
@@ -165,7 +188,7 @@ describe('HBAR Rate Limiter', async function () {
   it('should reset budget, while checking if we should rate limit', async function () {
     const cost = 1000000000;
 
-    rateLimiter.addExpense(cost, currentDateNow);
+    rateLimiter.addExpense(cost, currentDateNow, requestDetails);
 
     const isEnabled = rateLimiter.isEnabled();
     const futureDate = currentDateNow + validDuration * 2;
@@ -174,6 +197,7 @@ describe('HBAR Rate Limiter', async function () {
       'TRANSACTION',
       'eth_sendRawTransaction',
       randomAccountAddress,
+      requestDetails,
     );
     const limiterResetTime = rateLimiter.getResetTime();
     const limiterRemainingBudget = rateLimiter.getRemainingBudget();
@@ -187,21 +211,23 @@ describe('HBAR Rate Limiter', async function () {
   it('should reset budget, while adding expense', async function () {
     const cost = 1000000000;
 
-    rateLimiter.addExpense(cost, currentDateNow);
+    rateLimiter.addExpense(cost, currentDateNow, requestDetails);
     const shouldRateLimitBefore = rateLimiter.shouldLimit(
       currentDateNow,
       'TRANSACTION',
       'eth_sendRawTransaction',
       randomAccountAddress,
+      requestDetails,
     );
 
     const futureDate = currentDateNow + validDuration * 2;
-    rateLimiter.addExpense(100, futureDate);
+    rateLimiter.addExpense(100, futureDate, requestDetails);
     const shouldRateLimitAfter = rateLimiter.shouldLimit(
       futureDate,
       'TRANSACTION',
       'eth_sendRawTransaction',
       randomAccountAddress,
+      requestDetails,
     );
 
     const isEnabled = rateLimiter.isEnabled();
@@ -221,7 +247,7 @@ describe('HBAR Rate Limiter', async function () {
       callDataSize,
       fileChunkSize,
       mockedExchangeRateInCents,
-      getRequestId(),
+      requestDetails,
     );
     expect(result).to.be.true;
   });
@@ -232,7 +258,7 @@ describe('HBAR Rate Limiter', async function () {
       callDataSize,
       fileChunkSize,
       mockedExchangeRateInCents,
-      getRequestId(),
+      requestDetails,
     );
     expect(result).to.be.false;
   });
@@ -247,7 +273,7 @@ describe('HBAR Rate Limiter', async function () {
 
   it('should bypass rate limit if original caller is a white listed account', async function () {
     // add expense to rate limit throttle
-    rateLimiter.addExpense(validTotal, currentDateNow);
+    rateLimiter.addExpense(validTotal, currentDateNow, requestDetails);
 
     // should return true as `randomAccountAddress` is not white listed
     const shouldNOTByPassRateLimit = rateLimiter.shouldLimit(
@@ -255,6 +281,7 @@ describe('HBAR Rate Limiter', async function () {
       'TRANSACTION',
       'eth_sendRawTransaction',
       randomAccountAddress,
+      requestDetails,
     );
 
     // should return false as `randomWhiteListedAccountAddress` is white listed
@@ -263,6 +290,7 @@ describe('HBAR Rate Limiter', async function () {
       'TRANSACTION',
       'eth_sendRawTransaction',
       randomWhiteListedAccountAddress,
+      requestDetails,
     );
 
     expect(shouldByPassRateLimit).to.equal(false);
@@ -275,7 +303,7 @@ describe('HBAR Rate Limiter', async function () {
       callDataSize,
       fileChunkSize,
       mockedExchangeRateInCents,
-      getRequestId(),
+      requestDetails,
     );
     expect(result).to.be.false;
   });
@@ -286,7 +314,7 @@ describe('HBAR Rate Limiter', async function () {
       callDataSize,
       fileChunkSize,
       mockedExchangeRateInCents,
-      getRequestId(),
+      requestDetails,
     );
     expect(result).to.be.true;
   });

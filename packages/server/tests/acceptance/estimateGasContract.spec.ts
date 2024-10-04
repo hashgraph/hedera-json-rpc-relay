@@ -168,7 +168,7 @@ describe('EstimateGasContract tests', function () {
     const estimateGasResponse = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_ESTIMATE_GAS, [
       {
         data: '0x0ec1551d',
-        to: Utils.add0xPrefix(contract.target),
+        to: Utils.add0xPrefix(contract.target as string),
         from: randomAddress,
       },
     ]);

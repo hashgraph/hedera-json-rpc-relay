@@ -28,26 +28,28 @@ import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
 import { numberTo0x } from '../../../dist/formatters';
 import { DEFAULT_NETWORK_FEES, NOT_FOUND_RES } from './eth-config';
-import { predefined } from '../../../src/lib/errors/JsonRpcError';
+import { predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import { generateEthTestEnv } from './eth-helpers';
 import { toHex } from '../../helpers';
+import { RequestDetails } from '../../../src/lib/types';
 
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 let currentMaxBlockRange: number;
 
 describe('@ethGasPrice Gas Price spec', async function () {
   this.timeout(10000);
   let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
+  const requestDetails = new RequestDetails({ requestId: 'eth_getPriceTest', ipAddress: '0.0.0.0' });
+
   this.beforeEach(() => {
     // reset cache and restMock
-    cacheService.clear();
+    cacheService.clear(requestDetails);
     restMock.reset();
-
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
@@ -66,20 +68,20 @@ describe('@ethGasPrice Gas Price spec', async function () {
 
   describe('@ethGasPrice', async function () {
     it('eth_gasPrice', async function () {
-      const weiBars = await ethImpl.gasPrice();
+      const weiBars = await ethImpl.gasPrice(requestDetails);
       const expectedWeiBars = DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF;
       expect(weiBars).to.equal(numberTo0x(expectedWeiBars));
     });
 
     it('eth_gasPrice with cached value', async function () {
-      const firstGasResult = await ethImpl.gasPrice();
+      const firstGasResult = await ethImpl.gasPrice(requestDetails);
 
       const modifiedNetworkFees = { ...DEFAULT_NETWORK_FEES };
       modifiedNetworkFees.fees[2].gas = DEFAULT_NETWORK_FEES.fees[2].gas * 100;
 
       restMock.onGet(`network/fees`).reply(200, modifiedNetworkFees);
 
-      const secondGasResult = await ethImpl.gasPrice();
+      const secondGasResult = await ethImpl.gasPrice(requestDetails);
 
       expect(firstGasResult).to.equal(secondGasResult);
     });
@@ -91,7 +93,9 @@ describe('@ethGasPrice Gas Price spec', async function () {
 
       restMock.onGet(`network/fees`).reply(200, partialNetworkFees);
 
-      await RelayAssertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl);
+      await RelayAssertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl, [
+        requestDetails,
+      ]);
     });
 
     describe('@ethGasPrice different value for GAS_PRICE_PERCENTAGE_BUFFER env', async function () {
@@ -104,12 +108,12 @@ describe('@ethGasPrice Gas Price spec', async function () {
       for (let testCaseName in GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES) {
         it(testCaseName, async function () {
           const GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES[testCaseName];
-          const initialGasPrice = await ethImpl.gasPrice();
+          const initialGasPrice = await ethImpl.gasPrice(requestDetails);
           configServiceTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', GAS_PRICE_PERCENTAGE_BUFFER);
 
-          await cacheService.clear();
+          await cacheService.clear(requestDetails);
 
-          const gasPriceWithBuffer = await ethImpl.gasPrice();
+          const gasPriceWithBuffer = await ethImpl.gasPrice(requestDetails);
           configServiceTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', '0');
 
           const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);
@@ -138,14 +142,20 @@ describe('@ethGasPrice Gas Price spec', async function () {
       it('eth_gasPrice with mirror node return network fees found', async function () {
         const fauxGasTinyBars = 35_000;
         const fauxGasWeiBarHex = '0x13e52b9abe000';
-        sdkClientStub.getTinyBarGasFee.returns(fauxGasTinyBars);
+        sdkClientStub.getTinyBarGasFee.resolves(fauxGasTinyBars);
 
-        const gas = await ethImpl.gasPrice();
+        const gas = await ethImpl.gasPrice(requestDetails);
         expect(gas).to.equal(fauxGasWeiBarHex);
       });
 
       it('eth_gasPrice with no network fees records found', async function () {
-        await RelayAssertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl);
+        await RelayAssertions.assertRejection(
+          predefined.COULD_NOT_ESTIMATE_GAS_PRICE,
+          ethImpl.gasPrice,
+          true,
+          ethImpl,
+          [requestDetails],
+        );
       });
     });
   });

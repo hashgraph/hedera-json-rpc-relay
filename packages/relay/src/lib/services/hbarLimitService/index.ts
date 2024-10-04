@@ -21,13 +21,13 @@
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 import { IHbarLimitService } from './IHbarLimitService';
-import { formatRequestIdMessage } from '../../../formatters';
 import { SubscriptionType } from '../../db/types/hbarLimiter/subscriptionType';
 import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendingPlan';
 import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { RequestDetails } from '../../types/RequestDetails';
 
 export class HbarLimitService implements IHbarLimitService {
   static readonly ONE_DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
@@ -147,15 +147,14 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} [requestId] - An optional unique request ID for tracking the request.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
-  async resetLimiter(requestId?: string): Promise<void> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    this.logger.trace(`${requestIdPrefix} Resetting HBAR rate limiter...`);
-    await this.hbarSpendingPlanRepository.resetAllSpentTodayEntries();
+  async resetLimiter(requestDetails: RequestDetails): Promise<void> {
+    this.logger.trace(`${requestDetails.formattedRequestId} Resetting HBAR rate limiter...`);
+    await this.hbarSpendingPlanRepository.resetAllSpentTodayEntries(requestDetails);
     this.resetBudget();
     this.resetMetrics();
     this.reset = this.getResetTimestamp();
     this.logger.trace(
-      `${requestIdPrefix} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
+      `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
     );
   }
 
@@ -165,39 +164,38 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} methodName - The name of the method being invoked.
    * @param {string} ethAddress - The eth address to check.
    * @param {string} [ipAddress] - The ip address to check.
-   * @param {string} [requestId] - A prefix to include in log messages (optional).
    * @param {number} [estimatedTxFee] - The total estimated transaction fee, default to 0.
+   * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @returns {Promise<boolean>} - A promise that resolves with a boolean indicating if the address should be limited.
    */
   async shouldLimit(
     mode: string,
     methodName: string,
     ethAddress: string,
-    ipAddress?: string,
-    requestId?: string,
+    requestDetails: RequestDetails,
     estimatedTxFee: number = 0,
   ): Promise<boolean> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    if (await this.isDailyBudgetExceeded(mode, methodName, estimatedTxFee, requestIdPrefix)) {
+    const ipAddress = requestDetails.ipAddress;
+    if (await this.isDailyBudgetExceeded(mode, methodName, estimatedTxFee, requestDetails)) {
       return true;
     }
     if (!ethAddress && !ipAddress) {
       this.logger.warn('No eth address or ip address provided, cannot check if address should be limited');
       return false;
     }
-    const user = `(ethAddress=${ethAddress}, ipAddress=${ipAddress})`;
-    this.logger.trace(`${requestIdPrefix} Checking if ${user} should be limited...`);
-    let spendingPlan = await this.getSpendingPlan(ethAddress, ipAddress);
+    const user = `(ethAddress=${ethAddress})`;
+    this.logger.trace(`${requestDetails.formattedRequestId} Checking if ${user} should be limited...`);
+    let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
     if (!spendingPlan) {
       // Create a basic spending plan if none exists for the eth address or ip address
-      spendingPlan = await this.createBasicSpendingPlan(ethAddress, ipAddress);
+      spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestDetails);
     }
 
     const dailyLimit = HbarLimitService.DAILY_LIMITS[spendingPlan.subscriptionType];
 
     const exceedsLimit = spendingPlan.spentToday >= dailyLimit || spendingPlan.spentToday + estimatedTxFee > dailyLimit;
     this.logger.trace(
-      `${requestIdPrefix} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited: spentToday=${
+      `${requestDetails.formattedRequestId} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited, spentToday=${
         spendingPlan.spentToday
       }, estimatedTxFee=${estimatedTxFee}, dailyLimit=${dailyLimit}`,
     );
@@ -208,26 +206,26 @@ export class HbarLimitService implements IHbarLimitService {
    * Add expense to the remaining budget.
    * @param {number} cost - The cost of the expense.
    * @param {string} ethAddress - The Ethereum address to add the expense to.
-   * @param {string} [ipAddress] - The optional IP address to add the expense to.
-   * @param {string} [requestId] - An optional unique request ID for tracking the request.
+   * @param {string} ipAddress - The optional IP address to add the expense to.
+   * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the expense has been added.
    */
-  async addExpense(cost: number, ethAddress: string, ipAddress?: string, requestId?: string): Promise<void> {
+  async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails): Promise<void> {
+    const ipAddress = requestDetails.ipAddress;
     if (!ethAddress && !ipAddress) {
       throw new Error('Cannot add expense without an eth address or ip address');
     }
 
-    let spendingPlan = await this.getSpendingPlan(ethAddress, ipAddress);
+    let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
     if (!spendingPlan) {
       // Create a basic spending plan if none exists for the eth address or ip address
-      spendingPlan = await this.createBasicSpendingPlan(ethAddress, ipAddress);
+      spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestDetails);
     }
 
-    const requestIdPrefix = formatRequestIdMessage(requestId);
     this.logger.trace(
-      `${requestIdPrefix} Adding expense of ${cost} to spending plan with ID ${spendingPlan.id}, new spentToday=${
-        spendingPlan.spentToday + cost
-      }`,
+      `${requestDetails.formattedRequestId} Adding expense of ${cost} to spending plan with ID ${
+        spendingPlan.id
+      }, new spentToday=${spendingPlan.spentToday + cost}`,
     );
 
     // Check if the spending plan is being used for the first time today
@@ -235,15 +233,15 @@ export class HbarLimitService implements IHbarLimitService {
       this.dailyUniqueSpendingPlansCounter[spendingPlan.subscriptionType].inc(1);
     }
 
-    await this.hbarSpendingPlanRepository.addAmountToSpentToday(spendingPlan.id, cost);
+    await this.hbarSpendingPlanRepository.addAmountToSpentToday(spendingPlan.id, cost, requestDetails);
     this.remainingBudget -= cost;
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
 
     // Done asynchronously in the background
-    this.updateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType).then();
+    this.updateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType, requestDetails).then();
 
     this.logger.trace(
-      `${requestIdPrefix} HBAR rate limit expense update: cost=${cost}, remainingBudget=${this.remainingBudget}`,
+      `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost}, remainingBudget=${this.remainingBudget}`,
     );
   }
 
@@ -252,7 +250,7 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
    * @param {number} estimatedTxFee - The total estimated transaction fee, default to 0.
-   * @param {string} [requestIdPrefix] - An optional prefix to include in log messages.
+   * @param {RequestDetails} requestDetails The request details for logging and tracking
    * @returns {Promise<boolean>} - Resolves `true` if the daily budget has been exceeded, otherwise `false`.
    * @private
    */
@@ -260,20 +258,20 @@ export class HbarLimitService implements IHbarLimitService {
     mode: string,
     methodName: string,
     estimatedTxFee: number = 0,
-    requestIdPrefix?: string,
+    requestDetails: RequestDetails,
   ): Promise<boolean> {
     if (this.shouldResetLimiter()) {
-      await this.resetLimiter();
+      await this.resetLimiter(requestDetails);
     }
     if (this.remainingBudget <= 0 || this.remainingBudget - estimatedTxFee < 0) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
-        `${requestIdPrefix} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset}`,
+        `${requestDetails.formattedRequestId} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, resetTimestamp=${this.reset}`,
       );
       return true;
     } else {
       this.logger.trace(
-        `${requestIdPrefix} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee} resetTimestamp=${this.reset}.`,
+        `${requestDetails.formattedRequestId} HBAR rate limit not reached. ${this.remainingBudget} out of ${this.totalBudget} tℏ left in relay budget until ${this.reset}.`,
       );
       return false;
     }
@@ -282,10 +280,17 @@ export class HbarLimitService implements IHbarLimitService {
   /**
    * Updates the average daily usage per subscription type.
    * @param {SubscriptionType} subscriptionType - The subscription type to update the average daily usage for.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @private {Promise<void>} - A promise that resolves when the average daily usage has been updated.
    */
-  private async updateAverageDailyUsagePerSubscriptionType(subscriptionType: SubscriptionType): Promise<void> {
-    const plans = await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionType(subscriptionType);
+  private async updateAverageDailyUsagePerSubscriptionType(
+    subscriptionType: SubscriptionType,
+    requestDetails: RequestDetails,
+  ): Promise<void> {
+    const plans = await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionType(
+      subscriptionType,
+      requestDetails,
+    );
     const totalUsage = plans.reduce((total, plan) => total + plan.spentToday, 0);
     const averageUsage = Math.round(totalUsage / plans.length);
     this.averageDailySpendingPlanUsagesGauge[subscriptionType].set(averageUsage);
@@ -333,23 +338,31 @@ export class HbarLimitService implements IHbarLimitService {
   /**
    * Gets the spending plan for the given eth address or ip address.
    * @param {string} ethAddress - The eth address to get the spending plan for.
-   * @param {string} [ipAddress] - The ip address to get the spending plan for.
+   * @param {string} ipAddress - The ip address to get the spending plan for.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan | null>} - A promise that resolves with the spending plan or null if none exists.
    * @private
    */
-  private async getSpendingPlan(ethAddress: string, ipAddress?: string): Promise<IDetailedHbarSpendingPlan | null> {
+  private async getSpendingPlan(
+    ethAddress: string,
+    requestDetails: RequestDetails,
+  ): Promise<IDetailedHbarSpendingPlan | null> {
+    const ipAddress = requestDetails.ipAddress;
     if (ethAddress) {
       try {
-        return await this.getSpendingPlanByEthAddress(ethAddress);
+        return await this.getSpendingPlanByEthAddress(ethAddress, requestDetails);
       } catch (error) {
-        this.logger.warn(error, `Failed to get spending plan for eth address '${ethAddress}'`);
+        this.logger.warn(
+          error,
+          `${requestDetails.formattedRequestId} Failed to get spending plan for eth address '${ethAddress}'`,
+        );
       }
     }
     if (ipAddress) {
       try {
-        return await this.getSpendingPlanByIPAddress(ipAddress);
+        return await this.getSpendingPlanByIPAddress(requestDetails);
       } catch (error) {
-        this.logger.warn(error, `Failed to get spending plan for IP address '${ipAddress}'`);
+        this.logger.warn(error, `${requestDetails.formattedRequestId} Failed to get spending plan`);
       }
     }
     return null;
@@ -358,12 +371,19 @@ export class HbarLimitService implements IHbarLimitService {
   /**
    * Gets the spending plan for the given eth address.
    * @param {string} ethAddress - The eth address to get the spending plan for.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the spending plan.
    * @private
    */
-  private async getSpendingPlanByEthAddress(ethAddress: string): Promise<IDetailedHbarSpendingPlan> {
-    const ethAddressHbarSpendingPlan = await this.ethAddressHbarSpendingPlanRepository.findByAddress(ethAddress);
-    return this.hbarSpendingPlanRepository.findByIdWithDetails(ethAddressHbarSpendingPlan.planId);
+  private async getSpendingPlanByEthAddress(
+    ethAddress: string,
+    requestDetails: RequestDetails,
+  ): Promise<IDetailedHbarSpendingPlan> {
+    const ethAddressHbarSpendingPlan = await this.ethAddressHbarSpendingPlanRepository.findByAddress(
+      ethAddress,
+      requestDetails,
+    );
+    return this.hbarSpendingPlanRepository.findByIdWithDetails(ethAddressHbarSpendingPlan.planId, requestDetails);
   }
 
   /**
@@ -372,31 +392,44 @@ export class HbarLimitService implements IHbarLimitService {
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the spending plan.
    * @private
    */
-  private async getSpendingPlanByIPAddress(ipAddress: string): Promise<IDetailedHbarSpendingPlan> {
-    const ipAddressHbarSpendingPlan = await this.ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress);
-    return this.hbarSpendingPlanRepository.findByIdWithDetails(ipAddressHbarSpendingPlan.planId);
+  private async getSpendingPlanByIPAddress(requestDetails: RequestDetails): Promise<IDetailedHbarSpendingPlan> {
+    const ipAddress = requestDetails.ipAddress;
+    const ipAddressHbarSpendingPlan = await this.ipAddressHbarSpendingPlanRepository.findByAddress(
+      ipAddress,
+      requestDetails,
+    );
+    return this.hbarSpendingPlanRepository.findByIdWithDetails(ipAddressHbarSpendingPlan.planId, requestDetails);
   }
 
   /**
    * Creates a basic spending plan for the given eth address.
    * @param {string} ethAddress - The eth address to create the spending plan for.
-   * @param {string} [ipAddress] - The ip address to create the spending plan for.
+   * @param {string} ipAddress - The ip address to create the spending plan for.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
    * @private
    */
-  private async createBasicSpendingPlan(ethAddress: string, ipAddress?: string): Promise<IDetailedHbarSpendingPlan> {
+  private async createBasicSpendingPlan(
+    ethAddress: string,
+    requestDetails: RequestDetails,
+  ): Promise<IDetailedHbarSpendingPlan> {
+    const ipAddress = requestDetails.ipAddress;
     if (!ethAddress && !ipAddress) {
       throw new Error('Cannot create a spending plan without an associated eth address or ip address');
     }
-    const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC);
 
+    const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC, requestDetails);
     if (ethAddress) {
-      this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`);
-      await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id });
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`,
+      );
+      await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id }, requestDetails);
     }
     if (ipAddress) {
-      this.logger.trace(`Linking spending plan with ID ${spendingPlan.id} to ip address ${ipAddress}`);
-      await this.ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: spendingPlan.id });
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to ip address ${ipAddress}`,
+      );
+      await this.ipAddressHbarSpendingPlanRepository.save({ ipAddress, planId: spendingPlan.id }, requestDetails);
     }
     return spendingPlan;
   }
