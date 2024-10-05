@@ -65,10 +65,10 @@ describe('ValidationService tests', async function () {
       expect(() => {
         ValidationService.startUp({
           ...mandatoryStartUpFields,
-          HBAR_RATE_LIMIT_TINYBAR: '500',
-          HBAR_DAILY_LIMIT_BASIC: '1000',
-          HBAR_DAILY_LIMIT_EXTENDED: '20',
-          HBAR_DAILY_LIMIT_PRIVILEGED: '30',
+          HBAR_RATE_LIMIT_TINYBAR: '600',
+          HBAR_DAILY_LIMIT_BASIC: '700',
+          HBAR_DAILY_LIMIT_EXTENDED: '60',
+          HBAR_DAILY_LIMIT_PRIVILEGED: '80',
         });
       }).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_BASIC');
     });
@@ -77,7 +77,7 @@ describe('ValidationService tests', async function () {
       expect(() => {
         ValidationService.startUp({
           ...mandatoryStartUpFields,
-          HBAR_RATE_LIMIT_TINYBAR: '500',
+          HBAR_RATE_LIMIT_TINYBAR: '100',
           HBAR_DAILY_LIMIT_BASIC: '10',
           HBAR_DAILY_LIMIT_EXTENDED: '2000',
           HBAR_DAILY_LIMIT_PRIVILEGED: '30',
@@ -90,8 +90,8 @@ describe('ValidationService tests', async function () {
         ValidationService.startUp({
           ...mandatoryStartUpFields,
           HBAR_RATE_LIMIT_TINYBAR: '500',
-          HBAR_DAILY_LIMIT_BASIC: '10',
-          HBAR_DAILY_LIMIT_EXTENDED: '20',
+          HBAR_DAILY_LIMIT_BASIC: '20',
+          HBAR_DAILY_LIMIT_EXTENDED: '250',
           HBAR_DAILY_LIMIT_PRIVILEGED: '3000',
         });
       }).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_PRIVILEGED');
