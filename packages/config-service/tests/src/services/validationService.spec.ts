@@ -47,7 +47,7 @@ describe('ValidationService tests', async function () {
     it('should fail fast if mandatory env is not passed', async () => {
       expect(() => {
         ValidationService.startUp({});
-      }).to.throw;
+      }).to.throw('CHAIN_ID is a mandatory and the relay can not operate without its value.');
     });
 
     it('should fail fast if mandatory env is invalid number format', async () => {
