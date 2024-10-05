@@ -101,7 +101,7 @@ export class SubscriptionController implements Subs {
       this.subscriptions[tag] = [];
     }
 
-    if (ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT')) {
+    if (ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT') ?? true) {
       // Check if the connection is already subscribed to this event
       const existingSub = this.subscriptions[tag].find((sub) => sub.connection.id === connection.id);
       if (existingSub) {
