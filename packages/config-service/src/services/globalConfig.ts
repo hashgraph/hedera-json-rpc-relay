@@ -34,7 +34,7 @@ export class GlobalConfig {
     CHAIN_ID: {
       envName: 'CHAIN_ID',
       type: 'string',
-      required: true,
+      required: false,
       defaultValue: null,
     },
     CLIENT_TRANSPORT_SECURITY: {
@@ -292,7 +292,7 @@ export class GlobalConfig {
     HEDERA_NETWORK: {
       envName: 'HEDERA_NETWORK',
       type: 'string',
-      required: true,
+      required: false,
       defaultValue: null,
     },
     INITIAL_BALANCE: {
@@ -442,7 +442,7 @@ export class GlobalConfig {
     MIRROR_NODE_URL: {
       envName: 'MIRROR_NODE_URL',
       type: 'string',
-      required: true,
+      required: false,
       defaultValue: null,
     },
     MIRROR_NODE_URL_HEADER_X_API_KEY: {
@@ -478,7 +478,7 @@ export class GlobalConfig {
     OPERATOR_ID_MAIN: {
       envName: 'OPERATOR_ID_MAIN',
       type: 'string',
-      required: true,
+      required: false,
       defaultValue: null,
     },
     OPERATOR_KEY_ETH_SENDRAWTRANSACTION: {
@@ -496,7 +496,7 @@ export class GlobalConfig {
     OPERATOR_KEY_MAIN: {
       envName: 'OPERATOR_KEY_MAIN',
       type: 'string',
-      required: true,
+      required: false,
       defaultValue: null,
     },
     RATE_LIMIT_DISABLED: {
@@ -544,7 +544,7 @@ export class GlobalConfig {
     SERVER_PORT: {
       envName: 'SERVER_PORT',
       type: 'number',
-      required: true,
+      required: false,
       defaultValue: null,
     },
     SERVER_REQUEST_TIMEOUT_MS: {
