@@ -37,6 +37,13 @@ describe('ValidationService tests', async function () {
       SERVER_PORT: '7546',
     };
 
+    const hbarLimitFields = {
+      HBAR_RATE_LIMIT_TINYBAR: '100',
+      HBAR_DAILY_LIMIT_BASIC: '10',
+      HBAR_DAILY_LIMIT_EXTENDED: '20',
+      HBAR_DAILY_LIMIT_PRIVILEGED: '30',
+    };
+
     it('should fail fast if mandatory env is not passed', async () => {
       expect(() => {
         ValidationService.startUp({});
@@ -65,10 +72,8 @@ describe('ValidationService tests', async function () {
       expect(() => {
         ValidationService.startUp({
           ...mandatoryStartUpFields,
-          HBAR_RATE_LIMIT_TINYBAR: '600',
+          ...hbarLimitFields,
           HBAR_DAILY_LIMIT_BASIC: '700',
-          HBAR_DAILY_LIMIT_EXTENDED: '60',
-          HBAR_DAILY_LIMIT_PRIVILEGED: '80',
         });
       }).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_BASIC');
     });
@@ -77,10 +82,8 @@ describe('ValidationService tests', async function () {
       expect(() => {
         ValidationService.startUp({
           ...mandatoryStartUpFields,
-          HBAR_RATE_LIMIT_TINYBAR: '100',
-          HBAR_DAILY_LIMIT_BASIC: '10',
+          ...hbarLimitFields,
           HBAR_DAILY_LIMIT_EXTENDED: '2000',
-          HBAR_DAILY_LIMIT_PRIVILEGED: '30',
         });
       }).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_EXTENDED');
     });
@@ -89,9 +92,7 @@ describe('ValidationService tests', async function () {
       expect(() => {
         ValidationService.startUp({
           ...mandatoryStartUpFields,
-          HBAR_RATE_LIMIT_TINYBAR: '500',
-          HBAR_DAILY_LIMIT_BASIC: '20',
-          HBAR_DAILY_LIMIT_EXTENDED: '250',
+          ...hbarLimitFields,
           HBAR_DAILY_LIMIT_PRIVILEGED: '3000',
         });
       }).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_PRIVILEGED');
