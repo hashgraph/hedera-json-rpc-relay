@@ -814,7 +814,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       it('should NOT allow eth_call to process IHRC719.isAssociated() method', async () => {
         const selectorsList = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS');
-        expect(selectorsList).to.be.null;
+        expect(selectorsList).to.be.undefined;
 
         // If the selector for `isAssociated` is not included in `ETH_CALL_CONSENSUS_SELECTORS`, the request will fail with a `CALL_EXCEPTION` error code.
         await expect(hrc719Contract.isAssociated(tokenAddress)).to.eventually.be.rejected.and.have.property(
