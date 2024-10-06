@@ -38,6 +38,11 @@ const logger = mainLogger.child({ name: 'config-service' });
 
 export class ConfigService {
   /**
+   * @private
+   */
+  private static readonly envFileName: string = '.env';
+
+  /**
    * The singleton instance
    * @public
    */
@@ -54,7 +59,7 @@ export class ConfigService {
    * @private
    */
   private constructor() {
-    const configPath = findConfig('.env');
+    const configPath = findConfig(ConfigService.envFileName);
 
     if (!configPath) {
       logger.warn('No .env file is found. The relay can not operate without valid .env.');

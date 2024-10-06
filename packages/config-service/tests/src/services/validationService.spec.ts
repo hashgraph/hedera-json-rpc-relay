@@ -45,57 +45,57 @@ describe('ValidationService tests', async function () {
     };
 
     it('should fail fast if mandatory env is not passed', async () => {
-      expect(() => {
-        ValidationService.startUp({});
-      }).to.throw('CHAIN_ID is a mandatory and the relay can not operate without its value.');
+      expect(() => ValidationService.startUp({})).to.throw(
+        'CHAIN_ID is a mandatory and the relay can not operate without its value.',
+      );
     });
 
     it('should fail fast if mandatory env is invalid number format', async () => {
-      expect(() => {
+      expect(() =>
         ValidationService.startUp({
           ...mandatoryStartUpFields,
           SERVER_PORT: 'lorem_ipsum',
-        });
-      }).to.throw('SERVER_PORT must be a valid number.');
+        }),
+      ).to.throw('SERVER_PORT must be a valid number.');
     });
 
     it('should fail fast if OPERATOR_KEY_FORMAT is not specified and OPERATOR_KEY_MAIN is not in DER format', async () => {
-      expect(() => {
+      expect(() =>
         ValidationService.startUp({
           ...mandatoryStartUpFields,
           OPERATOR_KEY_MAIN: '0x5644',
-        });
-      }).to.throw('When OPERATOR_KEY_FORMAT is not specified, the OPERATOR_KEY_MAIN must be in DER format.');
+        }),
+      ).to.throw('When OPERATOR_KEY_FORMAT is not specified, the OPERATOR_KEY_MAIN must be in DER format.');
     });
 
     it('should fail fast if HBAR_RATE_LIMIT_TINYBAR is less than HBAR_DAILY_LIMIT_BASIC', async () => {
-      expect(() => {
+      expect(() =>
         ValidationService.startUp({
           ...mandatoryStartUpFields,
           ...hbarLimitFields,
           HBAR_DAILY_LIMIT_BASIC: '700',
-        });
-      }).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_BASIC');
+        }),
+      ).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_BASIC');
     });
 
     it('should fail fast if HBAR_RATE_LIMIT_TINYBAR is less than HBAR_DAILY_LIMIT_EXTENDED', async () => {
-      expect(() => {
+      expect(() =>
         ValidationService.startUp({
           ...mandatoryStartUpFields,
           ...hbarLimitFields,
           HBAR_DAILY_LIMIT_EXTENDED: '2000',
-        });
-      }).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_EXTENDED');
+        }),
+      ).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_EXTENDED');
     });
 
     it('should fail fast if HBAR_RATE_LIMIT_TINYBAR is less than HBAR_DAILY_LIMIT_PRIVILEGED', async () => {
-      expect(() => {
+      expect(() =>
         ValidationService.startUp({
           ...mandatoryStartUpFields,
           ...hbarLimitFields,
           HBAR_DAILY_LIMIT_PRIVILEGED: '3000',
-        });
-      }).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_PRIVILEGED');
+        }),
+      ).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_PRIVILEGED');
     });
   });
 

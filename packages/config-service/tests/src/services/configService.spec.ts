@@ -25,6 +25,23 @@ import { ConfigService } from '../../../src/services';
 chai.use(chaiAsPromised);
 
 describe('ConfigService tests', async function () {
+  it('should log warning when .env is missing', async () => {
+    // use missing .env
+    // @ts-ignore
+    delete ConfigService.instance;
+    // @ts-ignore
+    ConfigService.envFileName = 'invalid.env';
+
+    // @ts-ignore
+    expect(() => ConfigService.getInstance()).to.throw();
+
+    // reset normal behaviour
+    // @ts-ignore
+    delete ConfigService.instance;
+    // @ts-ignore
+    ConfigService.envFileName = '.env';
+  });
+
   it('should be able to get existing env var', async () => {
     const res = ConfigService.get('CHAIN_ID');
 
