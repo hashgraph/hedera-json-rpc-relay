@@ -176,4 +176,24 @@ describe('HAPI Service', async function () {
     expect(oldClientInstance).to.be.equal(newClientInstance);
     expect(hapiService.getIsReinitEnabled()).to.be.equal(false);
   });
+
+  it('should not reset isReinitEnabled is set to false', async function () {
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_TRANSACTION_RESET', '0');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_DURATION_RESET', '0');
+    ConfigServiceTestHelper.dynamicOverride('HAPI_CLIENT_ERROR_RESET', '[]');
+
+    hapiService = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
+    expect(hapiService.getTransactionCount()).to.eq(parseInt(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')!));
+
+    const oldClientInstance = hapiService.getMainClientInstance();
+    const oldSDKInstance = hapiService.getSDKClient();
+    const newSDKInstance = hapiService.getSDKClient();
+    const newClientInstance = hapiService.getMainClientInstance();
+
+    expect(oldSDKInstance).to.be.equal(newSDKInstance);
+    expect(oldClientInstance).to.be.equal(newClientInstance);
+    expect(() => {
+      hapiService.decrementErrorCounter(21);
+    }).to.not.throw;
+  });
 });

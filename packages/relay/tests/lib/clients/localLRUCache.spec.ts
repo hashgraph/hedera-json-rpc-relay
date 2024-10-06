@@ -106,6 +106,10 @@ describe('LocalLRUCache Test Suite', async function () {
       expect(cacheValueBeforeDelete).to.not.be.null;
       expect(cacheValueAfterDelete).to.be.null;
     });
+
+    it('purge stale entries from the cache', async function () {
+      expect(localLRUCache.purgeStale()).to.not.throw;
+    });
   });
 
   describe('verify cache management', async function () {
@@ -235,6 +239,20 @@ describe('LocalLRUCache Test Suite', async function () {
 
       const keys = await localLRUCache.keys(pattern, callingMethod, requestDetails);
       expect(keys).to.include.members([key1, key2, key3]);
+    });
+
+    it('should be able to multiSet', async function () {
+      await localLRUCache.multiSet(
+        {
+          boolean: false,
+          number: 5644,
+        },
+        callingMethod,
+        requestDetails,
+      );
+
+      expect(await localLRUCache.get('boolean', callingMethod, requestDetails)).to.be.false;
+      expect(await localLRUCache.get('number', callingMethod, requestDetails)).to.equal(5644);
     });
   });
 });
