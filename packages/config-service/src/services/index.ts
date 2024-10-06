@@ -76,6 +76,7 @@ export class ConfigService {
 
     // printing current env variables, masking up sensitive information
     for (let i in this.envs) {
+      // @ts-ignore
       logger.info(LoggerService.maskUpEnv(i, this.envs[i]));
     }
   }
