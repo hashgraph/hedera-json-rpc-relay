@@ -17,6 +17,7 @@
  * limitations under the License.
  *
  */
+
 import chai, { expect } from 'chai';
 import chaiExclude from 'chai-exclude';
 import { ethers } from 'ethers';
@@ -41,7 +42,7 @@ export default class Assertions {
   static maxBlockGasLimit = 30_000_000;
   static defaultGasUsed = 0.5;
 
-  static gasPriceDeviation = parseFloat(ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2');
+  public static gasPriceDeviation = parseFloat(ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2');
 
   static assertId = (id) => {
     const [shard, realm, num] = id.split('.');

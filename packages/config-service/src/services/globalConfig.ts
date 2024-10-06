@@ -6,7 +6,7 @@ export interface ConfigProperty {
 }
 
 export class GlobalConfig {
-  static ENTRIES: Record<string, ConfigProperty> = {
+  public static ENTRIES: Record<string, ConfigProperty> = {
     BATCH_REQUESTS_ENABLED: {
       envName: 'BATCH_REQUESTS_ENABLED',
       type: 'boolean',

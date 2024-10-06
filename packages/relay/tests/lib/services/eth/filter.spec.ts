@@ -31,7 +31,6 @@ import { defaultBlock, defaultEvmAddress, defaultLogs1, defaultLogTopics, toHex 
 import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import * as sinon from 'sinon';
 import { RequestDetails } from '../../../../src/lib/types';
 import { v4 as uuid } from 'uuid';
 

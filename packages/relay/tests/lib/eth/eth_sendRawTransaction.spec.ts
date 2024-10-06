@@ -32,7 +32,6 @@ import { getRequestId, mockData, signTransaction } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
 import { RequestDetails } from '../../../src/lib/types';
-import { Conf } from 'lerna/dist/libs/core/src';
 
 use(chaiAsPromised);
 

@@ -18,7 +18,6 @@
  *
  */
 
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { Utils } from '../../src/utils';

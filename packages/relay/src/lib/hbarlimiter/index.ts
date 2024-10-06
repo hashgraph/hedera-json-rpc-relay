@@ -20,8 +20,6 @@
 
 import { Logger } from 'pino';
 import constants from '../constants';
-import { predefined } from '../errors/JsonRpcError';
-import { formatRequestIdMessage } from '../../formatters';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { Counter, Gauge, Registry } from 'prom-client';
 import { RequestDetails } from '../types';

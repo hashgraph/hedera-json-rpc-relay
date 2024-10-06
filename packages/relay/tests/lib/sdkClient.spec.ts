@@ -22,7 +22,6 @@ import pino from 'pino';
 import Long from 'long';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { Context } from 'mocha';
 import EventEmitter from 'events';
 import { Registry } from 'prom-client';
 import { Utils } from '../../src/utils';

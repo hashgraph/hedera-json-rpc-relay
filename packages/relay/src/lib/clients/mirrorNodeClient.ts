@@ -159,8 +159,10 @@ export class MirrorNodeClient {
   static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;
 
   // @ts-ignore
-  static mirrorNodeContractResultsPageMax = parseInt(ConfigService.get('MIRROR_NODE_CONTRACT_RESULTS_PG_MAX') || 25);
-  static mirrorNodeContractResultsLogsPageMax =
+  public static mirrorNodeContractResultsPageMax = parseInt(
+    ConfigService.get('MIRROR_NODE_CONTRACT_RESULTS_PG_MAX') || 25,
+  );
+  public static mirrorNodeContractResultsLogsPageMax =
     // @ts-ignore
     parseInt(ConfigService.get('MIRROR_NODE_CONTRACT_RESULTS_LOGS_PG_MAX') || 200);
 

@@ -20,9 +20,7 @@
 
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { EthImpl } from '../../../src/lib/eth';
-import { Log, Transaction, Transaction2930, Transaction1559 } from '../../../src/lib/model';
-import constants from '../../../src/lib/constants';
+import { Transaction, Transaction2930, Transaction1559 } from '../../../src/lib/model';
 import RelayAssertions from '../../assertions';
 import {
   DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED,
@@ -32,7 +30,7 @@ import {
   EMPTY_LOGS_RESPONSE,
   NO_TRANSACTIONS,
 } from './eth-config';
-import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress, defaultLogs1 } from '../../helpers';
+import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { RequestDetails } from '../../../src/lib/types';
 
