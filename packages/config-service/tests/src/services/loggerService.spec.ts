@@ -29,7 +29,7 @@ chai.use(chaiAsPromised);
 
 describe('LoggerService tests', async function () {
   it('should be able to mask sensitive information', async () => {
-    for (const sensitiveField of LoggerService.sensitiveFields) {
+    for (const sensitiveField of LoggerService.SENSITIVE_FIELDS) {
       const hex = crypto.randomBytes(32).toString('hex');
       const res = LoggerService.maskUpEnv(sensitiveField, hex);
       expect(res).to.equal(`${sensitiveField} = **********${hex.slice(-4)}`);
