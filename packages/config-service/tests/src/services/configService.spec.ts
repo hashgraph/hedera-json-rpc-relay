@@ -26,11 +26,15 @@ chai.use(chaiAsPromised);
 
 describe('ConfigService tests', async function () {
   it('should log warning when .env is missing', async () => {
-    // use missing .env
+    // save current env
+    const envBefore = process.env;
+    process.env = {};
+
+    // fake invalid env file
     // @ts-ignore
     delete ConfigService.instance;
     // @ts-ignore
-    ConfigService.envFileName = 'invalid.env';
+    ConfigService.envFileName = 'invalid';
 
     // @ts-ignore
     expect(() => ConfigService.getInstance()).to.throw();
@@ -40,6 +44,8 @@ describe('ConfigService tests', async function () {
     delete ConfigService.instance;
     // @ts-ignore
     ConfigService.envFileName = '.env';
+
+    process.env = envBefore;
   });
 
   it('should be able to get existing env var', async () => {
