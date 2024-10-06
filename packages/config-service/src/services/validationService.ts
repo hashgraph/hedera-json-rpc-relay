@@ -1,7 +1,7 @@
 import { GlobalConfig } from './globalConfig';
 
 export class ValidationService {
-  static startUp(envs: NodeJS.Dict<string>) {
+  static startUp(envs: NodeJS.Dict<string>): void {
     // make sure that mandatory fields are passed
     Object.entries(GlobalConfig.ENTRIES).forEach(([entryName, entryInfo]) => {
       if (entryInfo.required) {
