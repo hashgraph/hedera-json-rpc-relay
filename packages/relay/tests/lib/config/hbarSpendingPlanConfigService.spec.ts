@@ -137,40 +137,25 @@ describe('HbarSpendingPlanConfigService', function () {
             amountSpent: 0,
           },
         ];
-        await hbarSpendingPlanRepository.create(
-          obsoletePlans[0].subscriptionType,
-          emptyRequestDetails,
-          neverExpireTtl,
-          obsoletePlans[0].id,
-        );
-        await hbarSpendingPlanRepository.create(
-          obsoletePlans[1].subscriptionType,
-          emptyRequestDetails,
-          neverExpireTtl,
-          obsoletePlans[1].id,
-        );
+        for (const plan of obsoletePlans) {
+          await hbarSpendingPlanRepository.create(plan.subscriptionType, emptyRequestDetails, neverExpireTtl, plan.id);
+        }
 
         const obsoleteEthAddressPlans: IEthAddressHbarSpendingPlan[] = [
           { ethAddress: '0x123', planId: 'plan-extended' },
           { ethAddress: '0x456', planId: 'plan-privileged' },
         ];
-        await ethAddressHbarSpendingPlanRepository.save(
-          obsoleteEthAddressPlans[0],
-          emptyRequestDetails,
-          neverExpireTtl,
-        );
-        await ethAddressHbarSpendingPlanRepository.save(
-          obsoleteEthAddressPlans[1],
-          emptyRequestDetails,
-          neverExpireTtl,
-        );
+        for (const ethAddressPlan of obsoleteEthAddressPlans) {
+          await ethAddressHbarSpendingPlanRepository.save(ethAddressPlan, emptyRequestDetails, neverExpireTtl);
+        }
 
         const obsoleteIpAddressPlans: IIPAddressHbarSpendingPlan[] = [
           { ipAddress: '0.0.0.1', planId: 'plan-extended' },
           { ipAddress: '0.0.0.2', planId: 'plan-privileged' },
         ];
-        await ipAddressHbarSpendingPlanRepository.save(obsoleteIpAddressPlans[0], emptyRequestDetails, neverExpireTtl);
-        await ipAddressHbarSpendingPlanRepository.save(obsoleteIpAddressPlans[1], emptyRequestDetails, neverExpireTtl);
+        for (const ipAddressPlan of obsoleteIpAddressPlans) {
+          await ipAddressHbarSpendingPlanRepository.save(ipAddressPlan, emptyRequestDetails, neverExpireTtl);
+        }
 
         await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
