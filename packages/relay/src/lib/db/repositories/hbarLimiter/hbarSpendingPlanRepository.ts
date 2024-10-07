@@ -87,7 +87,7 @@ export class HbarSpendingPlanRepository {
   /**
    * Creates a new HBar spending plan.
    * @param {SubscriptionType} subscriptionType - The subscription type of the plan to create.
-   @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @param [ttl] - The time-to-live for the plan in milliseconds. (default: 1 day)
    * @returns {Promise<IDetailedHbarSpendingPlan>} - The created HBar spending plan object.
    */
