@@ -22,7 +22,7 @@ import app from './server';
 import { setServerTimeout } from './koaJsonRpc/lib/utils'; // Import the 'setServerTimeout' function from the correct location
 
 async function main() {
-  const server = await app.listen({ port: process.env.SERVER_PORT || 7546 });
+  const server = app.listen({ port: process.env.SERVER_PORT || 7546, host: process.env.SERVER_HOST });
 
   // set request timeout to ensure sockets are closed after specified time of inactivity
   setServerTimeout(server);
