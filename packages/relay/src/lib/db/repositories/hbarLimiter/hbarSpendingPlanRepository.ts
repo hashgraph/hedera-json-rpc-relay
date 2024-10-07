@@ -31,7 +31,6 @@ import { RequestDetails } from '../../../types';
 
 export class HbarSpendingPlanRepository {
   private readonly collectionKey = 'hbarSpendingPlan';
-  private readonly oneDayInMillis = 24 * 60 * 60 * 1000;
 
   /**
    * The cache service used for storing data.
@@ -87,15 +86,15 @@ export class HbarSpendingPlanRepository {
   /**
    * Creates a new HBar spending plan.
    * @param {SubscriptionType} subscriptionType - The subscription type of the plan to create.
-   @param {RequestDetails} requestDetails - The request details for logging and tracking.
-   * @param [ttl] - The time-to-live for the plan in milliseconds. (default: 1 day)
-   * @param [planId] - The ID to assign to the plan. (default: generated UUID)
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @param {number} ttl - The time-to-live for the plan in milliseconds.
+   * @param {string} planId - The ID to assign to the plan. (default: generated UUID)
    * @returns {Promise<IDetailedHbarSpendingPlan>} - The created HBar spending plan object.
    */
   async create(
     subscriptionType: SubscriptionType,
     requestDetails: RequestDetails,
-    ttl: number = this.oneDayInMillis,
+    ttl: number,
     planId?: string,
   ): Promise<IDetailedHbarSpendingPlan> {
     const plan: IDetailedHbarSpendingPlan = {
@@ -211,28 +210,23 @@ export class HbarSpendingPlanRepository {
    * @param {string} id - The ID of the plan.
    * @param {number} amount - The amount to add.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
-   * @param [ttl] - The time-to-live for the amountSpent entry in milliseconds. (default: 1 day)
+   * @param {number} ttl - The time-to-live for the amountSpent entry in milliseconds.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
-  async addToAmountSpent(
-    id: string,
-    amount: number,
-    requestDetails: RequestDetails,
-    ttl: number = this.oneDayInMillis,
-  ): Promise<void> {
+  async addToAmountSpent(id: string, amount: number, requestDetails: RequestDetails, ttl: number): Promise<void> {
     await this.checkExistsAndActive(id, requestDetails);
 
     const key = this.getAmountSpentKey(id);
-    if (!(await this.cache.getAsync(key, 'addAmountToamountSpent', requestDetails))) {
+    if (!(await this.cache.getAsync(key, 'addToAmountSpent', requestDetails))) {
       this.logger.trace(
         `${requestDetails.formattedRequestId} No spending yet for HbarSpendingPlan with ID ${id}, setting amountSpent to ${amount}...`,
       );
-      await this.cache.set(key, amount, 'addAmountToamountSpent', requestDetails, ttl);
+      await this.cache.set(key, amount, 'addToAmountSpent', requestDetails, ttl);
     } else {
       this.logger.trace(
         `${requestDetails.formattedRequestId} Adding ${amount} to amountSpent for HbarSpendingPlan with ID ${id}...`,
       );
-      await this.cache.incrBy(key, amount, 'addAmountToamountSpent', requestDetails);
+      await this.cache.incrBy(key, amount, 'addToAmountSpent', requestDetails);
     }
   }
 
