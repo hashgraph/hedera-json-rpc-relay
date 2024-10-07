@@ -27,7 +27,6 @@ import { RequestDetails } from '../../../types';
 
 export class IPAddressHbarSpendingPlanRepository {
   private readonly collectionKey = 'ipAddressHbarSpendingPlan';
-  private readonly oneDayInMillis = 24 * 60 * 60 * 1000;
 
   /**
    * The cache service used for storing data.
@@ -127,14 +126,10 @@ export class IPAddressHbarSpendingPlanRepository {
    *
    * @param {IIPAddressHbarSpendingPlan} addressPlan - The plan to save.
    * @param {RequestDetails} requestDetails - The request details used for logging and tracking.
-   * @param {number} [ttl] - The time-to-live for the cache entry. (default: 1 day)
+   * @param {number} ttl - The time-to-live for the cache entry.
    * @returns {Promise<void>} - A promise that resolves when the IP address is linked to the plan.
    */
-  async save(
-    addressPlan: IIPAddressHbarSpendingPlan,
-    requestDetails: RequestDetails,
-    ttl: number = this.oneDayInMillis,
-  ): Promise<void> {
+  async save(addressPlan: IIPAddressHbarSpendingPlan, requestDetails: RequestDetails, ttl: number): Promise<void> {
     const key = this.getKey(addressPlan.ipAddress);
     await this.cache.set(key, addressPlan, 'save', requestDetails, ttl);
     this.logger.trace(

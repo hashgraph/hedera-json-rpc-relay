@@ -379,7 +379,7 @@ The total budget and the limit duration are defined as environment variables:
 Example configuration for a total budget of 110 HBARs (11_000_000_000 tinybars) per 80 seconds:
 ```dotenv
 HBAR_RATE_LIMIT_TINYBAR=11000000000
-HBAR_RATE_LIMIT_DURATION=8000
+HBAR_RATE_LIMIT_DURATION=80000
 ```
 
 ## Additional Considerations

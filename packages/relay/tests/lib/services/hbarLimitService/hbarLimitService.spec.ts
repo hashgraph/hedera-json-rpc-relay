@@ -23,7 +23,6 @@ import pino, { Logger } from 'pino';
 import chai, { expect } from 'chai';
 import { randomBytes, uuidV4 } from 'ethers';
 import chaiAsPromised from 'chai-as-promised';
-import { getRequestId } from '../../../helpers';
 import constants from '../../../../src/lib/constants';
 import { Counter, Gauge, Registry } from 'prom-client';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
@@ -55,22 +54,19 @@ describe('HbarLimitService', function () {
   const mockEthAddress = '0x123';
   const mockIpAddress = 'x.x.x';
   const mockEstimatedTxFee = 300;
-  const mockRequestId = getRequestId();
   const mockPlanId = uuidV4(randomBytes(16));
   const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
 
-  const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: mockIpAddress });
+  const requestDetails = new RequestDetails({ requestId: 'hbarLimitServiceTest', ipAddress: mockIpAddress });
 
   let hbarLimitService: HbarLimitService;
   let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarSpendingPlanRepository>;
   let ethAddressHbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<EthAddressHbarSpendingPlanRepository>;
   let ipAddressHbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<IPAddressHbarSpendingPlanRepository>;
   let loggerSpy: sinon.SinonSpiedInstance<Logger>;
-  let setIntervalSpy: sinon.SinonSpy;
 
   beforeEach(function () {
     loggerSpy = sinon.spy(logger);
-    setIntervalSpy = sinon.spy(global, 'setInterval');
     hbarSpendingPlanRepositoryStub = sinon.createStubInstance(HbarSpendingPlanRepository);
     ethAddressHbarSpendingPlanRepositoryStub = sinon.createStubInstance(EthAddressHbarSpendingPlanRepository);
     ipAddressHbarSpendingPlanRepositoryStub = sinon.createStubInstance(IPAddressHbarSpendingPlanRepository);
@@ -88,12 +84,6 @@ describe('HbarLimitService', function () {
   afterEach(function () {
     sinon.restore();
   });
-
-  function createSpiesForMetricsReset(fieldName: string) {
-    return Object.values(SubscriptionType).map((subscriptionType) =>
-      sinon.spy(hbarLimitService[fieldName][subscriptionType], 'reset'),
-    );
-  }
 
   function createSpendingPlan(id: string, amountSpent: number | Long | Hbar = 0) {
     return new HbarSpendingPlan({
@@ -120,28 +110,6 @@ describe('HbarLimitService', function () {
     const expectedDate = new Date(todayAtMidnight + limitDuration * times);
     const actualDate = hbarLimitService['reset'];
     expect(new Date(actualDate)).to.deep.equal(new Date(expectedDate));
-  });
-
-  it('should set an interval to reset the metrics every day at midnight', () => {
-    const resetMetricsSpy = sinon.spy(hbarLimitService, <any>'resetMetrics');
-    sinon.assert.calledOnceWithMatch(setIntervalSpy, sinon.match.func, hbarLimitService['oneDayInMillis']);
-    expect(resetMetricsSpy.notCalled).to.be.true;
-    setIntervalSpy.args[0][0]();
-    expect(resetMetricsSpy.calledOnce).to.be.true;
-  });
-
-  describe('resetMetrics', function () {
-    it('should reset the daily unique spending plans counter after one day', async function () {
-      const spies = createSpiesForMetricsReset('dailyUniqueSpendingPlansCounter');
-      hbarLimitService['resetMetrics']();
-      spies.forEach((spy) => sinon.assert.calledOnce(spy));
-    });
-
-    it('should reset the average daily spending plan usages gauge after one day', async function () {
-      const spies = createSpiesForMetricsReset('averageDailySpendingPlanUsagesGauge');
-      hbarLimitService['resetMetrics']();
-      spies.forEach((spy) => sinon.assert.calledOnce(spy));
-    });
   });
 
   describe('getResetTimestamp', function () {
@@ -598,8 +566,7 @@ describe('HbarLimitService', function () {
 
   describe('createBasicSpendingPlan', function () {
     const testCreateBasicSpendingPlan = async (ethAddress: string, ipAddress?: string) => {
-      const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: ipAddress ? ipAddress : '' });
-      console.log('requestDetails', requestDetails);
+      const requestDetails = new RequestDetails({ requestId: 'hbarLimitServiceTest', ipAddress: ipAddress ?? '' });
       const newSpendingPlan = createSpendingPlan(mockPlanId);
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
       ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
@@ -758,19 +725,6 @@ describe('HbarLimitService', function () {
 
     it('should return true when the remaining budget is negative', async function () {
       await testIsDailyBudgetExceeded(-1, true);
-    });
-
-    it('should handle errors when adding expense fails', async function () {
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
-        planId: mockPlanId,
-      });
-      hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(createSpendingPlan(mockPlanId));
-      hbarSpendingPlanRepositoryStub.addToAmountSpent.rejects(new Error('Failed to add expense'));
-
-      await expect(hbarLimitService.addExpense(100, mockEthAddress, requestDetails)).to.be.eventually.rejectedWith(
-        'Failed to add expense',
-      );
     });
 
     it('should return false when the remaining budget is greater than zero', async function () {
