@@ -37,8 +37,6 @@ export class HbarLimitService implements IHbarLimitService {
     PRIVILEGED: Hbar.fromTinybars(constants.HBAR_RATE_LIMIT_PRIVILEGED),
   };
 
-  private readonly oneDayInMillis = 24 * 60 * 60 * 1000;
-
   /**
    * Counts the number of times the rate limit has been reached.
    * @private
@@ -138,10 +136,6 @@ export class HbarLimitService implements IHbarLimitService {
       },
       {} as Record<SubscriptionType, Gauge>,
     );
-
-    setInterval(() => {
-      this.resetMetrics();
-    }, this.oneDayInMillis);
   }
 
   /**
@@ -312,17 +306,6 @@ export class HbarLimitService implements IHbarLimitService {
   private resetBudget(): void {
     this.remainingBudget = this.totalBudget;
     this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
-  }
-
-  /**
-   * Resets the metrics that track daily unique spending plans and average daily spending plan usages.
-   * @private
-   */
-  private resetMetrics(): void {
-    for (const subscriptionType of Object.values(SubscriptionType)) {
-      this.dailyUniqueSpendingPlansCounter[subscriptionType].reset();
-      this.averageDailySpendingPlanUsagesGauge[subscriptionType].reset();
-    }
   }
 
   /**
