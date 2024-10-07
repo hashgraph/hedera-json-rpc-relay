@@ -30,10 +30,8 @@ import chaiAsPromised from 'chai-as-promised';
 import { SpendingPlanConfig } from '../../../src/lib/types/spendingPlanConfig';
 import { RequestDetails } from '../../../src/lib/types';
 import { toHex, useInMemoryRedisServer } from '../../helpers';
-import { IEthAddressHbarSpendingPlan } from '../../../src/lib/db/types/hbarLimiter/ethAddressHbarSpendingPlan';
 import findConfig from 'find-config';
 import { HbarSpendingPlanConfigService } from '../../../src/lib/config/hbarSpendingPlanConfigService';
-import { IIPAddressHbarSpendingPlan } from '../../../src/lib/db/types/hbarLimiter/ipAddressHbarSpendingPlan';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
 
@@ -55,6 +53,7 @@ describe('HbarSpendingPlanConfigService', function () {
     let hbarSpendingPlanConfigService: HbarSpendingPlanConfigService;
 
     let loggerSpy: sinon.SinonSpiedInstance<Logger>;
+    let cacheServiceSpy: sinon.SinonSpiedInstance<CacheService>;
     let hbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<HbarSpendingPlanRepository>;
     let ethAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<EthAddressHbarSpendingPlanRepository>;
     let ipAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<IPAddressHbarSpendingPlanRepository>;
@@ -78,6 +77,7 @@ describe('HbarSpendingPlanConfigService', function () {
 
     beforeEach(function () {
       loggerSpy = sinon.spy(logger);
+      cacheServiceSpy = sinon.spy(cacheService);
       hbarSpendingPlanRepositorySpy = sinon.spy(hbarSpendingPlanRepository);
       ethAddressHbarSpendingPlanRepositorySpy = sinon.spy(ethAddressHbarSpendingPlanRepository);
       ipAddressHbarSpendingPlanRepositorySpy = sinon.spy(ipAddressHbarSpendingPlanRepository);
@@ -116,56 +116,131 @@ describe('HbarSpendingPlanConfigService', function () {
         );
       });
 
+      it('should remove obsolete associations of IP and ETH addresses linked to BASIC spending plans if they appear in the configuration', async function () {
+        sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
+          spendingPlansConfig.map((plan) => ({
+            id: plan.id,
+            name: plan.name,
+            subscriptionType: plan.subscriptionType,
+            ethAddresses: plan.ethAddresses,
+            ipAddresses: plan.ipAddresses,
+          })),
+        );
+        for (const plan of spendingPlansConfig) {
+          const basicPlan = await hbarSpendingPlanRepository.create(
+            SubscriptionType.BASIC,
+            emptyRequestDetails,
+            neverExpireTtl,
+          );
+          for (const ethAddress of plan.ethAddresses || []) {
+            await ethAddressHbarSpendingPlanRepository.save(
+              { ethAddress, planId: basicPlan.id },
+              emptyRequestDetails,
+              neverExpireTtl,
+            );
+          }
+          for (const ipAddress of plan.ipAddresses || []) {
+            await ipAddressHbarSpendingPlanRepository.save(
+              { ipAddress, planId: basicPlan.id },
+              emptyRequestDetails,
+              neverExpireTtl,
+            );
+          }
+        }
+        hbarSpendingPlanRepositorySpy.create.resetHistory();
+        ethAddressHbarSpendingPlanRepositorySpy.save.resetHistory();
+        ipAddressHbarSpendingPlanRepositorySpy.save.resetHistory();
+
+        await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
+
+        spendingPlansConfig.forEach((plan) => {
+          if (plan.ethAddresses) {
+            plan.ethAddresses.forEach((ethAddress) => {
+              sinon.assert.calledWith(
+                ethAddressHbarSpendingPlanRepositorySpy.save,
+                { ethAddress, planId: plan.id },
+                emptyRequestDetails,
+                neverExpireTtl,
+              );
+              sinon.assert.calledWith(ethAddressHbarSpendingPlanRepositorySpy.delete, ethAddress, emptyRequestDetails);
+            });
+          }
+
+          if (plan.ipAddresses) {
+            plan.ipAddresses.forEach((ipAddress) => {
+              sinon.assert.calledWith(
+                ipAddressHbarSpendingPlanRepositorySpy.save,
+                { ipAddress, planId: plan.id },
+                emptyRequestDetails,
+                neverExpireTtl,
+              );
+              sinon.assert.calledWith(ipAddressHbarSpendingPlanRepositorySpy.delete, ipAddress, emptyRequestDetails);
+            });
+          }
+        });
+      });
+
       it('should delete obsolete EXTENDED and PRIVILEGED plans from the database', async function () {
         sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(spendingPlansConfig);
 
-        const obsoletePlans = [
+        const obsoletePlans: SpendingPlanConfig[] = [
           {
             id: 'plan-extended',
+            name: 'Extended Plan',
             subscriptionType: SubscriptionType.EXTENDED,
-            createdAt: new Date(),
-            active: true,
-            spendingHistory: [],
-            amountSpent: 0,
+            ethAddresses: ['0x123'],
+            ipAddresses: ['127.0.0.1'],
           },
           {
             id: 'plan-privileged',
+            name: 'Privileged Plan',
             subscriptionType: SubscriptionType.PRIVILEGED,
-            createdAt: new Date(),
-            active: true,
-            spendingHistory: [],
-            amountSpent: 0,
+            ethAddresses: ['0x124'],
+            ipAddresses: ['128.0.0.1'],
           },
         ];
-        for (const plan of obsoletePlans) {
-          await hbarSpendingPlanRepository.create(plan.subscriptionType, emptyRequestDetails, neverExpireTtl, plan.id);
-        }
-
-        const obsoleteEthAddressPlans: IEthAddressHbarSpendingPlan[] = [
-          { ethAddress: '0x123', planId: 'plan-extended' },
-          { ethAddress: '0x456', planId: 'plan-privileged' },
-        ];
-        for (const ethAddressPlan of obsoleteEthAddressPlans) {
-          await ethAddressHbarSpendingPlanRepository.save(ethAddressPlan, emptyRequestDetails, neverExpireTtl);
-        }
-
-        const obsoleteIpAddressPlans: IIPAddressHbarSpendingPlan[] = [
-          { ipAddress: '0.0.0.1', planId: 'plan-extended' },
-          { ipAddress: '0.0.0.2', planId: 'plan-privileged' },
-        ];
-        for (const ipAddressPlan of obsoleteIpAddressPlans) {
-          await ipAddressHbarSpendingPlanRepository.save(ipAddressPlan, emptyRequestDetails, neverExpireTtl);
+        for (const { id, subscriptionType, ethAddresses, ipAddresses } of obsoletePlans) {
+          const plan = await hbarSpendingPlanRepository.create(
+            subscriptionType,
+            emptyRequestDetails,
+            neverExpireTtl,
+            id,
+          );
+          for (const ethAddress of ethAddresses || []) {
+            await ethAddressHbarSpendingPlanRepository.save(
+              { ethAddress, planId: plan.id },
+              emptyRequestDetails,
+              neverExpireTtl,
+            );
+          }
+          for (const ipAddress of ipAddresses || []) {
+            await ipAddressHbarSpendingPlanRepository.save(
+              { ipAddress, planId: plan.id },
+              emptyRequestDetails,
+              neverExpireTtl,
+            );
+          }
         }
 
         await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
         expect(hbarSpendingPlanRepositorySpy.delete.calledTwice).to.be.true;
-        obsoletePlans.forEach(({ id }) => {
+        obsoletePlans.forEach(({ id, ethAddresses, ipAddresses }) => {
           sinon.assert.calledWith(hbarSpendingPlanRepositorySpy.delete, id, emptyRequestDetails);
           sinon.assert.calledWith(
             loggerSpy.info,
             `Deleting HBAR spending plan with ID "${id}", as it is no longer in the spending plan configuration...`,
           );
+          sinon.assert.calledWithMatch(ethAddressHbarSpendingPlanRepositorySpy.deleteAllByPlanId, id);
+          sinon.assert.calledWithMatch(ipAddressHbarSpendingPlanRepositorySpy.deleteAllByPlanId, id);
+          ethAddresses?.forEach((ethAddress) => {
+            const key = ethAddressHbarSpendingPlanRepository['getKey'](ethAddress);
+            sinon.assert.calledWithMatch(cacheServiceSpy.delete, key);
+          });
+          ipAddresses?.forEach((ipAddress) => {
+            const key = ipAddressHbarSpendingPlanRepository['getKey'](ipAddress);
+            sinon.assert.calledWithMatch(cacheServiceSpy.delete, key);
+          });
         });
       });
 

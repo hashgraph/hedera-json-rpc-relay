@@ -163,6 +163,8 @@ export class HbarSpendingPlanConfigService {
       this.logger.trace(
         `Updating associations for HBAR spending plan '${planConfig.name}' with ID ${planConfig.id}...`,
       );
+      await this.deleteObsoleteEthAddressAssociations(planConfig, requestDetails);
+      await this.deleteObsoleteIpAddressAssociations(planConfig, requestDetails);
       await this.updateEthAddressAssociations(planConfig, requestDetails);
       await this.updateIpAddressAssociations(planConfig, requestDetails);
     }
@@ -258,5 +260,56 @@ export class HbarSpendingPlanConfigService {
         }
       }),
     );
+  }
+
+  /**
+   * Deletes obsolete ETH address associations from the cache.
+   *
+   * A plan is considered obsolete if it is associated with
+   * an ETH address that is not in the current spending plan configuration.
+   *
+   * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
+   * @param {RequestDetails} requestDetails - The details of the current request.
+   * @private
+   */
+  private async deleteObsoleteEthAddressAssociations(planConfig: SpendingPlanConfig, requestDetails: RequestDetails) {
+    for (const ethAddress of planConfig.ethAddresses || []) {
+      const exists = await this.ethAddressHbarSpendingPlanRepository.existsByAddress(ethAddress, requestDetails);
+      if (exists) {
+        const ethAddressPlan = await this.ethAddressHbarSpendingPlanRepository.findByAddress(
+          ethAddress,
+          requestDetails,
+        );
+        if (ethAddressPlan.planId !== planConfig.id) {
+          this.logger.info(
+            `Deleting association between ETH address ${ethAddress} and HBAR spending plan '${planConfig.name}'`,
+          );
+          await this.ethAddressHbarSpendingPlanRepository.delete(ethAddress, requestDetails);
+        }
+      }
+    }
+  }
+
+  /**
+   * Deletes obsolete IP address associations from the cache.
+   *
+   * A plan is considered obsolete if it is associated with
+   * an IP address that is not in the current spending plan configuration.
+   *
+   * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
+   * @param {RequestDetails} requestDetails - The details of the current request.
+   * @private
+   */
+  private async deleteObsoleteIpAddressAssociations(planConfig: SpendingPlanConfig, requestDetails: RequestDetails) {
+    for (const ipAddress of planConfig.ipAddresses || []) {
+      const exists = await this.ipAddressHbarSpendingPlanRepository.existsByAddress(ipAddress, requestDetails);
+      if (exists) {
+        const ipAddressPlan = await this.ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress, requestDetails);
+        if (ipAddressPlan.planId !== planConfig.id) {
+          this.logger.info(`Deleting association between IP address and HBAR spending plan '${planConfig.name}'`);
+          await this.ipAddressHbarSpendingPlanRepository.delete(ipAddress, requestDetails);
+        }
+      }
+    }
   }
 }
