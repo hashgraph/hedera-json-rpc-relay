@@ -435,7 +435,11 @@ export class HbarLimitService implements IHbarLimitService {
       throw new Error('Cannot create a spending plan without an associated eth address or ip address');
     }
 
-    const spendingPlan = await this.hbarSpendingPlanRepository.create(SubscriptionType.BASIC, requestDetails);
+    const spendingPlan = await this.hbarSpendingPlanRepository.create(
+      SubscriptionType.BASIC,
+      requestDetails,
+      this.limitDuration,
+    );
     if (ethAddress) {
       this.logger.trace(
         `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`,
