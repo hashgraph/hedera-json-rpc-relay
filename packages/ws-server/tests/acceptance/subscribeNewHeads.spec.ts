@@ -28,7 +28,9 @@ import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { WsTestHelper } from '../helper';
-import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
+import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
+import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
+
 chai.use(solidity);
 
 const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
@@ -104,7 +106,8 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
 
   before(async () => {
     // @ts-ignore
-    const { socketServer, mirrorNode, relay } = global;
+    const { socketServer, mirrorNode, relay }: { socketServer: any; mirrorNode: MirrorClient; relay: RelayClient } =
+      global;
     mirrorNodeServer = mirrorNode;
     rpcServer = relay;
     wsServer = socketServer;

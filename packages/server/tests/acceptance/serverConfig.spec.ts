@@ -32,7 +32,7 @@ describe('@server-config Server Configuration Options Coverage', function () {
       try {
         await Utils.sendJsonRpcRequestWithDelay(host, port, method, params, requestTimeoutMs + 1000);
         throw new Error('Request did not timeout as expected'); // Force the test to fail if the request does not time out
-      } catch (err) {
+      } catch (err: any) {
         expect(err.code).to.equal('ECONNRESET');
         expect(err.message).to.equal('socket hang up');
       }

@@ -28,7 +28,7 @@ import { predefined } from '../../errors/JsonRpcError';
 import { EthImpl } from '../../eth';
 import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
 import { IOpcode } from '../../clients/models/IOpcode';
-import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from '../../types';
+import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig, RequestDetails } from '../../types';
 
 /**
  * Represents a DebugService for tracing and debugging transactions and debugging
@@ -88,7 +88,7 @@ export class DebugService implements IDebugService {
    * @param {string} transactionIdOrHash - The ID or hash of the transaction to be traced.
    * @param {TracerType} tracer - The type of tracer to use (either 'CallTracer' or 'OpcodeLogger').
    * @param {ITracerConfig} tracerConfig - The configuration object for the tracer.
-   * @param {string} [requestIdPrefix] - An optional request id.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @throws {Error} Throws an error if the specified tracer type is not supported or if an exception occurs during the trace.
    * @returns {Promise<any>} A Promise that resolves to the result of the trace operation.
    *
@@ -99,15 +99,15 @@ export class DebugService implements IDebugService {
     transactionIdOrHash: string,
     tracer: TracerType,
     tracerConfig: ITracerConfig,
-    requestIdPrefix?: string,
+    requestDetails: RequestDetails,
   ): Promise<any> {
-    this.logger.trace(`${requestIdPrefix} debug_traceTransaction(${transactionIdOrHash})`);
+    this.logger.trace(`${requestDetails.formattedRequestId} debug_traceTransaction(${transactionIdOrHash})`);
     try {
       DebugService.requireDebugAPIEnabled();
       if (tracer === TracerType.CallTracer) {
-        return await this.callTracer(transactionIdOrHash, tracerConfig as ICallTracerConfig, requestIdPrefix);
+        return await this.callTracer(transactionIdOrHash, tracerConfig as ICallTracerConfig, requestDetails);
       } else if (tracer === TracerType.OpcodeLogger) {
-        return await this.callOpcodeLogger(transactionIdOrHash, tracerConfig as IOpcodeLoggerConfig, requestIdPrefix);
+        return await this.callOpcodeLogger(transactionIdOrHash, tracerConfig as IOpcodeLoggerConfig, requestDetails);
       }
     } catch (e) {
       throw this.common.genericErrorHandler(e);
@@ -119,23 +119,23 @@ export class DebugService implements IDebugService {
    *
    * @async
    * @param {any} result - The response from the actions endpoint.
-   * @param {string} requestIdPrefix - The request prefix id.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<[] | any>} The formatted actions response in an array.
    */
-  async formatActionsResult(result: any, requestIdPrefix?: string): Promise<[] | any> {
+  async formatActionsResult(result: any, requestDetails: RequestDetails): Promise<[] | any> {
     return await Promise.all(
       result.map(async (action, index) => {
         const { resolvedFrom, resolvedTo } = await this.resolveMultipleAddresses(
           action.from,
           action.to,
-          requestIdPrefix,
+          requestDetails,
         );
 
         // The actions endpoint does not return input and output for the calls so we get them from another endpoint
         // The first one is excluded because we take its input and output from the contracts/results/{transactionIdOrHash} endpoint
         const contract =
           index !== 0 && action.call_operation_type === CallType.CREATE
-            ? await this.mirrorNodeClient.getContract(action.to, requestIdPrefix)
+            ? await this.mirrorNodeClient.getContract(action.to, requestDetails)
             : undefined;
 
         return {
@@ -201,22 +201,22 @@ export class DebugService implements IDebugService {
    * @async
    * @param {string} address - The address to be resolved.
    * @param {[string]} types - The possible types of the address.
-   * @param {string} requestIdPrefix - The request prefix id.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<string>} The address returned as an EVM address.
    */
   async resolveAddress(
     address: string,
-    types = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-    requestIdPrefix?: string,
+    requestDetails: RequestDetails,
+    types: string[] = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
   ): Promise<string> {
     // if the address is null or undefined we return it as is
     if (!address) return address;
 
     const entity = await this.mirrorNodeClient.resolveEntityType(
       address,
-      types,
       EthImpl.debugTraceTransaction,
-      requestIdPrefix,
+      requestDetails,
+      types,
     );
 
     if (
@@ -233,15 +233,15 @@ export class DebugService implements IDebugService {
   async resolveMultipleAddresses(
     from: string,
     to: string,
-    requestIdPrefix?: string,
+    requestDetails: RequestDetails,
   ): Promise<{ resolvedFrom: string; resolvedTo: string }> {
     const [resolvedFrom, resolvedTo] = await Promise.all([
-      this.resolveAddress(
-        from,
-        [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
-        requestIdPrefix,
-      ),
-      this.resolveAddress(to, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT], requestIdPrefix),
+      this.resolveAddress(from, requestDetails, [
+        constants.TYPE_CONTRACT,
+        constants.TYPE_TOKEN,
+        constants.TYPE_ACCOUNT,
+      ]),
+      this.resolveAddress(to, requestDetails, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT]),
     ]);
 
     return { resolvedFrom, resolvedTo };
@@ -255,13 +255,13 @@ export class DebugService implements IDebugService {
    * @param {boolean} tracerConfig.enableMemory - Whether to enable memory.
    * @param {boolean} tracerConfig.disableStack - Whether to disable stack.
    * @param {boolean} tracerConfig.disableStorage - Whether to disable storage.
-   * @param {string} requestIdPrefix - The request prefix id.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<object>} The formatted response.
    */
   async callOpcodeLogger(
     transactionIdOrHash: string,
     tracerConfig: IOpcodeLoggerConfig,
-    requestIdPrefix?: string,
+    requestDetails: RequestDetails,
   ): Promise<object> {
     try {
       const options = {
@@ -271,7 +271,7 @@ export class DebugService implements IDebugService {
       };
       const response = await this.mirrorNodeClient.getContractsResultsOpcodes(
         transactionIdOrHash,
-        requestIdPrefix,
+        requestDetails,
         options,
       );
       return await this.formatOpcodesResult(response, options);
@@ -286,25 +286,25 @@ export class DebugService implements IDebugService {
    * @async
    * @param {string} transactionHash - The hash of the transaction to be debugged.
    * @param {ICallTracerConfig} tracerConfig - The tracer config to be used.
-   * @param {string} requestIdPrefix - The request prefix id.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<object>} The formatted response.
    */
   async callTracer(
     transactionHash: string,
     tracerConfig: ICallTracerConfig,
-    requestIdPrefix?: string,
+    requestDetails: RequestDetails,
   ): Promise<object> {
     try {
       const [actionsResponse, transactionsResponse] = await Promise.all([
-        this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestIdPrefix),
-        this.mirrorNodeClient.getContractResultWithRetry(transactionHash),
+        this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestDetails),
+        this.mirrorNodeClient.getContractResultWithRetry(transactionHash, requestDetails),
       ]);
       if (!actionsResponse || !transactionsResponse) {
         throw predefined.RESOURCE_NOT_FOUND(`Failed to retrieve contract results for transaction ${transactionHash}`);
       }
 
       const { call_type: type } = actionsResponse.actions[0];
-      const formattedActions = await this.formatActionsResult(actionsResponse.actions, requestIdPrefix);
+      const formattedActions = await this.formatActionsResult(actionsResponse.actions, requestDetails);
 
       const {
         from,
@@ -318,7 +318,7 @@ export class DebugService implements IDebugService {
         result,
       } = transactionsResponse;
 
-      const { resolvedFrom, resolvedTo } = await this.resolveMultipleAddresses(from, to, requestIdPrefix);
+      const { resolvedFrom, resolvedTo } = await this.resolveMultipleAddresses(from, to, requestDetails);
 
       const value = amount === 0 ? EthImpl.zeroHex : numberTo0x(amount);
       const errorResult = result !== constants.SUCCESS ? result : undefined;

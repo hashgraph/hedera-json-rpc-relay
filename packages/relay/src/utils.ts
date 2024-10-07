@@ -20,6 +20,7 @@
 
 import { PrivateKey } from '@hashgraph/sdk';
 import constants from './lib/constants';
+import crypto from 'crypto';
 
 export class Utils {
   public static readonly addPercentageBufferToGasPrice = (gasPrice: number): number => {
@@ -55,4 +56,13 @@ export class Utils {
         throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${process.env.OPERATOR_KEY_FORMAT}`);
     }
   }
+
+  /**
+   * Generates a random trace ID for requests.
+   *
+   * @returns {string} The generated random trace ID.
+   */
+  public static generateRequestId = (): string => {
+    return crypto.randomUUID();
+  };
 }

@@ -73,10 +73,10 @@ const getRequestId = () => {
   return formatRequestIdMessage(uuid());
 };
 
-export const ethCallFailing = async (ethImpl, args, block, assertFunc) => {
+export const ethCallFailing = async (ethImpl, args, block, requestDetails, assertFunc) => {
   let hasError = false;
   try {
-    await ethImpl.call(args, block);
+    await ethImpl.call(args, block, requestDetails);
   } catch (error: any) {
     hasError = true;
     assertFunc(error);

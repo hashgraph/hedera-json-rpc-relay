@@ -46,13 +46,16 @@ import DeployerContractJson from '../contracts/Deployer.json';
 import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import HRC719ContractJson from '../contracts/HRC719Contract.json';
-import TokenCreateJson from '../contracts/TokenCreateContract.json';
 
 // Helper functions/constants from local resources
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { TYPES } from '../../src/validator';
 import { overrideEnvsInMochaDescribe } from '../../../relay/tests/helpers';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import RelayClient from '../clients/relayClient';
+import ServicesClient from '../clients/servicesClient';
+import MirrorClient from '../clients/mirrorClient';
 
 chai.use(chaiExclude);
 
@@ -60,9 +63,14 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
   const accounts: AliasAccount[] = [];
+  const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
 
   // @ts-ignore
-  const { servicesNode, mirrorNode, relay } = global;
+  const {
+    servicesNode,
+    mirrorNode,
+    relay,
+  }: { servicesNode: ServicesClient; mirrorNode: MirrorClient; relay: RelayClient } = global;
   let mirrorPrimaryAccount: ethers.Wallet;
   let mirrorSecondaryAccount: ethers.Wallet;
 
@@ -111,7 +119,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         initialAccount,
         neededAccounts,
         initialBalance,
-        requestId,
+        requestDetails,
       )),
     );
     global.accounts.push(...accounts);
@@ -758,7 +766,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         adminPrivateKey: accounts[1].privateKey,
       });
 
-      tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
+      tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId!.toString());
 
       // Deploy a contract implementing HederaTokenService
       const HederaTokenServiceImplFactory = new ethers.ContractFactory(
@@ -1246,7 +1254,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
-      estimateGasContractAddress = await mirrorNode.get(`/contracts/results/${transactionHash}`);
+      estimateGasContractAddress = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
     });
 
     describe('Positive scenarios', async function () {

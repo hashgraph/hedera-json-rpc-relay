@@ -20,16 +20,16 @@
 
 import { expect } from 'chai';
 import {
-  JsonRpcError,
-  ParseError,
-  InvalidRequest,
-  MethodNotFound,
-  InvalidParams,
-  InternalError,
-  Unauthorized,
-  ServerError,
-  IPRateLimitExceeded,
   HBARRateLimitExceeded,
+  InternalError,
+  InvalidParams,
+  InvalidRequest,
+  IPRateLimitExceeded,
+  JsonRpcError,
+  MethodNotFound,
+  ParseError,
+  ServerError,
+  Unauthorized,
 } from '../../../src/koaJsonRpc/lib/RpcError';
 
 describe('RpcErrors', () => {

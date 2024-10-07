@@ -22,12 +22,12 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import { RelayImpl } from '../../src/lib/relay';
+import pino from 'pino';
+import { RelayImpl } from '../../src';
+import { withOverriddenEnvsInMochaTest } from '../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
-import pino from 'pino';
-import { withOverriddenEnvsInMochaTest } from '../helpers';
 const logger = pino();
 
 const Relay = new RelayImpl(logger, new Registry());

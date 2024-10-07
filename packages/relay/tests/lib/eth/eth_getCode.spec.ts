@@ -39,12 +39,13 @@ import {
 import { generateEthTestEnv } from './eth-helpers';
 import { JsonRpcError, predefined } from '../../../src';
 import { overrideEnvsInMochaDescribe } from '../../helpers';
+import { RequestDetails } from '../../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
-let sdkClientStub;
-let getSdkClientStub;
+let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let getSdkClientStub: sinon.SinonStub;
 
 describe('@ethGetCode using MirrorNode', async function () {
   this.timeout(10000);
@@ -52,11 +53,13 @@ describe('@ethGetCode using MirrorNode', async function () {
   let validBlockParam = [null, 'earliest', 'latest', 'pending', 'finalized', 'safe', '0x0', '0x369ABF'];
   let invalidBlockParam = ['hedera', 'ethereum', '0xhbar', '0x369ABF369ABF369ABF369ABF'];
 
+  const requestDetails = new RequestDetails({ requestId: 'eth_getCodeTest', ipAddress: '0.0.0.0' });
+
   overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
-  this.beforeEach(() => {
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear();
+    await cacheService.clear(requestDetails);
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
@@ -66,7 +69,7 @@ describe('@ethGetCode using MirrorNode', async function () {
     restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, null);
     restMock.onGet(`tokens/0.0.${parseInt(CONTRACT_ADDRESS_1, 16)}`).reply(404, null);
     restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(200, DEFAULT_CONTRACT);
-    sdkClientStub.getContractByteCode.returns(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
+    sdkClientStub.getContractByteCode.resolves(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
   });
 
   this.afterEach(() => {
@@ -85,20 +88,20 @@ describe('@ethGetCode using MirrorNode', async function () {
         }),
       );
 
-      const resNoCache = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
-      const resCached = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
+      const resNoCache = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
+      const resCached = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
       expect(resNoCache).to.equal(EthImpl.emptyHex);
       expect(resCached).to.equal(EthImpl.emptyHex);
     });
 
     it('should return the runtime_bytecode from the mirror node', async () => {
-      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
+      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
       expect(res).to.equal(MIRROR_NODE_DEPLOYED_BYTECODE);
     });
 
     it('should return the bytecode from SDK if Mirror Node returns 404', async () => {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(404, DEFAULT_CONTRACT);
-      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
+      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
       expect(res).to.equal(DEPLOYED_BYTECODE);
     });
 
@@ -107,7 +110,7 @@ describe('@ethGetCode using MirrorNode', async function () {
         ...DEFAULT_CONTRACT,
         runtime_bytecode: EthImpl.emptyHex,
       });
-      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null);
+      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
       expect(res).to.equal(DEPLOYED_BYTECODE);
     });
 
@@ -118,7 +121,7 @@ describe('@ethGetCode using MirrorNode', async function () {
       const redirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${HTS_TOKEN_ADDRESS.slice(
         2,
       )}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`;
-      const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, null);
+      const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, null, requestDetails);
       expect(res).to.equal(redirectBytecode);
     });
 
@@ -126,13 +129,13 @@ describe('@ethGetCode using MirrorNode', async function () {
       restMock.onGet(`contracts/${EthImpl.iHTSAddress}`).reply(200, DEFAULT_CONTRACT);
       restMock.onGet(`accounts/${EthImpl.iHTSAddress}${NO_TRANSACTIONS}`).reply(404, null);
 
-      const res = await ethImpl.getCode(EthImpl.iHTSAddress, null);
+      const res = await ethImpl.getCode(EthImpl.iHTSAddress, null, requestDetails);
       expect(res).to.equal(EthImpl.invalidEVMInstruction);
     });
 
     validBlockParam.forEach((blockParam) => {
       it(`should pass the validate param check with blockParam=${blockParam} and return the bytecode`, async () => {
-        const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, blockParam);
+        const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, blockParam, requestDetails);
         expect(res).to.equal(MIRROR_NODE_DEPLOYED_BYTECODE);
       });
     });
@@ -140,7 +143,7 @@ describe('@ethGetCode using MirrorNode', async function () {
     invalidBlockParam.forEach((blockParam) => {
       it(`should throw INVALID_PARAMETER JsonRpcError with invalid blockParam=${blockParam}`, async () => {
         try {
-          await ethImpl.getCode(EthImpl.iHTSAddress, blockParam);
+          await ethImpl.getCode(EthImpl.iHTSAddress, blockParam, requestDetails);
           expect(true).to.eq(false);
         } catch (error: any) {
           const expectedError = predefined.UNKNOWN_BLOCK(

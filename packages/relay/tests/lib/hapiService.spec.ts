@@ -29,6 +29,7 @@ import { SDKClient } from '../../src/lib/clients';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import { RequestDetails } from '../../src/lib/types';
 import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -44,6 +45,7 @@ describe('HAPI Service', async function () {
   let hapiService: HAPIService;
 
   const errorStatus = 50;
+  const requestDetails = new RequestDetails({ requestId: 'hapiService.spec.ts', ipAddress: '0.0.0.0' });
 
   this.beforeAll(() => {
     const duration: number = 60000;
@@ -161,7 +163,7 @@ describe('HAPI Service', async function () {
         const oldClientInstance = hapiService.getMainClientInstance();
         const oldSDKInstance = hapiService.getSDKClient();
 
-        hbarLimiter.addExpense(costAmount, Date.now());
+        hbarLimiter.addExpense(costAmount, Date.now(), requestDetails);
         hapiService.decrementErrorCounter(errorStatus);
 
         const newSDKInstance = hapiService.getSDKClient();

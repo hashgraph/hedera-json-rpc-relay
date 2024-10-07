@@ -1,0 +1,62 @@
+{
+  "eth_submitHashrate": {
+    "status": 400,
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_submitHashrate\"}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601}}"
+  },
+  "eth_sign": {
+    "status": 400,
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_sign\"}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601}}"
+  },
+  "eth_signTransaction": {
+    "status": 400,
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_signTransaction\"}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601}}"
+  },
+  "eth_sendTransaction": {
+    "status": 400,
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_sendTransaction\"}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601}}"
+  },
+  "eth_protocolVersion": {
+    "status": 400,
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_protocolVersion\"}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601}}"
+  },
+  "eth_newPendingTransactionFilter": {
+    "status": 400,
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_newPendingTransactionFilter\"}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601}}"
+  },
+  "eth_newBlockFilter": {
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_newBlockFilter\"}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0x33f5c9d2974eea142909a19906ef0548\"}"
+  },
+  "eth_getFilterChanges - existing filter": {
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_getFilterChanges\",\"params\":[\"0xb5c45fa0ece1ff79b115fc7cc490655b\"]}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":[\"0xc926f266c4a93e01cf6df220b5902b032adb38d70626835d8f53c9f8a648d747dd651af5e9c64201aad121a93c2304c4\"]}"
+  },
+  "eth_getFilterChanges - no existing filter": {
+    "status": 400,
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_getFilterChanges\",\"params\":[\"0x275220eef57cfbc06e932e043535d492\"]}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32001}}"
+  },
+  "eth_uninstallFilter": {
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_uninstallFilter\",\"params\":[\"0x275220eef57cfbc06e932e043535d492\"]}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":false}"
+  },
+  "eth_newFilter": {
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_newFilter\",\"params\":[{\"fromBlock\": \"0x1\",\"toBlock\": \"0x160c\",\"address\": \"0x281723C907113cbdEe8785F3480dD7496315312c\"}]}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xd569b8fad2873edebd3033831f790dee\"}"
+  },
+  "eth_getFilterLogs - existing filter": {
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_getFilterLogs\",\"params\":[\"0x65d84e9904db339e6a85340b9f7c3d3e\"]}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":[]}"
+  },
+  "eth_getFilterLogs - no existing filter": {
+    "status": 400,
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_getFilterLogs\",\"params\":[\"0xb567d26e162027d80fd434e3bc3d6897\"]}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32001}}"
+  }
+}
