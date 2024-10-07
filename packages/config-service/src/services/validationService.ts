@@ -20,7 +20,7 @@ export class ValidationService {
       envs[GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName] &&
       !envs[GlobalConfig.ENTRIES.OPERATOR_KEY_FORMAT.envName] &&
       // @ts-ignore
-      !envs[GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName].match(/^[0-9a-f]{96}$/)
+      !envs[GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName].match(/^[0-9a-f]{96,100}$/)
     ) {
       throw new Error(
         `When ${GlobalConfig.ENTRIES.OPERATOR_KEY_FORMAT.envName} is not specified, the ${GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName} must be in DER format.`,
