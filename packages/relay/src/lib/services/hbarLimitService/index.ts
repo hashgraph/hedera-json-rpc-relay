@@ -26,7 +26,7 @@ import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendi
 import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { RequestDetails } from '../../types/RequestDetails';
+import { RequestDetails } from '../../types';
 import constants from '../../constants';
 import { Hbar } from '@hashgraph/sdk';
 
@@ -164,9 +164,8 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
    * @param {string} ethAddress - The eth address to check.
-   * @param {string} [ipAddress] - The ip address to check.
-   * @param {number} [estimatedTxFee] - The total estimated transaction fee, default to 0.
    * @param {RequestDetails} requestDetails The request details for logging and tracking.
+   * @param {number} [estimatedTxFee] - The total estimated transaction fee, default to 0.
    * @returns {Promise<boolean>} - A promise that resolves with a boolean indicating if the address should be limited.
    */
   async shouldLimit(
@@ -208,7 +207,6 @@ export class HbarLimitService implements IHbarLimitService {
    * Add expense to the remaining budget.
    * @param {number} cost - The cost of the expense.
    * @param {string} ethAddress - The Ethereum address to add the expense to.
-   * @param {string} ipAddress - The optional IP address to add the expense to.
    * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the expense has been added.
    */
@@ -355,7 +353,6 @@ export class HbarLimitService implements IHbarLimitService {
   /**
    * Gets the spending plan for the given eth address or ip address.
    * @param {string} ethAddress - The eth address to get the spending plan for.
-   * @param {string} ipAddress - The ip address to get the spending plan for.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan | null>} - A promise that resolves with the spending plan or null if none exists.
    * @private
@@ -405,7 +402,7 @@ export class HbarLimitService implements IHbarLimitService {
 
   /**
    * Gets the spending plan for the given IP address.
-   * @param {string} ipAddress - The IP address to get the spending plan for.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the spending plan.
    * @private
    */
@@ -421,7 +418,6 @@ export class HbarLimitService implements IHbarLimitService {
   /**
    * Creates a basic spending plan for the given eth address.
    * @param {string} ethAddress - The eth address to create the spending plan for.
-   * @param {string} ipAddress - The ip address to create the spending plan for.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
    * @private

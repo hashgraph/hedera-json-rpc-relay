@@ -23,7 +23,6 @@ import pino, { Logger } from 'pino';
 import chai, { expect } from 'chai';
 import { randomBytes, uuidV4 } from 'ethers';
 import chaiAsPromised from 'chai-as-promised';
-import { getRequestId } from '../../../helpers';
 import constants from '../../../../src/lib/constants';
 import { Counter, Gauge, Registry } from 'prom-client';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
@@ -55,11 +54,10 @@ describe('HbarLimitService', function () {
   const mockEthAddress = '0x123';
   const mockIpAddress = 'x.x.x';
   const mockEstimatedTxFee = 300;
-  const mockRequestId = getRequestId();
   const mockPlanId = uuidV4(randomBytes(16));
   const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
 
-  const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: mockIpAddress });
+  const requestDetails = new RequestDetails({ requestId: 'hbarLimitServiceTest', ipAddress: mockIpAddress });
 
   let hbarLimitService: HbarLimitService;
   let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarSpendingPlanRepository>;
@@ -598,8 +596,7 @@ describe('HbarLimitService', function () {
 
   describe('createBasicSpendingPlan', function () {
     const testCreateBasicSpendingPlan = async (ethAddress: string, ipAddress?: string) => {
-      const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: ipAddress ? ipAddress : '' });
-      console.log('requestDetails', requestDetails);
+      const requestDetails = new RequestDetails({ requestId: 'hbarLimitServiceTest', ipAddress: ipAddress ?? '' });
       const newSpendingPlan = createSpendingPlan(mockPlanId);
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
       ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
