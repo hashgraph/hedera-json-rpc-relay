@@ -444,7 +444,11 @@ export class HbarLimitService implements IHbarLimitService {
       this.logger.trace(
         `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`,
       );
-      await this.ethAddressHbarSpendingPlanRepository.save({ ethAddress, planId: spendingPlan.id }, requestDetails);
+      await this.ethAddressHbarSpendingPlanRepository.save(
+        { ethAddress, planId: spendingPlan.id },
+        requestDetails,
+        this.limitDuration,
+      );
     }
     if (ipAddress) {
       this.logger.trace(
