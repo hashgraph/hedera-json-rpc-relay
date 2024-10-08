@@ -29,10 +29,42 @@ import { Logger } from 'pino';
 import { SubscriptionTier } from '../db/types/hbarLimiter/subscriptionTier';
 import { IDetailedHbarSpendingPlan } from '../db/types/hbarLimiter/hbarSpendingPlan';
 
+/**
+ * Service for managing pre-configured {@link HbarSpendingPlan} entities.
+ *
+ * It reads the pre-configured spending plans from a JSON file and populates the cache with them.
+ *
+ * @see SpendingPlanConfig
+ * @see SPENDING_PLANS_CONFIG_FILE
+ */
 export class HbarSpendingPlanConfigService {
-  private readonly TTL = -1; // -1 means no TTL, i.e. the data will not expire
-  private readonly DEFAULT_SPENDING_PLANS_CONFIG_FILE = 'spendingPlansConfig.json';
+  /**
+   * The time-to-live (TTL) for the pre-configured spending plans in the cache.
+   * Defaults to `-1`, which means no TTL, i.e. the data will not expire.
+   *
+   * @type {number}
+   * @private
+   */
+  private readonly TTL: number = -1;
 
+  /**
+   * The name of the spending plans configuration file. Defaults to `spendingPlansConfig.json`.
+   *
+   * @type {string}
+   * @private
+   */
+  private readonly SPENDING_PLANS_CONFIG_FILE: string =
+    process.env.HBAR_SPENDING_PLANS_CONFIG_FILE || 'spendingPlansConfig.json';
+
+  /**
+   * Creates an instance of `HbarSpendingPlanConfigService`.
+   *
+   * @constructor
+   * @param {Logger} logger - The logger instance.
+   * @param {HbarSpendingPlanRepository} hbarSpendingPlanRepository - The repository for HBAR spending plans.
+   * @param {EthAddressHbarSpendingPlanRepository} ethAddressHbarSpendingPlanRepository - The repository for ETH address associations.
+   * @param {IPAddressHbarSpendingPlanRepository} ipAddressHbarSpendingPlanRepository - The repository for IP address associations.
+   */
   constructor(
     private readonly logger: Logger,
     private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository,
@@ -41,39 +73,8 @@ export class HbarSpendingPlanConfigService {
   ) {}
 
   /**
-   * Loads the pre-configured spending plans from a JSON file.
-   * @returns {SpendingPlanConfig[]} An array of spending plan configurations.
-   * @throws {Error} If the configuration file is not found or cannot be read or parsed.
-   */
-  private loadSpendingPlansConfig(): SpendingPlanConfig[] {
-    const filename = process.env.HBAR_SPENDING_PLANS_CONFIG_FILE || this.DEFAULT_SPENDING_PLANS_CONFIG_FILE;
-    const configPath = findConfig(filename);
-    if (!configPath || !fs.existsSync(configPath)) {
-      throw new Error(`Configuration file not found at path "${configPath ?? filename}"`);
-    }
-    try {
-      const rawData = fs.readFileSync(configPath, 'utf-8');
-      return JSON.parse(rawData) as SpendingPlanConfig[];
-    } catch (error: any) {
-      throw new Error(`Failed to parse JSON from ${configPath}: ${error.message}`);
-    }
-  }
-
-  /**
-   * Validates the spending plan configuration.
-   * @param {SpendingPlanConfig[]} spendingPlans - The spending plan configurations to validate.
-   * @throws {Error} If any spending plan configuration is invalid.
-   */
-  private validateSpendingPlanConfig(spendingPlans: SpendingPlanConfig[]): void {
-    for (const plan of spendingPlans) {
-      if (!isValidSpendingPlanConfig(plan)) {
-        throw new Error(`Invalid spending plan configuration: ${JSON.stringify(plan)}`);
-      }
-    }
-  }
-
-  /**
    * Populates the database with pre-configured spending plans.
+   *
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    * @throws {Error} - If the spending plans configuration file is not found or cannot be loaded.
    */
@@ -95,12 +96,48 @@ export class HbarSpendingPlanConfigService {
   }
 
   /**
+   * Loads the pre-configured spending plans from a JSON file.
+   *
+   * @returns {SpendingPlanConfig[]} An array of spending plan configurations.
+   * @throws {Error} If the configuration file is not found or cannot be read or parsed.
+   * @private
+   */
+  private loadSpendingPlansConfig(): SpendingPlanConfig[] {
+    const configPath = findConfig(this.SPENDING_PLANS_CONFIG_FILE);
+    if (!configPath || !fs.existsSync(configPath)) {
+      throw new Error(`Configuration file not found at path "${configPath ?? this.SPENDING_PLANS_CONFIG_FILE}"`);
+    }
+    try {
+      const rawData = fs.readFileSync(configPath, 'utf-8');
+      return JSON.parse(rawData) as SpendingPlanConfig[];
+    } catch (error: any) {
+      throw new Error(`Failed to parse JSON from ${configPath}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Validates the spending plan configuration.
+   *
+   * @param {SpendingPlanConfig[]} spendingPlans - The spending plan configurations to validate.
+   * @throws {Error} If any spending plan configuration is invalid.
+   * @private
+   */
+  private validateSpendingPlanConfig(spendingPlans: SpendingPlanConfig[]): void {
+    for (const plan of spendingPlans) {
+      if (!isValidSpendingPlanConfig(plan)) {
+        throw new Error(`Invalid spending plan configuration: ${JSON.stringify(plan)}`);
+      }
+    }
+  }
+
+  /**
    * Deletes obsolete HBAR spending plans from the database.
    *
    * @param {IDetailedHbarSpendingPlan[]} existingPlans - The existing HBAR spending plans in the database.
    * @param {SpendingPlanConfig[]} spendingPlanConfigs - The current spending plan configurations.
    * @param {RequestDetails} requestDetails - The details of the current request.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   * @private
    */
   private async deleteObsoletePlans(
     existingPlans: IDetailedHbarSpendingPlan[],
@@ -133,6 +170,7 @@ export class HbarSpendingPlanConfigService {
    * @param {IDetailedHbarSpendingPlan[]} existingPlans - The existing HBAR spending plans in the database.
    * @param {RequestDetails} requestDetails - The details of the current request.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   * @private
    */
   private async addNewPlans(
     spendingPlanConfigs: SpendingPlanConfig[],
@@ -154,6 +192,7 @@ export class HbarSpendingPlanConfigService {
    * @param {SpendingPlanConfig[]} spendingPlanConfigs - The current spending plan configurations.
    * @param {RequestDetails} requestDetails - The details of the current request.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   * @private
    */
   private async updatePlanAssociations(
     spendingPlanConfigs: SpendingPlanConfig[],
@@ -176,6 +215,7 @@ export class HbarSpendingPlanConfigService {
    * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
    * @param {RequestDetails} requestDetails - The details of the current request.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   * @private
    */
   private async updateEthAddressAssociations(
     planConfig: SpendingPlanConfig,
@@ -227,6 +267,7 @@ export class HbarSpendingPlanConfigService {
    * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
    * @param {RequestDetails} requestDetails - The details of the current request.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   * @private
    */
   private async updateIpAddressAssociations(
     planConfig: SpendingPlanConfig,
@@ -265,8 +306,8 @@ export class HbarSpendingPlanConfigService {
   /**
    * Deletes obsolete ETH address associations from the cache.
    *
-   * A plan is considered obsolete if it is associated with
-   * an ETH address that is not in the current spending plan configuration.
+   * For example, if an ETH address is associated with a plan different from the one in the {@link SPENDING_PLANS_CONFIG_FILE},
+   * the association is deleted from the cache to allow the new association from the configuration file to take effect.
    *
    * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
    * @param {RequestDetails} requestDetails - The details of the current request.
@@ -293,8 +334,8 @@ export class HbarSpendingPlanConfigService {
   /**
    * Deletes obsolete IP address associations from the cache.
    *
-   * A plan is considered obsolete if it is associated with
-   * an IP address that is not in the current spending plan configuration.
+   * For example, if an IP address is associated with a plan different from the one in the {@link SPENDING_PLANS_CONFIG_FILE},
+   * the association is deleted from the cache to allow the new association from the configuration file to take effect.
    *
    * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
    * @param {RequestDetails} requestDetails - The details of the current request.
