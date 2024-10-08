@@ -18,6 +18,8 @@
  *
  */
 
+import { BigNumber } from 'bignumber.js';
+
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 enum CACHE_KEY {
@@ -139,16 +141,24 @@ export default {
     DURATION: 60000,
   },
 
+  // TODO: Replace with actual values - https://github.com/hashgraph/hedera-json-rpc-relay/issues/2895
   // @ts-ignore
-  HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION') || '80000'),
+  HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION') || '80000'), // 80 seconds
   // @ts-ignore
-  HBAR_RATE_LIMIT_TINYBAR: parseInt(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR') || '11000000000'),
+  HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR') || '11000000000'), // 110 HBARs per 80 seconds
+  // @ts-ignore
+  HBAR_RATE_LIMIT_BASIC: BigNumber(ConfigService.get('HBAR_DAILY_LIMIT_BASIC') || '92592592'), // Equivalent of 1000 HBARs per day
+  // @ts-ignore
+  HBAR_RATE_LIMIT_EXTENDED: BigNumber(ConfigService.get('HBAR_DAILY_LIMIT_EXTENDED') || '925925925'), // Equivalent of 10000 HBARs per day
+  // @ts-ignore
+  HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(ConfigService.get('HBAR_DAILY_LIMIT_PRIVILEGED') || '1851851850'), // Equivalent of 20000 HBARs per day
   // @ts-ignore
   GAS_PRICE_TINY_BAR_BUFFER: parseInt(ConfigService.get('GAS_PRICE_TINY_BAR_BUFFER') || '10000000000'),
   WEB_SOCKET_PORT: ConfigService.get('WEB_SOCKET_PORT') || 8546,
   WEB_SOCKET_HTTP_PORT: ConfigService.get('WEB_SOCKET_HTTP_PORT') || 8547,
 
   RELAY_PORT: ConfigService.get('SERVER_PORT') || 7546,
+  RELAY_HOST: ConfigService.get('SERVER_HOST') || 'localhost',
 
   FUNCTION_SELECTOR_CHAR_LENGTH: 10,
   MIRROR_NODE_RETRY_DELAY_DEFAULT: 2000,

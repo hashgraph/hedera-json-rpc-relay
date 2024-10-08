@@ -36,132 +36,128 @@ describe('Polling', async function () {
     'Poller: Fetching data for tag: {"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}}';
   const logs =
     '[{"address":"0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x3","data":"0x","logIndex":"0x0","removed":false,"topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000000000000000000000000000000000000000000000","0x000000000000000000000000000000000000000000000000000000000208fa13","0x0000000000000000000000000000000000000000000000000000000000000005"],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392","transactionIndex":"0x1"},{"address":"0x0000000000000000000000000000000002131952","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x3","data":"0x","logIndex":"0x1","removed":false,"topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000000000000000000000000000000000000000000000","0x000000000000000000000000000000000000000000000000000000000208fa13","0x0000000000000000000000000000000000000000000000000000000000000005"],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392","transactionIndex":"0x1"},{"address":"0x0000000000000000000000000000000002131953","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x4","data":"0x","logIndex":"0x0","removed":false,"topics":[],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393","transactionIndex":"0x1"},{"address":"0x0000000000000000000000000000000002131954","blockHash":"0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b","blockNumber":"0x5","data":"0x","logIndex":"0x0","removed":false,"topics":[],"transactionHash":"0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394","transactionIndex":"0x1"}]';
-  const logsArray = new Array([
-    [
-      {
-        address: '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69',
-        blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
-        blockNumber: '0x3',
-        data: '0x',
-        logIndex: '0x0',
-        removed: false,
-        topics: [
-          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
-          '0x000000000000000000000000000000000000000000000000000000000208fa13',
-          '0x0000000000000000000000000000000000000000000000000000000000000005',
-        ],
-        transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
-        transactionIndex: '0x1',
-      },
-      {
-        address: '0x0000000000000000000000000000000002131952',
-        blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
-        blockNumber: '0x3',
-        data: '0x',
-        logIndex: '0x1',
-        removed: false,
-        topics: [
-          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
-          '0x000000000000000000000000000000000000000000000000000000000208fa13',
-          '0x0000000000000000000000000000000000000000000000000000000000000005',
-        ],
-        transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
-        transactionIndex: '0x1',
-      },
-      {
-        address: '0x0000000000000000000000000000000002131953',
-        blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
-        blockNumber: '0x4',
-        data: '0x',
-        logIndex: '0x0',
-        removed: false,
-        topics: [],
-        transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393',
-        transactionIndex: '0x1',
-      },
-      {
-        address: '0x0000000000000000000000000000000002131954',
-        blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
-        blockNumber: '0x5',
-        data: '0x',
-        logIndex: '0x0',
-        removed: false,
-        topics: [],
-        transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394',
-        transactionIndex: '0x1',
-      },
-    ],
-    [
-      {
-        address: '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69',
-        blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
-        blockNumber: '0x3',
-        data: '0x',
-        logIndex: '0x0',
-        removed: false,
-        topics: [
-          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
-          '0x000000000000000000000000000000000000000000000000000000000208fa13',
-          '0x0000000000000000000000000000000000000000000000000000000000000005',
-        ],
-        transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
-        transactionIndex: '0x1',
-      },
-      {
-        address: '0x0000000000000000000000000000000002131952',
-        blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
-        blockNumber: '0x3',
-        data: '0x',
-        logIndex: '0x1',
-        removed: false,
-        topics: [
-          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
-          '0x000000000000000000000000000000000000000000000000000000000208fa13',
-          '0x0000000000000000000000000000000000000000000000000000000000000005',
-        ],
-        transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
-        transactionIndex: '0x1',
-      },
-      {
-        address: '0x0000000000000000000000000000000002131953',
-        blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
-        blockNumber: '0x4',
-        data: '0x',
-        logIndex: '0x0',
-        removed: false,
-        topics: [],
-        transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393',
-        transactionIndex: '0x1',
-      },
-      {
-        address: '0x0000000000000000000000000000000002131954',
-        blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
-        blockNumber: '0x5',
-        data: '0x',
-        logIndex: '0x0',
-        removed: false,
-        topics: [],
-        transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394',
-        transactionIndex: '0x1',
-      },
-    ],
-  ]);
+  const logsArray = [
+    {
+      address: '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69',
+      blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
+      blockNumber: '0x3',
+      data: '0x',
+      logIndex: '0x0',
+      removed: false,
+      topics: [
+        '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        '0x000000000000000000000000000000000000000000000000000000000208fa13',
+        '0x0000000000000000000000000000000000000000000000000000000000000005',
+      ],
+      transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
+      transactionIndex: '0x1',
+    },
+    {
+      address: '0x0000000000000000000000000000000002131952',
+      blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
+      blockNumber: '0x3',
+      data: '0x',
+      logIndex: '0x1',
+      removed: false,
+      topics: [
+        '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        '0x000000000000000000000000000000000000000000000000000000000208fa13',
+        '0x0000000000000000000000000000000000000000000000000000000000000005',
+      ],
+      transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
+      transactionIndex: '0x1',
+    },
+    {
+      address: '0x0000000000000000000000000000000002131953',
+      blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
+      blockNumber: '0x4',
+      data: '0x',
+      logIndex: '0x0',
+      removed: false,
+      topics: [],
+      transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393',
+      transactionIndex: '0x1',
+    },
+    {
+      address: '0x0000000000000000000000000000000002131954',
+      blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
+      blockNumber: '0x5',
+      data: '0x',
+      logIndex: '0x0',
+      removed: false,
+      topics: [],
+      transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394',
+      transactionIndex: '0x1',
+    },
+    {
+      address: '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69',
+      blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
+      blockNumber: '0x3',
+      data: '0x',
+      logIndex: '0x0',
+      removed: false,
+      topics: [
+        '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        '0x000000000000000000000000000000000000000000000000000000000208fa13',
+        '0x0000000000000000000000000000000000000000000000000000000000000005',
+      ],
+      transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
+      transactionIndex: '0x1',
+    },
+    {
+      address: '0x0000000000000000000000000000000002131952',
+      blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
+      blockNumber: '0x3',
+      data: '0x',
+      logIndex: '0x1',
+      removed: false,
+      topics: [
+        '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        '0x000000000000000000000000000000000000000000000000000000000208fa13',
+        '0x0000000000000000000000000000000000000000000000000000000000000005',
+      ],
+      transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
+      transactionIndex: '0x1',
+    },
+    {
+      address: '0x0000000000000000000000000000000002131953',
+      blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
+      blockNumber: '0x4',
+      data: '0x',
+      logIndex: '0x0',
+      removed: false,
+      topics: [],
+      transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393',
+      transactionIndex: '0x1',
+    },
+    {
+      address: '0x0000000000000000000000000000000002131954',
+      blockHash: '0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b',
+      blockNumber: '0x5',
+      data: '0x',
+      logIndex: '0x0',
+      removed: false,
+      topics: [],
+      transactionHash: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394',
+      transactionIndex: '0x1',
+    },
+  ];
   const SINGLE_LINE = 'Called notifySubscriber with single line of log data!';
   const tag =
     '{"event":"logs","filters":{"address":"0x23f5e49569A835d7bf9AefD30e4f60CdD570f225","topics":["0xc8b501cbd8e69c98c535894661d25839eb035b096adfde2bba416f04cc7ce987"]}}';
 
-  let ethImplStub: EthImpl;
+  let ethImplStub: sinon.SinonStubbedInstance<EthImpl>;
   let poller: Poller;
-  let sandbox;
+  let sandbox: sinon.SinonSandbox;
 
   this.beforeEach(() => {
     ethImplStub = sinon.createStubInstance(EthImpl);
-    ethImplStub.blockNumber.returns('0x1b177b');
-    ethImplStub.getLogs.returns(logs);
+    ethImplStub.blockNumber.resolves('0x1b177b');
+    ethImplStub.getLogs.resolves(JSON.parse(logs));
 
     const registry = new Registry();
     poller = new Poller(ethImplStub, logger, registry);
@@ -174,10 +170,10 @@ describe('Polling', async function () {
 
   describe('Poller', () => {
     it('should start polling', async () => {
-      ethImplStub.blockNumber.returns('0x1b177b');
+      ethImplStub.blockNumber.resolves('0x1b177b');
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       const notifySubscriber = (tag, logs) => {};
-      ethImplStub.getLogs.returns(logs);
+      ethImplStub.getLogs.resolves(JSON.parse(logs));
       const loggerSpy = sandbox.spy(logger, 'info');
 
       expect(poller.hasPoll(tag)).to.be.false;
@@ -216,7 +212,7 @@ describe('Polling', async function () {
         return;
       };
 
-      ethImplStub.getLogs.returns(logs);
+      ethImplStub.getLogs.resolves(JSON.parse(logs));
 
       poller.add(tag, notifySubscriber);
       const loggerSpy = sandbox.spy(logger, 'debug');
@@ -238,7 +234,7 @@ describe('Polling', async function () {
         return;
       };
 
-      ethImplStub.getLogs.returns(logsArray);
+      ethImplStub.getLogs.resolves(logsArray);
 
       poller.add(tag, notifySubscriber);
       const loggerSpy = sandbox.spy(logger, 'debug');

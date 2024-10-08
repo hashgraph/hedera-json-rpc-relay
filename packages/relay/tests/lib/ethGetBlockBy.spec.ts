@@ -131,7 +131,7 @@ describe('eth_getBlockBy', async function () {
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const total = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     const eventEmitter = new EventEmitter();
     hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);

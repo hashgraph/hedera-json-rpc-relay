@@ -67,6 +67,35 @@ describe('RPC Server', function () {
 
   this.timeout(5000);
 
+  it('should verify that the server is running with the correct host and port', async function () {
+    const CUSTOMIZE_PORT = '7545';
+    const CUSTOMIZE_HOST = '127.0.0.1';
+    const configuredServer = app.listen({ port: CUSTOMIZE_PORT, host: CUSTOMIZE_HOST });
+
+    return new Promise<void>((resolve, reject) => {
+      configuredServer.on('listening', () => {
+        const address = configuredServer.address();
+
+        try {
+          expect(address).to.not.be.null;
+          if (address && typeof address === 'object') {
+            expect(address.address).to.equal(CUSTOMIZE_HOST);
+            expect(address.port.toString()).to.equal(CUSTOMIZE_PORT);
+          } else {
+            throw new Error('Server address is not an object');
+          }
+          configuredServer.close(() => resolve());
+        } catch (error) {
+          configuredServer.close(() => reject(error));
+        }
+      });
+
+      configuredServer.on('error', (error) => {
+        reject(error);
+      });
+    });
+  });
+
   it('should execute "eth_chainId"', async function () {
     const res = await testClient.post('/', {
       id: '2',
