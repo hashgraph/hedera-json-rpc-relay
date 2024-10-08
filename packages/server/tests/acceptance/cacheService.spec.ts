@@ -65,11 +65,11 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   });
 
   it('Correctly sets TTL time', async () => {
-    const ttl = 1000;
+    const ttl = 200;
     const dataLabel = `${DATA_LABEL_PREFIX}2`;
 
     await cacheService.set(dataLabel, DATA, CALLING_METHOD, requestDetails, ttl);
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 100));
 
     const cache = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(cache).to.deep.eq(DATA, 'data is stored with TTL');
