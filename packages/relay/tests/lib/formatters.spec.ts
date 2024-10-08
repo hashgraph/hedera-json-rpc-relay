@@ -37,6 +37,7 @@ import {
   parseNumericEnvVar,
   prepend0x,
   strip0x,
+  tinybarsToWeibars,
   toHash32,
   toHexString,
   toNullableBigNumber,
@@ -735,6 +736,12 @@ describe('Formatters', () => {
       const target = { a: '1', b: '2', c: '3' };
       const result = mapKeysAndValues(target, { key: (key) => key.toUpperCase() });
       expect(result).to.deep.equal({ A: '1', B: '2', C: '3' });
+    });
+  });
+  
+  describe('getFunctionSelector', () => {
+    it('should convert tinybars to weibars', () => {
+      expect(tinybarsToWeibars(10)).to.eql(100000000000);
     });
   });
 });
