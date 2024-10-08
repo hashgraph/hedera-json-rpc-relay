@@ -229,7 +229,7 @@ export class RelayImpl implements Relay {
   }
 
   public async populatePreconfiguredSpendingPlans(): Promise<void> {
-    this.hbarSpendingPlanConfigService
+    return this.hbarSpendingPlanConfigService
       .populatePreconfiguredSpendingPlans()
       .then(() => this.logger.info('Pre-configured spending plans populated successfully'))
       .catch((e) => this.logger.warn(`Failed to load pre-configured spending plans: ${e.message}`));
