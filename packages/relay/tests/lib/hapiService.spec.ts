@@ -23,7 +23,9 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { expect } from 'chai';
 import EventEmitter from 'events';
+import { Hbar } from '@hashgraph/sdk';
 import { Client } from '@hashgraph/sdk';
+import constants from '../../src/lib/constants';
 import { register, Registry } from 'prom-client';
 import { SDKClient } from '../../src/lib/clients';
 import { RequestDetails } from '../../src/lib/types';
@@ -50,7 +52,8 @@ describe('HAPI Service', async function () {
   const requestDetails = new RequestDetails({ requestId: 'hapiService.spec.ts', ipAddress: '0.0.0.0' });
 
   this.beforeAll(() => {
-    const total: number = 100000000;
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
+    const duration = constants.HBAR_RATE_LIMIT_DURATION;
     eventEmitter = new EventEmitter();
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
 
@@ -63,7 +66,8 @@ describe('HAPI Service', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
   });
 
@@ -169,7 +173,9 @@ describe('HAPI Service', async function () {
     const newClientInstance = hapiService.getMainClientInstance();
     const hbarLimiterBudgetAfter = hbarLimitService['remainingBudget'];
 
-    expect(hbarLimiterBudgetBefore).to.be.greaterThan(hbarLimiterBudgetAfter);
+    expect(hbarLimiterBudgetBefore.toTinybars().toNumber()).to.be.greaterThan(
+      hbarLimiterBudgetAfter.toTinybars().toNumber(),
+    );
     expect(oldSDKInstance).to.not.be.equal(newSDKInstance);
     expect(oldClientInstance).to.not.be.equal(newClientInstance);
   });
