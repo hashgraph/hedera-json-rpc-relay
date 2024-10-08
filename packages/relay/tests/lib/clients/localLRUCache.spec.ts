@@ -145,8 +145,9 @@ describe('LocalLRUCache Test Suite', async function () {
     it('verify cache ttl nature', async function () {
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const key = 'key';
-      await customLocalLRUCache.set(key, 'value', callingMethod, requestDetails, 100); // set ttl to 1 ms
-      await new Promise((r) => setTimeout(r, 500)); // wait for ttl to expire
+      const ttl = 100; // set ttl to 100ms
+      await customLocalLRUCache.set(key, 'value', callingMethod, requestDetails, ttl);
+      await new Promise((r) => setTimeout(r, ttl + 100)); // wait for ttl to expire
       const cacheValue = await customLocalLRUCache.get(key, callingMethod, requestDetails);
       expect(cacheValue).to.be.null;
     });
