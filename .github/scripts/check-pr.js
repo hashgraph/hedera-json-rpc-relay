@@ -123,8 +123,8 @@ async function checkPRLabelsAndMilestone(pr) {
     }
 }
 
-function isDependabotPR(pr) {
-    return pr.user.login === 'dependabot[bot]';
+function isDependabotOrSnykPR(pr) {
+    return ((pr.user.login === 'dependabot[bot]') || (pr.user.login === 'swirlds-automation'));
 }
 
 async function processIssueReferencesInText(text) {
@@ -256,8 +256,9 @@ async function run() {
 
         await checkPRLabelsAndMilestone(pr);
 
-        if (isDependabotPR(pr)) {
-            console.log('Dependabot PR detected. Skipping issue reference requirement.');
+        if (isDependabotOrSnykPR(pr)) {
+            console.log('Dependabot or snyk PR detected. Skipping issue reference requirement.');
+            return;
         } else {
             const cleanBody = cleanText(pr.body);
             await processIssueReferencesInText(cleanBody);
