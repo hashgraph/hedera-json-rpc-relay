@@ -277,6 +277,13 @@ describe('HbarSpendingPlanConfigService', function () {
 
           const obsoletePlans: SpendingPlanConfig[] = [
             {
+              id: 'plan-basic',
+              name: 'Basic Plan',
+              subscriptionTier: SubscriptionTier.BASIC,
+              ethAddresses: ['0x122'],
+              ipAddresses: ['126.0.0.1'],
+            },
+            {
               id: 'plan-extended',
               name: 'Extended Plan',
               subscriptionTier: SubscriptionTier.EXTENDED,
@@ -317,7 +324,11 @@ describe('HbarSpendingPlanConfigService', function () {
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
           expect(hbarSpendingPlanRepositorySpy.delete.calledTwice).to.be.true;
-          obsoletePlans.forEach(({ id, ethAddresses, ipAddresses }) => {
+          for (const { id, subscriptionTier, ethAddresses, ipAddresses } of obsoletePlans) {
+            if (subscriptionTier === SubscriptionTier.BASIC) {
+              sinon.assert.neverCalledWith(hbarSpendingPlanRepositorySpy.delete, id, emptyRequestDetails);
+              continue;
+            }
             sinon.assert.calledWith(hbarSpendingPlanRepositorySpy.delete, id, emptyRequestDetails);
             sinon.assert.calledWith(
               loggerSpy.info,
@@ -333,7 +344,7 @@ describe('HbarSpendingPlanConfigService', function () {
               const key = ipAddressHbarSpendingPlanRepository['getKey'](ipAddress);
               sinon.assert.calledWithMatch(cacheServiceSpy.delete, key);
             });
-          });
+          }
         });
 
         it('should not duplicate already existing spending plans', async function () {
