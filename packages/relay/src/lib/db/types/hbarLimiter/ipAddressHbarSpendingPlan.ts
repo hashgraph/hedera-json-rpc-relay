@@ -1,4 +1,4 @@
-/* -
+/*
  *
  * Hedera JSON RPC Relay
  *
@@ -18,12 +18,7 @@
  *
  */
 
-/**
- * Formats an ID message for logging purposes.
- * @param {string } title - The title of the ID to be formatted.
- * @param {string | undefined} id - The ID to be formatted.
- * @returns {string} Returns a formatted ID message if an ID is provided, otherwise an empty string.
- */
-export const formatIdMessage = (title: string, id?: string): string => {
-  return id ? `[${title}: ${id}]` : '';
-};
+export interface IIPAddressHbarSpendingPlan {
+  ipAddress: string;
+  planId: string;
+}

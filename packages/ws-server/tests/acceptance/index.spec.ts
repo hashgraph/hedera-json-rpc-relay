@@ -22,9 +22,6 @@ import path from 'path';
 import pino from 'pino';
 import dotenv from 'dotenv';
 import chaiAsPromised from 'chai-as-promised';
-
-chai.use(chaiAsPromised);
-
 import fs from 'fs';
 import { AccountId, Hbar } from '@hashgraph/sdk';
 import app from '@hashgraph/json-rpc-server/dist/server';
@@ -35,7 +32,14 @@ import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer
 import ServicesClient from '@hashgraph/json-rpc-server/tests/clients/servicesClient';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { Server } from 'node:http';
+import { setServerTimeout } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/utils';
+
+chai.use(chaiAsPromised);
+
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -50,10 +54,10 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const NETWORK = process.env.HEDERA_NETWORK || '';
-const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
-const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
-const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
+const NETWORK = process.env.HEDERA_NETWORK || DOT_ENV.HEDERA_NETWORK || '';
+const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || DOT_ENV.OPERATOR_KEY_MAIN || '';
+const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
+const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || DOT_ENV.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
@@ -63,8 +67,7 @@ global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 describe('RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
-  let relayServer; // Relay Server
-  let socketServer;
+  const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
   global.servicesNode = new ServicesClient(
     NETWORK,
     OPERATOR_ID,
@@ -73,8 +76,6 @@ describe('RPC Server Acceptance Tests', function () {
   );
   global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
   global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
-  global.relayServer = relayServer;
-  global.socketServer = socketServer;
   global.logger = logger;
 
   before(async () => {
@@ -82,9 +83,9 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info('Acceptance Tests Configurations successfully loaded');
     logger.info(`LOCAL_NODE: ${process.env.LOCAL_NODE}`);
     logger.info(`CHAIN_ID: ${process.env.CHAIN_ID}`);
-    logger.info(`HEDERA_NETWORK: ${process.env.HEDERA_NETWORK}`);
-    logger.info(`OPERATOR_ID_MAIN: ${process.env.OPERATOR_ID_MAIN}`);
-    logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
+    logger.info(`HEDERA_NETWORK: ${NETWORK}`);
+    logger.info(`OPERATOR_ID_MAIN: ${OPERATOR_ID}`);
+    logger.info(`MIRROR_NODE_URL: ${MIRROR_NODE_URL}`);
     logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
     if (global.relayIsLocal) {
@@ -100,7 +101,7 @@ describe('RPC Server Acceptance Tests', function () {
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
-    await global.mirrorNode.get(`/accounts/${initialAccount.address}`);
+    await global.mirrorNode.get(`/accounts/${initialAccount.address}`, requestDetails);
   });
 
   after(async function () {
@@ -139,10 +140,12 @@ describe('RPC Server Acceptance Tests', function () {
 
     //stop relay
     logger.info('Stop relay');
+    const relayServer: Server = global.relayServer;
     if (relayServer !== undefined) {
       relayServer.close();
     }
 
+    const socketServer: Server = global.socketServer;
     if (process.env.TEST_WS_SERVER === 'true' && socketServer !== undefined) {
       socketServer.close();
     }
@@ -170,7 +173,9 @@ describe('RPC Server Acceptance Tests', function () {
     // start local relay, relay instance in local should not be running
 
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
-    relayServer = app.listen({ port: constants.RELAY_PORT });
+    const relayServer = app.listen({ port: constants.RELAY_PORT });
+    global.relayServer = relayServer;
+    setServerTimeout(relayServer);
 
     if (process.env.TEST_WS_SERVER === 'true') {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);

@@ -29,6 +29,7 @@ import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
 import { Log } from '../../../model';
 import * as _ from 'lodash';
 import { CacheService } from '../../cacheService/cacheService';
+import { RequestDetails } from '../../../types';
 
 /**
  * Create a new Common Service implementation.
@@ -102,14 +103,14 @@ export class CommonService implements ICommonService {
     params: any,
     fromBlock: string,
     toBlock: string,
-    requestIdPrefix?: string,
+    requestDetails: RequestDetails,
     address?: string | string[] | null,
   ) {
     if (this.blockTagIsLatestOrPending(toBlock)) {
       toBlock = CommonService.blockLatest;
     }
 
-    const latestBlockNumber: string = await this.getLatestBlockNumber(requestIdPrefix);
+    const latestBlockNumber: string = await this.getLatestBlockNumber(requestDetails);
 
     // toBlock is a number and is less than the current block number and fromBlock is not defined
     if (Number(toBlock) < Number(latestBlockNumber) && !fromBlock) {
@@ -124,7 +125,7 @@ export class CommonService implements ICommonService {
     let toBlockNum;
     params.timestamp = [];
 
-    const fromBlockResponse = await this.getHistoricalBlockResponse(fromBlock, true, requestIdPrefix);
+    const fromBlockResponse = await this.getHistoricalBlockResponse(requestDetails, fromBlock, true);
     if (!fromBlockResponse) {
       return false;
     }
@@ -135,7 +136,7 @@ export class CommonService implements ICommonService {
       params.timestamp.push(`lte:${fromBlockResponse.timestamp.to}`);
     } else {
       fromBlockNum = parseInt(fromBlockResponse.number);
-      const toBlockResponse = await this.getHistoricalBlockResponse(toBlock, true, requestIdPrefix);
+      const toBlockResponse = await this.getHistoricalBlockResponse(requestDetails, toBlock, true);
       if (toBlockResponse != null) {
         params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
         toBlockNum = parseInt(toBlockResponse.number);
@@ -163,13 +164,14 @@ export class CommonService implements ICommonService {
    * returns the block response
    * otherwise return undefined.
    *
-   * @param blockNumberOrTag
+   * @param requestDetails
+   * @param blockNumberOrTagOrHash
    * @param returnLatest
    */
   public async getHistoricalBlockResponse(
+    requestDetails: RequestDetails,
     blockNumberOrTagOrHash?: string | null,
     returnLatest?: boolean,
-    requestIdPrefix?: string | undefined,
   ): Promise<any> {
     if (!returnLatest && this.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
       return null;
@@ -177,7 +179,7 @@ export class CommonService implements ICommonService {
 
     const blockNumber = Number(blockNumberOrTagOrHash);
     if (blockNumberOrTagOrHash != null && blockNumberOrTagOrHash.length < 32 && !isNaN(blockNumber)) {
-      const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestIdPrefix);
+      const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestDetails);
       const latestBlock = latestBlockResponse.blocks[0];
       if (blockNumber > latestBlock.number + this.maxBlockRange) {
         return null;
@@ -185,39 +187,41 @@ export class CommonService implements ICommonService {
     }
 
     if (blockNumberOrTagOrHash == null || this.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
-      const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestIdPrefix);
+      const latestBlockResponse = await this.mirrorNodeClient.getLatestBlock(requestDetails);
       return latestBlockResponse.blocks[0];
     }
 
     if (blockNumberOrTagOrHash == CommonService.blockEarliest) {
-      return await this.mirrorNodeClient.getBlock(0, requestIdPrefix);
+      return await this.mirrorNodeClient.getBlock(0, requestDetails);
     }
 
     if (blockNumberOrTagOrHash.length < 32) {
-      return await this.mirrorNodeClient.getBlock(Number(blockNumberOrTagOrHash), requestIdPrefix);
+      return await this.mirrorNodeClient.getBlock(Number(blockNumberOrTagOrHash), requestDetails);
     }
 
-    return await this.mirrorNodeClient.getBlock(blockNumberOrTagOrHash, requestIdPrefix);
+    return await this.mirrorNodeClient.getBlock(blockNumberOrTagOrHash, requestDetails);
   }
 
   /**
    * Gets the most recent block number.
    */
-  public async getLatestBlockNumber(requestIdPrefix?: string): Promise<string> {
+  public async getLatestBlockNumber(requestDetails: RequestDetails): Promise<string> {
     // check for cached value
     const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
     const blockNumberCached = await this.cacheService.getAsync(
       cacheKey,
       CommonService.latestBlockNumber,
-      requestIdPrefix,
+      requestDetails,
     );
 
     if (blockNumberCached) {
-      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`,
+      );
       return blockNumberCached;
     }
 
-    const blocksResponse = await this.mirrorNodeClient.getLatestBlock(requestIdPrefix);
+    const blocksResponse = await this.mirrorNodeClient.getLatestBlock(requestDetails);
     const blocks = blocksResponse !== null ? blocksResponse.blocks : null;
     if (Array.isArray(blocks) && blocks.length > 0) {
       const currentBlock = numberTo0x(blocks[0].number);
@@ -226,8 +230,8 @@ export class CommonService implements ICommonService {
         cacheKey,
         currentBlock,
         CommonService.latestBlockNumber,
+        requestDetails,
         this.ethBlockNumberCacheTtlMs,
-        requestIdPrefix,
       );
 
       return currentBlock;
@@ -253,9 +257,13 @@ export class CommonService implements ICommonService {
     throw predefined.INTERNAL_ERROR(error.message.toString());
   }
 
-  public async validateBlockHashAndAddTimestampToParams(params: any, blockHash: string, requestIdPrefix?: string) {
+  public async validateBlockHashAndAddTimestampToParams(
+    params: any,
+    blockHash: string,
+    requestDetails: RequestDetails,
+  ) {
     try {
-      const block = await this.mirrorNodeClient.getBlock(blockHash, requestIdPrefix);
+      const block = await this.mirrorNodeClient.getBlock(blockHash, requestDetails);
       if (block) {
         params.timestamp = [`gte:${block.timestamp.from}`, `lte:${block.timestamp.to}`];
       } else {
@@ -282,10 +290,10 @@ export class CommonService implements ICommonService {
     }
   }
 
-  public async getLogsByAddress(address: string | string[], params: any, requestIdPrefix) {
+  public async getLogsByAddress(address: string | string[], params: any, requestDetails: RequestDetails) {
     const addresses = Array.isArray(address) ? address : [address];
     const logPromises = addresses.map((addr) =>
-      this.mirrorNodeClient.getContractResultsLogsByAddress(addr, params, undefined, requestIdPrefix),
+      this.mirrorNodeClient.getContractResultsLogsByAddress(addr, requestDetails, params, undefined),
     );
 
     const logResults = await Promise.all(logPromises);
@@ -297,14 +305,18 @@ export class CommonService implements ICommonService {
     return logs;
   }
 
-  public async getLogsWithParams(address: string | string[] | null, params, requestIdPrefix?: string): Promise<Log[]> {
+  public async getLogsWithParams(
+    address: string | string[] | null,
+    params: any,
+    requestDetails: RequestDetails,
+  ): Promise<Log[]> {
     const EMPTY_RESPONSE = [];
 
     let logResults;
     if (address) {
-      logResults = await this.getLogsByAddress(address, params, requestIdPrefix);
+      logResults = await this.getLogsByAddress(address, params, requestDetails);
     } else {
-      logResults = await this.mirrorNodeClient.getContractResultsLogs(params, undefined, requestIdPrefix);
+      logResults = await this.mirrorNodeClient.getContractResultsLogs(requestDetails, params);
     }
 
     if (!logResults) {
@@ -337,23 +349,23 @@ export class CommonService implements ICommonService {
     toBlock: string | 'latest',
     address: string | string[] | null,
     topics: any[] | null,
-    requestIdPrefix?: string,
+    requestDetails: RequestDetails,
   ): Promise<Log[]> {
     const EMPTY_RESPONSE = [];
     const params: any = {};
 
     if (blockHash) {
-      if (!(await this.validateBlockHashAndAddTimestampToParams(params, blockHash, requestIdPrefix))) {
+      if (!(await this.validateBlockHashAndAddTimestampToParams(params, blockHash, requestDetails))) {
         return EMPTY_RESPONSE;
       }
     } else if (
-      !(await this.validateBlockRangeAndAddTimestampToParams(params, fromBlock, toBlock, requestIdPrefix, address))
+      !(await this.validateBlockRangeAndAddTimestampToParams(params, fromBlock, toBlock, requestDetails, address))
     ) {
       return EMPTY_RESPONSE;
     }
 
     this.addTopicsToParams(params, topics);
 
-    return this.getLogsWithParams(address, params, requestIdPrefix);
+    return this.getLogsWithParams(address, params, requestDetails);
   }
 }

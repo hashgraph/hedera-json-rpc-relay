@@ -19,7 +19,7 @@
  */
 
 // External resources
-import { Contract, ethers } from 'ethers';
+import { BaseContract, ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
 import Axios from 'axios';
@@ -45,11 +45,16 @@ import callerContractJson from '../contracts/Caller.json';
 import DeployerContractJson from '../contracts/Deployer.json';
 import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
+import HRC719ContractJson from '../contracts/HRC719Contract.json';
 
 // Helper functions/constants from local resources
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { TYPES } from '../../src/validator';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import RelayClient from '../clients/relayClient';
+import ServicesClient from '../clients/servicesClient';
+import MirrorClient from '../clients/mirrorClient';
 
 chai.use(chaiExclude);
 
@@ -57,13 +62,18 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
   const accounts: AliasAccount[] = [];
+  const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
 
   // @ts-ignore
-  const { servicesNode, mirrorNode, relay } = global;
+  const {
+    servicesNode,
+    mirrorNode,
+    relay,
+  }: { servicesNode: ServicesClient; mirrorNode: MirrorClient; relay: RelayClient } = global;
   let mirrorPrimaryAccount: ethers.Wallet;
   let mirrorSecondaryAccount: ethers.Wallet;
 
-  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const CHAIN_ID = process.env.CHAIN_ID || 0x12a;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let reverterContract: ethers.Contract;
@@ -108,7 +118,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         initialAccount,
         neededAccounts,
         initialBalance,
-        requestId,
+        requestDetails,
       )),
     );
     global.accounts.push(...accounts);
@@ -743,7 +753,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
     const INITIAL_SUPPLY = 100000;
     const IS_TOKEN_ADDRESS_SIGNATURE = '0xbff9834f000000000000000000000000';
 
-    let htsImpl: Contract;
+    let htsImpl: BaseContract;
     let tokenAddress: string;
 
     before(async () => {
@@ -755,7 +765,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         adminPrivateKey: accounts[1].privateKey,
       });
 
-      tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId.toString());
+      tokenAddress = Utils.idToEvmAddress(htsResult.receipt.tokenId!.toString());
 
       // Deploy a contract implementing HederaTokenService
       const HederaTokenServiceImplFactory = new ethers.ContractFactory(
@@ -776,6 +786,52 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       let res = await Utils.ethCallWRetries(relay, callData, 'latest', requestId);
       expect(res).to.eq(RESULT_TRUE);
+    });
+
+    describe('eth_call with force-to-consensus-by-selector logic', () => {
+      // context: The `IHRC719.isAssociated()` function is a new feature which is, at the moment, fully supported only by the Consensus node and not yet by the Mirror node.
+      // Since `IHRC719.isAssociated()` is a view function, requests for this function are typically directed to the Mirror node by default.
+      // This acceptance test ensures that the new force-to-consensus-by-selector logic correctly routes requests for `IHRC719.isAssociated()`
+      // through the Consensus node rather than the Mirror node when using the `eth_call` endpoint.
+
+      let initialEthCallSelectorsAlwaysToConsensus: any, hrc719Contract: ethers.Contract;
+
+      before(async () => {
+        initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+
+        hrc719Contract = await Utils.deployContract(
+          HRC719ContractJson.abi,
+          HRC719ContractJson.bytecode,
+          accounts[0].wallet,
+        );
+      });
+
+      after(() => {
+        process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
+      });
+
+      it('should NOT allow eth_call to process IHRC719.isAssociated() method', async () => {
+        const selectorsList = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+        expect(selectorsList).to.be.undefined;
+
+        // If the selector for `isAssociated` is not included in `ETH_CALL_CONSENSUS_SELECTORS`, the request will fail with a `CALL_EXCEPTION` error code.
+        await expect(hrc719Contract.isAssociated(tokenAddress)).to.eventually.be.rejected.and.have.property(
+          'code',
+          'CALL_EXCEPTION',
+        );
+      });
+
+      it('should allow eth_call to successfully process IHRC719.isAssociated() method', async () => {
+        const isAssociatedSelector = (await hrc719Contract.isAssociated.populateTransaction(tokenAddress)).data.slice(
+          2,
+          10,
+        );
+
+        // Add the selector for isAssociated to ETH_CALL_CONSENSUS_SELECTORS to ensure isAssociated() passes
+        process.env.ETH_CALL_CONSENSUS_SELECTORS = JSON.stringify([isAssociatedSelector]);
+        const isAssociatedResult = await hrc719Contract.isAssociated(tokenAddress);
+        expect(isAssociatedResult).to.be.false; // associate status of the token with the caller
+      });
     });
   });
 
@@ -1197,7 +1253,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
-      estimateGasContractAddress = await mirrorNode.get(`/contracts/results/${transactionHash}`);
+      estimateGasContractAddress = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
     });
 
     describe('Positive scenarios', async function () {
@@ -1263,7 +1319,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should be able to debug a successful CREATE transaction of type Legacy with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionTypeLegacy,
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
@@ -1323,7 +1379,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionTypeLegacy,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             from: accounts[0].address,
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
@@ -1373,7 +1429,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should be able to debug a successful CREATE transaction of type Legacy with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionTypeLegacy,
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
@@ -1422,7 +1478,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionTypeLegacy,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             from: accounts[0].address,
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
@@ -1474,7 +1530,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should be able to debug a successful CREATE transaction of type 2930 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2930,
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
@@ -1531,7 +1587,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionType2930,
             nonce: await relay.getAccountNonce(accounts[2].address, requestId),
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             from: accounts[2].address,
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
@@ -1581,7 +1637,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should be able to debug a successful CREATE transaction of type 2930 with call depth and onlyTopCall true', async function () {
           const transaction = {
             ...transactionType2930,
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
@@ -1637,7 +1693,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionType2930,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             from: accounts[0].address,
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
@@ -1689,7 +1745,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         it('should be able to debug a successful CREATE transaction of type 1559 with call depth and onlyTopCall false', async function () {
           const transaction = {
             ...transactionType2,
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             data: bytecode,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
             gasPrice: await relay.gasPrice(requestId),
@@ -1852,7 +1908,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           const transaction = {
             ...transactionType2,
             nonce: await relay.getAccountNonce(accounts[0].address, requestId),
-            chainId: 0x12a,
+            chainId: Number(CHAIN_ID),
             gasPrice: await relay.gasPrice(requestId),
             data: '0x01121212',
           };
@@ -1917,7 +1973,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       it('should fail to debug a transaction with invalid onlyTopCall value type', async function () {
         const transaction = {
           ...transactionTypeLegacy,
-          chainId: 0x12a,
+          chainId: Number(CHAIN_ID),
           data: bytecode,
           nonce: await relay.getAccountNonce(accounts[0].address, requestId),
           gasPrice: await relay.gasPrice(requestId),
@@ -1942,7 +1998,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       it('should fail to debug a transaction with invalid tracer type', async function () {
         const transaction = {
           ...transactionTypeLegacy,
-          chainId: 0x12a,
+          chainId: Number(CHAIN_ID),
           data: bytecode,
           nonce: await relay.getAccountNonce(accounts[0].address, requestId),
           gasPrice: await relay.gasPrice(requestId),

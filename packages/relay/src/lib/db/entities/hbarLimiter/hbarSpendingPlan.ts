@@ -28,7 +28,7 @@ export class HbarSpendingPlan implements IDetailedHbarSpendingPlan {
   createdAt: Date;
   active: boolean;
   spendingHistory: HbarSpendingRecord[];
-  spentToday: number;
+  amountSpent: number;
 
   constructor(data: IDetailedHbarSpendingPlan) {
     this.id = data.id;
@@ -36,6 +36,6 @@ export class HbarSpendingPlan implements IDetailedHbarSpendingPlan {
     this.createdAt = new Date(data.createdAt);
     this.active = data.active;
     this.spendingHistory = data.spendingHistory?.map((spending) => new HbarSpendingRecord(spending)) || [];
-    this.spentToday = data.spentToday ?? 0;
+    this.amountSpent = data.amountSpent ?? 0;
   }
 }

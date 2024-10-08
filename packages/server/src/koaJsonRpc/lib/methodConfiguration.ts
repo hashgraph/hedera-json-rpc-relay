@@ -19,10 +19,9 @@
  */
 import dotenv from 'dotenv';
 import path from 'path';
+import CONSTANTS from '../../../../relay/dist/lib/constants';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
-
-import CONSTANTS from '../../../../relay/dist/lib/constants';
 
 const tier1rateLimit = parseInt(process.env.TIER_1_RATE_LIMIT ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_1.toString());
 const tier2rateLimit = parseInt(process.env.TIER_2_RATE_LIMIT ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_2.toString());

@@ -48,9 +48,11 @@ import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
 import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
+import { Server } from 'http';
 
 chai.use(chaiAsPromised);
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -65,10 +67,10 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const NETWORK = process.env.HEDERA_NETWORK || '';
-const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || '';
-const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || '';
-const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || '';
+const NETWORK = process.env.HEDERA_NETWORK || DOT_ENV.HEDERA_NETWORK || '';
+const OPERATOR_KEY = process.env.OPERATOR_KEY_MAIN || DOT_ENV.OPERATOR_KEY_MAIN || '';
+const OPERATOR_ID = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
+const MIRROR_NODE_URL = process.env.MIRROR_NODE_URL || DOT_ENV.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = process.env.E2E_RELAY_HOST || LOCAL_RELAY_URL;
 const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
@@ -81,6 +83,7 @@ describe('RPC Server Acceptance Tests', function () {
 
   let relayServer; // Relay Server
   let socketServer;
+
   global.servicesNode = new ServicesClient(
     NETWORK,
     OPERATOR_ID,
@@ -90,8 +93,6 @@ describe('RPC Server Acceptance Tests', function () {
   global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
   global.metrics = new MetricsClient(RELAY_URL, logger.child({ name: `metrics-test-client` }));
   global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
-  global.relayServer = relayServer;
-  global.socketServer = socketServer;
   global.logger = logger;
   global.initialBalance = INITIAL_BALANCE;
 
@@ -114,9 +115,9 @@ describe('RPC Server Acceptance Tests', function () {
     logger.info('Acceptance Tests Configurations successfully loaded');
     logger.info(`LOCAL_NODE: ${process.env.LOCAL_NODE}`);
     logger.info(`CHAIN_ID: ${process.env.CHAIN_ID}`);
-    logger.info(`HEDERA_NETWORK: ${process.env.HEDERA_NETWORK}`);
-    logger.info(`OPERATOR_ID_MAIN: ${process.env.OPERATOR_ID_MAIN}`);
-    logger.info(`MIRROR_NODE_URL: ${process.env.MIRROR_NODE_URL}`);
+    logger.info(`HEDERA_NETWORK: ${NETWORK}`);
+    logger.info(`OPERATOR_ID_MAIN: ${OPERATOR_ID}`);
+    logger.info(`MIRROR_NODE_URL: ${MIRROR_NODE_URL}`);
     logger.info(`E2E_RELAY_HOST: ${process.env.E2E_RELAY_HOST}`);
 
     if (global.relayIsLocal) {
@@ -129,10 +130,11 @@ describe('RPC Server Acceptance Tests', function () {
       RELAY_URL,
       CHAIN_ID,
       Utils.generateRequestId(),
+      Number(process.env.TEST_INITIAL_ACCOUNT_STARTING_BALANCE || 2000),
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
-    await global.mirrorNode.get(`/accounts/${initialAccount.address}`);
+    await global.mirrorNode.get(`/accounts/${initialAccount.address}`, Utils.generateRequestId());
   });
 
   after(async function () {
@@ -193,6 +195,8 @@ describe('RPC Server Acceptance Tests', function () {
   function stopRelay() {
     //stop relay
     logger.info('Stop relay');
+
+    const relayServer: Server = global.relayServer;
     if (relayServer !== undefined) {
       relayServer.close();
     }
@@ -206,7 +210,9 @@ describe('RPC Server Acceptance Tests', function () {
     // start local relay, relay instance in local should not be running
 
     logger.info(`Start relay on port ${constants.RELAY_PORT}`);
-    relayServer = app.listen({ port: constants.RELAY_PORT });
+    logger.info(`Start relay on host ${constants.RELAY_HOST}`);
+    const relayServer = app.listen({ port: constants.RELAY_PORT });
+    global.relayServer = relayServer;
     setServerTimeout(relayServer);
 
     if (process.env.TEST_WS_SERVER === 'true') {

@@ -30,5 +30,5 @@ export interface IHbarSpendingPlan {
 
 export interface IDetailedHbarSpendingPlan extends IHbarSpendingPlan {
   spendingHistory: IHbarSpendingRecord[];
-  spentToday: number;
+  amountSpent: number;
 }
