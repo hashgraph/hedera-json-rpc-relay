@@ -37,14 +37,13 @@ import { BigNumber } from 'bignumber.js';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
-const registry = new Registry();
-
-const logger = pino();
-const noTransactions = '?transactions=false';
-const requestDetails = new RequestDetails({ requestId: getRequestId(), ipAddress: '0.0.0.0' });
-
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
+
+  const registry = new Registry();
+  const logger = pino();
+  const noTransactions = '?transactions=false';
+  const requestDetails = new RequestDetails({ requestId: 'mirrorNodeClientTest', ipAddress: '0.0.0.0' });
 
   let instance: AxiosInstance, mock: MockAdapter, mirrorNodeInstance: MirrorNodeClient, cacheService: CacheService;
 
@@ -68,9 +67,9 @@ describe('MirrorNodeClient', async function () {
     );
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mock = new MockAdapter(instance);
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
   });
 
   describe('handleError', async () => {

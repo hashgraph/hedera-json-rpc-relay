@@ -83,9 +83,9 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     TX_DEFAULT_GAS: defaultGasOverride.toString(),
   });
 
-  this.beforeEach(() => {
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
     sdkClientStub = createStubInstance(SDKClient);
     getSdkClientStub = stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);

@@ -95,11 +95,11 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
       .reply(200, { transactions: [{ transaction_id: transactionId }, {}] });
   });
 
-  this.afterEach(() => {
+  this.afterEach(async () => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
   });
 

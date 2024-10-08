@@ -20,6 +20,7 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
 import { IPAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import pino from 'pino';
@@ -35,13 +36,27 @@ chai.use(chaiAsPromised);
 describe('IPAddressHbarSpendingPlanRepository', function () {
   const logger = pino();
   const registry = new Registry();
-  const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });
+  const requestDetails = new RequestDetails({
+    requestId: 'ipAddressHbarSpendingPlanRepositoryTest',
+    ipAddress: '0.0.0.0',
+  });
+  const ttl = 86_400_000; // 1 day
+  const ipAddress = '555.555.555.555';
+  const nonExistingIpAddress = 'xxx.xxx.xxx.xxx';
 
   const tests = (isSharedCacheEnabled: boolean) => {
     let cacheService: CacheService;
+    let cacheServiceSpy: sinon.SinonSpiedInstance<CacheService>;
     let repository: IPAddressHbarSpendingPlanRepository;
-    const ipAddress = '555.555.555.555';
-    const nonExistingIpAddress = 'xxx.xxx.xxx.xxx';
+
+    before(() => {
+      cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
+      cacheServiceSpy = sinon.spy(cacheService);
+      repository = new IPAddressHbarSpendingPlanRepository(
+        cacheService,
+        logger.child({ name: 'IPAddressHbarSpendingPlanRepository' }),
+      );
+    });
 
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6383);
@@ -49,12 +64,8 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
       overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
     }
 
-    before(() => {
-      cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
-      repository = new IPAddressHbarSpendingPlanRepository(
-        cacheService,
-        logger.child({ name: 'IPAddressHbarSpendingPlanRepository' }),
-      );
+    afterEach(async () => {
+      await cacheService.clear(requestDetails);
     });
 
     after(async () => {
@@ -82,13 +93,21 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
       it('saves an address plan successfully', async () => {
         const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: uuidV4(randomBytes(16)) };
 
-        await repository.save(addressPlan, requestDetails);
+        await repository.save(addressPlan, requestDetails, ttl);
         const result = await cacheService.getAsync<IIPAddressHbarSpendingPlan>(
           `${repository['collectionKey']}:${ipAddress}`,
           'test',
           requestDetails,
         );
         expect(result).to.deep.equal(addressPlan);
+        sinon.assert.calledWith(
+          cacheServiceSpy.set,
+          `${repository['collectionKey']}:${ipAddress}`,
+          addressPlan,
+          'save',
+          requestDetails,
+          ttl,
+        );
       });
 
       it('overwrites an existing address plan', async () => {
@@ -97,13 +116,21 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
 
         const newPlanId = uuidV4(randomBytes(16));
         const newAddressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: newPlanId };
-        await repository.save(newAddressPlan, requestDetails);
+        await repository.save(newAddressPlan, requestDetails, ttl);
         const result = await cacheService.getAsync<IIPAddressHbarSpendingPlan>(
           `${repository['collectionKey']}:${ipAddress}`,
           'test',
           requestDetails,
         );
         expect(result).to.deep.equal(newAddressPlan);
+        sinon.assert.calledWith(
+          cacheServiceSpy.set,
+          `${repository['collectionKey']}:${ipAddress}`,
+          newAddressPlan,
+          'save',
+          requestDetails,
+          ttl,
+        );
       });
     });
 

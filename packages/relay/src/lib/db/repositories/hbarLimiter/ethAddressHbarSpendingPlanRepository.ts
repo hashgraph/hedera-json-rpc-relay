@@ -27,7 +27,7 @@ import { RequestDetails } from '../../../types';
 
 export class EthAddressHbarSpendingPlanRepository {
   private readonly collectionKey = 'ethAddressHbarSpendingPlan';
-  private readonly threeMonthsInMillis = 90 * 24 * 60 * 60 * 1000;
+  private readonly oneDayInMillis = 24 * 60 * 60 * 1000;
 
   /**
    * The cache service used for storing data.
@@ -68,11 +68,12 @@ export class EthAddressHbarSpendingPlanRepository {
    *
    * @param {IEthAddressHbarSpendingPlan} addressPlan - The plan to save.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @param {number} ttl - The time-to-live for the cache entry.
    * @returns {Promise<void>} - A promise that resolves when the ETH address is linked to the plan.
    */
-  async save(addressPlan: IEthAddressHbarSpendingPlan, requestDetails: RequestDetails): Promise<void> {
+  async save(addressPlan: IEthAddressHbarSpendingPlan, requestDetails: RequestDetails, ttl: number): Promise<void> {
     const key = this.getKey(addressPlan.ethAddress);
-    await this.cache.set(key, addressPlan, 'save', requestDetails, this.threeMonthsInMillis);
+    await this.cache.set(key, addressPlan, 'save', requestDetails, ttl);
     this.logger.trace(`Saved EthAddressHbarSpendingPlan with address ${addressPlan.ethAddress}`);
   }
 

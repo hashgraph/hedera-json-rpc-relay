@@ -123,7 +123,7 @@ export class RelayImpl implements Relay {
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const total = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
     const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
 
     this.eventEmitter = new EventEmitter();

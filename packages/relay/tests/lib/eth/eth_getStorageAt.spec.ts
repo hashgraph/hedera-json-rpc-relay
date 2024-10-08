@@ -74,9 +74,9 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
 
   overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
 
-  this.beforeEach(() => {
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);

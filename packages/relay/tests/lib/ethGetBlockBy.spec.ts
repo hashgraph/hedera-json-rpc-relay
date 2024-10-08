@@ -36,6 +36,7 @@ import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../..
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { defaultDetailedContractResults, overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../helpers';
 import { EventEmitter } from 'events';
+import { RequestDetails } from '../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -117,8 +118,9 @@ describe('eth_getBlockBy', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
 
-  useInMemoryRedisServer(logger, 5031);
+  const requestDetails = new RequestDetails({ requestId: 'ethGetBlockByTest', ipAddress: '0.0.0.0' });
 
+  useInMemoryRedisServer(logger, 5031);
   overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: 'false' });
 
   this.beforeAll(async () => {
@@ -145,8 +147,8 @@ describe('eth_getBlockBy', async function () {
     ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
   });
 
-  this.beforeEach(() => {
-    cacheService.clear();
+  this.beforeEach(async () => {
+    await cacheService.clear(requestDetails);
     restMock.reset();
   });
 
