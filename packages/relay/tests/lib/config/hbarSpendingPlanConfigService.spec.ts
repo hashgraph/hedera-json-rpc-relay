@@ -209,13 +209,10 @@ describe('HbarSpendingPlanConfigService', function () {
       });
 
       describe('positive scenarios', function () {
-        const saveSpendingPlans = async (
-          spendingPlansConfig: SpendingPlanConfig[],
-          overrideTier?: SubscriptionTier,
-        ) => {
+        const saveSpendingPlans = async (spendingPlansConfig: SpendingPlanConfig[]) => {
           for (const plan of spendingPlansConfig) {
             await hbarSpendingPlanRepository.create(
-              overrideTier || plan.subscriptionTier,
+              plan.subscriptionTier,
               emptyRequestDetails,
               neverExpireTtl,
               plan.id,
