@@ -20,6 +20,7 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
 import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import pino from 'pino';
@@ -39,13 +40,16 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
     requestId: 'ethAddressHbarSpendingPlanRepositoryTest',
     ipAddress: '0.0.0.0',
   });
+  const ttl = 86_400_000; // 1 day
 
   const tests = (isSharedCacheEnabled: boolean) => {
     let cacheService: CacheService;
+    let cacheServiceSpy: sinon.SinonSpiedInstance<CacheService>;
     let repository: EthAddressHbarSpendingPlanRepository;
 
-    before(() => {
+    before(async () => {
       cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
+      cacheServiceSpy = sinon.spy(cacheService);
       repository = new EthAddressHbarSpendingPlanRepository(
         cacheService,
         logger.child({ name: 'EthAddressHbarSpendingPlanRepository' }),
@@ -54,10 +58,16 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
 
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6382);
+    } else {
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
     }
 
-    after(() => {
-      cacheService.disconnectRedisClient();
+    afterEach(async () => {
+      await cacheService.clear(requestDetails);
+    });
+
+    after(async () => {
+      await cacheService.disconnectRedisClient();
     });
 
     describe('findByAddress', () => {
@@ -84,13 +94,21 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
         const ethAddress = '0x123';
         const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
 
-        await repository.save(addressPlan, requestDetails);
+        await repository.save(addressPlan, requestDetails, ttl);
         const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
           `${repository['collectionKey']}:${ethAddress}`,
           'test',
           requestDetails,
         );
         expect(result).to.deep.equal(addressPlan);
+        sinon.assert.calledWith(
+          cacheServiceSpy.set,
+          `${repository['collectionKey']}:${ethAddress}`,
+          addressPlan,
+          'save',
+          requestDetails,
+          ttl,
+        );
       });
 
       it('overwrites an existing address plan', async () => {
@@ -100,13 +118,21 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
 
         const newPlanId = uuidV4(randomBytes(16));
         const newAddressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: newPlanId };
-        await repository.save(newAddressPlan, requestDetails);
+        await repository.save(newAddressPlan, requestDetails, ttl);
         const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
           `${repository['collectionKey']}:${ethAddress}`,
           'test',
           requestDetails,
         );
         expect(result).to.deep.equal(newAddressPlan);
+        sinon.assert.calledWith(
+          cacheServiceSpy.set,
+          `${repository['collectionKey']}:${ethAddress}`,
+          newAddressPlan,
+          'save',
+          requestDetails,
+          ttl,
+        );
       });
     });
 
