@@ -69,8 +69,6 @@ export class Utils {
   };
 
   /**
-   * Estimates the total fee in tinybars for file transactions based on the given call data size,
-   * file chunk size, and the current network exchange rate.
    * Estimates the transaction fees for file create and file append transactions based on the provided
    * call data size, file chunk size, and current network exchange rate.
    *
