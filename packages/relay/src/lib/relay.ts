@@ -147,7 +147,10 @@ export class RelayImpl implements Relay {
    * @param {Logger} logger - Logger instance for logging system messages.
    * @param {Registry} register - Registry instance for registering metrics.
    */
-  constructor(logger: Logger, register: Registry) {
+  constructor(
+    private readonly logger: Logger,
+    register: Registry,
+  ) {
     logger.info('Configurations successfully loaded');
 
     const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
@@ -222,12 +225,14 @@ export class RelayImpl implements Relay {
 
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
 
+    logger.info('Relay running with chainId=%s', chainId);
+  }
+
+  public async populatePreconfiguredSpendingPlans(): Promise<void> {
     this.hbarSpendingPlanConfigService
       .populatePreconfiguredSpendingPlans()
-      .then(() => logger.info('Pre-configured spending plans populated successfully'))
-      .catch((e) => logger.warn(`Failed to load pre-configured spending plans: ${e.message}`));
-
-    logger.info('Relay running with chainId=%s', chainId);
+      .then(() => this.logger.info('Pre-configured spending plans populated successfully'))
+      .catch((e) => this.logger.warn(`Failed to load pre-configured spending plans: ${e.message}`));
   }
 
   /**

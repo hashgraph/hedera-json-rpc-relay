@@ -49,6 +49,10 @@ const app = new KoaJsonRpc(logger.child({ name: 'koa-rpc' }), register, {
   limit: process.env.INPUT_SIZE_LIMIT ? process.env.INPUT_SIZE_LIMIT + 'mb' : null,
 });
 
+(async () => {
+  await relay.populatePreconfiguredSpendingPlans();
+})();
+
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });
 
 // clear and create metric in registry

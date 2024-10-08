@@ -41,6 +41,8 @@ export interface Relay {
   subs(): Subs | undefined;
 
   mirrorClient(): MirrorNodeClient;
+
+  populatePreconfiguredSpendingPlans(): Promise<void>;
 }
 
 export interface Subs {
