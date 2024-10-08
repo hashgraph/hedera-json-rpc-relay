@@ -42,7 +42,8 @@ describe('HbarSpendingPlanConfigService', function () {
   const registry = new Registry();
   const neverExpireTtl = -1;
   const emptyRequestDetails = new RequestDetails({ requestId: '', ipAddress: '' });
-  const path = findConfig('spendingPlansConfig.json', { dir: __dirname });
+  const spendingPlansConfigFile = 'spendingPlansConfig.example.json';
+  const path = findConfig(spendingPlansConfigFile);
   const spendingPlansConfig = JSON.parse(fs.readFileSync(path!, 'utf-8')) as SpendingPlanConfig[];
 
   const tests = (isSharedCacheEnabled: boolean) => {
@@ -58,7 +59,12 @@ describe('HbarSpendingPlanConfigService', function () {
     let ethAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<EthAddressHbarSpendingPlanRepository>;
     let ipAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<IPAddressHbarSpendingPlanRepository>;
 
+    let hbarSpendingPlanConfigFileEnv: string | undefined;
+
     before(function () {
+      hbarSpendingPlanConfigFileEnv = process.env.HBAR_SPENDING_PLANS_CONFIG_FILE;
+      process.env.HBAR_SPENDING_PLANS_CONFIG_FILE = spendingPlansConfigFile;
+
       cacheService = new CacheService(logger, registry);
       hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
       ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
@@ -69,6 +75,10 @@ describe('HbarSpendingPlanConfigService', function () {
         ethAddressHbarSpendingPlanRepository,
         ipAddressHbarSpendingPlanRepository,
       );
+    });
+
+    after(() => {
+      process.env.HBAR_SPENDING_PLANS_CONFIG_FILE = hbarSpendingPlanConfigFileEnv;
     });
 
     if (isSharedCacheEnabled) {
@@ -93,7 +103,14 @@ describe('HbarSpendingPlanConfigService', function () {
         it('should throw an error if the configuration file is not found', async function () {
           sinon.stub(fs, 'existsSync').returns(false);
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Configuration file not found at path "${hbarSpendingPlanConfigService['SPENDING_PLANS_CONFIG_FILE']}"`,
+            `Configuration file not found at path "${path}"`,
+          );
+        });
+
+        it('should throw an error if configuration file is not a parsable JSON', async function () {
+          sinon.stub(fs, 'readFileSync').returns('invalid JSON');
+          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
+            `Failed to parse JSON from ${path}: Unexpected token 'i', "invalid JSON" is not valid JSON`,
           );
         });
 
@@ -224,8 +241,6 @@ describe('HbarSpendingPlanConfigService', function () {
         };
 
         it('should populate the database with pre-configured spending plans', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(spendingPlansConfig);
-
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
           spendingPlansConfig.forEach(({ id, name, subscriptionTier }) => {
@@ -244,7 +259,6 @@ describe('HbarSpendingPlanConfigService', function () {
         });
 
         it('should remove obsolete associations of IP and ETH addresses linked to BASIC spending plans if they appear in the configuration', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(spendingPlansConfig);
           for (const { ethAddresses, ipAddresses } of spendingPlansConfig) {
             const basicPlan = await hbarSpendingPlanRepository.create(
               SubscriptionTier.BASIC,
@@ -304,8 +318,6 @@ describe('HbarSpendingPlanConfigService', function () {
         });
 
         it('should delete obsolete EXTENDED and PRIVILEGED plans from the database', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(spendingPlansConfig);
-
           const obsoletePlans: SpendingPlanConfig[] = [
             {
               id: 'plan-basic',
@@ -378,8 +390,7 @@ describe('HbarSpendingPlanConfigService', function () {
           }
         });
 
-        it('should not duplicate already existing spending plans', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(spendingPlansConfig);
+        it('should not duplicate already existing spending plans and their associations', async function () {
           await saveSpendingPlans(spendingPlansConfig);
 
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
@@ -389,7 +400,7 @@ describe('HbarSpendingPlanConfigService', function () {
           sinon.assert.notCalled(ipAddressHbarSpendingPlanRepositorySpy.save);
         });
 
-        it('should update new associations for ETH addresses', async function () {
+        it('should save only new associations for ETH addresses', async function () {
           sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
             spendingPlansConfig.map((plan, index) => ({
               id: plan.id,
@@ -428,7 +439,7 @@ describe('HbarSpendingPlanConfigService', function () {
           });
         });
 
-        it('should update associations for IP addresses', async function () {
+        it('should save only new associations for IP addresses', async function () {
           sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
             spendingPlansConfig.map((plan, index) => ({
               id: plan.id,
