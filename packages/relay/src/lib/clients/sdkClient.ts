@@ -397,7 +397,6 @@ export class SDKClient {
    * @param {string} originalCallerAddress - The address of the original caller making the request.
    * @param {number} networkGasPriceInWeiBars - The predefined gas price of the network in weibar.
    * @param {number} currentNetworkExchangeRateInCents - The exchange rate in cents of the current network.
-   * @param {string} requestId - The unique identifier for the request.
    * @returns {Promise<{ txResponse: TransactionResponse; fileId: FileId | null }>}
    * @throws {SDKClientError} Throws an error if no file ID is created or if the preemptive fee check fails.
    */
@@ -739,7 +738,7 @@ export class SDKClient {
 
       this.logger.warn(
         sdkClientError,
-        `${requestDetails.formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,
+        `${requestDetails.formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}) message=${sdkClientError.message}`,
       );
 
       if (!transactionResponse) {
