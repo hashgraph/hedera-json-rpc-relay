@@ -27,7 +27,6 @@ import { RequestDetails } from '../../../types';
 
 export class EthAddressHbarSpendingPlanRepository {
   private readonly collectionKey = 'ethAddressHbarSpendingPlan';
-  private readonly oneDayInMillis = 24 * 60 * 60 * 1000;
 
   /**
    * The cache service used for storing data.

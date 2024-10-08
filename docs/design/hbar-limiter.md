@@ -306,29 +306,38 @@ The following configurations will be used to automatically populate the cache wi
 
 All other users (ETH and IP addresses which are not specified in the configuration file) will be treated as "general users" and will be assigned a basic `HbarSpendingPlan` on their first request and their ETH address and IP address will be linked to that plan for all subsequent requests.
 
-The default filename for the configuration file is `spendingPlansConfig.json`, but it could also be specified by the ENV variables:
-- `HBAR_SPENDING_PLANS_CONFIG_FILE`: The name of the JSON file containing the pre-configured spending plans for supported projects and partner projects.
+### JSON Configuration File
 
+The relay will read the pre-configured spending plans from a JSON file. This file should be placed in the root directory of the relay.
+
+The default filename for the configuration file is `spendingPlansConfig.json`, but it could also be specified by the environment variable `HBAR_SPENDING_PLANS_CONFIG_FILE`.
+- `HBAR_SPENDING_PLANS_CONFIG_FILE`: The name of the file containing the pre-configured spending plans for supported projects and partners.
+
+#### The JSON file should have the following structure:
 ```json
 [
   {
+    "id": "c758c095-342c-4607-9db5-867d7e90ab9d",
     "name": "partner name",
     "ethAddresses": ["0x123", "0x124"],
     "ipAddresses": ["127.0.0.1", "128.0.0.1"],
     "subscriptionType": "PRIVILEGED"
   },
   {
+    "id": "a68488b0-6f7d-44a0-87c1-774ad64615f2",
     "name": "some other partner that has given us only eth addresses",
     "ethAddresses": ["0x125", "0x126"],
     "subscriptionType": "PRIVILEGED"
   },
   {
+    "id": "af13d6ed-d676-4d33-8b9d-cf05d1ad7134",
     "name": "supported project name",
     "ethAddresses": ["0x127", "0x128"],
     "ipAddresses": ["129.0.0.1", "130.0.0.1"],
     "subscriptionType": "EXTENDED"
   },
   {
+    "id": "7f665aa3-6b73-41d7-bf9b-92d04cdab96b",
     "name": "some other supported project that has given us only ip addresses",
     "ipAddresses": ["131.0.0.1", "132.0.0.1"],
     "subscriptionType": "EXTENDED"
@@ -336,14 +345,28 @@ The default filename for the configuration file is `spendingPlansConfig.json`, b
 ]
 ```
 
-On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly.
+#### Important notes
+- The `id` field is **strictly required** for each supported project or partner project. It is used as a unique identifier and as key in the cache and also for reference in the logs. We recommend using a UUID for this field, but any unique string will work.
+- The `name` field is used just for reference and can be any string. It is not used in the cache or for any other purpose, only for better readability in the logs on start-up of the relay when the spending plans are being configured.
+- The `ethAddresses` and `ipAddresses` fields are arrays of strings containing the ETH addresses and IP addresses associated with the supported project or partner project. **At least one** of these two fields must be present and contain **at least one entry**.
+- The `subscriptionType` field is also **required**. It is an enum with the following possible values: `BASIC`, `EXTENDED`, and `PRIVILEGED`.
 
-The JSON file can also be updated over time to add new supported projects or partner projects, and it will populate only the new entries on the next start-up.
+On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly. 
 
-```json
+If the cache already contains some of these entries, it will only populate the new entries and remove the obsolete ones.
+
+### Incremental changes to the JSON file
+
+#### Adding new partners or supported projects
+
+The JSON file can also be updated over time to add new partners or supported projects, and it will populate only the new entries on the next start-up.
+
+```javascript
 [
-  ...,
+  // rest of JSON file remains the same
+  ...oldContent,
   {
+    "id": "0b054498-5c48-4402-aad4-b9b455f33457",
     "name": "new partner name",
     "ethAddresses": ["0x129", "0x130"],
     "ipAddresses": ["133.0.0.1"],
@@ -352,18 +375,54 @@ The JSON file can also be updated over time to add new supported projects or par
 ]
 ```
 
+#### Removing or updating existing partners or supported projects
+
+If some of the pre-configured plans are removed them from the JSON file, they will be considered "obsolete" and removed from the cache on the next start-up of the relay.
+
+You can also add new ETH addresses or IP addresses to existing plans by updating the JSON file.
+
+```javascript
+[
+  // rest of JSON file remains the same
+  ...oldContent,
+  {
+    "id": "c758c095-342c-4607-9db5-867d7e90ab9d",
+    "name": "partner name",
+    "ethAddresses": ["0x123", "0x124", "<new_eth_address>"],
+    "ipAddresses": ["127.0.0.1", "128.0.0.1", "<new_ip_address>", "<another_new_ip_address>"],
+    "subscriptionType": "PRIVILEGED",
+  }
+]
+```
+
+Or if you remove any existing ETH addresses or IP addresses from the JSON file, only those will be removed from the cache on the next start-up.
+
+```javascript
+[
+  // rest of JSON file remains the same
+  ...oldContent,
+  {
+    "id": "c758c095-342c-4607-9db5-867d7e90ab9d",
+    "name": "partner name",
+    "ethAddresses": ["0x123"], // removed "0x124"
+    "ipAddresses": ["127.0.0.1"], // removed "128.0.0.1"
+    "subscriptionType": "PRIVILEGED",
+  }
+]
+```
+
 ### Spending Limits of Different Tiers
 
 The spending limits for different tiers are defined as environment variables:
-- `HBAR_RATE_LIMIT_BASIC`: The spending limit (in tinybars) for general users (tier 3)
-- `HBAR_RATE_LIMIT_EXTENDED`: The spending limit (in tinybars) for supported projects (tier 2)
-- `HBAR_RATE_LIMIT_PRIVILEGED`: The spending limit (in tinybars) for trusted partners (tier 1)
+- `HBAR_RATE_LIMIT_BASIC`: The spending limit in tinybars (tℏ) for general users (tier 3)
+- `HBAR_RATE_LIMIT_EXTENDED`: The spending limit in tinybars (tℏ) for supported projects (tier 2)
+- `HBAR_RATE_LIMIT_PRIVILEGED`: The spending limit in tinybars (tℏ) for trusted partners (tier 1)
 
-Example configuration for tiered spending limits:
+Example configuration for tiered spending limits of 0.1 ℏ, 1 ℏ, and 10 ℏ respectively:
 ```dotenv
-HBAR_RATE_LIMIT_BASIC=92592592
-HBAR_RATE_LIMIT_EXTENDED=925925925
-HBAR_RATE_LIMIT_PRIVILEGED=1851851850
+HBAR_RATE_LIMIT_BASIC=10000000
+HBAR_RATE_LIMIT_EXTENDED=100000000
+HBAR_RATE_LIMIT_PRIVILEGED=1000000000
 ```
 
 ### Total Budget and Limit Duration
@@ -376,7 +435,7 @@ The total budget and the limit duration are defined as environment variables:
   - This is the largest bucket from which others pull from.
   - If the total amount spent exceeds this limit, all spending is paused until the next reset.
 
-Example configuration for a total budget of 110 HBARs (11_000_000_000 tinybars) per 80 seconds:
+Example configuration for a total budget of 110 ℏ (11_000_000_000 tℏ) per 80 seconds:
 ```dotenv
 HBAR_RATE_LIMIT_TINYBAR=11000000000
 HBAR_RATE_LIMIT_DURATION=80000

@@ -24,7 +24,7 @@ describe('@server-config Server Configuration Options Coverage', function () {
   describe('Koa Server Timeout', () => {
     it('should timeout a request after the specified time', async () => {
       const requestTimeoutMs: number = parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS || '3000');
-      const host = 'localhost';
+      const host = process.env.SERVER_HOST || 'localhost';
       const port = parseInt(process.env.SERVER_PORT || '7546');
       const method = 'eth_blockNumber';
       const params: any[] = [];
