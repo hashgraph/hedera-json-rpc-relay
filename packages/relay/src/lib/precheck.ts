@@ -24,7 +24,8 @@ import { EthImpl } from './eth';
 import { Logger } from 'pino';
 import constants from './constants';
 import { ethers, Transaction } from 'ethers';
-import { formatRequestIdMessage, prepend0x } from '../formatters';
+import { prepend0x } from '../formatters';
+import { RequestDetails } from './types';
 
 /**
  * Precheck class for handling various prechecks before sending a raw transaction.
@@ -68,33 +69,35 @@ export class Precheck {
   /**
    * Sends a raw transaction after performing various prechecks.
    * @param {ethers.Transaction} parsedTx - The parsed transaction.
-   * @param {number} gasPrice - The gas price.
-   * @param {string} [requestId] - The request ID.
+   * @param {number} networkGasPriceInWeiBars - The predefined gas price of the network in weibar.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    */
-  async sendRawTransactionCheck(parsedTx: ethers.Transaction, gasPrice: number, requestId?: string): Promise<void> {
-    this.transactionType(parsedTx, requestId);
-    this.gasLimit(parsedTx, requestId);
-    const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestId);
-    this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestId);
-    this.chainId(parsedTx, requestId);
+  async sendRawTransactionCheck(
+    parsedTx: ethers.Transaction,
+    networkGasPriceInWeiBars: number,
+    requestDetails: RequestDetails,
+  ): Promise<void> {
+    this.transactionType(parsedTx, requestDetails);
+    this.gasLimit(parsedTx, requestDetails);
+    const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestDetails);
+    this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestDetails);
+    this.chainId(parsedTx, requestDetails);
     this.value(parsedTx);
-    this.gasPrice(parsedTx, gasPrice, requestId);
-    this.balance(parsedTx, mirrorAccountInfo, requestId);
+    this.gasPrice(parsedTx, networkGasPriceInWeiBars, requestDetails);
+    this.balance(parsedTx, mirrorAccountInfo, requestDetails);
   }
 
   /**
    * Verifies the account.
    * @param {Transaction} tx - The transaction.
-   * @param {string} [requestId] - The request ID.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<any>} A Promise.
    */
-  async verifyAccount(tx: Transaction, requestId?: string): Promise<any> {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    // verify account
-    const accountInfo = await this.mirrorNodeClient.getAccount(tx.from!, requestId);
+  async verifyAccount(tx: Transaction, requestDetails: RequestDetails): Promise<any> {
+    const accountInfo = await this.mirrorNodeClient.getAccount(tx.from!, requestDetails);
     if (accountInfo == null) {
       this.logger.trace(
-        `${requestIdPrefix} Failed to retrieve address '${
+        `${requestDetails.formattedRequestId} Failed to retrieve address '${
           tx.from
         }' account details from mirror node on verify account precheck for sendRawTransaction(transaction=${JSON.stringify(
           tx,
@@ -110,12 +113,11 @@ export class Precheck {
    * Checks the nonce of the transaction.
    * @param {Transaction} tx - The transaction.
    * @param {number} accountInfoNonce - The nonce of the account.
-   * @param {string} [requestId] - The request ID.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    */
-  nonce(tx: Transaction, accountInfoNonce: number, requestId?: string): void {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
+  nonce(tx: Transaction, accountInfoNonce: number, requestDetails: RequestDetails): void {
     this.logger.trace(
-      `${requestIdPrefix} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`,
+      `${requestDetails.formattedRequestId} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`,
     );
 
     if (accountInfoNonce > tx.nonce) {
@@ -126,15 +128,14 @@ export class Precheck {
   /**
    * Checks the chain ID of the transaction.
    * @param {Transaction} tx - The transaction.
-   * @param {string} [requestId] - The request ID.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    */
-  chainId(tx: Transaction, requestId?: string): void {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
+  chainId(tx: Transaction, requestDetails: RequestDetails): void {
     const txChainId = prepend0x(Number(tx.chainId).toString(16));
     const passes = this.isLegacyUnprotectedEtx(tx) || txChainId === this.chain;
     if (!passes) {
       this.logger.trace(
-        `${requestIdPrefix} Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)`,
+        `${requestDetails.formattedRequestId} Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)`,
         JSON.stringify(tx),
         txChainId,
       );
@@ -156,12 +157,11 @@ export class Precheck {
   /**
    * Checks the gas price of the transaction.
    * @param {Transaction} tx - The transaction.
-   * @param {number} gasPrice - The gas price.
+   * @param {number} networkGasPriceInWeiBars - The predefined gas price of the network in weibar.
    * @param {string} [requestId] - The request ID.
    */
-  gasPrice(tx: Transaction, gasPrice: number, requestId?: string): void {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
-    const minGasPrice = BigInt(gasPrice);
+  gasPrice(tx: Transaction, networkGasPriceInWeiBars: number, requestDetails: RequestDetails): void {
+    const networkGasPrice = BigInt(networkGasPriceInWeiBars);
     const txGasPrice = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
 
     // **notice: Pass gasPrice precheck if txGasPrice is greater than the minimum network's gas price value,
@@ -169,25 +169,25 @@ export class Precheck {
     // **explanation: The deterministic deployment transaction is pre-signed with a gasPrice value of only 10 hbars,
     //                which is lower than the minimum gas price value in all Hedera network environments. Therefore,
     //                this special case is exempt from the precheck in the Relay, and the gas price logic will be resolved at the Services level.
-    const passes = txGasPrice >= minGasPrice || Precheck.isDeterministicDeploymentTransaction(tx);
+    const passes = txGasPrice >= networkGasPrice || Precheck.isDeterministicDeploymentTransaction(tx);
 
     if (!passes) {
       if (constants.GAS_PRICE_TINY_BAR_BUFFER) {
         // Check if failure is within buffer range (Often it's by 1 tinybar) as network gasprice calculation can change slightly.
         // e.g gasPrice=1450000000000, requiredGasPrice=1460000000000, in which case we should allow users to go through and let the network check
         const txGasPriceWithBuffer = txGasPrice + BigInt(constants.GAS_PRICE_TINY_BAR_BUFFER);
-        if (txGasPriceWithBuffer >= minGasPrice) {
+        if (txGasPriceWithBuffer >= networkGasPrice) {
           return;
         }
       }
 
       this.logger.trace(
-        `${requestIdPrefix} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`,
+        `${requestDetails.formattedRequestId} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`,
         JSON.stringify(tx),
         txGasPrice,
-        minGasPrice,
+        networkGasPrice,
       );
-      throw predefined.GAS_PRICE_TOO_LOW(txGasPrice, minGasPrice);
+      throw predefined.GAS_PRICE_TOO_LOW(txGasPrice, networkGasPrice);
     }
   }
 
@@ -204,10 +204,9 @@ export class Precheck {
    * Checks the balance of the sender account.
    * @param {Transaction} tx - The transaction.
    * @param {any} account - The account information.
-   * @param {string} [requestId] - The request ID.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    */
-  balance(tx: Transaction, account: any, requestId?: string): void {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
+  balance(tx: Transaction, account: any, requestDetails: RequestDetails): void {
     const result = {
       passes: false,
       error: predefined.INSUFFICIENT_ACCOUNT_BALANCE,
@@ -217,7 +216,9 @@ export class Precheck {
 
     if (account == null) {
       this.logger.trace(
-        `${requestIdPrefix} Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(
+        `${
+          requestDetails.formattedRequestId
+        } Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(
           tx,
         )}, totalValue=${txTotalValue})`,
       );
@@ -230,7 +231,7 @@ export class Precheck {
       result.passes = tinybars >= txTotalValue;
     } catch (error: any) {
       this.logger.trace(
-        `${requestIdPrefix} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`,
+        `${requestDetails.formattedRequestId} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`,
         JSON.stringify(tx),
         txTotalValue,
         error.message,
@@ -245,7 +246,7 @@ export class Precheck {
 
     if (!result.passes) {
       this.logger.trace(
-        `${requestIdPrefix} Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountTinyBarBalance=%s)`,
+        `${requestDetails.formattedRequestId} Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountTinyBarBalance=%s)`,
         JSON.stringify(tx),
         txTotalValue,
         tinybars,
@@ -257,10 +258,9 @@ export class Precheck {
   /**
    * Checks the gas limit of the transaction.
    * @param {Transaction} tx - The transaction.
-   * @param {string} [requestId] - The request ID.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    */
-  gasLimit(tx: Transaction, requestId?: string): void {
-    const requestIdPrefix = formatRequestIdMessage(requestId);
+  gasLimit(tx: Transaction, requestDetails: RequestDetails): void {
     const gasLimit = Number(tx.gasLimit);
     const failBaseLog = 'Failed gasLimit precheck for sendRawTransaction(transaction=%s).';
 
@@ -268,7 +268,7 @@ export class Precheck {
 
     if (gasLimit > constants.MAX_GAS_PER_SEC) {
       this.logger.trace(
-        `${requestIdPrefix} ${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`,
+        `${requestDetails.formattedRequestId} ${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`,
         JSON.stringify(tx),
         gasLimit,
         constants.MAX_GAS_PER_SEC,
@@ -276,7 +276,7 @@ export class Precheck {
       throw predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.MAX_GAS_PER_SEC);
     } else if (gasLimit < intrinsicGasCost) {
       this.logger.trace(
-        `${requestIdPrefix} ${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`,
+        `${requestDetails.formattedRequestId} ${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`,
         JSON.stringify(tx),
         gasLimit,
         intrinsicGasCost,
@@ -345,12 +345,11 @@ export class Precheck {
     }
   }
 
-  transactionType(tx: Transaction, requestId?: string) {
+  transactionType(tx: Transaction, requestDetails: RequestDetails) {
     // Blob transactions are not supported as per HIP 866
     if (tx.type === 3) {
-      const requestIdPrefix = formatRequestIdMessage(requestId);
       this.logger.trace(
-        `${requestIdPrefix} Transaction with type=${
+        `${requestDetails.formattedRequestId} Transaction with type=${
           tx.type
         } is unsupported for sendRawTransaction(transaction=${JSON.stringify(tx)})`,
       );

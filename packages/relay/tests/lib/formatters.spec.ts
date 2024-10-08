@@ -26,6 +26,7 @@ import {
   formatRequestIdMessage,
   formatTransactionId,
   formatTransactionIdWithoutQueryParams,
+  getFunctionSelector,
   hexToASCII,
   isHex,
   isValidEthereumAddress,
@@ -41,12 +42,6 @@ import {
   toNullableBigNumber,
   toNullIfEmptyHex,
   trimPrecedingZeros,
-  isHex,
-  ASCIIToHex,
-  formatRequestIdMessage,
-  strip0x,
-  getFunctionSelector,
-  toHexString,
   weibarHexToTinyBarInt,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
@@ -447,24 +442,9 @@ describe('Formatters', () => {
       expect(weibarHexToTinyBarInt(value)).to.eq(111);
     });
 
-    it('should convert weibar hex value to tinybar number', () => {
-      const value = undefined;
-      expect(weibarHexToTinyBarInt(value)).to.be.null;
-    });
-
-    it('should convert weibar hex value to tinybar number', () => {
-      const value = null;
-      expect(weibarHexToTinyBarInt(value)).to.be.null;
-    });
-
     it('should handle 0x value', () => {
       const value = '0x';
-      expect(weibarHexToTinyBarInt(value)).to.eq(null);
-    });
-
-    it('should handle 0x value', () => {
-      const value = '0x';
-      expect(weibarHexToTinyBarInt(value)).to.eq(null);
+      expect(weibarHexToTinyBarInt(value)).to.eq(0);
     });
 
     it('should 0x0', () => {
@@ -706,8 +686,8 @@ describe('Formatters', () => {
       const result = getFunctionSelector('0x1234567890abcdef');
       expect(result).to.eq('12345678');
     });
-   });
-  
+  });
+
   describe('mapKeysAndValues', () => {
     it('should map keys and values correctly', () => {
       const target = { a: '1', b: '2', c: '3' };

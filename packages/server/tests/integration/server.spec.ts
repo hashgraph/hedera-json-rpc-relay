@@ -25,8 +25,6 @@ import path from 'path';
 import sinon from 'sinon';
 import { Server } from 'http';
 import { GCProfiler } from 'v8';
-dotenv.config({ path: path.resolve(__dirname, './test.env') });
-
 import Assertions from '../helpers/assertions';
 import app from '../../src/server';
 import { TracerType, Validator } from '../../src/validator';
@@ -36,6 +34,8 @@ import { Utils } from '../helpers/utils';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { contractAddress1, contractAddress2, contractHash1, contractId1 } from '../../../relay/tests/helpers';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
+
+dotenv.config({ path: path.resolve(__dirname, './test.env') });
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 
@@ -62,6 +62,35 @@ describe('RPC Server', function () {
   }
 
   this.timeout(5000);
+
+  it('should verify that the server is running with the correct host and port', async function () {
+    const CUSTOMIZE_PORT = '7545';
+    const CUSTOMIZE_HOST = '127.0.0.1';
+    const configuredServer = app.listen({ port: CUSTOMIZE_PORT, host: CUSTOMIZE_HOST });
+
+    return new Promise<void>((resolve, reject) => {
+      configuredServer.on('listening', () => {
+        const address = configuredServer.address();
+
+        try {
+          expect(address).to.not.be.null;
+          if (address && typeof address === 'object') {
+            expect(address.address).to.equal(CUSTOMIZE_HOST);
+            expect(address.port.toString()).to.equal(CUSTOMIZE_PORT);
+          } else {
+            throw new Error('Server address is not an object');
+          }
+          configuredServer.close(() => resolve());
+        } catch (error) {
+          configuredServer.close(() => reject(error));
+        }
+      });
+
+      configuredServer.on('error', (error) => {
+        reject(error);
+      });
+    });
+  });
 
   it('should execute "eth_chainId"', async function () {
     const res = await testClient.post('/', {

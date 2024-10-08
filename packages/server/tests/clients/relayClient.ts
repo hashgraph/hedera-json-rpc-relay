@@ -18,14 +18,14 @@
  *
  */
 
-import { ethers } from 'ethers';
+import { BlockTag, ethers } from 'ethers';
 import { Logger } from 'pino';
 import Assertions from '../helpers/assertions';
-import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
+import { predefined } from '@hashgraph/json-rpc-relay';
 import { Utils } from '../helpers/utils';
 
 export default class RelayClient {
-  private readonly provider: ethers.JsonRpcProvider;
+  readonly provider: ethers.JsonRpcProvider;
   private readonly logger: Logger;
 
   constructor(relayUrl: string, logger: Logger) {
@@ -42,7 +42,6 @@ export default class RelayClient {
    */
   async call(methodName: string, params: any[], requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-
     const result = await this.provider.send(methodName, params);
     this.logger.trace(
       `${requestIdPrefix} [POST] to relay '${methodName}' with params [${JSON.stringify(
@@ -61,7 +60,7 @@ export default class RelayClient {
    * @param payload
    * @returns
    */
-  async callBatch(payload: { id: string; method: string; params: any[] }[]) {
+  async callBatch(payload: { id: number; method: string; params: any[] }[]) {
     const request = this.provider._getConnection();
     request.setHeader('content-type', 'application/json');
     request.body = JSON.stringify(payload.map((r) => ({ ...r, jsonrpc: '2.0' })));
@@ -75,6 +74,7 @@ export default class RelayClient {
    * Calls the specified methodName with the provided params and asserts that it fails
    * @param methodName
    * @param params
+   * @param expectedRpcError
    * @param requestId
    */
   async callFailing(
@@ -126,7 +126,7 @@ export default class RelayClient {
    * @param block
    * @param requestId
    */
-  async getBalance(address, block = 'latest', requestId?: string) {
+  async getBalance(address: ethers.AddressLike, block: BlockTag = 'latest', requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     this.logger.debug(`${requestIdPrefix} [POST] to relay eth_getBalance for address ${address}]`);
     return this.provider.getBalance(address, block);
@@ -137,7 +137,7 @@ export default class RelayClient {
    * @param requestId
    * Returns: The nonce of the account with the provided `evmAddress`
    */
-  async getAccountNonce(evmAddress, requestId?: string): Promise<number> {
+  async getAccountNonce(evmAddress: string, requestId?: string): Promise<number> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_getTransactionCount for address ${evmAddress}`);
     const nonce = await this.provider.send('eth_getTransactionCount', [evmAddress, 'latest']);

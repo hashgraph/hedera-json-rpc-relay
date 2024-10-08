@@ -21,9 +21,7 @@
 import crypto from 'crypto';
 import constants from './lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
-import { TransactionRecord } from '@hashgraph/sdk';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { MirrorNodeTransactionRecord } from './lib/types/mirrorNode';
 import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 
 const EMPTY_HEX = '0x';
@@ -132,24 +130,23 @@ const parseNumericEnvVar = (envVarName: string, fallbackConstantKey: string): nu
 };
 
 /**
- * Parse weibar hex string to tinybar number, by applying tinybar to weibar coef.
- * Return null, if value is not a valid hex. Null is the only other valid response that mirror-node accepts.
- * @param value
- * @returns tinybarValue
+ * Converts a value in weibars (as a hex string, bigint, boolean, number, or string) to tinybars.
+ *
+ * @param {bigint | boolean | number | string} value - The value to convert, can be in various formats such as hex string, bigint, boolean, number, or string.
+ * @returns {number} - The equivalent value in tinybars, rounded to the nearest whole number.
  */
-const weibarHexToTinyBarInt = (value: bigint | boolean | number | string | null | undefined): number | null => {
-  if (value && value !== '0x') {
-    const weiBigInt = BigInt(value);
-    const coefBigInt = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
-    // Calculate the tinybar value
-    const tinybarValue = weiBigInt / coefBigInt;
-    // Check if there was a fractional part that got discarded
-    if (tinybarValue === BigInt(0) && weiBigInt > BigInt(0)) {
-      return 1; // Round up to the smallest unit of tinybar
-    }
-    return Number(tinybarValue);
+const weibarHexToTinyBarInt = (value: bigint | boolean | number | string): number => {
+  if (value === '0x') return 0;
+
+  const weiBigInt = BigInt(value);
+  const coefBigInt = BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
+  // Calculate the tinybar value
+  const tinybarValue = weiBigInt / coefBigInt;
+  // Check if there was a fractional part that got discarded
+  if (tinybarValue === BigInt(0) && weiBigInt > BigInt(0)) {
+    return 1; // Round up to the smallest unit of tinybar
   }
-  return null;
+  return Number(tinybarValue);
 };
 
 const formatContractResult = (cr: any) => {
