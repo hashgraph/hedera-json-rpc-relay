@@ -25,7 +25,7 @@ import { CacheService } from '../../../services/cacheService/cacheService';
 import { HbarSpendingPlanNotActiveError, HbarSpendingPlanNotFoundError } from '../../types/hbarLimiter/errors';
 import { IDetailedHbarSpendingPlan, IHbarSpendingPlan } from '../../types/hbarLimiter/hbarSpendingPlan';
 import { HbarSpendingRecord } from '../../entities/hbarLimiter/hbarSpendingRecord';
-import { SubscriptionType } from '../../types/hbarLimiter/subscriptionType';
+import { SubscriptionTier } from '../../types/hbarLimiter/subscriptionTier';
 import { HbarSpendingPlan } from '../../entities/hbarLimiter/hbarSpendingPlan';
 import { RequestDetails } from '../../../types';
 
@@ -85,21 +85,21 @@ export class HbarSpendingPlanRepository {
 
   /**
    * Creates a new HBar spending plan.
-   * @param {SubscriptionType} subscriptionType - The subscription type of the plan to create.
+   * @param {SubscriptionTier} subscriptionTier - The subscription tier of the plan to create.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @param {number} ttl - The time-to-live for the plan in milliseconds.
    * @param {string} planId - The ID to assign to the plan. (default: generated UUID)
    * @returns {Promise<IDetailedHbarSpendingPlan>} - The created HBar spending plan object.
    */
   async create(
-    subscriptionType: SubscriptionType,
+    subscriptionTier: SubscriptionTier,
     requestDetails: RequestDetails,
     ttl: number,
     planId?: string,
   ): Promise<IDetailedHbarSpendingPlan> {
     const plan: IDetailedHbarSpendingPlan = {
       id: planId ?? uuidV4(randomBytes(16)),
-      subscriptionType,
+      subscriptionTier: subscriptionTier,
       createdAt: new Date(),
       active: true,
       spendingHistory: [],
@@ -231,23 +231,23 @@ export class HbarSpendingPlanRepository {
   }
 
   /**
-   * Finds all active HBar spending plans by subscription type.
-   * @param {SubscriptionType[]} subscriptionTypes - The subscription types to filter by.
+   * Finds all active HBar spending plans by subscription tier.
+   * @param {SubscriptionTier[]} tiers - The subscription tiers to filter by.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan[]>} - A promise that resolves with the active spending plans.
    */
-  async findAllActiveBySubscriptionType(
-    subscriptionTypes: SubscriptionType[],
+  async findAllActiveBySubscriptionTier(
+    tiers: SubscriptionTier[],
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan[]> {
-    const callerMethod = this.findAllActiveBySubscriptionType.name;
+    const callerMethod = this.findAllActiveBySubscriptionTier.name;
     const keys = await this.cache.keys(this.getKey('*'), callerMethod, requestDetails);
     const plans = await Promise.all(
       keys.map((key) => this.cache.getAsync<IHbarSpendingPlan>(key, callerMethod, requestDetails)),
     );
     return Promise.all(
       plans
-        .filter((plan) => subscriptionTypes.includes(plan.subscriptionType) && plan.active)
+        .filter((plan) => tiers.includes(plan.subscriptionTier) && plan.active)
         .map(
           async (plan) =>
             new HbarSpendingPlan({

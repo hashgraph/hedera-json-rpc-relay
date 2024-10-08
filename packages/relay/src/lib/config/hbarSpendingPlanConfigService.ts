@@ -26,7 +26,7 @@ import { EthAddressHbarSpendingPlanRepository } from '../db/repositories/hbarLim
 import { IPAddressHbarSpendingPlanRepository } from '../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { RequestDetails } from '../types';
 import { Logger } from 'pino';
-import { SubscriptionType } from '../db/types/hbarLimiter/subscriptionType';
+import { SubscriptionTier } from '../db/types/hbarLimiter/subscriptionTier';
 import { IDetailedHbarSpendingPlan } from '../db/types/hbarLimiter/hbarSpendingPlan';
 
 export class HbarSpendingPlanConfigService {
@@ -84,8 +84,8 @@ export class HbarSpendingPlanConfigService {
     this.validateSpendingPlanConfig(spendingPlanConfigs);
 
     const existingPlans: IDetailedHbarSpendingPlan[] =
-      await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionType(
-        [SubscriptionType.EXTENDED, SubscriptionType.PRIVILEGED],
+      await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
+        [SubscriptionTier.EXTENDED, SubscriptionTier.PRIVILEGED],
         requestDetails,
       );
 
@@ -140,10 +140,10 @@ export class HbarSpendingPlanConfigService {
     requestDetails: RequestDetails,
   ): Promise<void> {
     const plansToAdd = spendingPlanConfigs.filter((spc) => !existingPlans.some((plan) => plan.id === spc.id));
-    for (const { id, name, subscriptionType } of plansToAdd) {
-      await this.hbarSpendingPlanRepository.create(subscriptionType, requestDetails, this.TTL, id);
+    for (const { id, name, subscriptionTier } of plansToAdd) {
+      await this.hbarSpendingPlanRepository.create(subscriptionTier, requestDetails, this.TTL, id);
       this.logger.info(
-        `Created HBAR spending plan "${name}" with ID "${id}" and subscriptionType "${subscriptionType}"`,
+        `Created HBAR spending plan "${name}" with ID "${id}" and subscriptionTier "${subscriptionTier}"`,
       );
     }
   }

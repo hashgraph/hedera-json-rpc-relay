@@ -18,7 +18,7 @@
  *
  */
 
-import { SubscriptionType } from '../db/types/hbarLimiter/subscriptionType';
+import { SubscriptionTier } from '../db/types/hbarLimiter/subscriptionTier';
 
 /**
  * Represents the configuration for a spending plan.
@@ -53,9 +53,9 @@ export interface SpendingPlanConfig {
 
   /**
    * The subscription tier associated with the spending plan.
-   * @type {SubscriptionType}
+   * @type {SubscriptionTier}
    */
-  subscriptionType: SubscriptionType;
+  subscriptionTier: SubscriptionTier;
 }
 
 /**
@@ -68,8 +68,8 @@ export function isValidSpendingPlanConfig(plan: any): plan is SpendingPlanConfig
     plan &&
     typeof plan.id === 'string' &&
     typeof plan.name === 'string' &&
-    typeof plan.subscriptionType === 'string' &&
-    Object.values(SubscriptionType).includes(plan.subscriptionType) &&
+    typeof plan.subscriptionTier === 'string' &&
+    Object.values(SubscriptionTier).includes(plan.subscriptionTier) &&
     ((Array.isArray(plan.ethAddresses) && plan.ethAddresses.length > 0) ||
       (Array.isArray(plan.ipAddresses) && plan.ipAddresses.length > 0))
   );

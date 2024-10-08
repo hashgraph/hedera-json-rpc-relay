@@ -24,7 +24,7 @@ import pino, { Logger } from 'pino';
 import { HbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { SubscriptionType } from '../../../src/lib/db/types/hbarLimiter/subscriptionType';
+import { SubscriptionTier } from '../../../src/lib/db/types/hbarLimiter/subscriptionTier';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { SpendingPlanConfig } from '../../../src/lib/types/spendingPlanConfig';
@@ -94,17 +94,17 @@ describe('HbarSpendingPlanConfigService', function () {
 
         await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
-        spendingPlansConfig.forEach(({ id, name, subscriptionType }) => {
+        spendingPlansConfig.forEach(({ id, name, subscriptionTier }) => {
           sinon.assert.calledWith(
             hbarSpendingPlanRepositorySpy.create,
-            subscriptionType,
+            subscriptionTier,
             emptyRequestDetails,
             neverExpireTtl,
             id,
           );
           sinon.assert.calledWith(
             loggerSpy.info,
-            `Created HBAR spending plan "${name}" with ID "${id}" and subscriptionType "${subscriptionType}"`,
+            `Created HBAR spending plan "${name}" with ID "${id}" and subscriptionTier "${subscriptionTier}"`,
           );
         });
       });
@@ -117,18 +117,10 @@ describe('HbarSpendingPlanConfigService', function () {
       });
 
       it('should remove obsolete associations of IP and ETH addresses linked to BASIC spending plans if they appear in the configuration', async function () {
-        sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
-          spendingPlansConfig.map((plan) => ({
-            id: plan.id,
-            name: plan.name,
-            subscriptionType: plan.subscriptionType,
-            ethAddresses: plan.ethAddresses,
-            ipAddresses: plan.ipAddresses,
-          })),
-        );
+        sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(spendingPlansConfig);
         for (const plan of spendingPlansConfig) {
           const basicPlan = await hbarSpendingPlanRepository.create(
-            SubscriptionType.BASIC,
+            SubscriptionTier.BASIC,
             emptyRequestDetails,
             neverExpireTtl,
           );
@@ -187,21 +179,21 @@ describe('HbarSpendingPlanConfigService', function () {
           {
             id: 'plan-extended',
             name: 'Extended Plan',
-            subscriptionType: SubscriptionType.EXTENDED,
+            subscriptionTier: SubscriptionTier.EXTENDED,
             ethAddresses: ['0x123'],
             ipAddresses: ['127.0.0.1'],
           },
           {
             id: 'plan-privileged',
             name: 'Privileged Plan',
-            subscriptionType: SubscriptionType.PRIVILEGED,
+            subscriptionTier: SubscriptionTier.PRIVILEGED,
             ethAddresses: ['0x124'],
             ipAddresses: ['128.0.0.1'],
           },
         ];
-        for (const { id, subscriptionType, ethAddresses, ipAddresses } of obsoletePlans) {
+        for (const { id, subscriptionTier, ethAddresses, ipAddresses } of obsoletePlans) {
           const plan = await hbarSpendingPlanRepository.create(
-            subscriptionType,
+            subscriptionTier,
             emptyRequestDetails,
             neverExpireTtl,
             id,
@@ -247,7 +239,7 @@ describe('HbarSpendingPlanConfigService', function () {
       it('should not duplicate already existing spending plans', async function () {
         sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(spendingPlansConfig);
         for (const plan of spendingPlansConfig) {
-          await hbarSpendingPlanRepository.create(plan.subscriptionType, emptyRequestDetails, neverExpireTtl, plan.id);
+          await hbarSpendingPlanRepository.create(plan.subscriptionTier, emptyRequestDetails, neverExpireTtl, plan.id);
         }
         hbarSpendingPlanRepositorySpy.create.resetHistory();
 
@@ -261,13 +253,13 @@ describe('HbarSpendingPlanConfigService', function () {
           spendingPlansConfig.map((plan, index) => ({
             id: plan.id,
             name: plan.name,
-            subscriptionType: plan.subscriptionType,
+            subscriptionTier: plan.subscriptionTier,
             ethAddresses: [toHex(index)].concat(plan.ethAddresses ? plan.ethAddresses : []),
             ipAddresses: plan.ipAddresses,
           })),
         );
         for (const plan of spendingPlansConfig) {
-          await hbarSpendingPlanRepository.create(plan.subscriptionType, emptyRequestDetails, neverExpireTtl, plan.id);
+          await hbarSpendingPlanRepository.create(plan.subscriptionTier, emptyRequestDetails, neverExpireTtl, plan.id);
         }
         hbarSpendingPlanRepositorySpy.create.resetHistory();
 
@@ -311,13 +303,13 @@ describe('HbarSpendingPlanConfigService', function () {
           spendingPlansConfig.map((plan, index) => ({
             id: plan.id,
             name: plan.name,
-            subscriptionType: plan.subscriptionType,
+            subscriptionTier: plan.subscriptionTier,
             ethAddresses: plan.ethAddresses,
-            ipAddresses: [toHex(index)].concat(plan.ipAddresses ? plan.ipAddresses : []),
+            ipAddresses: [`255.0.0.${index}`].concat(plan.ipAddresses ? plan.ipAddresses : []),
           })),
         );
         for (const plan of spendingPlansConfig) {
-          await hbarSpendingPlanRepository.create(plan.subscriptionType, emptyRequestDetails, neverExpireTtl, plan.id);
+          await hbarSpendingPlanRepository.create(plan.subscriptionTier, emptyRequestDetails, neverExpireTtl, plan.id);
         }
         hbarSpendingPlanRepositorySpy.create.resetHistory();
 
