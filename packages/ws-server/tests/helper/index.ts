@@ -92,8 +92,8 @@ export class WsTestHelper {
 }
 
 export class WsTestConstant {
-  public static FAKE_TX_HASH = `0x${'00'.repeat(20)}`;
-  public static STANDARD_WEB_SOCKET = 'Standard Web Socket';
-  public static ETHERS_WS_PROVIDER = 'Ethers Web Socket Provider';
-  public static WS_RELAY_URL = ConfigService.get('WS_RELAY_URL') || `ws://127.0.0.1:8546`;
+  public static readonly FAKE_TX_HASH = `0x${'00'.repeat(20)}`;
+  public static readonly STANDARD_WEB_SOCKET = 'Standard Web Socket';
+  public static readonly ETHERS_WS_PROVIDER = 'Ethers Web Socket Provider';
+  public static readonly WS_RELAY_URL = ConfigService.get('WS_RELAY_URL') || `ws://127.0.0.1:8546`;
 }

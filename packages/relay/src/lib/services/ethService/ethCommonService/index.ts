@@ -60,15 +60,15 @@ export class CommonService implements ICommonService {
    */
   private readonly cacheService: CacheService;
 
-  public static blockLatest = 'latest';
-  public static blockEarliest = 'earliest';
-  public static blockPending = 'pending';
-  public static blockSafe = 'safe';
-  public static blockFinalized = 'finalized';
-  public static isDevMode = ConfigService.get('DEV_MODE');
+  public static readonly blockLatest = 'latest';
+  public static readonly blockEarliest = 'earliest';
+  public static readonly blockPending = 'pending';
+  public static readonly blockSafe = 'safe';
+  public static readonly blockFinalized = 'finalized';
+  public static readonly isDevMode = ConfigService.get('DEV_MODE');
 
   // function callerNames
-  public static latestBlockNumber = 'getLatestBlockNumber';
+  public static readonly latestBlockNumber = 'getLatestBlockNumber';
 
   private readonly maxBlockRange = parseNumericEnvVar('MAX_BLOCK_RANGE', 'MAX_BLOCK_RANGE');
   private readonly ethBlockNumberCacheTtlMs = parseNumericEnvVar(
