@@ -205,7 +205,7 @@ After installing brownie you can go to your project directory and run following 
    brownie accounts new bob
    brownie accounts new alice
    ```
-   Since the transfer of hbars is performed during the tests it is adviced to connect to the forked network instead of
+   Since the transfer of hbars is performed during the tests it is advised to connect to the forked network instead of
    the actual remote network.
    
    In order to run the tests on the forked network add the fork config to the brownie networks list:
