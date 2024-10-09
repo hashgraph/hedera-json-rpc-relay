@@ -29,7 +29,6 @@ import { Poller } from './poller';
 import { Web3Impl } from './web3';
 import EventEmitter from 'events';
 import constants from './constants';
-import HbarLimit from './hbarlimiter';
 import { Client, Hbar } from '@hashgraph/sdk';
 import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';
@@ -109,6 +108,13 @@ export class RelayImpl implements Relay {
   /**
    * @private
    * @readonly
+   * @property {HbarLimitService} hbarLimitService - The service responsible for managing HBAR rate limiting.
+   */
+  private readonly hbarLimitService: HbarLimitService;
+
+  /**
+   * @private
+   * @readonly
    * @property {MetricService} metricService - The service responsible for capturing and reporting metrics.
    */
   private readonly metricService: MetricService;
@@ -149,15 +155,17 @@ export class RelayImpl implements Relay {
       this.cacheService,
       logger.child({ name: 'hbar-spending-plan-repository' }),
     );
+
     const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
       this.cacheService,
       logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
     );
+
     const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
       this.cacheService,
       logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
     );
-    const hbarLimitService = new HbarLimitService(
+    this.hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepository,
       ethAddressHbarSpendingPlanRepository,
       ipAddressHbarSpendingPlanRepository,
@@ -167,7 +175,7 @@ export class RelayImpl implements Relay {
       duration,
     );
 
-    const hapiService = new HAPIService(logger, register, this.cacheService, this.eventEmitter, hbarLimitService);
+    const hapiService = new HAPIService(logger, register, this.cacheService, this.eventEmitter, this.hbarLimitService);
 
     this.clientMain = hapiService.getMainClientInstance();
 
@@ -189,7 +197,7 @@ export class RelayImpl implements Relay {
       this.mirrorNodeClient,
       register,
       this.eventEmitter,
-      hbarLimitService,
+      this.hbarLimitService,
     );
 
     this.ethImpl = new EthImpl(
@@ -199,21 +207,6 @@ export class RelayImpl implements Relay {
       chainId,
       register,
       this.cacheService,
-    );
-
-    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'hbar-spending-plan-repository' }),
-    );
-
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
-    );
-
-    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
     );
 
     this.hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
