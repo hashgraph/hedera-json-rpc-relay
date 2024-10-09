@@ -43,6 +43,7 @@ import {
   toNullIfEmptyHex,
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
+  tinybarsToWeibars,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { BigNumber as BN } from 'bignumber.js';
@@ -735,6 +736,31 @@ describe('Formatters', () => {
       const target = { a: '1', b: '2', c: '3' };
       const result = mapKeysAndValues(target, { key: (key) => key.toUpperCase() });
       expect(result).to.deep.equal({ A: '1', B: '2', C: '3' });
+    });
+  });
+
+  describe('tinybarsToWeibars', () => {
+    it('should convert tinybars to weibars', () => {
+      expect(tinybarsToWeibars(10)).to.eql(100000000000);
+    });
+
+    it('should return null if null is passed', () => {
+      expect(tinybarsToWeibars(null)).to.eql(null);
+    });
+
+    it('should return 0 for 0 input', () => {
+      expect(tinybarsToWeibars(0)).to.eql(0);
+    });
+
+    it('should throw an error when value is smaller than 0', () => {
+      expect(() => tinybarsToWeibars(-10)).to.throw(Error, 'Invalid value - cannot pass negative number');
+    });
+
+    it('should throw an error when value is larger than the total supply of tinybars', () => {
+      expect(() => tinybarsToWeibars(constants.TOTAL_SUPPLY_TINYBARS * 10)).to.throw(
+        Error,
+        'Value cannot be more than the total supply of tinybars in the blockchain',
+      );
     });
   });
 });
