@@ -190,9 +190,10 @@ export default class Assertions {
       relayResponse.transactionIndex,
       "Assert transaction: 'transactionIndex' should equal mirrorNode response",
     ).to.eq(ethers.toQuantity(mirrorNodeResponse.transaction_index));
-    expect(relayResponse.value, "Assert transaction: 'value' should equal mirrorNode response").to.eq(
-      ethers.toQuantity(mirrorNodeResponse.amount),
-    );
+    expect(
+      relayResponse.value,
+      "Assert transaction: 'value' should equal mirrorNode response converted in weibar",
+    ).to.eq(ethers.toQuantity(BigInt(mirrorNodeResponse.amount * constants.TINYBAR_TO_WEIBAR_COEF)));
   }
 
   static transactionReceipt = (transactionReceipt, mirrorResult, effectiveGas) => {
