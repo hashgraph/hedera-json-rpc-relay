@@ -42,6 +42,12 @@ import parentContractJson from '../contracts/Parent.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
+import { RelayImpl } from '@hashgraph/json-rpc-relay/src';
+import { register, Registry } from 'prom-client';
+import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
+import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlan } from '@hashgraph/json-rpc-relay/dist/lib/db/entities/hbarLimiter/ethAddressHbarSpendingPlan';
+import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
@@ -67,6 +73,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
+  const registry = new Registry();
+  const cacheService = new CacheService(logger, registry);
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
   if (relayIsLocal) {
@@ -183,7 +191,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         const initialAccount: AliasAccount = global.accounts[0];
 
-        const neededAccounts: number = 2;
+        const neededAccounts: number = 3;
         accounts.push(
           ...(await Utils.createMultipleAliasAccounts(
             mirrorNode,
@@ -365,6 +373,86 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           // Explanation: A preemptive rate limit check triggers the HBAR_RATE_LIMIT_EXCEED error when (remainingBudget - estimatedTxFee) < 0.
           //             In this scenario, the final remainingHbarsAfter is expected to be less than estimatedTxFee.
           expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
+        });
+
+        it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts', async function () {
+          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+          const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
+          const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
+
+          const factory = new ethers.ContractFactory(
+            largeContractJson.abi,
+            largeContractJson.bytecode,
+            accounts[0].wallet,
+          );
+          const deployedTransaction = await factory.getDeployTransaction();
+          const estimatedTxFee = estimateFileTransactionsFee(
+            deployedTransaction.data.length,
+            fileChunkSize,
+            exchangeRateInCents,
+          );
+
+          const lastRemainingHbars = remainingHbarsBefore;
+          let spentToday = 0;
+          const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
+          const ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+
+          expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
+          expect(remainingHbarsBefore).to.be.gt(0);
+          try {
+            for (let i = 0; i < 50; i++) {
+              const contract = await deployContract(largeContractJson, accounts[2].wallet);
+              const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+
+              const ethSpendingPlanAfter = await ethAddressSpendingPlanRepository.findByAddress(
+                accounts[2].address,
+                requestDetails,
+              );
+              const hbarPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
+                ethSpendingPlanAfter.planId,
+                requestDetails,
+              );
+              expect(hbarPlan.spentToday).to.be.gt(spentToday);
+              expect(remainingHbars).to.be.lt(lastRemainingHbars);
+              spentToday = hbarPlan.spentToday;
+            }
+            expect.fail(`Expected an error but nothing was thrown`);
+          } catch (e: any) {
+            expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+          }
+          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          // Explanation: A preemptive rate limit check triggers the HBAR_RATE_LIMIT_EXCEED error when (remainingBudget - estimatedTxFee) < 0.
+          //             In this scenario, the final remainingHbarsAfter is expected to be less than estimatedTxFee.
+          expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
+        });
+
+        it('should create a BASIC spending plan for a new user', async function () {
+          const ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+          const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
+          const parentContractAddress = parentContract.target as string;
+          global.logger.trace(
+            `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
+          );
+          expect(ethAddressSpendingPlanRepository.findByAddress(accounts[1].address, requestDetails)).to.be.rejected;
+          const gasPrice = await relay.gasPrice(requestId);
+          const transaction = {
+            ...defaultLondonTransactionData,
+            to: parentContractAddress,
+            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+            maxPriorityFeePerGas: gasPrice,
+            maxFeePerGas: gasPrice,
+          };
+          const signedTx = await accounts[1].wallet.signTransaction(transaction);
+
+          await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
+            .fulfilled;
+
+          const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+            accounts[1].address,
+            requestDetails,
+          );
+          expect(ethSpendingPlan).to.not.be.undefined;
         });
       });
     });
