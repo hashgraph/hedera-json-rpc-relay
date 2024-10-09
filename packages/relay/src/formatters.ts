@@ -301,8 +301,9 @@ const getFunctionSelector = (data?: string): string => {
   return data.replace(/^0x/, '').substring(0, 8);
 };
 
-const tinybarsToWeibars = (value) => {
-  return value * constants.TINYBAR_TO_WEIBAR_COEF;
+const tinybarsToWeibars = (value: number | null) => {
+  if (value && value < 0) throw new Error('Invalid value, cannot pass negative number.');
+  return value == null ? null : value * constants.TINYBAR_TO_WEIBAR_COEF;
 };
 
 export {

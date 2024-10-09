@@ -739,9 +739,21 @@ describe('Formatters', () => {
     });
   });
   
-  describe('getFunctionSelector', () => {
+  describe('tinybarsToWeibars', () => {
     it('should convert tinybars to weibars', () => {
       expect(tinybarsToWeibars(10)).to.eql(100000000000);
+    });
+
+    it('should return null if null is passed', () => {
+      expect(tinybarsToWeibars(null)).to.eql(null);
+    });
+
+    it('should return 0 for 0 input', () => {
+      expect(tinybarsToWeibars(0)).to.eql(0);
+    });
+
+    it('should throw an error when value is smaller than 0', () => {
+      expect(() => (tinybarsToWeibars(-10))).to.throw(Error, 'Invalid value, cannot pass negative number.');
     });
   });
 });
