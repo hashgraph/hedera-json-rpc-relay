@@ -402,6 +402,7 @@ export class HbarLimitService implements IHbarLimitService {
         );
       }
     }
+
     if (ipAddress) {
       try {
         return await this.getSpendingPlanByIPAddress(requestDetails);
