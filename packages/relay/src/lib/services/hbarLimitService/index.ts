@@ -174,7 +174,7 @@ export class HbarLimitService implements IHbarLimitService {
   ): Promise<boolean> {
     const ipAddress = requestDetails.ipAddress;
 
-    if (await this.isDailyBudgetExceeded(mode, methodName, txConstructorName, estimatedTxFee, requestDetails)) {
+    if (await this.isTotalBudgetExceeded(mode, methodName, txConstructorName, estimatedTxFee, requestDetails)) {
       return true;
     }
 
@@ -232,8 +232,8 @@ export class HbarLimitService implements IHbarLimitService {
     }
 
     this.logger.trace(
-      `${requestDetails.formattedRequestId} Spending plan expense update: planID=${spendingPlan.id}, subscriptionType=${
-        spendingPlan.subscriptionType
+      `${requestDetails.formattedRequestId} Spending plan expense update: planID=${spendingPlan.id}, subscriptionTier=${
+        spendingPlan.subscriptionTier
       }, cost=${cost}, originalAmountSpent=${spendingPlan.amountSpent}, updatedAmountSpent=${
         spendingPlan.amountSpent + cost
       }`,
@@ -257,16 +257,16 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Checks if the total daily budget has been exceeded.
+   * Checks if the total budget has been exceeded.
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
    * @param {string} txConstructorName - The name of the transaction constructor associated with the transaction.
    * @param {number} estimatedTxFee - The total estimated transaction fee, default to 0.
    * @param {RequestDetails} requestDetails The request details for logging and tracking
-   * @returns {Promise<boolean>} - Resolves `true` if the daily budget has been exceeded, otherwise `false`.
+   * @returns {Promise<boolean>} - Resolves `true` if the budget has been exceeded, otherwise `false`.
    * @private
    */
-  private async isDailyBudgetExceeded(
+  private async isTotalBudgetExceeded(
     mode: string,
     methodName: string,
     txConstructorName: string,
