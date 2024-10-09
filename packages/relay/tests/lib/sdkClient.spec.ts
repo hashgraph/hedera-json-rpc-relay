@@ -31,7 +31,6 @@ import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
 import { register, Registry } from 'prom-client';
-import HbarLimit from '../../src/lib/hbarlimiter';
 import { RequestDetails } from '../../src/lib/types';
 import { formatTransactionId } from '../../src/formatters';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
@@ -109,7 +108,8 @@ describe('SdkClient', async function () {
       AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
       Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
     );
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const duration = constants.HBAR_RATE_LIMIT_DURATION;
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     eventEmitter = new EventEmitter();
 
     cacheService = new CacheService(logger, registry);
@@ -122,7 +122,8 @@ describe('SdkClient', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
 
     sdkClient = new SDKClient(

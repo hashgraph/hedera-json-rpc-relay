@@ -19,18 +19,19 @@
  */
 
 import pino from 'pino';
-import { EventEmitter } from 'stream';
 import MockAdapter from 'axios-mock-adapter';
-import { EthImpl } from '../../../src/lib/eth';
 import { register, Registry } from 'prom-client';
 import constants from '../../../src/lib/constants';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
-import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
+import { EthImpl } from '../../../src/lib/eth';
+import EventEmitter from 'events';
+import { EthAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
+import { Hbar } from '@hashgraph/sdk';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 export function contractResultsByNumberByIndexURL(number: number, index: number): string {
   return `contracts/results?block.number=${number}&transaction.index=${index}&limit=100&order=asc`;
@@ -63,7 +64,8 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
   // @ts-ignore
   const web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
 
-  const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+  const duration = constants.HBAR_RATE_LIMIT_DURATION;
+  const total = constants.HBAR_RATE_LIMIT_TOTAL;
   const eventEmitter = new EventEmitter();
 
   const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
@@ -75,7 +77,8 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
     ipAddressHbarSpendingPlanRepository,
     logger,
     register,
-    total,
+    Hbar.fromTinybars(total),
+    duration,
   );
 
   const hapiServiceInstance = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);

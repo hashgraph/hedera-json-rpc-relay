@@ -31,8 +31,6 @@ import { RequestDetails } from '../../../types';
 
 export class HbarSpendingPlanRepository {
   private readonly collectionKey = 'hbarSpendingPlan';
-  private readonly oneDayInMillis = 24 * 60 * 60 * 1000;
-  private readonly threeMonthsInMillis = this.oneDayInMillis * 90;
 
   /**
    * The cache service used for storing data.
@@ -71,7 +69,7 @@ export class HbarSpendingPlanRepository {
   }
 
   /**
-   * Gets an HBar spending plan by ID with detailed information (spendingHistory and spentToday).
+   * Gets an HBar spending plan by ID with detailed information (spendingHistory and amountSpent).
    * @param {string} id - The ID of the plan.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - The detailed HBar spending plan object.
@@ -81,7 +79,7 @@ export class HbarSpendingPlanRepository {
     return new HbarSpendingPlan({
       ...plan,
       spendingHistory: [],
-      spentToday: await this.getSpentToday(id, requestDetails),
+      amountSpent: await this.getAmountSpent(id, requestDetails),
     });
   }
 
@@ -89,20 +87,25 @@ export class HbarSpendingPlanRepository {
    * Creates a new HBar spending plan.
    * @param {SubscriptionType} subscriptionType - The subscription type of the plan to create.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @param {number} ttl - The time-to-live for the plan in milliseconds.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - The created HBar spending plan object.
    */
-  async create(subscriptionType: SubscriptionType, requestDetails: RequestDetails): Promise<IDetailedHbarSpendingPlan> {
+  async create(
+    subscriptionType: SubscriptionType,
+    requestDetails: RequestDetails,
+    ttl: number,
+  ): Promise<IDetailedHbarSpendingPlan> {
     const plan: IDetailedHbarSpendingPlan = {
       id: uuidV4(randomBytes(16)),
       subscriptionType,
       createdAt: new Date(),
       active: true,
       spendingHistory: [],
-      spentToday: 0,
+      amountSpent: 0,
     };
     this.logger.trace(`Creating HbarSpendingPlan with ID ${plan.id}...`);
     const key = this.getKey(plan.id);
-    await this.cache.set(key, plan, 'create', requestDetails, this.threeMonthsInMillis);
+    await this.cache.set(key, plan, 'create', requestDetails, ttl);
     return new HbarSpendingPlan(plan);
   }
 
@@ -157,48 +160,51 @@ export class HbarSpendingPlanRepository {
   }
 
   /**
-   * Gets the amount spent today for an HBar spending plan.
-   * @param {string} id - The ID of the plan.
-   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
-   * @returns {Promise<number>} - A promise that resolves with the amount spent today.
+   * Gets the amount spent for an HBar spending plan.
+   * @param id - The ID of the plan.
+   @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @returns {Promise<number>} - A promise that resolves with the amount spent.
    */
-  async getSpentToday(id: string, requestDetails: RequestDetails): Promise<number> {
+  async getAmountSpent(id: string, requestDetails: RequestDetails): Promise<number> {
     await this.checkExistsAndActive(id, requestDetails);
 
-    this.logger.trace(`Retrieving spentToday for HbarSpendingPlan with ID ${id}...`);
-    const key = this.getSpentTodayKey(id);
-    return this.cache.getAsync(key, 'getSpentToday', requestDetails).then((spentToday) => parseInt(spentToday ?? '0'));
+    this.logger.trace(`Retrieving amountSpent for HbarSpendingPlan with ID ${id}...`);
+    const key = this.getAmountSpentKey(id);
+    return this.cache
+      .getAsync(key, 'getAmountSpent', requestDetails)
+      .then((amountSpent) => parseInt(amountSpent ?? '0'));
   }
 
   /**
-   * Resets the amount spent today for all hbar spending plans.
+   * Resets the amount spent for all hbar spending plans.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
-  async resetAllSpentTodayEntries(requestDetails: RequestDetails): Promise<void> {
-    this.logger.trace('Resetting the spentToday entries for all HbarSpendingPlans...');
-    const callerMethod = this.resetAllSpentTodayEntries.name;
-    const keys = await this.cache.keys(`${this.collectionKey}:*:spentToday`, callerMethod, requestDetails);
+  async resetAmountSpentOfAllPlans(requestDetails: RequestDetails): Promise<void> {
+    this.logger.trace('Resetting the `amountSpent` entries for all HbarSpendingPlans...');
+    const callerMethod = this.resetAmountSpentOfAllPlans.name;
+    const keys = await this.cache.keys(this.getAmountSpentKey('*'), callerMethod, requestDetails);
     await Promise.all(keys.map((key) => this.cache.delete(key, callerMethod, requestDetails)));
-    this.logger.trace(`Successfully reset ${keys.length} spentToday entries for HbarSpendingPlans.`);
+    this.logger.trace(`Successfully reset ${keys.length} "amountSpent" entries for HbarSpendingPlans.`);
   }
 
   /**
-   * Adds an amount to the amount spent today for a plan.
+   * Adds an amount to the amount spent for a plan.
    * @param {string} id - The ID of the plan.
    * @param {number} amount - The amount to add.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @param {number} ttl - The time-to-live for the amountSpent entry in milliseconds.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
-  async addAmountToSpentToday(id: string, amount: number, requestDetails: RequestDetails): Promise<void> {
+  async addToAmountSpent(id: string, amount: number, requestDetails: RequestDetails, ttl: number): Promise<void> {
     await this.checkExistsAndActive(id, requestDetails);
 
-    const key = this.getSpentTodayKey(id);
-    if (!(await this.cache.getAsync(key, 'addAmountToSpentToday', requestDetails))) {
-      this.logger.trace(`No spending yet for HbarSpendingPlan with ID ${id}, setting spentToday to ${amount}...`);
-      await this.cache.set(key, amount, 'addAmountToSpentToday', requestDetails, this.oneDayInMillis);
+    const key = this.getAmountSpentKey(id);
+    if (!(await this.cache.getAsync(key, 'addToAmountSpent', requestDetails))) {
+      this.logger.trace(`No spending yet for HbarSpendingPlan with ID ${id}, setting amountSpent to ${amount}...`);
+      await this.cache.set(key, amount, 'addToAmountSpent', requestDetails, ttl);
     } else {
-      this.logger.trace(`Adding ${amount} to spentToday for HbarSpendingPlan with ID ${id}...`);
-      await this.cache.incrBy(key, amount, 'addAmountToSpentToday', requestDetails);
+      this.logger.trace(`Adding ${amount} to amountSpent for HbarSpendingPlan with ID ${id}...`);
+      await this.cache.incrBy(key, amount, 'addToAmountSpent', requestDetails);
     }
   }
 
@@ -213,7 +219,7 @@ export class HbarSpendingPlanRepository {
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan[]> {
     const callerMethod = this.findAllActiveBySubscriptionType.name;
-    const keys = await this.cache.keys(`${this.collectionKey}:*`, callerMethod, requestDetails);
+    const keys = await this.cache.keys(this.getKey('*'), callerMethod, requestDetails);
     const plans = await Promise.all(
       keys.map((key) => this.cache.getAsync<IHbarSpendingPlan>(key, callerMethod, requestDetails)),
     );
@@ -226,7 +232,7 @@ export class HbarSpendingPlanRepository {
               ...plan,
               createdAt: new Date(plan.createdAt),
               spendingHistory: [],
-              spentToday: await this.getSpentToday(plan.id, requestDetails),
+              amountSpent: await this.getAmountSpent(plan.id, requestDetails),
             }),
         ),
     );
@@ -242,12 +248,12 @@ export class HbarSpendingPlanRepository {
   }
 
   /**
-   * Gets the cache key for the amount spent today for an {@link IHbarSpendingPlan}.
+   * Gets the cache key for the amount spent for an {@link IHbarSpendingPlan}.
    * @param id - The ID of the plan to get the key for.
    * @private
    */
-  private getSpentTodayKey(id: string): string {
-    return `${this.collectionKey}:${id}:spentToday`;
+  private getAmountSpentKey(id: string): string {
+    return `${this.collectionKey}:${id}:amountSpent`;
   }
 
   /**

@@ -27,6 +27,7 @@ import sinon from 'sinon';
 import dotenv from 'dotenv';
 import { expect } from 'chai';
 import EventEmitter from 'events';
+import { Hbar } from '@hashgraph/sdk';
 import { BigNumber } from 'bignumber.js';
 import { EthImpl } from '../../src/lib/eth';
 import { AccountInfo } from '@hashgraph/sdk';
@@ -129,7 +130,8 @@ describe('Open RPC Specification', function () {
       cacheService,
       instance,
     );
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const duration = constants.HBAR_RATE_LIMIT_DURATION;
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     const eventEmitter = new EventEmitter();
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
@@ -141,7 +143,8 @@ describe('Open RPC Specification', function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
 
     clientServiceInstance = new ClientService(logger, registry, cacheService, eventEmitter, hbarLimitService);

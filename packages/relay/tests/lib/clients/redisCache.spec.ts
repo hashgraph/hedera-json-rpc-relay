@@ -36,7 +36,6 @@ describe('RedisCache Test Suite', async function () {
   const callingMethod = 'RedisCacheTest';
   const requestDetails = new RequestDetails({ requestId: 'localLRUCacheTest', ipAddress: '0.0.0.0' });
 
-
   let redisCache: RedisCache;
 
   useInMemoryRedisServer(logger, 6379);

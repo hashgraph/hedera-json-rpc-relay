@@ -136,7 +136,8 @@ describe('Metric Service', function () {
   beforeEach(() => {
     mock = new MockAdapter(instance);
 
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const duration = constants.HBAR_RATE_LIMIT_DURATION;
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
 
     eventEmitter = new EventEmitter();
 
@@ -150,7 +151,8 @@ describe('Metric Service', function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
 
     const sdkClient = new SDKClient(
@@ -192,7 +194,7 @@ describe('Metric Service', function () {
 
       // validate hbarLimitService
       const updatedBudget = hbarLimitService['remainingBudget'];
-      expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
+      expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(mockedTxFee);
 
       // validate cost metrics
       const costMetricObject = (await metricService['consensusNodeClientHistogramCost'].get()).values.find(
@@ -222,7 +224,9 @@ describe('Metric Service', function () {
       // validate hbarLimitService
       // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
       const updatedBudget = hbarLimitService['remainingBudget'];
-      expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
+      expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(
+        mockedTxFee + expectedTxRecordFee,
+      );
 
       // validate cost metric
       // @ts-ignore
@@ -286,7 +290,9 @@ describe('Metric Service', function () {
       // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
       const updatedBudget = hbarLimitService['remainingBudget'];
 
-      expect(originalBudget - updatedBudget).to.eq(mockedTxFee + expectedTxRecordFee);
+      expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(
+        mockedTxFee + expectedTxRecordFee,
+      );
 
       // validate cost metric
       // @ts-ignore
@@ -351,7 +357,7 @@ describe('Metric Service', function () {
       // validate hbarLimitService
       const updatedBudget = hbarLimitService['remainingBudget'];
 
-      expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
+      expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(mockedTxFee);
 
       // validate cost metrics
       // @ts-ignore
@@ -389,7 +395,7 @@ describe('Metric Service', function () {
 
       // validate hbarLimitService
       const updatedBudget = hbarLimitService['remainingBudget'];
-      expect(originalBudget - updatedBudget).to.eq(mockedTxFee);
+      expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(mockedTxFee);
 
       // validate cost metrics
       // @ts-ignore

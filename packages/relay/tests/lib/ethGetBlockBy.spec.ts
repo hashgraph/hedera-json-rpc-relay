@@ -31,6 +31,7 @@ import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
 import pino from 'pino';
 import { EventEmitter } from 'events';
+import { Hbar } from '@hashgraph/sdk';
 import constants from '../../src/lib/constants';
 import { Log, Transaction } from '../../src/lib/model';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
@@ -138,7 +139,8 @@ describe('eth_getBlockBy', async function () {
     // @ts-ignore
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
 
-    const total = constants.HBAR_RATE_LIMIT_TINYBAR;
+    const duration = constants.HBAR_RATE_LIMIT_DURATION;
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     const eventEmitter = new EventEmitter();
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
@@ -150,7 +152,8 @@ describe('eth_getBlockBy', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      total,
+      Hbar.fromTinybars(total),
+      duration,
     );
 
     hapiServiceInstance = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
