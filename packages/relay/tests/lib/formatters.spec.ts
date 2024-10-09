@@ -753,7 +753,14 @@ describe('Formatters', () => {
     });
 
     it('should throw an error when value is smaller than 0', () => {
-      expect(() => (tinybarsToWeibars(-10))).to.throw(Error, 'Invalid value, cannot pass negative number.');
+      expect(() => tinybarsToWeibars(-10)).to.throw(Error, 'Invalid value - cannot pass negative number');
+    });
+
+    it('should throw an error when value is larger than the total supply of tinybars', () => {
+      expect(() => tinybarsToWeibars(constants.TOTAL_SUPPLY_TINYBARS * 10)).to.throw(
+        Error,
+        'Value cannot be more than the total supply of tinybars in the blockchain',
+      );
     });
   });
 });

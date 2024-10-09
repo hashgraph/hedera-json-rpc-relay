@@ -302,7 +302,10 @@ const getFunctionSelector = (data?: string): string => {
 };
 
 const tinybarsToWeibars = (value: number | null) => {
-  if (value && value < 0) throw new Error('Invalid value, cannot pass negative number.');
+  if (value && value < 0) throw new Error('Invalid value - cannot pass negative number');
+  if (value && value > constants.TOTAL_SUPPLY_TINYBARS)
+    throw new Error('Value cannot be more than the total supply of tinybars in the blockchain');
+
   return value == null ? null : value * constants.TINYBAR_TO_WEIBAR_COEF;
 };
 
