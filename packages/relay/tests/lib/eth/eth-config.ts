@@ -18,6 +18,7 @@
  *
  */
 import {
+  defaultDetailedContractResultByHash,
   defaultEvmAddress,
   defaultLogs1,
   defaultLogs2,
@@ -26,7 +27,7 @@ import {
   mockData,
   toHex,
 } from '../../helpers';
-import { numberTo0x } from '../../../dist/formatters';
+import { numberTo0x, nanOrNumberTo0x } from '../../../dist/formatters';
 import constants from '../../../src/lib/constants';
 
 export const BLOCK_TRANSACTION_COUNT = 77;
@@ -601,6 +602,9 @@ export const BLOCK_BY_HASH_FROM_RELAY = {
 };
 export const CONTRACT_EVM_ADDRESS = '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9';
 export const DEFAULT_TX_HASH = '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+const DEFAULT_TRANSACTION_VALUE = nanOrNumberTo0x(
+  defaultDetailedContractResultByHash.amount * constants.TINYBAR_TO_WEIBAR_COEF,
+);
 export const DEFAULT_TRANSACTION = {
   accessList: [],
   blockHash: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
@@ -620,7 +624,7 @@ export const DEFAULT_TRANSACTION = {
   transactionIndex: '0x1',
   type: 2,
   v: 1,
-  value: '0x77359400',
+  value: DEFAULT_TRANSACTION_VALUE,
 };
 export const DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH = {
   address: '0xd8db0b1dbf8ba6721ef5256ad5fe07d72d1d04b9',
