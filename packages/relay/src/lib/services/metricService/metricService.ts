@@ -22,14 +22,18 @@ import { Logger } from 'pino';
 import EventEmitter from 'events';
 import constants from '../../constants';
 import HbarLimit from '../../hbarlimiter';
-import { Histogram, Registry } from 'prom-client';
+import { Counter, Histogram, Registry } from 'prom-client';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import {
+  IExecuteConsenusClientResetTransactionPayload,
+  IExecuteConsenusClientResetDurationPayload,
+  IExecuteConsenusClientResetErrorPayload,
   IExecuteQueryEventPayload,
   IExecuteTransactionEventPayload,
   ITransactionRecordMetric,
   RequestDetails,
 } from '../../types';
+import HAPIService from '../hapiService/hapiService';
 
 export default class MetricService {
   /**
@@ -47,6 +51,14 @@ export default class MetricService {
    * @private
    */
   private readonly sdkClient: SDKClient;
+
+  /**
+   * HAPIService for managing the sdkClient.
+   * @type {HAPIService}
+   * @readonly
+   * @private
+   */
+  private readonly hapiService: HAPIService;
 
   /**
    * Main Mirror Node client for retrieving transaction records.
@@ -81,6 +93,30 @@ export default class MetricService {
   private readonly consensusNodeClientHistogramGasFee: Histogram;
 
   /**
+   * Counter for capturing the number of consensus client resets based on duration count.
+   * @type {Counter}
+   * @readonly
+   * @private
+   */
+  private readonly consensusClientResetsDuration: Counter;
+
+  /**
+   * Counter for capturing the number of consensus client resets based on error code.
+   * @type {Counter}
+   * @readonly
+   * @private
+   */
+  private readonly consensusClientResetsError: Counter;
+
+  /**
+   * Counter for capturing the number of consensus client resets based on transaction count.
+   * @type {Counter}
+   * @readonly
+   * @private
+   */
+  private readonly consensusClientResetsTransactions: Counter;
+
+  /**
    * An instance of EventEmitter used for emitting and handling events within the class.
    *
    * @private
@@ -102,19 +138,23 @@ export default class MetricService {
    */
   constructor(
     logger: Logger,
-    sdkClient: SDKClient,
+    hapiService: HAPIService,
     mirrorNodeClient: MirrorNodeClient,
     hbarLimiter: HbarLimit,
     register: Registry,
     eventEmitter: EventEmitter,
   ) {
     this.logger = logger;
-    this.sdkClient = sdkClient;
+    this.hapiService = hapiService;
+    this.sdkClient = hapiService.getSDKClient();
     this.hbarLimiter = hbarLimiter;
     this.eventEmitter = eventEmitter;
     this.mirrorNodeClient = mirrorNodeClient;
     this.consensusNodeClientHistogramCost = this.initCostMetric(register);
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
+    this.consensusClientResetsDuration = this.initConsensusClientResetDurationMetric(register);
+    this.consensusClientResetsError = this.initConsensusClientResetErrorCodeMetric(register);
+    this.consensusClientResetsTransactions = this.initConsensusClientResetTransactionMetric(register);
 
     this.eventEmitter.on(constants.EVENTS.EXECUTE_TRANSACTION, (args: IExecuteTransactionEventPayload) => {
       this.captureTransactionMetrics(args).then();
@@ -123,6 +163,21 @@ export default class MetricService {
     this.eventEmitter.on(constants.EVENTS.EXECUTE_QUERY, (args: IExecuteQueryEventPayload) => {
       this.addExpenseAndCaptureMetrics(args);
     });
+
+    this.eventEmitter.on(constants.EVENTS.RESET_CLIENT_DURATION, (args: IExecuteConsenusClientResetDurationPayload) => {
+      this.incrementConsensusClientDurationResets(args);
+    });
+
+    this.eventEmitter.on(constants.EVENTS.RESET_CLIENT_ERRORS, (args: IExecuteConsenusClientResetErrorPayload) => {
+      this.incrementConsensusClientErrorResets(args);
+    });
+
+    this.eventEmitter.on(
+      constants.EVENTS.RESET_CLIENT_TRANSACTIONS,
+      (args: IExecuteConsenusClientResetTransactionPayload) => {
+        this.incrementConsensusClientTransactionResets(args);
+      },
+    );
   }
 
   /**
@@ -220,6 +275,20 @@ export default class MetricService {
     this.captureMetrics(executionMode, txConstructorName, status, cost, gasUsed, callerName, interactingEntity);
   };
 
+  public incrementConsensusClientDurationResets = ({ duration }: IExecuteConsenusClientResetDurationPayload): void => {
+    this.consensusClientResetsDuration.inc(1);
+  };
+
+  public incrementConsensusClientErrorResets = ({ errorCodes }: IExecuteConsenusClientResetErrorPayload): void => {
+    this.consensusClientResetsError.inc(1);
+  };
+
+  public incrementConsensusClientTransactionResets = ({
+    transactionCount,
+  }: IExecuteConsenusClientResetTransactionPayload): void => {
+    this.consensusClientResetsTransactions.inc(1);
+  };
+
   /**
    * Initialize consensus node cost metrics
    * @param {Registry} register
@@ -248,6 +317,54 @@ export default class MetricService {
       name: metricHistogramGasFee,
       help: 'Relay consensusnode mode type status gas fee histogram',
       labelNames: ['mode', 'type', 'status', 'caller', 'interactingEntity'],
+      registers: [register],
+    });
+  }
+
+  /**
+   * Initialize consensus node reset counter for duration
+   * @param {Registry} register
+   * @returns {Counter} Consensus node client reset metric
+   */
+  private initConsensusClientResetDurationMetric(register: Registry): Counter {
+    const metricConsensusClientReset = 'rpc_relay_consensusnode_client_reset_duration';
+    register.removeSingleMetric(metricConsensusClientReset);
+    return new Counter({
+      name: metricConsensusClientReset,
+      help: 'Relay consensusnode client reset counter for duration',
+      labelNames: ['Resets'],
+      registers: [register],
+    });
+  }
+
+  /**
+   * Initialize consensus node reset counter for duration
+   * @param {Registry} register
+   * @returns {Counter} Consensus node client reset metric
+   */
+  private initConsensusClientResetErrorCodeMetric(register: Registry): Counter {
+    const metricConsensusClientReset = 'rpc_relay_consensusnode_client_reset_error_code';
+    register.removeSingleMetric(metricConsensusClientReset);
+    return new Counter({
+      name: metricConsensusClientReset,
+      help: 'Relay consensusnode client reset counter for error codes',
+      labelNames: ['Resets'],
+      registers: [register],
+    });
+  }
+
+  /**
+   * Initialize consensus node reset counter for transaction count
+   * @param {Registry} register
+   * @returns {Counter} Consensus node client reset metric
+   */
+  private initConsensusClientResetTransactionMetric(register: Registry): Counter {
+    const metricConsensusClientReset = 'rpc_relay_consensusnode_client_reset_transactions';
+    register.removeSingleMetric(metricConsensusClientReset);
+    return new Counter({
+      name: metricConsensusClientReset,
+      help: 'Relay consensusnode client reset counter for transactions',
+      labelNames: ['Resets'],
       registers: [register],
     });
   }

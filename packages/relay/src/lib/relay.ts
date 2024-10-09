@@ -128,7 +128,7 @@ export class RelayImpl implements Relay {
 
     this.eventEmitter = new EventEmitter();
     this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);
-    const hapiService = new HAPIService(logger, register, hbarLimiter, this.cacheService, this.eventEmitter);
+    const hapiService = new HAPIService(logger, hbarLimiter, this.cacheService, this.eventEmitter);
     this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
@@ -145,7 +145,7 @@ export class RelayImpl implements Relay {
 
     this.metricService = new MetricService(
       logger,
-      hapiService.getSDKClient(),
+      hapiService,
       this.mirrorNodeClient,
       hbarLimiter,
       register,
