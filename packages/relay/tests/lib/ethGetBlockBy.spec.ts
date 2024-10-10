@@ -24,8 +24,6 @@ import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { register, Registry } from 'prom-client';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 
@@ -43,6 +41,8 @@ import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLi
 import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+
+dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
