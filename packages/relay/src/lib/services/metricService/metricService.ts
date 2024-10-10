@@ -25,10 +25,10 @@ import { Histogram, Registry } from 'prom-client';
 import { HbarLimitService } from '../hbarLimitService';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import {
-  RequestDetails,
-  ITransactionRecordMetric,
   IExecuteQueryEventPayload,
   IExecuteTransactionEventPayload,
+  ITransactionRecordMetric,
+  RequestDetails,
 } from '../../types';
 
 export default class MetricService {

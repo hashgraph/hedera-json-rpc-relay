@@ -20,8 +20,6 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-dotenv.config({ path: findConfig('.env') || '' });
-
 import { Logger } from 'pino';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
@@ -44,6 +42,8 @@ import { CacheService } from './services/cacheService/cacheService';
 import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+
+dotenv.config({ path: findConfig('.env') || '' });
 
 export class RelayImpl implements Relay {
   /**
