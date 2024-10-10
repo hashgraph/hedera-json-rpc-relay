@@ -193,8 +193,8 @@ export class HbarLimitService implements IHbarLimitService {
       );
       return false;
     }
-    const user = `(ethAddress=${ethAddress}, ipAddress=${ipAddress})`;
-    this.logger.trace(`${requestDetails.formattedRequestId} Checking if ${user} should be rate limited...`);
+    const user = `(ethAddress=${ethAddress})`;
+    this.logger.trace(`${requestDetails.formattedRequestId} Checking if ${user} should be limited...`);
     let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
     if (!spendingPlan) {
       // Create a basic spending plan if none exists for the eth address or ip address
@@ -479,7 +479,7 @@ export class HbarLimitService implements IHbarLimitService {
     }
     if (ipAddress) {
       this.logger.trace(
-        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to ip address ${ipAddress}`,
+        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to ip address`,
       );
       await this.ipAddressHbarSpendingPlanRepository.save(
         { ipAddress, planId: spendingPlan.id },
