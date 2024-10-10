@@ -21,8 +21,8 @@
 import { Logger } from 'pino';
 import EventEmitter from 'events';
 import constants from '../../constants';
-import HbarLimit from '../../hbarlimiter';
 import { Histogram, Registry } from 'prom-client';
+import { HbarLimitService } from '../hbarLimitService';
 import { MirrorNodeClient, SDKClient } from '../../clients';
 import {
   IExecuteQueryEventPayload,
@@ -57,14 +57,6 @@ export default class MetricService {
   private readonly mirrorNodeClient: MirrorNodeClient;
 
   /**
-   * This limiter tracks hbar expenses and limits.
-   * @type {HbarLimit}
-   * @readonly
-   * @private
-   */
-  private readonly hbarLimiter: HbarLimit;
-
-  /**
    * Histogram for capturing the cost of transactions and queries.
    * @type {Histogram}
    * @readonly
@@ -90,13 +82,20 @@ export default class MetricService {
   private readonly eventEmitter: EventEmitter;
 
   /**
+   * An instance of the HbarLimitService that tracks hbar expenses and limits.
+   * @private
+   * @readonly
+   * @type {HbarLimitService}
+   */
+  private readonly hbarLimitService: HbarLimitService;
+
+  /**
    * Constructs an instance of the MetricService responsible for tracking and recording various metrics
    * related to Hedera network interactions and resource usage.
    *
    * @param {Logger} logger - Logger instance for logging system messages.
    * @param {SDKClient} sdkClient - Client for interacting with the Hedera SDK.
    * @param {MirrorNodeClient} mirrorNodeClient - Client for querying the Hedera mirror node.
-   * @param {HbarLimit} hbarLimiter - Rate limiter for managing HBAR-related operations.
    * @param {Registry} register - Registry instance for registering metrics.
    * @param {EventEmitter} eventEmitter - The eventEmitter used for emitting and handling events within the class.
    */
@@ -104,15 +103,15 @@ export default class MetricService {
     logger: Logger,
     sdkClient: SDKClient,
     mirrorNodeClient: MirrorNodeClient,
-    hbarLimiter: HbarLimit,
     register: Registry,
     eventEmitter: EventEmitter,
+    hbarLimitService: HbarLimitService,
   ) {
     this.logger = logger;
     this.sdkClient = sdkClient;
-    this.hbarLimiter = hbarLimiter;
     this.eventEmitter = eventEmitter;
     this.mirrorNodeClient = mirrorNodeClient;
+    this.hbarLimitService = hbarLimitService;
     this.consensusNodeClientHistogramCost = this.initCostMetric(register);
     this.consensusNodeClientHistogramGasFee = this.initGasMetric(register);
 
@@ -136,6 +135,7 @@ export default class MetricService {
    * @param {string} payload.operatorAccountId - The account ID of the operator managing the transaction.
    * @param {string} payload.interactingEntity - The entity interacting with the transaction.
    * @param {RequestDetails} payload.requestDetails - The request details for logging and tracking.
+   * @param {string} payload.originalCallerAddress - The address of the original caller making the request.
    * @returns {Promise<void>} - A promise that resolves when the transaction metrics have been captured.
    */
   public async captureTransactionMetrics({
@@ -145,6 +145,7 @@ export default class MetricService {
     operatorAccountId,
     interactingEntity,
     requestDetails,
+    originalCallerAddress,
   }: IExecuteTransactionEventPayload): Promise<void> {
     const transactionRecordMetrics = await this.getTransactionRecordMetrics(
       transactionId,
@@ -157,7 +158,7 @@ export default class MetricService {
     if (transactionRecordMetrics) {
       const { gasUsed, transactionFee, txRecordChargeAmount, status } = transactionRecordMetrics;
       if (transactionFee !== 0) {
-        this.addExpenseAndCaptureMetrics({
+        await this.addExpenseAndCaptureMetrics({
           executionMode: constants.EXECUTION_MODE.TRANSACTION,
           transactionId,
           txConstructorName,
@@ -167,11 +168,12 @@ export default class MetricService {
           interactingEntity,
           status,
           requestDetails,
+          originalCallerAddress,
         } as IExecuteQueryEventPayload);
       }
 
       if (txRecordChargeAmount !== 0) {
-        this.addExpenseAndCaptureMetrics({
+        await this.addExpenseAndCaptureMetrics({
           executionMode: constants.EXECUTION_MODE.RECORD,
           transactionId,
           txConstructorName,
@@ -181,6 +183,7 @@ export default class MetricService {
           interactingEntity,
           status,
           requestDetails,
+          originalCallerAddress,
         } as IExecuteQueryEventPayload);
       }
     }
@@ -199,9 +202,10 @@ export default class MetricService {
    * @param {string} payload.interactingEntity - The entity interacting with the transaction.
    * @param {string} payload.status - The entity interacting with the transaction.
    * @param {string} payload.requestDetails - The request details for logging and tracking.
+   * @param {string | undefined} payload.originalCallerAddress - The address of the original caller making the request.
    * @returns {void} - This method does not return a value.
    */
-  public addExpenseAndCaptureMetrics = ({
+  public addExpenseAndCaptureMetrics = async ({
     executionMode,
     transactionId,
     txConstructorName,
@@ -211,12 +215,13 @@ export default class MetricService {
     interactingEntity,
     status,
     requestDetails,
-  }: IExecuteQueryEventPayload): void => {
+    originalCallerAddress,
+  }: IExecuteQueryEventPayload): Promise<void> => {
     this.logger.trace(
-      `${requestDetails.formattedRequestId} Capturing HBAR charged: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
+      `${requestDetails.formattedRequestId} Capturing transaction fee charged to operator: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
     );
 
-    this.hbarLimiter.addExpense(cost, Date.now(), requestDetails);
+    await this.hbarLimitService.addExpense(cost, originalCallerAddress ?? '', requestDetails);
     this.captureMetrics(executionMode, txConstructorName, status, cost, gasUsed, callerName, interactingEntity);
   };
 

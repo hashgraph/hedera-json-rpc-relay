@@ -27,13 +27,13 @@ import { Poller } from './poller';
 import { Web3Impl } from './web3';
 import EventEmitter from 'events';
 import constants from './constants';
-import HbarLimit from './hbarlimiter';
-import { Client } from '@hashgraph/sdk';
+import { Client, Hbar } from '@hashgraph/sdk';
 import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';
 import { Gauge, Registry } from 'prom-client';
 import { Eth, Net, Relay, Subs, Web3 } from '../index';
 import HAPIService from './services/hapiService/hapiService';
+import { HbarLimitService } from './services/hbarLimitService';
 import { SubscriptionController } from './subscriptionController';
 import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
@@ -43,6 +43,8 @@ import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigSe
 import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+
+dotenv.config({ path: findConfig('.env') || '' });
 
 dotenv.config({ path: findConfig('.env') || '' });
 
@@ -137,12 +139,35 @@ export class RelayImpl implements Relay {
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
-    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, register);
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
 
     this.eventEmitter = new EventEmitter();
     this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);
-    const hapiService = new HAPIService(logger, register, hbarLimiter, this.cacheService, this.eventEmitter);
+
+    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'hbar-spending-plan-repository' }),
+    );
+    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
+    );
+    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
+    );
+    const hbarLimitService = new HbarLimitService(
+      hbarSpendingPlanRepository,
+      ethAddressHbarSpendingPlanRepository,
+      ipAddressHbarSpendingPlanRepository,
+      logger.child({ name: 'hbar-rate-limit' }),
+      register,
+      Hbar.fromTinybars(total),
+      duration,
+    );
+
+    const hapiService = new HAPIService(logger, register, this.cacheService, this.eventEmitter, hbarLimitService);
+
     this.clientMain = hapiService.getMainClientInstance();
 
     this.web3Impl = new Web3Impl(this.clientMain);
@@ -161,9 +186,9 @@ export class RelayImpl implements Relay {
       logger,
       hapiService.getSDKClient(),
       this.mirrorNodeClient,
-      hbarLimiter,
       register,
       this.eventEmitter,
+      hbarLimitService,
     );
 
     this.ethImpl = new EthImpl(
@@ -173,21 +198,6 @@ export class RelayImpl implements Relay {
       chainId,
       register,
       this.cacheService,
-    );
-
-    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'hbar-spending-plan-repository' }),
-    );
-
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
-    );
-
-    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
     );
 
     this.hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
