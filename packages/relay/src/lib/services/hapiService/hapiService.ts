@@ -44,7 +44,7 @@ export default class HAPIService {
   private initialErrorCodes: number[];
   private initialResetDuration: number;
 
-  private hederaNetwork: string;
+  public hederaNetwork: string;
   private clientMain: Client;
 
   /**
