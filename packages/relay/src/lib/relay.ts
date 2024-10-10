@@ -99,27 +99,6 @@ export class RelayImpl implements Relay {
   /**
    * @private
    * @readonly
-   * @property {HbarSpendingPlanRepository} hbarSpendingPlanRepository - The repository used for managing HBAR spending plans.
-   */
-  private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository;
-
-  /**
-   * @private
-   * @readonly
-   * @property {EthAddressHbarSpendingPlanRepository} ethAddressHbarSpendingPlanRepository - The repository used for managing links between ETH addresses and HBAR spending plans.
-   */
-  private readonly ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository;
-
-  /**
-   * @private
-   * @readonly
-   * @property {IPAddressHbarSpendingPlanRepository} ipAddressHbarSpendingPlanRepository - The repository used for managing links between IP addresses and HBAR spending plans.
-   */
-  private readonly ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository;
-
-  /**
-   * @private
-   * @readonly
    * @property {HbarSpendingPlanConfigService} hbarSpendingPlanConfigService - The service responsible for managing HBAR spending plans.
    */
   private readonly hbarSpendingPlanConfigService: HbarSpendingPlanConfigService;
@@ -196,26 +175,26 @@ export class RelayImpl implements Relay {
       this.cacheService,
     );
 
-    this.hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
+    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
       this.cacheService,
       logger.child({ name: 'hbar-spending-plan-repository' }),
     );
 
-    this.ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
+    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
       this.cacheService,
       logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
     );
 
-    this.ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
+    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
       this.cacheService,
       logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
     );
 
     this.hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
       logger.child({ name: 'hbar-spending-plan-config-service' }),
-      this.hbarSpendingPlanRepository,
-      this.ethAddressHbarSpendingPlanRepository,
-      this.ipAddressHbarSpendingPlanRepository,
+      hbarSpendingPlanRepository,
+      ethAddressHbarSpendingPlanRepository,
+      ipAddressHbarSpendingPlanRepository,
     );
 
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
