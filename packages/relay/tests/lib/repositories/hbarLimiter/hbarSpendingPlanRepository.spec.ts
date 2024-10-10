@@ -33,7 +33,7 @@ import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hb
 
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 import { IDetailedHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingPlan';
-import { useInMemoryRedisServer } from '../../../helpers';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 import { RequestDetails } from '../../../../src/lib/types';
 
 chai.use(chaiAsPromised);
@@ -56,6 +56,8 @@ describe('HbarSpendingPlanRepository', function () {
 
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6380);
+    } else {
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
     }
 
     afterEach(async () => {
@@ -64,6 +66,10 @@ describe('HbarSpendingPlanRepository', function () {
 
     after(async () => {
       await cacheServiceSpy.disconnectRedisClient();
+    });
+
+    after(async () => {
+      await cacheService.disconnectRedisClient();
     });
 
     describe('create', () => {

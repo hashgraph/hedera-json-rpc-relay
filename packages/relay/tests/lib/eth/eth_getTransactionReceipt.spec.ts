@@ -140,10 +140,10 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     sandbox.stub(ethImpl, <any>'getFeeWeibars').resolves(gasPrice);
   };
 
-  this.afterEach(() => {
+  this.afterEach(async () => {
     restMock.resetHandlers();
     sandbox.restore();
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
   });
 
   it('returns `null` for non-existent hash', async function () {

@@ -22,6 +22,7 @@ import { expect } from 'chai';
 import { CacheService } from '../../../../packages/relay/src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../../relay/tests/helpers';
 
 const registry = new Registry();
 
@@ -64,11 +65,11 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   });
 
   it('Correctly sets TTL time', async () => {
-    const ttl = 1000;
+    const ttl = 200;
     const dataLabel = `${DATA_LABEL_PREFIX}2`;
 
     await cacheService.set(dataLabel, DATA, CALLING_METHOD, requestDetails, ttl);
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 100));
 
     const cache = await cacheService.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(cache).to.deep.eq(DATA, 'data is stored with TTL');
@@ -82,20 +83,19 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     expect(deletedCacheFromService).to.eq(null, 'getAsync method cannot read expired cache');
   });
 
-  it('Fallsback to local cache for REDIS_ENABLED !== true', async () => {
-    const dataLabel = `${DATA_LABEL_PREFIX}3`;
+  withOverriddenEnvsInMochaTest({ REDIS_ENABLED: 'false' }, () => {
+    it('Falls back to local cache for REDIS_ENABLED !== true', async () => {
+      const dataLabel = `${DATA_LABEL_PREFIX}3`;
 
-    process.env.REDIS_ENABLED = 'false';
-    const serviceWithDisabledRedis = new CacheService(global.logger, registry);
-    await new Promise((r) => setTimeout(r, 1000));
-    expect(serviceWithDisabledRedis.isRedisEnabled()).to.eq(false, 'redis is disabled');
-    await serviceWithDisabledRedis.set(dataLabel, DATA, CALLING_METHOD, requestDetails);
-    await new Promise((r) => setTimeout(r, 200));
+      const serviceWithDisabledRedis = new CacheService(global.logger, registry);
+      await new Promise((r) => setTimeout(r, 1000));
+      expect(serviceWithDisabledRedis.isRedisEnabled()).to.eq(false, 'redis is disabled');
+      await serviceWithDisabledRedis.set(dataLabel, DATA, CALLING_METHOD, requestDetails);
+      await new Promise((r) => setTimeout(r, 200));
 
-    const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD, requestDetails);
-    expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
-
-    process.env.REDIS_ENABLED = 'true';
+      const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD, requestDetails);
+      expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
+    });
   });
 
   it('Cache set by one instance can be accessed by another', async () => {
@@ -111,22 +111,16 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   describe('fallback to local cache in case of Redis error', async () => {
     const dataLabel = `${DATA_LABEL_PREFIX}_redis_error`;
 
-    let currentRedisEnabledEnv;
     let cacheService: CacheService;
 
-    before(async () => {
-      currentRedisEnabledEnv = process.env.REDIS_ENABLED;
+    overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'true' });
 
-      process.env.REDIS_ENABLED = 'true';
+    before(async () => {
       cacheService = new CacheService(global.logger, registry);
 
       // disconnect redis client to simulate Redis error
       await cacheService.disconnectRedisClient();
       await new Promise((r) => setTimeout(r, 1000));
-    });
-
-    after(async () => {
-      process.env.REDIS_ENABLED = currentRedisEnabledEnv;
     });
 
     it('test getAsync operation', async () => {

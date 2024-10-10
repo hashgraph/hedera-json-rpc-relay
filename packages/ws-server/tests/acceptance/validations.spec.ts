@@ -49,16 +49,16 @@ describe('@release @web-socket-batch-1 JSON-RPC requests validation', async func
 
   const UNSUPPORTED_METHODS = ['eth_getChainId', 'getLogs', 'ethCall', 'blockNum', 'getGasPrice'];
 
+  WsTestHelper.overrideEnvsInMochaDescribe({ REQUEST_ID_IS_OPTIONAL: 'true' });
+
   let ethersWsProvider: WebSocketProvider;
 
   beforeEach(async () => {
-    process.env.REQUEST_ID_IS_OPTIONAL = 'true';
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
   afterEach(async () => {
     if (ethersWsProvider) await ethersWsProvider.destroy();
-    delete process.env.REQUEST_ID_IS_OPTIONAL;
   });
 
   after(async () => {

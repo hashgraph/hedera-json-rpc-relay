@@ -27,6 +27,7 @@ import { predefined } from '@hashgraph/json-rpc-relay';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { WsTestHelper } from '../helper';
 import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
 import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
 
@@ -102,7 +103,6 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   let mirrorNodeServer, requestId, rpcServer, wsServer;
 
   let wsProvider;
-  let originalWsNewHeadsEnabledValue, originalWsSubcriptionLimitValue;
 
   before(async () => {
     // @ts-ignore
@@ -127,16 +127,9 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       )),
     );
     global.accounts.push(...accounts);
-
-    // cache original ENV values
-    originalWsNewHeadsEnabledValue = process.env.WS_NEW_HEADS_ENABLED;
-    originalWsSubcriptionLimitValue = process.env.WS_SUBSCRIPTION_LIMIT;
   });
 
   beforeEach(async () => {
-    process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
-    process.env.WS_SUBSCRIPTION_LIMIT = '10';
-
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
     await new Promise((resolve) => setTimeout(resolve, 1000));
   });
@@ -146,97 +139,94 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       await wsProvider.destroy();
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    process.env.WS_SUBSCRIPTION_LIMIT = originalWsSubcriptionLimitValue;
   });
 
   describe('Configuration', async function () {
-    it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
-      const webSocket = new WebSocket(WS_RELAY_URL);
-      process.env.WS_NEW_HEADS_ENABLED = 'false';
-      const messagePromise = new Promise<void>((resolve, reject) => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: 'false' }, () => {
+      it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
+        const webSocket = new WebSocket(WS_RELAY_URL);
+        const messagePromise = new Promise<void>((resolve, reject) => {
+          webSocket.on('message', function incoming(data) {
+            try {
+              const response = JSON.parse(data);
+              expect(response).to.have.property('error');
+              expect(response.error).to.have.property('code');
+              expect(response.error.code).to.equal(-32601);
+              expect(response.error).to.have.property('message');
+              expect(response.error.message).to.equal('Unsupported JSON-RPC method');
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          });
+          webSocket.on('open', function open() {
+            // send the request for newHeads
+            webSocket.send('{"id":1,"jsonrpc":"2.0","method":"eth_subscribe","params":["newHeads"]}');
+          });
+          webSocket.on('error', (error) => {
+            reject(error); // Reject the promise on WebSocket error
+          });
+        });
+        await messagePromise;
+
+        webSocket.close();
+      });
+    });
+
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_SUBSCRIPTION_LIMIT: '2', WS_NEW_HEADS_ENABLED: 'true' }, () => {
+      it('Does not allow more subscriptions per connection than the specified limit with newHeads', async function () {
+        // Create different subscriptions
+        for (let i = 0; i < 3; i++) {
+          if (i === 2) {
+            const expectedError = predefined.MAX_SUBSCRIPTIONS;
+            await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, [
+              'eth_subscribe',
+              ['newHeads'],
+            ]);
+          } else {
+            await wsProvider.send('eth_subscribe', ['newHeads']);
+          }
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      });
+    });
+
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: undefined }, () => {
+      it('@release should subscribe to newHeads and receive a valid JSON RPC response', async (done) => {
+        expect(process.env.WS_NEW_HEADS_ENABLED).to.be.undefined;
+
+        const webSocket = new WebSocket(WS_RELAY_URL);
+        const subscriptionId = 1;
+        webSocket.on('open', function open() {
+          webSocket.send(
+            JSON.stringify({
+              id: subscriptionId,
+              jsonrpc: '2.0',
+              method: 'eth_subscribe',
+              params: ['newHeads', { includeTransactions: true }],
+            }),
+          );
+        });
+
+        let responseCounter = 0;
+
+        Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
         webSocket.on('message', function incoming(data) {
-          try {
-            const response = JSON.parse(data);
-            expect(response).to.have.property('error');
-            expect(response.error).to.have.property('code');
-            expect(response.error.code).to.equal(-32601);
-            expect(response.error).to.have.property('message');
-            expect(response.error.message).to.equal('Unsupported JSON-RPC method');
-            resolve();
-          } catch (error) {
-            reject(error);
+          const response = JSON.parse(data);
+          responseCounter++;
+          verifyResponse(response, done, webSocket, true);
+          if (responseCounter > 1) {
+            webSocket.close();
           }
         });
-        webSocket.on('open', function open() {
-          // send the request for newHeads
-          webSocket.send('{"id":1,"jsonrpc":"2.0","method":"eth_subscribe","params":["newHeads"]}');
-        });
-        webSocket.on('error', (error) => {
-          reject(error); // Reject the promise on WebSocket error
-        });
+        done();
       });
-      await messagePromise;
-
-      webSocket.close();
-      process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
-    });
-
-    it('Does not allow more subscriptions per connection than the specified limit with newHeads', async function () {
-      process.env.WS_SUBSCRIPTION_LIMIT = '2';
-      process.env.WS_NEW_HEADS_ENABLED = 'true';
-      // Create different subscriptions
-      for (let i = 0; i < 3; i++) {
-        if (i === 2) {
-          const expectedError = predefined.MAX_SUBSCRIPTIONS;
-          await Assertions.assertPredefinedRpcError(expectedError, wsProvider.send, true, wsProvider, [
-            'eth_subscribe',
-            ['newHeads'],
-          ]);
-        } else {
-          await wsProvider.send('eth_subscribe', ['newHeads']);
-        }
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      process.env.WS_NEW_HEADS_ENABLED = originalWsNewHeadsEnabledValue;
-    });
-
-    it('@release should subscribe to newHeads even when WS_NEW_HEADS_ENABLED=undefined, and receive a valid JSON RPC response', async (done) => {
-      delete process.env.WS_NEW_HEADS_ENABLED;
-      expect(process.env.WS_NEW_HEADS_ENABLED).to.be.undefined;
-
-      const webSocket = new WebSocket(WS_RELAY_URL);
-      const subscriptionId = 1;
-      webSocket.on('open', function open() {
-        webSocket.send(
-          JSON.stringify({
-            id: subscriptionId,
-            jsonrpc: '2.0',
-            method: 'eth_subscribe',
-            params: ['newHeads', { includeTransactions: true }],
-          }),
-        );
-      });
-
-      let responseCounter = 0;
-
-      Utils.sendTransaction(ONE_TINYBAR, CHAIN_ID, accounts, rpcServer, requestId, mirrorNodeServer);
-      webSocket.on('message', function incoming(data) {
-        const response = JSON.parse(data);
-        responseCounter++;
-        verifyResponse(response, done, webSocket, true);
-        if (responseCounter > 1) {
-          webSocket.close();
-        }
-      });
-      done();
     });
   });
 
   describe('Subscriptions for newHeads', async function () {
-    this.beforeEach(() => {
-      process.env.WS_NEW_HEADS_ENABLED = 'true';
-    });
+    WsTestHelper.overrideEnvsInMochaDescribe({ WS_NEW_HEADS_ENABLED: 'true' });
 
     it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
       const webSocket = new WebSocket(WS_RELAY_URL);

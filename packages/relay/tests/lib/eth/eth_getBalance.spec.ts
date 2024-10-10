@@ -24,7 +24,7 @@ import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 
 import { EthImpl } from '../../../src/lib/eth';
-import { buildCryptoTransferTransaction } from '../../helpers';
+import { buildCryptoTransferTransaction, overrideEnvsInMochaDescribe } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import { numberTo0x } from '../../../dist/formatters';
 import {
@@ -51,7 +51,6 @@ use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: sinon.SinonStub;
-let currentMaxBlockRange: number;
 
 describe('@ethGetBalance using MirrorNode', async function () {
   this.timeout(10000);
@@ -59,22 +58,21 @@ describe('@ethGetBalance using MirrorNode', async function () {
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getBalanceTest', ipAddress: '0.0.0.0' });
 
-  this.beforeEach(() => {
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
   it('should return balance from mirror node', async () => {

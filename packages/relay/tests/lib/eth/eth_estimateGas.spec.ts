@@ -39,6 +39,7 @@ import {
   ONE_TINYBAR_IN_WEI_HEX,
   RECEIVER_ADDRESS,
 } from './eth-config';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
@@ -46,7 +47,6 @@ use(chaiAsPromised);
 let sdkClientStub: SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: SinonStub<[], SDKClient>;
 let ethImplOverridden: Eth;
-let currentMaxBlockRange: number;
 
 describe('@ethEstimateGas Estimate Gas spec', async function () {
   this.timeout(10000);
@@ -77,18 +77,20 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   };
   const id = uuid();
   const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
-  process.env.TX_DEFAULT_GAS = defaultGasOverride.toString();
 
-  this.beforeEach(() => {
+  overrideEnvsInMochaDescribe({
+    ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1',
+    TX_DEFAULT_GAS: defaultGasOverride.toString(),
+  });
+
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
     sdkClientStub = createStubInstance(SDKClient);
     getSdkClientStub = stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     ethImplOverridden = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
     restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
     mockGetAccount(hapiServiceInstance.getMainClientInstance().operatorAccountId!.toString(), 200, {
       evm_address: ACCOUNT_ADDRESS_1,
@@ -98,7 +100,6 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
   describe('eth_estimateGas with contract call', async function () {});
@@ -405,31 +406,30 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     expect(estimatedGas).to.equal(numberTo0x(Precheck.transactionIntrinsicGasCost(transaction.data!)));
   });
 
-  it('should eth_estimateGas with contract revert and message does not equal executionReverted and ESTIMATE_GAS_THROWS is set to false', async function () {
-    const estimateGasThrows = process.env.ESTIMATE_GAS_THROWS;
-    process.env.ESTIMATE_GAS_THROWS = 'false';
-    await mockContractCall(
-      transaction,
-      true,
-      400,
-      {
-        _status: {
-          messages: [
-            {
-              message: 'data field invalid hexadecimal string',
-              detail: '',
-              data: '',
-            },
-          ],
+  withOverriddenEnvsInMochaTest({ ESTIMATE_GAS_THROWS: 'false' }, () => {
+    it('should eth_estimateGas with contract revert and message does not equal executionReverted and ESTIMATE_GAS_THROWS is set to false', async function () {
+      await mockContractCall(
+        transaction,
+        true,
+        400,
+        {
+          _status: {
+            messages: [
+              {
+                message: 'data field invalid hexadecimal string',
+                detail: '',
+                data: '',
+              },
+            ],
+          },
         },
-      },
-      requestDetails,
-    );
+        requestDetails,
+      );
 
-    const result: any = await ethImpl.estimateGas(transaction, id, requestDetails);
+      const result = await ethImpl.estimateGas(transaction, id, requestDetails);
 
-    expect(result).to.equal(numberTo0x(Precheck.transactionIntrinsicGasCost(transaction.data!)));
-    process.env.ESTIMATE_GAS_THROWS = estimateGasThrows;
+      expect(result).to.equal(numberTo0x(Precheck.transactionIntrinsicGasCost(transaction.data!)));
+    });
   });
 
   it('should eth_estimateGas with contract revert and message equals "execution reverted: Invalid number of recipients"', async function () {

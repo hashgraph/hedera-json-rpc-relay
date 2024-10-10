@@ -21,13 +21,10 @@
 import { expect } from 'chai';
 import { Utils } from '../../src/utils';
 import constants from '../../src/lib/constants';
+import { overrideEnvsInMochaDescribe } from '../helpers';
 
 describe('Utils', () => {
   describe('addPercentageBufferToGasPrice', () => {
-    afterEach(() => {
-      process.env.GAS_PRICE_PERCENTAGE_BUFFER = '0';
-    });
-
     const TW_COEF = constants.TINYBAR_TO_WEIBAR_COEF;
     const TEST_CASES = [
       { testName: 'zero input', buffer: '0', input: 0, output: 0 },
@@ -38,10 +35,18 @@ describe('Utils', () => {
       { testName: 'negative buffer -6%', buffer: '-6', input: 100 * TW_COEF, output: 94 * TW_COEF },
       { testName: 'negative buffer -12.58%', buffer: '-12.58', input: 136 * TW_COEF, output: 119 * TW_COEF },
     ];
+    const gasFormat = Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      maximumFractionDigits: 2,
+    });
+
     for (let i in TEST_CASES) {
-      it(TEST_CASES[i].testName, () => {
-        process.env.GAS_PRICE_PERCENTAGE_BUFFER = TEST_CASES[i].buffer;
-        expect(Utils.addPercentageBufferToGasPrice(TEST_CASES[i].input)).to.equal(TEST_CASES[i].output);
+      describe(`${TEST_CASES[i].testName}, ${gasFormat.format(TEST_CASES[i].input)} gas`, () => {
+        overrideEnvsInMochaDescribe({ GAS_PRICE_PERCENTAGE_BUFFER: TEST_CASES[i].buffer });
+
+        it(`should return ${gasFormat.format(TEST_CASES[i].output)} gas`, () => {
+          expect(Utils.addPercentageBufferToGasPrice(TEST_CASES[i].input)).to.equal(TEST_CASES[i].output);
+        });
       });
     }
   });

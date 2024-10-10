@@ -30,9 +30,12 @@ import {
   sendToClient,
 } from '../../src/utils/utils';
 import { WS_CONSTANTS } from '../../src/utils/constants';
-import { Relay } from '@hashgraph/json-rpc-relay/src';
 import ConnectionLimiter from '../../src/metrics/connectionLimiter';
 import WsMetricRegistry from '../../src/metrics/wsMetricRegistry';
+import { WsTestHelper } from '../helper';
+import { RelayImpl } from '@hashgraph/json-rpc-relay';
+import { Counter, Histogram } from 'prom-client';
+import { SubscriptionController } from '@hashgraph/json-rpc-relay/dist/lib/subscriptionController';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('Utilities unit tests', async function () {
@@ -191,34 +194,27 @@ describe('Utilities unit tests', async function () {
   });
 
   describe('handleConnectionClose', () => {
-    let relayStub: sinon.SinonStubbedInstance<Relay>;
+    let relayStub: sinon.SinonStubbedInstance<RelayImpl>;
     let limiterStub: sinon.SinonStubbedInstance<ConnectionLimiter>;
     let wsMetricRegistryStub: sinon.SinonStubbedInstance<WsMetricRegistry>;
     let ctxStub: any;
     let startTime: [number, number];
 
-    beforeEach(() => {
-      relayStub = {
-        subs: sinon.stub().returns({
-          unsubscribe: sinon.spy(),
-        }),
-      } as any;
-
-      limiterStub = {
-        decrementCounters: sinon.spy(),
-      } as any;
-
-      wsMetricRegistryStub = {
-        getCounter: sinon.stub().returns({
-          inc: sinon.spy(),
-        }),
-        getHistogram: sinon.stub().returns({
-          labels: sinon.stub().returns({
+    beforeEach(async () => {
+      relayStub = sinon.createStubInstance(RelayImpl, {
+        subs: sinon.createStubInstance(SubscriptionController),
+      });
+      limiterStub = sinon.createStubInstance(ConnectionLimiter);
+      wsMetricRegistryStub = sinon.createStubInstance(WsMetricRegistry);
+      wsMetricRegistryStub.getCounter.returns(sinon.createStubInstance(Counter));
+      wsMetricRegistryStub.getHistogram.returns(
+        sinon.createStubInstance(Histogram, {
+          labels: sinon.stub<[Partial<Record<any, string | number>>]>().returns({
             observe: sinon.spy(),
+            startTimer: sinon.spy(),
           }),
         }),
-      } as any;
-
+      );
       ctxStub = {
         websocket: {
           id: 'mock-id',
@@ -227,54 +223,25 @@ describe('Utilities unit tests', async function () {
       };
 
       startTime = process.hrtime();
+
+      await handleConnectionClose(ctxStub, relayStub, limiterStub, wsMetricRegistryStub, startTime);
     });
 
     it('should unsubscribe subscriptions', async () => {
-      await handleConnectionClose(
-        ctxStub,
-        relayStub as Relay,
-        limiterStub as ConnectionLimiter,
-        wsMetricRegistryStub as WsMetricRegistry,
-        startTime,
-      );
-
-      expect(relayStub.subs()?.unsubscribe.calledWith(ctxStub.websocket)).to.be.true;
+      const unsubscribeSpy = relayStub.subs()?.unsubscribe as sinon.SinonSpy;
+      expect(unsubscribeSpy.calledWith(ctxStub.websocket)).to.be.true;
     });
 
     it('should decrement the limiter counters', async () => {
-      await handleConnectionClose(
-        ctxStub,
-        relayStub as Relay,
-        limiterStub as ConnectionLimiter,
-        wsMetricRegistryStub as WsMetricRegistry,
-        startTime,
-      );
-
       expect(limiterStub.decrementCounters.calledWith(ctxStub)).to.be.true;
     });
 
     it('should increment the total closed connections counter', async () => {
-      await handleConnectionClose(
-        ctxStub,
-        relayStub as Relay,
-        limiterStub as ConnectionLimiter,
-        wsMetricRegistryStub as WsMetricRegistry,
-        startTime,
-      );
-
       const incStub = wsMetricRegistryStub.getCounter('totalClosedConnections').inc as sinon.SinonSpy;
       expect(incStub.calledOnce).to.be.true;
     });
 
     it('should update the connection duration histogram', async () => {
-      await handleConnectionClose(
-        ctxStub,
-        relayStub as Relay,
-        limiterStub as ConnectionLimiter,
-        wsMetricRegistryStub as WsMetricRegistry,
-        startTime,
-      );
-
       const labelsStub = wsMetricRegistryStub.getHistogram('connectionDuration').labels as sinon.SinonStub;
       const observeSpy = labelsStub().observe as sinon.SinonSpy;
 
@@ -283,61 +250,67 @@ describe('Utilities unit tests', async function () {
     });
 
     it('should terminate the websocket connection', async () => {
-      await handleConnectionClose(
-        ctxStub,
-        relayStub as Relay,
-        limiterStub as ConnectionLimiter,
-        wsMetricRegistryStub as WsMetricRegistry,
-        startTime,
-      );
-
       expect(ctxStub.websocket.terminate.calledOnce).to.be.true;
     });
   });
 
   describe('getMultipleAddressesEnabled', () => {
-    it('should return true when WS_MULTIPLE_ADDRESSES_ENABLED is set to "true"', () => {
-      process.env.WS_MULTIPLE_ADDRESSES_ENABLED = 'true';
-      expect(getMultipleAddressesEnabled()).to.be.true;
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: 'true' }, () => {
+      it('should return true', () => {
+        expect(getMultipleAddressesEnabled()).to.be.true;
+      });
     });
 
-    it('should return false when WS_MULTIPLE_ADDRESSES_ENABLED is set to "false"', () => {
-      process.env.WS_MULTIPLE_ADDRESSES_ENABLED = 'false';
-      expect(getMultipleAddressesEnabled()).to.be.false;
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: 'false' }, () => {
+      it('should return false', () => {
+        expect(getMultipleAddressesEnabled()).to.be.false;
+      });
     });
 
-    it('should return false when WS_MULTIPLE_ADDRESSES_ENABLED is undefined', () => {
-      delete process.env.WS_MULTIPLE_ADDRESSES_ENABLED;
-      expect(getMultipleAddressesEnabled()).to.be.false;
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: undefined }, () => {
+      it('should return false', () => {
+        expect(getMultipleAddressesEnabled()).to.be.false;
+      });
     });
   });
 
   describe('getWsBatchRequestsEnabled', () => {
-    it('should return true when WS_BATCH_REQUESTS_ENABLED is set to "true"', () => {
-      process.env.WS_BATCH_REQUESTS_ENABLED = 'true';
-      expect(getWsBatchRequestsEnabled()).to.be.true;
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: 'true' }, () => {
+      it('should return true', () => {
+        expect(getWsBatchRequestsEnabled()).to.be.true;
+      });
     });
 
-    it('should return false when WS_BATCH_REQUESTS_ENABLED is set to "false"', () => {
-      process.env.WS_BATCH_REQUESTS_ENABLED = 'false';
-      expect(getWsBatchRequestsEnabled()).to.be.false;
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: 'false' }, () => {
+      it('should return false', () => {
+        expect(getWsBatchRequestsEnabled()).to.be.false;
+      });
     });
 
-    it('should return true when WS_BATCH_REQUESTS_ENABLED is undefined', () => {
-      delete process.env.WS_BATCH_REQUESTS_ENABLED;
-      expect(getWsBatchRequestsEnabled()).to.be.true;
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: undefined }, () => {
+      it('should return true', () => {
+        expect(getWsBatchRequestsEnabled()).to.be.true;
+      });
     });
   });
 
   describe('getBatchRequestsMaxSize', () => {
-    it('should return the value of WS_BATCH_REQUESTS_MAX_SIZE when it is set', () => {
-      process.env.WS_BATCH_REQUESTS_MAX_SIZE = '50';
-      expect(getBatchRequestsMaxSize()).to.equal(50);
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: '50' }, () => {
+      it('should return 50', () => {
+        expect(getBatchRequestsMaxSize()).to.equal(50);
+      });
     });
 
-    it('should return 20 when WS_BATCH_REQUESTS_MAX_SIZE is not set', () => {
-      delete process.env.WS_BATCH_REQUESTS_MAX_SIZE;
-      expect(getBatchRequestsMaxSize()).to.equal(20);
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: '0' }, () => {
+      it('should return 0', () => {
+        expect(getBatchRequestsMaxSize()).to.equal(0);
+      });
+    });
+
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: undefined }, () => {
+      it('should return 20', () => {
+        expect(getBatchRequestsMaxSize()).to.equal(20);
+      });
     });
   });
 });

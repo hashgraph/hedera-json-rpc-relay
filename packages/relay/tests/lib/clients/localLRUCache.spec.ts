@@ -23,7 +23,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
 import pino from 'pino';
 import { LocalLRUCache } from '../../../src/lib/clients';
-import constants from '../../../src/lib/constants';
+import { overrideEnvsInMochaDescribe } from '../../helpers';
 import { RequestDetails } from '../../../src/lib/types';
 
 const logger = pino();
@@ -107,13 +107,9 @@ describe('LocalLRUCache Test Suite', async function () {
   });
 
   describe('verify cache management', async function () {
-    beforeEach(() => {
-      process.env.CACHE_MAX = constants.CACHE_MAX.toString();
-    });
+    overrideEnvsInMochaDescribe({ CACHE_MAX: '2' });
 
     it('verify cache size', async function () {
-      const cacheMaxSize = 2;
-      process.env.CACHE_MAX = `${cacheMaxSize}`;
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const keyValuePairs = {
         key1: 'value1',
@@ -149,8 +145,9 @@ describe('LocalLRUCache Test Suite', async function () {
     it('verify cache ttl nature', async function () {
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const key = 'key';
-      await customLocalLRUCache.set(key, 'value', callingMethod, requestDetails, 100); // set ttl to 1 ms
-      await new Promise((r) => setTimeout(r, 500)); // wait for ttl to expire
+      const ttl = 100; // set ttl to 100ms
+      await customLocalLRUCache.set(key, 'value', callingMethod, requestDetails, ttl);
+      await new Promise((r) => setTimeout(r, ttl + 100)); // wait for ttl to expire
       const cacheValue = await customLocalLRUCache.get(key, callingMethod, requestDetails);
       expect(cacheValue).to.be.null;
     });

@@ -81,9 +81,9 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     ipAddress: '0.0.0.0',
   });
 
-  this.beforeEach(() => {
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);

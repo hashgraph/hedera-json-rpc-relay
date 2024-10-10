@@ -50,9 +50,9 @@ describe('@ethGetBlockTransactionCountByHash using MirrorNode', async function (
     ipAddress: '0.0.0.0',
   });
 
-  this.beforeEach(() => {
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
