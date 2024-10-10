@@ -27,7 +27,6 @@ import { Poller } from './poller';
 import { Web3Impl } from './web3';
 import EventEmitter from 'events';
 import constants from './constants';
-import HbarLimit from './hbarlimiter';
 import { Client, Hbar } from '@hashgraph/sdk';
 import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';
@@ -199,21 +198,6 @@ export class RelayImpl implements Relay {
       chainId,
       register,
       this.cacheService,
-    );
-
-    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'hbar-spending-plan-repository' }),
-    );
-
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
-    );
-
-    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
-      this.cacheService,
-      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
     );
 
     this.hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
