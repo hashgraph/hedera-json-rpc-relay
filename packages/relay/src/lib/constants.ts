@@ -20,8 +20,9 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-dotenv.config({ path: findConfig('.env') || '' });
 import { BigNumber } from 'bignumber.js';
+
+dotenv.config({ path: findConfig('.env') || '' });
 
 enum CACHE_KEY {
   ACCOUNT = 'account',
