@@ -20,8 +20,6 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-dotenv.config({ path: findConfig('.env') || '' });
-
 import { Logger } from 'pino';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
