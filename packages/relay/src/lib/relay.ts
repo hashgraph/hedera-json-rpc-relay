@@ -20,8 +20,6 @@
 
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
-dotenv.config({ path: findConfig('.env') || '' });
-
 import { Logger } from 'pino';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
@@ -46,6 +44,8 @@ import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigSe
 import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+
+dotenv.config({ path: findConfig('.env') || '' });
 
 dotenv.config({ path: findConfig('.env') || '' });
 
