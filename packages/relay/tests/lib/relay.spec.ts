@@ -24,7 +24,6 @@ import sinon from 'sinon';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 import { RelayImpl } from '../../src';
-import { HbarSpendingPlanConfigService } from '../../src/lib/config/hbarSpendingPlanConfigService';
 
 chai.use(chaiAsPromised);
 
