@@ -81,6 +81,15 @@ The purpose of the HBar Limiter is to track and control the spending of HBars in
 
 The HBar limiter will be implemented as a separate service, used by other services/classes that need it. It will have two main purposes - to capture the gas fees for different operation and to check if an operation needs to be paused, due to an exceeded HBar limit.
 
+### What is an HbarSpendingPlan?
+
+An `HbarSpendingPlan` is a record that tracks the total amount of HBars spent by a user or group of users (linked by ETH and IP addresses) over a specific period. It includes the following information:
+- **id**: A unique identifier for the spending plan.
+- **subscriptionTier**: The tier of the user or group of users (BASIC, EXTENDED, or PRIVILEGED).
+- **createdAt**: The timestamp when the spending plan was created.
+- **active**: A flag indicating whether the spending plan is currently active.
+- **spendingHistory**: A list of spending records, each containing the amount spent and the timestamp.
+
 ### General Users (BASIC tier):
 
 **NOTE:** Each general user will have a unique spending plan, linked both to their ETH and IP addresses. Each new user will be automatically assigned a BASIC spending plan when they send their first transaction and this plan will remain linked to them for any subsequent requests.
@@ -172,7 +181,7 @@ classDiagram
 classDiagram
     class HbarSpendingPlan {
         -id: string
-        -subscriptionType: SubscriptionType
+        -subscriptionTier: SubscriptionTier
         -createdAt: Date
         -active: boolean
         -spendingHistory: HbarSpendingRecord[]
@@ -211,7 +220,7 @@ classDiagram
         -cache: CacheService
         +findById(id: string): Promise<IHbarSpendingPlan>
         +findByIdWithDetails(id: string): Promise<IDetailedHbarSpendingPlan>
-        +create(subscriptionType: SubscriptionType): Promise<IDetailedHbarSpendingPlan>
+        +create(subscriptionTier: SubscriptionTier): Promise<IDetailedHbarSpendingPlan>
         +checkExistsAndActive(id: string): Promise<void>
         +getSpendingHistory(id: string): Promise<HbarSpendingRecord[]>
         +addAmountToSpendingHistory(id: string, amount: number): Promise<number>
@@ -233,13 +242,13 @@ classDiagram
         +delete(ip: string): Promise<void>
     }
 
-    class SubscriptionType
-    <<Enumeration>> SubscriptionType
-    SubscriptionType : BASIC
-    SubscriptionType : EXTENDED
-    SubscriptionType : PRIVILEGED
+    class SubscriptionTier
+    <<Enumeration>> SubscriptionTier
+    SubscriptionTier : BASIC
+    SubscriptionTier : EXTENDED
+    SubscriptionTier : PRIVILEGED
 
-    HbarSpendingPlan --> SubscriptionType : could be one of the types
+    HbarSpendingPlan --> SubscriptionTier : could be one of the types
     HbarSpendingPlan --> HbarSpendingRecord : stores history of
     EthAddressHbarSpendingPlan --> HbarSpendingPlan : links an ETH address to
     IpAddressHbarSpendingPlan --> HbarSpendingPlan : links an IP address to
@@ -306,61 +315,128 @@ The following configurations will be used to automatically populate the cache wi
 
 All other users (ETH and IP addresses which are not specified in the configuration file) will be treated as "general users" and will be assigned a basic `HbarSpendingPlan` on their first request and their ETH address and IP address will be linked to that plan for all subsequent requests.
 
+### JSON Configuration File
+
+The relay will read the pre-configured spending plans from a JSON file. This file should be placed in the root directory of the relay.
+
+The default filename for the configuration file is `spendingPlansConfig.json`, but it could also be specified by the environment variable `HBAR_SPENDING_PLANS_CONFIG_FILE`.
+- `HBAR_SPENDING_PLANS_CONFIG_FILE`: The name of the file containing the pre-configured spending plans for supported projects and partners.
+
+#### The JSON file should have the following structure:
 ```json
 [
   {
+    "id": "c758c095-342c-4607-9db5-867d7e90ab9d",
     "name": "partner name",
     "ethAddresses": ["0x123", "0x124"],
     "ipAddresses": ["127.0.0.1", "128.0.0.1"],
-    "subscriptionType": "PRIVILEGED"
+    "subscriptionTier": "PRIVILEGED"
   },
   {
+    "id": "a68488b0-6f7d-44a0-87c1-774ad64615f2",
     "name": "some other partner that has given us only eth addresses",
     "ethAddresses": ["0x125", "0x126"],
-    "subscriptionType": "PRIVILEGED"
+    "subscriptionTier": "PRIVILEGED"
   },
   {
+    "id": "af13d6ed-d676-4d33-8b9d-cf05d1ad7134",
     "name": "supported project name",
     "ethAddresses": ["0x127", "0x128"],
     "ipAddresses": ["129.0.0.1", "130.0.0.1"],
-    "subscriptionType": "EXTENDED"
+    "subscriptionTier": "EXTENDED"
   },
   {
+    "id": "7f665aa3-6b73-41d7-bf9b-92d04cdab96b",
     "name": "some other supported project that has given us only ip addresses",
     "ipAddresses": ["131.0.0.1", "132.0.0.1"],
-    "subscriptionType": "EXTENDED"
+    "subscriptionTier": "EXTENDED"
   }
 ]
 ```
 
-On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly.
+#### Important notes
+- The `id` field is **strictly required** for each supported project or partner project. It is used as a unique identifier and as key in the cache and also for reference in the logs. We recommend using a UUID for this field, but any unique string will work.
+- The `name` field is used just for reference and can be any string. It is not used in the cache or for any other purpose, only for better readability in the logs on start-up of the relay when the spending plans are being configured.
+- The `ethAddresses` and `ipAddresses` fields are arrays of strings containing the ETH addresses and IP addresses associated with the supported project or partner project. **At least one** of these two fields must be present and contain **at least one entry**.
+- The `subscriptionTier` field is also **required**. It is an enum with the following possible values: `BASIC`, `EXTENDED`, and `PRIVILEGED`.
 
-The JSON file can also be updated over time to add new supported projects or partner projects, and it will populate only the new entries on the next start-up.
+On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly. 
 
-```json
+If the cache already contains some of these entries, it will only populate the new entries and remove the obsolete ones.
+
+### Incremental changes to the JSON file
+
+#### Adding new partners or supported projects
+
+The JSON file can also be updated over time to add new partners or supported projects, and it will populate only the new entries on the next start-up.
+
+```javascript
 [
-  ...,
+  // rest of JSON file remains the same
+  ...oldContent,
   {
+    "id": "0b054498-5c48-4402-aad4-b9b455f33457",
     "name": "new partner name",
     "ethAddresses": ["0x129", "0x130"],
     "ipAddresses": ["133.0.0.1"],
-    "subscriptionType": "PRIVILEGED"
+    "subscriptionTier": "PRIVILEGED"
+  }
+]
+```
+
+#### Removing or updating existing partners or supported projects
+
+If some of the pre-configured plans are removed them from the JSON file, they will be considered "obsolete" and removed from the cache on the next start-up of the relay.
+
+You can also add new ETH addresses or IP addresses to existing plans by updating the JSON file.
+
+```javascript
+[
+  // rest of JSON file remains the same
+  ...oldContent,
+  {
+    "id": "c758c095-342c-4607-9db5-867d7e90ab9d",
+    "name": "partner name",
+    "ethAddresses": ["0x123", "0x124", "<new_eth_address>"],
+    "ipAddresses": ["127.0.0.1", "128.0.0.1", "<new_ip_address>", "<another_new_ip_address>"],
+    "subscriptionTier": "PRIVILEGED",
+  }
+]
+```
+
+Or if you remove any existing ETH addresses or IP addresses from the JSON file, only those will be removed from the cache on the next start-up.
+
+```javascript
+[
+  // rest of JSON file remains the same
+  ...oldContent,
+  {
+    "id": "c758c095-342c-4607-9db5-867d7e90ab9d",
+    "name": "partner name",
+    "ethAddresses": ["0x123"], // removed "0x124"
+    "ipAddresses": ["127.0.0.1"], // removed "128.0.0.1"
+    "subscriptionTier": "PRIVILEGED",
   }
 ]
 ```
 
 ### Spending Limits of Different Tiers
 
+**Units:** All environment variables are specified in tinybars (tℏ):
+```math
+1 HBAR (ℏ) = 100,000,000 tinybars (tℏ)
+```
+
 The spending limits for different tiers are defined as environment variables:
-- `HBAR_RATE_LIMIT_BASIC`: The spending limit (in tinybars) for general users (tier 3)
-- `HBAR_RATE_LIMIT_EXTENDED`: The spending limit (in tinybars) for supported projects (tier 2)
-- `HBAR_RATE_LIMIT_PRIVILEGED`: The spending limit (in tinybars) for trusted partners (tier 1)
+- `HBAR_RATE_LIMIT_BASIC`: The spending limit (tℏ) for general users (tier 3)
+- `HBAR_RATE_LIMIT_EXTENDED`: The spending limit (tℏ) for supported projects (tier 2)
+- `HBAR_RATE_LIMIT_PRIVILEGED`: The spending limit (tℏ) for trusted partners (tier 1)
 
 Example configuration for tiered spending limits:
 ```dotenv
-HBAR_RATE_LIMIT_BASIC=92592592
-HBAR_RATE_LIMIT_EXTENDED=925925925
-HBAR_RATE_LIMIT_PRIVILEGED=1851851850
+HBAR_RATE_LIMIT_BASIC=10000000# 0.1 ℏ
+HBAR_RATE_LIMIT_EXTENDED=100000000# 1 ℏ
+HBAR_RATE_LIMIT_PRIVILEGED=1000000000# 10 ℏ
 ```
 
 ### Total Budget and Limit Duration
@@ -369,14 +445,14 @@ The total budget and the limit duration are defined as environment variables:
 - `HBAR_RATE_LIMIT_DURATION`: The time window (in milliseconds) for which both the total budget and the spending limits are applicable. 
   - On initialization of `HbarLimitService`, a reset timestamp is calculated by adding the `HBAR_RATE_LIMIT_DURATION` to the current timestamp.
   - The total budget and spending limits are reset when the current timestamp exceeds the reset timestamp.
-- `HBAR_RATE_LIMIT_TINYBAR`: The ceiling (in tinybars) on the total amount of HBARs that can be spent in the limit duration. 
+- `HBAR_RATE_LIMIT_TINYBAR`: The ceiling on the total amount (in tℏ) that can be spent in the limit duration. 
   - This is the largest bucket from which others pull from.
   - If the total amount spent exceeds this limit, all spending is paused until the next reset.
 
-Example configuration for a total budget of 110 HBARs (11_000_000_000 tinybars) per 80 seconds:
+Example configuration for a total budget and limit duration:
 ```dotenv
-HBAR_RATE_LIMIT_TINYBAR=11000000000
-HBAR_RATE_LIMIT_DURATION=80000
+HBAR_RATE_LIMIT_TINYBAR=11000000000# 110 ℏ
+HBAR_RATE_LIMIT_DURATION=80000# 80 seconds
 ```
 
 ## Additional Considerations

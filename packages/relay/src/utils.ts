@@ -23,6 +23,8 @@ import constants from './lib/constants';
 import crypto from 'crypto';
 
 export class Utils {
+  public static readonly IP_ADDRESS_REGEX = /\b((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}\b/g;
+
   public static readonly addPercentageBufferToGasPrice = (gasPrice: number): number => {
     // converting to tinybar and afterward to weibar again is needed
     // in order to handle the possibility of an invalid floating number being calculated as a gas price
