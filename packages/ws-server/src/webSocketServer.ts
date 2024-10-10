@@ -53,10 +53,6 @@ const register = new Registry();
 const logger = mainLogger.child({ name: 'rpc-ws-server' });
 const relay: Relay = new RelayImpl(logger, register);
 
-(async () => {
-  await relay.populatePreconfiguredSpendingPlans();
-})();
-
 const mirrorNodeClient = relay.mirrorClient();
 const limiter = new ConnectionLimiter(logger, register);
 const wsMetricRegistry = new WsMetricRegistry(register);

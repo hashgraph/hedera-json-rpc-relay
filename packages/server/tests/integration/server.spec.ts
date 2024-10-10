@@ -42,11 +42,11 @@ const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 describe('RPC Server', function () {
   let testServer: Server;
   let testClient: AxiosInstance;
-  let populatePreconfiguredSpendingPlansSpy: sinon.SinonSpy<[], Promise<void>>;
+  let populatePreconfiguredSpendingPlansSpy: sinon.SinonSpy;
   let app: Koa<Koa.DefaultState, Koa.DefaultContext>;
 
   before(function () {
-    populatePreconfiguredSpendingPlansSpy = sinon.spy(RelayImpl.prototype, 'populatePreconfiguredSpendingPlans');
+    populatePreconfiguredSpendingPlansSpy = sinon.spy(RelayImpl.prototype, <any>'populatePreconfiguredSpendingPlans');
     app = require('../../src/server').default;
     testServer = app.listen(process.env.E2E_SERVER_PORT);
     testClient = BaseTest.createTestClient();

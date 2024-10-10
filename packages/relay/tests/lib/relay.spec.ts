@@ -24,6 +24,7 @@ import sinon from 'sinon';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 import { RelayImpl } from '../../src';
+import { HbarSpendingPlanConfigService } from '../../src/lib/config/hbarSpendingPlanConfigService';
 
 chai.use(chaiAsPromised);
 
@@ -77,12 +78,13 @@ describe('RelayImpl', () => {
 
   describe('populatePreconfiguredSpendingPlans', () => {
     let spendingPlansConfigFile: string | undefined;
-    let populatePreconfiguredSpendingPlansSpy: sinon.SinonSpy;
     let loggerSpy: sinon.SinonSpiedInstance<pino.Logger>;
+    let populatePreconfiguredSpendingPlansSpy: sinon.SinonSpy;
 
     beforeEach(() => {
       spendingPlansConfigFile = process.env.HBAR_SPENDING_PLANS_CONFIG_FILE;
       loggerSpy = sinon.spy(logger);
+      populatePreconfiguredSpendingPlansSpy = sinon.spy(RelayImpl.prototype, <any>'populatePreconfiguredSpendingPlans');
     });
 
     afterEach(() => {
@@ -93,18 +95,13 @@ describe('RelayImpl', () => {
     describe('when a configuration file is provided', () => {
       beforeEach(() => {
         process.env.HBAR_SPENDING_PLANS_CONFIG_FILE = 'spendingPlansConfig.example.json';
-        relay = new RelayImpl(logger, register);
       });
 
       it('should populate preconfigured spending plans successfully', async () => {
-        const populatePreconfiguredSpendingPlansSpy = sinon.spy(
-          relay['hbarSpendingPlanConfigService'],
-          'populatePreconfiguredSpendingPlans',
-        );
-
-        await relay.populatePreconfiguredSpendingPlans();
+        expect((relay = new RelayImpl(logger, register))).to.not.throw;
 
         expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
+        await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).to.not.be.rejected;
         expect(loggerSpy.info.calledWith('Pre-configured spending plans populated successfully')).to.be.true;
       });
     });
@@ -112,18 +109,13 @@ describe('RelayImpl', () => {
     describe('when no configuration file is provided', () => {
       beforeEach(() => {
         process.env.HBAR_SPENDING_PLANS_CONFIG_FILE = 'nonExistingFile.json';
-        relay = new RelayImpl(logger, register);
       });
 
       it('should not throw an error', async () => {
-        const populatePreconfiguredSpendingPlansSpy = sinon.spy(
-          relay['hbarSpendingPlanConfigService'],
-          'populatePreconfiguredSpendingPlans',
-        );
-
-        await expect(relay.populatePreconfiguredSpendingPlans()).to.not.be.rejected;
+        expect((relay = new RelayImpl(logger, register))).to.not.throw;
 
         expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
+        await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).to.not.be.rejected;
         expect(loggerSpy.error.calledWith(`Configuration file not found at path "nonExistingFile.json"`));
       });
     });

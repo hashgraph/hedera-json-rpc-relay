@@ -225,10 +225,16 @@ export class RelayImpl implements Relay {
 
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
 
+    this.populatePreconfiguredSpendingPlans().then();
+
     logger.info('Relay running with chainId=%s', chainId);
   }
 
-  public async populatePreconfiguredSpendingPlans(): Promise<void> {
+  /**
+   * Populates pre-configured spending plans from a configuration file.
+   * @returns {Promise<void>} A promise that resolves when the spending plans have been successfully populated.
+   */
+  private async populatePreconfiguredSpendingPlans(): Promise<void> {
     return this.hbarSpendingPlanConfigService
       .populatePreconfiguredSpendingPlans()
       .then(() => this.logger.info('Pre-configured spending plans populated successfully'))
