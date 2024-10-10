@@ -1489,11 +1489,7 @@ export class EthImpl implements Eth {
   ): Promise<string | JsonRpcError> {
     this.logger.error(
       e,
-      `${
-        requestDetails.formattedRequestId
-      } Failed to successfully submit sendRawTransaction for transaction ${transaction} to node ${JSON.stringify(
-        this.hapiService.getMainClientInstance().network,
-      )}`,
+      `${requestDetails.formattedRequestId} Failed to successfully submit sendRawTransaction for transaction ${transaction} to node ${this.hapiService.hederaNetwork}`,
     );
     if (e instanceof JsonRpcError) {
       return e;
@@ -1935,7 +1931,7 @@ export class EthImpl implements Eth {
       this.logger.error(
         e,
         `${requestIdPrefix} Failed to successfully submit contractCallQuery to consensus-node: ${JSON.stringify(
-          this.hapiService.getMainClientInstance().network,
+          this.hapiService.hederaNetwork,
         )}`,
       );
       if (e instanceof JsonRpcError) {
