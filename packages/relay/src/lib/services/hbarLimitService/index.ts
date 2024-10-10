@@ -385,7 +385,7 @@ export class HbarLimitService implements IHbarLimitService {
         );
       }
     }
-    //const shouldUseIP = process.env.SHOULD_USE_IP_FOR_SPENDING_PLAN;
+
     if (ipAddress) {
       try {
         return await this.getSpendingPlanByIPAddress(requestDetails);

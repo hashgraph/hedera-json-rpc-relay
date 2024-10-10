@@ -191,7 +191,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         const initialAccount: AliasAccount = global.accounts[0];
 
-        const neededAccounts: number = 3;
+        const neededAccounts: number = 4;
         accounts.push(
           ...(await Utils.createMultipleAliasAccounts(
             mirrorNode,
@@ -413,9 +413,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                 ethSpendingPlanAfter.planId,
                 requestDetails,
               );
-              expect(hbarPlan.spentToday).to.be.gt(spentToday);
+              expect(hbarPlan.amountSpent).to.be.gt(spentToday);
               expect(remainingHbars).to.be.lt(lastRemainingHbars);
-              spentToday = hbarPlan.spentToday;
+              spentToday = hbarPlan.amountSpent;
             }
             expect.fail(`Expected an error but nothing was thrown`);
           } catch (e: any) {
@@ -434,22 +434,25 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           global.logger.trace(
             `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
           );
-          expect(ethAddressSpendingPlanRepository.findByAddress(accounts[1].address, requestDetails)).to.be.rejected;
+
+          expect(ethAddressSpendingPlanRepository.findByAddress(accounts[3].address, requestDetails)).to.be.rejected;
           const gasPrice = await relay.gasPrice(requestId);
           const transaction = {
             ...defaultLondonTransactionData,
             to: parentContractAddress,
-            nonce: await relay.getAccountNonce(accounts[1].address, requestId),
+            nonce: await relay.getAccountNonce(accounts[3].address, requestId),
             maxPriorityFeePerGas: gasPrice,
             maxFeePerGas: gasPrice,
           };
-          const signedTx = await accounts[1].wallet.signTransaction(transaction);
+          const signedTx = await accounts[3].wallet.signTransaction(transaction);
 
           await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
             .fulfilled;
 
+          await new Promise((r) => setTimeout(r, 20000));
+
           const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
-            accounts[1].address,
+            accounts[3].address,
             requestDetails,
           );
           expect(ethSpendingPlan).to.not.be.undefined;
