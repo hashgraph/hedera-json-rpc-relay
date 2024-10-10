@@ -248,6 +248,9 @@ export class HbarLimitService implements IHbarLimitService {
     this.remainingBudget = Hbar.fromTinybars(this.remainingBudget.toTinybars().sub(cost));
     this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
 
+    // Done asynchronously in the background
+    this.updateAverageDailyUsagePerSubscriptionType(spendingPlan.subscriptionType, requestDetails).then();
+
     this.logger.trace(
       `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost} tℏ, remainingBudget=${this.remainingBudget}`,
     );
@@ -382,6 +385,7 @@ export class HbarLimitService implements IHbarLimitService {
         );
       }
     }
+    //const shouldUseIP = process.env.SHOULD_USE_IP_FOR_SPENDING_PLAN;
     if (ipAddress) {
       try {
         return await this.getSpendingPlanByIPAddress(requestDetails);
