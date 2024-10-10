@@ -151,7 +151,7 @@ export class LocalLRUCache implements ICacheClient {
     if (resolvedTtl > 0) {
       this.cache.set(key, value, { ttl: resolvedTtl });
     } else {
-      this.cache.set(key, value);
+      this.cache.set(key, value, { ttl: 0 }); // 0 means indefinite time
     }
     const censoredKey = key.replace(Utils.IP_ADDRESS_REGEX, '<REDACTED>');
     const censoredValue = JSON.stringify(value).replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
