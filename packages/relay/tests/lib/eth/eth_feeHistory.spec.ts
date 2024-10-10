@@ -17,8 +17,9 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
@@ -40,7 +41,6 @@ import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
 import { RequestDetails } from '../../../src/lib/types';
 
-dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
@@ -49,7 +49,16 @@ let currentMaxBlockRange: number;
 
 describe('@ethFeeHistory using MirrorNode', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+
+  let restMock, hapiServiceInstance, ethImpl, cacheService;
+
+  before(() => {
+    const generatedEthTestEnvs = generateEthTestEnv();
+    restMock = generatedEthTestEnvs.restMock;
+    hapiServiceInstance = generatedEthTestEnvs.hapiServiceInstance;
+    ethImpl = generatedEthTestEnvs.ethImpl;
+    cacheService = generatedEthTestEnvs.cacheService;
+  });
 
   const requestDetails = new RequestDetails({ requestId: 'eth_feeHistoryTest', ipAddress: '0.0.0.0' });
 
@@ -60,18 +69,21 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
+    currentMaxBlockRange = Number(ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
+    ConfigServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
   });
 
   this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
+    ConfigServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', ETH_FEE_HISTORY_VALUE);
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
+    ConfigServiceTestHelper.dynamicOverride(
+      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
+      currentMaxBlockRange.toString(),
+    );
   });
 
   describe('eth_feeHistory with ... param', function () {
@@ -238,7 +250,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     }
 
     this.beforeAll(function () {
-      process.env.ETH_FEE_HISTORY_FIXED = 'true';
+      ConfigServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', true);
     });
 
     this.beforeEach(function () {
@@ -248,7 +260,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     });
 
     this.afterAll(function () {
-      process.env.ETH_FEE_HISTORY_FIXED = 'false';
+      ConfigServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', false);
     });
 
     it('eth_feeHistory with fixed fees', async function () {

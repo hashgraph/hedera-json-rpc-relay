@@ -18,16 +18,14 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
-import { parseOpenRPCDocument, validateOpenRPCDocument } from '@open-rpc/schema-utils-js';
-
+import { validateOpenRPCDocument, parseOpenRPCDocument } from '@open-rpc/schema-utils-js';
 import Ajv from 'ajv';
-
-import path from 'path';
 import pino from 'pino';
 import axios from 'axios';
 import sinon from 'sinon';
-import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { Registry } from 'prom-client';
 import { BigNumber } from 'bignumber.js';
@@ -76,10 +74,6 @@ import EventEmitter from 'events';
 import Long from 'long';
 import { AccountInfo } from '@hashgraph/sdk';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
-process.env.npm_package_version = 'relay/0.0.1-SNAPSHOT';
-
 const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
@@ -95,6 +89,10 @@ describe('Open RPC Specification', function () {
   let rpcDocument: any;
   let methodsResponseSchema: { [method: string]: any };
   let ethImpl: EthImpl;
+
+  before(() => {
+    ConfigServiceTestHelper.dynamicOverride('npm_package_version', 'relay/0.0.1-SNAPSHOT');
+  });
 
   const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });
 
@@ -123,7 +121,7 @@ describe('Open RPC Specification', function () {
     const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

@@ -18,6 +18,8 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import pino from 'pino';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
@@ -42,22 +44,22 @@ describe('HBAR Rate Limiter', async function () {
   const mockedExchangeRateInCents: number = 12;
   const randomAccountAddress = random20BytesAddress();
   const randomWhiteListedAccountAddress = random20BytesAddress();
-  const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+  const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   const requestDetails = new RequestDetails({ requestId: getRequestId(), ipAddress: '0.0.0.0' });
 
   this.beforeEach(() => {
     currentDateNow = Date.now();
-    process.env.HBAR_RATE_LIMIT_WHITELIST = `[${randomWhiteListedAccountAddress}]`;
+    ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_WHITELIST', `[${randomWhiteListedAccountAddress}]`);
     rateLimiter = new HbarLimit(logger, currentDateNow, validTotal, validDuration, registry);
     rateLimiterWithEmptyBudget = new HbarLimit(logger, currentDateNow, invalidTotal, validDuration, registry);
   });
 
   this.beforeAll(() => {
-    process.env.HBAR_RATE_LIMIT_WHITELIST = `[${randomWhiteListedAccountAddress}]`;
+    ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_WHITELIST', `[${randomWhiteListedAccountAddress}]`);
   });
 
   this.afterAll(() => {
-    delete process.env.HBAR_RATE_LIMIT_WHITELIST;
+    ConfigServiceTestHelper.remove('HBAR_RATE_LIMIT_WHITELIST');
   });
 
   it('should be disabled, if we pass invalid total', async function () {

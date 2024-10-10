@@ -60,6 +60,7 @@ import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { SDKClientError } from '../errors/SDKClientError';
 import { JsonRpcError, predefined } from '../errors/JsonRpcError';
 import { CacheService } from '../services/cacheService/cacheService';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { weibarHexToTinyBarInt } from '../../formatters';
 import {
   IExecuteQueryEventPayload,
@@ -136,18 +137,18 @@ export class SDKClient {
   ) {
     this.clientMain = clientMain;
 
-    if (process.env.CONSENSUS_MAX_EXECUTION_TIME) {
+    if (ConfigService.get('CONSENSUS_MAX_EXECUTION_TIME')) {
       // sets the maximum time in ms for the SDK to wait when submitting
       // a transaction/query before throwing a TIMEOUT error
-      this.clientMain = clientMain.setMaxExecutionTime(Number(process.env.CONSENSUS_MAX_EXECUTION_TIME));
+      this.clientMain = clientMain.setMaxExecutionTime(Number(ConfigService.get('CONSENSUS_MAX_EXECUTION_TIME')));
     }
 
     this.logger = logger;
     this.hbarLimiter = hbarLimiter;
     this.cacheService = cacheService;
     this.eventEmitter = eventEmitter;
-    this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
-    this.fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+    this.maxChunks = Number(ConfigService.get('FILE_APPEND_MAX_CHUNKS')) || 20;
+    this.fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   }
 
   /**
@@ -417,7 +418,7 @@ export class SDKClient {
     if (ethereumTransactionData.callData.length <= this.fileAppendChunkSize) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
-      const isPreemptiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK === 'true';
+      const isPreemptiveCheckOn = ConfigService.get('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK');
 
       if (isPreemptiveCheckOn) {
         const hexCallDataLength = Buffer.from(ethereumTransactionData.callData).toString('hex').length;
@@ -531,7 +532,8 @@ export class SDKClient {
   ): Promise<ContractFunctionResult> {
     let retries = 0;
     let resp;
-    while (parseInt(process.env.CONTRACT_QUERY_TIMEOUT_RETRIES || '1') > retries) {
+    // @ts-ignore
+    while (parseInt(ConfigService.get('CONTRACT_QUERY_TIMEOUT_RETRIES') || '1') > retries) {
       try {
         resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestDetails);
         return resp;

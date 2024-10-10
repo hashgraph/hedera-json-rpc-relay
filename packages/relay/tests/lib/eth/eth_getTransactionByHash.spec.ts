@@ -17,12 +17,10 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-
-import { Transaction, Transaction1559, Transaction2930 } from '../../../src/lib/model';
+import { Transaction, Transaction2930, Transaction1559 } from '../../../src/lib/model';
 import RelayAssertions from '../../assertions';
 import {
   DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED,
@@ -36,7 +34,6 @@ import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress } from 
 import { generateEthTestEnv } from './eth-helpers';
 import { RequestDetails } from '../../../src/lib/types';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async function () {

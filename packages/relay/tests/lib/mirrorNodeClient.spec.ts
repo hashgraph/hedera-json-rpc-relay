@@ -18,8 +18,8 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { MirrorNodeClient } from '../../src/lib/clients';
@@ -31,13 +31,11 @@ import pino from 'pino';
 import { ethers } from 'ethers';
 import { MirrorNodeClientError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+
+const registry = new Registry();
 import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { BigNumber } from 'bignumber.js';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
-const registry = new Registry();
 
 const logger = pino();
 const noTransactions = '?transactions=false';
@@ -60,7 +58,8 @@ describe('MirrorNodeClient', async function () {
     });
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      // @ts-ignore
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -136,7 +135,8 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`restUrl` is exposed and correct', async () => {
-    const domain = (process.env.MIRROR_NODE_URL || '').replace(/^https?:\/\//, '');
+    // @ts-ignore
+    const domain = (ConfigService.get('MIRROR_NODE_URL') || '').replace(/^https?:\/\//, '');
     const prodMirrorNodeInstance = new MirrorNodeClient(
       domain,
       logger.child({ name: `mirror-node` }),
@@ -161,10 +161,11 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('Can provide custom x-api-key header', async () => {
-    const exampleApiKey = 'abc123iAManAPIkey';
-    process.env.MIRROR_NODE_URL_HEADER_X_API_KEY = exampleApiKey;
+    const exampleApiKey = '["abc123iAManAPIkey"]';
+    ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_URL_HEADER_X_API_KEY', exampleApiKey);
     const mirrorNodeInstanceOverridden = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      // @ts-ignore
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

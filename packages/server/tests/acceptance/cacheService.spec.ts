@@ -19,9 +19,11 @@
  */
 
 import { expect } from 'chai';
-import { CacheService } from '../../../../packages/relay/src/lib/services/cacheService/cacheService';
+import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 const registry = new Registry();
 
@@ -85,7 +87,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
   it('Fallsback to local cache for REDIS_ENABLED !== true', async () => {
     const dataLabel = `${DATA_LABEL_PREFIX}3`;
 
-    process.env.REDIS_ENABLED = 'false';
+    ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', false);
     const serviceWithDisabledRedis = new CacheService(global.logger, registry);
     await new Promise((r) => setTimeout(r, 1000));
     expect(serviceWithDisabledRedis.isRedisEnabled()).to.eq(false, 'redis is disabled');
@@ -95,7 +97,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const dataInLRU = await serviceWithDisabledRedis.getAsync(dataLabel, CALLING_METHOD, requestDetails);
     expect(dataInLRU).to.deep.eq(DATA, 'data is stored in local cache');
 
-    process.env.REDIS_ENABLED = 'true';
+    ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', true);
   });
 
   it('Cache set by one instance can be accessed by another', async () => {
@@ -112,21 +114,25 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     const dataLabel = `${DATA_LABEL_PREFIX}_redis_error`;
 
     let currentRedisEnabledEnv;
+    let currentMultiSetEnv;
     let cacheService: CacheService;
 
     before(async () => {
-      currentRedisEnabledEnv = process.env.REDIS_ENABLED;
+      currentRedisEnabledEnv = ConfigService.get('REDIS_ENABLED');
+      currentMultiSetEnv = ConfigService.get('MULTI_SET');
 
-      process.env.REDIS_ENABLED = 'true';
+      ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', true);
+      ConfigServiceTestHelper.dynamicOverride('MULTI_SET', false);
       cacheService = new CacheService(global.logger, registry);
 
       // disconnect redis client to simulate Redis error
       await cacheService.disconnectRedisClient();
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 700));
     });
 
     after(async () => {
-      process.env.REDIS_ENABLED = currentRedisEnabledEnv;
+      ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', currentRedisEnabledEnv);
+      ConfigServiceTestHelper.dynamicOverride('MULTI_SET', currentMultiSetEnv);
     });
 
     it('test getAsync operation', async () => {

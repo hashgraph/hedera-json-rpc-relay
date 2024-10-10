@@ -18,15 +18,14 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-
 import pino from 'pino';
 import constants from '../../src/lib/constants';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
@@ -36,8 +35,6 @@ import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../..
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { defaultDetailedContractResults, useInMemoryRedisServer } from '../helpers';
 import { EventEmitter } from 'events';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 use(chaiAsPromised);
 
@@ -124,7 +121,7 @@ describe('eth_getBlockBy', async function () {
 
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL ?? '',
+      ConfigService.get('MIRROR_NODE_URL') ?? '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -139,7 +136,7 @@ describe('eth_getBlockBy', async function () {
     const eventEmitter = new EventEmitter();
     hapiServiceInstance = new HAPIService(logger, registry, hbarLimiter, cacheService, eventEmitter);
 
-    process.env.ETH_FEE_HISTORY_FIXED = 'false';
+    ConfigServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', false);
 
     // @ts-ignore
     ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);

@@ -18,6 +18,8 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import pino from 'pino';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
@@ -38,8 +40,8 @@ describe('Net', async function () {
   });
 
   it('should execute "net_version"', function () {
-    const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
-    let expectedNetVersion = process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
+    const hederaNetwork: string = (ConfigService.get('HEDERA_NETWORK') || '{}').toLowerCase();
+    let expectedNetVersion = ConfigService.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
     if (expectedNetVersion.startsWith('0x')) expectedNetVersion = parseInt(expectedNetVersion, 16).toString();
 
     const actualNetVersion = Relay.net().version();
@@ -47,38 +49,38 @@ describe('Net', async function () {
   });
 
   it('should set chainId from CHAIN_ID environment variable', () => {
-    process.env.CHAIN_ID = '123';
+    ConfigServiceTestHelper.dynamicOverride('CHAIN_ID', '123');
     Relay = new RelayImpl(logger, new Registry());
     const actualNetVersion = Relay.net().version();
     expect(actualNetVersion).to.equal('123');
   });
 
   it('should set chainId from CHAIN_ID environment variable starting with 0x', () => {
-    process.env.CHAIN_ID = '0x1a';
+    ConfigServiceTestHelper.dynamicOverride('CHAIN_ID', '0x1a');
     Relay = new RelayImpl(logger, new Registry());
     const actualNetVersion = Relay.net().version();
     expect(actualNetVersion).to.equal('26'); // 0x1a in decimal is 26
   });
 
   it('should default chainId to 298 when no environment variables are set', () => {
-    delete process.env.HEDERA_NETWORK;
-    delete process.env.CHAIN_ID;
+    ConfigServiceTestHelper.remove('HEDERA_NETWORK');
+    ConfigServiceTestHelper.remove('CHAIN_ID');
     Relay = new RelayImpl(logger, new Registry());
     const actualNetVersion = Relay.net().version();
     expect(actualNetVersion).to.equal('298');
   });
 
   it('should handle empty HEDERA_NETWORK and set chainId to default', () => {
-    process.env.HEDERA_NETWORK = '';
-    delete process.env.CHAIN_ID;
+    ConfigServiceTestHelper.dynamicOverride('HEDERA_NETWORK', '');
+    ConfigServiceTestHelper.remove('CHAIN_ID');
     Relay = new RelayImpl(logger, new Registry());
     const actualNetVersion = Relay.net().version();
     expect(actualNetVersion).to.equal('298');
   });
 
   it('should prioritize CHAIN_ID over HEDERA_NETWORK', () => {
-    process.env.HEDERA_NETWORK = 'mainnet';
-    process.env.CHAIN_ID = '0x2';
+    ConfigServiceTestHelper.dynamicOverride('HEDERA_NETWORK', 'mainnet');
+    ConfigServiceTestHelper.dynamicOverride('CHAIN_ID', '0x2');
     Relay = new RelayImpl(logger, new Registry());
     const actualNetVersion = Relay.net().version();
     expect(actualNetVersion).to.equal('2'); // 0x2 in decimal is 2

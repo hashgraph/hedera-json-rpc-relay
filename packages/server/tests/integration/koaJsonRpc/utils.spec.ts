@@ -23,6 +23,7 @@ import sinon from 'sinon';
 import { Server } from 'http';
 import * as utils from '../../../src/koaJsonRpc/lib/utils';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 
 describe('utils.ts', () => {
   describe('hasOwnProperty', () => {
@@ -52,14 +53,14 @@ describe('utils.ts', () => {
     });
 
     it('should set server timeout from environment variable', () => {
-      process.env.SERVER_REQUEST_TIMEOUT_MS = '30000';
+      ConfigServiceTestHelper.dynamicOverride('SERVER_REQUEST_TIMEOUT_MS', '30000');
 
       utils.setServerTimeout(server);
       expect(spy.calledWith(30000)).to.eq(true);
     });
 
     it('should set server timeout to default value when environment variable is not set', () => {
-      delete process.env.SERVER_REQUEST_TIMEOUT_MS;
+      ConfigServiceTestHelper.remove('SERVER_REQUEST_TIMEOUT_MS');
 
       utils.setServerTimeout(server);
       expect(spy.calledWith(60000)).to.eq(true);
@@ -68,14 +69,14 @@ describe('utils.ts', () => {
 
   describe('getBatchRequestsMaxSize', () => {
     it('should return the batch request max size from environment variable', () => {
-      process.env.BATCH_REQUESTS_MAX_SIZE = '150';
+      ConfigServiceTestHelper.dynamicOverride('BATCH_REQUESTS_MAX_SIZE', '150');
 
       const result = utils.getBatchRequestsMaxSize();
       expect(result).to.equal(150);
     });
 
     it('should return default batch request max size when environment variable is not set', () => {
-      delete process.env.BATCH_REQUESTS_MAX_SIZE;
+      ConfigServiceTestHelper.remove('BATCH_REQUESTS_MAX_SIZE');
 
       const result = utils.getBatchRequestsMaxSize();
       expect(result).to.equal(100);
@@ -84,14 +85,14 @@ describe('utils.ts', () => {
 
   describe('getLimitDuration', () => {
     it('should return the limit duration from environment variable', () => {
-      process.env.LIMIT_DURATION = '500';
+      ConfigServiceTestHelper.dynamicOverride('LIMIT_DURATION', '500');
 
       const result = utils.getLimitDuration();
       expect(result).to.equal(500);
     });
 
     it('should return the default limit duration when environment variable is not set', () => {
-      delete process.env.LIMIT_DURATION;
+      ConfigServiceTestHelper.remove('LIMIT_DURATION');
 
       const result = utils.getLimitDuration();
       expect(result).to.equal(constants.DEFAULT_RATE_LIMIT.DURATION);
@@ -100,14 +101,14 @@ describe('utils.ts', () => {
 
   describe('getDefaultRateLimit', () => {
     it('should return the default rate limit from environment variable', () => {
-      process.env.DEFAULT_RATE_LIMIT = '250';
+      ConfigServiceTestHelper.dynamicOverride('DEFAULT_RATE_LIMIT', '250');
 
       const result = utils.getDefaultRateLimit();
       expect(result).to.equal(250);
     });
 
     it('should return the default rate limit when environment variable is not set', () => {
-      delete process.env.DEFAULT_RATE_LIMIT;
+      ConfigServiceTestHelper.remove('DEFAULT_RATE_LIMIT');
 
       const result = utils.getDefaultRateLimit();
       expect(result).to.equal(200);
@@ -116,14 +117,14 @@ describe('utils.ts', () => {
 
   describe('getRequestIdIsOptional', () => {
     it('should return true when REQUEST_ID_IS_OPTIONAL is set to true', () => {
-      process.env.REQUEST_ID_IS_OPTIONAL = 'true';
+      ConfigServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', true);
 
       const result = utils.getRequestIdIsOptional();
       expect(result).to.be.true;
     });
 
     it('should return false when REQUEST_ID_IS_OPTIONAL is not set to true', () => {
-      process.env.REQUEST_ID_IS_OPTIONAL = 'false';
+      ConfigServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', false);
 
       const result = utils.getRequestIdIsOptional();
       expect(result).to.be.false;
@@ -132,13 +133,15 @@ describe('utils.ts', () => {
 
   describe('getBatchRequestsEnabled', () => {
     it('should return true when BATCH_REQUESTS_ENABLED is set to true', () => {
-      process.env.BATCH_REQUESTS_ENABLED = 'true';
+      ConfigServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', true);
+
       const result = utils.getBatchRequestsEnabled();
       expect(result).to.be.true;
     });
 
     it('should return false when BATCH_REQUESTS_ENABLED is not set to true', () => {
-      process.env.BATCH_REQUESTS_ENABLED = 'false';
+      ConfigServiceTestHelper.dynamicOverride('BATCH_REQUESTS_ENABLED', false);
+
       const result = utils.getBatchRequestsEnabled();
       expect(result).to.be.false;
     });

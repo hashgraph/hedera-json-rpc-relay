@@ -27,8 +27,8 @@ import { AliasAccount } from '../types/AliasAccount';
 import EstimateGasContractJson from '../contracts/EstimateGasContract.json';
 
 // Constants from local resources
-import constants from '../../../../packages/relay/src/lib/constants';
-import RelayCalls from '../../../../packages/server/tests/helpers/constants';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import RelayCalls from '../helpers/constants';
 
 describe('EstimateGasContract tests', function () {
   const signers: AliasAccount[] = [];

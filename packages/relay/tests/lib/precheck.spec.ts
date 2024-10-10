@@ -18,6 +18,8 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
@@ -32,12 +34,11 @@ import constants from '../../src/lib/constants';
 import { JsonRpcError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { ONE_TINYBAR_IN_WEI_HEX } from './eth/eth-config';
-import { RequestDetails } from '../../src/lib/types';
 
 const registry = new Registry();
+import { RequestDetails } from '../../src/lib/types';
 
 const logger = pino();
-
 const limitOrderPostFix = '?order=desc&limit=1';
 const transactionsPostFix = '?transactions=false';
 
@@ -95,7 +96,7 @@ describe('Precheck', async function () {
 
     // @ts-ignore
     const mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL!,
+      ConfigService.get('MIRROR_NODE_URL')!,
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -238,11 +239,11 @@ describe('Precheck', async function () {
     let initialMinGasPriceBuffer;
     before(async () => {
       initialMinGasPriceBuffer = constants.GAS_PRICE_TINY_BAR_BUFFER;
-      process.env.GAS_PRICE_TINY_BAR_BUFFER = '10000000000'; // 1 tinybar
+      ConfigServiceTestHelper.dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', '10000000000'); // 1 tinybar
     });
 
     after(async () => {
-      process.env.GAS_PRICE_TINY_BAR_BUFFER = initialMinGasPriceBuffer;
+      ConfigServiceTestHelper.dynamicOverride('GAS_PRICE_TINY_BAR_BUFFER', initialMinGasPriceBuffer);
     });
 
     it('should pass for gas price gt to required gas price', async function () {

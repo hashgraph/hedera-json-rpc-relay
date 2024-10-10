@@ -21,10 +21,7 @@
 import pino from 'pino';
 import Long from 'long';
 import { expect } from 'chai';
-import { resolve } from 'path';
 import * as sinon from 'sinon';
-import { config } from 'dotenv';
-import { Context } from 'mocha';
 import EventEmitter from 'events';
 import { Registry } from 'prom-client';
 import { Utils } from '../../src/utils';
@@ -38,6 +35,8 @@ import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import MetricService from '../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { calculateTxRecordChargeAmount, random20BytesAddress } from '../helpers';
 import {
   AccountId,
@@ -60,7 +59,6 @@ import {
 } from '@hashgraph/sdk';
 import { RequestDetails } from '../../src/lib/types';
 
-config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
 const logger = pino();
 
@@ -95,7 +93,7 @@ describe('SdkClient', async function () {
   } as unknown as FeeSchedules;
 
   before(() => {
-    const hederaNetwork = process.env.HEDERA_NETWORK!;
+    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
@@ -103,8 +101,8 @@ describe('SdkClient', async function () {
     }
 
     client = client.setOperator(
-      AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
-      Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')!),
+      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
@@ -118,7 +116,7 @@ describe('SdkClient', async function () {
       eventEmitter,
     );
 
-    process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
+    ConfigServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
 
     instance = axios.create({
       baseURL: 'https://localhost:5551/api/v1',
@@ -131,7 +129,7 @@ describe('SdkClient', async function () {
 
     // mirror node client
     mirrorNodeClient = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -264,31 +262,6 @@ describe('SdkClient', async function () {
       HEX_ECDSA: '0x08e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
     };
 
-    before(function (this: Context) {
-      // Store the original process.env
-      originalEnv = process.env;
-
-      if (
-        this.currentTest?.title ===
-        'Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is null'
-      ) {
-        process.env = new Proxy(process.env, {
-          get: (target, prop) => {
-            if (prop === 'OPERATOR_KEY_FORMAT') {
-              return null;
-            }
-            // @ts-ignore
-            return target[prop];
-          },
-        });
-      }
-    });
-
-    after(() => {
-      // Restore the original process.env after the test
-      process.env = originalEnv;
-    });
-
     it('Initialize the privateKey for default which is DER', async () => {
       const hapiService = new HAPIService(
         logger,
@@ -302,7 +275,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is undefined', async () => {
-      delete process.env.OPERATOR_KEY_FORMAT;
+      ConfigServiceTestHelper.remove('OPERATOR_KEY_FORMAT');
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -315,7 +288,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
-      process.env.OPERATOR_KEY_FORMAT = 'DER';
+      ConfigServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'DER');
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -328,7 +301,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
-      process.env.OPERATOR_KEY_FORMAT = 'HEX_ED25519';
+      ConfigServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'HEX_ED25519');
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -341,7 +314,7 @@ describe('SdkClient', async function () {
     });
 
     it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
-      process.env.OPERATOR_KEY_FORMAT = 'HEX_ECDSA';
+      ConfigServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'HEX_ECDSA');
       const hapiService = new HAPIService(
         logger,
         registry,
@@ -354,7 +327,7 @@ describe('SdkClient', async function () {
     });
 
     it('It should throw an Error when an unexpected string is set', async () => {
-      process.env.OPERATOR_KEY_FORMAT = 'BAD_FORMAT';
+      ConfigServiceTestHelper.dynamicOverride('OPERATOR_KEY_FORMAT', 'BAD_FORMAT');
       try {
         new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter);
         expect.fail(`Expected an error but nothing was thrown`);
@@ -365,8 +338,8 @@ describe('SdkClient', async function () {
   });
 
   describe('HBAR Limiter', async () => {
-    const FILE_APPEND_CHUNK_SIZE = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
-    const MAX_CHUNKS = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
+    const FILE_APPEND_CHUNK_SIZE = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+    const MAX_CHUNKS = Number(ConfigService.get('FILE_APPEND_MAX_CHUNKS')) || 20;
     const transactionBuffer = new Uint8Array([
       2, 249, 250, 182, 130, 1, 42, 7, 1, 133, 209, 56, 92, 123, 240, 131, 228, 225, 192, 148, 61, 176, 51, 137, 34,
       205, 229, 74, 102, 224, 197, 133, 1, 18, 73, 145, 93, 50, 210, 37, 134, 9, 24, 78, 114, 160, 0, 185, 250, 68, 130,
@@ -2174,7 +2147,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileCreateFee / 10 ** 8) : fileCreateFee;
           transfers = [
             {
-              accountId: process.env.OPERATOR_ID_MAIN,
+              accountId: ConfigService.get('OPERATOR_ID_MAIN'),
               amount: Hbar.fromTinybars(-1 * fileCreateFee),
               is_approval: false,
             },
@@ -2184,7 +2157,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileAppendFee / 10 ** 8) : fileAppendFee;
           transfers = [
             {
-              accountId: process.env.OPERATOR_ID_MAIN,
+              accountId: ConfigService.get('OPERATOR_ID_MAIN'),
               amount: Hbar.fromTinybars(-1 * fileAppendFee),
               is_approval: false,
             },
@@ -2194,7 +2167,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileDeleteFee / 10 ** 8) : fileDeleteFee;
           transfers = [
             {
-              accountId: process.env.OPERATOR_ID_MAIN,
+              accountId: ConfigService.get('OPERATOR_ID_MAIN'),
               amount: Hbar.fromTinybars(-1 * fileDeleteFee),
               is_approval: false,
             },
@@ -2209,7 +2182,7 @@ describe('SdkClient', async function () {
               is_approval: false,
             },
             {
-              accountId: process.env.OPERATOR_ID_MAIN,
+              accountId: ConfigService.get('OPERATOR_ID_MAIN'),
               amount: Hbar.fromTinybars(-1 * defaultTransactionFee),
               is_approval: false,
             },
@@ -2272,8 +2245,9 @@ describe('SdkClient', async function () {
       hbarLimitMock = sinon.mock(hbarLimiter);
       sdkClientMock = sinon.mock(sdkClient);
       mock = new MockAdapter(instance);
-      hbarRateLimitPreemptiveCheck = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK;
-      process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = 'true';
+      // @ts-ignore
+      hbarRateLimitPreemptiveCheck = ConfigService.get('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK');
+      ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', true);
     });
 
     afterEach(() => {
@@ -2281,7 +2255,7 @@ describe('SdkClient', async function () {
       sinon.restore();
       sdkClientMock.restore();
       hbarLimitMock.restore();
-      process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK = hbarRateLimitPreemptiveCheck;
+      ConfigServiceTestHelper.dynamicOverride('HBAR_RATE_LIMIT_PREEMPTIVE_CHECK', hbarRateLimitPreemptiveCheck);
     });
 
     it('should rate limit before creating file', async () => {
@@ -2628,7 +2602,7 @@ describe('SdkClient', async function () {
     });
 
     it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'false'; // switch to mirror node mode
+      ConfigServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', false);
       const mockedTransactionId = transactionId.toString();
       const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);
       const mockedMirrorNodeTransactionRecord = {
@@ -2644,7 +2618,7 @@ describe('SdkClient', async function () {
                 is_approval: false,
               },
               {
-                account: process.env.OPERATOR_ID_MAIN,
+                account: ConfigService.get('OPERATOR_ID_MAIN'),
                 amount: -1 * defaultTransactionFee,
                 is_approval: false,
               },
@@ -2675,7 +2649,7 @@ describe('SdkClient', async function () {
       expect(response).to.eq(transactionResponse);
       expect(transactionStub.called).to.be.true;
 
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true'; // switch back to consensus node
+      ConfigServiceTestHelper.dynamicOverride('GET_RECORD_DEFAULT_TO_CONSENSUS_NODE', true);
     });
 
     it('Should execute calculateTxRecordChargeAmount() to get the charge amount of transaction record', () => {
@@ -2730,7 +2704,7 @@ describe('SdkClient', async function () {
     });
 
     it('Should execute getTransferAmountSumForAccount() to calculate transactionFee of the specify accountId', () => {
-      const accountId = process.env.OPERATOR_ID_MAIN || '';
+      const accountId = ConfigService.get('OPERATOR_ID_MAIN') || '';
       const mockedTxRecord = getMockedTransactionRecord();
 
       const transactionFee = sdkClient.getTransferAmountSumForAccount(mockedTxRecord, accountId);

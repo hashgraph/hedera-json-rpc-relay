@@ -22,6 +22,7 @@ import pino from 'pino';
 import { expect } from 'chai';
 import { WS_CONSTANTS } from '../../src/utils/constants';
 import { validateJsonRpcRequest, verifySupportedMethod } from '../../src/utils/utils';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 const logger = pino();
@@ -73,7 +74,7 @@ describe('validations unit test', async function () {
   });
 
   it('Should execute validateJsonRpcRequest() to validate JSON RPC request that has no id field but return true because REQUEST_ID_IS_OPTIONAL=true', () => {
-    process.env.REQUEST_ID_IS_OPTIONAL = 'true';
+    ConfigServiceTestHelper.dynamicOverride('REQUEST_ID_IS_OPTIONAL', true);
 
     const REQUEST = {
       jsonrpc: '2.0',
@@ -82,7 +83,7 @@ describe('validations unit test', async function () {
     };
     // @ts-ignore
     expect(validateJsonRpcRequest(REQUEST, logger, requestDetails)).to.be.true;
-    delete process.env.REQUEST_ID_IS_OPTIONAL;
+    ConfigServiceTestHelper.remove('REQUEST_ID_IS_OPTIONAL');
   });
 
   it("Should execute verifySupportedMethod() to validate requests' methods and return true if methods are supported", () => {

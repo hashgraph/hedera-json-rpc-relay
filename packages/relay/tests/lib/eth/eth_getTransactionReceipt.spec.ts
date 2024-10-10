@@ -17,12 +17,10 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
 import { expect, use } from 'chai';
 import sinon, { createSandbox } from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-
 import { EthImpl } from '../../../src/lib/eth';
 import constants from '../../../src/lib/constants';
 import RelayAssertions from '../../assertions';
@@ -31,7 +29,6 @@ import { defaultErrorMessageHex } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { RequestDetails } from '../../../src/lib/types';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async function () {

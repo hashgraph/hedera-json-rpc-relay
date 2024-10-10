@@ -23,10 +23,11 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
-import { predefined } from '@hashgraph/json-rpc-relay';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { ContractId, Hbar, HbarUnit } from '@hashgraph/sdk';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 // Assertions from local resources
 import Assertions from '../helpers/assertions';
@@ -80,7 +81,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   let createChildTx: ethers.ContractTransactionResponse;
   let accounts0StartBalance: bigint;
 
-  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
   const ONE_WEIBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 18)));
 
@@ -436,7 +437,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('@release should call eth_gasPrice', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestId);
       expect(res).to.exist;
-      if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
+      if (ConfigService.get('LOCAL_NODE')) {
         expect(res).be.equal(expectedGasPrice);
       } else {
         expect(Number(res)).to.be.gt(0);
@@ -1081,7 +1082,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   // Only run the following tests against a local node since they only work with the genesis account
-  if (process.env.LOCAL_NODE && process.env.LOCAL_NODE !== 'false') {
+  if (ConfigService.get('LOCAL_NODE')) {
     describe('Gas Price related RPC endpoints', () => {
       let lastBlockBeforeUpdate;
       let lastBlockAfterUpdate;

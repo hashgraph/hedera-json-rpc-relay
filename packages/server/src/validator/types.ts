@@ -26,7 +26,7 @@ import {
   IOpcodeLoggerConfig,
   ITracerConfig,
   ITracerConfigWrapper,
-} from '@hashgraph/json-rpc-relay/src/lib/types';
+} from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 export const TYPES: { [key: string]: ITypeValidation } = {
   address: {

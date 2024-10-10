@@ -18,8 +18,8 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../../../config-service/tests/configServiceTestHelper';
 import { pino } from 'pino';
 import { Registry } from 'prom-client';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
@@ -29,7 +29,6 @@ import * as sinon from 'sinon';
 import { useInMemoryRedisServer } from '../../../helpers';
 import { RequestDetails } from '../../../../dist/lib/types';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 const logger = pino();
 const registry = new Registry();
 let cacheService: CacheService;
@@ -142,7 +141,7 @@ describe('CacheService Test Suite', async function () {
 
   describe('Internal Cache Test Suite', async function () {
     this.beforeAll(() => {
-      process.env.REDIS_ENABLED = 'false';
+      ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', false);
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
@@ -280,14 +279,14 @@ describe('CacheService Test Suite', async function () {
     let multiSet: string | undefined;
 
     this.beforeAll(async () => {
-      multiSet = process.env.MULTI_SET;
-      process.env.MULTI_SET = 'true';
+      multiSet = ConfigService.get('MULTI_SET');
+      ConfigServiceTestHelper.dynamicOverride('MULTI_SET', true);
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
     this.afterAll(async () => {
       await cacheService.disconnectRedisClient();
-      process.env.MULTI_SET = multiSet;
+      ConfigServiceTestHelper.dynamicOverride('MULTI_SET', multiSet);
     });
 
     this.beforeEach(async () => {
