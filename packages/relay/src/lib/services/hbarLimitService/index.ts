@@ -403,7 +403,10 @@ export class HbarLimitService implements IHbarLimitService {
       }
     }
 
-    if (ipAddress) {
+    //TODO: This is a temporary solution to allow for testing should be swapped and preferably not used in production
+    const shouldUseIP =
+      process.env.SHOULD_USE_IP_REPOSITORY !== undefined ? process.env.SHOULD_USE_IP_REPOSITORY : 'true';
+    if (ipAddress && !shouldUseIP) {
       try {
         return await this.getSpendingPlanByIPAddress(requestDetails);
       } catch (error) {
