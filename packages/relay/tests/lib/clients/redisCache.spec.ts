@@ -45,7 +45,7 @@ describe('RedisCache Test Suite', async function () {
 
   this.beforeAll(async () => {
     redisCache = new RedisCache(logger.child({ name: `cache` }), registry);
-    redisCache['options'].ttl = 200; // Set default TTL to 200 milliseconds for testing
+    redisCache['options'].ttl = 100; // set default cache ttl to 100ms for testing
     redisClientSpy = sinon.spy(redisCache['client']);
   });
 

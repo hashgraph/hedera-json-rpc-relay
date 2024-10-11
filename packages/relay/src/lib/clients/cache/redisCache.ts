@@ -199,12 +199,8 @@ export class RedisCache implements IRedisCacheClient {
       serializedKeyValuePairs[key] = JSON.stringify(value);
     }
 
-    try {
-      // Perform mSet operation
-      await client.mSet(serializedKeyValuePairs);
-    } catch (e) {
-      this.logger.error(e);
-    }
+    // Perform mSet operation
+    await client.mSet(serializedKeyValuePairs);
 
     // Log the operation
     const entriesLength = Object.keys(keyValuePairs).length;

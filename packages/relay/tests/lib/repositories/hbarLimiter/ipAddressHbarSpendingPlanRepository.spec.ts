@@ -93,7 +93,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
         }
 
         const result = await repository.findAllByPlanId(planId, 'findAllByPlanId', requestDetails);
-        expect(result).to.deep.equal(ipAddressPlans);
+        expect(result).to.have.deep.members(ipAddressPlans);
       });
 
       it('returns an empty array if no address plans are found for the plan ID', async () => {

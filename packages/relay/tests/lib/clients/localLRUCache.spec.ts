@@ -36,27 +36,16 @@ describe('LocalLRUCache Test Suite', async function () {
   const logger = pino();
   const registry = new Registry();
   const callingMethod = 'localLRUCacheTest';
-
-  let localLRUCache: LocalLRUCache;
-  let lruCacheSpy: sinon.SinonSpiedInstance<LRUCache<string, any>>;
-  let cacheTTL: string | undefined;
-
   const requestDetails = new RequestDetails({ requestId: 'localLRUCacheTest', ipAddress: '0.0.0.0' });
 
-  this.beforeAll(() => {
-    cacheTTL = process.env.CACHE_TTL;
-    process.env.CACHE_TTL = '200'; // set default cache ttl to 200ms for testing
-    localLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
-    lruCacheSpy = sinon.spy(localLRUCache['cache']);
-  });
+  let localLRUCache: LocalLRUCache;
 
-  this.afterAll(() => {
-    process.env.CACHE_TTL = cacheTTL;
+  this.beforeAll(() => {
+    localLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
   });
 
   this.beforeEach(() => {
     localLRUCache.clear();
-    sinon.resetHistory();
   });
 
   describe('verify simple cache', async function () {
@@ -147,41 +136,51 @@ describe('LocalLRUCache Test Suite', async function () {
     });
 
     it('verify cache LRU nature', async function () {
+      const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const key = 'key';
       let valueCount = 0; // keep track of values sets
-      await localLRUCache.set(key, ++valueCount, callingMethod, requestDetails);
-      await localLRUCache.set(key, ++valueCount, callingMethod, requestDetails);
-      await localLRUCache.set(key, ++valueCount, callingMethod, requestDetails);
-      const cacheValue = await localLRUCache.get(key, callingMethod, requestDetails);
+      await customLocalLRUCache.set(key, ++valueCount, callingMethod, requestDetails);
+      await customLocalLRUCache.set(key, ++valueCount, callingMethod, requestDetails);
+      await customLocalLRUCache.set(key, ++valueCount, callingMethod, requestDetails);
+      const cacheValue = await customLocalLRUCache.get(key, callingMethod, requestDetails);
       // expect cache to have the latest value for key
       expect(cacheValue).to.be.equal(valueCount);
     });
 
     it('verify cache ttl nature', async function () {
+      const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const key = 'key';
       const ttl = 100;
-      await localLRUCache.set(key, 'value', callingMethod, requestDetails, ttl);
+      await customLocalLRUCache.set(key, 'value', callingMethod, requestDetails, ttl);
 
       await new Promise((r) => setTimeout(r, ttl + 100)); // wait for ttl to expire
-      const cacheValue = await localLRUCache.get(key, callingMethod, requestDetails);
+      const cacheValue = await customLocalLRUCache.get(key, callingMethod, requestDetails);
       expect(cacheValue).to.be.null;
     });
 
     it('it should set without TTL if -1 is passed for TTL', async () => {
-      const key = 'key';
-      const value = { intField: 1, stringField: 'string', boolField: true, arrField: [1, 2, 3] };
-      const ttl = -1;
+      try {
+        process.env.CACHE_TTL = '100'; // set default cache ttl to 100ms for testing
+        const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
+        const lruCacheSpy = sinon.spy(customLocalLRUCache['cache']);
 
-      await localLRUCache.set(key, value, callingMethod, requestDetails, ttl);
-      sinon.assert.calledOnceWithExactly(lruCacheSpy.set, key, value, { ttl: 0 });
+        const key = 'key';
+        const value = { intField: 1, stringField: 'string', boolField: true, arrField: [1, 2, 3] };
+        const ttl = -1;
 
-      const cachedValue = await localLRUCache.get(key, callingMethod, requestDetails);
-      expect(cachedValue).equal(value);
+        await customLocalLRUCache.set(key, value, callingMethod, requestDetails, ttl);
+        sinon.assert.calledOnceWithExactly(lruCacheSpy.set, key, value, { ttl: 0 });
 
-      await new Promise((resolve) => setTimeout(resolve, localLRUCache['options'].ttl + 100));
+        const cachedValue = await customLocalLRUCache.get(key, callingMethod, requestDetails);
+        expect(cachedValue).equal(value);
 
-      const cachedValueAfterTTL = await localLRUCache.get(key, callingMethod, requestDetails);
-      expect(cachedValueAfterTTL).equal(value);
+        await new Promise((resolve) => setTimeout(resolve, customLocalLRUCache['options'].ttl + 100));
+
+        const cachedValueAfterTTL = await customLocalLRUCache.get(key, callingMethod, requestDetails);
+        expect(cachedValueAfterTTL).equal(value);
+      } finally {
+        delete process.env.CACHE_TTL;
+      }
     });
   });
 

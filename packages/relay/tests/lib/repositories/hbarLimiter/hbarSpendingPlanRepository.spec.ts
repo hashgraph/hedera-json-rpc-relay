@@ -45,11 +45,12 @@ describe('HbarSpendingPlanRepository', function () {
   const ttl = 86_400_000; // 1 day
 
   const tests = (isSharedCacheEnabled: boolean) => {
+    let cacheService: CacheService;
     let cacheServiceSpy: sinon.SinonSpiedInstance<CacheService>;
     let repository: HbarSpendingPlanRepository;
 
     before(async () => {
-      const cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
+      cacheService = new CacheService(logger.child({ name: `CacheService` }), registry);
       cacheServiceSpy = sinon.spy(cacheService);
       repository = new HbarSpendingPlanRepository(cacheService, logger.child({ name: `HbarSpendingPlanRepository` }));
     });
@@ -59,11 +60,11 @@ describe('HbarSpendingPlanRepository', function () {
     }
 
     afterEach(async () => {
-      await cacheServiceSpy.clear(requestDetails);
+      await cacheService.clear(requestDetails);
     });
 
     after(async () => {
-      await cacheServiceSpy.disconnectRedisClient();
+      await cacheService.disconnectRedisClient();
     });
 
     describe('create', () => {
@@ -137,7 +138,7 @@ describe('HbarSpendingPlanRepository', function () {
 
         const key = `${repository['collectionKey']}:${createdPlan.id}:spendingHistory`;
         const hbarSpending = { amount: 100, timestamp: new Date() } as IHbarSpendingRecord;
-        await cacheServiceSpy.rPush(key, hbarSpending, 'test', requestDetails);
+        await cacheService.rPush(key, hbarSpending, 'test', requestDetails);
 
         const spendingHistory = await repository.getSpendingHistory(createdPlan.id, requestDetails);
         expect(spendingHistory).to.have.lengthOf(1);
@@ -299,7 +300,7 @@ describe('HbarSpendingPlanRepository', function () {
 
         // Manually set the plan to inactive
         const key = `${repository['collectionKey']}:${createdPlan.id}`;
-        await cacheServiceSpy.set(key, { ...createdPlan, active: false }, 'test', requestDetails);
+        await cacheService.set(key, { ...createdPlan, active: false }, 'test', requestDetails);
 
         const amount = 50;
         await expect(
@@ -326,7 +327,7 @@ describe('HbarSpendingPlanRepository', function () {
 
         // Manually set the plan to inactive
         const key = `${repository['collectionKey']}:${createdPlan.id}`;
-        await cacheServiceSpy.set(key, { ...createdPlan, active: false }, 'test', requestDetails);
+        await cacheService.set(key, { ...createdPlan, active: false }, 'test', requestDetails);
 
         await expect(repository.checkExistsAndActive(createdPlan.id, requestDetails)).to.be.eventually.rejectedWith(
           HbarSpendingPlanNotActiveError,
@@ -359,7 +360,7 @@ describe('HbarSpendingPlanRepository', function () {
 
         // Manually set the plan to inactive
         const key = `${repository['collectionKey']}:${inactivePlan.id}`;
-        await cacheServiceSpy.set(key, { ...inactivePlan, active: false }, 'test', requestDetails);
+        await cacheService.set(key, { ...inactivePlan, active: false }, 'test', requestDetails);
 
         const activePlans = await repository.findAllActiveBySubscriptionTier([subscriptionTier], requestDetails);
         expect(activePlans).to.deep.equal([activePlan]);

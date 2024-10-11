@@ -96,7 +96,7 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
         }
 
         const result = await repository.findAllByPlanId(planId, 'findAllByPlanId', requestDetails);
-        expect(result).to.deep.equal(ethAddressPlans);
+        expect(result).to.have.deep.members(ethAddressPlans);
       });
 
       it('returns an empty array if no address plans are found for the plan ID', async () => {

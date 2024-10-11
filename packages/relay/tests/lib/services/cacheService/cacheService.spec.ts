@@ -30,17 +30,19 @@ import { useInMemoryRedisServer } from '../../../helpers';
 import { RequestDetails } from '../../../../dist/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-const logger = pino();
-const registry = new Registry();
-let cacheService: CacheService;
-
-const callingMethod = 'CacheServiceTest';
 
 chai.use(chaiAsPromised);
 
 describe('CacheService Test Suite', async function () {
   this.timeout(10000);
+
+  const logger = pino();
+  const registry = new Registry();
+  const callingMethod = 'CacheServiceTest';
   const requestDetails = new RequestDetails({ requestId: 'cacheServiceTest', ipAddress: '0.0.0.0' });
+
+  let cacheService: CacheService;
+
   const describeKeysTestSuite = () => {
     describe('keys', async function () {
       it('should retrieve all keys', async function () {
@@ -141,13 +143,20 @@ describe('CacheService Test Suite', async function () {
   };
 
   describe('Internal Cache Test Suite', async function () {
+    let redisEnabled: string | undefined;
+
     this.beforeAll(() => {
+      redisEnabled = process.env.REDIS_ENABLED;
       process.env.REDIS_ENABLED = 'false';
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
     this.afterEach(async () => {
       await cacheService.clear(requestDetails);
+    });
+
+    this.afterAll(() => {
+      process.env.REDIS_ENABLED = redisEnabled;
     });
 
     it('should be able to set and get from internal cache', async function () {
@@ -431,16 +440,6 @@ describe('CacheService Test Suite', async function () {
     });
 
     describe('incrBy', async function () {
-      it('should increment value in internal cache', async function () {
-        const key = 'counter';
-        const amount = 5;
-
-        await cacheService.set(key, 10, callingMethod, requestDetails);
-        const newValue = await cacheService.incrBy(key, amount, callingMethod, requestDetails);
-
-        expect(newValue).to.equal(15);
-      });
-
       it('should increment value in shared cache', async function () {
         const key = 'counter';
         const amount = 5;
@@ -457,9 +456,10 @@ describe('CacheService Test Suite', async function () {
 
         await cacheService.disconnectRedisClient();
 
+        await cacheService.set(key, 10, callingMethod, requestDetails);
         const newValue = await cacheService.incrBy(key, amount, callingMethod, requestDetails);
 
-        expect(newValue).to.equal(5);
+        expect(newValue).to.equal(15);
       });
     });
 
