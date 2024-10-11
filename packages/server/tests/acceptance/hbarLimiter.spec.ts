@@ -48,7 +48,6 @@ import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/d
 import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { SubscriptionType } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionType';
-import { IDetailedHbarSpendingPlan } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/hbarSpendingPlan';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
