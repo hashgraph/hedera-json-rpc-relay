@@ -36,11 +36,17 @@ import { Log, Transaction } from '../../src/lib/model';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+<<<<<<< HEAD
 import { defaultDetailedContractResults, useInMemoryRedisServer } from '../helpers';
 import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+=======
+import { defaultDetailedContractResults, overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../helpers';
+import { EventEmitter } from 'events';
+import { RequestDetails } from '../../src/lib/types';
+>>>>>>> 2e2fc079 (test: add helper method for overriding env variables (#3022))
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -122,7 +128,10 @@ describe('eth_getBlockBy', async function () {
   this.timeout(10000);
   let ethImpl: EthImpl;
 
+  const requestDetails = new RequestDetails({ requestId: 'ethGetBlockByTest', ipAddress: '0.0.0.0' });
+
   useInMemoryRedisServer(logger, 5031);
+  overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: 'false' });
 
   this.beforeAll(async () => {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
@@ -155,14 +164,12 @@ describe('eth_getBlockBy', async function () {
 
     hapiServiceInstance = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
 
-    process.env.ETH_FEE_HISTORY_FIXED = 'false';
-
     // @ts-ignore
     ethImpl = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
   });
 
-  this.beforeEach(() => {
-    cacheService.clear();
+  this.beforeEach(async () => {
+    await cacheService.clear(requestDetails);
     restMock.reset();
   });
 

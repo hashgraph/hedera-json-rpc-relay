@@ -29,6 +29,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { Registry } from 'prom-client';
 import ConnectionLimiter from '@hashgraph/json-rpc-ws-server/src/metrics/connectionLimiter';
+import { overrideEnvsInMochaDescribe } from '../helpers';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
@@ -265,22 +266,14 @@ describe('subscriptionController', async function () {
   });
 
   describe('With WS_SAME_SUB_FOR_SAME_EVENT == `false`', async function () {
-    let originalEnv;
-    let originalSubscriptionController;
+    let subscriptionController: SubscriptionController;
+
+    overrideEnvsInMochaDescribe({ WS_SAME_SUB_FOR_SAME_EVENT: 'false' });
 
     before(() => {
-      originalEnv = process.env.WS_SAME_SUB_FOR_SAME_EVENT;
-      originalSubscriptionController = subscriptionController;
-
-      process.env.WS_SAME_SUB_FOR_SAME_EVENT = 'false';
       const registry = new Registry();
       poller = new Poller(ethImpl, logger, registry);
       subscriptionController = new SubscriptionController(poller, logger, registry);
-    });
-
-    after(() => {
-      process.env.WS_SAME_SUB_FOR_SAME_EVENT = originalEnv;
-      subscriptionController = originalSubscriptionController;
     });
 
     it('Subscribing to the same event and filters should return different subscription id', async function () {

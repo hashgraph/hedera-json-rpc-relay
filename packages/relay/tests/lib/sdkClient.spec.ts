@@ -24,7 +24,6 @@ import { expect } from 'chai';
 import { resolve } from 'path';
 import * as sinon from 'sinon';
 import { config } from 'dotenv';
-import { Context } from 'mocha';
 import EventEmitter from 'events';
 import { Utils } from '../../src/utils';
 import axios, { AxiosInstance } from 'axios';
@@ -34,15 +33,21 @@ import { register, Registry } from 'prom-client';
 import HbarLimit from '../../src/lib/hbarlimiter';
 import { RequestDetails } from '../../src/lib/types';
 import { formatTransactionId } from '../../src/formatters';
+import { predefined } from '../../src';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
 import MetricService from '../../src/lib/services/metricService/metricService';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { calculateTxRecordChargeAmount, random20BytesAddress } from '../helpers';
 import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import {
+  calculateTxRecordChargeAmount,
+  overrideEnvsInMochaDescribe,
+  random20BytesAddress,
+  withOverriddenEnvsInMochaTest,
+} from '../helpers';
 import {
   Hbar,
   Query,
@@ -79,7 +84,7 @@ describe('SdkClient', async function () {
   let mirrorNodeClient: MirrorNodeClient;
   let hbarLimitService: HbarLimitService;
 
-  const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });
+  const requestDetails = new RequestDetails({ requestId: 'sdkClientTest', ipAddress: '0.0.0.0' });
   const feeSchedules = {
     current: {
       transactionFeeSchedule: [
@@ -96,6 +101,8 @@ describe('SdkClient', async function () {
       ],
     },
   } as unknown as FeeSchedules;
+
+  overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
 
   before(() => {
     const hederaNetwork = process.env.HEDERA_NETWORK!;
@@ -132,8 +139,6 @@ describe('SdkClient', async function () {
       eventEmitter,
       hbarLimitService,
     );
-
-    process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true';
 
     instance = axios.create({
       baseURL: 'https://localhost:5551/api/v1',
@@ -283,74 +288,76 @@ describe('SdkClient', async function () {
       HEX_ECDSA: '0x08e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
     };
 
-    before(function (this: Context) {
-      // Store the original process.env
-      originalEnv = process.env;
-
-      if (
-        this.currentTest?.title ===
-        'Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is null'
-      ) {
-        process.env = new Proxy(process.env, {
-          get: (target, prop) => {
-            if (prop === 'OPERATOR_KEY_FORMAT') {
-              return null;
-            }
-            // @ts-ignore
-            return target[prop];
-          },
-        });
-      }
-    });
-
-    this.beforeEach(() => {
-      initialOperatorKeyFormat = process.env.OPERATOR_KEY_FORMAT;
-      hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
-    });
-
-    after(() => {
-      // Restore the original process.env after the test
-      process.env = originalEnv;
-      process.env.OPERATOR_KEY_FORMAT = initialOperatorKeyFormat;
-    });
-
     it('Initialize the privateKey for default which is DER', async () => {
       const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
     });
 
-    it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is undefined', async () => {
-      delete process.env.OPERATOR_KEY_FORMAT;
-      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
-      expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
+    withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: undefined }, () => {
+      it('Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is undefined', async () => {
+        const hapiService = new HAPIService(
+          logger,
+          registry,
+          hbarLimiter,
+          new CacheService(logger, registry),
+          eventEmitter,
+        );
+        const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
+        expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
+      });
     });
 
-    it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
-      process.env.OPERATOR_KEY_FORMAT = 'DER';
-      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.DER);
-      expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
+    withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'DER' }, () => {
+      it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to DER', async () => {
+        const hapiService = new HAPIService(
+          logger,
+          registry,
+          hbarLimiter,
+          new CacheService(logger, registry),
+          eventEmitter,
+        );
+        const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.DER);
+        expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
+      });
     });
 
-    it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
-      process.env.OPERATOR_KEY_FORMAT = 'HEX_ED25519';
-      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.HEX_ED25519);
-      expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
+    withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'HEX_ED25519' }, () => {
+      it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ED25519', async () => {
+        const hapiService = new HAPIService(
+          logger,
+          registry,
+          hbarLimiter,
+          new CacheService(logger, registry),
+          eventEmitter,
+        );
+        const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.HEX_ED25519);
+        expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
+      });
     });
 
-    it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
-      process.env.OPERATOR_KEY_FORMAT = 'HEX_ECDSA';
-      const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.HEX_ECDSA);
-      expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
+    withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'HEX_ECDSA' }, () => {
+      it('Initialize the privateKey for OPERATOR_KEY_FORMAT set to HEX_ECDSA', async () => {
+        const hapiService = new HAPIService(
+          logger,
+          registry,
+          hbarLimiter,
+          new CacheService(logger, registry),
+          eventEmitter,
+        );
+        const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ECDSA.HEX_ECDSA);
+        expect(privateKey.toString()).to.eq(OPERATOR_KEY_ECDSA.DER);
+      });
     });
 
-    it('It should throw an Error when an unexpected string is set', async () => {
-      process.env.OPERATOR_KEY_FORMAT = 'BAD_FORMAT';
-      try {
-        new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
-        expect.fail(`Expected an error but nothing was thrown`);
-      } catch (e: any) {
-        expect(e.message).to.eq('Invalid OPERATOR_KEY_FORMAT provided: BAD_FORMAT');
-      }
+    withOverriddenEnvsInMochaTest({ OPERATOR_KEY_FORMAT: 'BAD_FORMAT' }, () => {
+      it('It should throw an Error when an unexpected string is set', async () => {
+        try {
+          new HAPIService(logger, registry, hbarLimiter, new CacheService(logger, registry), eventEmitter);
+          expect.fail(`Expected an error but nothing was thrown`);
+        } catch (e: any) {
+          expect(e.message).to.eq('Invalid OPERATOR_KEY_FORMAT provided: BAD_FORMAT');
+        }
+      });
     });
   });
 
@@ -2155,7 +2162,6 @@ describe('SdkClient', async function () {
     const mockedNetworkGasPrice = 710000;
 
     const randomAccountAddress = random20BytesAddress();
-    let hbarRateLimitPreemptiveCheck: string | undefined;
 
     const getMockedTransaction = (transactionType: string, toHbar: boolean) => {
       let transactionFee: any;
@@ -2258,6 +2264,8 @@ describe('SdkClient', async function () {
 
     let hbarLimitServiceMock: sinon.SinonMock;
     let sdkClientMock: sinon.SinonMock;
+
+    overrideEnvsInMochaDescribe({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' });
 
     beforeEach(() => {
       hbarLimitServiceMock = sinon.mock(hbarLimitService);
@@ -2620,34 +2628,36 @@ describe('SdkClient', async function () {
       expect(transactionRecordStub.called).to.be.true;
     });
 
-    it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'false'; // switch to mirror node mode
-      const mockedTransactionId = transactionId.toString();
-      const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);
-      const mockedMirrorNodeTransactionRecord = {
-        transactions: [
-          {
-            charged_tx_fee: defaultTransactionFee,
-            result: 'SUCCESS',
-            transaction_id: mockedTransactionIdFormatted,
-            transfers: [
-              {
-                account: '0.0.800',
-                amount: defaultTransactionFee,
-                is_approval: false,
-              },
-              {
-                account: process.env.OPERATOR_ID_MAIN,
-                amount: -1 * defaultTransactionFee,
-                is_approval: false,
-              },
-            ],
-          },
-        ],
-      };
-      mock.onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`).reply(200, mockedMirrorNodeTransactionRecord);
-      const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
-      const transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+      it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
+        const mockedTransactionId = transactionId.toString();
+        const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);
+        const mockedMirrorNodeTransactionRecord = {
+          transactions: [
+            {
+              charged_tx_fee: defaultTransactionFee,
+              result: 'SUCCESS',
+              transaction_id: mockedTransactionIdFormatted,
+              transfers: [
+                {
+                  account: '0.0.800',
+                  amount: defaultTransactionFee,
+                  is_approval: false,
+                },
+                {
+                  account: process.env.OPERATOR_ID_MAIN,
+                  amount: -1 * defaultTransactionFee,
+                  is_approval: false,
+                },
+              ],
+            },
+          ],
+        };
+        mock
+          .onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`)
+          .reply(200, mockedMirrorNodeTransactionRecord);
+        const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
+        const transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
 
       hbarLimitServiceMock.expects('addExpense').withArgs(defaultTransactionFee).once();
       hbarLimitServiceMock
@@ -2662,19 +2672,18 @@ describe('SdkClient', async function () {
         .once()
         .returns(false);
 
-      const response = await sdkClient.executeTransaction(
-        new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
-        mockedCallerName,
-        mockedInteractingEntity,
-        requestDetails,
-        true,
-        randomAccountAddress,
-      );
+        const response = await sdkClient.executeTransaction(
+          new EthereumTransaction().setCallDataFileId(fileId).setEthereumData(transactionBuffer),
+          mockedCallerName,
+          mockedInteractingEntity,
+          requestDetails,
+          true,
+          randomAccountAddress,
+        );
 
-      expect(response).to.eq(transactionResponse);
-      expect(transactionStub.called).to.be.true;
-
-      process.env.GET_RECORD_DEFAULT_TO_CONSENSUS_NODE = 'true'; // switch back to consensus node
+        expect(response).to.eq(transactionResponse);
+        expect(transactionStub.called).to.be.true;
+      });
     });
 
     it('Should execute calculateTxRecordChargeAmount() to get the charge amount of transaction record', () => {
