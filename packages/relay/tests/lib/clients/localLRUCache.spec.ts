@@ -23,10 +23,9 @@ import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
 import pino from 'pino';
 import { LocalLRUCache } from '../../../src/lib/clients';
-import { overrideEnvsInMochaDescribe } from '../../helpers';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../helpers';
 import { RequestDetails } from '../../../src/lib/types';
 import sinon from 'sinon';
-import LRUCache from 'lru-cache';
 
 chai.use(chaiAsPromised);
 
@@ -153,9 +152,9 @@ describe('LocalLRUCache Test Suite', async function () {
       expect(cacheValue).to.be.null;
     });
 
-    it('it should set without TTL if -1 is passed for TTL', async () => {
-      try {
-        process.env.CACHE_TTL = '100'; // set default cache ttl to 100ms for testing
+    // set default cache ttl to 100ms to test the default ttl will be overridden by the ttl passed in set method
+    withOverriddenEnvsInMochaTest({ CACHE_TTL: '100' }, async () => {
+      it('it should set without TTL if -1 is passed for TTL', async () => {
         const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
         const lruCacheSpy = sinon.spy(customLocalLRUCache['cache']);
 
@@ -173,9 +172,7 @@ describe('LocalLRUCache Test Suite', async function () {
 
         const cachedValueAfterTTL = await customLocalLRUCache.get(key, callingMethod, requestDetails);
         expect(cachedValueAfterTTL).equal(value);
-      } finally {
-        delete process.env.CACHE_TTL;
-      }
+      });
     });
   });
 

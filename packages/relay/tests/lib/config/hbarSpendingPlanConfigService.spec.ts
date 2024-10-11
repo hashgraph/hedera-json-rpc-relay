@@ -29,7 +29,7 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { SpendingPlanConfig } from '../../../src/lib/types/spendingPlanConfig';
 import { RequestDetails } from '../../../src/lib/types';
-import { toHex, useInMemoryRedisServer } from '../../helpers';
+import { overrideEnvsInMochaDescribe, toHex, useInMemoryRedisServer } from '../../helpers';
 import findConfig from 'find-config';
 import { HbarSpendingPlanConfigService } from '../../../src/lib/config/hbarSpendingPlanConfigService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
@@ -59,12 +59,9 @@ describe('HbarSpendingPlanConfigService', function () {
     let ethAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<EthAddressHbarSpendingPlanRepository>;
     let ipAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<IPAddressHbarSpendingPlanRepository>;
 
-    let hbarSpendingPlanConfigFileEnv: string | undefined;
+    overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: spendingPlansConfigFile });
 
     before(function () {
-      hbarSpendingPlanConfigFileEnv = process.env.HBAR_SPENDING_PLANS_CONFIG_FILE;
-      process.env.HBAR_SPENDING_PLANS_CONFIG_FILE = spendingPlansConfigFile;
-
       cacheService = new CacheService(logger, registry);
       hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
       ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
@@ -75,10 +72,6 @@ describe('HbarSpendingPlanConfigService', function () {
         ethAddressHbarSpendingPlanRepository,
         ipAddressHbarSpendingPlanRepository,
       );
-    });
-
-    after(() => {
-      process.env.HBAR_SPENDING_PLANS_CONFIG_FILE = hbarSpendingPlanConfigFileEnv;
     });
 
     if (isSharedCacheEnabled) {
