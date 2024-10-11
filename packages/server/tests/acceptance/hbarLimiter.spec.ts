@@ -47,9 +47,14 @@ import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheS
 import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { SubscriptionType } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionType';
+import { IDetailedHbarSpendingPlan } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/hbarSpendingPlan';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
+let hbarSpendingPlanRepository: HbarSpendingPlanRepository;
+let ethAddressSpendingPlanRepository: EthAddressHbarSpendingPlanRepository;
+let ipSpendingPlanRepository: IPAddressHbarSpendingPlanRepository;
 
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   // @ts-ignore
@@ -68,6 +73,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     metrics: MetricsClient;
     relayIsLocal: boolean;
   } = global;
+
   const operatorAccount = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
   const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
   const requestId = 'hbarLimiterTest';
@@ -181,8 +187,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       before(async function () {
         // Restart the relay to reset the limits
-        await global.restartLocalRelay();
-
+        //await global.restartLocalRelay();
+        await cacheService.clear(requestDetails);
         logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
         logger.info(
           `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`,
@@ -201,6 +207,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           )),
         );
         global.accounts.push(...accounts);
+        hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
+        ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+        ipSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
       });
 
       beforeEach(async function () {
@@ -335,6 +344,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
         });
 
+        //TODO: Possibly remove this test since the next one covers the same scenario but for BASIC users
+        // We can create new ones for PRIVILEGED and EXTENDED users
         it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
@@ -394,9 +405,16 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
           const lastRemainingHbars = remainingHbarsBefore;
           let spentToday = 0;
-          const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
-          const ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
-          const ipSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
+
+          //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
+          const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionType(
+            SubscriptionType.BASIC,
+            requestDetails,
+          );
+          const ipPlans = await ipSpendingPlanRepository.getAllPlans(requestDetails);
+          const ipPlanWithId = await basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
+          const ipAddress = ipPlanWithId[0].ipAddress;
+          await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
           expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
           expect(remainingHbarsBefore).to.be.gt(0);
           let spendingPlanId;
@@ -431,13 +449,19 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('should create a BASIC spending plan for a new user', async function () {
-          const ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
           const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
           const parentContractAddress = parentContract.target as string;
           global.logger.trace(
             `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
           );
-
+          const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionType(
+            SubscriptionType.BASIC,
+            requestDetails,
+          );
+          const ipPlans = await ipSpendingPlanRepository.getAllPlans(requestDetails);
+          const ipPlanWithId = await basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
+          const ipAddress = ipPlanWithId[0].ipAddress;
+          await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
           expect(ethAddressSpendingPlanRepository.findByAddress(accounts[3].address, requestDetails)).to.be.rejected;
           const gasPrice = await relay.gasPrice(requestId);
           const transaction = {
