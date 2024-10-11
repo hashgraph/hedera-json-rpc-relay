@@ -161,6 +161,6 @@ export class EthAddressHbarSpendingPlanRepository {
    * @private
    */
   private getKey(ethAddress: string): string {
-    return `${this.collectionKey}:${ethAddress}`;
+    return `${this.collectionKey}:${ethAddress?.trim().toLowerCase()}`;
   }
 }

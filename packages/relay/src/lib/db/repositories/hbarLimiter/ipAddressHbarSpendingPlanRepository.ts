@@ -141,6 +141,7 @@ export class IPAddressHbarSpendingPlanRepository {
    * Deletes an {@link IPAddressHbarSpendingPlan} from the cache, unlinking the plan from the IP address.
    *
    * @param {string} ipAddress - The IP address to unlink the plan from.
+   * @param {RequestDetails} requestDetails - The request details used for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the IP address is unlinked from the plan.
    */
   async delete(ipAddress: string, requestDetails: RequestDetails): Promise<void> {
