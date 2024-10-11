@@ -859,7 +859,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 'data' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}, value: 123`,
+            `Invalid parameter 'data' for TransactionObject: ${Validator.EVEN_HEX_ERROR}, value: 123`,
           );
         }
       });
@@ -1503,7 +1503,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 'data' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}, value: 123`,
+            `Invalid parameter 'data' for TransactionObject: ${Validator.EVEN_HEX_ERROR}, value: 123`,
           );
         }
       });
