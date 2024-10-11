@@ -100,8 +100,8 @@ describe('HbarLimitService', function () {
     expect(hbarLimitService['hbarLimitCounter']).to.be.instanceOf(Counter);
     expect(hbarLimitService['hbarLimitRemainingGauge']).to.be.instanceOf(Gauge);
     Object.values(SubscriptionTier).forEach((tier) => {
-      expect(hbarLimitService['dailyUniqueSpendingPlansCounter'][tier]).to.be.instanceOf(Counter);
-      expect(hbarLimitService['averageDailySpendingPlanUsagesGauge'][tier]).to.be.instanceOf(Gauge);
+      expect(hbarLimitService['uniqueSpendingPlansCounter'][tier]).to.be.instanceOf(Counter);
+      expect(hbarLimitService['averageSpendingPlanAmountSpentGauge'][tier]).to.be.instanceOf(Gauge);
     });
   });
 
@@ -175,7 +175,7 @@ describe('HbarLimitService', function () {
 
   describe('shouldLimit', function () {
     describe('based on ethAddress', async function () {
-      it('should return true if the total daily budget is exceeded', async function () {
+      it('should return true if the total budget is exceeded', async function () {
         // @ts-ignore
         hbarLimitService.remainingBudget = Hbar.fromTinybars(0);
         const result = await hbarLimitService.shouldLimit(mode, methodName, mockEthAddress, requestDetails);
@@ -322,7 +322,7 @@ describe('HbarLimitService', function () {
     });
 
     describe('based on ipAddress', async function () {
-      it('should return true if the total daily budget is exceeded', async function () {
+      it('should return true if the total budget is exceeded', async function () {
         // @ts-ignore
         hbarLimitService.remainingBudget = Hbar.fromTinybars(0);
         const result = await hbarLimitService.shouldLimit(mode, methodName, '', requestDetails);
@@ -627,17 +627,17 @@ describe('HbarLimitService', function () {
           spendingHistory: [{ amount: expense, timestamp: new Date() }],
         },
       ]);
-      const incDailyUniqueSpendingPlansCounterSpy = sinon.spy(
-        hbarLimitService['dailyUniqueSpendingPlansCounter'][SubscriptionTier.BASIC],
+      const incUniqueSpendingPlansCounterSpy = sinon.spy(
+        hbarLimitService['uniqueSpendingPlansCounter'][SubscriptionTier.BASIC],
         'inc',
       );
-      const setAverageDailySpendingPlanUsagesGaugeSpy = sinon.spy(
-        hbarLimitService['averageDailySpendingPlanUsagesGauge'][SubscriptionTier.BASIC],
+      const setAverageSpendingPlanAmountSpentGaugeSpy = sinon.spy(
+        hbarLimitService['averageSpendingPlanAmountSpentGauge'][SubscriptionTier.BASIC],
         'set',
       );
-      const updateAverageDailyUsagePerSubscriptionTierSpy = sinon.spy(
+      const updateAverageAmountSpentPerSubscriptionTierSpy = sinon.spy(
         hbarLimitService,
-        <any>'updateAverageDailyUsagePerSubscriptionTier',
+        'updateAverageAmountSpentPerSubscriptionTier' as any,
       );
 
       await hbarLimitService.addExpense(expense, ethAddress, requestDetails);
@@ -649,10 +649,10 @@ describe('HbarLimitService', function () {
       expect((await hbarLimitService['hbarLimitRemainingGauge'].get()).values[0].value).to.equal(
         hbarLimitService['totalBudget'].toTinybars().sub(expense).toNumber(),
       );
-      await Promise.all(updateAverageDailyUsagePerSubscriptionTierSpy.returnValues);
+      await Promise.all(updateAverageAmountSpentPerSubscriptionTierSpy.returnValues);
       const expectedAverageUsage = Math.round((otherPlanOfTheSameTier.amountSpent + expense) / 2);
-      sinon.assert.calledOnceWithExactly(setAverageDailySpendingPlanUsagesGaugeSpy, expectedAverageUsage);
-      sinon.assert.calledOnceWithExactly(incDailyUniqueSpendingPlansCounterSpy, 1);
+      sinon.assert.calledOnceWithExactly(setAverageSpendingPlanAmountSpentGaugeSpy, expectedAverageUsage);
+      sinon.assert.calledOnceWithExactly(incUniqueSpendingPlansCounterSpy, 1);
     };
 
     it('should throw an error if empty ethAddress or ipAddress is provided', async function () {
@@ -710,31 +710,31 @@ describe('HbarLimitService', function () {
     });
   });
 
-  describe('isDailyBudgetExceeded', function () {
-    const testIsDailyBudgetExceeded = async (remainingBudget: number, expected: boolean) => {
+  describe('isTotalBudgetExceeded', function () {
+    const testIsTotalBudgetExceeded = async (remainingBudget: number, expected: boolean) => {
       // @ts-ignore
       hbarLimitService.remainingBudget = Hbar.fromTinybars(remainingBudget);
       await expect(
-        hbarLimitService['isDailyBudgetExceeded'](mode, methodName, undefined, requestDetails),
+        hbarLimitService['isTotalBudgetExceeded'](mode, methodName, undefined, requestDetails),
       ).to.eventually.equal(expected);
     };
 
     it('should return true when the remaining budget is zero', async function () {
-      await testIsDailyBudgetExceeded(0, true);
+      await testIsTotalBudgetExceeded(0, true);
     });
 
     it('should return true when the remaining budget is negative', async function () {
-      await testIsDailyBudgetExceeded(-1, true);
+      await testIsTotalBudgetExceeded(-1, true);
     });
 
     it('should return false when the remaining budget is greater than zero', async function () {
-      await testIsDailyBudgetExceeded(100, false);
+      await testIsTotalBudgetExceeded(100, false);
     });
 
-    it('should update the hbar limit counter when a method is called and the daily budget is exceeded', async function () {
+    it('should update the hbar limit counter when a method is called and the total budget is exceeded', async function () {
       // @ts-ignore
       const hbarLimitCounterSpy = sinon.spy(hbarLimitService.hbarLimitCounter, <any>'inc');
-      await testIsDailyBudgetExceeded(0, true);
+      await testIsTotalBudgetExceeded(0, true);
       expect(hbarLimitCounterSpy.calledWithMatch({ mode, methodName }, 1)).to.be.true;
     });
 
@@ -742,7 +742,7 @@ describe('HbarLimitService', function () {
       // @ts-ignore
       hbarLimitService.reset = new Date();
       const resetLimiterSpy = sinon.spy(hbarLimitService, 'resetLimiter');
-      await testIsDailyBudgetExceeded(0, false);
+      await testIsTotalBudgetExceeded(0, false);
       expect(resetLimiterSpy.calledOnce).to.be.true;
     });
   });
