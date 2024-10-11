@@ -103,6 +103,21 @@ export class IPAddressHbarSpendingPlanRepository {
   }
 
   /**
+   * Gets all IP address spending plans from the cache.
+   *
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @returns {Promise<IPAddressHbarSpendingPlan[]>} - A promise that resolves with an array of IP address spending plans.
+   */
+  async getAllPlans(requestDetails: RequestDetails): Promise<IPAddressHbarSpendingPlan[]> {
+    const pattern = `${this.collectionKey}:*`;
+    const keys = await this.cache.keys(pattern, 'getAllPlans', requestDetails);
+    const plans = await Promise.all(
+      keys.map((key) => this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, 'getAllPlans', requestDetails)),
+    );
+    return plans.filter((plan) => plan !== null).map((plan) => new IPAddressHbarSpendingPlan(plan));
+  }
+
+  /**
    * Finds an {@link IPAddressHbarSpendingPlan} for an IP address.
    *
    * @param {string} ipAddress - The IP address to search for.
