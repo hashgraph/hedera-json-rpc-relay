@@ -20,8 +20,10 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import sinon from 'sinon';
+import findConfig from 'find-config';
+import fs from 'fs';
 import pino from 'pino';
+import sinon from 'sinon';
 import { Registry } from 'prom-client';
 import { RelayImpl } from '../../src';
 
@@ -106,8 +108,10 @@ describe('RelayImpl', () => {
     });
 
     describe('when no configuration file is provided', () => {
+      const nonExistingFile = 'nonExistingFile.json';
+
       beforeEach(() => {
-        process.env.HBAR_SPENDING_PLANS_CONFIG_FILE = 'nonExistingFile.json';
+        process.env.HBAR_SPENDING_PLANS_CONFIG_FILE = nonExistingFile;
       });
 
       it('should not throw an error', async () => {
@@ -115,7 +119,28 @@ describe('RelayImpl', () => {
 
         expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
         await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).to.not.be.rejected;
-        expect(loggerSpy.trace.calledWith(`Configuration file not found at path "nonExistingFile.json"`));
+        expect(loggerSpy.warn.notCalled).to.be.true;
+      });
+    });
+
+    describe('when a configuration file with invalid JSON is provided', () => {
+      let path: string | null;
+
+      beforeEach(() => {
+        process.env.HBAR_SPENDING_PLANS_CONFIG_FILE = 'spendingPlansConfig.example.json';
+        path = findConfig('spendingPlansConfig.example.json');
+        sinon.stub(fs, 'readFileSync').returns('invalid JSON');
+      });
+
+      it('should log a warning', async () => {
+        expect((relay = new RelayImpl(logger, register))).to.not.throw;
+
+        expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
+        await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).not.to.be.rejected;
+
+        const cause = `Failed to parse JSON from ${path}: Unexpected token 'i', "invalid JSON" is not valid JSON`;
+        const message = `Failed to load pre-configured spending plans: ${cause}`;
+        expect(loggerSpy.warn.calledWith(message)).to.be.true;
       });
     });
   });
