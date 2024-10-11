@@ -144,7 +144,7 @@ export default {
   },
 
   // TODO: Replace with actual values - https://github.com/hashgraph/hedera-json-rpc-relay/issues/2895
-  HBAR_RATE_LIMIT_DURATION: parseInt(process.env.HBAR_RATE_LIMIT_DURATION || '180000'), // 180 seconds
+  HBAR_RATE_LIMIT_DURATION: parseInt(process.env.HBAR_RATE_LIMIT_DURATION || '80000'), // 80 seconds
   HBAR_RATE_LIMIT_TOTAL: BigNumber(process.env.HBAR_RATE_LIMIT_TINYBAR || '11000000000'), // 110 HBARs per 80 seconds
   HBAR_RATE_LIMIT_BASIC: BigNumber(process.env.HBAR_RATE_LIMIT_BASIC || '92592592'), // Equivalent of 1000 HBARs per day
   HBAR_RATE_LIMIT_EXTENDED: BigNumber(process.env.HBAR_RATE_LIMIT_EXTENDED || '925925925'), // Equivalent of 10000 HBARs per day
