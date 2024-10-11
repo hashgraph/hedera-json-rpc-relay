@@ -25,7 +25,7 @@ export class ValidationService {
     // validate mandatory fields and their types
     Object.entries(GlobalConfig.ENTRIES).forEach(([entryName, entryInfo]) => {
       if (entryInfo.required) {
-        if (envs[entryName] === undefined) {
+        if (!envs.hasOwnProperty(entryName)) {
           throw new Error(`${entryName} is a mandatory and the relay cannot operate without its value.`);
         }
 
