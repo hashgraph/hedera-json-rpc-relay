@@ -30,6 +30,7 @@ import { randomBytes, uuidV4 } from 'ethers';
 import { Registry } from 'prom-client';
 import { useInMemoryRedisServer } from '../../../helpers';
 import { RequestDetails } from '../../../../src/lib/types';
+import { IPAddressHbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/ipAddressHbarSpendingPlan';
 
 chai.use(chaiAsPromised);
 
@@ -65,6 +66,64 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
 
     after(async () => {
       await cacheService.disconnectRedisClient();
+    });
+
+    describe('existsByAddress', () => {
+      it('returns true if address plan exists', async () => {
+        const addressPlan = new IPAddressHbarSpendingPlan({ ipAddress, planId: uuidV4(randomBytes(16)) });
+        await cacheService.set(`${repository['collectionKey']}:${ipAddress}`, addressPlan, 'test', requestDetails);
+
+        await expect(repository.existsByAddress(ipAddress, requestDetails)).to.eventually.be.true;
+      });
+
+      it('returns false if address plan does not exist', async () => {
+        await expect(repository.existsByAddress(nonExistingIpAddress, requestDetails)).to.eventually.be.false;
+      });
+    });
+
+    describe('findAllByPlanId', () => {
+      it('retrieves all address plans by plan ID', async () => {
+        const planId = uuidV4(randomBytes(16));
+        const ipAddressPlans = [
+          new IPAddressHbarSpendingPlan({ ipAddress: '555.555.555.555', planId }),
+          new IPAddressHbarSpendingPlan({ ipAddress: '666.666.666.666', planId }),
+        ];
+        for (const plan of ipAddressPlans) {
+          await cacheService.set(`${repository['collectionKey']}:${plan.ipAddress}`, plan, 'test', requestDetails);
+        }
+
+        const result = await repository.findAllByPlanId(planId, 'findAllByPlanId', requestDetails);
+        expect(result).to.deep.equal(ipAddressPlans);
+      });
+
+      it('returns an empty array if no address plans are found for the plan ID', async () => {
+        const planId = uuidV4(randomBytes(16));
+        const result = await repository.findAllByPlanId(planId, 'findAllByPlanId', requestDetails);
+        expect(result).to.deep.equal([]);
+      });
+    });
+
+    describe('deleteAllByPlanId', () => {
+      it('deletes all address plans by plan ID', async () => {
+        const planId = uuidV4(randomBytes(16));
+        const ipAddresses = ['555.555.555.555', '666.666.666.666'];
+        for (const ipAddress of ipAddresses) {
+          const addressPlan = new IPAddressHbarSpendingPlan({ ipAddress, planId });
+          await cacheService.set(`${repository['collectionKey']}:${ipAddress}`, addressPlan, 'test', requestDetails);
+        }
+
+        await repository.deleteAllByPlanId(planId, 'deleteAllByPlanId', requestDetails);
+
+        for (const ipAddress of ipAddresses) {
+          await expect(cacheService.getAsync(`${repository['collectionKey']}:${ipAddress}`, 'test', requestDetails)).to
+            .eventually.be.null;
+        }
+      });
+
+      it('does not throw an error if no address plans are found for the plan ID', async () => {
+        const planId = uuidV4(randomBytes(16));
+        await expect(repository.deleteAllByPlanId(planId, 'deleteAllByPlanId', requestDetails)).to.be.fulfilled;
+      });
     });
 
     describe('findByAddress', () => {
