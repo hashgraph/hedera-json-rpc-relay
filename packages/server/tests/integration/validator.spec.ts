@@ -566,6 +566,9 @@ describe('Validator', async () => {
       expect(() => Validator.validateParams([{ data: '123456' }], validation)).to.throw(
         expectInvalidObject('data', Validator.EVEN_HEX_ERROR, object, '123456'),
       );
+      expect(() => Validator.validateParams([{ data: '0x1234567' }], validation)).to.throw(
+        expectInvalidObject('data', Validator.EVEN_HEX_ERROR, object, '0x1234567'),
+      );
     });
   });
 
