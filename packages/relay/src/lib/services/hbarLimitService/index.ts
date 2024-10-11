@@ -50,7 +50,11 @@ export class HbarLimitService implements IHbarLimitService {
   private readonly hbarLimitRemainingGauge: Gauge;
 
   /**
-   * Tracks the number of unique ETH addresses that have made requests.
+   * Tracks the number of unique spending plans that have been utilized during the limit duration.
+   * (i.e., plans that had expenses added to them).
+   *
+   * For basic spending plans, this equates to the number of unique users who have made requests during that period,
+   * since each user has their own individual spending plan.
    *
    * @private
    */
