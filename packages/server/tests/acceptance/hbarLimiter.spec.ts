@@ -39,6 +39,7 @@ import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hb
 import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 
 // Contracts used in tests
@@ -217,7 +218,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       describe('Remaining HBAR Limit', () => {
         overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
 
-        it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
+        it('should execute "eth_sendRawTransaction" for BASIC user without triggering HBAR rate limit exceeded', async function () {
           const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
           const parentContractAddress = parentContract.target as string;
           global.logger.trace(
@@ -399,22 +400,26 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           let spentToday = 0;
           const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
           const ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
-
+          const ipSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
           expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
           expect(remainingHbarsBefore).to.be.gt(0);
+          let spendingPlanId;
           try {
             for (let i = 0; i < 50; i++) {
-              const contract = await deployContract(largeContractJson, accounts[2].wallet);
+              await deployContract(largeContractJson, accounts[2].wallet);
               const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
-              const ethSpendingPlanAfter = await ethAddressSpendingPlanRepository.findByAddress(
-                accounts[2].address,
-                requestDetails,
-              );
-              const hbarPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
-                ethSpendingPlanAfter.planId,
-                requestDetails,
-              );
+              // Check that the BASIC spending plan is created after the first deployment only
+              if (i === 0) {
+                const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+                  accounts[2].wallet.address,
+                  requestDetails,
+                );
+
+                spendingPlanId = ethSpendingPlan.planId;
+              }
+              const hbarPlan = await hbarSpendingPlanRepository.findByIdWithDetails(spendingPlanId, requestDetails);
+
               expect(hbarPlan.amountSpent).to.be.gt(spentToday);
               expect(remainingHbars).to.be.lt(lastRemainingHbars);
               spentToday = hbarPlan.amountSpent;
