@@ -50,21 +50,21 @@ export class HbarLimitService implements IHbarLimitService {
   private readonly hbarLimitRemainingGauge: Gauge;
 
   /**
-   * Tracks the number of unique spending plans that have been utilized on a daily basis
+   * Tracks the number of unique spending plans that have been utilized during the limit duration.
    * (i.e., plans that had expenses added to them).
    *
-   * For basic spending plans, this equates to the number of unique users who have made requests on that day,
+   * For basic spending plans, this equates to the number of unique users who have made requests during that period,
    * since each user has their own individual spending plan.
    *
    * @private
    */
-  private readonly dailyUniqueSpendingPlansCounter: Record<SubscriptionTier, Counter>;
+  private readonly uniqueSpendingPlansCounter: Record<SubscriptionTier, Counter>;
 
   /**
-   * Tracks the average daily spending plan usages.
+   * Tracks the average amount of tinybars spent by spending plans per subscription tier
    * @private
    */
-  private readonly averageDailySpendingPlanUsagesGauge: Record<SubscriptionTier, Gauge>;
+  private readonly averageSpendingPlanAmountSpentGauge: Record<SubscriptionTier, Gauge>;
 
   /**
    * The remaining budget for the rate limiter.
@@ -109,13 +109,13 @@ export class HbarLimitService implements IHbarLimitService {
     });
     this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
 
-    this.dailyUniqueSpendingPlansCounter = Object.values(SubscriptionTier).reduce(
-      (acc, type) => {
-        const dailyUniqueSpendingPlansCounterName = `daily_unique_spending_plans_counter_${type.toLowerCase()}`;
-        this.register.removeSingleMetric(dailyUniqueSpendingPlansCounterName);
-        acc[type] = new Counter({
-          name: dailyUniqueSpendingPlansCounterName,
-          help: `Tracks the number of unique spending plans used daily for ${type} subscription tier`,
+    this.uniqueSpendingPlansCounter = Object.values(SubscriptionTier).reduce(
+      (acc, tier) => {
+        const uniqueSpendingPlansCounterName = `unique_spending_plans_counter_${tier.toLowerCase()}`;
+        this.register.removeSingleMetric(uniqueSpendingPlansCounterName);
+        acc[tier] = new Counter({
+          name: uniqueSpendingPlansCounterName,
+          help: `Tracks the number of unique ${tier} spending plans used during the limit duration`,
           registers: [register],
         });
         return acc;
@@ -123,13 +123,13 @@ export class HbarLimitService implements IHbarLimitService {
       {} as Record<SubscriptionTier, Counter>,
     );
 
-    this.averageDailySpendingPlanUsagesGauge = Object.values(SubscriptionTier).reduce(
-      (acc, type) => {
-        const averageDailySpendingGaugeName = `average_daily_spending_plan_usages_gauge_${type.toLowerCase()}`;
-        this.register.removeSingleMetric(averageDailySpendingGaugeName);
-        acc[type] = new Gauge({
-          name: averageDailySpendingGaugeName,
-          help: `Tracks the average daily spending plan usages for ${type} subscription tier`,
+    this.averageSpendingPlanAmountSpentGauge = Object.values(SubscriptionTier).reduce(
+      (acc, tier) => {
+        const averageAmountSpentGaugeName = `average_spending_plan_amount_spent_gauge_${tier.toLowerCase()}`;
+        this.register.removeSingleMetric(averageAmountSpentGaugeName);
+        acc[tier] = new Gauge({
+          name: averageAmountSpentGaugeName,
+          help: `Tracks the average amount of tinybars spent by ${tier} spending plans`,
           registers: [register],
         });
         return acc;
@@ -156,6 +156,7 @@ export class HbarLimitService implements IHbarLimitService {
     this.logger.trace(`${requestDetails.formattedRequestId} Resetting HBAR rate limiter...`);
     await this.hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
     this.resetBudget();
+    this.resetTemporaryMetrics();
     this.reset = this.getResetTimestamp();
     this.logger.trace(
       `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
@@ -182,8 +183,7 @@ export class HbarLimitService implements IHbarLimitService {
     estimatedTxFee: number = 0,
   ): Promise<boolean> {
     const ipAddress = requestDetails.ipAddress;
-
-    if (await this.isDailyBudgetExceeded(mode, methodName, txConstructorName, estimatedTxFee, requestDetails)) {
+    if (await this.isTotalBudgetExceeded(mode, methodName, estimatedTxFee, requestDetails)) {
       return true;
     }
 
@@ -264,7 +264,7 @@ export class HbarLimitService implements IHbarLimitService {
 
     // Check if the spending plan is being used for the first time today
     if (spendingPlan.amountSpent === 0) {
-      this.dailyUniqueSpendingPlansCounter[spendingPlan.subscriptionTier].inc(1);
+      this.uniqueSpendingPlansCounter[spendingPlan.subscriptionTier].inc(1);
     }
 
     await this.hbarSpendingPlanRepository.addToAmountSpent(spendingPlan.id, cost, requestDetails, this.limitDuration);
@@ -272,7 +272,7 @@ export class HbarLimitService implements IHbarLimitService {
     this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
 
     // Done asynchronously in the background
-    this.updateAverageDailyUsagePerSubscriptionTier(spendingPlan.subscriptionTier, requestDetails).then();
+    this.updateAverageAmountSpentPerSubscriptionTier(spendingPlan.subscriptionTier, requestDetails).then();
 
     this.logger.trace(
       `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost} tℏ, remainingBudget=${this.remainingBudget}`,
@@ -280,16 +280,16 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Checks if the total daily budget has been exceeded.
+   * Checks if the total budget of the limiter has been exceeded.
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
    * @param {string} txConstructorName - The name of the transaction constructor associated with the transaction.
    * @param {number} estimatedTxFee - The total estimated transaction fee, default to 0.
    * @param {RequestDetails} requestDetails The request details for logging and tracking
-   * @returns {Promise<boolean>} - Resolves `true` if the daily budget has been exceeded, otherwise `false`.
+   * @returns {Promise<boolean>} - Resolves `true` if the total budget has been exceeded, otherwise `false`.
    * @private
    */
-  private async isDailyBudgetExceeded(
+  private async isTotalBudgetExceeded(
     mode: string,
     methodName: string,
     txConstructorName: string,
@@ -314,12 +314,12 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Updates the average daily usage per subscription tier.
-   * @param {SubscriptionTier} subscriptionTier - The subscription tier to update the average daily usage for.
+   * Updates the average amount of tinybars spent of spending plans per subscription tier.
+   * @param {SubscriptionTier} subscriptionTier - The subscription tier to update the average usage for.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
-   * @private {Promise<void>} - A promise that resolves when the average daily usage has been updated.
+   * @private {Promise<void>} - A promise that resolves when the average usage has been updated.
    */
-  private async updateAverageDailyUsagePerSubscriptionTier(
+  private async updateAverageAmountSpentPerSubscriptionTier(
     subscriptionTier: SubscriptionTier,
     requestDetails: RequestDetails,
   ): Promise<void> {
@@ -329,7 +329,7 @@ export class HbarLimitService implements IHbarLimitService {
     );
     const totalUsage = plans.reduce((total, plan) => total + plan.amountSpent, 0);
     const averageUsage = Math.round(totalUsage / plans.length);
-    this.averageDailySpendingPlanUsagesGauge[subscriptionTier].set(averageUsage);
+    this.averageSpendingPlanAmountSpentGauge[subscriptionTier].set(averageUsage);
   }
 
   /**
@@ -348,6 +348,14 @@ export class HbarLimitService implements IHbarLimitService {
   private resetBudget(): void {
     this.remainingBudget = this.totalBudget;
     this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
+  }
+
+  /**
+   * Resets the metrics which are used to track the number of unique spending plans used during the limit duration.
+   * @private
+   */
+  private resetTemporaryMetrics(): void {
+    Object.values(SubscriptionTier).forEach((tier) => this.uniqueSpendingPlansCounter[tier].reset());
   }
 
   /**
