@@ -75,13 +75,13 @@ export class HbarSpendingPlanConfigService {
   /**
    * Populates the database with pre-configured spending plans.
    *
-   * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   * @returns {Promise<number>} - A promise that resolves with the number of spending plans which were added or deleted.
    * @throws {Error} - If the spending plans configuration file is not found or cannot be loaded.
    */
-  public async populatePreconfiguredSpendingPlans(): Promise<void> {
+  public async populatePreconfiguredSpendingPlans(): Promise<number> {
     const spendingPlanConfigs = this.loadSpendingPlansConfig();
     if (!spendingPlanConfigs.length) {
-      return;
+      return 0;
     }
     this.validateSpendingPlanConfig(spendingPlanConfigs);
 
@@ -91,9 +91,11 @@ export class HbarSpendingPlanConfigService {
         [SubscriptionTier.EXTENDED, SubscriptionTier.PRIVILEGED],
         requestDetails,
       );
-    await this.deleteObsoletePlans(existingPlans, spendingPlanConfigs, requestDetails);
-    await this.addNewPlans(spendingPlanConfigs, existingPlans, requestDetails);
+    const plansDeleted = await this.deleteObsoletePlans(existingPlans, spendingPlanConfigs, requestDetails);
+    const plansAdded = await this.addNewPlans(spendingPlanConfigs, existingPlans, requestDetails);
     await this.updatePlanAssociations(spendingPlanConfigs, requestDetails);
+
+    return plansDeleted + plansAdded;
   }
 
   /**
@@ -138,14 +140,14 @@ export class HbarSpendingPlanConfigService {
    * @param {IDetailedHbarSpendingPlan[]} existingPlans - The existing HBAR spending plans in the database.
    * @param {SpendingPlanConfig[]} spendingPlanConfigs - The current spending plan configurations.
    * @param {RequestDetails} requestDetails - The details of the current request.
-   * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   * @returns {Promise<number>} - A promise that resolves with the number of plans deleted.
    * @private
    */
   private async deleteObsoletePlans(
     existingPlans: IDetailedHbarSpendingPlan[],
     spendingPlanConfigs: SpendingPlanConfig[],
     requestDetails: RequestDetails,
-  ): Promise<void> {
+  ): Promise<number> {
     const plansToDelete = existingPlans.filter((plan) => !spendingPlanConfigs.some((spc) => spc.id === plan.id));
     for (const { id } of plansToDelete) {
       this.logger.info(
@@ -163,6 +165,7 @@ export class HbarSpendingPlanConfigService {
         requestDetails,
       );
     }
+    return plansToDelete.length;
   }
 
   /**
@@ -171,14 +174,14 @@ export class HbarSpendingPlanConfigService {
    * @param {SpendingPlanConfig[]} spendingPlanConfigs - The current spending plan configurations.
    * @param {IDetailedHbarSpendingPlan[]} existingPlans - The existing HBAR spending plans in the database.
    * @param {RequestDetails} requestDetails - The details of the current request.
-   * @returns {Promise<void>} - A promise that resolves when the operation is complete.
+   * @returns {Promise<number>} - A promise that resolves with the number of plans added.
    * @private
    */
   private async addNewPlans(
     spendingPlanConfigs: SpendingPlanConfig[],
     existingPlans: IDetailedHbarSpendingPlan[],
     requestDetails: RequestDetails,
-  ): Promise<void> {
+  ): Promise<number> {
     const plansToAdd = spendingPlanConfigs.filter((spc) => !existingPlans.some((plan) => plan.id === spc.id));
     for (const { id, name, subscriptionTier } of plansToAdd) {
       await this.hbarSpendingPlanRepository.create(subscriptionTier, requestDetails, this.TTL, id);
@@ -186,6 +189,7 @@ export class HbarSpendingPlanConfigService {
         `Created HBAR spending plan "${name}" with ID "${id}" and subscriptionTier "${subscriptionTier}"`,
       );
     }
+    return plansToAdd.length;
   }
 
   /**
@@ -243,22 +247,12 @@ export class HbarSpendingPlanConfigService {
       planConfig.ethAddresses?.filter((ethAddress) => !currentEthAddresses.includes(ethAddress)) || [];
     await Promise.all(
       addressesToAdd.map(async (ethAddress) => {
-        const existsInCache = await this.ethAddressHbarSpendingPlanRepository.existsByAddress(
-          ethAddress,
+        await this.ethAddressHbarSpendingPlanRepository.save(
+          { ethAddress, planId: planConfig.id },
           requestDetails,
+          this.TTL,
         );
-        if (!existsInCache) {
-          await this.ethAddressHbarSpendingPlanRepository.save(
-            { ethAddress, planId: planConfig.id },
-            requestDetails,
-            this.TTL,
-          );
-          this.logger.info(`Associated HBAR spending plan '${planConfig.name}' with ETH address ${ethAddress}`);
-        } else {
-          this.logger.trace(
-            `Skipping ETH address ${ethAddress} as it already has an HBAR spending plan associated with it`,
-          );
-        }
+        this.logger.info(`Associated HBAR spending plan '${planConfig.name}' with ETH address ${ethAddress}`);
       }),
     );
   }
@@ -290,17 +284,12 @@ export class HbarSpendingPlanConfigService {
     const addressesToAdd = planConfig.ipAddresses?.filter((ipAddress) => !currentIpAddresses.includes(ipAddress)) || [];
     await Promise.all(
       addressesToAdd.map(async (ipAddress) => {
-        const existsInCache = await this.ipAddressHbarSpendingPlanRepository.existsByAddress(ipAddress, requestDetails);
-        if (!existsInCache) {
-          await this.ipAddressHbarSpendingPlanRepository.save(
-            { ipAddress, planId: planConfig.id },
-            requestDetails,
-            this.TTL,
-          );
-          this.logger.info(`Associated HBAR spending plan '${planConfig.name}' with IP address`);
-        } else {
-          this.logger.trace(`Skipping IP address as it already has an HBAR spending plan associated with it`);
-        }
+        await this.ipAddressHbarSpendingPlanRepository.save(
+          { ipAddress, planId: planConfig.id },
+          requestDetails,
+          this.TTL,
+        );
+        this.logger.info(`Associated HBAR spending plan '${planConfig.name}' with IP address`);
       }),
     );
   }
