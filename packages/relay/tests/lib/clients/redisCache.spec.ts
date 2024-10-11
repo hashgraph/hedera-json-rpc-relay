@@ -25,6 +25,8 @@ import { RedisCache } from '../../../src/lib/clients';
 import { Registry } from 'prom-client';
 import { useInMemoryRedisServer } from '../../helpers';
 import { RequestDetails } from '../../../dist/lib/types';
+import sinon from 'sinon';
+import { RedisClientType } from 'redis';
 
 chai.use(chaiAsPromised);
 
@@ -37,11 +39,14 @@ describe('RedisCache Test Suite', async function () {
   const requestDetails = new RequestDetails({ requestId: 'localLRUCacheTest', ipAddress: '0.0.0.0' });
 
   let redisCache: RedisCache;
+  let redisClientSpy: sinon.SinonSpiedInstance<RedisClientType>;
 
   useInMemoryRedisServer(logger, 6379);
 
   this.beforeAll(async () => {
     redisCache = new RedisCache(logger.child({ name: `cache` }), registry);
+    redisCache['options'].ttl = 100; // set default cache ttl to 100ms for testing
+    redisClientSpy = sinon.spy(redisCache['client']);
   });
 
   this.beforeEach(async () => {
@@ -49,6 +54,7 @@ describe('RedisCache Test Suite', async function () {
       await redisCache.connect();
     }
     await redisCache.clear();
+    sinon.resetHistory();
   });
 
   this.afterAll(async () => {
@@ -109,6 +115,7 @@ describe('RedisCache Test Suite', async function () {
       const ttl = 100;
 
       await redisCache.set(key, value, callingMethod, requestDetails, ttl);
+      sinon.assert.calledOnceWithExactly(redisClientSpy.set, key, JSON.stringify(value), { PX: ttl });
 
       const cachedValue = await redisCache.get(key, callingMethod, requestDetails);
       expect(cachedValue).equal(value);
@@ -125,6 +132,7 @@ describe('RedisCache Test Suite', async function () {
       const ttl = 1100;
 
       await redisCache.set(key, value, callingMethod, requestDetails, ttl);
+      sinon.assert.calledOnceWithExactly(redisClientSpy.set, key, JSON.stringify(value), { PX: ttl });
 
       const cachedValue = await redisCache.get(key, callingMethod, requestDetails);
       expect(cachedValue).equal(value);
@@ -133,6 +141,20 @@ describe('RedisCache Test Suite', async function () {
 
       const expiredValue = await redisCache.get(key, callingMethod, requestDetails);
       expect(expiredValue).to.be.null;
+    });
+
+    it('it should set without TTL if -1 is passed for TTL', async () => {
+      const key = 'int';
+      const value = 1;
+      const ttl = -1;
+
+      await redisCache.set(key, value, callingMethod, requestDetails, ttl);
+      sinon.assert.calledOnceWithExactly(redisClientSpy.set, key, JSON.stringify(value));
+
+      const cachedValue = await redisCache.get(key, callingMethod, requestDetails);
+      expect(cachedValue).equal(value);
+
+      await new Promise((resolve) => setTimeout(resolve, redisCache['options'].ttl));
     });
   });
 

@@ -26,12 +26,11 @@ import sinon from 'sinon';
 import { Server } from 'http';
 import { GCProfiler } from 'v8';
 import Assertions from '../helpers/assertions';
-import app from '../../src/server';
 import { TracerType, Validator } from '../../src/validator';
 import RelayCalls from '../../tests/helpers/constants';
 import * as Constants from '../../src/validator/constants';
 import { Utils } from '../helpers/utils';
-import { predefined } from '@hashgraph/json-rpc-relay';
+import { predefined, RelayImpl } from '@hashgraph/json-rpc-relay';
 import {
   contractAddress1,
   contractAddress2,
@@ -41,6 +40,7 @@ import {
   withOverriddenEnvsInMochaTest,
 } from '../../../relay/tests/helpers';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
+import Koa from 'koa';
 
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
 
@@ -49,8 +49,12 @@ const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 describe('RPC Server', function () {
   let testServer: Server;
   let testClient: AxiosInstance;
+  let populatePreconfiguredSpendingPlansSpy: sinon.SinonSpy;
+  let app: Koa<Koa.DefaultState, Koa.DefaultContext>;
 
   before(function () {
+    populatePreconfiguredSpendingPlansSpy = sinon.spy(RelayImpl.prototype, <any>'populatePreconfiguredSpendingPlans');
+    app = require('../../src/server').default;
     testServer = app.listen(process.env.E2E_SERVER_PORT);
     testClient = BaseTest.createTestClient();
   });
@@ -97,6 +101,13 @@ describe('RPC Server', function () {
         reject(error);
       });
     });
+  });
+
+  it('should try to populate preconfigured spending plans', async function () {
+    const calls = populatePreconfiguredSpendingPlansSpy.getCalls();
+    expect(calls.length).to.be.equal(1);
+    await calls[0].returnValue;
+    expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
   });
 
   it('should execute "eth_chainId"', async function () {

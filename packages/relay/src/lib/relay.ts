@@ -39,6 +39,10 @@ import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
 import { RequestDetails } from './types';
 import { Utils } from '../utils';
+import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigService';
+import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 
 dotenv.config({ path: findConfig('.env') || '' });
 
@@ -95,6 +99,13 @@ export class RelayImpl implements Relay {
   /**
    * @private
    * @readonly
+   * @property {HbarSpendingPlanConfigService} hbarSpendingPlanConfigService - The service responsible for managing HBAR spending plans.
+   */
+  private readonly hbarSpendingPlanConfigService: HbarSpendingPlanConfigService;
+
+  /**
+   * @private
+   * @readonly
    * @property {MetricService} metricService - The service responsible for capturing and reporting metrics.
    */
   private readonly metricService: MetricService;
@@ -115,7 +126,10 @@ export class RelayImpl implements Relay {
    * @param {Logger} logger - Logger instance for logging system messages.
    * @param {Registry} register - Registry instance for registering metrics.
    */
-  constructor(logger: Logger, register: Registry) {
+  constructor(
+    private readonly logger: Logger,
+    register: Registry,
+  ) {
     logger.info('Configurations successfully loaded');
 
     const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
@@ -161,13 +175,53 @@ export class RelayImpl implements Relay {
       this.cacheService,
     );
 
+    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'hbar-spending-plan-repository' }),
+    );
+
+    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
+    );
+
+    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
+      this.cacheService,
+      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
+    );
+
+    this.hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
+      logger.child({ name: 'hbar-spending-plan-config-service' }),
+      hbarSpendingPlanRepository,
+      ethAddressHbarSpendingPlanRepository,
+      ipAddressHbarSpendingPlanRepository,
+    );
+
     if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
       const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
       this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }
 
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
+
+    this.populatePreconfiguredSpendingPlans().then();
+
     logger.info('Relay running with chainId=%s', chainId);
+  }
+
+  /**
+   * Populates pre-configured spending plans from a configuration file.
+   * @returns {Promise<void>} A promise that resolves when the spending plans have been successfully populated.
+   */
+  private async populatePreconfiguredSpendingPlans(): Promise<void> {
+    return this.hbarSpendingPlanConfigService
+      .populatePreconfiguredSpendingPlans()
+      .then((plansUpdated) => {
+        if (plansUpdated > 0) {
+          this.logger.info('Pre-configured spending plans populated successfully');
+        }
+      })
+      .catch((e) => this.logger.warn(`Failed to load pre-configured spending plans: ${e.message}`));
   }
 
   /**
