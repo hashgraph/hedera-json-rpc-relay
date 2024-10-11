@@ -18,7 +18,7 @@
  *
  */
 
-export enum SubscriptionType {
+export enum SubscriptionTier {
   /**
    * General users (default)
    */

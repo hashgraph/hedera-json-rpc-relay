@@ -20,11 +20,11 @@
 
 import { IDetailedHbarSpendingPlan } from '../../types/hbarLimiter/hbarSpendingPlan';
 import { HbarSpendingRecord } from './hbarSpendingRecord';
-import { SubscriptionType } from '../../types/hbarLimiter/subscriptionType';
+import { SubscriptionTier } from '../../types/hbarLimiter/subscriptionTier';
 
 export class HbarSpendingPlan implements IDetailedHbarSpendingPlan {
   id: string;
-  subscriptionType: SubscriptionType;
+  subscriptionTier: SubscriptionTier;
   createdAt: Date;
   active: boolean;
   spendingHistory: HbarSpendingRecord[];
@@ -32,7 +32,7 @@ export class HbarSpendingPlan implements IDetailedHbarSpendingPlan {
 
   constructor(data: IDetailedHbarSpendingPlan) {
     this.id = data.id;
-    this.subscriptionType = data.subscriptionType;
+    this.subscriptionTier = data.subscriptionTier;
     this.createdAt = new Date(data.createdAt);
     this.active = data.active;
     this.spendingHistory = data.spendingHistory?.map((spending) => new HbarSpendingRecord(spending)) || [];

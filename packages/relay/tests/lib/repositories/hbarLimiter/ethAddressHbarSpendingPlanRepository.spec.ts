@@ -30,6 +30,7 @@ import { randomBytes, uuidV4 } from 'ethers';
 import { Registry } from 'prom-client';
 import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 import { RequestDetails } from '../../../../dist/lib/types';
+import { EthAddressHbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/ethAddressHbarSpendingPlan';
 
 chai.use(chaiAsPromised);
 
@@ -68,6 +69,66 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
 
     after(async () => {
       await cacheService.disconnectRedisClient();
+    });
+
+    describe('existsByAddress', () => {
+      it('returns true if address plan exists', async () => {
+        const ethAddress = '0x123';
+        const addressPlan = new EthAddressHbarSpendingPlan({ ethAddress, planId: uuidV4(randomBytes(16)) });
+        await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test', requestDetails);
+
+        await expect(repository.existsByAddress(ethAddress, requestDetails)).to.eventually.be.true;
+      });
+
+      it('returns false if address plan does not exist', async () => {
+        const ethAddress = '0xnonexistent';
+        await expect(repository.existsByAddress(ethAddress, requestDetails)).to.eventually.be.false;
+      });
+    });
+
+    describe('findAllByPlanId', () => {
+      it('retrieves all address plans by plan ID', async () => {
+        const planId = uuidV4(randomBytes(16));
+        const ethAddressPlans = [
+          new EthAddressHbarSpendingPlan({ ethAddress: '0x123', planId }),
+          new EthAddressHbarSpendingPlan({ ethAddress: '0x456', planId }),
+        ];
+        for (const plan of ethAddressPlans) {
+          await cacheService.set(`${repository['collectionKey']}:${plan.ethAddress}`, plan, 'test', requestDetails);
+        }
+
+        const result = await repository.findAllByPlanId(planId, 'findAllByPlanId', requestDetails);
+        expect(result).to.have.deep.members(ethAddressPlans);
+      });
+
+      it('returns an empty array if no address plans are found for the plan ID', async () => {
+        const planId = uuidV4(randomBytes(16));
+        const result = await repository.findAllByPlanId(planId, 'findAllByPlanId', requestDetails);
+        expect(result).to.deep.equal([]);
+      });
+    });
+
+    describe('deleteAllByPlanId', () => {
+      it('deletes all address plans by plan ID', async () => {
+        const planId = uuidV4(randomBytes(16));
+        const ethAddresses = ['0x123', '0x456', '0x789'];
+        for (const ethAddress of ethAddresses) {
+          const addressPlan = new EthAddressHbarSpendingPlan({ ethAddress, planId });
+          await cacheService.set(`${repository['collectionKey']}:${ethAddress}`, addressPlan, 'test', requestDetails);
+        }
+
+        await repository.deleteAllByPlanId(planId, 'deleteAllByPlanId', requestDetails);
+
+        for (const ethAddress of ethAddresses) {
+          await expect(cacheService.getAsync(`${repository['collectionKey']}:${ethAddress}`, 'test', requestDetails)).to
+            .eventually.be.null;
+        }
+      });
+
+      it('does not throw an error if no address plans are found for the plan ID', async () => {
+        const planId = uuidV4(randomBytes(16));
+        await expect(repository.deleteAllByPlanId(planId, 'deleteAllByPlanId', requestDetails)).to.be.fulfilled;
+      });
     });
 
     describe('findByAddress', () => {

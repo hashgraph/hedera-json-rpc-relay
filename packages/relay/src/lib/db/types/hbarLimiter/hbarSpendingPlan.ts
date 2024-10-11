@@ -19,11 +19,11 @@
  */
 
 import { IHbarSpendingRecord } from './hbarSpendingRecord';
-import { SubscriptionType } from './subscriptionType';
+import { SubscriptionTier } from './subscriptionTier';
 
 export interface IHbarSpendingPlan {
   id: string;
-  subscriptionType: SubscriptionType;
+  subscriptionTier: SubscriptionTier;
   createdAt: Date;
   active: boolean;
 }
