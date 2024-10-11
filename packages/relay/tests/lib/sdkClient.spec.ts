@@ -289,40 +289,12 @@ describe('SdkClient', async function () {
       HEX_ECDSA: '0x08e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
     };
 
-<<<<<<< HEAD
-=======
-    before(function (this: Context) {
-      // Store the original process.env
-      originalEnv = process.env;
-
-      if (
-        this.currentTest?.title ===
-        'Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is null'
-      ) {
-        process.env = new Proxy(process.env, {
-          get: (target, prop) => {
-            if (prop === 'OPERATOR_KEY_FORMAT') {
-              return null;
-            }
-            // @ts-ignore
-            return target[prop];
-          },
-        });
+    this.beforeEach(() => {
+      if (process.env.OPERATOR_KEY_FORMAT !== 'BAD_FORMAT') {
+        hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
       }
     });
 
-    this.beforeEach(() => {
-      initialOperatorKeyFormat = process.env.OPERATOR_KEY_FORMAT;
-      hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
-    });
-
-    after(() => {
-      // Restore the original process.env after the test
-      process.env = originalEnv;
-      process.env.OPERATOR_KEY_FORMAT = initialOperatorKeyFormat;
-    });
-
->>>>>>> 391b7f28 (feat: removed hbarLimiter instance in SDKClient classes)
     it('Initialize the privateKey for default which is DER', async () => {
       const privateKey = Utils.createPrivateKeyBasedOnFormat.call(hapiService, OPERATOR_KEY_ED25519.DER);
       expect(privateKey.toString()).to.eq(OPERATOR_KEY_ED25519.DER);
