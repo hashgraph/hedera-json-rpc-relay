@@ -22,11 +22,11 @@ import { GlobalConfig } from './globalConfig';
 
 export class ValidationService {
   static startUp(envs: NodeJS.Dict<string>): void {
-    // make sure that mandatory fields are passed
+    // validate mandatory fields and their types
     Object.entries(GlobalConfig.ENTRIES).forEach(([entryName, entryInfo]) => {
       if (entryInfo.required) {
-        if (!envs[entryName]) {
-          throw new Error(`${entryName} is a mandatory and the relay can not operate without its value.`);
+        if (envs[entryName] === undefined) {
+          throw new Error(`${entryName} is a mandatory and the relay cannot operate without its value.`);
         }
 
         if (entryInfo.type === 'number' && isNaN(Number(envs[entryName]))) {
@@ -47,7 +47,7 @@ export class ValidationService {
       );
     }
 
-    // make sure that HBAR_RATE_LIMIT_TINYBAR is more than HBAR_DAILY_LIMIT_BASIC, HBAR_DAILY_LIMIT_EXTENDED, HBAR_DAILY_LIMIT_PRIVILEGED
+    // ensure HBAR_RATE_LIMIT_TINYBAR is not less than daily limits
     if (
       envs[GlobalConfig.ENTRIES.HBAR_RATE_LIMIT_TINYBAR.envName] &&
       envs[GlobalConfig.ENTRIES.HBAR_DAILY_LIMIT_BASIC.envName] &&
@@ -60,7 +60,7 @@ export class ValidationService {
         GlobalConfig.ENTRIES.HBAR_DAILY_LIMIT_PRIVILEGED.envName,
       ]) {
         if (Number(envs[GlobalConfig.ENTRIES.HBAR_RATE_LIMIT_TINYBAR.envName]) < Number(envs[field])) {
-          throw new Error(`${GlobalConfig.ENTRIES.HBAR_RATE_LIMIT_TINYBAR.envName} can not be less than ${field}`);
+          throw new Error(`${GlobalConfig.ENTRIES.HBAR_RATE_LIMIT_TINYBAR.envName} cannot be less than ${field}`);
         }
       }
     }

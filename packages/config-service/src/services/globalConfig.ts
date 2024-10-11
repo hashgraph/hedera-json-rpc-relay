@@ -498,7 +498,7 @@ export class GlobalConfig {
     OPERATOR_ID_MAIN: {
       envName: 'OPERATOR_ID_MAIN',
       type: 'string',
-      required: false,
+      required: true,
       defaultValue: null,
     },
     OPERATOR_KEY_ETH_SENDRAWTRANSACTION: {
@@ -516,7 +516,7 @@ export class GlobalConfig {
     OPERATOR_KEY_MAIN: {
       envName: 'OPERATOR_KEY_MAIN',
       type: 'string',
-      required: false,
+      required: true,
       defaultValue: null,
     },
     RATE_LIMIT_DISABLED: {

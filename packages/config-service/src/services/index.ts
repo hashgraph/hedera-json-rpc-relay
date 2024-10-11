@@ -62,7 +62,7 @@ export class ConfigService {
     const configPath = findConfig(ConfigService.envFileName);
 
     if (!configPath) {
-      logger.warn('No .env file is found. The relay can not operate without valid .env.');
+      logger.warn('No .env file is found. The relay cannot operate without valid .env.');
     }
 
     // @ts-ignore

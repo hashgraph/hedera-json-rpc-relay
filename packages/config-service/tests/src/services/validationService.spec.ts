@@ -46,7 +46,7 @@ describe('ValidationService tests', async function () {
 
     it('should fail fast if mandatory env is not passed', async () => {
       expect(() => ValidationService.startUp({})).to.throw(
-        'CHAIN_ID is a mandatory and the relay can not operate without its value.',
+        'CHAIN_ID is a mandatory and the relay cannot operate without its value.',
       );
     });
 
@@ -75,7 +75,7 @@ describe('ValidationService tests', async function () {
           ...hbarLimitFields,
           HBAR_DAILY_LIMIT_BASIC: '700',
         }),
-      ).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_BASIC');
+      ).to.throw('HBAR_RATE_LIMIT_TINYBAR cannot be less than HBAR_DAILY_LIMIT_BASIC');
     });
 
     it('should fail fast if HBAR_RATE_LIMIT_TINYBAR is less than HBAR_DAILY_LIMIT_EXTENDED', async () => {
@@ -85,7 +85,7 @@ describe('ValidationService tests', async function () {
           ...hbarLimitFields,
           HBAR_DAILY_LIMIT_EXTENDED: '2000',
         }),
-      ).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_EXTENDED');
+      ).to.throw('HBAR_RATE_LIMIT_TINYBAR cannot be less than HBAR_DAILY_LIMIT_EXTENDED');
     });
 
     it('should fail fast if HBAR_RATE_LIMIT_TINYBAR is less than HBAR_DAILY_LIMIT_PRIVILEGED', async () => {
@@ -95,7 +95,7 @@ describe('ValidationService tests', async function () {
           ...hbarLimitFields,
           HBAR_DAILY_LIMIT_PRIVILEGED: '3000',
         }),
-      ).to.throw('HBAR_RATE_LIMIT_TINYBAR can not be less than HBAR_DAILY_LIMIT_PRIVILEGED');
+      ).to.throw('HBAR_RATE_LIMIT_TINYBAR cannot be less than HBAR_DAILY_LIMIT_PRIVILEGED');
     });
   });
 
