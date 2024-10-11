@@ -68,10 +68,6 @@ describe('HbarSpendingPlanRepository', function () {
       await cacheServiceSpy.disconnectRedisClient();
     });
 
-    after(async () => {
-      await cacheService.disconnectRedisClient();
-    });
-
     describe('create', () => {
       it('creates a plan successfully', async () => {
         const subscriptionType = SubscriptionType.BASIC;
