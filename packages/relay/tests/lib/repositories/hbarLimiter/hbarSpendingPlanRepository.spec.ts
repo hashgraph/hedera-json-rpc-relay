@@ -30,10 +30,9 @@ import {
   HbarSpendingPlanNotFoundError,
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { IHbarSpendingRecord } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingRecord';
-
 import { SubscriptionType } from '../../../../src/lib/db/types/hbarLimiter/subscriptionType';
 import { IDetailedHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingPlan';
-import { useInMemoryRedisServer } from '../../../helpers';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 import { RequestDetails } from '../../../../src/lib/types';
 
 chai.use(chaiAsPromised);
@@ -56,6 +55,8 @@ describe('HbarSpendingPlanRepository', function () {
 
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6380);
+    } else {
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
     }
 
     afterEach(async () => {

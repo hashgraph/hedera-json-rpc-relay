@@ -51,6 +51,7 @@ import HRC719ContractJson from '../contracts/HRC719Contract.json';
 import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
 import { predefined } from '@hashgraph/json-rpc-relay';
 import { TYPES } from '../../src/validator';
+import { overrideEnvsInMochaDescribe } from '../../../relay/tests/helpers';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import RelayClient from '../clients/relayClient';
 import ServicesClient from '../clients/servicesClient';
@@ -2023,16 +2024,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   });
 
   describe('Batch Request Test Suite BATCH_REQUESTS_ENABLED = true', async function () {
-    let PREV_BATCH_REQUESTS_ENABLED: string | undefined;
-
-    before(async () => {
-      PREV_BATCH_REQUESTS_ENABLED = process.env.BATCH_REQUESTS_ENABLED;
-      process.env.BATCH_REQUESTS_ENABLED = 'true';
-    });
-
-    after(async () => {
-      process.env.BATCH_REQUESTS_ENABLED = PREV_BATCH_REQUESTS_ENABLED;
-    });
+    overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: 'true' });
 
     it('Should return a batch of requests', async function () {
       const testAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId);

@@ -106,7 +106,7 @@ describe('RedisCache Test Suite', async function () {
     it('should be able to set cache with TTL less than 1000 milliseconds', async () => {
       const key = 'int';
       const value = 1;
-      const ttl = 500;
+      const ttl = 100;
 
       await redisCache.set(key, value, callingMethod, requestDetails, ttl);
 
@@ -122,7 +122,7 @@ describe('RedisCache Test Suite', async function () {
     it('should be able to set cache with TTL greater than 1000 milliseconds', async () => {
       const key = 'int';
       const value = 1;
-      const ttl = 1500;
+      const ttl = 1100;
 
       await redisCache.set(key, value, callingMethod, requestDetails, ttl);
 

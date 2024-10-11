@@ -32,12 +32,12 @@ import {
   BLOCKS_LIMIT_ORDER_URL,
   DEFAULT_BLOCK,
   DEFAULT_NETWORK_FEES,
-  ETH_FEE_HISTORY_VALUE,
   GAS_USED_RATIO,
   NOT_FOUND_RES,
 } from './eth-config';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
+import { overrideEnvsInMochaDescribe } from '../../helpers';
 import { RequestDetails } from '../../../src/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
@@ -45,7 +45,6 @@ use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: sinon.SinonStub;
-let currentMaxBlockRange: number;
 
 describe('@ethFeeHistory using MirrorNode', async function () {
   this.timeout(10000);
@@ -53,25 +52,20 @@ describe('@ethFeeHistory using MirrorNode', async function () {
 
   const requestDetails = new RequestDetails({ requestId: 'eth_feeHistoryTest', ipAddress: '0.0.0.0' });
 
-  this.beforeEach(() => {
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
-  });
-
-  this.afterAll(() => {
-    process.env.ETH_FEE_HISTORY_FIXED = ETH_FEE_HISTORY_VALUE;
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
   describe('eth_feeHistory with ... param', function () {
@@ -237,18 +231,12 @@ describe('@ethFeeHistory using MirrorNode', async function () {
       return latestBlock;
     }
 
-    this.beforeAll(function () {
-      process.env.ETH_FEE_HISTORY_FIXED = 'true';
-    });
+    overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: 'true' });
 
-    this.beforeEach(function () {
-      cacheService.clear(requestDetails);
+    beforeEach(async function () {
+      await cacheService.clear(requestDetails);
       restMock.reset();
       restMock.onGet(`network/fees`).reply(200, DEFAULT_NETWORK_FEES);
-    });
-
-    this.afterAll(function () {
-      process.env.ETH_FEE_HISTORY_FIXED = 'false';
     });
 
     it('eth_feeHistory with fixed fees', async function () {
