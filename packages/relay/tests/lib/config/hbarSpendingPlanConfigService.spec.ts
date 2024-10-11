@@ -100,11 +100,9 @@ describe('HbarSpendingPlanConfigService', function () {
 
     describe('populatePreconfiguredSpendingPlans', function () {
       describe('negative scenarios', function () {
-        it('should throw an error if the configuration file is not found', async function () {
+        it('should not throw an error if the configuration file is not found', async function () {
           sinon.stub(fs, 'existsSync').returns(false);
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Configuration file not found at path "${path}"`,
-          );
+          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).not.to.be.rejected;
         });
 
         it('should throw an error if configuration file is not a parsable JSON', async function () {

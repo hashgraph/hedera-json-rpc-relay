@@ -115,7 +115,7 @@ describe('RelayImpl', () => {
 
         expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
         await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).to.not.be.rejected;
-        expect(loggerSpy.error.calledWith(`Configuration file not found at path "nonExistingFile.json"`));
+        expect(loggerSpy.trace.calledWith(`Configuration file not found at path "nonExistingFile.json"`));
       });
     });
   });

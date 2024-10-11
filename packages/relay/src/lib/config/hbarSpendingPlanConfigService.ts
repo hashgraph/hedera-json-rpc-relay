@@ -79,17 +79,18 @@ export class HbarSpendingPlanConfigService {
    * @throws {Error} - If the spending plans configuration file is not found or cannot be loaded.
    */
   public async populatePreconfiguredSpendingPlans(): Promise<void> {
-    const requestDetails = new RequestDetails({ requestId: '', ipAddress: '' });
-
     const spendingPlanConfigs = this.loadSpendingPlansConfig();
+    if (!spendingPlanConfigs.length) {
+      return;
+    }
     this.validateSpendingPlanConfig(spendingPlanConfigs);
 
+    const requestDetails = new RequestDetails({ requestId: '', ipAddress: '' });
     const existingPlans: IDetailedHbarSpendingPlan[] =
       await this.hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
         [SubscriptionTier.EXTENDED, SubscriptionTier.PRIVILEGED],
         requestDetails,
       );
-
     await this.deleteObsoletePlans(existingPlans, spendingPlanConfigs, requestDetails);
     await this.addNewPlans(spendingPlanConfigs, existingPlans, requestDetails);
     await this.updatePlanAssociations(spendingPlanConfigs, requestDetails);
@@ -105,7 +106,8 @@ export class HbarSpendingPlanConfigService {
   private loadSpendingPlansConfig(): SpendingPlanConfig[] {
     const configPath = findConfig(this.SPENDING_PLANS_CONFIG_FILE);
     if (!configPath || !fs.existsSync(configPath)) {
-      throw new Error(`Configuration file not found at path "${configPath ?? this.SPENDING_PLANS_CONFIG_FILE}"`);
+      this.logger.trace(`Configuration file not found at path "${configPath ?? this.SPENDING_PLANS_CONFIG_FILE}"`);
+      return [];
     }
     try {
       const rawData = fs.readFileSync(configPath, 'utf-8');
