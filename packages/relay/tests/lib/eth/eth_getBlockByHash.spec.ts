@@ -25,7 +25,12 @@ import chaiAsPromised from 'chai-as-promised';
 
 import { predefined } from '../../../src';
 import { EthImpl } from '../../../src/lib/eth';
-import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults } from '../../helpers';
+import {
+  blockLogsBloom,
+  defaultContractResults,
+  defaultDetailedContractResults,
+  overrideEnvsInMochaDescribe,
+} from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
 import { numberTo0x } from '../../../dist/formatters';
@@ -63,7 +68,6 @@ use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: sinon.SinonStub;
-let currentMaxBlockRange: number;
 let ethImplLowTransactionCount: EthImpl;
 
 describe('@ethGetBlockByHash using MirrorNode', async function () {
@@ -75,9 +79,11 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getBlockByHashTest', ipAddress: '0.0.0.0' });
 
-  this.beforeEach(() => {
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
@@ -90,8 +96,6 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       .onGet(contractByEvmAddress(CONTRACT_ADDRESS_2))
       .reply(200, { ...DEFAULT_CONTRACT, evmAddress: CONTRACT_ADDRESS_2 });
 
-    currentMaxBlockRange = Number(process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE);
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = '1';
     ethImplLowTransactionCount = new EthImpl(
       hapiServiceInstance,
       mirrorNodeInstance,
@@ -105,7 +109,6 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    process.env.ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE = currentMaxBlockRange.toString();
   });
 
   it('eth_getBlockByHash with match', async function () {

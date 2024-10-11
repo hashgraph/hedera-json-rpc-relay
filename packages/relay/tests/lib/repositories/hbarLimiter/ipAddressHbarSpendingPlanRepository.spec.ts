@@ -28,7 +28,7 @@ import { IIPAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLim
 import { IPAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { randomBytes, uuidV4 } from 'ethers';
 import { Registry } from 'prom-client';
-import { useInMemoryRedisServer } from '../../../helpers';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 import { RequestDetails } from '../../../../src/lib/types';
 import { IPAddressHbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/ipAddressHbarSpendingPlan';
 
@@ -37,7 +37,10 @@ chai.use(chaiAsPromised);
 describe('IPAddressHbarSpendingPlanRepository', function () {
   const logger = pino();
   const registry = new Registry();
-  const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });
+  const requestDetails = new RequestDetails({
+    requestId: 'ipAddressHbarSpendingPlanRepositoryTest',
+    ipAddress: '0.0.0.0',
+  });
   const ttl = 86_400_000; // 1 day
   const ipAddress = '555.555.555.555';
   const nonExistingIpAddress = 'xxx.xxx.xxx.xxx';
@@ -58,6 +61,8 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
 
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6383);
+    } else {
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
     }
 
     afterEach(async () => {

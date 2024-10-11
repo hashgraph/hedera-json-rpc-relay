@@ -42,7 +42,8 @@ jobs:
       contents: write
       actions: read
       # issues: read
-
+    env:
+      OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0

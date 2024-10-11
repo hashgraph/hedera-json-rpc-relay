@@ -26,7 +26,7 @@ import { CacheService } from '../../../../src/lib/services/cacheService/cacheSer
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
-import { useInMemoryRedisServer } from '../../../helpers';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 import { RequestDetails } from '../../../../dist/lib/types';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
@@ -143,20 +143,14 @@ describe('CacheService Test Suite', async function () {
   };
 
   describe('Internal Cache Test Suite', async function () {
-    let redisEnabled: string | undefined;
+    overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
 
     this.beforeAll(() => {
-      redisEnabled = process.env.REDIS_ENABLED;
-      process.env.REDIS_ENABLED = 'false';
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
     this.afterEach(async () => {
       await cacheService.clear(requestDetails);
-    });
-
-    this.afterAll(() => {
-      process.env.REDIS_ENABLED = redisEnabled;
     });
 
     it('should be able to set and get from internal cache', async function () {
@@ -285,18 +279,14 @@ describe('CacheService Test Suite', async function () {
     };
 
     useInMemoryRedisServer(logger, 6381);
-
-    let multiSet: string | undefined;
+    overrideEnvsInMochaDescribe({ MULTI_SET: 'true' });
 
     this.beforeAll(async () => {
-      multiSet = process.env.MULTI_SET;
-      process.env.MULTI_SET = 'true';
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
     this.afterAll(async () => {
       await cacheService.disconnectRedisClient();
-      process.env.MULTI_SET = multiSet;
     });
 
     this.beforeEach(async () => {
