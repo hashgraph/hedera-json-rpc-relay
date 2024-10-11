@@ -48,9 +48,12 @@ import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
 import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
+let ethAddressSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
+  ipSpendingPlanRepository: IPAddressHbarSpendingPlanRepository;
 
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   // @ts-ignore
@@ -186,6 +189,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       before(async function () {
         // Restart the relay to reset the limits
         await global.restartLocalRelay();
+        await cacheService.clear(requestDetails);
+        ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+        ipSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
 
         logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
         logger.info(
@@ -398,9 +404,16 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
           const lastRemainingHbars = remainingHbarsBefore;
           let spentToday = 0;
-          const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
-          const ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
-          const ipSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
+
+          //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
+          const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
+            [SubscriptionTier.BASIC],
+            requestDetails,
+          );
+          const ipPlans = await ipSpendingPlanRepository.getAllPlans(requestDetails);
+          const ipPlanWithId = await basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
+          const ipAddress = ipPlanWithId[0]!.ipAddress;
+          await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
           expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
           expect(remainingHbarsBefore).to.be.gt(0);
           let spendingPlanId;
@@ -435,13 +448,21 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('should create a BASIC spending plan for a new user', async function () {
-          const ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
           const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
           const parentContractAddress = parentContract.target as string;
           global.logger.trace(
             `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
           );
 
+          //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
+          const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
+            [SubscriptionTier.BASIC],
+            requestDetails,
+          );
+          const ipPlans = await ipSpendingPlanRepository.getAllPlans(requestDetails);
+          const ipPlanWithId = await basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
+          const ipAddress = ipPlanWithId[0]!.ipAddress;
+          await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
           expect(ethAddressSpendingPlanRepository.findByAddress(accounts[3].address, requestDetails)).to.be.rejected;
           const gasPrice = await relay.gasPrice(requestId);
           const transaction = {
