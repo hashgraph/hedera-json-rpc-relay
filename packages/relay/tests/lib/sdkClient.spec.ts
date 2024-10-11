@@ -276,8 +276,6 @@ describe('SdkClient', async function () {
 
   describe('HAPIService', async () => {
     let hapiService: HAPIService;
-    let originalEnv: NodeJS.ProcessEnv;
-    let initialOperatorKeyFormat: string | undefined;
 
     const OPERATOR_KEY_ED25519 = {
       DER: '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137',
@@ -289,35 +287,10 @@ describe('SdkClient', async function () {
       HEX_ECDSA: '0x08e926c84220295b5db5df25be107ce905b41e237ac748dd04d479c23dcdf2d5',
     };
 
-    before(function (this: Context) {
-      // Store the original process.env
-      originalEnv = process.env;
-
-      if (
-        this.currentTest?.title ===
-        'Initialize the privateKey for default which is DER when OPERATOR_KEY_FORMAT is null'
-      ) {
-        process.env = new Proxy(process.env, {
-          get: (target, prop) => {
-            if (prop === 'OPERATOR_KEY_FORMAT') {
-              return null;
-            }
-            // @ts-ignore
-            return target[prop];
-          },
-        });
-      }
-    });
-
     this.beforeEach(() => {
-      initialOperatorKeyFormat = process.env.OPERATOR_KEY_FORMAT;
-      hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
-    });
-
-    after(() => {
-      // Restore the original process.env after the test
-      process.env = originalEnv;
-      process.env.OPERATOR_KEY_FORMAT = initialOperatorKeyFormat;
+      if (process.env.OPERATOR_KEY_FORMAT !== 'BAD_FORMAT') {
+        hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
+      }
     });
 
     it('Initialize the privateKey for default which is DER', async () => {
