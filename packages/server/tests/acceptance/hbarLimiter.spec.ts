@@ -333,43 +333,45 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
         });
 
-        it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
-          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
-          let exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
-          const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
-
-          const factory = new ethers.ContractFactory(
-            largeContractJson.abi,
-            largeContractJson.bytecode,
-            accounts[0].wallet,
-          );
-          const deployedTransaction = await factory.getDeployTransaction();
-          const estimatedTxFee = estimateFileTransactionsFee(
-            deployedTransaction.data.length,
-            fileChunkSize,
-            exchangeRateInCents,
+        it('should create a BASIC spending plan for a new user', async function () {
+          const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
+          const parentContractAddress = parentContract.target as string;
+          global.logger.trace(
+            `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
           );
 
-          let lastRemainingHbars = remainingHbarsBefore;
-          expect(remainingHbarsBefore).to.be.gt(0);
-          try {
-            for (let i = 0; i < 50; i++) {
-              const contract = await deployContract(largeContractJson, accounts[0].wallet);
-              await contract.waitForDeployment();
-              const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-              expect(remainingHbars).to.be.lt(lastRemainingHbars);
-            }
-            expect.fail(`Expected an error but nothing was thrown`);
-          } catch (e: any) {
-            expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+          //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
+          const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
+            [SubscriptionTier.BASIC],
+            requestDetails,
+          );
+          const ipPlans = await ipSpendingPlanRepository.getAllPlans(requestDetails);
+          const ipPlanWithId = basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
+          const ipAddress = ipPlanWithId[0]?.ipAddress;
+          if (ipAddress) {
+            await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
           }
+          expect(ethAddressSpendingPlanRepository.findByAddress(accounts[3].address, requestDetails)).to.be.rejected;
+          const gasPrice = await relay.gasPrice(requestId);
+          const transaction = {
+            ...defaultLondonTransactionData,
+            to: parentContractAddress,
+            nonce: await relay.getAccountNonce(accounts[3].address, requestId),
+            maxPriorityFeePerGas: gasPrice,
+            maxFeePerGas: gasPrice,
+          };
+          const signedTx = await accounts[3].wallet.signTransaction(transaction);
 
-          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
+            .fulfilled;
 
-          // Explanation: A preemptive rate limit check triggers the HBAR_RATE_LIMIT_EXCEED error when (remainingBudget - estimatedTxFee) < 0.
-          //             In this scenario, the final remainingHbarsAfter is expected to be less than estimatedTxFee.
-          expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
+          await new Promise((r) => setTimeout(r, 20000));
+
+          const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+            accounts[3].address,
+            requestDetails,
+          );
+          expect(ethSpendingPlan).to.not.be.undefined;
         });
 
         it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts', async function () {
@@ -426,45 +428,43 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           }
         });
 
-        it('should create a BASIC spending plan for a new user', async function () {
-          const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
-          const parentContractAddress = parentContract.target as string;
-          global.logger.trace(
-            `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
+        it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
+          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+          let exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
+          const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
+
+          const factory = new ethers.ContractFactory(
+            largeContractJson.abi,
+            largeContractJson.bytecode,
+            accounts[0].wallet,
+          );
+          const deployedTransaction = await factory.getDeployTransaction();
+          const estimatedTxFee = estimateFileTransactionsFee(
+            deployedTransaction.data.length,
+            fileChunkSize,
+            exchangeRateInCents,
           );
 
-          //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
-          const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
-            [SubscriptionTier.BASIC],
-            requestDetails,
-          );
-          const ipPlans = await ipSpendingPlanRepository.getAllPlans(requestDetails);
-          const ipPlanWithId = basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
-          const ipAddress = ipPlanWithId[0]?.ipAddress;
-          if (ipAddress) {
-            await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
+          let lastRemainingHbars = remainingHbarsBefore;
+          expect(remainingHbarsBefore).to.be.gt(0);
+          try {
+            for (let i = 0; i < 50; i++) {
+              const contract = await deployContract(largeContractJson, accounts[0].wallet);
+              await contract.waitForDeployment();
+              const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+              expect(remainingHbars).to.be.lt(lastRemainingHbars);
+            }
+            expect.fail(`Expected an error but nothing was thrown`);
+          } catch (e: any) {
+            expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
           }
-          expect(ethAddressSpendingPlanRepository.findByAddress(accounts[3].address, requestDetails)).to.be.rejected;
-          const gasPrice = await relay.gasPrice(requestId);
-          const transaction = {
-            ...defaultLondonTransactionData,
-            to: parentContractAddress,
-            nonce: await relay.getAccountNonce(accounts[3].address, requestId),
-            maxPriorityFeePerGas: gasPrice,
-            maxFeePerGas: gasPrice,
-          };
-          const signedTx = await accounts[3].wallet.signTransaction(transaction);
 
-          await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
-            .fulfilled;
+          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
-          await new Promise((r) => setTimeout(r, 20000));
-
-          const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
-            accounts[3].address,
-            requestDetails,
-          );
-          expect(ethSpendingPlan).to.not.be.undefined;
+          // Explanation: A preemptive rate limit check triggers the HBAR_RATE_LIMIT_EXCEED error when (remainingBudget - estimatedTxFee) < 0.
+          //             In this scenario, the final remainingHbarsAfter is expected to be less than estimatedTxFee.
+          expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
         });
       });
     });
