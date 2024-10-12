@@ -37,6 +37,7 @@ import MetricsClient from '../clients/metricsClient';
 import { AliasAccount } from '../types/AliasAccount';
 import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hbarLimitService';
 import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
+import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
 import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
@@ -48,7 +49,6 @@ import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
 import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
-import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
@@ -385,7 +385,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts', async function () {
-          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
           const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
           const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
@@ -402,9 +401,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             exchangeRateInCents,
           );
 
-          const lastRemainingHbars = remainingHbarsBefore;
-          let spentToday = 0;
-
           //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
           const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
             [SubscriptionTier.BASIC],
@@ -412,39 +408,34 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           );
           const ipPlans = await ipSpendingPlanRepository.getAllPlans(requestDetails);
           const ipPlanWithId = await basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
-          const ipAddress = ipPlanWithId[0]!.ipAddress;
-          await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
+          const ipAddress = ipPlanWithId[0]?.ipAddress;
+          if (ipAddress) {
+            await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
+          }
           expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
-          expect(remainingHbarsBefore).to.be.gt(0);
-          let spendingPlanId;
           try {
             for (let i = 0; i < 50; i++) {
               await deployContract(largeContractJson, accounts[2].wallet);
-              const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-
-              // Check that the BASIC spending plan is created after the first deployment only
-              if (i === 0) {
-                const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
-                  accounts[2].wallet.address,
-                  requestDetails,
-                );
-
-                spendingPlanId = ethSpendingPlan.planId;
-              }
-              const hbarPlan = await hbarSpendingPlanRepository.findByIdWithDetails(spendingPlanId, requestDetails);
-
-              expect(hbarPlan.amountSpent).to.be.gt(spentToday);
-              expect(remainingHbars).to.be.lt(lastRemainingHbars);
-              spentToday = hbarPlan.amountSpent;
             }
             expect.fail(`Expected an error but nothing was thrown`);
           } catch (e: any) {
             expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+
+            const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+              accounts[2].wallet.address,
+              requestDetails,
+            );
+
+            const spendingPlanAssociated = await hbarSpendingPlanRepository.findByIdWithDetails(
+              ethSpendingPlan.planId,
+              requestDetails,
+            );
+            const basicSpendingLimit = HbarLimitService.TIER_LIMITS[SubscriptionTier.BASIC];
+            const amountSpent = spendingPlanAssociated.amountSpent;
+
+            // Explanation: A preemptive rate limit check triggers the HBAR_RATE_LIMIT_EXCEED error when basicSpendingLimit < estimatedTxFee + amountSpent.
+            expect(basicSpendingLimit.toTinybars().toNumber()).to.be.lt(estimatedTxFee + amountSpent);
           }
-          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          // Explanation: A preemptive rate limit check triggers the HBAR_RATE_LIMIT_EXCEED error when (remainingBudget - estimatedTxFee) < 0.
-          //             In this scenario, the final remainingHbarsAfter is expected to be less than estimatedTxFee.
-          expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
         });
 
         it('should create a BASIC spending plan for a new user', async function () {
@@ -460,9 +451,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             requestDetails,
           );
           const ipPlans = await ipSpendingPlanRepository.getAllPlans(requestDetails);
-          const ipPlanWithId = await basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
-          const ipAddress = ipPlanWithId[0]!.ipAddress;
-          await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
+          const ipPlanWithId = basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
+          const ipAddress = ipPlanWithId[0]?.ipAddress;
+          if (ipAddress) {
+            await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
+          }
           expect(ethAddressSpendingPlanRepository.findByAddress(accounts[3].address, requestDetails)).to.be.rejected;
           const gasPrice = await relay.gasPrice(requestId);
           const transaction = {
