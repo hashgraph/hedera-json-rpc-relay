@@ -103,6 +103,21 @@ export class IPAddressHbarSpendingPlanRepository {
   }
 
   /**
+   * Deletes all IP address spending plans from the cache.
+   *
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @returns {Promise<void>} - A promise that resolves when all IP address spending plans are deleted.
+   */
+  async deleteAll(requestDetails: RequestDetails): Promise<void> {
+    const key = this.getKey('*');
+    const keys = await this.cache.keys(key, 'deleteAll', requestDetails);
+    for (const key of keys) {
+      await this.cache.delete(key, 'deleteAll', requestDetails);
+    }
+    this.logger.trace(`${requestDetails.formattedRequestId} Deleted all IP address spending plans`);
+  }
+
+  /**
    * Gets all IP address spending plans from the cache.
    *
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
