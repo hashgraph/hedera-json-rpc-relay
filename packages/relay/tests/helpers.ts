@@ -65,6 +65,10 @@ const random20BytesAddress = (addHexPrefix = true) => {
   return (addHexPrefix ? '0x' : '') + crypto.randomBytes(20).toString('hex');
 };
 
+const randomIpAddress = () => {
+  return Array.from({ length: 4 }, () => Math.floor(Math.random() * 256)).join('.');
+};
+
 export const toHex = (num) => {
   return `0x${Number(num).toString(16)}`;
 };
@@ -358,6 +362,7 @@ export {
   signTransaction,
   mockData,
   random20BytesAddress,
+  randomIpAddress,
   getRequestId,
   getQueryParams,
 };
