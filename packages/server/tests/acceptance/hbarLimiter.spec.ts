@@ -45,6 +45,7 @@ import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';
+import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
@@ -215,10 +216,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       beforeEach(async function () {
         await new Promise((r) => setTimeout(r, 3000));
-      });
-
-      afterEach(async function () {
-        await hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
       });
 
       describe('Remaining HBAR Limit', () => {
