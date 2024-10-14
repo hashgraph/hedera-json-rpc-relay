@@ -39,9 +39,7 @@ import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hb
 import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
 import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
-import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
-import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';
@@ -53,8 +51,9 @@ import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/ty
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
-let ethAddressSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
-  ipSpendingPlanRepository: IPAddressHbarSpendingPlanRepository;
+let hbarSpendingPlanRepository: HbarSpendingPlanRepository;
+let ethAddressSpendingPlanRepository: EthAddressHbarSpendingPlanRepository;
+let ipSpendingPlanRepository: IPAddressHbarSpendingPlanRepository;
 
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   // @ts-ignore
@@ -174,7 +173,21 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       return sumAccountTransfers(ethereumTransaction.transfers, operatorAccount);
     };
 
+    const getResetTimestamp = (): Date => {
+      const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
+      let resetDate = new Date(todayAtMidnight);
+      while (resetDate.getTime() < Date.now()) {
+        // 1. Calculate the difference between the current time and the reset time.
+        // 2. Determine how many intervals of size `limitDuration` have passed since the last reset.
+        // 3. Calculate the new reset date by adding the required intervals to the original reset date.
+        const intervalsPassed = Math.ceil((Date.now() - resetDate.getTime()) / constants.HBAR_RATE_LIMIT_DURATION);
+        resetDate = new Date(resetDate.getTime() + intervalsPassed * constants.HBAR_RATE_LIMIT_DURATION);
+      }
+      return resetDate;
+    };
+
     describe('HBAR Rate Limit Tests', function () {
+      overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
       this.timeout(480 * 1000); // 480 seconds
 
       const accounts: AliasAccount[] = [];
@@ -215,11 +228,15 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       beforeEach(async function () {
-        await new Promise((r) => setTimeout(r, 3000));
+        await ipSpendingPlanRepository.deleteAll(requestDetails);
       });
 
-      describe('Remaining HBAR Limit', () => {
-        overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
+      describe('Total HBAR Limit', () => {
+        before(async () => {
+          logger.info(`${requestDetails.formattedRequestId} Waiting until the next reset of the HBAR rate limiter`);
+          const nextReset = getResetTimestamp();
+          await new Promise((r) => setTimeout(r, nextReset.getTime() - Date.now()));
+        });
 
         it('should execute "eth_sendRawTransaction" for BASIC user without triggering HBAR rate limit exceeded', async function () {
           const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
@@ -278,7 +295,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           expect(remainingHbarsBefore).to.be.gt(0);
 
           // This flow should spend hbars from the operator, for fileCreate
-          const contract = await deployContract(mediumSizeContract, accounts[0].wallet);
+          const contract = await deployContract(mediumSizeContract, accounts[1].wallet);
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
@@ -286,7 +303,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('should verify the estimated and actual transaction fees for file transactions are approximately equal', async function () {
-          const contract = await deployContract(mediumSizeContract, accounts[0].wallet);
+          const contract = await deployContract(mediumSizeContract, accounts[1].wallet);
           let exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
           const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
 
@@ -311,7 +328,17 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
       });
 
-      describe('Rate Limit', () => {
+      describe('Tiered HBAR Rate Limit', () => {
+        before(async () => {
+          //Unlink all ip addresses from plans since the current tests are ran on localhost and the ip address is the same
+          await ipSpendingPlanRepository.deleteAll(requestDetails);
+
+          // Wait until the next reset of the HBAR rate limiter
+          logger.info(`${requestDetails.formattedRequestId} Waiting until the next reset of the HBAR rate limiter`);
+          const nextReset = getResetTimestamp();
+          await new Promise((r) => setTimeout(r, nextReset.getTime() - Date.now()));
+        });
+
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
           const TOLERANCE = 0.02;
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
@@ -381,7 +408,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTxSecond], requestId)).to
             .be.fulfilled;
 
-          await new Promise((r) => setTimeout(r, 3000));
           const spendingPlanAssociatedAfterSecond = await hbarSpendingPlanRepository.findByIdWithDetails(
             ethSpendingPlan.planId,
             requestDetails,
@@ -434,6 +460,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           }
         });
 
+        //this test is skipped since its currently just gonna test for BASIC user, may be reworked for privileged/extended user
         it.skip('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
           const maxBasicSpendingLimit = HbarLimitService.TIER_LIMITS.BASIC.toTinybars().toNumber();
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
