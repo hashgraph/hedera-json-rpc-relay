@@ -90,11 +90,7 @@ describe('Open RPC Specification', function () {
   let methodsResponseSchema: { [method: string]: any };
   let ethImpl: EthImpl;
 
-  before(() => {
-    ConfigServiceTestHelper.dynamicOverride('npm_package_version', 'relay/0.0.1-SNAPSHOT');
-  });
-
-  const requestDetails = new RequestDetails({ requestId: 'testId', ipAddress: '0.0.0.0' });
+  const requestDetails = new RequestDetails({ requestId: 'openRpcTest', ipAddress: '0.0.0.0' });
 
   this.beforeAll(async () => {
     rpcDocument = await parseOpenRPCDocument(JSON.stringify(openRpcSchema));

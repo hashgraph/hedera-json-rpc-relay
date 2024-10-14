@@ -23,6 +23,7 @@ import sinon from 'sinon';
 import { Registry } from 'prom-client';
 import pino, { Logger } from 'pino';
 import RateLimit from '../../src/rateLimit';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../../relay/tests/helpers';
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 describe('RateLimit', () => {
@@ -36,9 +37,9 @@ describe('RateLimit', () => {
     registry = new Registry();
   });
 
+  overrideEnvsInMochaDescribe({ RATE_LIMIT_DISABLED: 'false' });
+
   beforeEach(() => {
-    ConfigServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', false);
-    // Create a new instance of RateLimit
     rateLimit = new RateLimit(logger, registry, duration);
   });
 
@@ -47,12 +48,13 @@ describe('RateLimit', () => {
     sinon.restore();
   });
 
-  it('should not rate limit when RATE_LIMIT_DISABLED is true', () => {
-    ConfigServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', true);
-    rateLimit = new RateLimit(logger, registry, duration);
-    const shouldLimit = rateLimit.shouldRateLimit('127.0.0.1', 'method1', 10, 'requestId');
+  withOverriddenEnvsInMochaTest({ RATE_LIMIT_DISABLED: 'true' }, () => {
+    it('should not rate limit when RATE_LIMIT_DISABLED is true', () => {
+      rateLimit = new RateLimit(logger, registry, duration);
+      const shouldLimit = rateLimit.shouldRateLimit('127.0.0.1', 'method1', 10, 'requestId');
 
-    expect(shouldLimit).to.be.false;
+      expect(shouldLimit).to.be.false;
+    });
   });
 
   it('should set a new IP and method when first encountered', () => {
@@ -117,19 +119,19 @@ describe('RateLimit', () => {
     expect(counterSpy.calledOnce).to.be.true;
   });
 
-  it('should prioritize environment variable RATE_LIMIT_DISABLED', () => {
-    ConfigServiceTestHelper.dynamicOverride('RATE_LIMIT_DISABLED', true);
+  withOverriddenEnvsInMochaTest({ RATE_LIMIT_DISABLED: 'true' }, () => {
+    it('should prioritize environment variable RATE_LIMIT_DISABLED', () => {
+      const logSpy = sinon.spy(logger, 'warn');
+      const counterSpy = sinon.spy(rateLimit['ipRateLimitCounter'], 'inc');
 
-    const logSpy = sinon.spy(logger, 'warn');
-    const counterSpy = sinon.spy(rateLimit['ipRateLimitCounter'], 'inc');
+      for (let i = 0; i < 10; i++) {
+        rateLimit.shouldRateLimit('127.0.0.1', 'method1', 10, 'requestId');
+      }
 
-    for (let i = 0; i < 10; i++) {
       rateLimit.shouldRateLimit('127.0.0.1', 'method1', 10, 'requestId');
-    }
 
-    rateLimit.shouldRateLimit('127.0.0.1', 'method1', 10, 'requestId');
-
-    expect(logSpy.called).to.be.false;
-    expect(counterSpy.called).to.be.false;
+      expect(logSpy.called).to.be.false;
+      expect(counterSpy.called).to.be.false;
+    });
   });
 });

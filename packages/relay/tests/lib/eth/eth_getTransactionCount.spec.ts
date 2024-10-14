@@ -29,7 +29,12 @@ import { SDKClient } from '../../../src/lib/clients';
 import { DEFAULT_NETWORK_FEES, NO_TRANSACTIONS } from './eth-config';
 import { Eth, predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
-import { defaultDetailedContractResults, defaultEthereumTransactions, mockData } from '../../helpers';
+import {
+  defaultDetailedContractResults,
+  defaultEthereumTransactions,
+  mockData,
+  overrideEnvsInMochaDescribe,
+} from '../../helpers';
 import { numberTo0x } from '../../../src/formatters';
 import { generateEthTestEnv } from './eth-helpers';
 import { RequestDetails } from '../../../src/lib/types';
@@ -41,7 +46,6 @@ use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: sinon.SinonStub;
-let currentMaxBlockRange: number;
 
 describe('@ethGetTransactionCount eth_getTransactionCount spec', async function () {
   this.timeout(10000);
@@ -71,6 +75,8 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     return `accounts/${address}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
   }
 
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+
   this.beforeEach(() => {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
     restMock.onGet(blockPath).reply(200, mockData.blocks.blocks[2]);
@@ -86,19 +92,13 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     restMock
       .onGet(transactionPath(mockData.account.evm_address, 2))
       .reply(200, { transactions: [{ transaction_id: transactionId }, {}] });
-    currentMaxBlockRange = Number(ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    ConfigServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
   });
 
-  this.afterEach(() => {
+  this.afterEach(async () => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    ConfigServiceTestHelper.dynamicOverride(
-      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-      currentMaxBlockRange.toString(),
-    );
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
   });
 
@@ -110,6 +110,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
   it('should return 0x0 nonce for no block consideration with not found acoount', async () => {
     restMock.onGet(contractPath).reply(404, mockData.notFound);
     restMock.onGet(accountPath).reply(404, mockData.notFound);
+    // @ts-ignore
     const nonce = await ethImpl.getTransactionCount(MOCK_ACCOUNT_ADDR, null, requestDetails);
     expect(nonce).to.exist;
     expect(nonce).to.equal(EthImpl.zeroHex);
@@ -118,6 +119,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
   it('should return latest nonce for no block consideration but valid account', async () => {
     restMock.onGet(contractPath).reply(404, mockData.notFound);
     restMock.onGet(accountPath).reply(200, mockData.account);
+    // @ts-ignore
     const nonce = await ethImpl.getTransactionCount(MOCK_ACCOUNT_ADDR, null, requestDetails);
     expect(nonce).to.exist;
     expect(nonce).to.equal(numberTo0x(mockData.account.ethereum_nonce));

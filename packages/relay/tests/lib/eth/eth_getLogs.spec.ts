@@ -34,6 +34,8 @@ import {
   expectLogData2,
   expectLogData3,
   expectLogData4,
+  overrideEnvsInMochaDescribe,
+  withOverriddenEnvsInMochaTest,
 } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import {
@@ -68,7 +70,6 @@ use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: sinon.SinonStub;
-let currentMaxBlockRange: number;
 
 describe('@ethGetLogs using MirrorNode', async function () {
   this.timeout(100000);
@@ -93,24 +94,20 @@ describe('@ethGetLogs using MirrorNode', async function () {
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getLogsTest', ipAddress: '0.0.0.0' });
 
-  beforeEach(() => {
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+
+  beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    ConfigServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
   });
 
   afterEach(() => {
     getSdkClientStub.restore();
-    ConfigServiceTestHelper.dynamicOverride(
-      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-      currentMaxBlockRange.toString(),
-    );
   });
 
   describe('timeout', async function () {
@@ -203,55 +200,54 @@ describe('@ethGetLogs using MirrorNode', async function () {
     });
   });
 
-  it('should be able to return more than two logs with limit of two per request', async function () {
-    const unfilteredLogs = {
-      logs: [
-        { ...DEFAULT_LOGS.logs[0], address: '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69' },
-        { ...DEFAULT_LOGS.logs[1], address: '0x0000000000000000000000000000000002131952' },
-        { ...DEFAULT_LOGS.logs[2], address: '0x0000000000000000000000000000000002131953' },
-        { ...DEFAULT_LOGS.logs[3], address: '0x0000000000000000000000000000000002131954' },
-      ],
-    };
-    const filteredLogs = {
-      logs: [
-        { ...DEFAULT_LOGS.logs[0], address: '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69' },
-        { ...DEFAULT_LOGS.logs[1], address: '0x0000000000000000000000000000000002131952' },
-      ],
-      links: { next: 'contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0' },
-    };
-    const filteredLogsNext = {
-      logs: [
-        { ...DEFAULT_LOGS.logs[2], address: '0x0000000000000000000000000000000002131953' },
-        { ...DEFAULT_LOGS.logs[3], address: '0x0000000000000000000000000000000002131954' },
-      ],
-      links: { next: null },
-    };
+  withOverriddenEnvsInMochaTest({ MIRROR_NODE_LIMIT_PARAM: '2' }, () => {
+    it('should be able to return more than two logs with limit of two per request', async function () {
+      const unfilteredLogs = {
+        logs: [
+          { ...DEFAULT_LOGS.logs[0], address: '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69' },
+          { ...DEFAULT_LOGS.logs[1], address: '0x0000000000000000000000000000000002131952' },
+          { ...DEFAULT_LOGS.logs[2], address: '0x0000000000000000000000000000000002131953' },
+          { ...DEFAULT_LOGS.logs[3], address: '0x0000000000000000000000000000000002131954' },
+        ],
+      };
+      const filteredLogs = {
+        logs: [
+          { ...DEFAULT_LOGS.logs[0], address: '0x67D8d32E9Bf1a9968a5ff53B87d777Aa8EBBEe69' },
+          { ...DEFAULT_LOGS.logs[1], address: '0x0000000000000000000000000000000002131952' },
+        ],
+        links: { next: 'contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0' },
+      };
+      const filteredLogsNext = {
+        logs: [
+          { ...DEFAULT_LOGS.logs[2], address: '0x0000000000000000000000000000000002131953' },
+          { ...DEFAULT_LOGS.logs[3], address: '0x0000000000000000000000000000000002131954' },
+        ],
+        links: { next: null },
+      };
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
 
-    restMock
-      .onGet(
-        `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=2&order=asc`,
-      )
-      .replyOnce(200, filteredLogs)
-      .onGet('contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0')
-      .replyOnce(200, filteredLogsNext);
+      restMock
+        .onGet(
+          `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=2&order=asc`,
+        )
+        .replyOnce(200, filteredLogs)
+        .onGet('contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0')
+        .replyOnce(200, filteredLogsNext);
 
-    unfilteredLogs.logs.forEach((log, index) => {
-      restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
+      unfilteredLogs.logs.forEach((log, index) => {
+        restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
+      });
+
+      const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
+      expect(result).to.exist;
+
+      expect(result.length).to.eq(4);
+      expectLogData(result[0], filteredLogs.logs[0], defaultDetailedContractResults);
+      expectLogData(result[1], filteredLogs.logs[1], defaultDetailedContractResults);
+      expectLogData(result[2], filteredLogsNext.logs[0], defaultDetailedContractResults2);
+      expectLogData(result[3], filteredLogsNext.logs[1], defaultDetailedContractResults3);
     });
-    //setting mirror node limit to 2 for this test only
-    ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
-    const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
-    //resetting mirror node limit to 100
-    ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '100');
-    expect(result).to.exist;
-
-    expect(result.length).to.eq(4);
-    expectLogData(result[0], filteredLogs.logs[0], defaultDetailedContractResults);
-    expectLogData(result[1], filteredLogs.logs[1], defaultDetailedContractResults);
-    expectLogData(result[2], filteredLogsNext.logs[0], defaultDetailedContractResults2);
-    expectLogData(result[3], filteredLogsNext.logs[1], defaultDetailedContractResults3);
   });
 
   it('Should return evm address if contract has one', async function () {

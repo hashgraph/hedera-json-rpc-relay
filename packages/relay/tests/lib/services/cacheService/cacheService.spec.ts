@@ -26,7 +26,7 @@ import { CacheService } from '../../../../src/lib/services/cacheService/cacheSer
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import * as sinon from 'sinon';
-import { useInMemoryRedisServer } from '../../../helpers';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 import { RequestDetails } from '../../../../dist/lib/types';
 
 const logger = pino();
@@ -39,7 +39,14 @@ chai.use(chaiAsPromised);
 
 describe('CacheService Test Suite', async function () {
   this.timeout(10000);
+
+  const logger = pino();
+  const registry = new Registry();
+  const callingMethod = 'CacheServiceTest';
   const requestDetails = new RequestDetails({ requestId: 'cacheServiceTest', ipAddress: '0.0.0.0' });
+
+  let cacheService: CacheService;
+
   const describeKeysTestSuite = () => {
     describe('keys', async function () {
       it('should retrieve all keys', async function () {
@@ -140,8 +147,9 @@ describe('CacheService Test Suite', async function () {
   };
 
   describe('Internal Cache Test Suite', async function () {
+    overrideEnvsInMochaDescribe({ REDIS_ENABLED: false });
+
     this.beforeAll(() => {
-      ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', false);
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
@@ -275,18 +283,14 @@ describe('CacheService Test Suite', async function () {
     };
 
     useInMemoryRedisServer(logger, 6381);
-
-    let multiSet: string | undefined;
+    overrideEnvsInMochaDescribe({ MULTI_SET: true });
 
     this.beforeAll(async () => {
-      multiSet = ConfigService.get('MULTI_SET');
-      ConfigServiceTestHelper.dynamicOverride('MULTI_SET', true);
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
     });
 
     this.afterAll(async () => {
       await cacheService.disconnectRedisClient();
-      ConfigServiceTestHelper.dynamicOverride('MULTI_SET', multiSet);
     });
 
     this.beforeEach(async () => {
@@ -430,16 +434,6 @@ describe('CacheService Test Suite', async function () {
     });
 
     describe('incrBy', async function () {
-      it('should increment value in internal cache', async function () {
-        const key = 'counter';
-        const amount = 5;
-
-        await cacheService.set(key, 10, callingMethod, requestDetails);
-        const newValue = await cacheService.incrBy(key, amount, callingMethod, requestDetails);
-
-        expect(newValue).to.equal(15);
-      });
-
       it('should increment value in shared cache', async function () {
         const key = 'counter';
         const amount = 5;
@@ -456,9 +450,10 @@ describe('CacheService Test Suite', async function () {
 
         await cacheService.disconnectRedisClient();
 
+        await cacheService.set(key, 10, callingMethod, requestDetails);
         const newValue = await cacheService.incrBy(key, amount, callingMethod, requestDetails);
 
-        expect(newValue).to.equal(5);
+        expect(newValue).to.equal(15);
       });
     });
 

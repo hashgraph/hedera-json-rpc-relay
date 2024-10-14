@@ -24,21 +24,21 @@ import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
 import pino from 'pino';
 import { LocalLRUCache } from '../../../src/lib/clients';
-import constants from '../../../src/lib/constants';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../helpers';
 import { RequestDetails } from '../../../src/lib/types';
-
-const logger = pino();
-const registry = new Registry();
-let localLRUCache: LocalLRUCache;
-
-const callingMethod = 'localLRUCacheTest';
+import sinon from 'sinon';
 
 chai.use(chaiAsPromised);
 
 describe('LocalLRUCache Test Suite', async function () {
   this.timeout(10000);
 
+  const logger = pino();
+  const registry = new Registry();
+  const callingMethod = 'localLRUCacheTest';
   const requestDetails = new RequestDetails({ requestId: 'localLRUCacheTest', ipAddress: '0.0.0.0' });
+
+  let localLRUCache: LocalLRUCache;
 
   this.beforeAll(() => {
     localLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
@@ -112,13 +112,9 @@ describe('LocalLRUCache Test Suite', async function () {
   });
 
   describe('verify cache management', async function () {
-    beforeEach(() => {
-      ConfigServiceTestHelper.dynamicOverride('CACHE_MAX', constants.CACHE_MAX.toString());
-    });
+    overrideEnvsInMochaDescribe({ CACHE_MAX: '2' });
 
     it('verify cache size', async function () {
-      const cacheMaxSize = 2;
-      ConfigServiceTestHelper.dynamicOverride('CACHE_MAX', `${cacheMaxSize}`);
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const keyValuePairs = {
         key1: 'value1',
@@ -154,10 +150,34 @@ describe('LocalLRUCache Test Suite', async function () {
     it('verify cache ttl nature', async function () {
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const key = 'key';
-      await customLocalLRUCache.set(key, 'value', callingMethod, requestDetails, 100); // set ttl to 1 ms
-      await new Promise((r) => setTimeout(r, 500)); // wait for ttl to expire
+      const ttl = 100; // set ttl to 100ms
+      await customLocalLRUCache.set(key, 'value', callingMethod, requestDetails, ttl);
+      await new Promise((r) => setTimeout(r, ttl + 100)); // wait for ttl to expire
       const cacheValue = await customLocalLRUCache.get(key, callingMethod, requestDetails);
       expect(cacheValue).to.be.null;
+    });
+
+    // set default cache ttl to 100ms to test the default ttl will be overridden by the ttl passed in set method
+    withOverriddenEnvsInMochaTest({ CACHE_TTL: '100' }, async () => {
+      it('it should set without TTL if -1 is passed for TTL', async () => {
+        const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
+        const lruCacheSpy = sinon.spy(customLocalLRUCache['cache']);
+
+        const key = 'key';
+        const value = { intField: 1, stringField: 'string', boolField: true, arrField: [1, 2, 3] };
+        const ttl = -1;
+
+        await customLocalLRUCache.set(key, value, callingMethod, requestDetails, ttl);
+        sinon.assert.calledOnceWithExactly(lruCacheSpy.set, key, value, { ttl: 0 });
+
+        const cachedValue = await customLocalLRUCache.get(key, callingMethod, requestDetails);
+        expect(cachedValue).equal(value);
+
+        await new Promise((resolve) => setTimeout(resolve, customLocalLRUCache['options'].ttl + 100));
+
+        const cachedValueAfterTTL = await customLocalLRUCache.get(key, callingMethod, requestDetails);
+        expect(cachedValueAfterTTL).equal(value);
+      });
     });
   });
 

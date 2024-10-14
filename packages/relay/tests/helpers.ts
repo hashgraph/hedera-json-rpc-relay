@@ -887,40 +887,98 @@ export const calculateTxRecordChargeAmount = (exchangeRateIncents: number) => {
 };
 
 export const useInMemoryRedisServer = (logger: Logger, port: number) => {
-  let envsToReset: { TEST?: string; REDIS_ENABLED?: string; REDIS_URL?: string };
+  overrideEnvsInMochaDescribe({ TEST: false, REDIS_ENABLED: true, REDIS_URL: `redis://127.0.0.1:${port}` });
+
   let redisInMemoryServer: RedisInMemoryServer;
 
   before(async () => {
-    ({ envsToReset, redisInMemoryServer } = await startRedisInMemoryServer(logger, port));
+    redisInMemoryServer = await startRedisInMemoryServer(logger, port);
   });
 
   after(async () => {
-    await stopRedisInMemoryServer(redisInMemoryServer, envsToReset);
+    await stopRedisInMemoryServer(redisInMemoryServer);
   });
 };
 
 export const startRedisInMemoryServer = async (logger: Logger, port: number) => {
   const redisInMemoryServer = new RedisInMemoryServer(logger.child({ name: 'RedisInMemoryServer' }), port);
   await redisInMemoryServer.start();
-  const envsToReset = {
-    TEST: ConfigService.get('TEST'),
-    REDIS_ENABLED: ConfigService.get('REDIS_ENABLED'),
-    REDIS_URL: ConfigService.get('REDIS_URL'),
-  };
-  ConfigServiceTestHelper.dynamicOverride('TEST', false);
-  ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', true);
-  ConfigServiceTestHelper.dynamicOverride('REDIS_URL', `redis://127.0.0.1:${port}`);
-  return { redisInMemoryServer, envsToReset };
+  return redisInMemoryServer;
 };
 
-export const stopRedisInMemoryServer = async (
-  redisInMemoryServer: RedisInMemoryServer,
-  envsToReset: { TEST?: string; REDIS_ENABLED?: string; REDIS_URL?: string },
-): Promise<void> => {
+export const stopRedisInMemoryServer = async (redisInMemoryServer: RedisInMemoryServer): Promise<void> => {
   await redisInMemoryServer.stop();
-  ConfigServiceTestHelper.dynamicOverride('TEST', envsToReset.TEST);
-  ConfigServiceTestHelper.dynamicOverride('REDIS_ENABLED', envsToReset.REDIS_ENABLED);
-  ConfigServiceTestHelper.dynamicOverride('REDIS_URL', envsToReset.REDIS_URL);
+};
+
+/**
+ * Temporarily overrides environment variables for the duration of the encapsulating describe block.
+ * @param envs - An object containing key-value pairs of environment variables to set.
+ *
+ * @example
+ * describe('given TEST is set to false', () => {
+ *   overrideEnvsInMochaDescribe({ TEST: 'false' });
+ *
+ *   it('should return false', () => {
+ *     expect(process.env.TEST).to.equal('false');
+ *   });
+ * });
+ *
+ * it('should return true', () => {
+ *   expect(process.env.TEST).to.equal('true');
+ * });
+ */
+export const overrideEnvsInMochaDescribe = (envs: NodeJS.Dict<string>) => {
+  let envsToReset: NodeJS.Dict<string> = {};
+
+  const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
+    if (value === undefined) {
+      delete object[key];
+    } else {
+      object[key] = value;
+    }
+  };
+
+  before(() => {
+    for (const key in envs) {
+      envsToReset[key] = process.env[key];
+      overrideEnv(process.env, key, envs[key]);
+    }
+  });
+
+  after(() => {
+    for (const key in envs) {
+      overrideEnv(process.env, key, envsToReset[key]);
+    }
+  });
+};
+
+/**
+ * Overrides environment variables for the duration of the provided tests.
+ *
+ * @param {NodeJS.Dict<string>} envs - An object containing key-value pairs of environment variables to set.
+ * @param {Function} tests - A function containing the tests to run with the overridden environment variables.
+ *
+ * @example
+ * withOverriddenEnvsInMochaTest({ TEST: 'false' }, () => {
+ *   it('should return false', () => {
+ *     expect(process.env.TEST).to.equal('false');
+ *   });
+ * });
+ *
+ * it('should return true', () => {
+ *   expect(process.env.TEST).to.equal('true');
+ * });
+ */
+export const withOverriddenEnvsInMochaTest = (envs: NodeJS.Dict<string>, tests: () => void) => {
+  const overriddenEnvs = Object.entries(envs)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(', ');
+
+  describe(`given ${overriddenEnvs} are set`, () => {
+    overrideEnvsInMochaDescribe(envs);
+
+    tests();
+  });
 };
 
 export const estimateFileTransactionsFee = (

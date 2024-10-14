@@ -28,6 +28,7 @@ import { EthImpl } from '../../src/lib/eth';
 import sinon from 'sinon';
 import { Registry } from 'prom-client';
 import ConnectionLimiter from '@hashgraph/json-rpc-ws-server/src/metrics/connectionLimiter';
+import { overrideEnvsInMochaDescribe } from '../helpers';
 
 const logger = pino();
 const register = new Registry();
@@ -262,22 +263,14 @@ describe('subscriptionController', async function () {
   });
 
   describe('With WS_SAME_SUB_FOR_SAME_EVENT == `false`', async function () {
-    let originalEnv;
-    let originalSubscriptionController;
+    let subscriptionController: SubscriptionController;
+
+    overrideEnvsInMochaDescribe({ WS_SAME_SUB_FOR_SAME_EVENT: 'false' });
 
     before(() => {
-      originalEnv = ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT');
-      originalSubscriptionController = subscriptionController;
-
-      ConfigServiceTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', false);
       const registry = new Registry();
       poller = new Poller(ethImpl, logger, registry);
       subscriptionController = new SubscriptionController(poller, logger, registry);
-    });
-
-    after(() => {
-      ConfigServiceTestHelper.dynamicOverride('WS_SAME_SUB_FOR_SAME_EVENT', originalEnv);
-      subscriptionController = originalSubscriptionController;
     });
 
     it('Subscribing to the same event and filters should return different subscription id', async function () {

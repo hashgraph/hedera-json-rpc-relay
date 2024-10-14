@@ -26,7 +26,7 @@ import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
-describe('@web-socket-batch-1 Batch Requests', async function () {
+describe('@web-socket-batch-request Batch Requests', async function () {
   const METHOD_NAME = 'batch_request';
   let ethersWsProvider: WebSocketProvider;
   let batchRequests: any = [];
@@ -67,13 +67,11 @@ describe('@web-socket-batch-1 Batch Requests', async function () {
   });
 
   beforeEach(async () => {
-    ConfigServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', true);
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
   afterEach(async () => {
     if (ethersWsProvider) await ethersWsProvider.destroy();
-    ConfigServiceTestHelper.remove('WS_BATCH_REQUESTS_ENABLED');
   });
 
   after(async () => {
@@ -85,41 +83,44 @@ describe('@web-socket-batch-1 Batch Requests', async function () {
     }
   });
 
-  it(`@release Should submit batch requests to WS server using Standard Web Socket and retrieve batch responses`, async () => {
-    // call batch request
-    const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
+  WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: 'true' }, () => {
+    it(`@release Should submit batch requests to WS server using Standard Web Socket and retrieve batch responses`, async () => {
+      // call batch request
+      const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 
-    // individually process each request
-    let promises: any = [];
-    batchRequests.forEach((request: any) => {
-      promises.push(WsTestHelper.sendRequestToStandardWebSocket(request.method, request.params));
+      // individually process each request
+      let promises: any = [];
+      batchRequests.forEach((request: any) => {
+        promises.push(WsTestHelper.sendRequestToStandardWebSocket(request.method, request.params));
+      });
+      const individualResponses = await Promise.all(promises);
+
+      expect(batchResponses).to.deep.eq(individualResponses);
     });
-    const individualResponses = await Promise.all(promises);
 
-    expect(batchResponses).to.deep.eq(individualResponses);
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: '1' }, () => {
+      it('Should submit batch requests to WS server and get batchRequestAmountMaxExceed if requests size exceeds WS_BATCH_REQUESTS_MAX_SIZE', async () => {
+        const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
+
+        const expectedError = predefined.BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED(
+          batchRequests.length,
+          Number(process.env.WS_BATCH_REQUESTS_MAX_SIZE),
+        );
+        delete expectedError.data;
+
+        expect(batchResponses[0].error).to.deep.eq(expectedError);
+      });
+    });
   });
 
-  it('Should submit batch requests to WS server and get batchRequestDisabledError if WS_BATCH_REQUESTS_DISABLED=false ', async () => {
-    ConfigServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', false);
-    const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
+  WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: 'false' }, () => {
+    it('Should submit batch requests to WS server and get batchRequestDisabledError if WS_BATCH_REQUESTS_DISABLED=false ', async () => {
+      const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 
-    const expectedError = predefined.WS_BATCH_REQUESTS_DISABLED;
-    delete expectedError.data;
+      const expectedError = predefined.WS_BATCH_REQUESTS_DISABLED;
+      delete expectedError.data;
 
-    expect(batchResponses[0].error).to.deep.eq(expectedError);
-  });
-
-  it('Should submit batch requests to WS server and get batchRequestAmountMaxExceed if requests size exceeds WS_BATCH_REQUESTS_MAX_SIZE', async () => {
-    ConfigServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_MAX_SIZE', '1');
-
-    const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
-
-    const expectedError = predefined.BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED(
-      batchRequests.length,
-      Number(ConfigService.get('WS_BATCH_REQUESTS_MAX_SIZE')),
-    );
-    delete expectedError.data;
-
-    expect(batchResponses[0].error).to.deep.eq(expectedError);
+      expect(batchResponses[0].error).to.deep.eq(expectedError);
+    });
   });
 });

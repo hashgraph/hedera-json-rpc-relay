@@ -46,6 +46,63 @@ export class IPAddressHbarSpendingPlanRepository {
   }
 
   /**
+   * Checks if an {@link IPAddressHbarSpendingPlan} exists for an IP address.
+   *
+   * @param {string} ipAddress - The IP address to check for.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @returns {Promise<boolean>} - A promise that resolves with a boolean indicating if the plan exists.
+   */
+  async existsByAddress(ipAddress: string, requestDetails: RequestDetails): Promise<boolean> {
+    const key = this.getKey(ipAddress);
+    const addressPlan = await this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, 'existsByAddress', requestDetails);
+    return !!addressPlan;
+  }
+
+  /**
+   * Finds all IP addresses associated with a spending plan.
+   * @param {string} planId - The ID of the spending plan to search for.
+   * @param {string} callingMethod - The method calling this function.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @returns {Promise<IPAddressHbarSpendingPlan[]>} - A promise that resolves with an array of associated plans.
+   */
+  async findAllByPlanId(
+    planId: string,
+    callingMethod: string,
+    requestDetails: RequestDetails,
+  ): Promise<IPAddressHbarSpendingPlan[]> {
+    const ipAddressPlans: IPAddressHbarSpendingPlan[] = [];
+    const key = this.getKey('*');
+    const keys = await this.cache.keys(key, callingMethod, requestDetails);
+    for (const key of keys) {
+      const addressPlan = await this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, callingMethod, requestDetails);
+      if (addressPlan?.planId === planId) {
+        ipAddressPlans.push(new IPAddressHbarSpendingPlan(addressPlan));
+      }
+    }
+    return ipAddressPlans;
+  }
+
+  /**
+   * Deletes all IP addresses associated with a spending plan.
+   * @param planId - The ID of the spending plan to search for.
+   * @param callingMethod - The method calling this function.
+   * @param requestDetails - The request details for logging and tracking.
+   */
+  async deleteAllByPlanId(planId: string, callingMethod: string, requestDetails: RequestDetails): Promise<void> {
+    const key = this.getKey('*');
+    const keys = await this.cache.keys(key, callingMethod, requestDetails);
+    for (const key of keys) {
+      const addressPlan = await this.cache.getAsync<IIPAddressHbarSpendingPlan>(key, callingMethod, requestDetails);
+      if (addressPlan?.planId === planId) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Removing IP address from HbarSpendingPlan with ID ${planId}`,
+        );
+        await this.cache.delete(key, callingMethod, requestDetails);
+      }
+    }
+  }
+
+  /**
    * Finds an {@link IPAddressHbarSpendingPlan} for an IP address.
    *
    * @param {string} ipAddress - The IP address to search for.
@@ -58,7 +115,9 @@ export class IPAddressHbarSpendingPlanRepository {
     if (!addressPlan) {
       throw new IPAddressHbarSpendingPlanNotFoundError(ipAddress);
     }
-    this.logger.trace(`Retrieved link between IP address and HbarSpendingPlan with ID ${addressPlan.planId}`);
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} Retrieved link between IP address and HbarSpendingPlan with ID ${addressPlan.planId}`,
+    );
     return new IPAddressHbarSpendingPlan(addressPlan);
   }
 
@@ -73,13 +132,16 @@ export class IPAddressHbarSpendingPlanRepository {
   async save(addressPlan: IIPAddressHbarSpendingPlan, requestDetails: RequestDetails, ttl: number): Promise<void> {
     const key = this.getKey(addressPlan.ipAddress);
     await this.cache.set(key, addressPlan, 'save', requestDetails, ttl);
-    this.logger.trace(`Linked new IP address to HbarSpendingPlan with ID ${addressPlan.planId}`);
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} Linked new IP address to HbarSpendingPlan with ID ${addressPlan.planId}`,
+    );
   }
 
   /**
    * Deletes an {@link IPAddressHbarSpendingPlan} from the cache, unlinking the plan from the IP address.
    *
    * @param {string} ipAddress - The IP address to unlink the plan from.
+   * @param {RequestDetails} requestDetails - The request details used for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the IP address is unlinked from the plan.
    */
   async delete(ipAddress: string, requestDetails: RequestDetails): Promise<void> {
@@ -89,7 +151,7 @@ export class IPAddressHbarSpendingPlanRepository {
     const errorMessage = ipAddressSpendingPlan
       ? `Removed IP address from HbarSpendingPlan with ID ${ipAddressSpendingPlan.planId}`
       : `Trying to remove an IP address, which is not linked to a spending plan`;
-    this.logger.trace(errorMessage);
+    this.logger.trace(`${requestDetails.formattedRequestId} ${errorMessage}`);
   }
 
   /**

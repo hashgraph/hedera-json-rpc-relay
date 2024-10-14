@@ -90,6 +90,10 @@ export const TYPES: { [key: string]: ITypeValidation } = {
     test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '*$').test(param),
     error: Constants.DEFAULT_HEX_ERROR,
   },
+  hexEvenLength: {
+    test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '*$').test(param) && !(param.length % 2),
+    error: Constants.EVEN_HEX_ERROR,
+  },
   hex64: {
     test: (param: string) => new RegExp(Constants.BASE_HEX_REGEX + '{1,64}$').test(param),
     error: Constants.HASH_ERROR,

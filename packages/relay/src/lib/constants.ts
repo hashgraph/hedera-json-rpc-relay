@@ -73,6 +73,7 @@ export enum CallType {
 export default {
   HBAR_TO_TINYBAR_COEF: 100_000_000,
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
+  TOTAL_SUPPLY_TINYBARS: 5_000_000_000_000_000_000,
   // 131072 bytes are 128kbytes
   SEND_RAW_TRANSACTION_SIZE_LIMIT: ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT')
     ? // @ts-ignore

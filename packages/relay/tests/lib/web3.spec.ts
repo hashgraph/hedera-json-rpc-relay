@@ -22,24 +22,25 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import { RelayImpl } from '../../src/lib/relay';
 import pino from 'pino';
+import { RelayImpl } from '../../src';
+import { withOverriddenEnvsInMochaTest } from '../helpers';
 
 const logger = pino();
 const Relay = new RelayImpl(logger, new Registry());
 
 describe('Web3', function () {
-  it('should execute "web3_clientVersion"', async function () {
-    ConfigServiceTestHelper.dynamicOverride('npm_package_version', '1.0.0');
-    const clientVersion = Relay.web3().clientVersion();
-
-    expect(clientVersion).to.be.equal('relay/' + ConfigService.get('npm_package_version'));
+  withOverriddenEnvsInMochaTest({ npm_package_version: '1.0.0' }, () => {
+    it('should return "relay/1.0.0"', async function () {
+      const clientVersion = Relay.web3().clientVersion();
+      expect(clientVersion).to.be.equal('relay/' + process.env.npm_package_version);
+    });
   });
 
-  it('should return "relay/" when npm_package_version is not set', () => {
-    ConfigServiceTestHelper.remove('npm_package_version');
-    const version = Relay.web3().clientVersion();
-
-    expect(version).to.equal('relay/');
+  withOverriddenEnvsInMochaTest({ npm_package_version: undefined }, () => {
+    it('should return "relay/"', () => {
+      const version = Relay.web3().clientVersion();
+      expect(version).to.equal('relay/');
+    });
   });
 });

@@ -27,6 +27,7 @@ import constants from '../../constants';
 import { IRedisCacheClient } from './IRedisCacheClient';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '../../types';
+import { Utils } from '../../../utils';
 
 /**
  * A class that provides caching functionality using Redis.
@@ -137,11 +138,10 @@ export class RedisCache implements IRedisCacheClient {
     const client = await this.getConnectedClient();
     const result = await client.get(key);
     if (result) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} returning cached value ${key}:${JSON.stringify(
-          result,
-        )} on ${callingMethod} call`,
-      );
+      const censoredKey = key.replace(Utils.IP_ADDRESS_REGEX, '<REDACTED>');
+      const censoredValue = result.replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
+      const message = `Returning cached value ${censoredKey}:${censoredValue} on ${callingMethod} call`;
+      this.logger.trace(`${requestDetails.formattedRequestId} ${message}`);
       // TODO: add metrics
       return JSON.parse(result);
     }
@@ -168,11 +168,18 @@ export class RedisCache implements IRedisCacheClient {
     const client = await this.getConnectedClient();
     const serializedValue = JSON.stringify(value);
     const resolvedTtl = ttl ?? this.options.ttl; // in milliseconds
+    if (resolvedTtl > 0) {
+      await client.set(key, serializedValue, { PX: resolvedTtl });
+    } else {
+      await client.set(key, serializedValue);
+    }
 
-    await client.set(key, serializedValue, { PX: resolvedTtl });
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} caching ${key}: ${serializedValue} on ${callingMethod} for ${resolvedTtl} s`,
-    );
+    const censoredKey = key.replace(Utils.IP_ADDRESS_REGEX, '<REDACTED>');
+    const censoredValue = serializedValue.replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
+    const message = `Caching ${censoredKey}:${censoredValue} on ${callingMethod} for ${
+      resolvedTtl > 0 ? `${resolvedTtl} ms` : 'indefinite time'
+    }`;
+    this.logger.trace(`${requestDetails.formattedRequestId} ${message}`);
     // TODO: add metrics
   }
 
@@ -196,12 +203,8 @@ export class RedisCache implements IRedisCacheClient {
       serializedKeyValuePairs[key] = JSON.stringify(value);
     }
 
-    try {
-      // Perform mSet operation
-      await client.mSet(serializedKeyValuePairs);
-    } catch (e) {
-      this.logger.error(e);
-    }
+    // Perform mSet operation
+    await client.mSet(serializedKeyValuePairs);
 
     // Log the operation
     const entriesLength = Object.keys(keyValuePairs).length;

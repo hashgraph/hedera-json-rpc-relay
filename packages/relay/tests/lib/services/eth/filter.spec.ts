@@ -27,7 +27,14 @@ import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
 import constants from '../../../../src/lib/constants';
 import { CommonService, FilterService } from '../../../../src/lib/services/ethService';
-import { defaultBlock, defaultEvmAddress, defaultLogs1, defaultLogTopics, toHex } from '../../../helpers';
+import {
+  defaultBlock,
+  defaultEvmAddress,
+  defaultLogs1,
+  defaultLogTopics,
+  toHex,
+  withOverriddenEnvsInMochaTest,
+} from '../../../helpers';
 import RelayAssertions from '../../../assertions';
 import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
@@ -37,7 +44,7 @@ import { v4 as uuid } from 'uuid';
 const logger = pino();
 const registry = new Registry();
 
-let restMock: MockAdapter, web3Mock: MockAdapter;
+let restMock: MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let filterService: FilterService;
 let cacheService: CacheService;
@@ -50,14 +57,19 @@ describe('Filter API Test Suite', async function () {
     toBlock: 'latest',
   };
 
-  let blockFilterObject;
+  const blockFilterObject = {
+    type: constants.FILTER.TYPE.NEW_BLOCK,
+    params: {
+      blockAtCreation: defaultBlock.number,
+    },
+    lastQueried: null,
+  };
   const existingFilterId = '0x1112233';
   const nonExistingFilterId = '0x1112231';
   const LATEST_BLOCK_QUERY = 'blocks?limit=1&order=desc';
   const BLOCK_BY_NUMBER_QUERY = 'blocks';
-  let logFilterObject;
 
-  const validateFilterCache = async (filterId, expectedFilterType, expectedParams = {}) => {
+  const validateFilterCache = async (filterId: string, expectedFilterType: string, expectedParams = {}) => {
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
     const cachedFilter = await cacheService.getAsync(cacheKey, 'validateFilterCache', requestDetails);
     expect(cachedFilter).to.exist;
@@ -69,24 +81,7 @@ describe('Filter API Test Suite', async function () {
   };
 
   this.beforeAll(() => {
-    blockFilterObject = {
-      type: constants.FILTER.TYPE.NEW_BLOCK,
-      params: {
-        blockAtCreation: defaultBlock.number,
-      },
-      lastQueried: null,
-    };
-
-    logFilterObject = {
-      type: constants.FILTER.TYPE.LOG,
-      params: {
-        fromBlock: defaultBlock.number,
-      },
-      lastQueried: null,
-    };
-
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
-    // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
       ConfigService.get('MIRROR_NODE_URL'),
       logger.child({ name: `mirror-node` }),
@@ -94,13 +89,8 @@ describe('Filter API Test Suite', async function () {
       cacheService,
     );
 
-    // @ts-ignore
     restMock = new MockAdapter(mirrorNodeInstance.getMirrorNodeRestInstance(), { onNoMatch: 'throwException' });
 
-    // @ts-ignore
-    web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
-
-    // @ts-ignore
     const common = new CommonService(mirrorNodeInstance, logger.child({ name: 'common-service' }), cacheService);
     filterService = new FilterService(
       mirrorNodeInstance,
@@ -121,89 +111,104 @@ describe('Filter API Test Suite', async function () {
   });
 
   describe('all methods require a filter flag', async function () {
-    let ffAtStart;
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: undefined }, () => {
+      it(`should throw UNSUPPORTED_METHOD for newFilter`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.newFilter,
+          true,
+          filterService,
+          [undefined, undefined, requestDetails],
+        );
+      });
 
-    before(function () {
-      ffAtStart = ConfigService.get('FILTER_API_ENABLED');
+      it(`should throw UNSUPPORTED_METHOD for uninstallFilter`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.uninstallFilter,
+          true,
+          filterService,
+          [existingFilterId, requestDetails],
+        );
+      });
+
+      it(`should throw UNSUPPORTED_METHOD for getFilterChanges`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.getFilterChanges,
+          true,
+          filterService,
+          [existingFilterId, requestDetails],
+        );
+      });
     });
 
-    after(function () {
-      ConfigServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', ffAtStart);
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: 'true' }, () => {
+      let filterId: string;
+
+      beforeEach(async () => {
+        restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock }] });
+        filterId = await filterService.newFilter(undefined, undefined, requestDetails);
+      });
+
+      it(`should call newFilter`, async function () {
+        expect(filterId).to.exist;
+        expect(RelayAssertions.validateHash(filterId, 32)).to.eq(true, 'returns valid filterId');
+      });
+
+      it(`should call getFilterChanges`, async function () {
+        restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
+        restMock
+          .onGet(
+            `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
+          )
+          .reply(200, defaultLogs1);
+        const filterChanges = await filterService.getFilterChanges(filterId, requestDetails);
+        expect(filterChanges).to.exist;
+      });
+
+      it(`should call uninstallFilter`, async function () {
+        const isFilterUninstalled = await filterService.uninstallFilter(filterId, requestDetails);
+        expect(isFilterUninstalled).to.eq(true, 'executes correctly');
+      });
     });
 
-    it('FILTER_API_ENABLED is not specified', async function () {
-      ConfigServiceTestHelper.remove('FILTER_API_ENABLED');
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.newFilter,
-        true,
-        filterService,
-        [undefined, undefined, requestDetails],
-      );
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.uninstallFilter,
-        true,
-        filterService,
-        [existingFilterId, requestDetails],
-      );
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.getFilterChanges,
-        true,
-        filterService,
-        [existingFilterId, requestDetails],
-      );
-    });
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: 'false' }, () => {
+      it(`should throw UNSUPPORTED_METHOD for newFilter`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.newFilter,
+          true,
+          filterService,
+          [undefined, undefined, requestDetails],
+        );
+      });
 
-    it('FILTER_API_ENABLED=true', async function () {
-      ConfigServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', true);
-      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock }] });
-      const filterId = await filterService.newFilter(undefined, undefined, requestDetails);
-      expect(filterId).to.exist;
-      expect(RelayAssertions.validateHash(filterId, 32)).to.eq(true, 'returns valid filterId');
+      it(`should throw UNSUPPORTED_METHOD for uninstallFilter`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.uninstallFilter,
+          true,
+          filterService,
+          [existingFilterId, requestDetails],
+        );
+      });
 
-      restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
-      restMock
-        .onGet(
-          `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
-        )
-        .reply(200, defaultLogs1);
-      const filterChanges = await filterService.getFilterChanges(filterId, requestDetails);
-      expect(filterChanges).to.exist;
-
-      const isFilterUninstalled = await filterService.uninstallFilter(filterId, requestDetails);
-      expect(isFilterUninstalled).to.eq(true, 'executes correctly');
-    });
-
-    it('FILTER_API_ENABLED=false', async function () {
-      ConfigServiceTestHelper.dynamicOverride('FILTER_API_ENABLED', false);
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.newFilter,
-        true,
-        filterService,
-        [undefined, undefined, requestDetails],
-      );
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.uninstallFilter,
-        true,
-        filterService,
-        [existingFilterId, requestDetails],
-      );
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_METHOD,
-        filterService.getFilterChanges,
-        true,
-        filterService,
-        [existingFilterId, requestDetails],
-      );
+      it(`should throw UNSUPPORTED_METHOD for getFilterChanges`, async function () {
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_METHOD,
+          filterService.getFilterChanges,
+          true,
+          filterService,
+          [existingFilterId, requestDetails],
+        );
+      });
     });
   });
 
   describe('eth_newFilter', async function () {
-    let blockNumberHexes, numberHex;
+    let blockNumberHexes: Record<number, string>;
+    let numberHex: string;
 
     beforeEach(() => {
       blockNumberHexes = {

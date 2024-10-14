@@ -31,14 +31,13 @@ import { DEFAULT_NETWORK_FEES, NOT_FOUND_RES } from './eth-config';
 import { predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import { generateEthTestEnv } from './eth-helpers';
-import { toHex } from '../../helpers';
+import { overrideEnvsInMochaDescribe, toHex } from '../../helpers';
 import { RequestDetails } from '../../../src/lib/types';
 
 use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: sinon.SinonStub;
-let currentMaxBlockRange: number;
 
 describe('@ethGasPrice Gas Price spec', async function () {
   this.timeout(10000);
@@ -46,24 +45,20 @@ describe('@ethGasPrice Gas Price spec', async function () {
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getPriceTest', ipAddress: '0.0.0.0' });
 
-  this.beforeEach(() => {
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+
+  this.beforeEach(async () => {
     // reset cache and restMock
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    ConfigServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
   });
 
   this.afterEach(() => {
     getSdkClientStub.restore();
     restMock.resetHandlers();
-    ConfigServiceTestHelper.dynamicOverride(
-      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-      currentMaxBlockRange.toString(),
-    );
   });
 
   describe('@ethGasPrice', async function () {
@@ -105,31 +100,36 @@ describe('@ethGasPrice Gas Price spec', async function () {
           '10.25',
       };
 
+      let initialGasPrice: string;
+
+      it('should return gas price without buffer', async function () {
+        await cacheService.clear(requestDetails);
+        initialGasPrice = await ethImpl.gasPrice(requestDetails);
+        expect(initialGasPrice).to.equal(toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF));
+      });
+
       for (let testCaseName in GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES) {
-        it(testCaseName, async function () {
-          const GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES[testCaseName];
-          const initialGasPrice = await ethImpl.gasPrice(requestDetails);
-          ConfigServiceTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', GAS_PRICE_PERCENTAGE_BUFFER);
+        const GAS_PRICE_PERCENTAGE_BUFFER = GAS_PRICE_PERCENTAGE_BUFFER_TESTCASES[testCaseName];
 
-          await cacheService.clear(requestDetails);
+        describe(testCaseName, async function () {
+          overrideEnvsInMochaDescribe({ GAS_PRICE_PERCENTAGE_BUFFER: GAS_PRICE_PERCENTAGE_BUFFER });
 
-          const gasPriceWithBuffer = await ethImpl.gasPrice(requestDetails);
-          ConfigServiceTestHelper.dynamicOverride('GAS_PRICE_PERCENTAGE_BUFFER', '0');
+          it(`should return gas price with buffer`, async function () {
+            const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);
+            const expectedGasPriceWithBuffer = toHex(
+              Number(expectedInitialGasPrice) +
+                Math.round(
+                  (Number(expectedInitialGasPrice) / constants.TINYBAR_TO_WEIBAR_COEF) *
+                    (Number(GAS_PRICE_PERCENTAGE_BUFFER || 0) / 100),
+                ) *
+                  constants.TINYBAR_TO_WEIBAR_COEF,
+            );
 
-          const expectedInitialGasPrice = toHex(DEFAULT_NETWORK_FEES.fees[2].gas * constants.TINYBAR_TO_WEIBAR_COEF);
-          const expectedGasPriceWithBuffer = toHex(
-            Number(expectedInitialGasPrice) +
-              Math.round(
-                (Number(expectedInitialGasPrice) / constants.TINYBAR_TO_WEIBAR_COEF) *
-                  (Number(GAS_PRICE_PERCENTAGE_BUFFER || 0) / 100),
-              ) *
-                constants.TINYBAR_TO_WEIBAR_COEF,
-          );
+            const gasPriceWithBuffer = await ethImpl.gasPrice(requestDetails);
 
-          expect(expectedInitialGasPrice).to.not.equal(expectedGasPriceWithBuffer);
-          expect(initialGasPrice).to.not.equal(gasPriceWithBuffer);
-          expect(initialGasPrice).to.equal(expectedInitialGasPrice);
-          expect(gasPriceWithBuffer).to.equal(expectedGasPriceWithBuffer);
+            expect(gasPriceWithBuffer).to.not.equal(initialGasPrice);
+            expect(gasPriceWithBuffer).to.equal(expectedGasPriceWithBuffer);
+          });
         });
       }
     });

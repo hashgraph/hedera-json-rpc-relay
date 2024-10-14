@@ -23,9 +23,15 @@ import { ConfigServiceTestHelper } from '../../../../config-service/tests/config
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
+import { Logger } from 'pino';
 import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { EthImpl } from '../../../src/lib/eth';
-import { blockLogsBloom, defaultContractResults, defaultDetailedContractResults } from '../../helpers';
+import {
+  blockLogsBloom,
+  defaultContractResults,
+  defaultDetailedContractResults,
+  overrideEnvsInMochaDescribe,
+} from '../../helpers';
 import { Block, Transaction } from '../../../src/lib/model';
 import { MirrorNodeClient, SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
@@ -83,7 +89,6 @@ use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: sinon.SinonStub;
-let currentMaxBlockRange: number;
 let ethImplLowTransactionCount: EthImpl;
 
 describe('@ethGetBlockByNumber using MirrorNode', async function () {
@@ -99,10 +104,10 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
   }: {
     restMock: MockAdapter;
     hapiServiceInstance: HAPIService;
-    ethImpl: Eth;
+    ethImpl: EthImpl;
     cacheService: CacheService;
     mirrorNodeInstance: MirrorNodeClient;
-    logger: any;
+    logger: Logger;
     registry: Registry;
   } = generateEthTestEnv(true);
   const results = defaultContractResults.results;
@@ -127,6 +132,8 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     expect(transactions[1].gas).equal(hashNumber(GAS_USED_2));
   }
 
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+
   this.beforeEach(async () => {
     // reset cache and restMock
     await cacheService.clear(requestDetails);
@@ -136,8 +143,6 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    currentMaxBlockRange = Number(ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE'));
-    ConfigServiceTestHelper.dynamicOverride('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', '1');
     ethImplLowTransactionCount = new EthImpl(
       hapiServiceInstance,
       mirrorNodeInstance,
@@ -161,11 +166,6 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
 
   this.afterEach(() => {
     getSdkClientStub.restore();
-
-    ConfigServiceTestHelper.dynamicOverride(
-      'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-      currentMaxBlockRange.toString(),
-    );
   });
 
   it('"eth_blockNumber" should return the latest block number', async function () {

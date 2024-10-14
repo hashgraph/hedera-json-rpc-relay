@@ -84,9 +84,6 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   let wsProvider;
   const accounts: AliasAccount[] = [];
   let logContractSigner;
-  // Cached original ENV variables
-  let originalWsMaxInactivityTtl;
-  let originalWsMultipleAddressesEnabledValue;
 
   const topics = [
     '0xa8fb2f9a49afc2ea148319326c7208965555151db2ce137c05174098730aedc3',
@@ -116,15 +113,9 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
     // Deploy Log Contract
     logContractSigner = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
-
-    // cache original ENV values
-    originalWsMultipleAddressesEnabledValue = ConfigService.get('WS_MULTIPLE_ADDRESSES_ENABLED');
   });
 
   beforeEach(async () => {
-    // restore original ENV value
-    ConfigServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', originalWsMultipleAddressesEnabledValue);
-
     wsProvider = await new ethers.WebSocketProvider(WS_RELAY_URL);
     requestId = Utils.generateRequestId();
     // Stabilizes the initial connection test.
@@ -252,107 +243,105 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
     // skip this test if using a remote relay since updating the env vars would not affect it
     if (global.relayIsLocal) {
-      it('Subscribe to multiple contracts on same subscription', async function () {
-        ConfigServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', true);
-        await new Promise((resolve) => setTimeout(resolve, 10000));
+      WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: 'true' }, () => {
+        it('Subscribe to multiple contracts on same subscription', async function () {
+          await new Promise((resolve) => setTimeout(resolve, 10000));
 
-        const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
-        const logContractSigner3 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
-        const addressCollection = [logContractSigner.target, logContractSigner2.target, logContractSigner3.target];
-        let subscriptionId = '';
-        const webSocket = new WebSocket(WS_RELAY_URL);
+          const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
+          const logContractSigner3 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
+          const addressCollection = [logContractSigner.target, logContractSigner2.target, logContractSigner3.target];
+          let subscriptionId = '';
+          const webSocket = new WebSocket(WS_RELAY_URL);
 
-        let latestEventFromSubscription;
-        webSocket.on('message', function incoming(data) {
-          const parsed = JSON.parse(data);
-          if (parsed.id !== null || parsed.method) {
-            if (subscriptionId == '') {
-              subscriptionId = parsed.result;
-            } else {
-              latestEventFromSubscription = parsed;
+          let latestEventFromSubscription;
+          webSocket.on('message', function incoming(data) {
+            const parsed = JSON.parse(data);
+            if (parsed.id !== null || parsed.method) {
+              if (subscriptionId == '') {
+                subscriptionId = parsed.result;
+              } else {
+                latestEventFromSubscription = parsed;
+              }
             }
-          }
+          });
+
+          webSocket.on('open', function open() {
+            const request = `{"jsonrpc":"2.0","method":"eth_subscribe","params":["logs", {"address":${JSON.stringify(
+              addressCollection,
+            )}}],"id":1}`;
+            webSocket.send(request);
+          });
+          await new Promise((resolve) => setTimeout(resolve, 500)); // wait for subscription to be created
+
+          const gasOptions = await Utils.gasOptions(requestId, 500_000);
+
+          // create event on contract 1
+          const tx1 = await logContractSigner.log1(100, gasOptions);
+          await tx1.wait();
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // wait for event to be received
+          expect('1: ' + latestEventFromSubscription.params.result.address).to.be.eq(
+            '1: ' + logContractSigner.target.toLowerCase(),
+          );
+          expect('1: ' + latestEventFromSubscription.params.subscription).to.be.eq('1: ' + subscriptionId);
+
+          // create event on contract 2
+          const tx2 = await logContractSigner2.log1(200, gasOptions);
+          await tx2.wait();
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // wait for event to be received
+          expect('2: ' + latestEventFromSubscription.params.result.address).to.be.eq(
+            '2: ' + logContractSigner2.target.toLowerCase(),
+          );
+          expect('2: ' + latestEventFromSubscription.params.subscription).to.be.eq('2: ' + subscriptionId);
+
+          // create event on contract 3
+          const tx3 = await logContractSigner3.log1(300, gasOptions);
+          await tx3.wait();
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // wait for event to be received
+          expect('3: ' + latestEventFromSubscription.params.result.address).to.be.eq(
+            '3: ' + logContractSigner3.target.toLowerCase(),
+          );
+          expect('3: ' + latestEventFromSubscription.params.subscription).to.be.eq('3: ' + subscriptionId);
+
+          // close the connection
+          webSocket.close();
+
+          // wait for the connections to be closed
+          await new Promise((resolve) => setTimeout(resolve, 500));
         });
-
-        webSocket.on('open', function open() {
-          const request = `{"jsonrpc":"2.0","method":"eth_subscribe","params":["logs", {"address":${JSON.stringify(
-            addressCollection,
-          )}}],"id":1}`;
-          webSocket.send(request);
-        });
-        await new Promise((resolve) => setTimeout(resolve, 500)); // wait for subscription to be created
-
-        const gasOptions = await Utils.gasOptions(requestId, 500_000);
-
-        // create event on contract 1
-        const tx1 = await logContractSigner.log1(100, gasOptions);
-        await tx1.wait();
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // wait for event to be received
-        expect('1: ' + latestEventFromSubscription.params.result.address).to.be.eq(
-          '1: ' + logContractSigner.target.toLowerCase(),
-        );
-        expect('1: ' + latestEventFromSubscription.params.subscription).to.be.eq('1: ' + subscriptionId);
-
-        // create event on contract 2
-        const tx2 = await logContractSigner2.log1(200, gasOptions);
-        await tx2.wait();
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // wait for event to be received
-        expect('2: ' + latestEventFromSubscription.params.result.address).to.be.eq(
-          '2: ' + logContractSigner2.target.toLowerCase(),
-        );
-        expect('2: ' + latestEventFromSubscription.params.subscription).to.be.eq('2: ' + subscriptionId);
-
-        // create event on contract 3
-        const tx3 = await logContractSigner3.log1(300, gasOptions);
-        await tx3.wait();
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // wait for event to be received
-        expect('3: ' + latestEventFromSubscription.params.result.address).to.be.eq(
-          '3: ' + logContractSigner3.target.toLowerCase(),
-        );
-        expect('3: ' + latestEventFromSubscription.params.subscription).to.be.eq('3: ' + subscriptionId);
-
-        // close the connection
-        webSocket.close();
-
-        // wait for the connections to be closed
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        ConfigServiceTestHelper.dynamicOverride(
-          'WS_MULTIPLE_ADDRESSES_ENABLED',
-          originalWsMultipleAddressesEnabledValue,
-        );
       });
     }
 
-    it('Subscribe to multiple contracts on same subscription Should fail with INVALID_PARAMETER due to feature flag disabled', async function () {
-      ConfigServiceTestHelper.dynamicOverride('WS_MULTIPLE_ADDRESSES_ENABLED', false);
-      const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
-      const addressCollection = [logContractSigner.target, logContractSigner2.target];
-      const webSocket = new WebSocket(WS_RELAY_URL);
-      const requestId = 3;
-      webSocket.on('open', function open() {
-        const request = `{"jsonrpc":"2.0","method":"eth_subscribe","params":["logs", {"address":${JSON.stringify(
-          addressCollection,
-        )}}],"id":${requestId}}`;
-        webSocket.send(request);
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: 'false' }, () => {
+      it('Subscribe to multiple contracts on same subscription Should fail with INVALID_PARAMETER due to feature flag disabled', async function () {
+        const logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
+        const addressCollection = [logContractSigner.target, logContractSigner2.target];
+        const webSocket = new WebSocket(WS_RELAY_URL);
+        const requestId = 3;
+        webSocket.on('open', function open() {
+          const request = `{"jsonrpc":"2.0","method":"eth_subscribe","params":["logs", {"address":${JSON.stringify(
+            addressCollection,
+          )}}],"id":${requestId}}`;
+          webSocket.send(request);
+        });
+        let response;
+        webSocket.on('message', function incoming(data) {
+          response = JSON.parse(data);
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        expect(response.id).to.be.eq(requestId);
+        expect(response.error.code).to.be.eq(-32602);
+        expect(response.error.message).to.be.eq(
+          `Invalid parameter filters.address: Only one contract address is allowed`,
+        );
+
+        // post test clean-up
+        webSocket.close();
+
+        // wait 500 ms for the connection to be closed
+        await new Promise((resolve) => setTimeout(resolve, 500));
       });
-      let response;
-      webSocket.on('message', function incoming(data) {
-        response = JSON.parse(data);
-      });
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      expect(response.id).to.be.eq(requestId);
-      expect(response.error.code).to.be.eq(-32602);
-      expect(response.error.message).to.be.eq(
-        `Invalid parameter filters.address: Only one contract address is allowed`,
-      );
-
-      // post test clean-up
-      webSocket.close();
-
-      // wait 500 ms for the connection to be closed
-      await new Promise((resolve) => setTimeout(resolve, 500));
     });
 
     it('Expect Unsupported Method Error message when subscribing for newPendingTransactions method', async function () {
@@ -439,31 +428,23 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   });
 
   describe('Connection limit', async function () {
-    let originalWsMaxConnectionLimit,
-      providers: ethers.WebSocketProvider[] = [];
+    let providers: ethers.WebSocketProvider[] = [];
+
+    WsTestHelper.overrideEnvsInMochaDescribe({ WS_CONNECTION_LIMIT: '5' });
 
     beforeEach(async () => {
-      // cache original ENV values
-      originalWsMaxConnectionLimit = ConfigService.get('WS_CONNECTION_LIMIT');
-      ConfigServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT', '5');
-
       // We already have one connection
       expect(server._connections).to.equal(1);
 
-      // @ts-ignore
-      for (let i = 1; i < parseInt(ConfigService.get('WS_CONNECTION_LIMIT')); i++) {
+      for (let i = 1; i < parseInt(process.env.WS_CONNECTION_LIMIT); i++) {
         providers.push(await establishConnection());
       }
 
       // Server is at max connections
-      // @ts-ignore
-      expect(server._connections).to.equal(parseInt(ConfigService.get('WS_CONNECTION_LIMIT')));
+      expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT));
     });
 
     afterEach(async () => {
-      // Return ENV variables to their original value
-      ConfigServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT', originalWsMaxConnectionLimit);
-
       for (const provider of providers) {
         await provider.destroy();
       }
@@ -493,15 +474,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   describe('Connection TTL', async function () {
     let TEST_TTL = 5000;
 
-    this.beforeAll(async () => {
-      // cache original ENV values
-      originalWsMaxInactivityTtl = ConfigService.get('WS_MAX_INACTIVITY_TTL') || '300000';
-      ConfigServiceTestHelper.dynamicOverride('WS_MAX_INACTIVITY_TTL', TEST_TTL.toString());
-    });
-    this.afterAll(async () => {
-      // Return ENV variables to their original value
-      ConfigServiceTestHelper.dynamicOverride('WS_MAX_INACTIVITY_TTL', originalWsMaxInactivityTtl);
-    });
+    WsTestHelper.overrideEnvsInMochaDescribe({ WS_MAX_INACTIVITY_TTL: TEST_TTL.toString() });
 
     it('Connection TTL is enforced, should close all connections', async function () {
       const wsConn2 = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -917,16 +890,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   // skip this test if using a remote relay since updating the env vars would not affect it
   if (global.relayIsLocal) {
     describe('IP connection limits', async function () {
-      let originalConnectionLimitPerIp;
-
-      before(() => {
-        originalConnectionLimitPerIp = ConfigService.get('WS_CONNECTION_LIMIT_PER_IP');
-        ConfigServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT_PER_IP', '3');
-      });
-
-      after(() => {
-        ConfigServiceTestHelper.dynamicOverride('WS_CONNECTION_LIMIT_PER_IP', originalConnectionLimitPerIp);
-      });
+      WsTestHelper.overrideEnvsInMochaDescribe({ WS_CONNECTION_LIMIT_PER_IP: '3' });
 
       it('Does not allow more connections from the same IP than the specified limit', async function () {
         const providers = [];
@@ -972,16 +936,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     });
 
     describe('Connection subscription limits', async function () {
-      let originalSubsPerConnection;
-
-      before(() => {
-        originalSubsPerConnection = ConfigService.get('WS_SUBSCRIPTION_LIMIT');
-        ConfigServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', '2');
-      });
-
-      after(() => {
-        ConfigServiceTestHelper.dynamicOverride('WS_SUBSCRIPTION_LIMIT', originalSubsPerConnection);
-      });
+      WsTestHelper.overrideEnvsInMochaDescribe({ WS_SUBSCRIPTION_LIMIT: '2' });
 
       it('Does not allow more subscriptions per connection than the specified limit', async function () {
         // Create different subscriptions

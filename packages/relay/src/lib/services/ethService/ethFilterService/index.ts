@@ -188,7 +188,7 @@ export class FilterService implements IFilterService {
     return predefined.UNSUPPORTED_METHOD;
   }
 
-  public async getFilterLogs(filterId: string, requestDetails: RequestDetails): Promise<any> {
+  public async getFilterLogs(filterId: string, requestDetails: RequestDetails): Promise<Log[]> {
     this.logger.trace(`${requestDetails.formattedRequestId} getFilterLogs(${filterId})`);
     FilterService.requireFiltersEnabled();
 
