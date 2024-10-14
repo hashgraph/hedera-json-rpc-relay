@@ -23,32 +23,11 @@ import findConfig from 'find-config';
 import fs from 'fs';
 import { Logger } from 'pino';
 import { SpendingPlanConfig } from '../../../types/spendingPlanConfig';
+import { EthAddressHbarSpendingPlanRepository } from '../../../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { HbarSpendingPlanRepository } from '../../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 
 export class CustomLRUCache<K, V> extends LRUCache<K, V> {
-  /**
-   * Prefix for HbarSpendingPlan keys.
-   *
-   * @type {string}
-   * @private
-   */
-  private readonly hbarSpendingPlanKeyPrefix = 'hbarSpendingPlan';
-
-  /**
-   * Prefix for EthAddressHbarSpendingPlan keys.
-   *
-   * @type {string}
-   * @private
-   */
-  private readonly ethAddressHbarSpendingPlanKeyPrefix = 'ethAddressHbarSpendingPlan';
-
-  /**
-   * Prefix for IpAddressHbarSpendingPlan keys.
-   *
-   * @type {string}
-   * @private
-   */
-  private readonly ipAddressHbarSpendingPlanKeyPrefix = 'ipAddressHbarSpendingPlan';
-
   /**
    * The name of the spending plans configuration file. Defaults to `spendingPlansConfig.json`.
    *
@@ -142,7 +121,7 @@ export class CustomLRUCache<K, V> extends LRUCache<K, V> {
    * @private
    */
   private isPreconfiguredPlanKey(key: string, plan: SpendingPlanConfig): boolean {
-    return key.includes(`${this.hbarSpendingPlanKeyPrefix}:${plan.id}`);
+    return key.includes(`${HbarSpendingPlanRepository.collectionKey}:${plan.id}`);
   }
 
   /**
@@ -154,7 +133,7 @@ export class CustomLRUCache<K, V> extends LRUCache<K, V> {
    */
   private isPreconfiguredEthAddressKey(key: string, plan: SpendingPlanConfig): boolean {
     return (plan.ethAddresses || []).some((ethAddress) => {
-      return key.includes(`${this.ethAddressHbarSpendingPlanKeyPrefix}:${ethAddress.trim().toLowerCase()}`);
+      return key.includes(`${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress.trim().toLowerCase()}`);
     });
   }
 
@@ -167,7 +146,7 @@ export class CustomLRUCache<K, V> extends LRUCache<K, V> {
    */
   private isPreconfiguredIpAddressKey(key: string, plan: SpendingPlanConfig): boolean {
     return (plan.ipAddresses || []).some((ipAddress) => {
-      return key.includes(`${this.ipAddressHbarSpendingPlanKeyPrefix}:${ipAddress}`);
+      return key.includes(`${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`);
     });
   }
 }
