@@ -22,9 +22,10 @@ import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
 import { ICacheClient } from './ICacheClient';
 import constants from '../../constants';
-import LRUCache, { LimitedByCount, LimitedByTTL } from 'lru-cache';
+import { LimitedByCount, LimitedByTTL } from 'lru-cache';
 import { RequestDetails } from '../../types';
 import { Utils } from '../../../utils';
+import { CustomLRUCache } from './impl/customLRUCache';
 
 /**
  * Represents a LocalLRUCache instance that uses an LRU (Least Recently Used) caching strategy
@@ -49,7 +50,7 @@ export class LocalLRUCache implements ICacheClient {
    *
    * @private
    */
-  private readonly cache: LRUCache<string, any>;
+  private readonly cache: CustomLRUCache<string, any>;
 
   /**
    * The logger used for logging all output from this class.
@@ -74,7 +75,7 @@ export class LocalLRUCache implements ICacheClient {
    * @param {Registry} register - The registry instance used for metrics tracking.
    */
   public constructor(logger: Logger, register: Registry) {
-    this.cache = new LRUCache(this.options);
+    this.cache = new CustomLRUCache(logger.child({ name: 'custom-lru-cache' }), this.options);
     this.logger = logger;
     this.register = register;
 
