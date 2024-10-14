@@ -89,6 +89,16 @@ export class CustomLRUCache<K, V> extends LRUCache<K, V> {
   }
 
   /**
+   * Deletes a key from the cache without checking if it is protected.
+   * @param {K} key - The key to delete.
+   * @returns {boolean} - True if the key was deleted, false otherwise.
+   * @template K - The key type.
+   */
+  deleteUnsafe(key: K): boolean {
+    return super.delete(key);
+  }
+
+  /**
    * Loads the pre-configured spending plans from the spending plans configuration file.
    * @returns {SpendingPlanConfig[]} - The pre-configured spending plans.
    * @private

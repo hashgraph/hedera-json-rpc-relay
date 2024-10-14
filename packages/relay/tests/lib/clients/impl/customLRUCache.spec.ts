@@ -42,88 +42,129 @@ describe('CustomLRUCache', () => {
     cache = new CustomLRUCache<string, any>(logger, { max: 10 });
   });
 
-  it('deletes a non-protected key', () => {
-    cache.set('nonProtectedKey', 'value');
-    expect(cache.delete('nonProtectedKey')).to.be.true;
-    expect(cache.has('nonProtectedKey')).to.be.false;
-  });
-
-  it('does not delete a protected HbarSpendingPlan key', () => {
-    const protectedKey = `hbarSpendingPlan:${spendingPlansConfig[0].id}`;
-    cache.set(protectedKey, spendingPlansConfig[0]);
-    expect(cache.delete(protectedKey)).to.be.false;
-    expect(cache.has(protectedKey)).to.be.true;
-  });
-
-  it('does not delete a protected EthAddressHbarSpendingPlan key', () => {
-    const ethAddressPlan = spendingPlansConfig.find((plan) => !!plan.ethAddresses);
-    if (!ethAddressPlan || !ethAddressPlan.ethAddresses) {
-      expect.fail('No spending plan with ethAddresses found');
-    }
-
-    const protectedKey = `ethAddressHbarSpendingPlan:${ethAddressPlan.ethAddresses[0]}`;
-    cache.set(protectedKey, 'value');
-    expect(cache.delete(protectedKey)).to.be.false;
-    expect(cache.has(protectedKey)).to.be.true;
-  });
-
-  it('does not delete a protected IpAddressHbarSpendingPlan key', () => {
-    const ipAddressPlan = spendingPlansConfig.find((plan) => !!plan.ipAddresses);
-    if (!ipAddressPlan || !ipAddressPlan.ipAddresses) {
-      expect.fail('No spending plan with ipAddresses found');
-    }
-
-    const protectedKey = `ipAddressHbarSpendingPlan:${ipAddressPlan.ipAddresses[0]}`;
-    cache.set(protectedKey, 'value');
-    expect(cache.delete(protectedKey)).to.be.false;
-    expect(cache.has(protectedKey)).to.be.true;
-  });
-
-  it('deletes a HbarSpendingPlan key that is not in the spending plans config', () => {
-    const nonProtectedKey = `hbarSpendingPlan:${randomUUID()}`;
-    cache.set(nonProtectedKey, 'value');
-    expect(cache.delete(nonProtectedKey)).to.be.true;
-    expect(cache.has(nonProtectedKey)).to.be.false;
-  });
-
-  it('deletes a EthAddressHbarSpendingPlan key that is not in the spending plans config', () => {
-    const nonProtectedKey = `ethAddressHbarSpendingPlan:${random20BytesAddress()}`;
-    cache.set(nonProtectedKey, 'value');
-    expect(cache.delete(nonProtectedKey)).to.be.true;
-    expect(cache.has(nonProtectedKey)).to.be.false;
-  });
-
-  it('deletes a IpAddressHbarSpendingPlan key that is not in the spending plans config', () => {
-    const nonProtectedKey = `ipAddressHbarSpendingPlan:${randomIpAddress()}`;
-    cache.set(nonProtectedKey, 'value');
-    expect(cache.delete(nonProtectedKey)).to.be.true;
-    expect(cache.has(nonProtectedKey)).to.be.false;
-  });
-
-  describe('given empty spending plans config', () => {
-    overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: 'nonExistentFile.json' });
-
-    it('deletes a non-protected HbarSpendingPlan key', () => {
-      cache = new CustomLRUCache<string, any>(logger, { max: 10 });
-
-      const spendingPlanKey = `hbarSpendingPlan:${randomUUID()}`;
-      cache.set(spendingPlanKey, { id: randomUUID(), name: 'test', subscriptionTier: SubscriptionTier.BASIC });
-      expect(cache.delete(spendingPlanKey)).to.be.true;
-      expect(cache.has(spendingPlanKey)).to.be.false;
+  describe('delete', () => {
+    it('deletes a non-protected key', () => {
+      cache.set('nonProtectedKey', 'value');
+      expect(cache.delete('nonProtectedKey')).to.be.true;
+      expect(cache.has('nonProtectedKey')).to.be.false;
     });
 
-    it('deletes a non-protected EthAddressHbarSpendingPlan key', () => {
-      const ethAddressPlanKey = `ethAddressHbarSpendingPlan:${random20BytesAddress()}`;
-      cache.set(ethAddressPlanKey, 'value');
-      expect(cache.delete(ethAddressPlanKey)).to.be.true;
-      expect(cache.has(ethAddressPlanKey)).to.be.false;
+    it('does not delete a protected HbarSpendingPlan key', () => {
+      const protectedKey = `hbarSpendingPlan:${spendingPlansConfig[0].id}`;
+      cache.set(protectedKey, spendingPlansConfig[0]);
+      expect(cache.delete(protectedKey)).to.be.false;
+      expect(cache.has(protectedKey)).to.be.true;
     });
 
-    it('deletes a non-protected IpAddressHbarSpendingPlan key', () => {
-      const ipAddressPlanKey = `ipAddressHbarSpendingPlan:${randomIpAddress()}`;
-      cache.set(ipAddressPlanKey, 'value');
-      expect(cache.delete(ipAddressPlanKey)).to.be.true;
-      expect(cache.has(ipAddressPlanKey)).to.be.false;
+    it('does not delete a protected EthAddressHbarSpendingPlan key', () => {
+      const ethAddressPlan = spendingPlansConfig.find((plan) => !!plan.ethAddresses);
+      if (!ethAddressPlan || !ethAddressPlan.ethAddresses) {
+        expect.fail('No spending plan with ethAddresses found');
+      }
+
+      const protectedKey = `ethAddressHbarSpendingPlan:${ethAddressPlan.ethAddresses[0]}`;
+      cache.set(protectedKey, 'value');
+      expect(cache.delete(protectedKey)).to.be.false;
+      expect(cache.has(protectedKey)).to.be.true;
+    });
+
+    it('does not delete a protected IpAddressHbarSpendingPlan key', () => {
+      const ipAddressPlan = spendingPlansConfig.find((plan) => !!plan.ipAddresses);
+      if (!ipAddressPlan || !ipAddressPlan.ipAddresses) {
+        expect.fail('No spending plan with ipAddresses found');
+      }
+
+      const protectedKey = `ipAddressHbarSpendingPlan:${ipAddressPlan.ipAddresses[0]}`;
+      cache.set(protectedKey, 'value');
+      expect(cache.delete(protectedKey)).to.be.false;
+      expect(cache.has(protectedKey)).to.be.true;
+    });
+
+    it('deletes a HbarSpendingPlan key that is not in the spending plans config', () => {
+      const nonProtectedKey = `hbarSpendingPlan:${randomUUID()}`;
+      cache.set(nonProtectedKey, 'value');
+      expect(cache.delete(nonProtectedKey)).to.be.true;
+      expect(cache.has(nonProtectedKey)).to.be.false;
+    });
+
+    it('deletes a EthAddressHbarSpendingPlan key that is not in the spending plans config', () => {
+      const nonProtectedKey = `ethAddressHbarSpendingPlan:${random20BytesAddress()}`;
+      cache.set(nonProtectedKey, 'value');
+      expect(cache.delete(nonProtectedKey)).to.be.true;
+      expect(cache.has(nonProtectedKey)).to.be.false;
+    });
+
+    it('deletes a IpAddressHbarSpendingPlan key that is not in the spending plans config', () => {
+      const nonProtectedKey = `ipAddressHbarSpendingPlan:${randomIpAddress()}`;
+      cache.set(nonProtectedKey, 'value');
+      expect(cache.delete(nonProtectedKey)).to.be.true;
+      expect(cache.has(nonProtectedKey)).to.be.false;
+    });
+
+    describe('given empty spending plans config', () => {
+      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: 'nonExistentFile.json' });
+
+      it('deletes a non-protected HbarSpendingPlan key', () => {
+        cache = new CustomLRUCache<string, any>(logger, { max: 10 });
+
+        const spendingPlanKey = `hbarSpendingPlan:${randomUUID()}`;
+        cache.set(spendingPlanKey, { id: randomUUID(), name: 'test', subscriptionTier: SubscriptionTier.BASIC });
+        expect(cache.delete(spendingPlanKey)).to.be.true;
+        expect(cache.has(spendingPlanKey)).to.be.false;
+      });
+
+      it('deletes a non-protected EthAddressHbarSpendingPlan key', () => {
+        const ethAddressPlanKey = `ethAddressHbarSpendingPlan:${random20BytesAddress()}`;
+        cache.set(ethAddressPlanKey, 'value');
+        expect(cache.delete(ethAddressPlanKey)).to.be.true;
+        expect(cache.has(ethAddressPlanKey)).to.be.false;
+      });
+
+      it('deletes a non-protected IpAddressHbarSpendingPlan key', () => {
+        const ipAddressPlanKey = `ipAddressHbarSpendingPlan:${randomIpAddress()}`;
+        cache.set(ipAddressPlanKey, 'value');
+        expect(cache.delete(ipAddressPlanKey)).to.be.true;
+        expect(cache.has(ipAddressPlanKey)).to.be.false;
+      });
+    });
+  });
+
+  describe('deleteUnsafe', () => {
+    it('deletes a non-protected key', () => {
+      cache.set('nonProtectedKey', 'value');
+      expect(cache.delete('nonProtectedKey')).to.be.true;
+      expect(cache.has('nonProtectedKey')).to.be.false;
+    });
+
+    it('deletes a protected HbarSpendingPlan key', () => {
+      const protectedKey = `hbarSpendingPlan:${spendingPlansConfig[0].id}`;
+      cache.set(protectedKey, spendingPlansConfig[0]);
+      expect(cache.delete(protectedKey)).to.be.true;
+      expect(cache.has(protectedKey)).to.be.false;
+    });
+
+    it('deletes a protected EthAddressHbarSpendingPlan key', () => {
+      const ethAddressPlan = spendingPlansConfig.find((plan) => !!plan.ethAddresses);
+      if (!ethAddressPlan || !ethAddressPlan.ethAddresses) {
+        expect.fail('No spending plan with ethAddresses found');
+      }
+
+      const protectedKey = `ethAddressHbarSpendingPlan:${ethAddressPlan.ethAddresses[0]}`;
+      cache.set(protectedKey, 'value');
+      expect(cache.delete(protectedKey)).to.be.true;
+      expect(cache.has(protectedKey)).to.be.false;
+    });
+
+    it('deletes a protected IpAddressHbarSpendingPlan key', () => {
+      const ipAddressPlan = spendingPlansConfig.find((plan) => !!plan.ipAddresses);
+      if (!ipAddressPlan || !ipAddressPlan.ipAddresses) {
+        expect.fail('No spending plan with ipAddresses found');
+      }
+
+      const protectedKey = `ipAddressHbarSpendingPlan:${ipAddressPlan.ipAddresses[0]}`;
+      cache.set(protectedKey, 'value');
+      expect(cache.delete(protectedKey)).to.be.true;
+      expect(cache.has(protectedKey)).to.be.false;
     });
   });
 });

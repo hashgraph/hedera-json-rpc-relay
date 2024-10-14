@@ -213,7 +213,7 @@ export class LocalLRUCache implements ICacheClient {
    */
   public async delete(key: string, callingMethod: string, requestDetails: RequestDetails): Promise<void> {
     this.logger.trace(`${requestDetails.formattedRequestId} delete cache for ${key}`);
-    this.cache.delete(key);
+    this.cache.deleteUnsafe(key);
   }
 
   /**
