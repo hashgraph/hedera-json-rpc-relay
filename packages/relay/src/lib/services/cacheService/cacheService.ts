@@ -34,7 +34,7 @@ export class CacheService {
    *
    * @private
    */
-  private readonly internalCache: LocalLRUCache;
+  private readonly internalCache: ICacheClient;
 
   /**
    * The Redis cache used for caching items from requests.
