@@ -345,16 +345,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           );
 
           //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
-          const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
-            [SubscriptionTier.BASIC],
-            requestDetails,
-          );
-          const ipPlans = await ipSpendingPlanRepository.getAllPlans(requestDetails);
-          const ipPlanWithId = basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
-          const ipAddress = ipPlanWithId[0]?.ipAddress;
-          if (ipAddress) {
-            await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
-          }
+          await ipSpendingPlanRepository.deleteAll(requestDetails);
           expect(ethAddressSpendingPlanRepository.findByAddress(accounts[3].address, requestDetails)).to.be.rejected;
           const gasPrice = await relay.gasPrice(requestId);
           const transaction = {
@@ -419,16 +410,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           );
 
           //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
-          const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
-            [SubscriptionTier.BASIC],
-            requestDetails,
-          );
-          const ipPlans = await ipSpendingPlanRepository.getAllPlans(requestDetails);
-          const ipPlanWithId = await basicPlans.map((plan) => ipPlans.find((ipPlan) => ipPlan.planId === plan.id));
-          const ipAddress = ipPlanWithId[0]?.ipAddress;
-          if (ipAddress) {
-            await ipSpendingPlanRepository.delete(ipAddress, requestDetails);
-          }
+          await ipSpendingPlanRepository.deleteAll(requestDetails);
           expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
           try {
             for (let i = 0; i < 50; i++) {
