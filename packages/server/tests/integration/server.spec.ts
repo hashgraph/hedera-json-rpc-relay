@@ -135,7 +135,7 @@ describe('RPC Server', function () {
     }
   });
 
-  withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: 'true' }, async function () {
+  withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: true }, async function () {
     xit('supports optionality of request id when configured', async function () {
       const app2 = require('../../src/server').default;
       const port = `1${ConfigService.get('E2E_SERVER_PORT')}`;
@@ -188,7 +188,7 @@ describe('RPC Server', function () {
     });
 
     BaseTest.defaultResponseChecks(res);
-    expect(res.data.result).to.be.equal('relay/' + ConfigService.get('NPM_PACKAGE_VERSION'));
+    expect(res.data.result).to.be.equal('relay/' + ConfigService.get('npm_package_version'));
   });
 
   it('should execute "eth_getTransactionByHash with missing transaction"', async function () {
@@ -656,7 +656,7 @@ describe('RPC Server', function () {
       }
     });
 
-    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: 'false' }, async function () {
+    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: false }, async function () {
       it('should not execute batch request when disabled', async function () {
         try {
           await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);

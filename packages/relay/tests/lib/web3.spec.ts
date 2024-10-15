@@ -29,14 +29,14 @@ const logger = pino();
 const Relay = new RelayImpl(logger, new Registry());
 
 describe('Web3', function () {
-  withOverriddenEnvsInMochaTest({ NPM_PACKAGE_VERSION: '1.0.0' }, () => {
+  withOverriddenEnvsInMochaTest({ npm_package_version: '1.0.0' }, () => {
     it('should return "relay/1.0.0"', async function () {
       const clientVersion = Relay.web3().clientVersion();
-      expect(clientVersion).to.be.equal('relay/' + ConfigService.get('NPM_PACKAGE_VERSION'));
+      expect(clientVersion).to.be.equal('relay/' + ConfigService.get('npm_package_version'));
     });
   });
 
-  withOverriddenEnvsInMochaTest({ NPM_PACKAGE_VERSION: undefined }, () => {
+  withOverriddenEnvsInMochaTest({ npm_package_version: undefined }, () => {
     it('should return "relay/"', () => {
       const version = Relay.web3().clientVersion();
       expect(version).to.equal('relay/');

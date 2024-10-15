@@ -161,7 +161,7 @@ export const getWsBatchRequestsEnabled = (): boolean => {
  * @returns {number} The maximum size of batch requests for WebSocket.
  */
 export const getBatchRequestsMaxSize = (): number => {
-  return Number(ConfigService.get('WS_BATCH_REQUESTS_MAX_SIZE') || 20);
+  return Number(ConfigService.get('WS_BATCH_REQUESTS_MAX_SIZE') ?? 20);
 };
 
 /**

@@ -92,7 +92,7 @@ describe('Open RPC Specification', function () {
 
   const requestDetails = new RequestDetails({ requestId: 'openRpcTest', ipAddress: '0.0.0.0' });
 
-  overrideEnvsInMochaDescribe({ NPM_PACKAGE_VERSION: 'relay/0.0.1-SNAPSHOT' });
+  overrideEnvsInMochaDescribe({ npm_package_version: 'relay/0.0.1-SNAPSHOT' });
 
   this.beforeAll(async () => {
     rpcDocument = await parseOpenRPCDocument(JSON.stringify(openRpcSchema));

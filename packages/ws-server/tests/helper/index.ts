@@ -141,14 +141,14 @@ export class WsTestHelper {
    * @param {Function} tests - A function containing the tests to run with the overridden environment variables.
    *
    * @example
-   * withOverriddenEnvsInMochaTest({ TEST: 'false' }, () => {
+   * withOverriddenEnvsInMochaTest({ TEST: false }, () => {
    *   it('should return false', () => {
-   *     expect(ConfigService.get('TEST')).to.equal('false');
+   *     expect(ConfigService.get('TEST')).to.equal(false);
    *   });
    * });
    *
    * it('should return true', () => {
-   *   expect(ConfigService.get('TEST')).to.equal('true');
+   *   expect(ConfigService.get('TEST')).to.equal(true);
    * });
    */
   static withOverriddenEnvsInMochaTest(envs: NodeJS.Dict<any>, tests: () => void) {

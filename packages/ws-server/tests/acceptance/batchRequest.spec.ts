@@ -82,7 +82,7 @@ describe('@web-socket-batch-request Batch Requests', async function () {
     }
   });
 
-  WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: 'true' }, () => {
+  WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: true }, () => {
     it(`@release Should submit batch requests to WS server using Standard Web Socket and retrieve batch responses`, async () => {
       // call batch request
       const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
@@ -97,7 +97,7 @@ describe('@web-socket-batch-request Batch Requests', async function () {
       expect(batchResponses).to.deep.eq(individualResponses);
     });
 
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: '1' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: 1 }, () => {
       it('Should submit batch requests to WS server and get batchRequestAmountMaxExceed if requests size exceeds WS_BATCH_REQUESTS_MAX_SIZE', async () => {
         const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 
@@ -112,7 +112,7 @@ describe('@web-socket-batch-request Batch Requests', async function () {
     });
   });
 
-  WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: 'false' }, () => {
+  WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: false }, () => {
     it('Should submit batch requests to WS server and get batchRequestDisabledError if WS_BATCH_REQUESTS_DISABLED=false ', async () => {
       const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 

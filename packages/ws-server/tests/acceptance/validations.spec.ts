@@ -25,7 +25,6 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 describe('@release @web-socket-batch-1 JSON-RPC requests validation', async function () {
   const BLOCK_NUMBER_METHOD_NAME = 'eth_blockNumber';
