@@ -24,7 +24,6 @@ import { Registry } from 'prom-client';
 import pino, { Logger } from 'pino';
 import RateLimit from '../../src/rateLimit';
 import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../../relay/tests/helpers';
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 describe('RateLimit', () => {
   let logger: Logger;

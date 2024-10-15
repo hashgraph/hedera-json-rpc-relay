@@ -18,8 +18,6 @@
  *
  */
 
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { expect, use } from 'chai';
 import { v4 as uuid } from 'uuid';
 import { AbiCoder, keccak256 } from 'ethers';

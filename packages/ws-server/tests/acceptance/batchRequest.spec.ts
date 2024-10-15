@@ -24,7 +24,6 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 describe('@web-socket-batch-request Batch Requests', async function () {
   const METHOD_NAME = 'batch_request';

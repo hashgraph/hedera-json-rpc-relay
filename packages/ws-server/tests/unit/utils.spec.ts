@@ -30,14 +30,12 @@ import {
   sendToClient,
 } from '../../src/utils/utils';
 import { WS_CONSTANTS } from '../../src/utils/constants';
-import { Relay } from '@hashgraph/json-rpc-relay/dist';
 import ConnectionLimiter from '../../src/metrics/connectionLimiter';
 import WsMetricRegistry from '../../src/metrics/wsMetricRegistry';
 import { WsTestHelper } from '../helper';
 import { RelayImpl } from '@hashgraph/json-rpc-relay';
 import { Counter, Histogram } from 'prom-client';
 import { SubscriptionController } from '@hashgraph/json-rpc-relay/dist/lib/subscriptionController';
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('Utilities unit tests', async function () {

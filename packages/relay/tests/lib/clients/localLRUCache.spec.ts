@@ -18,7 +18,6 @@
  *
  */
 
-import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';

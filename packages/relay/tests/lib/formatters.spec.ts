@@ -18,7 +18,6 @@
  *
  */
 
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { expect } from 'chai';
 import {
   ASCIIToHex,

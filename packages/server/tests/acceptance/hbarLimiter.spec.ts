@@ -34,9 +34,7 @@ import {
   overrideEnvsInMochaDescribe,
   withOverriddenEnvsInMochaTest,
 } from '@hashgraph/json-rpc-relay/tests/helpers';
-import { estimateFileTransactionsFee } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';

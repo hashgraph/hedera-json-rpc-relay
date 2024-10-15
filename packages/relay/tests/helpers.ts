@@ -927,10 +927,10 @@ export const stopRedisInMemoryServer = async (redisInMemoryServer: RedisInMemory
  *   expect(ConfigService.get('TEST')).to.equal(true);
  * });
  */
-export const overrideEnvsInMochaDescribe = (envs: NodeJS.Dict<string | number | boolean | null | undefined>) => {
-  let envsToReset: NodeJS.Dict<string | number | boolean | null | undefined> = {};
+export const overrideEnvsInMochaDescribe = (envs: NodeJS.Dict<any>) => {
+  let envsToReset: NodeJS.Dict<any> = {};
 
-  const overrideEnv = (key: string, value: string | number | boolean | null | undefined) => {
+  const overrideEnv = (key: string, value: any) => {
     if (value === undefined) {
       ConfigServiceTestHelper.remove(key);
     } else {
@@ -969,10 +969,7 @@ export const overrideEnvsInMochaDescribe = (envs: NodeJS.Dict<string | number | 
  *   expect(ConfigService.get('TEST')).to.equal(true);
  * });
  */
-export const withOverriddenEnvsInMochaTest = (
-  envs: NodeJS.Dict<string | number | boolean | null | undefined>,
-  tests: () => void,
-) => {
+export const withOverriddenEnvsInMochaTest = (envs: NodeJS.Dict<any>, tests: () => void) => {
   const overriddenEnvs = Object.entries(envs)
     .map(([key, value]) => `${key}=${value}`)
     .join(', ');

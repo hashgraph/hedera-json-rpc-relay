@@ -42,8 +42,6 @@ import {
   withOverriddenEnvsInMochaTest,
 } from '../helpers';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
-import { calculateTxRecordChargeAmount, random20BytesAddress } from '../helpers';
 import {
   AccountId,
   Client,
