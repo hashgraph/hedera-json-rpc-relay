@@ -190,7 +190,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       before(async function () {
         // Restart the relay to reset the limits
-        await global.restartLocalRelay();
+        //await global.restartLocalRelay();
         await cacheService.clear(requestDetails);
         hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
         ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
@@ -276,6 +276,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           // This flow should not spend any hbars from the operator, as it's fully paid by the signer
           await deployContract(EstimateGasContract, accounts[0].wallet);
 
+          //add a timeout since expected cost relies on querying the mirror node which may not be yet updated
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
           verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
@@ -288,6 +290,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           // This flow should spend hbars from the operator, for fileCreate
           const contract = await deployContract(mediumSizeContract, accounts[1].wallet);
 
+          //add a timeout since expected cost relies on querying the mirror node which may not be yet updated
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
           verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
