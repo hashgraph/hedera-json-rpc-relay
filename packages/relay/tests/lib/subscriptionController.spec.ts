@@ -265,7 +265,7 @@ describe('subscriptionController', async function () {
   describe('With WS_SAME_SUB_FOR_SAME_EVENT == `false`', async function () {
     let subscriptionController: SubscriptionController;
 
-    overrideEnvsInMochaDescribe({ WS_SAME_SUB_FOR_SAME_EVENT: 'false' });
+    overrideEnvsInMochaDescribe({ WS_SAME_SUB_FOR_SAME_EVENT: false });
 
     before(() => {
       const registry = new Registry();

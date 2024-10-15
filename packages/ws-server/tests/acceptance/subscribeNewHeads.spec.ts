@@ -196,7 +196,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
 
     WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: undefined }, () => {
       it('@release should subscribe to newHeads and receive a valid JSON RPC response', async (done) => {
-        expect(process.env.WS_NEW_HEADS_ENABLED).to.be.undefined;
+        expect(ConfigService.get('WS_NEW_HEADS_ENABLED')).to.be.undefined;
 
         const webSocket = new WebSocket(WS_RELAY_URL);
         const subscriptionId = 1;
@@ -228,7 +228,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   });
 
   describe('Subscriptions for newHeads', async function () {
-    WsTestHelper.overrideEnvsInMochaDescribe({ WS_NEW_HEADS_ENABLED: 'true' });
+    WsTestHelper.overrideEnvsInMochaDescribe({ WS_NEW_HEADS_ENABLED: true });
 
     it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
       const webSocket = new WebSocket(WS_RELAY_URL);

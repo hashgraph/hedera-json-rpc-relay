@@ -430,18 +430,18 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   describe('Connection limit', async function () {
     let providers: ethers.WebSocketProvider[] = [];
 
-    WsTestHelper.overrideEnvsInMochaDescribe({ WS_CONNECTION_LIMIT: '5' });
+    WsTestHelper.overrideEnvsInMochaDescribe({ WS_CONNECTION_LIMIT: 5 });
 
     beforeEach(async () => {
       // We already have one connection
       expect(server._connections).to.equal(1);
 
-      for (let i = 1; i < parseInt(process.env.WS_CONNECTION_LIMIT); i++) {
+      for (let i = 1; i < parseInt(ConfigService.get('WS_CONNECTION_LIMIT')); i++) {
         providers.push(await establishConnection());
       }
 
       // Server is at max connections
-      expect(server._connections).to.equal(parseInt(process.env.WS_CONNECTION_LIMIT));
+      expect(server._connections).to.equal(parseInt(ConfigService.get('WS_CONNECTION_LIMIT')));
     });
 
     afterEach(async () => {
@@ -474,7 +474,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   describe('Connection TTL', async function () {
     let TEST_TTL = 5000;
 
-    WsTestHelper.overrideEnvsInMochaDescribe({ WS_MAX_INACTIVITY_TTL: TEST_TTL.toString() });
+    WsTestHelper.overrideEnvsInMochaDescribe({ WS_MAX_INACTIVITY_TTL: TEST_TTL });
 
     it('Connection TTL is enforced, should close all connections', async function () {
       const wsConn2 = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -890,7 +890,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   // skip this test if using a remote relay since updating the env vars would not affect it
   if (global.relayIsLocal) {
     describe('IP connection limits', async function () {
-      WsTestHelper.overrideEnvsInMochaDescribe({ WS_CONNECTION_LIMIT_PER_IP: '3' });
+      WsTestHelper.overrideEnvsInMochaDescribe({ WS_CONNECTION_LIMIT_PER_IP: 3 });
 
       it('Does not allow more connections from the same IP than the specified limit', async function () {
         const providers = [];
@@ -936,7 +936,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     });
 
     describe('Connection subscription limits', async function () {
-      WsTestHelper.overrideEnvsInMochaDescribe({ WS_SUBSCRIPTION_LIMIT: '2' });
+      WsTestHelper.overrideEnvsInMochaDescribe({ WS_SUBSCRIPTION_LIMIT: 2 });
 
       it('Does not allow more subscriptions per connection than the specified limit', async function () {
         // Create different subscriptions

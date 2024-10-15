@@ -54,7 +54,7 @@ describe('RPC Server', function () {
   before(function () {
     populatePreconfiguredSpendingPlansSpy = sinon.spy(RelayImpl.prototype, <any>'populatePreconfiguredSpendingPlans');
     app = require('../../src/server').default;
-    testServer = app.listen(process.env.E2E_SERVER_PORT);
+    testServer = app.listen(ConfigService.get('E2E_SERVER_PORT'));
     testClient = BaseTest.createTestClient();
 
     // leak detection middleware
@@ -138,7 +138,7 @@ describe('RPC Server', function () {
   withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: 'true' }, async function () {
     xit('supports optionality of request id when configured', async function () {
       const app2 = require('../../src/server').default;
-      const port = `1${process.env.E2E_SERVER_PORT}`;
+      const port = `1${ConfigService.get('E2E_SERVER_PORT')}`;
       const testServer2 = app2.listen(port);
 
       try {
@@ -157,7 +157,7 @@ describe('RPC Server', function () {
         expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
         expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
         expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
-        expect(response.data.result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+        expect(response.data.result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
       } catch (error: any) {
         expect(true, `Unexpected error: ${error.message}`).to.eq(false);
       } finally {
@@ -188,7 +188,7 @@ describe('RPC Server', function () {
     });
 
     BaseTest.defaultResponseChecks(res);
-    expect(res.data.result).to.be.equal('relay/' + ConfigService.get('npm_package_version'));
+    expect(res.data.result).to.be.equal('relay/' + ConfigService.get('NPM_PACKAGE_VERSION'));
   });
 
   it('should execute "eth_getTransactionByHash with missing transaction"', async function () {
@@ -490,7 +490,7 @@ describe('RPC Server', function () {
   });
 
   describe('batchRequest Test Cases', async function () {
-    overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: 'true' });
+    overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: true });
 
     function getEthChainIdRequest(id) {
       return {

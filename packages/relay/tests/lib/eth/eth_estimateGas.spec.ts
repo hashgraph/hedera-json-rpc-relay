@@ -81,7 +81,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
 
   overrideEnvsInMochaDescribe({
-    ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1',
+    ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1,
     TX_DEFAULT_GAS: defaultGasOverride.toString(),
   });
 

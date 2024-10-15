@@ -118,7 +118,7 @@ describe('eth_getBlockBy', async function () {
   const requestDetails = new RequestDetails({ requestId: 'ethGetBlockByTest', ipAddress: '0.0.0.0' });
 
   useInMemoryRedisServer(logger, 5031);
-  overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: 'false' });
+  overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: false });
 
   this.beforeAll(async () => {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);

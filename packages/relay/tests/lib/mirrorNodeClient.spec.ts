@@ -26,7 +26,7 @@ import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from '../helpers';
+import { getRequestId, mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from '../helpers';
 import pino from 'pino';
 import { ethers } from 'ethers';
 import { MirrorNodeClientError, predefined } from '../../src';
@@ -168,14 +168,14 @@ describe('MirrorNodeClient', async function () {
   withOverriddenEnvsInMochaTest({ MIRROR_NODE_URL_HEADER_X_API_KEY: 'abc123iAManAPIkey' }, () => {
     it('Can provide custom x-api-key header', async () => {
       const mirrorNodeInstanceOverridden = new MirrorNodeClient(
-        process.env.MIRROR_NODE_URL || '',
+        ConfigService.get('MIRROR_NODE_URL') || '',
         logger.child({ name: `mirror-node` }),
         registry,
         cacheService,
       );
       const axiosHeaders = mirrorNodeInstanceOverridden.getMirrorNodeRestInstance().defaults.headers.common;
       expect(axiosHeaders).has.property('x-api-key');
-      expect(axiosHeaders['x-api-key']).to.eq(process.env.MIRROR_NODE_URL_HEADER_X_API_KEY);
+      expect(axiosHeaders['x-api-key']).to.eq(ConfigService.get('MIRROR_NODE_URL_HEADER_X_API_KEY'));
     });
   });
 

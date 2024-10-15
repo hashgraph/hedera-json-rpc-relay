@@ -45,7 +45,7 @@ describe('@ethGasPrice Gas Price spec', async function () {
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getPriceTest', ipAddress: '0.0.0.0' });
 
-  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1 });
 
   this.beforeEach(async () => {
     // reset cache and restMock

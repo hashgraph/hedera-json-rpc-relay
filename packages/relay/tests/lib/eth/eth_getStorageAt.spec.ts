@@ -71,7 +71,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     expect(result).equal(DEFAULT_CURRENT_CONTRACT_STATE.state[0].value);
   }
 
-  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1 });
 
   this.beforeEach(async () => {
     // reset cache and restMock

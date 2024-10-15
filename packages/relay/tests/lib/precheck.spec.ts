@@ -243,7 +243,7 @@ describe('Precheck', async function () {
   });
 
   describe('gas price', async function () {
-    overrideEnvsInMochaDescribe({ GAS_PRICE_TINY_BAR_BUFFER: '10000000000' }); // 1 tinybar
+    overrideEnvsInMochaDescribe({ GAS_PRICE_TINY_BAR_BUFFER: 10000000000 }); // 1 tinybar
 
     it('should pass for gas price gt to required gas price', async function () {
       expect(() => precheck.gasPrice(parsedTxWithMatchingChainId, 10, requestDetails)).to.not.throw;

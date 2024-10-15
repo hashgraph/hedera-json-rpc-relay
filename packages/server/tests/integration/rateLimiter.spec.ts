@@ -37,7 +37,7 @@ describe('RateLimit', () => {
     registry = new Registry();
   });
 
-  overrideEnvsInMochaDescribe({ RATE_LIMIT_DISABLED: 'false' });
+  overrideEnvsInMochaDescribe({ RATE_LIMIT_DISABLED: false });
 
   beforeEach(() => {
     rateLimit = new RateLimit(logger, registry, duration);

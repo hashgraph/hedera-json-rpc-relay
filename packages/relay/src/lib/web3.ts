@@ -30,6 +30,6 @@ export class Web3Impl implements Web3 {
   }
 
   clientVersion(): string {
-    return 'relay/' + (ConfigService.get('npm_package_version') ?? '');
+    return 'relay/' + (ConfigService.get('NPM_PACKAGE_VERSION') ?? '');
   }
 }

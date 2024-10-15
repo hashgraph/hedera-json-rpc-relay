@@ -332,7 +332,7 @@ describe('Debug API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: false }, () => {
       it('should throw UNSUPPORTED_METHOD', async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
@@ -344,7 +344,7 @@ describe('Debug API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: true }, () => {
       it('should successfully debug a transaction', async function () {
         const traceTransaction = await debugService.debug_traceTransaction(
           transactionHash,

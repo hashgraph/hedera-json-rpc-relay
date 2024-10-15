@@ -62,7 +62,7 @@ describe('RelayImpl', () => {
     expect(eth).to.not.be.undefined;
   });
 
-  withOverriddenEnvsInMochaTest({ SUBSCRIPTIONS_ENABLED: 'true' }, () => {
+  withOverriddenEnvsInMochaTest({ SUBSCRIPTIONS_ENABLED: true }, () => {
     it('should return the correct subscription implementation when enabled', () => {
       relay = new RelayImpl(logger, register);
 
@@ -71,7 +71,7 @@ describe('RelayImpl', () => {
     });
   });
 
-  withOverriddenEnvsInMochaTest({ SUBSCRIPTIONS_ENABLED: 'false' }, () => {
+  withOverriddenEnvsInMochaTest({ SUBSCRIPTIONS_ENABLED: false }, () => {
     it('should return undefined subscription implementation when not enabled', () => {
       relay = new RelayImpl(logger, register);
 

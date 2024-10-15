@@ -143,7 +143,7 @@ describe('Filter API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: true }, () => {
       let filterId: string;
 
       beforeEach(async () => {
@@ -173,7 +173,7 @@ describe('Filter API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: false }, () => {
       it(`should throw UNSUPPORTED_METHOD for newFilter`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,

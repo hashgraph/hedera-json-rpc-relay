@@ -22,6 +22,7 @@ import WebSocket from 'ws';
 import { expect } from 'chai';
 import { WebSocketProvider } from 'ethers';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 export class WsTestHelper {
   static async assertFailInvalidParamsEthersWsProvider(
@@ -96,38 +97,39 @@ export class WsTestHelper {
    *
    * @example
    * describe('given TEST is set to false', () => {
-   *   overrideEnvsInMochaDescribe({ TEST: 'false' });
+   *   overrideEnvsInMochaDescribe({ TEST: false });
    *
    *   it('should return false', () => {
-   *     expect(process.env.TEST).to.equal('false');
+   *     expect(ConfigService.get('TEST')).to.equal(false);
    *   });
    * });
    *
    * it('should return true', () => {
-   *   expect(process.env.TEST).to.equal('true');
+   *   expect(ConfigService.get('TEST')).to.equal(true);
    * });
    */
   static overrideEnvsInMochaDescribe(envs: NodeJS.Dict<string>) {
     let envsToReset: NodeJS.Dict<string> = {};
 
-    const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
+    const overrideEnv = (key: string, value: string | undefined) => {
       if (value === undefined) {
-        delete object[key];
+        ConfigServiceTestHelper.remove(key);
       } else {
-        object[key] = value;
+        ConfigServiceTestHelper.dynamicOverride(key, value);
       }
     };
 
     before(() => {
       for (const key in envs) {
-        envsToReset[key] = process.env[key];
-        overrideEnv(process.env, key, envs[key]);
+        // @ts-ignore
+        envsToReset[key] = ConfigService.get(key);
+        overrideEnv(key, envs[key]);
       }
     });
 
     after(() => {
       for (const key in envs) {
-        overrideEnv(process.env, key, envsToReset[key]);
+        overrideEnv(key, envsToReset[key]);
       }
     });
   }
@@ -141,12 +143,12 @@ export class WsTestHelper {
    * @example
    * withOverriddenEnvsInMochaTest({ TEST: 'false' }, () => {
    *   it('should return false', () => {
-   *     expect(process.env.TEST).to.equal('false');
+   *     expect(ConfigService.get('TEST')).to.equal('false');
    *   });
    * });
    *
    * it('should return true', () => {
-   *   expect(process.env.TEST).to.equal('true');
+   *   expect(ConfigService.get('TEST')).to.equal('true');
    * });
    */
   static withOverriddenEnvsInMochaTest(envs: NodeJS.Dict<string>, tests: () => void) {

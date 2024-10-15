@@ -167,7 +167,7 @@ describe('Metric Service', function () {
       requestDetails,
     };
 
-    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: false }, () => {
       it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
         mock
           .onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`)
@@ -194,7 +194,7 @@ describe('Metric Service', function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true }, () => {
       it('Should execute captureTransactionMetrics() by retrieving transaction record from CONSENSUS NODE client', async () => {
         const mockedExchangeRateInCents = 12;
         const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
@@ -253,7 +253,7 @@ describe('Metric Service', function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true }, () => {
       it('Should listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics()', async () => {
         const mockedExchangeRateInCents = 12;
         const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);

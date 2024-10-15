@@ -315,6 +315,12 @@ export class GlobalConfig {
       required: true,
       defaultValue: null,
     },
+    HBAR_SPENDING_PLANS_CONFIG_FILE: {
+      envName: 'HBAR_SPENDING_PLANS_CONFIG_FILE',
+      type: 'string',
+      required: false,
+      defaultValue: null,
+    },
     INITIAL_BALANCE: {
       envName: 'INITIAL_BALANCE',
       type: 'number',

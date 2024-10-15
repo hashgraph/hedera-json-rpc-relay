@@ -94,7 +94,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getLogsTest', ipAddress: '0.0.0.0' });
 
-  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1 });
 
   beforeEach(async () => {
     // reset cache and restMock

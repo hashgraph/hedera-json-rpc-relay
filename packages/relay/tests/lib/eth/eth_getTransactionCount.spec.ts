@@ -75,7 +75,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     return `accounts/${address}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
   }
 
-  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1 });
 
   this.beforeEach(() => {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);

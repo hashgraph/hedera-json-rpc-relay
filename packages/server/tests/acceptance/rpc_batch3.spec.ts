@@ -2026,7 +2026,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   });
 
   describe('Batch Request Test Suite BATCH_REQUESTS_ENABLED = true', async function () {
-    overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: 'true' });
+    overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: true });
 
     it('Should return a batch of requests', async function () {
       const testAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId);

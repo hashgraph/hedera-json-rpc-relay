@@ -22,7 +22,6 @@ import pino from 'pino';
 import Long from 'long';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
-import { config } from 'dotenv';
 import EventEmitter from 'events';
 import { Registry } from 'prom-client';
 import { Utils } from '../../src/utils';
@@ -99,7 +98,7 @@ describe('SdkClient', async function () {
     },
   } as unknown as FeeSchedules;
 
-  overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
+  overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true });
 
   before(() => {
     const hederaNetwork = ConfigService.get('HEDERA_NETWORK')!;
@@ -2250,7 +2249,7 @@ describe('SdkClient', async function () {
     let hbarLimitMock: sinon.SinonMock;
     let sdkClientMock: sinon.SinonMock;
 
-    overrideEnvsInMochaDescribe({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' });
+    overrideEnvsInMochaDescribe({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: true });
 
     beforeEach(() => {
       hbarLimitMock = sinon.mock(hbarLimiter);
@@ -2608,7 +2607,7 @@ describe('SdkClient', async function () {
       expect(transactionRecordStub.called).to.be.true;
     });
 
-    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: false }, () => {
       it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
         const mockedTransactionId = transactionId.toString();
         const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);
@@ -2625,7 +2624,7 @@ describe('SdkClient', async function () {
                   is_approval: false,
                 },
                 {
-                  account: process.env.OPERATOR_ID_MAIN,
+                  account: ConfigService.get('OPERATOR_ID_MAIN'),
                   amount: -1 * defaultTransactionFee,
                   is_approval: false,
                 },

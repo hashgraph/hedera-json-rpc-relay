@@ -132,7 +132,7 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     expect(transactions[1].gas).equal(hashNumber(GAS_USED_2));
   }
 
-  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1 });
 
   this.beforeEach(async () => {
     // reset cache and restMock

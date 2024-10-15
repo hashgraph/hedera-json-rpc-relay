@@ -112,7 +112,7 @@ describe('LocalLRUCache Test Suite', async function () {
   });
 
   describe('verify cache management', async function () {
-    overrideEnvsInMochaDescribe({ CACHE_MAX: '2' });
+    overrideEnvsInMochaDescribe({ CACHE_MAX: 2 });
 
     it('verify cache size', async function () {
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
