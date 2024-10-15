@@ -22,6 +22,7 @@ import fs from 'fs';
 import { expect } from 'chai';
 import { resolve } from 'path';
 import { Logger } from 'pino';
+import { Registry } from 'prom-client';
 import dotenv, { config } from 'dotenv';
 import { BaseContract, ethers } from 'ethers';
 import { predefined } from '@hashgraph/json-rpc-relay';
@@ -34,11 +35,10 @@ import RelayClient from '../clients/relayClient';
 import MirrorClient from '../clients/mirrorClient';
 import MetricsClient from '../clients/metricsClient';
 import { AliasAccount } from '../types/AliasAccount';
-import {
-  estimateFileTransactionsFee,
-  overrideEnvsInMochaDescribe,
-  withOverriddenEnvsInMochaTest,
-} from '@hashgraph/json-rpc-relay/tests/helpers';
+import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hbarLimitService';
+import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
+import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
+import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';
@@ -71,6 +71,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
+  const cacheService = new CacheService(logger.child({ name: 'cache-service' }), new Registry());
+  const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
+    cacheService,
+    logger.child({ name: 'hbar-spending-plan-repository' }),
+  );
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
   if (relayIsLocal) {
@@ -204,6 +209,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await new Promise((r) => setTimeout(r, 3000));
       });
 
+      afterEach(async function () {
+        await hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
+      });
+
       describe('Remaining HBAR Limit', () => {
         overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
 
@@ -321,6 +330,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
+          const maxBasicSpendingLimit = HbarLimitService.TIER_LIMITS.BASIC.toTinybars().toNumber();
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
           let exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
@@ -353,10 +363,17 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           }
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          const totalHbarSpentByBasicPlan = remainingHbarsBefore - remainingHbarsAfter; // total amount spent by the current basic plan
 
-          // Explanation: A preemptive rate limit check triggers the HBAR_RATE_LIMIT_EXCEED error when (remainingBudget - estimatedTxFee) < 0.
-          //             In this scenario, the final remainingHbarsAfter is expected to be less than estimatedTxFee.
-          expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
+          // Explanation:
+          // An HBAR limit check triggers the HBAR_RATE_LIMIT_EXCEED error in two scenarios:
+          //    a. if remainingHbarsBefore > maxBasicSpendingLimit ===> (totalHbarSpentByBasicPlan + estimatedTxFee) > maxBasicSpendingLimit
+          //    b. if remainingHbarsBefore <= maxBasicSpendingLimit ===> (remainingBudget - estimatedTxFee) < 0
+          if (remainingHbarsBefore > maxBasicSpendingLimit) {
+            expect(totalHbarSpentByBasicPlan + estimatedTxFee).to.be.gt(maxBasicSpendingLimit);
+          } else {
+            expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
+          }
         });
       });
     });
