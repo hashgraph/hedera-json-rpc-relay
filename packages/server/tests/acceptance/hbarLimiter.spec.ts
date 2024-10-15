@@ -190,7 +190,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       before(async function () {
         // Restart the relay to reset the limits
-        //await global.restartLocalRelay();
+        await global.restartLocalRelay();
         await cacheService.clear(requestDetails);
         hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
         ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
