@@ -156,8 +156,10 @@ export class HbarLimitService implements IHbarLimitService {
 
   /**
    * Checks if the given eth address or ip address should be limited.
+   *
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
+   * @param {string} txConstructorName - The name of the transaction constructor associated with the transaction.
    * @param {string} ethAddress - The eth address to check.
    * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @param {number} [estimatedTxFee] - The total estimated transaction fee, default to 0.
@@ -166,16 +168,20 @@ export class HbarLimitService implements IHbarLimitService {
   async shouldLimit(
     mode: string,
     methodName: string,
+    txConstructorName: string,
     ethAddress: string,
     requestDetails: RequestDetails,
     estimatedTxFee: number = 0,
   ): Promise<boolean> {
     const ipAddress = requestDetails.ipAddress;
-    if (await this.isTotalBudgetExceeded(mode, methodName, estimatedTxFee, requestDetails)) {
+    if (await this.isTotalBudgetExceeded(mode, methodName, txConstructorName, estimatedTxFee, requestDetails)) {
       return true;
     }
+
     if (!ethAddress && !ipAddress) {
-      this.logger.warn('No eth address or ip address provided, cannot check if address should be limited');
+      this.logger.warn(
+        `${requestDetails.formattedRequestId} No eth address or ip address provided, cannot check if address should be limited.`,
+      );
       return false;
     }
     const user = `(ethAddress=${ethAddress})`;
@@ -188,24 +194,35 @@ export class HbarLimitService implements IHbarLimitService {
 
     const spendingLimit = HbarLimitService.TIER_LIMITS[spendingPlan.subscriptionTier].toTinybars();
 
+    // note: estimatedTxFee is only applicable in a few cases (currently, only for file transactions).
+    //      In most situations, estimatedTxFee is set to 0 (i.e., not considered).
+    //      In such cases, it should still be true if spendingPlan.amountSpent === spendingLimit.
     const exceedsLimit =
       spendingLimit.lte(spendingPlan.amountSpent) || spendingLimit.lt(spendingPlan.amountSpent + estimatedTxFee);
+
     this.logger.trace(
-      `${requestDetails.formattedRequestId} ${user} ${exceedsLimit ? 'should' : 'should not'} be limited: amountSpent=${
+      `${requestDetails.formattedRequestId} User ${
+        exceedsLimit ? 'has' : 'has NOT'
+      } exceeded HBAR rate limit threshold: user=${user}, amountSpent=${
         spendingPlan.amountSpent
-      }, estimatedTxFee=${estimatedTxFee} tℏ, spendingLimit=${spendingLimit.toString()} tℏ`,
+      }, estimatedTxFee=${estimatedTxFee}, spendingLimit=${spendingLimit}, txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
     );
+
     return exceedsLimit;
   }
 
   /**
-   * Add expense to the remaining budget.
+   * Add expense to the remaining budget and update the spending plan if applicable.
    * @param {number} cost - The cost of the expense.
    * @param {string} ethAddress - The Ethereum address to add the expense to.
    * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the expense has been added.
    */
   async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails): Promise<void> {
+    const newRemainingBudget = this.remainingBudget.toTinybars().sub(cost);
+    this.remainingBudget = Hbar.fromTinybars(newRemainingBudget);
+    this.hbarLimitRemainingGauge.set(newRemainingBudget.toNumber());
+
     const ipAddress = requestDetails.ipAddress;
     if (!ethAddress && !ipAddress) {
       throw new Error('Cannot add expense without an eth address or ip address');
@@ -218,9 +235,11 @@ export class HbarLimitService implements IHbarLimitService {
     }
 
     this.logger.trace(
-      `${requestDetails.formattedRequestId} Adding expense of ${cost} to spending plan with ID ${
-        spendingPlan.id
-      }, new amountSpent=${spendingPlan.amountSpent + cost}`,
+      `${requestDetails.formattedRequestId} Spending plan expense update: planID=${spendingPlan.id}, subscriptionTier=${
+        spendingPlan.subscriptionTier
+      }, cost=${cost}, originalAmountSpent=${spendingPlan.amountSpent}, updatedAmountSpent=${
+        spendingPlan.amountSpent + cost
+      }`,
     );
 
     // Check if the spending plan is being used for the first time today
@@ -229,8 +248,6 @@ export class HbarLimitService implements IHbarLimitService {
     }
 
     await this.hbarSpendingPlanRepository.addToAmountSpent(spendingPlan.id, cost, requestDetails, this.limitDuration);
-    this.remainingBudget = Hbar.fromTinybars(this.remainingBudget.toTinybars().sub(cost));
-    this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
 
     // Done asynchronously in the background
     this.updateAverageAmountSpentPerSubscriptionTier(spendingPlan.subscriptionTier, requestDetails).then();
@@ -244,6 +261,7 @@ export class HbarLimitService implements IHbarLimitService {
    * Checks if the total budget of the limiter has been exceeded.
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
+   * @param {string} txConstructorName - The name of the transaction constructor associated with the transaction.
    * @param {number} estimatedTxFee - The total estimated transaction fee, default to 0.
    * @param {RequestDetails} requestDetails The request details for logging and tracking
    * @returns {Promise<boolean>} - Resolves `true` if the total budget has been exceeded, otherwise `false`.
@@ -252,21 +270,33 @@ export class HbarLimitService implements IHbarLimitService {
   private async isTotalBudgetExceeded(
     mode: string,
     methodName: string,
+    txConstructorName: string,
     estimatedTxFee: number = 0,
     requestDetails: RequestDetails,
   ): Promise<boolean> {
     if (this.shouldResetLimiter()) {
       await this.resetLimiter(requestDetails);
     }
+    // note: estimatedTxFee is only applicable in a few cases (currently, only for file transactions).
+    //      In most situations, estimatedTxFee is set to 0 (i.e., not considered).
+    //      In such cases, it should still be false if remainingBudget === 0.
     if (this.remainingBudget.toTinybars().lte(0) || this.remainingBudget.toTinybars().sub(estimatedTxFee).lt(0)) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
-        `${requestDetails.formattedRequestId} HBAR rate limit incoming call: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee} tℏ, resetTimestamp=${this.reset}`,
+        `${requestDetails.formattedRequestId} Total HBAR rate limit reached: remainingBudget=${
+          this.remainingBudget
+        }, totalBudget=${
+          this.totalBudget
+        }, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
       );
       return true;
     } else {
       this.logger.trace(
-        `${requestDetails.formattedRequestId} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, totalBudget=${this.totalBudget}, estimatedTxFee=${estimatedTxFee} tℏ, resetTimestamp=${this.reset}.`,
+        `${requestDetails.formattedRequestId} Total HBAR rate limit NOT reached: remainingBudget=${
+          this.remainingBudget
+        }, totalBudget=${
+          this.totalBudget
+        }, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
       );
       return false;
     }
@@ -412,6 +442,7 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} ethAddress - The eth address to create the spending plan for.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
+   * @throws {Error} - If neither eth address nor IP address is provided.
    * @private
    */
   private async createBasicSpendingPlan(
@@ -440,7 +471,7 @@ export class HbarLimitService implements IHbarLimitService {
     }
     if (ipAddress) {
       this.logger.trace(
-        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to ip address ${ipAddress}`,
+        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to ip address`,
       );
       await this.ipAddressHbarSpendingPlanRepository.save(
         { ipAddress, planId: spendingPlan.id },
