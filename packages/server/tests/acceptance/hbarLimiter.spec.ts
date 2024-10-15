@@ -48,6 +48,9 @@ import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
 import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
