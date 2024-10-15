@@ -104,13 +104,33 @@ export class CustomLRUCache<K, V> extends LRUCache<K, V> {
    * @private
    */
   private isKeyProtected(key: string): boolean {
-    return this.spendingPlansConfig.some((plan) => {
-      return (
-        this.isPreconfiguredPlanKey(key, plan) ||
-        this.isPreconfiguredEthAddressKey(key, plan) ||
-        this.isPreconfiguredIpAddressKey(key, plan)
-      );
-    });
+    if (this.isHbarSpendingPlanRepositoryKey(key)) {
+      return this.spendingPlansConfig.some((plan) => {
+        return (
+          this.isPreconfiguredPlanKey(key, plan) ||
+          this.isPreconfiguredEthAddressKey(key, plan) ||
+          this.isPreconfiguredIpAddressKey(key, plan)
+        );
+      });
+    }
+    return false;
+  }
+
+  /**
+   * Determines if a key is associated with any of the spending plan repositories.
+   * @param {string} key - The key to check.
+   * @returns {boolean} - True if the key is associated with a spending plan repository, false otherwise.
+   * @private
+   */
+  private isHbarSpendingPlanRepositoryKey(key: string): boolean {
+    if (!key) {
+      return false;
+    }
+    return (
+      key.startsWith(HbarSpendingPlanRepository.collectionKey) ||
+      key.startsWith(EthAddressHbarSpendingPlanRepository.collectionKey) ||
+      key.startsWith(IPAddressHbarSpendingPlanRepository.collectionKey)
+    );
   }
 
   /**
