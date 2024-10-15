@@ -2195,6 +2195,11 @@ describe('SdkClient', async function () {
               is_approval: false,
             },
             {
+              accountId: process.env.OPERATOR_ID_MAIN,
+              amount: Hbar.fromTinybars(defaultTransactionFee),
+              is_approval: false,
+            },
+            {
               accountId: accountId.toString(),
               amount: Hbar.fromTinybars(-1 * defaultTransactionFee),
               is_approval: false,
@@ -2225,7 +2230,7 @@ describe('SdkClient', async function () {
         },
       }) as unknown as TransactionResponse;
 
-    const getMockedTransactionRecord: any = (transactionType: string) => ({
+    const getMockedTransactionRecord: any = (transactionType: string, toHbar: boolean = false) => ({
       receipt: {
         status: Status.Success,
         exchangeRate: { exchangeRateInCents: 12 },
@@ -2234,7 +2239,7 @@ describe('SdkClient', async function () {
       contractFunctionResult: {
         gasUsed,
       },
-      transfers: getMockedTransaction(transactionType, false).transfers,
+      transfers: getMockedTransaction(transactionType, toHbar).transfers,
     });
 
     const fileInfo = {
@@ -2710,9 +2715,9 @@ describe('SdkClient', async function () {
       }
     });
 
-    it('Should execute getTransferAmountSumForAccount() to calculate transactionFee of the specify accountId', () => {
+    it('Should execute getTransferAmountSumForAccount() to calculate transactionFee by only transfers that are paid by the specify accountId', () => {
       const accountId = process.env.OPERATOR_ID_MAIN || '';
-      const mockedTxRecord = getMockedTransactionRecord();
+      const mockedTxRecord = getMockedTransactionRecord(EthereumTransaction.name, true);
 
       const transactionFee = sdkClient.getTransferAmountSumForAccount(mockedTxRecord, accountId);
       expect(transactionFee).to.eq(defaultTransactionFee);
