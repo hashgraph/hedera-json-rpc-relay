@@ -219,8 +219,11 @@ export class HbarLimitService implements IHbarLimitService {
    * @returns {Promise<void>} - A promise that resolves when the expense has been added.
    */
   async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails): Promise<void> {
-    const ipAddress = requestDetails.ipAddress;
+    const newRemainingBudget = this.remainingBudget.toTinybars().sub(cost);
+    this.remainingBudget = Hbar.fromTinybars(newRemainingBudget);
+    this.hbarLimitRemainingGauge.set(newRemainingBudget.toNumber());
 
+    const ipAddress = requestDetails.ipAddress;
     if (!ethAddress && !ipAddress) {
       throw new Error('Cannot add expense without an eth address or ip address');
     }
@@ -245,8 +248,6 @@ export class HbarLimitService implements IHbarLimitService {
     }
 
     await this.hbarSpendingPlanRepository.addToAmountSpent(spendingPlan.id, cost, requestDetails, this.limitDuration);
-    this.remainingBudget = Hbar.fromTinybars(this.remainingBudget.toTinybars().sub(cost));
-    this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
 
     // Done asynchronously in the background
     this.updateAverageAmountSpentPerSubscriptionTier(spendingPlan.subscriptionTier, requestDetails).then();
