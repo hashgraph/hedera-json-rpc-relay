@@ -18,58 +18,129 @@
  *
  */
 
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { Logger } from 'pino';
 import EventEmitter from 'events';
 import findConfig from 'find-config';
 import constants from '../../constants';
 import { Utils } from './../../../utils';
-import HbarLimit from '../../hbarlimiter';
 import { Counter, Registry } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
+import { HbarLimitService } from '../hbarLimitService';
 import { CacheService } from '../cacheService/cacheService';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
-import fs from 'fs';
 
 export default class HAPIService {
+  /**
+   * The number of transactions that have occurred.
+   * @private
+   * @type {number}
+   */
   private transactionCount: number;
-  private errorCodes: number[];
+
+  /**
+   * An array of error codes encountered.
+   * @private
+   * @readonly
+   * @type {number[]}
+   */
+  private readonly errorCodes: number[];
+
+  /**
+   * The duration for resetting operations.
+   * @private
+   * @type {number}
+   */
   private resetDuration: number;
+
+  /**
+   * Indicates whether a reset operation should occur.
+   * @private
+   * @type {boolean}
+   */
   private shouldReset: boolean;
 
-  private isReinitEnabled: boolean;
-  private isTimeResetDisabled: boolean;
+  /**
+   * Indicates whether reinitialization is enabled.
+   * @private
+   * @readonly
+   * @type {boolean}
+   */
+  private readonly isReinitEnabled: boolean;
 
-  private initialTransactionCount: number;
-  private initialErrorCodes: number[];
-  private initialResetDuration: number;
+  /**
+   * Indicates whether time-based resets are disabled.
+   * @private
+   * @readonly
+   * @type {boolean}
+   */
+  private readonly isTimeResetDisabled: boolean;
 
-  private hederaNetwork: string;
+  /**
+   * The initial count of transactions.
+   * @private
+   * @readonly
+   * @type {number}
+   */
+  private readonly initialTransactionCount: number;
+
+  /**
+   * The initial array of error codes.
+   * @private
+   * @readonly
+   * @type {number[]}
+   */
+  private readonly initialErrorCodes: number[];
+
+  /**
+   * The initial duration for resetting operations.
+   * @private
+   * @readonly
+   * @type {number}
+   */
+  private readonly initialResetDuration: number;
+
+  /**
+   * The network name for Hedera services.
+   * @private
+   * @readonly
+   * @type {string}
+   */
+  private readonly hederaNetwork: string;
+
+  /**
+   * The main client for interacting with the Hedera network.
+   * @private
+   * @type {Client}
+   */
   private clientMain: Client;
 
   /**
-   * The SDK Client use for connecting to both the consensus nodes and mirror node. The account
+   * The SDK Client used for connecting to both the consensus nodes and mirror node. The account
    * associated with this client will pay for all operations on the main network.
-   *
    * @private
+   * @type {SDKClient}
    */
   private client: SDKClient;
 
   /**
    * The logger used for logging all output from this class.
    * @private
+   * @readonly
+   * @type {Logger}
    */
-  private logger: Logger;
+  private readonly logger: Logger;
 
   /**
-   * This limiter tracks hbar expenses and limits.
+   * An instance of the HbarLimitService that tracks hbar expenses and limits.
    * @private
+   * @readonly
+   * @type {HbarLimitService}
    */
-  private hbarLimiter: HbarLimit;
-
+  private readonly hbarLimitService: HbarLimitService;
   /**
    * An instance of EventEmitter used for emitting and handling events within the class.
-   *
    * @private
    * @readonly
    * @type {EventEmitter}
@@ -77,10 +148,27 @@ export default class HAPIService {
   private readonly eventEmitter: EventEmitter;
 
   /**
+   * A registry used within the class.
    * @private
+   * @readonly
+   * @type {Registry}
    */
   private readonly register: Registry;
-  private clientResetCounter: Counter;
+
+  /**
+   * A counter for tracking client resets.
+   * @private
+   * @readonly
+   * @type {Counter}
+   */
+  private readonly clientResetCounter: Counter;
+
+  /**
+   * A service for caching data within the class.
+   * @private
+   * @readonly
+   * @type {CacheService}
+   */
   private readonly cacheService: CacheService;
 
   /**
@@ -93,16 +181,16 @@ export default class HAPIService {
    *
    * @param {Logger} logger - The logger instance used for logging.
    * @param {Registry} register - The registry instance for metrics and other services.
-   * @param {HbarLimit} hbarLimiter - The Hbar rate limiter instance.
    * @param {CacheService} cacheService - The cache service instance.
    * @param {EventEmitter} eventEmitter - The event emitter instance used for emitting events.
+   * @param {HbarLimitService} hbarLimitService - An HBAR Rate Limit service that tracks hbar expenses and limits.
    */
   constructor(
     logger: Logger,
     register: Registry,
-    hbarLimiter: HbarLimit,
     cacheService: CacheService,
     eventEmitter: EventEmitter,
+    hbarLimitService: HbarLimitService,
   ) {
     dotenv.config({ path: findConfig('.env') || '' });
     if (fs.existsSync(findConfig('.env') || '')) {
@@ -112,8 +200,8 @@ export default class HAPIService {
     }
 
     this.logger = logger;
-    this.hbarLimiter = hbarLimiter;
 
+    this.hbarLimitService = hbarLimitService;
     this.eventEmitter = eventEmitter;
     this.hederaNetwork = (process.env.HEDERA_NETWORK || this.config.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
@@ -218,9 +306,9 @@ export default class HAPIService {
     return new SDKClient(
       this.clientMain,
       logger.child({ name: `consensus-node` }),
-      this.hbarLimiter,
       this.cacheService,
       this.eventEmitter,
+      this.hbarLimitService,
     );
   }
 

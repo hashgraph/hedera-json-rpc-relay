@@ -982,8 +982,8 @@ export const withOverriddenEnvsInMochaTest = (envs: NodeJS.Dict<string>, tests: 
 export const estimateFileTransactionsFee = (
   callDataSize: number,
   fileChunkSize: number,
-  exchangeRateInCents: number,
-) => {
+  currentNetworkExchangeRateInCents: number,
+): number => {
   const fileCreateTransactions = 1;
   const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
 
@@ -1001,7 +1001,9 @@ export const estimateFileTransactionsFee = (
     fileAppendFeeInCents * fileAppendTransactions +
     lastFileAppendChunkFeeInCents;
 
-  const estimatedTxFee = Math.round((totalTxFeeInCents / exchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF);
+  const estimatedTxFee = Math.round(
+    (totalTxFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
+  );
 
   return estimatedTxFee;
 };
