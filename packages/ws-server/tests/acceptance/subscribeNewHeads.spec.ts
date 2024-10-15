@@ -143,7 +143,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   });
 
   describe('Configuration', async function () {
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: 'false' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: false }, () => {
       it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
         const webSocket = new WebSocket(WS_RELAY_URL);
         const messagePromise = new Promise<void>((resolve, reject) => {
@@ -174,7 +174,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       });
     });
 
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_SUBSCRIPTION_LIMIT: '2', WS_NEW_HEADS_ENABLED: 'true' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_SUBSCRIPTION_LIMIT: 2, WS_NEW_HEADS_ENABLED: true }, () => {
       it('Does not allow more subscriptions per connection than the specified limit with newHeads', async function () {
         // Create different subscriptions
         for (let i = 0; i < 3; i++) {

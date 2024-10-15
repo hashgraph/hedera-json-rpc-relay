@@ -108,10 +108,10 @@ export class WsTestHelper {
    *   expect(ConfigService.get('TEST')).to.equal(true);
    * });
    */
-  static overrideEnvsInMochaDescribe(envs: NodeJS.Dict<string>) {
+  static overrideEnvsInMochaDescribe(envs: NodeJS.Dict<any>) {
     let envsToReset: NodeJS.Dict<string> = {};
 
-    const overrideEnv = (key: string, value: string | undefined) => {
+    const overrideEnv = (key: string, value: any) => {
       if (value === undefined) {
         ConfigServiceTestHelper.remove(key);
       } else {
@@ -151,7 +151,7 @@ export class WsTestHelper {
    *   expect(ConfigService.get('TEST')).to.equal('true');
    * });
    */
-  static withOverriddenEnvsInMochaTest(envs: NodeJS.Dict<string>, tests: () => void) {
+  static withOverriddenEnvsInMochaTest(envs: NodeJS.Dict<any>, tests: () => void) {
     const overriddenEnvs = Object.entries(envs)
       .map(([key, value]) => `${key}=${value}`)
       .join(', ');

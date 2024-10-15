@@ -323,7 +323,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
         });
 
-        withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' }, () => {
+        withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: true }, () => {
           it('Should preemptively check the rate limit before submitting EthereumTransaction', async function () {
             try {
               for (let i = 0; i < 50; i++) {
@@ -341,7 +341,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
         });
 
-        withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'false' }, () => {
+        withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: false }, () => {
           it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
             const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
             const lastRemainingHbars = remainingHbarsBefore;
