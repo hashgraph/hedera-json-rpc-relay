@@ -110,9 +110,9 @@ export class IPAddressHbarSpendingPlanRepository {
    */
   async deleteAll(requestDetails: RequestDetails): Promise<void> {
     const key = this.getKey('*');
-    const keys = await this.cache.keys(key, 'deleteAll', requestDetails);
+    const keys = await this.cache.keys(key, this.deleteAll.name, requestDetails);
     for (const key of keys) {
-      await this.cache.delete(key, 'deleteAll', requestDetails);
+      await this.cache.delete(key, this.deleteAll.name, requestDetails);
     }
     this.logger.trace(`${requestDetails.formattedRequestId} Deleted all IP address spending plans`);
   }
