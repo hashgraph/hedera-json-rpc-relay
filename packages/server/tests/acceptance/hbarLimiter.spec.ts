@@ -49,6 +49,7 @@ import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/ty
 import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
@@ -170,9 +171,21 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       return sumAccountTransfers(ethereumTransaction.transfers, operatorAccount);
     };
 
+    const getResetTimestamp = (): Date => {
+      const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
+      let resetDate = new Date(todayAtMidnight);
+      while (resetDate.getTime() < Date.now()) {
+        // 1. Calculate the difference between the current time and the reset time.
+        // 2. Determine how many intervals of size `limitDuration` have passed since the last reset.
+        // 3. Calculate the new reset date by adding the required intervals to the original reset date.
+        const intervalsPassed = Math.ceil((Date.now() - resetDate.getTime()) / constants.HBAR_RATE_LIMIT_DURATION);
+        resetDate = new Date(resetDate.getTime() + intervalsPassed * constants.HBAR_RATE_LIMIT_DURATION);
+      }
+      return resetDate;
+    };
+
     describe('HBAR Rate Limit Tests', function () {
       overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
-      overrideEnvsInMochaDescribe({ HBAR_RATE_LIMIT_BASIC: '1000000000' });
       this.timeout(480 * 1000); // 480 seconds
 
       const accounts: AliasAccount[] = [];
@@ -229,6 +242,12 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('Total HBAR Limit', () => {
+        before(async () => {
+          logger.info(`${requestDetails.formattedRequestId} Waiting until the next reset of the HBAR rate limiter`);
+          const nextReset = getResetTimestamp();
+          await new Promise((r) => setTimeout(r, nextReset.getTime() - Date.now()));
+        });
+
         it('should execute "eth_sendRawTransaction" for BASIC user without triggering HBAR rate limit exceeded', async function () {
           const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
           const parentContractAddress = parentContract.target as string;
@@ -263,6 +282,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
           const contract = await deployContract(largeContractJson, accounts[0].wallet);
 
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
 
@@ -277,7 +297,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           await deployContract(EstimateGasContract, accounts[0].wallet);
 
           //add a timeout since expected cost relies on querying the mirror node which may not be yet updated
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 3000));
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
           verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
@@ -291,7 +311,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const contract = await deployContract(mediumSizeContract, accounts[1].wallet);
 
           //add a timeout since expected cost relies on querying the mirror node which may not be yet updated
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 3000));
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
           verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
@@ -324,6 +344,12 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('Tiered HBAR Rate Limit', () => {
+        before(async () => {
+          logger.info(`${requestDetails.formattedRequestId} Waiting until the next reset of the HBAR rate limiter`);
+          const nextReset = getResetTimestamp();
+          await new Promise((r) => setTimeout(r, nextReset.getTime() - Date.now()));
+        });
+
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
           const TOLERANCE = 0.02;
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
@@ -332,6 +358,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             .balance;
           const largeContract = await deployContract(largeContractJson, accounts[0].wallet);
 
+          //adds a timeout since following lines query the mirror node and it may not be updated yet
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
             .balance;
 
