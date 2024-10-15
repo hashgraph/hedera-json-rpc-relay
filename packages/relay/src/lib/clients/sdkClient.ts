@@ -712,7 +712,11 @@ export class SDKClient {
     }
 
     try {
-      this.logger.info(`${requestDetails.formattedRequestId} Execute ${txConstructorName} transaction`);
+      this.logger.info(
+        `${requestDetails.formattedRequestId} Execute ${txConstructorName} transaction to NodeId: ${
+          this.clientMain._network.getNode().address
+        }`,
+      );
       transactionResponse = await transaction.execute(this.clientMain);
 
       transactionId = transactionResponse.transactionId.toString();
