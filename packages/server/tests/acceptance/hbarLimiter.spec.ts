@@ -39,11 +39,9 @@ import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hb
 import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
 import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';
-import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
@@ -80,10 +78,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
   const cacheService = new CacheService(logger.child({ name: 'cache-service' }), new Registry());
-  const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
-    cacheService,
-    logger.child({ name: 'hbar-spending-plan-repository' }),
-  );
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
   if (relayIsLocal) {
@@ -197,6 +191,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await cacheService.clear(requestDetails);
         ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
         ipSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
+        hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
+          cacheService,
+          logger.child({ name: 'hbar-spending-plan-repository' }),
+        );
 
         logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
         logger.info(
@@ -301,7 +299,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         it('should verify the estimated and actual transaction fees for file transactions are approximately equal', async function () {
           const contract = await deployContract(mediumSizeContract, accounts[1].wallet);
-          let exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
+          const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
           const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
 
           const { fileCreateTxFee, fileCreateTimestamp } = await getExpectedCostOfFileCreateTx();
@@ -472,7 +470,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const maxBasicSpendingLimit = HbarLimitService.TIER_LIMITS.BASIC.toTinybars().toNumber();
           const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
-          let exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
+          const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
           const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
 
           const factory = new ethers.ContractFactory(
@@ -487,7 +485,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             exchangeRateInCents,
           );
 
-          let lastRemainingHbars = remainingHbarsBefore;
+          const lastRemainingHbars = remainingHbarsBefore;
           expect(remainingHbarsBefore).to.be.gt(0);
           try {
             for (let i = 0; i < 50; i++) {
