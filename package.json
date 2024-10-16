@@ -8,7 +8,6 @@
     "@types/find-config": "^1.0.4",
     "@types/koa-cors": "^0.0.6",
     "@types/sinon": "^10.0.20",
-    "@types/lodash": "^4.17.7",
     "@typescript-eslint/eslint-plugin": "^6.5.0",
     "@typescript-eslint/parser": "^6.5.0",
     "ajv": "^8.16.0",
@@ -16,6 +15,7 @@
     "axios-mock-adapter": "^1.20.0",
     "chai-as-promised": "^7.1.1",
     "chai-exclude": "^2.1.1",
+    "env-cmd": "^10.1.0",
     "eslint": "^8.48.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^8.3.0",
@@ -79,7 +79,8 @@
     "test": "npx lerna run test",
     "openrpctest": "ts-mocha packages/relay/tests/lib/openrpc.spec.ts --exit",
     "bump-version": "SEM_VER=${npm_config_semver} SNAPSHOT=${npm_config_snapshot} node scripts/.bump-version.js",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "create-alias-accounts": "env-cmd npx lerna exec --scope @hashgraph/json-rpc-server -- npm run create-alias-accounts"
   },
   "dependencies": {
     "@ethereumjs/rlp": "^5.0.2",
@@ -91,8 +92,8 @@
     "lerna": "^8.1.8",
     "pino": "^7.11.0",
     "pino-pretty": "^7.6.1",
-    "prom-client": "^14.0.1",
     "pnpm": "^8.7.1",
+    "prom-client": "^14.0.1",
     "redis": "^4.7.0"
   },
   "overrides": {
