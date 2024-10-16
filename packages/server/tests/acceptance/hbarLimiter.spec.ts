@@ -181,9 +181,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         await global.restartLocalRelay();
 
         logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
-        logger.info(
-          `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`,
-        );
+        logger.info(`${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TOTAL: ${process.env.HBAR_RATE_LIMIT_TOTAL}`);
 
         const initialAccount: AliasAccount = global.accounts[0];
 

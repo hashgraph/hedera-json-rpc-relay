@@ -7,7 +7,7 @@ Rate-limiting based on spent HBAR budget for a duration of time. Use to limit ex
 All rate-limiting options are exposed and can be configured from `.env` .
 
 ```js
-HBAR_RATE_LIMIT_TINYBAR: 11_000_000_000,
+HBAR_RATE_LIMIT_TOTAL: 11_000_000_000,
 HBAR_RATE_LIMIT_DURATION: 80000
 ```
 

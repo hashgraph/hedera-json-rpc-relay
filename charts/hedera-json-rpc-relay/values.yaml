@@ -21,7 +21,7 @@ config:
   ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: false
   ETH_GET_LOGS_BLOCK_RANGE_LIMIT: 1000
   GAS_PRICE_TINY_BAR_BUFFER: 10000000000
-  HBAR_RATE_LIMIT_TINYBAR: 5000000000
+  HBAR_RATE_LIMIT_TOTAL: 5000000000
   HBAR_RATE_LIMIT_DURATION: 60000
   HBAR_RATE_LIMIT_BASIC: 5000000000
   # Valid options are `previewnet`, `testnet`, and `mainnet` for remote options. For local use {"127.0.01:50211":"0.0.3"}. For IPs use {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1"} form
@@ -67,7 +67,7 @@ cronjob:
     pullPolicy: IfNotPresent
     repository: postman/newman
     tag: 5.3.1-alpine
-  postman: ""  # Custom postman.json in base64 encoding
+  postman: '' # Custom postman.json in base64 encoding
   schedule: '@daily'
 
 fullnameOverride: ''
@@ -173,7 +173,7 @@ test:
     pullPolicy: IfNotPresent
     repository: postman/newman
     tag: 5.3.1-alpine
-  postman: ""  # Custom postman.json in base64 encoding
+  postman: '' # Custom postman.json in base64 encoding
 
 terminationGracePeriodSeconds: 60
 
