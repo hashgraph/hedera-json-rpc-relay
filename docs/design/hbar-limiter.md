@@ -84,7 +84,6 @@ The HBar limiter will be implemented as a separate service, used by other servic
 ### What is an HbarSpendingPlan?
 
 An `HbarSpendingPlan` is a record that tracks the total amount of HBars spent by a user or group of users (linked by ETH and IP addresses) over a specific period. It includes the following information:
-
 - **id**: A unique identifier for the spending plan.
 - **subscriptionTier**: The tier of the user or group of users (BASIC, EXTENDED, or PRIVILEGED).
 - **createdAt**: The timestamp when the spending plan was created.
@@ -115,7 +114,7 @@ flowchart TD
 
 **NOTE:** There will be one spending plan per project/partner with a total spending limit, shared amongst a group of users (IP and ETH addresses) linked to that plan. This means that they will share a common total spending limit for the project/partner.
 
-All users associated with a project/partner will be pre-configured in the relay as shown in the
+All users associated with a project/partner will be pre-configured in the relay as shown in the 
 
 ```mermaid
 flowchart TD
@@ -258,18 +257,16 @@ classDiagram
     EthAddressHbarSpendingPlanRepository --> CacheService : uses
     IpAddressHbarSpendingPlanRepository --> CacheService : uses
 ```
-
 ### Support flexible alerting mechanisms for spending thresholds
-
-The existing technical infrastructure, prometheus and grafana will be used to trigger alerts. At the time of this writing 10K HBar is the maximum the relay operator can spend in one day, on HashIO.
+The existing technical infrastructure, prometheus and grafana will be used to trigger alerts.  At the time of this writing 10K HBar is the maximum the relay operator can spend in one day, on HashIO.
 
 The rest of this section describes addtional metrics that will be added, with alerts later, to track critical balances, and how new values for those tiers in HashIO will
 be determined.
 
 The initial spending threshold of the Tier 3 General users will be a rough
-estimate based on the current daily spending of the Relay Operator. In order
+estimate based on the current daily spending of the Relay Operator.  In order
 to refine this over time a prometheus metric called the `basicSpendingPlanCounter`
-will be used to track the number of unique spending plans.
+will be used to track the number of unique spending plans.  
 
 The metrics listed below will be added to help determine the best Tier 3 General users over time:
 
@@ -279,38 +276,31 @@ The metrics listed below will be added to help determine the best Tier 3 General
 4. Time-based Allocation - Allocating the Relay Operator's budget throughout the day to prevent early users from consuming all resources
 5. User History - Track individual user usage over time to identify and manage heavy users
 6. Flexible Limits - Implement a system that can adjust limits based on current usage and time of day
-
+   
 #### HBar Allocation Strategy
-
 ##### Metrics to Track
-
 1. Daily Unique Users
 2. Total HBar Spent per Day
 3. Rolling Average of Daily Unique Users (e.g., over 7 or 30 days)
 4. Individual User Daily and Monthly Usage
-
+   
 ##### Allocation Algorithm
-
 1. Base Allocation:
-
    - Daily Budget / Rolling Average of Daily Unique Users = Base User Limit
-
+  
 2. Time-Based Adjustment:
-
    - Divide the day into time slots (e.g., 6 4-hour slots)
    - Allocate a portion of the daily budget to each slot
    - Adjust user limits based on remaining budget in the current slot
 
 3. Dynamic User Limit:
-
    - Start with the Base User Limit
    - Adjust based on:
-     a. User's historical usage (lower limit for consistently heavy users)
-     b. Time of day (higher limits when usage is typically lower)
-     c. Current day's usage (increase limits if overall usage is low)
+a. User's historical usage (lower limit for consistently heavy users)
+b. Time of day (higher limits when usage is typically lower)
+c. Current day's usage (increase limits if overall usage is low)
 
 4. Flexible Ceiling:
-
    - Implement a hard cap (e.g., 2x Base User Limit) to prevent single user from consuming too much
 
 5. Reserve Pool:
@@ -330,11 +320,9 @@ All other users (ETH and IP addresses which are not specified in the configurati
 The relay will read the pre-configured spending plans from a JSON file. This file should be placed in the root directory of the relay.
 
 The default filename for the configuration file is `spendingPlansConfig.json`, but it could also be specified by the environment variable `HBAR_SPENDING_PLANS_CONFIG_FILE`.
-
 - `HBAR_SPENDING_PLANS_CONFIG_FILE`: The name of the file containing the pre-configured spending plans for supported projects and partners.
 
 #### The JSON file should have the following structure:
-
 ```json
 [
   {
@@ -367,13 +355,12 @@ The default filename for the configuration file is `spendingPlansConfig.json`, b
 ```
 
 #### Important notes
-
 - The `id` field is **strictly required** for each supported project or partner project. It is used as a unique identifier and as key in the cache and also for reference in the logs. We recommend using a UUID for this field, but any unique string will work.
 - The `name` field is used just for reference and can be any string. It is not used in the cache or for any other purpose, only for better readability in the logs on start-up of the relay when the spending plans are being configured.
 - The `ethAddresses` and `ipAddresses` fields are arrays of strings containing the ETH addresses and IP addresses associated with the supported project or partner project. **At least one** of these two fields must be present and contain **at least one entry**.
 - The `subscriptionTier` field is also **required**. It is an enum with the following possible values: `BASIC`, `EXTENDED`, and `PRIVILEGED`.
 
-On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly.
+On every start-up, the relay will check if these entries are already populated in the cache. If not, it will populate them accordingly. 
 
 If the cache already contains some of these entries, it will only populate the new entries and remove the obsolete ones.
 
@@ -388,13 +375,13 @@ The JSON file can also be updated over time to add new partners or supported pro
   // rest of JSON file remains the same
   ...oldContent,
   {
-    id: '0b054498-5c48-4402-aad4-b9b455f33457',
-    name: 'new partner name',
-    ethAddresses: ['0x129', '0x130'],
-    ipAddresses: ['133.0.0.1'],
-    subscriptionTier: 'PRIVILEGED',
-  },
-];
+    "id": "0b054498-5c48-4402-aad4-b9b455f33457",
+    "name": "new partner name",
+    "ethAddresses": ["0x129", "0x130"],
+    "ipAddresses": ["133.0.0.1"],
+    "subscriptionTier": "PRIVILEGED"
+  }
+]
 ```
 
 #### Removing or updating existing partners or supported projects
@@ -408,13 +395,13 @@ You can also add new ETH addresses or IP addresses to existing plans by updating
   // rest of JSON file remains the same
   ...oldContent,
   {
-    id: 'c758c095-342c-4607-9db5-867d7e90ab9d',
-    name: 'partner name',
-    ethAddresses: ['0x123', '0x124', '<new_eth_address>'],
-    ipAddresses: ['127.0.0.1', '128.0.0.1', '<new_ip_address>', '<another_new_ip_address>'],
-    subscriptionTier: 'PRIVILEGED',
-  },
-];
+    "id": "c758c095-342c-4607-9db5-867d7e90ab9d",
+    "name": "partner name",
+    "ethAddresses": ["0x123", "0x124", "<new_eth_address>"],
+    "ipAddresses": ["127.0.0.1", "128.0.0.1", "<new_ip_address>", "<another_new_ip_address>"],
+    "subscriptionTier": "PRIVILEGED",
+  }
+]
 ```
 
 Or if you remove any existing ETH addresses or IP addresses from the JSON file, only those will be removed from the cache on the next start-up.
@@ -424,31 +411,28 @@ Or if you remove any existing ETH addresses or IP addresses from the JSON file, 
   // rest of JSON file remains the same
   ...oldContent,
   {
-    id: 'c758c095-342c-4607-9db5-867d7e90ab9d',
-    name: 'partner name',
-    ethAddresses: ['0x123'], // removed "0x124"
-    ipAddresses: ['127.0.0.1'], // removed "128.0.0.1"
-    subscriptionTier: 'PRIVILEGED',
-  },
-];
+    "id": "c758c095-342c-4607-9db5-867d7e90ab9d",
+    "name": "partner name",
+    "ethAddresses": ["0x123"], // removed "0x124"
+    "ipAddresses": ["127.0.0.1"], // removed "128.0.0.1"
+    "subscriptionTier": "PRIVILEGED",
+  }
+]
 ```
 
 ### Spending Limits of Different Tiers
 
 **Units:** All environment variables are specified in tinybars (tℏ):
-
 ```math
 1 HBAR (ℏ) = 100,000,000 tinybars (tℏ)
 ```
 
 The spending limits for different tiers are defined as environment variables:
-
 - `HBAR_RATE_LIMIT_BASIC`: The spending limit (tℏ) for general users (tier 3)
 - `HBAR_RATE_LIMIT_EXTENDED`: The spending limit (tℏ) for supported projects (tier 2)
 - `HBAR_RATE_LIMIT_PRIVILEGED`: The spending limit (tℏ) for trusted partners (tier 1)
 
 Example configuration for tiered spending limits:
-
 ```dotenv
 HBAR_RATE_LIMIT_BASIC=10000000# 0.1 ℏ
 HBAR_RATE_LIMIT_EXTENDED=100000000# 1 ℏ
@@ -458,18 +442,16 @@ HBAR_RATE_LIMIT_PRIVILEGED=1000000000# 10 ℏ
 ### Total Budget and Limit Duration
 
 The total budget and the limit duration are defined as environment variables:
-
-- `HBAR_RATE_LIMIT_DURATION`: The time window (in milliseconds) for which both the total budget and the spending limits are applicable.
+- `HBAR_RATE_LIMIT_DURATION`: The time window (in milliseconds) for which both the total budget and the spending limits are applicable. 
   - On initialization of `HbarLimitService`, a reset timestamp is calculated by adding the `HBAR_RATE_LIMIT_DURATION` to the current timestamp.
   - The total budget and spending limits are reset when the current timestamp exceeds the reset timestamp.
-- `HBAR_RATE_LIMIT_TOTAL`: The ceiling on the total amount (in tℏ) that can be spent in the limit duration.
+- `HBAR_RATE_LIMIT_TINYBAR`: The ceiling on the total amount (in tℏ) that can be spent in the limit duration. 
   - This is the largest bucket from which others pull from.
   - If the total amount spent exceeds this limit, all spending is paused until the next reset.
 
 Example configuration for a total budget and limit duration:
-
 ```dotenv
-HBAR_RATE_LIMIT_TOTAL=11000000000# 110 ℏ
+HBAR_RATE_LIMIT_TINYBAR=11000000000# 110 ℏ
 HBAR_RATE_LIMIT_DURATION=80000# 80 seconds
 ```
 
