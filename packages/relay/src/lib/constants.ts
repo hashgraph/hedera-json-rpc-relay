@@ -139,12 +139,11 @@ export default {
     DURATION: 60000,
   },
 
-  // TODO: Replace with actual values - https://github.com/hashgraph/hedera-json-rpc-relay/issues/2895
-  HBAR_RATE_LIMIT_DURATION: parseInt(process.env.HBAR_RATE_LIMIT_DURATION || '80000'), // 80 seconds
-  HBAR_RATE_LIMIT_TOTAL: BigNumber(process.env.HBAR_RATE_LIMIT_TINYBAR || '11000000000'), // 110 HBARs per 80 seconds
-  HBAR_RATE_LIMIT_BASIC: BigNumber(process.env.HBAR_RATE_LIMIT_BASIC || '92592592'), // Equivalent of 1000 HBARs per day
-  HBAR_RATE_LIMIT_EXTENDED: BigNumber(process.env.HBAR_RATE_LIMIT_EXTENDED || '925925925'), // Equivalent of 10000 HBARs per day
-  HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(process.env.HBAR_RATE_LIMIT_PRIVILEGED || '1851851850'), // Equivalent of 20000 HBARs per day
+  HBAR_RATE_LIMIT_DURATION: parseInt(process.env.HBAR_RATE_LIMIT_DURATION || '86400000'), // 1 day
+  HBAR_RATE_LIMIT_TOTAL: BigNumber(process.env.HBAR_RATE_LIMIT_TINYBAR || '800000000000'), // 8000 HBARs
+  HBAR_RATE_LIMIT_BASIC: BigNumber(process.env.HBAR_RATE_LIMIT_BASIC || '1120000000'), // 11.2 HBARs
+  HBAR_RATE_LIMIT_EXTENDED: BigNumber(process.env.HBAR_RATE_LIMIT_EXTENDED || '3200000000'), // 32 HBARs
+  HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(process.env.HBAR_RATE_LIMIT_PRIVILEGED || '8000000000'), // 80 HBARs
   GAS_PRICE_TINY_BAR_BUFFER: parseInt(process.env.GAS_PRICE_TINY_BAR_BUFFER || '10000000000'),
   WEB_SOCKET_PORT: process.env.WEB_SOCKET_PORT || 8546,
   WEB_SOCKET_HTTP_PORT: process.env.WEB_SOCKET_HTTP_PORT || 8547,
