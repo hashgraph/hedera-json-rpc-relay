@@ -15,7 +15,7 @@
     {
       "id": "af13d6ed-d676-4d33-8b9d-cf05d1ad7134",
       "name": "supported project name",
-      "ethAddresses": ["0x421e224dfe6717d94a03ce23741c2d7c6009f2dc", "0x421e224dfe6717d94a03ce23741c2d7c6009f2dc"],
+      "ethAddresses": ["0x421e224dfe6717d94a03ce23741c2d7c6009f2dc", "0x149294f355f62827748988071de70ab195d0eb23"],
       "ipAddresses": ["129.0.0.1", "130.0.0.1"],
       "subscriptionTier": "EXTENDED"
     },
