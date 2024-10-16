@@ -136,6 +136,10 @@ export class HbarLimitService implements IHbarLimitService {
       },
       {} as Record<SubscriptionTier, Gauge>,
     );
+
+    logger.info(
+      `HBAR Limiter successfully configured: totalBudget=${totalBudget}, maxLimitForBasicTier=${HbarLimitService.TIER_LIMITS.BASIC}, maxLimitForExtendedTier=${HbarLimitService.TIER_LIMITS.EXTENDED}, maxLimitForprivilegedTier=${HbarLimitService.TIER_LIMITS.PRIVILEGED}, limitDuration=${limitDuration}, resetTimeStamp=${this.reset}.`,
+    );
   }
 
   /**
