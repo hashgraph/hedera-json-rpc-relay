@@ -100,13 +100,8 @@ jobs:
       networkTag: ${{inputs.networkNodeTag}}
       mirrorTag: ${{inputs.mirrorNodeTag}}
 
-<<<<<<< HEAD
   websocket-batch-1:
     name: Websocket Batch 1
-=======
-  websocket:
-    name: Websocket
->>>>>>> 96afa059 (Updating workflows/actions to be compatible to and updating to the step-security maintained version.)
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: ws_batch1
@@ -140,7 +135,6 @@ jobs:
       networkTag: ${{inputs.networkNodeTag}}
       mirrorTag: ${{inputs.mirrorNodeTag}}
 
-<<<<<<< HEAD
   server-config:
     name: Server Config
     uses: ./.github/workflows/acceptance-workflow.yml
@@ -149,8 +143,6 @@ jobs:
       networkTag: ${{inputs.networkNodeTag}}
       mirrorTag: ${{inputs.mirrorNodeTag}}
       
-=======
->>>>>>> 96afa059 (Updating workflows/actions to be compatible to and updating to the step-security maintained version.)
   publish_results:
     name: Publish Results
     if: ${{ !cancelled() }}
