@@ -1,6 +1,5 @@
 # Default values for json-rpc-relay in CI. Configured to testnet
 config:
-  SERVER_PORT: '7546'
   CHAIN_ID: '0x128'
   HEDERA_NETWORK: 'testnet'
   MIRROR_NODE_URL: 'https://testnet.mirrornode.hedera.com'

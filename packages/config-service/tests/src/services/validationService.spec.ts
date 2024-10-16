@@ -22,6 +22,7 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { GlobalConfig } from '../../../dist/services/globalConfig';
 import { ValidationService } from '../../../dist/services/validationService';
+import { ConfigService } from '../../../dist/services';
 
 chai.use(chaiAsPromised);
 
@@ -51,12 +52,14 @@ describe('ValidationService tests', async function () {
     });
 
     it('should fail fast if mandatory env is invalid number format', async () => {
+      GlobalConfig.ENTRIES.SERVER_PORT.required = true;
       expect(() =>
         ValidationService.startUp({
           ...mandatoryStartUpFields,
           SERVER_PORT: 'lorem_ipsum',
         }),
       ).to.throw('SERVER_PORT must be a valid number.');
+      GlobalConfig.ENTRIES.SERVER_PORT.required = false;
     });
 
     it('should fail fast if OPERATOR_KEY_FORMAT is not specified and OPERATOR_KEY_MAIN is not in DER format', async () => {

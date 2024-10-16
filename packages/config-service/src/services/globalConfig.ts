@@ -570,8 +570,8 @@ export class GlobalConfig {
     SERVER_PORT: {
       envName: 'SERVER_PORT',
       type: 'number',
-      required: true,
-      defaultValue: null,
+      required: false,
+      defaultValue: 7546,
     },
     SERVER_REQUEST_TIMEOUT_MS: {
       envName: 'SERVER_REQUEST_TIMEOUT_MS',
@@ -631,13 +631,13 @@ export class GlobalConfig {
       envName: 'WEB_SOCKET_HTTP_PORT',
       type: 'number',
       required: false,
-      defaultValue: null,
+      defaultValue: 8547,
     },
     WEB_SOCKET_PORT: {
       envName: 'WEB_SOCKET_PORT',
       type: 'number',
       required: false,
-      defaultValue: null,
+      defaultValue: 8546,
     },
     WRITE_SNAPSHOT_ON_MEMORY_LEAK: {
       envName: 'WRITE_SNAPSHOT_ON_MEMORY_LEAK',
