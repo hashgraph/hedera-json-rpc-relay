@@ -1041,7 +1041,7 @@ export class SDKClient {
    */
   public getTransferAmountSumForAccount(transactionRecord: TransactionRecord, accountId: string): number {
     return transactionRecord.transfers
-      .filter((transfer) => transfer.accountId.toString() === accountId)
+      .filter((transfer) => transfer.accountId.toString() === accountId && transfer.amount.isNegative())
       .reduce((acc, transfer) => {
         return acc - transfer.amount.toTinybars().toNumber();
       }, 0);

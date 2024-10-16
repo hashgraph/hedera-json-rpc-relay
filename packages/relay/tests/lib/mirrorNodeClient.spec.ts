@@ -1300,11 +1300,12 @@ describe('MirrorNodeClient', async function () {
   });
 
   describe('getTransactionRecordMetrics', () => {
-    it('Should execute getTransferAmountSumForAccount() to calculate transactionFee of the specify accountId', () => {
+    it('Should execute getTransferAmountSumForAccount() to calculate transactionFee by only transfers that are paid by the specify accountId', () => {
       const accountIdA = `0.0.1022`;
       const accountIdB = `0.0.1023`;
       const mockedTxFeeA = 300;
       const mockedTxFeeB = 600;
+      const mockedTxFeeC = 900;
 
       const expectedTxFeeForAccountIdA = mockedTxFeeA + mockedTxFeeB;
 
@@ -1328,6 +1329,16 @@ describe('MirrorNodeClient', async function () {
               {
                 account: accountIdA,
                 amount: -1 * mockedTxFeeB,
+                is_approval: false,
+              },
+              {
+                account: accountIdA,
+                amount: mockedTxFeeC,
+                is_approval: false,
+              },
+              {
+                account: accountIdA,
+                amount: mockedTxFeeB,
                 is_approval: false,
               },
             ],
