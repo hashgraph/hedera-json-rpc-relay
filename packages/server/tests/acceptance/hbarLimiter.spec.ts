@@ -477,54 +477,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               }
             }
           });
-
-          //this test is skipped since its currently just gonna test for BASIC user, may be reworked for privileged/extended user
-          it.skip('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
-            const maxBasicSpendingLimit = HbarLimitService.TIER_LIMITS.BASIC.toTinybars().toNumber();
-            const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-            const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
-            const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
-            const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
-
-            const factory = new ethers.ContractFactory(
-              largeContractJson.abi,
-              largeContractJson.bytecode,
-              accounts[0].wallet,
-            );
-            const deployedTransaction = await factory.getDeployTransaction();
-            const estimatedTxFee = estimateFileTransactionsFee(
-              deployedTransaction.data.length,
-              fileChunkSize,
-              exchangeRateInCents,
-            );
-
-            const lastRemainingHbars = remainingHbarsBefore;
-            expect(remainingHbarsBefore).to.be.gt(0);
-            try {
-              for (let i = 0; i < 50; i++) {
-                const contract = await deployContract(largeContractJson, accounts[0].wallet);
-                await contract.waitForDeployment();
-                const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-                expect(remainingHbars).to.be.lt(lastRemainingHbars);
-              }
-              expect.fail(`Expected an error but nothing was thrown`);
-            } catch (e: any) {
-              expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
-            }
-
-            const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-            const totalHbarSpentByBasicPlan = remainingHbarsBefore - remainingHbarsAfter; // total amount spent by the current basic plan
-
-            // Explanation:
-            // An HBAR limit check triggers the HBAR_RATE_LIMIT_EXCEED error in two scenarios:
-            //    a. if remainingHbarsBefore > maxBasicSpendingLimit ===> (totalHbarSpentByBasicPlan + estimatedTxFee) > maxBasicSpendingLimit
-            //    b. if remainingHbarsBefore <= maxBasicSpendingLimit ===> (remainingBudget - estimatedTxFee) < 0
-            if (remainingHbarsBefore > maxBasicSpendingLimit) {
-              expect(totalHbarSpentByBasicPlan + estimatedTxFee).to.be.gt(maxBasicSpendingLimit);
-            } else {
-              expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
-            }
-          });
         });
       });
     });
