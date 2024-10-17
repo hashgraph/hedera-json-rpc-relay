@@ -18,6 +18,8 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import pino from 'pino';
 import { Registry } from 'prom-client';
@@ -43,13 +45,13 @@ export function balancesByAccountIdByTimestampURL(id: string, timestamp?: string
 }
 
 export function generateEthTestEnv(fixedFeeHistory = false) {
-  process.env.ETH_FEE_HISTORY_FIXED = fixedFeeHistory.toString();
+  ConfigServiceTestHelper.dynamicOverride('ETH_FEE_HISTORY_FIXED', fixedFeeHistory);
   const logger = pino();
   const registry = new Registry();
   const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
   // @ts-ignore
   const mirrorNodeInstance = new MirrorNodeClient(
-    process.env.MIRROR_NODE_URL || '',
+    ConfigService.get('MIRROR_NODE_URL') || '',
     logger.child({ name: `mirror-node` }),
     registry,
     cacheService,

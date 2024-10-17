@@ -52,7 +52,7 @@ describe('utils.ts', () => {
       sinon.restore();
     });
 
-    withOverriddenEnvsInMochaTest({ SERVER_REQUEST_TIMEOUT_MS: '30000' }, () => {
+    withOverriddenEnvsInMochaTest({ SERVER_REQUEST_TIMEOUT_MS: 30000 }, () => {
       it('should set server timeout from environment variable', () => {
         utils.setServerTimeout(server);
         expect(spy.calledWith(30000)).to.eq(true);
@@ -68,7 +68,7 @@ describe('utils.ts', () => {
   });
 
   describe('getBatchRequestsMaxSize', () => {
-    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_MAX_SIZE: '150' }, () => {
+    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_MAX_SIZE: 150 }, () => {
       it('should return the batch request max size from environment variable', () => {
         const result = utils.getBatchRequestsMaxSize();
         expect(result).to.equal(150);
@@ -84,7 +84,7 @@ describe('utils.ts', () => {
   });
 
   describe('getLimitDuration', () => {
-    withOverriddenEnvsInMochaTest({ LIMIT_DURATION: '500' }, () => {
+    withOverriddenEnvsInMochaTest({ LIMIT_DURATION: 500 }, () => {
       it('should return the limit duration from environment variable', () => {
         const result = utils.getLimitDuration();
         expect(result).to.equal(500);
@@ -100,7 +100,7 @@ describe('utils.ts', () => {
   });
 
   describe('getDefaultRateLimit', () => {
-    withOverriddenEnvsInMochaTest({ DEFAULT_RATE_LIMIT: '250' }, () => {
+    withOverriddenEnvsInMochaTest({ DEFAULT_RATE_LIMIT: 250 }, () => {
       it('should return the default rate limit from environment variable', () => {
         const result = utils.getDefaultRateLimit();
         expect(result).to.equal(250);
@@ -116,14 +116,14 @@ describe('utils.ts', () => {
   });
 
   describe('getRequestIdIsOptional', () => {
-    withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: true }, () => {
       it('should return true when REQUEST_ID_IS_OPTIONAL is set to true', () => {
         const result = utils.getRequestIdIsOptional();
         expect(result).to.be.true;
       });
     });
 
-    withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: false }, () => {
       it('should return false when REQUEST_ID_IS_OPTIONAL is not set to true', () => {
         const result = utils.getRequestIdIsOptional();
         expect(result).to.be.false;
@@ -132,14 +132,14 @@ describe('utils.ts', () => {
   });
 
   describe('getBatchRequestsEnabled', () => {
-    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: true }, () => {
       it('should return true when BATCH_REQUESTS_ENABLED is set to true', () => {
         const result = utils.getBatchRequestsEnabled();
         expect(result).to.be.true;
       });
     });
 
-    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: false }, () => {
       it('should return false when BATCH_REQUESTS_ENABLED is not set to true', () => {
         const result = utils.getBatchRequestsEnabled();
         expect(result).to.be.false;

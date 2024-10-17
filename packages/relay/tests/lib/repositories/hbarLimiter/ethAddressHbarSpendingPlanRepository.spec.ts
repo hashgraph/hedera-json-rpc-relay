@@ -60,7 +60,7 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6382);
     } else {
-      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: false });
     }
 
     afterEach(async () => {

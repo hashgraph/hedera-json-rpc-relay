@@ -57,7 +57,7 @@ describe('HbarSpendingPlanRepository', function () {
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6380);
     } else {
-      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: false });
     }
 
     afterEach(async () => {

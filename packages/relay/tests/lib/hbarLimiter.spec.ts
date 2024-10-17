@@ -18,6 +18,7 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import pino from 'pino';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
@@ -42,7 +43,7 @@ describe('HBAR Rate Limiter', async function () {
   const mockedExchangeRateInCents: number = 12;
   const randomAccountAddress = random20BytesAddress();
   const randomWhiteListedAccountAddress = random20BytesAddress();
-  const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+  const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   const requestDetails = new RequestDetails({ requestId: 'hbarRateLimiterTest', ipAddress: '0.0.0.0' });
 
   this.beforeEach(() => {

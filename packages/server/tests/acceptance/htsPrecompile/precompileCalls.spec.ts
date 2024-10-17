@@ -37,9 +37,9 @@ import IHederaTokenServiceJson from '../../contracts/IHederaTokenService.json';
 import HederaTokenServiceImplJson from '../../contracts/HederaTokenServiceImpl.json';
 import TokenManagementContractJson from '../../contracts/TokenManagementContract.json';
 
-import { predefined } from '../../../../relay/src/lib/errors/JsonRpcError';
+import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { Utils } from '../../helpers/utils';
-import { numberTo0x } from '../../../../../packages/relay/src/formatters';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 
 chai.use(solidity);
 describe('@precompile-calls Tests for eth_call with HTS', async function () {

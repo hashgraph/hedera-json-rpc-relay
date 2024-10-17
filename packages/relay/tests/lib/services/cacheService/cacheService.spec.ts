@@ -18,8 +18,6 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
 import { pino } from 'pino';
 import { Registry } from 'prom-client';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
@@ -29,7 +27,11 @@ import * as sinon from 'sinon';
 import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 import { RequestDetails } from '../../../../dist/lib/types';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+const logger = pino();
+const registry = new Registry();
+let cacheService: CacheService;
+
+const callingMethod = 'CacheServiceTest';
 
 chai.use(chaiAsPromised);
 
@@ -143,7 +145,7 @@ describe('CacheService Test Suite', async function () {
   };
 
   describe('Internal Cache Test Suite', async function () {
-    overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
+    overrideEnvsInMochaDescribe({ REDIS_ENABLED: false });
 
     this.beforeAll(() => {
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);
@@ -279,7 +281,7 @@ describe('CacheService Test Suite', async function () {
     };
 
     useInMemoryRedisServer(logger, 6381);
-    overrideEnvsInMochaDescribe({ MULTI_SET: 'true' });
+    overrideEnvsInMochaDescribe({ MULTI_SET: true });
 
     this.beforeAll(async () => {
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry);

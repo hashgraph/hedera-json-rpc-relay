@@ -21,6 +21,8 @@
 import WebSocket from 'ws';
 import { expect } from 'chai';
 import { WebSocketProvider } from 'ethers';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 export class WsTestHelper {
   static async assertFailInvalidParamsEthersWsProvider(
@@ -95,38 +97,39 @@ export class WsTestHelper {
    *
    * @example
    * describe('given TEST is set to false', () => {
-   *   overrideEnvsInMochaDescribe({ TEST: 'false' });
+   *   overrideEnvsInMochaDescribe({ TEST: false });
    *
    *   it('should return false', () => {
-   *     expect(process.env.TEST).to.equal('false');
+   *     expect(ConfigService.get('TEST')).to.equal(false);
    *   });
    * });
    *
    * it('should return true', () => {
-   *   expect(process.env.TEST).to.equal('true');
+   *   expect(ConfigService.get('TEST')).to.equal(true);
    * });
    */
-  static overrideEnvsInMochaDescribe(envs: NodeJS.Dict<string>) {
+  static overrideEnvsInMochaDescribe(envs: NodeJS.Dict<any>) {
     let envsToReset: NodeJS.Dict<string> = {};
 
-    const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
+    const overrideEnv = (key: string, value: any) => {
       if (value === undefined) {
-        delete object[key];
+        ConfigServiceTestHelper.remove(key);
       } else {
-        object[key] = value;
+        ConfigServiceTestHelper.dynamicOverride(key, value);
       }
     };
 
     before(() => {
       for (const key in envs) {
-        envsToReset[key] = process.env[key];
-        overrideEnv(process.env, key, envs[key]);
+        // @ts-ignore
+        envsToReset[key] = ConfigService.get(key);
+        overrideEnv(key, envs[key]);
       }
     });
 
     after(() => {
       for (const key in envs) {
-        overrideEnv(process.env, key, envsToReset[key]);
+        overrideEnv(key, envsToReset[key]);
       }
     });
   }
@@ -138,17 +141,17 @@ export class WsTestHelper {
    * @param {Function} tests - A function containing the tests to run with the overridden environment variables.
    *
    * @example
-   * withOverriddenEnvsInMochaTest({ TEST: 'false' }, () => {
+   * withOverriddenEnvsInMochaTest({ TEST: false }, () => {
    *   it('should return false', () => {
-   *     expect(process.env.TEST).to.equal('false');
+   *     expect(ConfigService.get('TEST')).to.equal(false);
    *   });
    * });
    *
    * it('should return true', () => {
-   *   expect(process.env.TEST).to.equal('true');
+   *   expect(ConfigService.get('TEST')).to.equal(true);
    * });
    */
-  static withOverriddenEnvsInMochaTest(envs: NodeJS.Dict<string>, tests: () => void) {
+  static withOverriddenEnvsInMochaTest(envs: NodeJS.Dict<any>, tests: () => void) {
     const overriddenEnvs = Object.entries(envs)
       .map(([key, value]) => `${key}=${value}`)
       .join(', ');
@@ -162,8 +165,8 @@ export class WsTestHelper {
 }
 
 export class WsTestConstant {
-  static FAKE_TX_HASH = `0x${'00'.repeat(20)}`;
-  static STANDARD_WEB_SOCKET = 'Standard Web Socket';
-  static ETHERS_WS_PROVIDER = 'Ethers Web Socket Provider';
-  static WS_RELAY_URL = process.env.WS_RELAY_URL || `ws://127.0.0.1:8546`;
+  public static readonly FAKE_TX_HASH = `0x${'00'.repeat(20)}`;
+  public static readonly STANDARD_WEB_SOCKET = 'Standard Web Socket';
+  public static readonly ETHERS_WS_PROVIDER = 'Ethers Web Socket Provider';
+  public static readonly WS_RELAY_URL = ConfigService.get('WS_RELAY_URL') || `ws://127.0.0.1:8546`;
 }

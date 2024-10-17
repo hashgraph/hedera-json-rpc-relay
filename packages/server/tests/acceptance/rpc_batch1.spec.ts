@@ -34,13 +34,14 @@ import logsContractJson from '../contracts/Logs.json';
 import basicContract from '../../tests/contracts/Basic.json';
 
 // Errors and constants from local resources
-import { predefined } from '../../../relay/src/lib/errors/JsonRpcError';
-import Constants from '../../../relay/src/lib/constants';
-import constants from '../../../relay/src/lib/constants';
+import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import RelayCalls from '../../tests/helpers/constants';
 
 // Other imports
-import { numberTo0x, prepend0x } from '../../../../packages/relay/src/formatters';
+import { numberTo0x, prepend0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import RelayClient from '../clients/relayClient';
 import ServicesClient from '../clients/servicesClient';
@@ -67,10 +68,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let account2Address: string;
   let expectedGasPrice: string;
 
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
   const requestId = 'rpc_batch1Test';
   const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
   const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
-  const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
   const INCORRECT_CHAIN_ID = 999;
   const GAS_PRICE_TOO_LOW = '0x1';
   const GAS_PRICE_REF = '0x123456';
@@ -310,15 +311,15 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('should be able to use `address` param with a large block range', async () => {
-        const blockRangeLimit = constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
-        constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT = 10;
+        const blockRangeLimit = Constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
+        Constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT = 10;
         try {
           //when we pass only address, it defaults to the latest block
           const logs = await relay.call(
             RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             [
               {
-                fromBlock: numberTo0x(latestBlock - constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT - 1),
+                fromBlock: numberTo0x(latestBlock - Constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT - 1),
                 address: contractAddress,
               },
             ],
@@ -330,7 +331,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             expect(logs[i].address.toLowerCase()).to.equal(contractAddress.toLowerCase());
           }
         } finally {
-          constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT = blockRangeLimit;
+          Constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT = blockRangeLimit;
         }
       });
 
@@ -426,7 +427,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
         //for the purpose of the test, we are settings limit to 2, and fetching all.
         //setting mirror node limit to 2 for this test only
-        process.env['MIRROR_NODE_LIMIT_PARAM'] = '2';
+        ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
         // calculate blocks behind latest, so we can fetch logs from the past.
         // if current block is less than 10, we will fetch logs from the beginning otherwise we will fetch logs from 10 blocks behind latest
         const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestIdPrefix));
@@ -737,7 +738,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         type: 1,
       };
 
-      const gasPriceDeviation = parseFloat(process.env.TEST_GAS_PRICE_DEVIATION ?? '0.2');
+      const gasPriceDeviation = parseFloat(ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2');
 
       it('@release should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
         const response = await relay.call(
@@ -979,25 +980,25 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         const sendHbarTx = {
           ...defaultLegacyTransactionData,
           value: TEN_HBAR, // 10hbar - the gasPrice to deploy the deterministic proxy contract
-          to: constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
+          to: Constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
           nonce: await relay.getAccountNonce(accounts[0].address, requestId),
           gasPrice: await relay.gasPrice(requestId),
         };
         const signedSendHbarTx = await accounts[0].wallet.signTransaction(sendHbarTx);
         await relay.sendRawTransaction(signedSendHbarTx, requestId);
         await Utils.wait(5000); // wait for signer's account to propagate accross the network
-        const deployerBalance = await global.relay.getBalance(constants.DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest');
+        const deployerBalance = await global.relay.getBalance(Constants.DETERMINISTIC_DEPLOYMENT_SIGNER, 'latest');
         expect(deployerBalance).to.not.eq(0);
 
         // @logic: since the DETERMINISTIC_DEPLOYER_TRANSACTION is a deterministic transaction hash which is signed
         //          by the DETERMINISTIC_DEPLOYMENT_SIGNER with tx.nonce = 0. With that reason, if the current nonce of the signer
         //          is not 0, it means the DETERMINISTIC_DEPLOYER_TRANSACTION has already been submitted, and the DETERMINISTIC_PROXY_CONTRACT
         //          has already been deployed to the network. Therefore, it only matters to test this flow once.
-        const signerNonce = await relay.getAccountNonce(constants.DETERMINISTIC_DEPLOYMENT_SIGNER, requestId);
+        const signerNonce = await relay.getAccountNonce(Constants.DETERMINISTIC_DEPLOYMENT_SIGNER, requestId);
 
         if (signerNonce === 0) {
           const deployerBalance = await relay.getBalance(
-            constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
+            Constants.DETERMINISTIC_DEPLOYMENT_SIGNER,
             'latest',
             requestId,
           );
@@ -1005,7 +1006,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
           // send transaction to deploy proxy transaction
           const deterministicDeployTransactionHash = await relay.sendRawTransaction(
-            constants.DETERMINISTIC_DEPLOYER_TRANSACTION,
+            Constants.DETERMINISTIC_DEPLOYER_TRANSACTION,
             requestId,
           );
 
@@ -1014,12 +1015,12 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           const toAccountInfo = await global.mirrorNode.get(`/accounts/${receipt.to}`, requestId);
 
           expect(receipt).to.exist;
-          expect(fromAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
-          expect(toAccountInfo.evm_address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
-          expect(receipt.address).to.eq(constants.DETERMINISTIC_PROXY_CONTRACT);
+          expect(fromAccountInfo.evm_address).to.eq(Constants.DETERMINISTIC_DEPLOYMENT_SIGNER);
+          expect(toAccountInfo.evm_address).to.eq(Constants.DETERMINISTIC_PROXY_CONTRACT);
+          expect(receipt.address).to.eq(Constants.DETERMINISTIC_PROXY_CONTRACT);
         } else {
           try {
-            await relay.sendRawTransaction(constants.DETERMINISTIC_DEPLOYER_TRANSACTION, requestId);
+            await relay.sendRawTransaction(Constants.DETERMINISTIC_DEPLOYER_TRANSACTION, requestId);
             expect(true).to.be.false;
           } catch (error: any) {
             const expectedNonceTooLowError = predefined.NONCE_TOO_LOW(0, signerNonce);
@@ -1306,7 +1307,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         };
 
         const signedTx = await accounts[1].wallet.signTransaction(transaction);
-        const error = predefined.TRANSACTION_SIZE_TOO_BIG('132320', String(constants.SEND_RAW_TRANSACTION_SIZE_LIMIT));
+        const error = predefined.TRANSACTION_SIZE_TOO_BIG('132320', String(Constants.SEND_RAW_TRANSACTION_SIZE_LIMIT));
 
         await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestDetails]);
       });

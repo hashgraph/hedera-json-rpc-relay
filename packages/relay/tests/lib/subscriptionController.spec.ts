@@ -19,19 +19,14 @@
  */
 
 import pino from 'pino';
-// @ts-ignore
 import { SubscriptionController } from '../../src/lib/subscriptionController';
 import { expect } from 'chai';
 import { Poller } from '../../src/lib/poller';
 import { EthImpl } from '../../src/lib/eth';
 import sinon from 'sinon';
-import dotenv from 'dotenv';
-import path from 'path';
 import { Registry } from 'prom-client';
 import ConnectionLimiter from '@hashgraph/json-rpc-ws-server/src/metrics/connectionLimiter';
 import { overrideEnvsInMochaDescribe } from '../helpers';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();
 const register = new Registry();
@@ -268,7 +263,7 @@ describe('subscriptionController', async function () {
   describe('With WS_SAME_SUB_FOR_SAME_EVENT == `false`', async function () {
     let subscriptionController: SubscriptionController;
 
-    overrideEnvsInMochaDescribe({ WS_SAME_SUB_FOR_SAME_EVENT: 'false' });
+    overrideEnvsInMochaDescribe({ WS_SAME_SUB_FOR_SAME_EVENT: false });
 
     before(() => {
       const registry = new Registry();

@@ -28,6 +28,7 @@ import { RequestDetails } from '../types';
 import { Logger } from 'pino';
 import { SubscriptionTier } from '../db/types/hbarLimiter/subscriptionTier';
 import { IDetailedHbarSpendingPlan } from '../db/types/hbarLimiter/hbarSpendingPlan';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 /**
  * Service for managing pre-configured {@link HbarSpendingPlan} entities.
@@ -53,8 +54,9 @@ export class HbarSpendingPlanConfigService {
    * @type {string}
    * @private
    */
+  // @ts-ignore
   private readonly SPENDING_PLANS_CONFIG_FILE: string =
-    process.env.HBAR_SPENDING_PLANS_CONFIG_FILE || 'spendingPlansConfig.json';
+    ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE') || 'spendingPlansConfig.json';
 
   /**
    * Creates an instance of `HbarSpendingPlanConfigService`.
