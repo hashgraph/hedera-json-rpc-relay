@@ -34,36 +34,6 @@ export class ValidationService {
         }
       }
     });
-
-    // make sure that if OPERATOR_KEY_FORMAT is not specified, the provided OPERATOR_KEY_MAIN is in the DER format
-    if (
-      envs[GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName] &&
-      !envs[GlobalConfig.ENTRIES.OPERATOR_KEY_FORMAT.envName] &&
-      // @ts-ignore
-      !envs[GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName].match(/^[0-9a-f]{96,100}$/)
-    ) {
-      throw new Error(
-        `When ${GlobalConfig.ENTRIES.OPERATOR_KEY_FORMAT.envName} is not specified, the ${GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName} must be in DER format.`,
-      );
-    }
-
-    // ensure HBAR_RATE_LIMIT_TINYBAR is not less than daily limits
-    if (
-      envs[GlobalConfig.ENTRIES.HBAR_RATE_LIMIT_TINYBAR.envName] &&
-      envs[GlobalConfig.ENTRIES.HBAR_DAILY_LIMIT_BASIC.envName] &&
-      envs[GlobalConfig.ENTRIES.HBAR_DAILY_LIMIT_EXTENDED.envName] &&
-      envs[GlobalConfig.ENTRIES.HBAR_DAILY_LIMIT_PRIVILEGED.envName]
-    ) {
-      for (const field of [
-        GlobalConfig.ENTRIES.HBAR_DAILY_LIMIT_BASIC.envName,
-        GlobalConfig.ENTRIES.HBAR_DAILY_LIMIT_EXTENDED.envName,
-        GlobalConfig.ENTRIES.HBAR_DAILY_LIMIT_PRIVILEGED.envName,
-      ]) {
-        if (Number(envs[GlobalConfig.ENTRIES.HBAR_RATE_LIMIT_TINYBAR.envName]) < Number(envs[field])) {
-          throw new Error(`${GlobalConfig.ENTRIES.HBAR_RATE_LIMIT_TINYBAR.envName} cannot be less than ${field}`);
-        }
-      }
-    }
   }
 
   static typeCasting(envs: NodeJS.Dict<string>): NodeJS.Dict<any> {

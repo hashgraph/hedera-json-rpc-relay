@@ -61,45 +61,6 @@ describe('ValidationService tests', async function () {
       ).to.throw('SERVER_PORT must be a valid number.');
       GlobalConfig.ENTRIES.SERVER_PORT.required = false;
     });
-
-    it('should fail fast if OPERATOR_KEY_FORMAT is not specified and OPERATOR_KEY_MAIN is not in DER format', async () => {
-      expect(() =>
-        ValidationService.startUp({
-          ...mandatoryStartUpFields,
-          OPERATOR_KEY_MAIN: '0x5644',
-        }),
-      ).to.throw('When OPERATOR_KEY_FORMAT is not specified, the OPERATOR_KEY_MAIN must be in DER format.');
-    });
-
-    it('should fail fast if HBAR_RATE_LIMIT_TINYBAR is less than HBAR_DAILY_LIMIT_BASIC', async () => {
-      expect(() =>
-        ValidationService.startUp({
-          ...mandatoryStartUpFields,
-          ...hbarLimitFields,
-          HBAR_DAILY_LIMIT_BASIC: '700',
-        }),
-      ).to.throw('HBAR_RATE_LIMIT_TINYBAR cannot be less than HBAR_DAILY_LIMIT_BASIC');
-    });
-
-    it('should fail fast if HBAR_RATE_LIMIT_TINYBAR is less than HBAR_DAILY_LIMIT_EXTENDED', async () => {
-      expect(() =>
-        ValidationService.startUp({
-          ...mandatoryStartUpFields,
-          ...hbarLimitFields,
-          HBAR_DAILY_LIMIT_EXTENDED: '2000',
-        }),
-      ).to.throw('HBAR_RATE_LIMIT_TINYBAR cannot be less than HBAR_DAILY_LIMIT_EXTENDED');
-    });
-
-    it('should fail fast if HBAR_RATE_LIMIT_TINYBAR is less than HBAR_DAILY_LIMIT_PRIVILEGED', async () => {
-      expect(() =>
-        ValidationService.startUp({
-          ...mandatoryStartUpFields,
-          ...hbarLimitFields,
-          HBAR_DAILY_LIMIT_PRIVILEGED: '3000',
-        }),
-      ).to.throw('HBAR_RATE_LIMIT_TINYBAR cannot be less than HBAR_DAILY_LIMIT_PRIVILEGED');
-    });
   });
 
   describe('typeCasting', () => {
