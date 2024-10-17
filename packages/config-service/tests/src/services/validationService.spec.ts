@@ -22,7 +22,6 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { GlobalConfig } from '../../../dist/services/globalConfig';
 import { ValidationService } from '../../../dist/services/validationService';
-import { ConfigService } from '../../../dist/services';
 
 chai.use(chaiAsPromised);
 
@@ -36,13 +35,6 @@ describe('ValidationService tests', async function () {
       OPERATOR_KEY_MAIN:
         '302000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
       SERVER_PORT: '7546',
-    };
-
-    const hbarLimitFields = {
-      HBAR_RATE_LIMIT_TINYBAR: '100',
-      HBAR_DAILY_LIMIT_BASIC: '10',
-      HBAR_DAILY_LIMIT_EXTENDED: '20',
-      HBAR_DAILY_LIMIT_PRIVILEGED: '30',
     };
 
     it('should fail fast if mandatory env is not passed', async () => {
