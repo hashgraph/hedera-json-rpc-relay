@@ -81,6 +81,7 @@ const handleSendingRequestsToRelay = async ({
       chainId: (_, requestDetails) => [requestDetails],
       estimateGas: (params, requestDetails) => [...params, null, requestDetails],
       getStorageAt: (params, requestDetails) => [params[0], params[1], requestDetails, params[2]],
+      newFilter: (params, requestDetails) => [params[0], params[1], requestDetails, params[2], params[3]],
       default: (params, requestDetails) => [...params, requestDetails],
     };
 
