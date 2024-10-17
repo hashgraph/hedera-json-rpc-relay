@@ -1,8 +1,8 @@
-/*
+/*-
  *
- * Hedera JSON RPC Relay
+ * Hedera JSON RPC Relay - Wagmi Example
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,21 @@
  *
  */
 
-export enum SubscriptionType {
-  /**
-   * General users (default)
-   */
-  BASIC = 'BASIC',
+import { http, createConfig } from 'wagmi';
+import { hedera, hederaTestnet } from 'wagmi/chains';
+import { coinbaseWallet, injected } from 'wagmi/connectors';
 
-  /**
-   * Supported projects
-   */
-  EXTENDED = 'EXTENDED',
+export const config = createConfig({
+  chains: [hederaTestnet, hedera],
+  connectors: [injected(), coinbaseWallet()],
+  transports: {
+    [hederaTestnet.id]: http(),
+    [hedera.id]: http(),
+  },
+});
 
-  /**
-   * Trusted Partners
-   */
-  PRIVILEGED = 'PRIVILEGED',
+declare module 'wagmi' {
+  interface Register {
+    config: typeof config;
+  }
 }

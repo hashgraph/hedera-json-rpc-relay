@@ -26,14 +26,21 @@ import sinon from 'sinon';
 import { Server } from 'http';
 import { GCProfiler } from 'v8';
 import Assertions from '../helpers/assertions';
-import app from '../../src/server';
 import { TracerType, Validator } from '../../src/validator';
 import RelayCalls from '../../tests/helpers/constants';
 import * as Constants from '../../src/validator/constants';
 import { Utils } from '../helpers/utils';
-import { predefined } from '@hashgraph/json-rpc-relay';
-import { contractAddress1, contractAddress2, contractHash1, contractId1 } from '../../../relay/tests/helpers';
+import { predefined, RelayImpl } from '@hashgraph/json-rpc-relay';
+import {
+  contractAddress1,
+  contractAddress2,
+  contractHash1,
+  contractId1,
+  overrideEnvsInMochaDescribe,
+  withOverriddenEnvsInMochaTest,
+} from '../../../relay/tests/helpers';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
+import Koa from 'koa';
 
 dotenv.config({ path: path.resolve(__dirname, './test.env') });
 
@@ -42,8 +49,12 @@ const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 describe('RPC Server', function () {
   let testServer: Server;
   let testClient: AxiosInstance;
+  let populatePreconfiguredSpendingPlansSpy: sinon.SinonSpy;
+  let app: Koa<Koa.DefaultState, Koa.DefaultContext>;
 
   before(function () {
+    populatePreconfiguredSpendingPlansSpy = sinon.spy(RelayImpl.prototype, <any>'populatePreconfiguredSpendingPlans');
+    app = require('../../src/server').default;
     testServer = app.listen(process.env.E2E_SERVER_PORT);
     testClient = BaseTest.createTestClient();
   });
@@ -92,6 +103,13 @@ describe('RPC Server', function () {
     });
   });
 
+  it('should try to populate preconfigured spending plans', async function () {
+    const calls = populatePreconfiguredSpendingPlansSpy.getCalls();
+    expect(calls.length).to.be.equal(1);
+    await calls[0].returnValue;
+    expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
+  });
+
   it('should execute "eth_chainId"', async function () {
     const res = await testClient.post('/', {
       id: '2',
@@ -118,35 +136,35 @@ describe('RPC Server', function () {
     }
   });
 
-  xit('supports optionality of request id when configured', async function () {
-    const app2 = require('../../src/server').default;
-    const port = `1${process.env.E2E_SERVER_PORT}`;
-    const testServer2 = app2.listen(port);
-    const testClient2 = BaseTest.createTestClient(port);
+  withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: 'true' }, async function () {
+    xit('supports optionality of request id when configured', async function () {
+      const app2 = require('../../src/server').default;
+      const port = `1${process.env.E2E_SERVER_PORT}`;
+      const testServer2 = app2.listen(port);
 
-    try {
-      process.env.REQUEST_ID_IS_OPTIONAL = 'true';
-      const response = await testClient2.post('/', {
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
-        params: [null],
-      });
+      try {
+        const testClient2 = BaseTest.createTestClient(port);
+        const response = await testClient2.post('/', {
+          jsonrpc: '2.0',
+          method: RelayCalls.ETH_ENDPOINTS.ETH_CHAIN_ID,
+          params: [null],
+        });
 
-      expect(response.status).to.eq(200);
-      expect(response.statusText).to.eq('OK');
-      expect(response, "Default response: Should have 'data' property").to.have.property('data');
-      expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
-      expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
-      expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
-      expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
-      expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
-      expect(response.data.result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
-    } catch (error: any) {
-      expect(true, `Unexpected error: ${error.message}`).to.eq(false);
-    }
-
-    process.env.REQUEST_ID_IS_OPTIONAL = 'false';
-    testServer2.close();
+        expect(response.status).to.eq(200);
+        expect(response.statusText).to.eq('OK');
+        expect(response, "Default response: Should have 'data' property").to.have.property('data');
+        expect(response.data, "Default response: 'data' should have 'id' property").to.have.property('id');
+        expect(response.data, "Default response: 'data' should have 'jsonrpc' property").to.have.property('jsonrpc');
+        expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
+        expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
+        expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
+        expect(response.data.result).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+      } catch (error: any) {
+        expect(true, `Unexpected error: ${error.message}`).to.eq(false);
+      } finally {
+        testServer2.close();
+      }
+    });
   });
 
   it('should execute "eth_accounts"', async function () {
@@ -473,15 +491,7 @@ describe('RPC Server', function () {
   });
 
   describe('batchRequest Test Cases', async function () {
-    const batchRequestEnabledValue = process.env.BATCH_REQUESTS_ENABLED;
-
-    this.beforeAll(function () {
-      process.env.BATCH_REQUESTS_ENABLED = 'true';
-    });
-
-    this.afterAll(function () {
-      process.env.BATCH_REQUESTS_ENABLED = batchRequestEnabledValue;
-    });
+    overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: 'true' });
 
     function getEthChainIdRequest(id) {
       return {
@@ -647,36 +657,26 @@ describe('RPC Server', function () {
       }
     });
 
-    it('should not execute batch request when disabled', async function () {
-      // disable batch request
-      process.env.BATCH_REQUESTS_ENABLED = 'false';
-
-      // do batch request
-      try {
-        await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
-        Assertions.expectedError();
-      } catch (error: any) {
-        BaseTest.batchDisabledErrorCheck(error.response);
-      }
-
-      // enable batch request again
-      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: 'false' }, async function () {
+      it('should not execute batch request when disabled', async function () {
+        try {
+          await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.batchDisabledErrorCheck(error.response);
+        }
+      });
     });
 
-    it('batch request be disabled by default', async function () {
-      // disable batch request
-      process.env.BATCH_REQUESTS_ENABLED = undefined;
-
-      // do batch request
-      try {
-        await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
-        Assertions.expectedError();
-      } catch (error: any) {
-        BaseTest.batchDisabledErrorCheck(error.response);
-      }
-
-      // enable batch requests again
-      process.env.BATCH_REQUESTS_ENABLED = 'true';
+    withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: undefined }, async function () {
+      it('batch request be disabled by default', async function () {
+        try {
+          await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.batchDisabledErrorCheck(error.response);
+        }
+      });
     });
   });
 
@@ -859,7 +859,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 'data' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}, value: 123`,
+            `Invalid parameter 'data' for TransactionObject: ${Validator.EVEN_HEX_ERROR}, value: 123`,
           );
         }
       });
@@ -1503,7 +1503,7 @@ describe('RPC Server', function () {
           BaseTest.invalidParamError(
             error.response,
             Validator.ERROR_CODE,
-            `Invalid parameter 'data' for TransactionObject: ${Validator.DEFAULT_HEX_ERROR}, value: 123`,
+            `Invalid parameter 'data' for TransactionObject: ${Validator.EVEN_HEX_ERROR}, value: 123`,
           );
         }
       });

@@ -1351,7 +1351,7 @@ export class MirrorNodeClient {
    */
   public getTransferAmountSumForAccount(transactionRecord: MirrorNodeTransactionRecord, accountId: string): number {
     return transactionRecord.transfers
-      .filter((transfer) => transfer.account === accountId)
+      .filter((transfer) => transfer.account === accountId && transfer.amount < 0)
       .reduce((acc, transfer) => {
         return acc - transfer.amount;
       }, 0);

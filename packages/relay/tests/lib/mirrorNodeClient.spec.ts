@@ -26,7 +26,7 @@ import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { getRequestId, mockData, random20BytesAddress } from '../helpers';
+import { mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from '../helpers';
 import pino from 'pino';
 import { ethers } from 'ethers';
 import { MirrorNodeClientError, predefined } from '../../src';
@@ -37,14 +37,13 @@ import { BigNumber } from 'bignumber.js';
 
 dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
-const registry = new Registry();
-
-const logger = pino();
-const noTransactions = '?transactions=false';
-const requestDetails = new RequestDetails({ requestId: getRequestId(), ipAddress: '0.0.0.0' });
-
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
+
+  const registry = new Registry();
+  const logger = pino();
+  const noTransactions = '?transactions=false';
+  const requestDetails = new RequestDetails({ requestId: 'mirrorNodeClientTest', ipAddress: '0.0.0.0' });
 
   let instance: AxiosInstance, mock: MockAdapter, mirrorNodeInstance: MirrorNodeClient, cacheService: CacheService;
 
@@ -68,9 +67,9 @@ describe('MirrorNodeClient', async function () {
     );
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mock = new MockAdapter(instance);
-    cacheService.clear(requestDetails);
+    await cacheService.clear(requestDetails);
   });
 
   describe('handleError', async () => {
@@ -160,18 +159,18 @@ describe('MirrorNodeClient', async function () {
     expect(extractedEvmAddress).to.eq(evmAddress);
   });
 
-  it('Can provide custom x-api-key header', async () => {
-    const exampleApiKey = 'abc123iAManAPIkey';
-    process.env.MIRROR_NODE_URL_HEADER_X_API_KEY = exampleApiKey;
-    const mirrorNodeInstanceOverridden = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
-      logger.child({ name: `mirror-node` }),
-      registry,
-      cacheService,
-    );
-    const axiosHeaders = mirrorNodeInstanceOverridden.getMirrorNodeRestInstance().defaults.headers.common;
-    expect(axiosHeaders).has.property('x-api-key');
-    expect(axiosHeaders['x-api-key']).to.eq(exampleApiKey);
+  withOverriddenEnvsInMochaTest({ MIRROR_NODE_URL_HEADER_X_API_KEY: 'abc123iAManAPIkey' }, () => {
+    it('Can provide custom x-api-key header', async () => {
+      const mirrorNodeInstanceOverridden = new MirrorNodeClient(
+        process.env.MIRROR_NODE_URL || '',
+        logger.child({ name: `mirror-node` }),
+        registry,
+        cacheService,
+      );
+      const axiosHeaders = mirrorNodeInstanceOverridden.getMirrorNodeRestInstance().defaults.headers.common;
+      expect(axiosHeaders).has.property('x-api-key');
+      expect(axiosHeaders['x-api-key']).to.eq(process.env.MIRROR_NODE_URL_HEADER_X_API_KEY);
+    });
   });
 
   it('`getQueryParams` general', async () => {
@@ -1296,11 +1295,12 @@ describe('MirrorNodeClient', async function () {
   });
 
   describe('getTransactionRecordMetrics', () => {
-    it('Should execute getTransferAmountSumForAccount() to calculate transactionFee of the specify accountId', () => {
+    it('Should execute getTransferAmountSumForAccount() to calculate transactionFee by only transfers that are paid by the specify accountId', () => {
       const accountIdA = `0.0.1022`;
       const accountIdB = `0.0.1023`;
       const mockedTxFeeA = 300;
       const mockedTxFeeB = 600;
+      const mockedTxFeeC = 900;
 
       const expectedTxFeeForAccountIdA = mockedTxFeeA + mockedTxFeeB;
 
@@ -1324,6 +1324,16 @@ describe('MirrorNodeClient', async function () {
               {
                 account: accountIdA,
                 amount: -1 * mockedTxFeeB,
+                is_approval: false,
+              },
+              {
+                account: accountIdA,
+                amount: mockedTxFeeC,
+                is_approval: false,
+              },
+              {
+                account: accountIdA,
+                amount: mockedTxFeeB,
                 is_approval: false,
               },
             ],

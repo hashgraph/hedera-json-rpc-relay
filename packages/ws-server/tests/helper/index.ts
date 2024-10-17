@@ -31,7 +31,7 @@ export class WsTestHelper {
     try {
       await wsProvider.send(methodName, params);
       expect(true).to.eq(false);
-    } catch (error) {
+    } catch (error: any) {
       if (error.info) error = error.info;
       expect(error.error).to.exist;
       expect(error.error.code).to.be.oneOf([-32602, -32603]);
@@ -87,6 +87,77 @@ export class WsTestHelper {
       method,
       params,
     };
+  }
+
+  /**
+   * Temporarily overrides environment variables for the duration of the encapsulating describe block.
+   * @param envs - An object containing key-value pairs of environment variables to set.
+   *
+   * @example
+   * describe('given TEST is set to false', () => {
+   *   overrideEnvsInMochaDescribe({ TEST: 'false' });
+   *
+   *   it('should return false', () => {
+   *     expect(process.env.TEST).to.equal('false');
+   *   });
+   * });
+   *
+   * it('should return true', () => {
+   *   expect(process.env.TEST).to.equal('true');
+   * });
+   */
+  static overrideEnvsInMochaDescribe(envs: NodeJS.Dict<string>) {
+    let envsToReset: NodeJS.Dict<string> = {};
+
+    const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
+      if (value === undefined) {
+        delete object[key];
+      } else {
+        object[key] = value;
+      }
+    };
+
+    before(() => {
+      for (const key in envs) {
+        envsToReset[key] = process.env[key];
+        overrideEnv(process.env, key, envs[key]);
+      }
+    });
+
+    after(() => {
+      for (const key in envs) {
+        overrideEnv(process.env, key, envsToReset[key]);
+      }
+    });
+  }
+
+  /**
+   * Overrides environment variables for the duration of the provided tests.
+   *
+   * @param {NodeJS.Dict<string>} envs - An object containing key-value pairs of environment variables to set.
+   * @param {Function} tests - A function containing the tests to run with the overridden environment variables.
+   *
+   * @example
+   * withOverriddenEnvsInMochaTest({ TEST: 'false' }, () => {
+   *   it('should return false', () => {
+   *     expect(process.env.TEST).to.equal('false');
+   *   });
+   * });
+   *
+   * it('should return true', () => {
+   *   expect(process.env.TEST).to.equal('true');
+   * });
+   */
+  static withOverriddenEnvsInMochaTest(envs: NodeJS.Dict<string>, tests: () => void) {
+    const overriddenEnvs = Object.entries(envs)
+      .map(([key, value]) => `${key}=${value}`)
+      .join(', ');
+
+    describe(`given ${overriddenEnvs} are set`, () => {
+      WsTestHelper.overrideEnvsInMochaDescribe(envs);
+
+      tests();
+    });
   }
 }
 

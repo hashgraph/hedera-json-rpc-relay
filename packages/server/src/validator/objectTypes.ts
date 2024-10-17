@@ -162,7 +162,7 @@ export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
         nullable: false,
       },
       data: {
-        type: 'hex',
+        type: 'hexEvenLength',
         nullable: true,
       },
       type: {
