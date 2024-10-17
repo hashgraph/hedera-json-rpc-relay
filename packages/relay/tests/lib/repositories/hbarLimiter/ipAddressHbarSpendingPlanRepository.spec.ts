@@ -76,7 +76,12 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
     describe('existsByAddress', () => {
       it('returns true if address plan exists', async () => {
         const addressPlan = new IPAddressHbarSpendingPlan({ ipAddress, planId: uuidV4(randomBytes(16)) });
-        await cacheService.set(`${repository['collectionKey']}:${ipAddress}`, addressPlan, 'test', requestDetails);
+        await cacheService.set(
+          `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
+          addressPlan,
+          'test',
+          requestDetails,
+        );
 
         await expect(repository.existsByAddress(ipAddress, requestDetails)).to.eventually.be.true;
       });
@@ -94,7 +99,12 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
           new IPAddressHbarSpendingPlan({ ipAddress: '666.666.666.666', planId }),
         ];
         for (const plan of ipAddressPlans) {
-          await cacheService.set(`${repository['collectionKey']}:${plan.ipAddress}`, plan, 'test', requestDetails);
+          await cacheService.set(
+            `${IPAddressHbarSpendingPlanRepository.collectionKey}:${plan.ipAddress}`,
+            plan,
+            'test',
+            requestDetails,
+          );
         }
 
         const result = await repository.findAllByPlanId(planId, 'findAllByPlanId', requestDetails);
@@ -114,14 +124,24 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
         const ipAddresses = ['555.555.555.555', '666.666.666.666'];
         for (const ipAddress of ipAddresses) {
           const addressPlan = new IPAddressHbarSpendingPlan({ ipAddress, planId });
-          await cacheService.set(`${repository['collectionKey']}:${ipAddress}`, addressPlan, 'test', requestDetails);
+          await cacheService.set(
+            `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
+            addressPlan,
+            'test',
+            requestDetails,
+          );
         }
 
         await repository.deleteAllByPlanId(planId, 'deleteAllByPlanId', requestDetails);
 
         for (const ipAddress of ipAddresses) {
-          await expect(cacheService.getAsync(`${repository['collectionKey']}:${ipAddress}`, 'test', requestDetails)).to
-            .eventually.be.null;
+          await expect(
+            cacheService.getAsync(
+              `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
+              'test',
+              requestDetails,
+            ),
+          ).to.eventually.be.null;
         }
       });
 
@@ -134,7 +154,12 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
     describe('findByAddress', () => {
       it('retrieves an address plan by ip', async () => {
         const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: uuidV4(randomBytes(16)) };
-        await cacheService.set(`${repository['collectionKey']}:${ipAddress}`, addressPlan, 'test', requestDetails);
+        await cacheService.set(
+          `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
+          addressPlan,
+          'test',
+          requestDetails,
+        );
 
         const result = await repository.findByAddress(ipAddress, requestDetails);
         expect(result).to.deep.equal(addressPlan);
@@ -154,14 +179,14 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
 
         await repository.save(addressPlan, requestDetails, ttl);
         const result = await cacheService.getAsync<IIPAddressHbarSpendingPlan>(
-          `${repository['collectionKey']}:${ipAddress}`,
+          `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
           'test',
           requestDetails,
         );
         expect(result).to.deep.equal(addressPlan);
         sinon.assert.calledWith(
           cacheServiceSpy.set,
-          `${repository['collectionKey']}:${ipAddress}`,
+          `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
           addressPlan,
           'save',
           requestDetails,
@@ -171,20 +196,25 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
 
       it('overwrites an existing address plan', async () => {
         const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: uuidV4(randomBytes(16)) };
-        await cacheService.set(`${repository['collectionKey']}:${ipAddress}`, addressPlan, 'test', requestDetails);
+        await cacheService.set(
+          `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
+          addressPlan,
+          'test',
+          requestDetails,
+        );
 
         const newPlanId = uuidV4(randomBytes(16));
         const newAddressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: newPlanId };
         await repository.save(newAddressPlan, requestDetails, ttl);
         const result = await cacheService.getAsync<IIPAddressHbarSpendingPlan>(
-          `${repository['collectionKey']}:${ipAddress}`,
+          `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
           'test',
           requestDetails,
         );
         expect(result).to.deep.equal(newAddressPlan);
         sinon.assert.calledWith(
           cacheServiceSpy.set,
-          `${repository['collectionKey']}:${ipAddress}`,
+          `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
           newAddressPlan,
           'save',
           requestDetails,
@@ -196,11 +226,16 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
     describe('delete', () => {
       it('deletes an address plan successfully', async () => {
         const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: uuidV4(randomBytes(16)) };
-        await cacheService.set(`${repository['collectionKey']}:${ipAddress}`, addressPlan, 'test', requestDetails);
+        await cacheService.set(
+          `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
+          addressPlan,
+          'test',
+          requestDetails,
+        );
 
         await repository.delete(ipAddress, requestDetails);
         const result = await cacheService.getAsync<IIPAddressHbarSpendingPlan>(
-          `${repository['collectionKey']}:${ipAddress}`,
+          `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
           'test',
           requestDetails,
         );

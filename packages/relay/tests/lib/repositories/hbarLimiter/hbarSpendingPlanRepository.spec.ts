@@ -77,7 +77,7 @@ describe('HbarSpendingPlanRepository', function () {
         );
         sinon.assert.calledWithMatch(
           cacheServiceSpy.set,
-          `${repository['collectionKey']}:${createdPlan.id}`,
+          `${HbarSpendingPlanRepository.collectionKey}:${createdPlan.id}`,
           createdPlan,
           'create',
           requestDetails,
@@ -137,7 +137,7 @@ describe('HbarSpendingPlanRepository', function () {
         const subscriptionTier = SubscriptionTier.BASIC;
         const createdPlan = await repository.create(subscriptionTier, requestDetails, ttl);
 
-        const key = `${repository['collectionKey']}:${createdPlan.id}:spendingHistory`;
+        const key = `${HbarSpendingPlanRepository.collectionKey}:${createdPlan.id}:spendingHistory`;
         const hbarSpending = { amount: 100, timestamp: new Date() } as IHbarSpendingRecord;
         await cacheService.rPush(key, hbarSpending, 'test', requestDetails);
 
@@ -164,7 +164,7 @@ describe('HbarSpendingPlanRepository', function () {
 
         sinon.assert.calledWithMatch(
           cacheServiceSpy.rPush,
-          `${repository['collectionKey']}:${createdPlan.id}:spendingHistory`,
+          `${HbarSpendingPlanRepository.collectionKey}:${createdPlan.id}:spendingHistory`,
           { amount, timestamp: spendingHistory[0].timestamp },
           'addAmountToSpendingHistory',
           requestDetails,
@@ -262,7 +262,7 @@ describe('HbarSpendingPlanRepository', function () {
         expect(plan!.amountSpent).to.equal(amount);
         sinon.assert.calledWithMatch(
           cacheServiceSpy.set,
-          `${repository['collectionKey']}:${createdPlan.id}:amountSpent`,
+          `${HbarSpendingPlanRepository.collectionKey}:${createdPlan.id}:amountSpent`,
           amount,
           'addToAmountSpent',
           requestDetails,
@@ -274,7 +274,7 @@ describe('HbarSpendingPlanRepository', function () {
         await repository.addToAmountSpent(createdPlan.id, newAmount, requestDetails, ttl);
         sinon.assert.calledWithMatch(
           cacheServiceSpy.incrBy,
-          `${repository['collectionKey']}:${createdPlan.id}:amountSpent`,
+          `${HbarSpendingPlanRepository.collectionKey}:${createdPlan.id}:amountSpent`,
           newAmount,
           'addToAmountSpent',
           requestDetails,
@@ -300,7 +300,7 @@ describe('HbarSpendingPlanRepository', function () {
         const createdPlan = await repository.create(subscriptionTier, requestDetails, ttl);
 
         // Manually set the plan to inactive
-        const key = `${repository['collectionKey']}:${createdPlan.id}`;
+        const key = `${HbarSpendingPlanRepository.collectionKey}:${createdPlan.id}`;
         await cacheService.set(key, { ...createdPlan, active: false }, 'test', requestDetails);
 
         const amount = 50;
@@ -327,7 +327,7 @@ describe('HbarSpendingPlanRepository', function () {
         const createdPlan = await repository.create(subscriptionTier, requestDetails, ttl);
 
         // Manually set the plan to inactive
-        const key = `${repository['collectionKey']}:${createdPlan.id}`;
+        const key = `${HbarSpendingPlanRepository.collectionKey}:${createdPlan.id}`;
         await cacheService.set(key, { ...createdPlan, active: false }, 'test', requestDetails);
 
         await expect(repository.checkExistsAndActive(createdPlan.id, requestDetails)).to.be.eventually.rejectedWith(
@@ -360,7 +360,7 @@ describe('HbarSpendingPlanRepository', function () {
         const inactivePlan = await repository.create(subscriptionTier, requestDetails, ttl);
 
         // Manually set the plan to inactive
-        const key = `${repository['collectionKey']}:${inactivePlan.id}`;
+        const key = `${HbarSpendingPlanRepository.collectionKey}:${inactivePlan.id}`;
         await cacheService.set(key, { ...inactivePlan, active: false }, 'test', requestDetails);
 
         const activePlans = await repository.findAllActiveBySubscriptionTier([subscriptionTier], requestDetails);
