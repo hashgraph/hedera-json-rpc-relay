@@ -25,11 +25,15 @@ import findConfig from 'find-config';
 import constants from '../../constants';
 import { Utils } from './../../../utils';
 import HbarLimit from '../../hbarlimiter';
-import { Counter, Registry } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import { CacheService } from '../cacheService/cacheService';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import fs from 'fs';
+import {
+  IExecuteConsenusClientResetDurationPayload,
+  IExecuteConsenusClientResetErrorPayload,
+  IExecuteConsenusClientResetTransactionPayload,
+} from '../../types/events';
 
 export default class HAPIService {
   private transactionCount: number;
@@ -76,11 +80,6 @@ export default class HAPIService {
    */
   private readonly eventEmitter: EventEmitter;
 
-  /**
-   * @private
-   */
-  private readonly register: Registry;
-  private clientResetCounter: Counter;
   private readonly cacheService: CacheService;
 
   /**
@@ -92,18 +91,11 @@ export default class HAPIService {
    * Constructs an instance of the class, initializes configuration settings, and sets up various services.
    *
    * @param {Logger} logger - The logger instance used for logging.
-   * @param {Registry} register - The registry instance for metrics and other services.
    * @param {HbarLimit} hbarLimiter - The Hbar rate limiter instance.
    * @param {CacheService} cacheService - The cache service instance.
    * @param {EventEmitter} eventEmitter - The event emitter instance used for emitting events.
    */
-  constructor(
-    logger: Logger,
-    register: Registry,
-    hbarLimiter: HbarLimit,
-    cacheService: CacheService,
-    eventEmitter: EventEmitter,
-  ) {
+  constructor(logger: Logger, hbarLimiter: HbarLimit, cacheService: CacheService, eventEmitter: EventEmitter) {
     dotenv.config({ path: findConfig('.env') || '' });
     if (fs.existsSync(findConfig('.env') || '')) {
       this.config = dotenv.parse(fs.readFileSync(findConfig('.env') || ''));
@@ -137,16 +129,6 @@ export default class HAPIService {
       this.isReinitEnabled = false;
     }
     this.shouldReset = false;
-
-    this.register = register;
-    const metricCounterName = 'rpc_relay_client_service';
-    this.register.removeSingleMetric(metricCounterName);
-    this.clientResetCounter = new Counter({
-      name: metricCounterName,
-      help: 'Relay Client Service',
-      registers: [register],
-      labelNames: ['transactions', 'duration', 'errors'],
-    });
   }
 
   /**
@@ -159,6 +141,9 @@ export default class HAPIService {
 
     this.transactionCount--;
     if (this.transactionCount <= 0) {
+      this.eventEmitter.emit(constants.EVENTS.RESET_CLIENT_TRANSACTIONS, {
+        transactionCount: this.transactionCount,
+      } as IExecuteConsenusClientResetTransactionPayload);
       this.shouldReset = true;
     }
   }
@@ -172,6 +157,9 @@ export default class HAPIService {
     }
 
     if (this.errorCodes.includes(statusCode)) {
+      this.eventEmitter.emit(constants.EVENTS.RESET_CLIENT_ERRORS, {
+        errorCodes: this.errorCodes,
+      } as IExecuteConsenusClientResetErrorPayload);
       this.shouldReset = true;
     }
   }
@@ -182,6 +170,9 @@ export default class HAPIService {
     }
 
     if (this.resetDuration < Date.now()) {
+      this.eventEmitter.emit(constants.EVENTS.RESET_CLIENT_DURATION, {
+        duration: this.resetDuration,
+      } as IExecuteConsenusClientResetDurationPayload);
       this.shouldReset = true;
     }
   }
@@ -190,10 +181,6 @@ export default class HAPIService {
    * Reset the SDK Client and all counters.
    */
   private resetClient() {
-    this.clientResetCounter
-      .labels(this.transactionCount.toString(), this.resetDuration.toString(), this.errorCodes.toString())
-      .inc(1);
-
     this.clientMain = this.initClient(this.logger, this.hederaNetwork);
     this.client = this.initSDKClient(this.logger);
     this.resetCounters();

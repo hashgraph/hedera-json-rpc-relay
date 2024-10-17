@@ -22,7 +22,13 @@ import { IFeeHistory } from './IFeeHistory';
 import { ITransactionRecordMetric } from './metrics';
 import { ITransactionReceipt } from './ITransactionReceipt';
 import { ITracerConfigWrapper } from './ITracerConfigWrapper';
-import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload } from './events';
+import {
+  IExecuteQueryEventPayload,
+  IExecuteTransactionEventPayload,
+  IExecuteConsenusClientResetDurationPayload,
+  IExecuteConsenusClientResetErrorPayload,
+  IExecuteConsenusClientResetTransactionPayload,
+} from './events';
 import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig } from './ITracerConfig';
 import {
   IAssessedCustomFee,
@@ -62,6 +68,9 @@ export {
   MirrorNodeTransactionRecord,
   IMirrorNodeTransactionRecord,
   IExecuteTransactionEventPayload,
+  IExecuteConsenusClientResetDurationPayload,
+  IExecuteConsenusClientResetErrorPayload,
+  IExecuteConsenusClientResetTransactionPayload,
   IRequestDetails,
   RequestDetails,
 };
