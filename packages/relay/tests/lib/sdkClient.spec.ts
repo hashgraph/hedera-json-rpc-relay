@@ -141,8 +141,9 @@ describe('SdkClient', async function () {
       new CacheService(logger.child({ name: `cache` }), registry),
       instance,
     );
+    const hapiService = new HAPIService(logger, hbarLimiter, new CacheService(logger, registry), eventEmitter);
 
-    metricService = new MetricService(logger, sdkClient, mirrorNodeClient, hbarLimiter, registry, eventEmitter);
+    metricService = new MetricService(logger, hapiService, mirrorNodeClient, hbarLimiter, registry, eventEmitter);
   });
 
   beforeEach(() => {

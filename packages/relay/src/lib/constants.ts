@@ -218,6 +218,9 @@ export default {
   EVENTS: {
     EXECUTE_TRANSACTION: 'execute_transaction',
     EXECUTE_QUERY: 'execute_query',
+    RESET_CLIENT_DURATION: 'reset_client_duration',
+    RESET_CLIENT_ERRORS: 'reset_client_errors',
+    RESET_CLIENT_TRANSACTIONS: 'reset_client_transactions',
   },
 
   EXECUTION_MODE: {
