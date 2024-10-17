@@ -142,17 +142,16 @@ export default {
     DURATION: 60000,
   },
 
-  // TODO: Replace with actual values - https://github.com/hashgraph/hedera-json-rpc-relay/issues/2895
   // @ts-ignore
-  HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION') || '80000'), // 80 seconds
+  HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION') || '86400000'), // 1 day
   // @ts-ignore
-  HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR') || '11000000000'), // 110 HBARs per 80 seconds
+  HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR') || '800000000000'), // 8000 HBARs
   // @ts-ignore
-  HBAR_RATE_LIMIT_BASIC: BigNumber(ConfigService.get('HBAR_DAILY_LIMIT_BASIC') || '92592592'), // Equivalent of 1000 HBARs per day
+  HBAR_RATE_LIMIT_BASIC: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_BASIC') || '1120000000'), // 11.2 HBARs
   // @ts-ignore
-  HBAR_RATE_LIMIT_EXTENDED: BigNumber(ConfigService.get('HBAR_DAILY_LIMIT_EXTENDED') || '925925925'), // Equivalent of 10000 HBARs per day
+  HBAR_RATE_LIMIT_EXTENDED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_EXTENDED') || '3200000000'), // 32 HBARs
   // @ts-ignore
-  HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(ConfigService.get('HBAR_DAILY_LIMIT_PRIVILEGED') || '1851851850'), // Equivalent of 20000 HBARs per day
+  HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_PRIVILEGED') || '8000000000'), // 80 HBARs
   // @ts-ignore
   GAS_PRICE_TINY_BAR_BUFFER: parseInt(ConfigService.get('GAS_PRICE_TINY_BAR_BUFFER') || '10000000000'),
   WEB_SOCKET_PORT: ConfigService.get('WEB_SOCKET_PORT') || 8546,
