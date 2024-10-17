@@ -148,11 +148,11 @@ export class RelayImpl implements Relay {
     );
     const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
       this.cacheService,
-      logger.child({ name: 'eth-address-hbar-spending-plan-repository' }),
+      logger.child({ name: 'evm-address-spending-plan-repository' }),
     );
     const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
       this.cacheService,
-      logger.child({ name: 'ip-address-hbar-spending-plan-repository' }),
+      logger.child({ name: 'ip-address-spending-plan-repository' }),
     );
     const hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepository,

@@ -114,7 +114,7 @@ export class EthAddressHbarSpendingPlanRepository {
     for (const key of keys) {
       await this.cache.delete(key, this.deleteAll.name, requestDetails);
     }
-    this.logger.trace(`${requestDetails.formattedRequestId} Deleted all IP address spending plans`);
+    this.logger.trace(`${requestDetails.formattedRequestId} Deleted all EVM address spending plans`);
   }
 
   /**
