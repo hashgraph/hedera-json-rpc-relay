@@ -202,3 +202,18 @@ export const constructValidLogSubscriptionFilter = (filters: any): object => {
     Object.entries(filters).filter(([key, value]) => value !== undefined && ['address', 'topics'].includes(key)),
   );
 };
+
+/**
+ * A mapping of parameter rearrangement functions for various methods.
+ * Each function adjusts the order of parameters to ensure that the
+ * `requestDetails` object is placed correctly based on the method's requirements.
+ */
+export const paramRearrangementMap: {
+  [key: string]: (params: any[], requestDetails: RequestDetails) => any[];
+} = {
+  chainId: (_: any[], requestDetails: RequestDetails) => [requestDetails],
+  estimateGas: (params, requestDetails) => [params[0], params[1], requestDetails],
+  getStorageAt: (params, requestDetails) => [params[0], params[1], requestDetails, params[2]],
+  newFilter: (params, requestDetails) => [params[0], params[1], requestDetails, params[2], params[3]],
+  default: (params, requestDetails) => [...params, requestDetails],
+};
