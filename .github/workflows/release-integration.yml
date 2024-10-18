@@ -9,6 +9,9 @@ env:
   OWNER: hashgraph
   REGISTRY: ghcr.io
 
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: smart-contracts-linux-medium

@@ -13,6 +13,9 @@ on:
         required: true
         default: 'v0.40.0'    
 
+permissions:
+  contents: read
+  
 jobs:
   release-acceptance-test:
     runs-on: smart-contracts-linux-medium

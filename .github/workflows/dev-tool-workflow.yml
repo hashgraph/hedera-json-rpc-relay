@@ -10,6 +10,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   dev-tool-workflow:
     runs-on: smart-contracts-linux-medium
