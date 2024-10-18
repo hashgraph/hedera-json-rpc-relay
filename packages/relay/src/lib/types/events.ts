@@ -27,6 +27,7 @@ export interface IExecuteTransactionEventPayload {
   operatorAccountId: string;
   interactingEntity: string;
   requestDetails: RequestDetails;
+  originalCallerAddress: string;
 }
 
 export interface IExecuteQueryEventPayload {
@@ -39,4 +40,5 @@ export interface IExecuteQueryEventPayload {
   interactingEntity: string;
   status: string;
   requestDetails: RequestDetails;
+  originalCallerAddress: string | undefined;
 }
