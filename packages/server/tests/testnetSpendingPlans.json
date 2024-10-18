@@ -1,0 +1,28 @@
+[
+    {
+      "id": "c758c095-342c-4607-9db5-867d7e90ab9d",
+      "name": "partner name",
+      "ethAddresses": ["0x7d102fe71af42790fe31b126c1f49766376ca2b5", "0x4ad27ba9330cb336b0ee38bfb5b86da015500342"],
+      "ipAddresses": ["127.0.0.1", "128.0.0.1"],
+      "subscriptionTier": "PRIVILEGED"
+    },
+    {
+      "id": "a68488b0-6f7d-44a0-87c1-774ad64615f2",
+      "name": "some other partner that has given us only eth addresses",
+      "ethAddresses": ["0x40183ec818c1826114767391989ff2eaebc2b91e", "0x1fd56166627bee3fc51c0918451e3391f463219c"],
+      "subscriptionTier": "PRIVILEGED"
+    },
+    {
+      "id": "af13d6ed-d676-4d33-8b9d-cf05d1ad7134",
+      "name": "supported project name",
+      "ethAddresses": ["0x421e224dfe6717d94a03ce23741c2d7c6009f2dc", "0x149294f355f62827748988071de70ab195d0eb23"],
+      "ipAddresses": ["129.0.0.1", "130.0.0.1"],
+      "subscriptionTier": "EXTENDED"
+    },
+    {
+      "id": "7f665aa3-6b73-41d7-bf9b-92d04cdab96b",
+      "name": "some other supported project that has given us only ip addresses",
+      "ipAddresses": ["131.0.0.1", "132.0.0.1"],
+      "subscriptionTier": "EXTENDED"
+    }
+  ]
