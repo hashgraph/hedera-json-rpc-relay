@@ -737,13 +737,20 @@ export class SDKClient {
       }
 
       this.logger.warn(
+        `${
+          requestDetails.formattedRequestId
+        } Logging more info about failed transaction LogID: ${transaction._getLogId()} Max attempts: ${
+          transaction._maxAttempts
+        }, Grpc deadline ${transaction._grpcDeadline}, NodeIds ${transaction.nodeAccountIds} `,
+      );
+      this.logger.warn(
         sdkClientError,
         `${requestDetails.formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}) message=${sdkClientError.message}`,
       );
 
       if (!transactionResponse) {
         throw predefined.INTERNAL_ERROR(
-          `${requestDetails.formattedRequestId} Transaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
+          `${requestDetails.formattedRequestId} TTransaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
         );
       }
       return transactionResponse;
