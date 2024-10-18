@@ -17,12 +17,10 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-
 import { EthImpl } from '../../../src/lib/eth';
 import { buildCryptoTransferTransaction, overrideEnvsInMochaDescribe } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
@@ -46,7 +44,6 @@ import {
 import { balancesByAccountIdByTimestampURL, generateEthTestEnv } from './eth-helpers';
 import { RequestDetails } from '../../../src/lib/types';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
@@ -58,7 +55,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getBalanceTest', ipAddress: '0.0.0.0' });
 
-  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1 });
 
   this.beforeEach(async () => {
     // reset cache and restMock

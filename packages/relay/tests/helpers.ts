@@ -27,6 +27,8 @@ import { Hbar, HbarUnit } from '@hashgraph/sdk';
 import { formatRequestIdMessage, numberTo0x, toHash32 } from '../src/formatters';
 import { RedisInMemoryServer } from './redisInMemoryServer';
 import { Logger } from 'pino';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../config-service/tests/configServiceTestHelper';
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -885,7 +887,7 @@ export const calculateTxRecordChargeAmount = (exchangeRateIncents: number) => {
 };
 
 export const useInMemoryRedisServer = (logger: Logger, port: number) => {
-  overrideEnvsInMochaDescribe({ TEST: 'false', REDIS_ENABLED: 'true', REDIS_URL: `redis://127.0.0.1:${port}` });
+  overrideEnvsInMochaDescribe({ TEST: false, REDIS_ENABLED: true, REDIS_URL: `redis://127.0.0.1:${port}` });
 
   let redisInMemoryServer: RedisInMemoryServer;
 
@@ -914,38 +916,38 @@ export const stopRedisInMemoryServer = async (redisInMemoryServer: RedisInMemory
  *
  * @example
  * describe('given TEST is set to false', () => {
- *   overrideEnvsInMochaDescribe({ TEST: 'false' });
+ *   overrideEnvsInMochaDescribe({ TEST: false });
  *
  *   it('should return false', () => {
- *     expect(process.env.TEST).to.equal('false');
+ *     expect(ConfigService.get('TEST')).to.equal(false);
  *   });
  * });
  *
  * it('should return true', () => {
- *   expect(process.env.TEST).to.equal('true');
+ *   expect(ConfigService.get('TEST')).to.equal(true);
  * });
  */
-export const overrideEnvsInMochaDescribe = (envs: NodeJS.Dict<string>) => {
-  let envsToReset: NodeJS.Dict<string> = {};
+export const overrideEnvsInMochaDescribe = (envs: NodeJS.Dict<any>) => {
+  let envsToReset: NodeJS.Dict<any> = {};
 
-  const overrideEnv = (object: NodeJS.Dict<string>, key: string, value: string | undefined) => {
+  const overrideEnv = (key: string, value: any) => {
     if (value === undefined) {
-      delete object[key];
+      ConfigServiceTestHelper.remove(key);
     } else {
-      object[key] = value;
+      ConfigServiceTestHelper.dynamicOverride(key, value);
     }
   };
 
   before(() => {
     for (const key in envs) {
-      envsToReset[key] = process.env[key];
-      overrideEnv(process.env, key, envs[key]);
+      envsToReset[key] = ConfigService.get(key);
+      overrideEnv(key, envs[key]);
     }
   });
 
   after(() => {
     for (const key in envs) {
-      overrideEnv(process.env, key, envsToReset[key]);
+      overrideEnv(key, envsToReset[key]);
     }
   });
 };
@@ -957,17 +959,17 @@ export const overrideEnvsInMochaDescribe = (envs: NodeJS.Dict<string>) => {
  * @param {Function} tests - A function containing the tests to run with the overridden environment variables.
  *
  * @example
- * withOverriddenEnvsInMochaTest({ TEST: 'false' }, () => {
+ * withOverriddenEnvsInMochaTest({ TEST: false }, () => {
  *   it('should return false', () => {
- *     expect(process.env.TEST).to.equal('false');
+ *     expect(ConfigService.get('TEST')).to.equal(false);
  *   });
  * });
  *
  * it('should return true', () => {
- *   expect(process.env.TEST).to.equal('true');
+ *   expect(ConfigService.get('TEST')).to.equal(true);
  * });
  */
-export const withOverriddenEnvsInMochaTest = (envs: NodeJS.Dict<string>, tests: () => void) => {
+export const withOverriddenEnvsInMochaTest = (envs: NodeJS.Dict<any>, tests: () => void) => {
   const overriddenEnvs = Object.entries(envs)
     .map(([key, value]) => `${key}=${value}`)
     .join(', ');

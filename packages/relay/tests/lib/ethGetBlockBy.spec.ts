@@ -18,15 +18,13 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Registry } from 'prom-client';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-
 import pino from 'pino';
 import constants from '../../src/lib/constants';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
@@ -37,8 +35,6 @@ import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { defaultDetailedContractResults, overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../helpers';
 import { EventEmitter } from 'events';
 import { RequestDetails } from '../../src/lib/types';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 use(chaiAsPromised);
 
@@ -121,14 +117,14 @@ describe('eth_getBlockBy', async function () {
   const requestDetails = new RequestDetails({ requestId: 'ethGetBlockByTest', ipAddress: '0.0.0.0' });
 
   useInMemoryRedisServer(logger, 5031);
-  overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: 'false' });
+  overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: false });
 
   this.beforeAll(async () => {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
 
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL ?? '',
+      ConfigService.get('MIRROR_NODE_URL') ?? '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

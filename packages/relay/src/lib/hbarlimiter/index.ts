@@ -20,6 +20,7 @@
 
 import { Logger } from 'pino';
 import constants from '../constants';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { Counter, Gauge, Registry } from 'prom-client';
 import { RequestDetails } from '../types';
 
@@ -192,7 +193,7 @@ export default class HbarLimit {
    * @returns {boolean} - Returns `true` if the account is whitelisted, otherwise `false`.
    */
   isAccountWhiteListed(originalCallerAddress: string): boolean {
-    const whiteListedAccountIDs = process.env.HBAR_RATE_LIMIT_WHITELIST ?? [''];
+    const whiteListedAccountIDs = ConfigService.get('HBAR_RATE_LIMIT_WHITELIST') ?? [''];
     return (whiteListedAccountIDs as string[]).includes(originalCallerAddress);
   }
 

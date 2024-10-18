@@ -20,6 +20,7 @@
 
 import { PrivateKey } from '@hashgraph/sdk';
 import constants from './lib/constants';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import crypto from 'crypto';
 
 export class Utils {
@@ -34,7 +35,8 @@ export class Utils {
     //   buffered gas price = 126 + 12.6 = 138.6 <--- invalid tinybars
     gasPrice +=
       Math.round(
-        (gasPrice / constants.TINYBAR_TO_WEIBAR_COEF) * (Number(process.env.GAS_PRICE_PERCENTAGE_BUFFER || 0) / 100),
+        (gasPrice / constants.TINYBAR_TO_WEIBAR_COEF) *
+          (Number(ConfigService.get('GAS_PRICE_PERCENTAGE_BUFFER') || 0) / 100),
       ) * constants.TINYBAR_TO_WEIBAR_COEF;
 
     return gasPrice;
@@ -45,7 +47,7 @@ export class Utils {
    * @returns PrivateKey
    */
   public static createPrivateKeyBasedOnFormat(operatorMainKey: string): PrivateKey {
-    switch (process.env.OPERATOR_KEY_FORMAT) {
+    switch (ConfigService.get('OPERATOR_KEY_FORMAT')) {
       case 'DER':
       case undefined:
       case null:
@@ -55,7 +57,7 @@ export class Utils {
       case 'HEX_ECDSA':
         return PrivateKey.fromStringECDSA(operatorMainKey);
       default:
-        throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${process.env.OPERATOR_KEY_FORMAT}`);
+        throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${ConfigService.get('OPERATOR_KEY_FORMAT')}`);
     }
   }
 

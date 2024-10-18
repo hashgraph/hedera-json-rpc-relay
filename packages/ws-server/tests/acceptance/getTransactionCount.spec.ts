@@ -22,16 +22,17 @@
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
 import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@release @web-socket-batch-2 eth_getTransactionCount', async function () {
   const METHOD_NAME = 'eth_getTransactionCount';
-  const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   // @ts-ignore

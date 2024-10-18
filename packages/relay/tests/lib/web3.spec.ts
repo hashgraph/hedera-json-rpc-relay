@@ -18,25 +18,21 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import pino from 'pino';
 import { RelayImpl } from '../../src';
 import { withOverriddenEnvsInMochaTest } from '../helpers';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
 const logger = pino();
-
 const Relay = new RelayImpl(logger, new Registry());
 
 describe('Web3', function () {
   withOverriddenEnvsInMochaTest({ npm_package_version: '1.0.0' }, () => {
     it('should return "relay/1.0.0"', async function () {
       const clientVersion = Relay.web3().clientVersion();
-      expect(clientVersion).to.be.equal('relay/' + process.env.npm_package_version);
+      expect(clientVersion).to.be.equal('relay/' + ConfigService.get('npm_package_version'));
     });
   });
 

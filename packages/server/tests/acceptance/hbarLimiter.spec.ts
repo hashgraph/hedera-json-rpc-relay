@@ -34,6 +34,7 @@ import {
   overrideEnvsInMochaDescribe,
   withOverriddenEnvsInMochaTest,
 } from '@hashgraph/json-rpc-relay/tests/helpers';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 // Contracts used in tests
 import parentContractJson from '../contracts/Parent.json';
@@ -67,8 +68,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     metrics: MetricsClient;
     relayIsLocal: boolean;
   } = global;
-  const operatorAccount = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
-  const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+  const operatorAccount = ConfigService.get('OPERATOR_ID_MAIN') || DOT_ENV.OPERATOR_ID_MAIN || '';
+  const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
 
@@ -169,7 +170,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       const accounts: AliasAccount[] = [];
       const defaultLondonTransactionData = {
         value: Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10))), // 1 tinybar
-        chainId: Number(process.env.CHAIN_ID || 0),
+        chainId: Number(ConfigService.get('CHAIN_ID') || 0),
         maxPriorityFeePerGas: Assertions.defaultGasPrice,
         maxFeePerGas: Assertions.defaultGasPrice,
         gasLimit: 3_000_000,
@@ -182,7 +183,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
         logger.info(
-          `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`,
+          `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get(
+            'HBAR_RATE_LIMIT_TINYBAR',
+          )}`,
         );
 
         const initialAccount: AliasAccount = global.accounts[0];
@@ -205,7 +208,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('Remaining HBAR Limit', () => {
-        overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
+        overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true });
 
         it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
           const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
@@ -282,7 +285,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             contract.deploymentTransaction()!.data,
           );
 
-          const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+          const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
           const estimatedTxFee = estimateFileTransactionsFee(
             contract.deploymentTransaction()!.data.length,
             fileChunkSize,
@@ -320,7 +323,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
         });
 
-        withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' }, () => {
+        withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: true }, () => {
           it('Should preemptively check the rate limit before submitting EthereumTransaction', async function () {
             try {
               for (let i = 0; i < 50; i++) {
@@ -338,7 +341,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
         });
 
-        withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'false' }, () => {
+        withOverriddenEnvsInMochaTest({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: false }, () => {
           it('multiple deployments of large contracts should eventually exhaust the remaining hbar limit', async function () {
             const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
             const lastRemainingHbars = remainingHbarsBefore;
