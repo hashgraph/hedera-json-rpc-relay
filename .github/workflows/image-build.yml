@@ -7,6 +7,9 @@ on:
 env:
   OWNER: hashgraph
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: smart-contracts-linux-medium
