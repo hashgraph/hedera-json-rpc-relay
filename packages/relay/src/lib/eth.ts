@@ -1520,7 +1520,7 @@ export class EthImpl implements Eth {
 
         if (!accountNonce) {
           this.logger.warn(`${requestDetails.formattedRequestId} Cannot find updated account nonce.`);
-          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONT_NONCE error.`);
+          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONG_NONCE error.`);
         }
 
         if (parsedTx.nonce > accountNonce) {
