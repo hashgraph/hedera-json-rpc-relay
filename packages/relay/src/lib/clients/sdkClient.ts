@@ -69,6 +69,9 @@ import {
   ITransactionRecordMetric,
   RequestDetails,
 } from '../types';
+import MirrorNode from '@hashgraph/sdk/lib/MirrorNode';
+import { MirrorNodeClient } from './mirrorNodeClient';
+import { Registry } from 'prom-client';
 
 const _ = require('lodash');
 
@@ -114,6 +117,8 @@ export class SDKClient {
    */
   private readonly eventEmitter: EventEmitter;
 
+  private readonly mirrorNodeClient: MirrorNodeClient;
+
   /**
    * An instance of the HbarLimitService that tracks hbar expenses and limits.
    * @private
@@ -137,6 +142,9 @@ export class SDKClient {
     eventEmitter: EventEmitter,
     hbarLimitService: HbarLimitService,
   ) {
+    const registry = new Registry();
+    const restUrl = process.env.MIRROR_NODE_REST_URL || '';
+    this.mirrorNodeClient = new MirrorNodeClient(restUrl, logger, registry, cacheService);
     this.clientMain = clientMain;
 
     if (ConfigService.get('CONSENSUS_MAX_EXECUTION_TIME')) {
@@ -748,6 +756,14 @@ export class SDKClient {
           `${requestDetails.formattedRequestId} TTransaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
         );
       }
+
+      const transactionId = transaction.transactionId ? transaction.transactionId.toString() : false;
+      console.log('Transaction id', transactionId);
+      if (transactionId) {
+        const transactionFromMirrorNode = await this.mirrorNodeClient.getTransactionById(transactionId, requestDetails);
+        this.logger.warn('Transaction found', transactionFromMirrorNode);
+      }
+
       return transactionResponse;
     } finally {
       if (transactionId?.length) {
