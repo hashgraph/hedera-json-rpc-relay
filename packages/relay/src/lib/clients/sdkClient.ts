@@ -53,14 +53,15 @@ import {
   TransactionResponse,
 } from '@hashgraph/sdk';
 import { Logger } from 'pino';
+import { Utils } from '../../utils';
 import { EventEmitter } from 'events';
-import HbarLimit from '../hbarlimiter';
 import constants from './../constants';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
-import { SDKClientError } from '../errors/SDKClientError';
-import { JsonRpcError, predefined } from '../errors/JsonRpcError';
-import { CacheService } from '../services/cacheService/cacheService';
 import { weibarHexToTinyBarInt } from '../../formatters';
+import { SDKClientError } from './../errors/SDKClientError';
+import { HbarLimitService } from '../services/hbarLimitService';
+import { JsonRpcError, predefined } from './../errors/JsonRpcError';
+import { CacheService } from '../services/cacheService/cacheService';
 import {
   IExecuteQueryEventPayload,
   IExecuteTransactionEventPayload,
@@ -84,12 +85,6 @@ export class SDKClient {
    * @private
    */
   private readonly logger: Logger;
-
-  /**
-   * This limiter tracks hbar expenses and limits.
-   * @private
-   */
-  private readonly hbarLimiter: HbarLimit;
 
   /**
    * LRU cache container.
@@ -119,20 +114,27 @@ export class SDKClient {
   private readonly eventEmitter: EventEmitter;
 
   /**
+   * An instance of the HbarLimitService that tracks hbar expenses and limits.
+   * @private
+   * @readonly
+   * @type {HbarLimitService}
+   */
+  private readonly hbarLimitService: HbarLimitService;
+
+  /**
    * Constructs an instance of the SDKClient and initializes various services and settings.
    *
    * @param {Client} clientMain - The primary Hedera client instance used for executing transactions and queries.
    * @param {Logger} logger - The logger instance for logging information, warnings, and errors.
-   * @param {HbarLimit} hbarLimiter - The Hbar rate limiter instance for managing Hbar transaction budgets.
    * @param {CacheService} cacheService - The cache service instance used for caching and retrieving data.
    * @param {EventEmitter} eventEmitter - The eventEmitter used for emitting and handling events within the class.
    */
   constructor(
     clientMain: Client,
     logger: Logger,
-    hbarLimiter: HbarLimit,
     cacheService: CacheService,
     eventEmitter: EventEmitter,
+    hbarLimitService: HbarLimitService,
   ) {
     this.clientMain = clientMain;
 
@@ -143,9 +145,9 @@ export class SDKClient {
     }
 
     this.logger = logger;
-    this.hbarLimiter = hbarLimiter;
     this.cacheService = cacheService;
     this.eventEmitter = eventEmitter;
+    this.hbarLimitService = hbarLimitService;
     this.maxChunks = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
     this.fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
   }
@@ -417,23 +419,6 @@ export class SDKClient {
     if (ethereumTransactionData.callData.length <= this.fileAppendChunkSize) {
       ethereumTransaction.setEthereumData(ethereumTransactionData.toBytes());
     } else {
-      const isPreemptiveCheckOn = process.env.HBAR_RATE_LIMIT_PREEMPTIVE_CHECK === 'true';
-
-      if (isPreemptiveCheckOn) {
-        const hexCallDataLength = Buffer.from(ethereumTransactionData.callData).toString('hex').length;
-        const shouldPreemptivelyLimit = this.hbarLimiter.shouldPreemptivelyLimitFileTransactions(
-          originalCallerAddress,
-          hexCallDataLength,
-          this.fileAppendChunkSize,
-          currentNetworkExchangeRateInCents,
-          requestDetails,
-        );
-
-        if (shouldPreemptivelyLimit) {
-          throw predefined.HBAR_RATE_LIMIT_PREEMPTIVE_EXCEEDED;
-        }
-      }
-
       fileId = await this.createFile(
         ethereumTransactionData.callData,
         this.clientMain,
@@ -441,6 +426,7 @@ export class SDKClient {
         callerName,
         interactingEntity,
         originalCallerAddress,
+        currentNetworkExchangeRateInCents,
       );
       if (!fileId) {
         throw new SDKClientError({}, `${requestDetails.formattedRequestId} No fileId created for transaction. `);
@@ -506,7 +492,7 @@ export class SDKClient {
       contractCallQuery.setPaymentTransactionId(TransactionId.generate(this.clientMain.operatorAccountId));
     }
 
-    return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestDetails);
+    return this.executeQuery(contractCallQuery, this.clientMain, callerName, to, requestDetails, from);
   }
 
   /**
@@ -603,6 +589,7 @@ export class SDKClient {
    * @param {string} callerName - The name of the caller executing the query.
    * @param {string} interactingEntity - The entity interacting with the query.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @param {string} [originalCallerAddress] - The optional address of the original caller making the request.
    * @returns {Promise<T>} A promise resolving to the query response.
    * @throws {Error} Throws an error if the query fails or if rate limits are exceeded.
    * @template T - The type of the query response.
@@ -613,6 +600,7 @@ export class SDKClient {
     callerName: string,
     interactingEntity: string,
     requestDetails: RequestDetails,
+    originalCallerAddress?: string,
   ): Promise<T> {
     const queryConstructorName = query.constructor.name;
     const requestIdPrefix = requestDetails.formattedRequestId;
@@ -669,6 +657,7 @@ export class SDKClient {
           interactingEntity,
           status,
           requestDetails,
+          originalCallerAddress,
         } as IExecuteQueryEventPayload);
       }
     }
@@ -683,6 +672,7 @@ export class SDKClient {
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
+   * @param {number} [estimatedTxFee] - The optioanl total estimated transaction fee.
    * @returns {Promise<TransactionResponse>} - A promise that resolves to the transaction response.
    * @throws {SDKClientError} - Throws if an error occurs during transaction execution.
    */
@@ -693,19 +683,22 @@ export class SDKClient {
     requestDetails: RequestDetails,
     shouldThrowHbarLimit: boolean,
     originalCallerAddress: string,
+    estimatedTxFee?: number,
   ): Promise<TransactionResponse> {
     const txConstructorName = transaction.constructor.name;
     let transactionId: string = '';
     let transactionResponse: TransactionResponse | null = null;
 
     if (shouldThrowHbarLimit) {
-      const shouldLimit = this.hbarLimiter.shouldLimit(
-        Date.now(),
+      const shouldLimit = await this.hbarLimitService.shouldLimit(
         constants.EXECUTION_MODE.TRANSACTION,
         callerName,
+        txConstructorName,
         originalCallerAddress,
         requestDetails,
+        estimatedTxFee,
       );
+
       if (shouldLimit) {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
@@ -756,6 +749,7 @@ export class SDKClient {
           txConstructorName,
           operatorAccountId: this.clientMain.operatorAccountId!.toString(),
           interactingEntity,
+          originalCallerAddress,
         } as IExecuteTransactionEventPayload);
       }
     }
@@ -770,6 +764,7 @@ export class SDKClient {
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @param {boolean} shouldThrowHbarLimit - Flag to indicate whether to check HBAR limits.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
+   * @param {number} [estimatedTxFee] - The optioanl total estimated transaction fee.
    * @returns {Promise<void>} - A promise that resolves when the batch execution is complete.
    * @throws {SDKClientError} - Throws if an error occurs during batch transaction execution.
    */
@@ -780,18 +775,21 @@ export class SDKClient {
     requestDetails: RequestDetails,
     shouldThrowHbarLimit: boolean,
     originalCallerAddress: string,
+    estimatedTxFee?: number,
   ): Promise<void> {
     const txConstructorName = transaction.constructor.name;
     let transactionResponses: TransactionResponse[] | null = null;
 
     if (shouldThrowHbarLimit) {
-      const shouldLimit = this.hbarLimiter.shouldLimit(
-        Date.now(),
+      const shouldLimit = await this.hbarLimitService.shouldLimit(
         constants.EXECUTION_MODE.TRANSACTION,
         callerName,
+        txConstructorName,
         originalCallerAddress,
         requestDetails,
+        estimatedTxFee,
       );
+
       if (shouldLimit) {
         throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
       }
@@ -822,6 +820,7 @@ export class SDKClient {
               txConstructorName,
               operatorAccountId: this.clientMain.operatorAccountId!.toString(),
               interactingEntity,
+              originalCallerAddress,
             } as IExecuteTransactionEventPayload);
           }
         }
@@ -837,6 +836,7 @@ export class SDKClient {
    * @param {string} callerName - The name of the caller creating the file.
    * @param {string} interactingEntity - The entity interacting with the transaction.
    * @param {string} originalCallerAddress - The address of the original caller making the request.
+   * @param {number} currentNetworkExchangeRateInCents - The current network exchange rate in cents per HBAR.
    * @returns {Promise<FileId | null>} A promise that resolves to the created file ID or null if the creation failed.
    * @throws Will throw an error if the created file is empty or if any transaction fails during execution.
    */
@@ -847,8 +847,28 @@ export class SDKClient {
     callerName: string,
     interactingEntity: string,
     originalCallerAddress: string,
+    currentNetworkExchangeRateInCents: number,
   ): Promise<FileId | null> {
     const hexedCallData = Buffer.from(callData).toString('hex');
+
+    const estimatedTxFee = Utils.estimateFileTransactionsFee(
+      hexedCallData.length,
+      this.fileAppendChunkSize,
+      currentNetworkExchangeRateInCents,
+    );
+
+    const shouldPreemptivelyLimit = await this.hbarLimitService.shouldLimit(
+      constants.EXECUTION_MODE.TRANSACTION,
+      callerName,
+      this.createFile.name,
+      originalCallerAddress,
+      requestDetails,
+      estimatedTxFee,
+    );
+
+    if (shouldPreemptivelyLimit) {
+      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+    }
 
     const fileCreateTx = new FileCreateTransaction()
       .setContents(hexedCallData.substring(0, this.fileAppendChunkSize))
@@ -859,7 +879,7 @@ export class SDKClient {
       callerName,
       interactingEntity,
       requestDetails,
-      true,
+      false,
       originalCallerAddress,
     );
 
@@ -877,7 +897,7 @@ export class SDKClient {
         callerName,
         interactingEntity,
         requestDetails,
-        true,
+        false,
         originalCallerAddress,
       );
     }
@@ -889,6 +909,7 @@ export class SDKClient {
         callerName,
         interactingEntity,
         requestDetails,
+        originalCallerAddress,
       );
 
       if (fileInfo.size.isZero()) {
@@ -942,6 +963,7 @@ export class SDKClient {
         callerName,
         interactingEntity,
         requestDetails,
+        originalCallerAddress,
       );
 
       if (fileInfo.isDeleted) {
