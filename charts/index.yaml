@@ -3,7 +3,7 @@ entries:
   hedera-json-rpc:
   - apiVersion: v2
     appVersion: 0.58.1
-    created: "2024-10-21T18:00:58.958772432Z"
+    created: "2024-10-21T18:29:18.47064687Z"
     dependencies:
     - alias: relay
       condition: relay.enabled
@@ -16,7 +16,7 @@ entries:
       repository: file://../hedera-json-rpc-relay-websocket
       version: '>=0.24.0-0'
     description: Umbrella Helm chart deployment of the hashgraph/hedera-json-rpc products
-    digest: d57cf0004e448c16ffe8bf8ca8451557528c5f7cc3eb3b564b7957ceb2b12958
+    digest: c4d29961bf6303e94741c93d5c9700e1612e9a2610e6bfbcbda434598fd7a85b
     home: https://github.com/hashgraph/hedera-json-rpc-relay
     icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
     keywords:
@@ -3044,9 +3044,9 @@ entries:
   hedera-json-rpc-relay:
   - apiVersion: v2
     appVersion: 0.58.1
-    created: "2024-10-21T18:00:58.960383205Z"
+    created: "2024-10-21T18:29:18.471528055Z"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay
-    digest: 857e507b416fe0c371bda9fce64ecdade67b001b2df696ac6b4bc0f91ab775e8
+    digest: bc291ab8ceb09030c7891e8a894c283a7620ff98c6ba12d2c33c5da9717d0ede
     home: https://github.com/hashgraph/hedera-json-rpc-relay
     icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
     keywords:
@@ -5436,10 +5436,10 @@ entries:
   hedera-json-rpc-relay-websocket:
   - apiVersion: v2
     appVersion: 0.58.1
-    created: "2024-10-21T18:00:58.961035137Z"
+    created: "2024-10-21T18:29:18.472138939Z"
     description: Helm chart deployment of the hashgraph/hedera-json-rpc-relay web
       socket server
-    digest: 56a6b69b729ce03cd6287e8a1f64c0f92c6e7ac4e262774c0bb087ac3788717d
+    digest: b958053afa2244e853957f8c4776ddc6e935ab1b089b8eb99cde5162ea9169b4
     home: https://github.com/hashgraph/hedera-json-rpc-relay
     icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
     keywords:
@@ -7895,4 +7895,4 @@ entries:
     urls:
     - json-rpc-relay-websocket-0.26.0-SNAPSHOT.tgz
     version: 0.26.0-SNAPSHOT
-generated: "2024-10-21T18:00:58.955427445Z"
+generated: "2024-10-21T18:29:18.467505432Z"
