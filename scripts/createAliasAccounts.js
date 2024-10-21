@@ -28,7 +28,13 @@ if (!operatorAccountId || !operatorPrivateKey) {
   throw new Error('Operator ID and Private Key must be set.');
 }
 
-const client = Client.forTestnet();
+let client;
+if(process.env.HEDERA_NETWORK === 'testnet') {
+  client = Client.forTestnet();
+} else {
+  client = Client.forPreviewnet();
+}
+
 client.setOperator(operatorAccountId, operatorPrivateKey);
 
 const numberOfAccounts = 4;
