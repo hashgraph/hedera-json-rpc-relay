@@ -40,6 +40,7 @@ import MetricService from '../../../../src/lib/services/metricService/metricServ
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload, RequestDetails } from '../../../../src/lib/types';
 import { AccountId, Client, Hbar, Long, Status, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
+import HAPIService from '../../../../src/lib/services/hapiService/hapiService';
 
 config({ path: resolve(__dirname, '../../../test.env') });
 const registry = new Registry();
@@ -142,15 +143,15 @@ describe('Metric Service', function () {
     hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
     eventEmitter = new EventEmitter();
 
-    const sdkClient = new SDKClient(
-      client,
-      logger.child({ name: `consensus-node` }),
+    const hapiService = new HAPIService(
+      logger,
       hbarLimiter,
       new CacheService(logger.child({ name: `cache` }), registry),
       eventEmitter,
     );
+
     // Init new MetricService instance
-    metricService = new MetricService(logger, sdkClient, mirrorNodeClient, hbarLimiter, registry, eventEmitter);
+    metricService = new MetricService(logger, hapiService, mirrorNodeClient, hbarLimiter, registry, eventEmitter);
   });
 
   afterEach(() => {

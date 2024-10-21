@@ -40,3 +40,14 @@ export interface IExecuteQueryEventPayload {
   status: string;
   requestDetails: RequestDetails;
 }
+
+export interface IExecuteConsenusClientResetDurationPayload {
+  duration: number;
+}
+export interface IExecuteConsenusClientResetErrorPayload {
+  errorCodes: number[];
+}
+
+export interface IExecuteConsenusClientResetTransactionPayload {
+  transactionCount: number;
+}
