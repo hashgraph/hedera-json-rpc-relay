@@ -6,7 +6,7 @@ on:
 
 jobs:
   check_pr:
-    runs-on: ubuntu-latest
+    runs-on: smart-contracts-linux-medium
 
     steps:
       - name: Harden Runner
