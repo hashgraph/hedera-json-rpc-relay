@@ -752,6 +752,7 @@ export class SDKClient {
       );
 
       if (!transactionResponse) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         const transactionId = transaction.transactionId ? transaction.transactionId.toString() : false;
         console.log('Transaction id', transactionId);
         if (transactionId) {
