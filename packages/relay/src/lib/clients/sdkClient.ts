@@ -760,8 +760,15 @@ export class SDKClient {
       const transactionId = transaction.transactionId ? transaction.transactionId.toString() : false;
       console.log('Transaction id', transactionId);
       if (transactionId) {
-        const transactionFromMirrorNode = await this.mirrorNodeClient.getTransactionById(transactionId, requestDetails);
-        this.logger.warn('Transaction found', transactionFromMirrorNode);
+        try {
+          const transactionFromMirrorNode = await this.mirrorNodeClient.getTransactionById(
+            transactionId,
+            requestDetails,
+          );
+          this.logger.warn('Transaction found', transactionFromMirrorNode);
+        } catch (e) {
+          this.logger.warn('Transaction not found in mirror node', e);
+        }
       }
 
       return transactionResponse;
