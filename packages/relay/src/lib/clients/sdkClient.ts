@@ -752,23 +752,22 @@ export class SDKClient {
       );
 
       if (!transactionResponse) {
+        const transactionId = transaction.transactionId ? transaction.transactionId.toString() : false;
+        console.log('Transaction id', transactionId);
+        if (transactionId) {
+          try {
+            const transactionFromMirrorNode = await this.mirrorNodeClient.getTransactionById(
+              transactionId,
+              requestDetails,
+            );
+            this.logger.warn('Transaction found', transactionFromMirrorNode);
+          } catch (e) {
+            this.logger.warn('Transaction not found in mirror node', e);
+          }
+        }
         throw predefined.INTERNAL_ERROR(
           `${requestDetails.formattedRequestId} TTransaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
         );
-      }
-
-      const transactionId = transaction.transactionId ? transaction.transactionId.toString() : false;
-      console.log('Transaction id', transactionId);
-      if (transactionId) {
-        try {
-          const transactionFromMirrorNode = await this.mirrorNodeClient.getTransactionById(
-            transactionId,
-            requestDetails,
-          );
-          this.logger.warn('Transaction found', transactionFromMirrorNode);
-        } catch (e) {
-          this.logger.warn('Transaction not found in mirror node', e);
-        }
       }
 
       return transactionResponse;
