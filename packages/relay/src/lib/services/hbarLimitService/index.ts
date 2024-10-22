@@ -229,13 +229,21 @@ export class HbarLimitService implements IHbarLimitService {
 
     const ipAddress = requestDetails.ipAddress;
     if (!ethAddress && !ipAddress) {
-      throw new Error('Cannot add expense without an eth address or ip address');
+      this.logger.trace('Cannot add expense to a spending plan without an eth address or ip address');
+      return;
     }
 
     let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
     if (!spendingPlan) {
-      // Create a basic spending plan if none exists for the eth address or ip address
-      spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestDetails);
+      if (ethAddress) {
+        // Create a basic spending plan if none exists for the eth address
+        spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestDetails);
+      } else {
+        this.logger.warn(
+          `${requestDetails.formattedRequestId} Cannot add expense to a spending plan without an eth address or ip address`,
+        );
+        return;
+      }
     }
 
     this.logger.trace(
@@ -455,7 +463,7 @@ export class HbarLimitService implements IHbarLimitService {
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan> {
     if (!ethAddress) {
-      throw new Error('Cannot create a spending plan without an associated eth address or ip address');
+      throw new Error('Cannot create a spending plan without an associated eth address');
     }
 
     const spendingPlan = await this.hbarSpendingPlanRepository.create(
