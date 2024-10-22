@@ -27,6 +27,12 @@ export class LoggerService {
     GlobalConfig.ENTRIES.GITHUB_TOKEN.envName,
   ];
 
+  /**
+   * Hide sensitive information
+   *
+   * @param envName
+   * @param envValue
+   */
   static maskUpEnv(envName: string, envValue: string | undefined): string {
     if (this.SENSITIVE_FIELDS.indexOf(envName) > -1) {
       return `${envName} = **********${envValue?.slice(-4)}`;

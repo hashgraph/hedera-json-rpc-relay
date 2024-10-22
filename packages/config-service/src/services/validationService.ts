@@ -21,6 +21,10 @@
 import { GlobalConfig } from './globalConfig';
 
 export class ValidationService {
+  /**
+   * Validate mandatory fields on start-up
+   * @param envs
+   */
   static startUp(envs: NodeJS.Dict<string>): void {
     // validate mandatory fields and their types
     Object.entries(GlobalConfig.ENTRIES).forEach(([entryName, entryInfo]) => {
@@ -36,6 +40,10 @@ export class ValidationService {
     });
   }
 
+  /**
+   * Transform string env variables to the proper formats (number/boolean/string)
+   * @param envs
+   */
   static typeCasting(envs: NodeJS.Dict<string>): NodeJS.Dict<any> {
     const typeCastedEnvs: NodeJS.Dict<any> = {};
 
