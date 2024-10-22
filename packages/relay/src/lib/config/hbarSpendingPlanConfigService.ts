@@ -47,15 +47,6 @@ export class HbarSpendingPlanConfigService {
   private readonly TTL: number = -1;
 
   /**
-   * The name of the spending plans configuration file. Defaults to `spendingPlansConfig.json`.
-   *
-   * @type {string}
-   * @private
-   */
-  private readonly SPENDING_PLANS_CONFIG_FILE: string =
-    process.env.HBAR_SPENDING_PLANS_CONFIG_FILE || 'spendingPlansConfig.json';
-
-  /**
    * Creates an instance of `HbarSpendingPlanConfigService`.
    *
    * @constructor
