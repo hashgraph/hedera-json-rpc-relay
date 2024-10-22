@@ -250,6 +250,7 @@ export default class HAPIService {
     }
 
     this.transactionCount--;
+    this.logger.info(`Transaction count for sdk client, ${this.transactionCount}`);
     if (this.transactionCount <= 0) {
       this.shouldReset = true;
     }
