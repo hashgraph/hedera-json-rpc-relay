@@ -2262,7 +2262,7 @@ describe('SdkClient', async function () {
       hbarLimitServiceMock.restore();
     });
 
-    it.only('should execute executeAllTransaction with 3 file appends and add expenses to limiter only for the successful ones (2)', async () => {
+    it('should execute executeAllTransaction with 3 file appends and add expenses to limiter only for the successful ones (2)', async () => {
       const fileAppendTxStub = sinon
         .stub(FileAppendTransaction.prototype, 'executeAll')
         .resolves([
