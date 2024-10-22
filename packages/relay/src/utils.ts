@@ -69,4 +69,42 @@ export class Utils {
   public static generateRequestId = (): string => {
     return crypto.randomUUID();
   };
+
+  /**
+   * Estimates the transaction fees for file create and file append transactions based on the provided
+   * call data size, file chunk size, and current network exchange rate.
+   *
+   * @param {number} callDataSize - The size of the call data in bytes.
+   * @param {number} fileChunkSize - The size of each file chunk in bytes.
+   * @param {number} currentNetworkExchangeRateInCents - The current network exchange rate in cents.
+   * @returns {number} The estimated transaction fee in tinybars.
+   */
+  public static estimateFileTransactionsFee(
+    callDataSize: number,
+    fileChunkSize: number,
+    currentNetworkExchangeRateInCents: number,
+  ): number {
+    const fileCreateTransactions = 1;
+    const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
+
+    // The first chunk goes in with FileCreateTransaciton, the rest are FileAppendTransactions
+    const fileAppendTransactions = Math.floor(callDataSize / fileChunkSize) - 1;
+    const lastFileAppendChunkSize = callDataSize % fileChunkSize;
+
+    const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
+    const lastFileAppendChunkFeeInCents =
+      constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_BASE_FEE +
+      lastFileAppendChunkSize * constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_RATE_PER_BYTE;
+
+    const totalTxFeeInCents =
+      fileCreateTransactions * fileCreateFeeInCents +
+      fileAppendFeeInCents * fileAppendTransactions +
+      lastFileAppendChunkFeeInCents;
+
+    const estimatedTxFee = Math.round(
+      (totalTxFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
+    );
+
+    return estimatedTxFee;
+  }
 }

@@ -25,6 +25,7 @@ export interface IHbarLimitService {
   shouldLimit(
     mode: string,
     methodName: string,
+    txConstructorName: string,
     ethAddress: string,
     requestDetails: RequestDetails,
     estimatedTxFee?: number,

@@ -19,22 +19,37 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { expect } from 'chai';
-import { validateOpenRPCDocument, parseOpenRPCDocument } from '@open-rpc/schema-utils-js';
 import Ajv from 'ajv';
+import path from 'path';
 import pino from 'pino';
+import Long from 'long';
 import axios from 'axios';
 import sinon from 'sinon';
+import dotenv from 'dotenv';
+import { expect } from 'chai';
+import EventEmitter from 'events';
+import { AccountInfo, Hbar } from '@hashgraph/sdk';
 import MockAdapter from 'axios-mock-adapter';
 import { Registry } from 'prom-client';
 import { BigNumber } from 'bignumber.js';
-
-import { RelayImpl } from '../../src';
 import { EthImpl } from '../../src/lib/eth';
-import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
+import MockAdapter from 'axios-mock-adapter';
+import constants from '../../src/lib/constants';
+import { RelayImpl } from '../../src/lib/relay';
+import { register, Registry } from 'prom-client';
+import { NOT_FOUND_RES } from './eth/eth-config';
+import { numberTo0x } from '../../src/formatters';
+import { SDKClient } from '../../src/lib/clients';
 import { RequestDetails } from '../../src/lib/types';
-
 import openRpcSchema from '../../../../docs/openrpc.json';
+import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
+import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
+import ClientService from '../../src/lib/services/hapiService/hapiService';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import { parseOpenRPCDocument, validateOpenRPCDocument } from '@open-rpc/schema-utils-js';
+import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import {
   blockHash,
   blockNumber,
@@ -64,15 +79,6 @@ import {
   overrideEnvsInMochaDescribe,
   signedTransactionHash,
 } from '../helpers';
-import { NOT_FOUND_RES } from './eth/eth-config';
-import ClientService from '../../src/lib/services/hapiService/hapiService';
-import HbarLimit from '../../src/lib/hbarlimiter';
-import { numberTo0x } from '../../src/formatters';
-import constants from '../../src/lib/constants';
-import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import EventEmitter from 'events';
-import Long from 'long';
-import { AccountInfo } from '@hashgraph/sdk';
 
 const logger = pino();
 const registry = new Registry();
@@ -126,11 +132,23 @@ describe('Open RPC Specification', function () {
       instance,
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
-    const hbarLimiter = new HbarLimit(logger.child({ name: 'hbar-rate-limit' }), Date.now(), total, duration, registry);
+    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     const eventEmitter = new EventEmitter();
 
-    clientServiceInstance = new ClientService(logger, registry, hbarLimiter, cacheService, eventEmitter);
+    const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
+    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+    const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
+    const hbarLimitService = new HbarLimitService(
+      hbarSpendingPlanRepository,
+      ethAddressHbarSpendingPlanRepository,
+      ipAddressHbarSpendingPlanRepository,
+      logger,
+      register,
+      Hbar.fromTinybars(total),
+      duration,
+    );
+
+    clientServiceInstance = new ClientService(logger, registry, cacheService, eventEmitter, hbarLimitService);
     sdkClientStub = sinon.createStubInstance(SDKClient);
     sinon.stub(clientServiceInstance, 'getSDKClient').returns(sdkClientStub);
     // @ts-ignore
