@@ -61,6 +61,12 @@ describe('HbarSpendingPlanConfigService', function () {
 
     overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: spendingPlansConfigFile });
 
+    if (isSharedCacheEnabled) {
+      useInMemoryRedisServer(logger, 6384);
+    } else {
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
+    }
+
     before(function () {
       cacheService = new CacheService(logger, registry);
       hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
@@ -73,10 +79,6 @@ describe('HbarSpendingPlanConfigService', function () {
         ipAddressHbarSpendingPlanRepository,
       );
     });
-
-    if (isSharedCacheEnabled) {
-      useInMemoryRedisServer(logger, 6384);
-    }
 
     beforeEach(function () {
       loggerSpy = sinon.spy(logger);
@@ -112,7 +114,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ethAddresses: ['0x123'],
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -127,7 +129,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ethAddresses: ['0x123'],
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -142,7 +144,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ethAddresses: ['0x123'],
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -158,7 +160,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ethAddresses: ['0x123'],
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -173,7 +175,7 @@ describe('HbarSpendingPlanConfigService', function () {
             subscriptionTier: SubscriptionTier.EXTENDED,
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -190,7 +192,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ipAddresses: [],
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -350,7 +352,7 @@ describe('HbarSpendingPlanConfigService', function () {
         });
 
         it('should save only new associations for ETH addresses', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
+          sinon.stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
             spendingPlansConfig.map((plan, index) => ({
               id: plan.id,
               name: plan.name,
@@ -389,7 +391,7 @@ describe('HbarSpendingPlanConfigService', function () {
         });
 
         it('should save only new associations for IP addresses', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
+          sinon.stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
             spendingPlansConfig.map((plan, index) => ({
               id: plan.id,
               name: plan.name,
@@ -424,7 +426,7 @@ describe('HbarSpendingPlanConfigService', function () {
         });
 
         it('should delete obsolete associations for ETH addresses', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
+          sinon.stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
             spendingPlansConfig.map((plan) => ({
               id: plan.id,
               name: plan.name,
@@ -463,7 +465,7 @@ describe('HbarSpendingPlanConfigService', function () {
         });
 
         it('should delete obsolete associations for IP addresses', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
+          sinon.stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
             spendingPlansConfig.map((plan) => ({
               id: plan.id,
               name: plan.name,
