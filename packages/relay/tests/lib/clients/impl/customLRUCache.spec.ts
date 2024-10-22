@@ -38,8 +38,8 @@ describe('CustomLRUCache', () => {
 
   overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: spendingPlansConfigFile });
 
-  before(() => {
-    cache = new CustomLRUCache<string, any>(logger, { max: 10 });
+  beforeEach(() => {
+    cache = new CustomLRUCache<string, any>(logger, { ttl: 100, max: 3 });
   });
 
   describe('delete', () => {
@@ -132,14 +132,14 @@ describe('CustomLRUCache', () => {
   describe('deleteUnsafe', () => {
     it('deletes a non-protected key', () => {
       cache.set('nonProtectedKey', 'value');
-      expect(cache.delete('nonProtectedKey')).to.be.true;
+      expect(cache.deleteUnsafe('nonProtectedKey')).to.be.true;
       expect(cache.has('nonProtectedKey')).to.be.false;
     });
 
     it('deletes a protected HbarSpendingPlan key', () => {
       const protectedKey = `hbarSpendingPlan:${spendingPlansConfig[0].id}`;
       cache.set(protectedKey, spendingPlansConfig[0]);
-      expect(cache.delete(protectedKey)).to.be.true;
+      expect(cache.deleteUnsafe(protectedKey)).to.be.true;
       expect(cache.has(protectedKey)).to.be.false;
     });
 
@@ -151,7 +151,7 @@ describe('CustomLRUCache', () => {
 
       const protectedKey = `ethAddressHbarSpendingPlan:${ethAddressPlan.ethAddresses[0]}`;
       cache.set(protectedKey, 'value');
-      expect(cache.delete(protectedKey)).to.be.true;
+      expect(cache.deleteUnsafe(protectedKey)).to.be.true;
       expect(cache.has(protectedKey)).to.be.false;
     });
 
@@ -163,8 +163,32 @@ describe('CustomLRUCache', () => {
 
       const protectedKey = `ipAddressHbarSpendingPlan:${ipAddressPlan.ipAddresses[0]}`;
       cache.set(protectedKey, 'value');
-      expect(cache.delete(protectedKey)).to.be.true;
+      expect(cache.deleteUnsafe(protectedKey)).to.be.true;
       expect(cache.has(protectedKey)).to.be.false;
+    });
+  });
+
+  describe('max', () => {
+    it('should delete the least recently used key when the cache is full', () => {
+      const nonProtectedKey = 'nonProtectedKey';
+      const keys = ['key1', 'key2', nonProtectedKey];
+      keys.forEach((key) => cache.set(key, 'value'));
+      cache.get('key1');
+      cache.get('key2');
+      cache.set('key3', 'value');
+      console.log([...cache.keys()]);
+      expect(cache.has(nonProtectedKey)).to.be.false;
+    });
+
+    it('should not delete a protected key when the cache is full', () => {
+      const protectedKey = `hbarSpendingPlan:${spendingPlansConfig[0].id}`;
+      const keys = ['key1', 'key2', protectedKey];
+      keys.forEach((key) => cache.set(key, 'value'));
+      cache.get('key1');
+      cache.get('key2');
+      cache.set('key3', 'value');
+      console.log([...cache.keys()]);
+      expect(cache.has(protectedKey)).to.be.true;
     });
   });
 });

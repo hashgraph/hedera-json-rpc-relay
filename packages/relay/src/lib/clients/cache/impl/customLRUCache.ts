@@ -27,7 +27,7 @@ import { EthAddressHbarSpendingPlanRepository } from '../../../db/repositories/h
 import { IPAddressHbarSpendingPlanRepository } from '../../../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 
-export class CustomLRUCache<K, V> extends LRUCache<K, V> {
+export class CustomLRUCache<K extends string, V> extends LRUCache<K, V> {
   /**
    * The name of the spending plans configuration file. Defaults to `spendingPlansConfig.json`.
    *
@@ -38,19 +38,19 @@ export class CustomLRUCache<K, V> extends LRUCache<K, V> {
     process.env.HBAR_SPENDING_PLANS_CONFIG_FILE || 'spendingPlansConfig.json';
 
   /**
-   * The spending plans configuration. This is loaded from the spending plans configuration file.
+   * The keys that are protected from deletion.
    *
-   * @type {SpendingPlanConfig[]}
+   * @type {Set<string>}
    * @private
    */
-  private readonly spendingPlansConfig: SpendingPlanConfig[];
+  private readonly protectedKeys: Set<string>;
 
   constructor(
     private readonly logger: Logger,
     options: LRUCache.Options<K, V>,
   ) {
     super(options);
-    this.spendingPlansConfig = this.loadSpendingPlansConfig();
+    this.protectedKeys = this.getProtectedKeys();
   }
 
   /**
@@ -60,7 +60,7 @@ export class CustomLRUCache<K, V> extends LRUCache<K, V> {
    * @template K - The key type.
    */
   delete(key: K): boolean {
-    if (typeof key === 'string' && this.isKeyProtected(key)) {
+    if (this.protectedKeys.has(key)) {
       this.logger.trace(`Deletion of key ${key} is ignored as it is protected.`);
       return false;
     }
@@ -75,6 +75,39 @@ export class CustomLRUCache<K, V> extends LRUCache<K, V> {
    */
   deleteUnsafe(key: K): boolean {
     return super.delete(key);
+  }
+
+  /**
+   * Loads the keys that are protected from deletion.
+   * @returns {Set<string>} - The protected keys.
+   * @private
+   */
+  private getProtectedKeys(): Set<string> {
+    return new Set<string>([...this.getPreconfiguredSpendingPlanKeys()]);
+  }
+
+  /**
+   * Loads the keys associated with pre-configured spending plans which are protected from deletion.
+   * @returns {Set<string>} - The protected keys.
+   * @private
+   */
+  private getPreconfiguredSpendingPlanKeys(): Set<string> {
+    return new Set<string>(
+      this.loadSpendingPlansConfig().flatMap((plan) => {
+        const { id, ethAddresses = [], ipAddresses = [] } = plan;
+        return [
+          `${HbarSpendingPlanRepository.collectionKey}:${id}`,
+          `${HbarSpendingPlanRepository.collectionKey}:${id}:amountSpent`,
+          `${HbarSpendingPlanRepository.collectionKey}:${id}:spendingHistory`,
+          ...ethAddresses.map((ethAddress) => {
+            return `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress.trim().toLowerCase()}`;
+          }),
+          ...ipAddresses.map((ipAddress) => {
+            return `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`;
+          }),
+        ];
+      }),
+    );
   }
 
   /**
@@ -95,78 +128,5 @@ export class CustomLRUCache<K, V> extends LRUCache<K, V> {
       this.logger.error(`Failed to parse JSON from ${configPath}: ${error.message}`);
       return [];
     }
-  }
-
-  /**
-   * Determines if a key is protected. A key is protected if it is associated with a pre-configured spending plan.
-   * @param {string} key - The key to check.
-   * @returns {boolean} - True if the key is protected, false otherwise.
-   * @private
-   */
-  private isKeyProtected(key: string): boolean {
-    if (this.isHbarSpendingPlanRepositoryKey(key)) {
-      return this.spendingPlansConfig.some((plan) => {
-        return (
-          this.isPreconfiguredPlanKey(key, plan) ||
-          this.isPreconfiguredEthAddressKey(key, plan) ||
-          this.isPreconfiguredIpAddressKey(key, plan)
-        );
-      });
-    }
-    return false;
-  }
-
-  /**
-   * Determines if a key is associated with any of the spending plan repositories.
-   * @param {string} key - The key to check.
-   * @returns {boolean} - True if the key is associated with a spending plan repository, false otherwise.
-   * @private
-   */
-  private isHbarSpendingPlanRepositoryKey(key: string): boolean {
-    if (!key) {
-      return false;
-    }
-    return (
-      key.startsWith(HbarSpendingPlanRepository.collectionKey) ||
-      key.startsWith(EthAddressHbarSpendingPlanRepository.collectionKey) ||
-      key.startsWith(IPAddressHbarSpendingPlanRepository.collectionKey)
-    );
-  }
-
-  /**
-   * Determines if a key is associated with a pre-configured spending plan.
-   * @param {string} key - The key to check.
-   * @param {SpendingPlanConfig} plan - The spending plan to check against.
-   * @returns {boolean} - True if the key is associated with the spending plan, false otherwise.
-   * @private
-   */
-  private isPreconfiguredPlanKey(key: string, plan: SpendingPlanConfig): boolean {
-    return key.includes(`${HbarSpendingPlanRepository.collectionKey}:${plan.id}`);
-  }
-
-  /**
-   * Determines if a key is associated with a pre-configured ETH address.
-   * @param {string} key - The key to check.
-   * @param {SpendingPlanConfig} plan - The spending plan to check against.
-   * @returns {boolean} - True if the key is associated with the ETH address, false otherwise.
-   * @private
-   */
-  private isPreconfiguredEthAddressKey(key: string, plan: SpendingPlanConfig): boolean {
-    return (plan.ethAddresses || []).some((ethAddress) => {
-      return key.includes(`${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress.trim().toLowerCase()}`);
-    });
-  }
-
-  /**
-   * Determines if a key is associated with a pre-configured IP address.
-   * @param {string} key - The key to check.
-   * @param {SpendingPlanConfig} plan - The spending plan to check against.
-   * @returns {boolean} - True if the key is associated with the IP address, false otherwise.
-   * @private
-   */
-  private isPreconfiguredIpAddressKey(key: string, plan: SpendingPlanConfig): boolean {
-    return (plan.ipAddresses || []).some((ipAddress) => {
-      return key.includes(`${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`);
-    });
   }
 }
