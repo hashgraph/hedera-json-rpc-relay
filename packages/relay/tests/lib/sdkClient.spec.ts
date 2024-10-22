@@ -30,7 +30,6 @@ import constants from '../../src/lib/constants';
 import { register, Registry } from 'prom-client';
 import { RequestDetails } from '../../src/lib/types';
 import { formatTransactionId } from '../../src/formatters';
-import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';

@@ -20,20 +20,16 @@
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import Ajv from 'ajv';
-import path from 'path';
 import pino from 'pino';
 import Long from 'long';
 import axios from 'axios';
 import sinon from 'sinon';
-import dotenv from 'dotenv';
 import { expect } from 'chai';
 import EventEmitter from 'events';
 import { AccountInfo, Hbar } from '@hashgraph/sdk';
 import MockAdapter from 'axios-mock-adapter';
-import { Registry } from 'prom-client';
 import { BigNumber } from 'bignumber.js';
 import { EthImpl } from '../../src/lib/eth';
-import MockAdapter from 'axios-mock-adapter';
 import constants from '../../src/lib/constants';
 import { RelayImpl } from '../../src/lib/relay';
 import { register, Registry } from 'prom-client';
