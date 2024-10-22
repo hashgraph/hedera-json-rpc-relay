@@ -2262,6 +2262,35 @@ describe('SdkClient', async function () {
       hbarLimitServiceMock.restore();
     });
 
+    it.only('should execute executeAllTransaction with 3 file appends and add expenses to limiter only for the successful ones (2)', async () => {
+      const fileAppendTxStub = sinon
+        .stub(FileAppendTransaction.prototype, 'executeAll')
+        .resolves([
+          getMockedTransactionResponse(FileAppendTransaction.name),
+          getMockedTransactionResponse(FileAppendTransaction.name),
+        ]);
+
+      const txRecordStub = sinon
+        .stub(TransactionRecordQuery.prototype, 'execute')
+        .resolves(getMockedTransactionRecord(FileAppendTransaction.name));
+
+      hbarLimitServiceMock.expects('addExpense').withArgs(fileAppendFee).exactly(2);
+      hbarLimitServiceMock.expects('addExpense').withArgs(mockedTransactionRecordFee).exactly(2);
+      hbarLimitServiceMock.expects('shouldLimit').once().returns(false);
+
+      await sdkClient.executeAllTransaction(
+        new FileAppendTransaction(),
+        mockedCallerName,
+        mockedInteractingEntity,
+        requestDetails,
+        true,
+        randomAccountAddress,
+      );
+
+      expect(fileAppendTxStub.called).to.be.true;
+      expect(txRecordStub.called).to.be.true;
+    });
+
     it('should rate limit before creating file', async () => {
       const transactionStub = sinon
         .stub(EthereumTransaction.prototype, 'execute')
