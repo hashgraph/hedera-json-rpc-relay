@@ -736,7 +736,8 @@ export class SDKClient {
           requestDetails.formattedRequestId
         } Logging more info about failed transaction LogID: ${transaction._getLogId()} Max attempts: ${
           transaction._maxAttempts
-        }, Grpc deadline ${transaction._grpcDeadline}, NodeIds ${transaction.nodeAccountIds} `,
+        }, Grpc deadline ${transaction._grpcDeadline}, NodeIds ${transaction.nodeAccountIds} ${this.clientMain} 
+        Tranasaction ${transaction} `,
       );
       this.logger.warn(
         sdkClientError,
