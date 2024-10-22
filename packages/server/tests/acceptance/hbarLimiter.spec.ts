@@ -371,8 +371,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
             );
 
-            //Unlinking the ipAdress, since the deployContract will link the ip address to a spending plan and the following transaction will use the same plan
-            await ipSpendingPlanRepository.deleteAll(requestDetails);
             expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
             const gasPrice = await relay.gasPrice(requestId);
             const transaction = {
@@ -423,7 +421,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             );
             expect(amountSpendAfterFirst).to.be.lt(spendingPlanAssociatedAfterSecond.amountSpent);
 
-            await ipSpendingPlanRepository.deleteAll(requestDetails);
             // it should use a different BASIC plan for another user
             const thirdTransaction = {
               ...defaultLondonTransactionData,

@@ -388,27 +388,6 @@ describe('HBAR Rate Limit Service', function () {
         expect(result).to.be.true;
       });
 
-      it('should create a basic spending plan if none exists for the ipAddress', async function () {
-        const spendingPlan = createSpendingPlan(mockPlanId, 0);
-        const error = new IPAddressHbarSpendingPlanNotFoundError(mockIpAddress);
-        ipAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
-        hbarSpendingPlanRepositoryStub.create.resolves(spendingPlan);
-        ipAddressHbarSpendingPlanRepositoryStub.save.resolves();
-
-        const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: mockIpAddress });
-        const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
-
-        expect(result).to.be.false;
-        expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
-        expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
-        expect(
-          loggerSpy.warn.calledWithMatch(
-            sinon.match.instanceOf(IPAddressHbarSpendingPlanNotFoundError),
-            `${requestDetails.formattedRequestId} Failed to get spending plan`,
-          ),
-        ).to.be.true;
-      });
-
       it('should return false if ipAddress is null or empty', async function () {
         const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: '' });
         const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
@@ -630,15 +609,18 @@ describe('HBAR Rate Limit Service', function () {
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
       ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
-      const result = await hbarLimitService['createBasicSpendingPlan'](ethAddress, requestDetails);
+      const promise = hbarLimitService['createBasicSpendingPlan'](ethAddress, requestDetails);
 
-      expect(result).to.deep.equal(newSpendingPlan);
-      expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
       if (ethAddress) {
+        await expect(promise).eventually.to.deep.equal(newSpendingPlan);
+        expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
+        expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.false;
         expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
-      }
-      if (ipAddress) {
-        expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.eq(!!ipAddress);
+      } else {
+        await expect(promise).to.be.rejectedWith('Cannot create a spending plan without an associated eth address');
+        expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.false;
+        expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.false;
+        expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.false;
       }
     };
 
@@ -646,16 +628,12 @@ describe('HBAR Rate Limit Service', function () {
       await testCreateBasicSpendingPlan(mockEthAddress);
     });
 
-    it('should create a basic spending plan for the given ipAddress', async function () {
-      await testCreateBasicSpendingPlan('', mockIpAddress);
-    });
-
-    it('should create a basic spending plan and link it to the ETH address if both ethAddress and ipAddress are provided', async function () {
+    it('should create a basic spending plan and link it only to the given ethAddress, if also an ipAddress is available', async function () {
       await testCreateBasicSpendingPlan(mockEthAddress, '127.0.0.1');
     });
 
-    it('should create a basic spending plan if none exists', async function () {
-      await testCreateBasicSpendingPlan(mockEthAddress, '127.0.0.1');
+    it('should throw an error if no ethAddress is provided', async function () {
+      await testCreateBasicSpendingPlan('');
     });
   });
 
