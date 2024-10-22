@@ -75,9 +75,8 @@ export class ConfigService {
     this.envs = ValidationService.typeCasting(process.env);
 
     // printing current env variables, masking up sensitive information
-    for (let i in this.envs) {
-      // @ts-ignore
-      logger.info(LoggerService.maskUpEnv(i, this.envs[i]));
+    for (const name in this.envs) {
+      logger.info(LoggerService.maskUpEnv(name, this.envs[name]));
     }
   }
 
