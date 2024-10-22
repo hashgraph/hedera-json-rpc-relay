@@ -35,7 +35,7 @@ export class LoggerService {
    */
   static maskUpEnv(envName: string, envValue: string | undefined): string {
     if (this.SENSITIVE_FIELDS.indexOf(envName) > -1) {
-      return `${envName} = **********${envValue?.slice(-4)}`;
+      return `${envName} = **********`;
     }
 
     return `${envName} = ${envValue}`;

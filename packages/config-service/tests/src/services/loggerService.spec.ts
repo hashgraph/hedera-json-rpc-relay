@@ -32,7 +32,7 @@ describe('LoggerService tests', async function () {
     for (const sensitiveField of LoggerService.SENSITIVE_FIELDS) {
       const hex = crypto.randomBytes(32).toString('hex');
       const res = LoggerService.maskUpEnv(sensitiveField, hex);
-      expect(res).to.equal(`${sensitiveField} = **********${hex.slice(-4)}`);
+      expect(res).to.equal(`${sensitiveField} = **********`);
     }
   });
 
