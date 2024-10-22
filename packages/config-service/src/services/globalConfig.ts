@@ -267,20 +267,20 @@ export class GlobalConfig {
       required: false,
       defaultValue: null,
     },
-    HBAR_DAILY_LIMIT_BASIC: {
-      envName: 'HBAR_DAILY_LIMIT_BASIC',
+    HBAR_RATE_LIMIT_BASIC: {
+      envName: 'HBAR_RATE_LIMIT_BASIC',
       type: 'number',
       required: false,
       defaultValue: null,
     },
-    HBAR_DAILY_LIMIT_EXTENDED: {
-      envName: 'HBAR_DAILY_LIMIT_EXTENDED',
+    HBAR_RATE_LIMIT_EXTENDED: {
+      envName: 'HBAR_RATE_LIMIT_EXTENDED',
       type: 'number',
       required: false,
       defaultValue: null,
     },
-    HBAR_DAILY_LIMIT_PRIVILEGED: {
-      envName: 'HBAR_DAILY_LIMIT_PRIVILEGED',
+    HBAR_RATE_LIMIT_PRIVILEGED: {
+      envName: 'HBAR_RATE_LIMIT_PRIVILEGED',
       type: 'number',
       required: false,
       defaultValue: null,
