@@ -1,0 +1,38 @@
+{
+  "eth_accounts": {
+    "request": "{\"id\":\"test_id\",\"jsonrpc\":\"2.0\",\"method\":\"eth_accounts\",\"params\":[]}",
+    "response": "{\"result\":[],\"jsonrpc\":\"2.0\",\"id\":\"test_id\"}"
+  },
+  "eth_gasPrice": {
+    "request": "{\"id\":\"test_id\",\"jsonrpc\":\"2.0\",\"method\":\"eth_gasPrice\",\"params\":[]}",
+    "response": "{\"jsonrpc\":\"2.0\",\"id\":\"test_id\",\"result\":\"0xa54f4c3c00\"}"
+  },
+  "eth_getUncleByBlockHashAndIndex": {
+    "request": "{\"id\":\"test_id\",\"jsonrpc\":\"2.0\",\"method\":\"eth_getUncleByBlockHashAndIndex\",\"params\":[]}",
+    "response": "{\"result\":null,\"jsonrpc\":\"2.0\",\"id\":\"test_id\"}"
+  },
+  "eth_getUncleByBlockNumberAndIndex": {
+    "request": "{\"id\":\"test_id\",\"jsonrpc\":\"2.0\",\"method\":\"eth_getUncleByBlockNumberAndIndex\",\"params\":[]}",
+    "response": "{\"result\":null,\"jsonrpc\":\"2.0\",\"id\":\"test_id\"}"
+  },
+  "eth_getUncleCountByBlockHash": {
+    "request": "{\"id\":\"test_id\",\"jsonrpc\":\"2.0\",\"method\":\"eth_getUncleCountByBlockHash\",\"params\":[]}",
+    "response": "{\"result\":\"0x0\",\"jsonrpc\":\"2.0\",\"id\":\"test_id\"}"
+  },
+  "eth_getUncleCountByBlockNumber": {
+    "request": "{\"id\":\"test_id\",\"jsonrpc\":\"2.0\",\"method\":\"eth_getUncleCountByBlockNumber\",\"params\":[]}",
+    "response": "{\"result\":\"0x0\",\"jsonrpc\":\"2.0\",\"id\":\"test_id\"}"
+  },
+  "eth_hashrate": {
+    "request": "{\"jsonrpc\":\"2.0\",\"id\":\"test_id\",\"method\":\"eth_hashrate\"}",
+    "response": "{\"result\":\"0x0\",\"jsonrpc\":\"2.0\",\"id\":\"test_id\"}"
+  },
+  "eth_maxPriorityFeePerGas": {
+    "request": "{\"id\":\"test_id\",\"jsonrpc\":\"2.0\",\"method\":\"eth_maxPriorityFeePerGas\"}",
+    "response": "{\"result\":\"0x0\",\"jsonrpc\":\"2.0\",\"id\":\"test_id\"}"
+  },
+  "eth_mining": {
+    "request": "{\"id\":\"test_id\",\"jsonrpc\":\"2.0\",\"method\":\"eth_mining\",\"params\":[]}",
+    "response": "{\"result\":false,\"jsonrpc\":\"2.0\",\"id\":\"test_id\"}"
+  }
+}

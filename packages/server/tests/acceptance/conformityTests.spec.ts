@@ -776,3 +776,12 @@ describe('@api-conformity @conformity-batch-4 Ethereum execution apis tests', as
 
   synthesizeTestCases(TEST_CASES_BATCH_4, updateParamIfNeeded);
 });
+
+describe('@api-conformity @conformity-batch-5 Ethereum execution apis tests', async function () {
+  this.timeout(240 * 1000);
+
+  const TEST_CASES_BATCH_5 = require('./data/conformity-tests-batch-5.json');
+
+  const updateParamIfNeeded = (_testName, request) => request;
+  synthesizeTestCases(TEST_CASES_BATCH_5, updateParamIfNeeded);
+});
