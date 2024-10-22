@@ -40,8 +40,6 @@ import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../..
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
 use(chaiAsPromised);
 
 const logger = pino();
