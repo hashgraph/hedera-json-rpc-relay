@@ -58,11 +58,23 @@ export class LocalLRUCache implements ICacheClient {
   private readonly logger: Logger;
 
   /**
-   * The metrics register used for metrics tracking.
+   * The gauge used for tracking the size of the cache.
    * @private
    */
-  private readonly register: Registry;
   private readonly cacheKeyGauge: Gauge<string>;
+
+  /**
+   * A set of keys that should never be evicted from the cache.
+   * @private
+   */
+  private readonly reservedKeys: Set<string>;
+
+  /**
+   * The LRU cache used for caching items from requests that should never be evicted.
+   *
+   * @private
+   */
+  private readonly reservedCache?: LRUCache<string, any>;
 
   /**
    * Represents a LocalLRUCache instance that uses an LRU (Least Recently Used) caching strategy
@@ -73,10 +85,13 @@ export class LocalLRUCache implements ICacheClient {
    * @param {Logger} logger - The logger instance to be used for logging.
    * @param {Registry} register - The registry instance used for metrics tracking.
    */
-  public constructor(logger: Logger, register: Registry) {
+  public constructor(logger: Logger, register: Registry, reservedKeys: Set<string> = new Set()) {
     this.cache = new LRUCache(this.options);
     this.logger = logger;
-    this.register = register;
+    this.reservedKeys = reservedKeys;
+    if (reservedKeys.size > 0) {
+      this.reservedCache = new LRUCache({ max: reservedKeys.size });
+    }
 
     const cacheSizeCollect = (): void => {
       this.purgeStale();
@@ -104,7 +119,8 @@ export class LocalLRUCache implements ICacheClient {
    * @returns {*} The cached value if found, otherwise null.
    */
   public async get(key: string, callingMethod: string, requestDetails: RequestDetails): Promise<any> {
-    const value = this.cache.get(key);
+    const cache = this.getCacheInstance(key);
+    const value = cache.get(key);
     if (value !== undefined) {
       const censoredKey = key.replace(Utils.IP_ADDRESS_REGEX, '<REDACTED>');
       const censoredValue = JSON.stringify(value).replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
@@ -124,7 +140,8 @@ export class LocalLRUCache implements ICacheClient {
    * @returns {Promise<number>} The remaining TTL in milliseconds.
    */
   public async getRemainingTtl(key: string, callingMethod: string, requestDetails: RequestDetails): Promise<number> {
-    const remainingTtl = this.cache.getRemainingTTL(key); // in milliseconds
+    const cache = this.getCacheInstance(key);
+    const remainingTtl = cache.getRemainingTTL(key); // in milliseconds
     this.logger.trace(
       `${requestDetails.formattedRequestId} returning remaining TTL ${key}:${remainingTtl} on ${callingMethod} call`,
     );
@@ -148,10 +165,11 @@ export class LocalLRUCache implements ICacheClient {
     ttl?: number,
   ): Promise<void> {
     const resolvedTtl = ttl ?? this.options.ttl;
+    const cache = this.getCacheInstance(key);
     if (resolvedTtl > 0) {
-      this.cache.set(key, value, { ttl: resolvedTtl });
+      cache.set(key, value, { ttl: resolvedTtl });
     } else {
-      this.cache.set(key, value, { ttl: 0 }); // 0 means indefinite time
+      cache.set(key, value, { ttl: 0 }); // 0 means indefinite time
     }
     const censoredKey = key.replace(Utils.IP_ADDRESS_REGEX, '<REDACTED>');
     const censoredValue = JSON.stringify(value).replace(/"ipAddress":"[^"]+"/, '"ipAddress":"<REDACTED>"');
@@ -211,8 +229,9 @@ export class LocalLRUCache implements ICacheClient {
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    */
   public async delete(key: string, callingMethod: string, requestDetails: RequestDetails): Promise<void> {
-    this.logger.trace(`${requestDetails.formattedRequestId} delete cache for ${key}`);
-    this.cache.delete(key);
+    this.logger.trace(`${requestDetails.formattedRequestId} delete cache for ${key} on ${callingMethod} call`);
+    const cache = this.getCacheInstance(key);
+    cache.delete(key);
   }
 
   /**
@@ -239,7 +258,7 @@ export class LocalLRUCache implements ICacheClient {
    * @returns {Promise<string[]>} An array of keys that match the pattern.
    */
   public async keys(pattern: string, callingMethod: string, requestDetails: RequestDetails): Promise<string[]> {
-    const keys = Array.from(this.cache.rkeys());
+    const keys = [...this.cache.rkeys(), ...this.reservedKeys];
 
     // Replace escaped special characters with placeholders
     let regexPattern = pattern
@@ -271,5 +290,9 @@ export class LocalLRUCache implements ICacheClient {
       `${requestDetails.formattedRequestId} retrieving keys matching ${pattern} on ${callingMethod} call`,
     );
     return matchingKeys;
+  }
+
+  private getCacheInstance(key: string): LRUCache<string, any> {
+    return this.reservedCache && this.reservedKeys.has(key) ? this.reservedCache : this.cache;
   }
 }
