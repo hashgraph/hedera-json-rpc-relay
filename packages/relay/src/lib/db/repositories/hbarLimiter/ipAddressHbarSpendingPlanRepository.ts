@@ -26,7 +26,7 @@ import { IPAddressHbarSpendingPlan } from '../../entities/hbarLimiter/ipAddressH
 import { RequestDetails } from '../../../types';
 
 export class IPAddressHbarSpendingPlanRepository {
-  private readonly collectionKey = 'ipAddressHbarSpendingPlan';
+  public static readonly collectionKey = 'ipAddressHbarSpendingPlan';
 
   /**
    * The cache service used for storing data.
@@ -176,6 +176,6 @@ export class IPAddressHbarSpendingPlanRepository {
    * @private
    */
   private getKey(ipAddress: string): string {
-    return `${this.collectionKey}:${ipAddress}`;
+    return `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`;
   }
 }

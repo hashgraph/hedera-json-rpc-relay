@@ -35,7 +35,6 @@ import { IDetailedHbarSpendingPlan } from '../db/types/hbarLimiter/hbarSpendingP
  * It reads the pre-configured spending plans from a JSON file and populates the cache with them.
  *
  * @see SpendingPlanConfig
- * @see SPENDING_PLANS_CONFIG_FILE
  */
 export class HbarSpendingPlanConfigService {
   /**
@@ -73,13 +72,38 @@ export class HbarSpendingPlanConfigService {
   ) {}
 
   /**
+   * Returns the cache keys for the pre-configured spending plans.
+   *
+   * @param {Logger} logger - The logger instance.
+   * @returns {Set<string>} - A set of cache keys for the pre-configured spending plans.
+   */
+  public static getPreconfiguredSpendingPlanKeys(logger: Logger): Set<string> {
+    return new Set<string>(
+      this.loadSpendingPlansConfig(logger).flatMap((plan) => {
+        const { id, ethAddresses = [], ipAddresses = [] } = plan;
+        return [
+          `${HbarSpendingPlanRepository.collectionKey}:${id}`,
+          `${HbarSpendingPlanRepository.collectionKey}:${id}:amountSpent`,
+          `${HbarSpendingPlanRepository.collectionKey}:${id}:spendingHistory`,
+          ...ethAddresses.map((ethAddress) => {
+            return `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress.trim().toLowerCase()}`;
+          }),
+          ...ipAddresses.map((ipAddress) => {
+            return `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`;
+          }),
+        ];
+      }),
+    );
+  }
+
+  /**
    * Populates the database with pre-configured spending plans.
    *
    * @returns {Promise<number>} - A promise that resolves with the number of spending plans which were added or deleted.
    * @throws {Error} - If the spending plans configuration file is not found or cannot be loaded.
    */
   public async populatePreconfiguredSpendingPlans(): Promise<number> {
-    const spendingPlanConfigs = this.loadSpendingPlansConfig();
+    const spendingPlanConfigs = HbarSpendingPlanConfigService.loadSpendingPlansConfig(this.logger);
     if (!spendingPlanConfigs.length) {
       return 0;
     }
@@ -105,10 +129,11 @@ export class HbarSpendingPlanConfigService {
    * @throws {Error} If the configuration file is not found or cannot be read or parsed.
    * @private
    */
-  private loadSpendingPlansConfig(): SpendingPlanConfig[] {
-    const configPath = findConfig(this.SPENDING_PLANS_CONFIG_FILE);
+  private static loadSpendingPlansConfig(logger: Logger): SpendingPlanConfig[] {
+    const filename = process.env.HBAR_SPENDING_PLANS_CONFIG_FILE || 'spendingPlansConfig.json';
+    const configPath = findConfig(filename);
     if (!configPath || !fs.existsSync(configPath)) {
-      this.logger.trace(`Configuration file not found at path "${configPath ?? this.SPENDING_PLANS_CONFIG_FILE}"`);
+      logger.trace(`Configuration file not found at path "${configPath ?? filename}"`);
       return [];
     }
     try {

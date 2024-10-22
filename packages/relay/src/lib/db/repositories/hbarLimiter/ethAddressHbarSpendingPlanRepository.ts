@@ -26,7 +26,7 @@ import { EthAddressHbarSpendingPlan } from '../../entities/hbarLimiter/ethAddres
 import { RequestDetails } from '../../../types';
 
 export class EthAddressHbarSpendingPlanRepository {
-  private readonly collectionKey = 'ethAddressHbarSpendingPlan';
+  public static readonly collectionKey = 'ethAddressHbarSpendingPlan';
 
   /**
    * The cache service used for storing data.
@@ -176,6 +176,6 @@ export class EthAddressHbarSpendingPlanRepository {
    * @private
    */
   private getKey(ethAddress: string): string {
-    return `${this.collectionKey}:${ethAddress?.trim().toLowerCase()}`;
+    return `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress?.trim().toLowerCase()}`;
   }
 }
