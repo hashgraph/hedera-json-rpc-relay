@@ -19,7 +19,7 @@
  */
 
 import { Validator } from '.';
-import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
+import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay/dist';
 import { IMethodParamSchema, IObjectSchema, ITypeValidation } from '../types/validator';
 
 export function validateParam(index: number | string, param: any, validation: IMethodParamSchema): void {

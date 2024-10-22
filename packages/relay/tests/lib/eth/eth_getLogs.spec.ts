@@ -17,12 +17,10 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-
 import {
   defaultDetailedContractResults,
   defaultDetailedContractResults2,
@@ -66,7 +64,6 @@ import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { Eth } from '../../../src';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
-dotenv.config({ path: path.resolve(__dirname, '../../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
@@ -95,7 +92,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getLogsTest', ipAddress: '0.0.0.0' });
 
-  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1 });
 
   beforeEach(async () => {
     // reset cache and restMock

@@ -21,13 +21,15 @@
 // external resources
 import { expect } from 'chai';
 import { WsTestHelper } from '../helper';
-import relayConstants from '@hashgraph/json-rpc-relay/src/lib/constants';
+import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
 describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
-  const rateLimitTier2 = Number(process.env.TIER_2_RATE_LIMIT || relayConstants.DEFAULT_RATE_LIMIT.TIER_2);
-  const limitDuration = Number(process.env.LIMIT_DURATION) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
+  const rateLimitTier2 = Number(ConfigService.get('TIER_2_RATE_LIMIT') || relayConstants.DEFAULT_RATE_LIMIT.TIER_2);
+  const limitDuration = Number(ConfigService.get('LIMIT_DURATION')) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
   const batchRequests = [
     {
@@ -44,7 +46,12 @@ describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
     },
   ];
 
+  before(async () => {
+    ConfigServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', true);
+  });
+
   after(async () => {
+    ConfigServiceTestHelper.dynamicOverride('WS_BATCH_REQUESTS_ENABLED', false);
     // expect all the connections to the WS server to be closed after all
     if (global && global.socketServer) {
       expect(global.socketServer._connections).to.eq(0);

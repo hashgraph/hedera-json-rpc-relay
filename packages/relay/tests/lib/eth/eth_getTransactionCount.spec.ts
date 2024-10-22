@@ -17,12 +17,10 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-
 import { EthImpl } from '../../../src/lib/eth';
 import constants from '../../../src/lib/constants';
 import { SDKClient } from '../../../src/lib/clients';
@@ -42,7 +40,6 @@ import MockAdapter from 'axios-mock-adapter';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
@@ -76,7 +73,7 @@ describe('@ethGetTransactionCount eth_getTransactionCount spec', async function 
     return `accounts/${address}?transactiontype=ETHEREUMTRANSACTION&timestamp=lte:${mockData.blocks.blocks[2].timestamp.to}&limit=${num}&order=desc`;
   }
 
-  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1 });
 
   this.beforeEach(() => {
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);

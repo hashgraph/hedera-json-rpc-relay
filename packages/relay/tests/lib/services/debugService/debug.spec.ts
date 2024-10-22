@@ -18,10 +18,9 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import path from 'path';
-import dotenv from 'dotenv';
 import MockAdapter from 'axios-mock-adapter';
 import { Registry } from 'prom-client';
 import { MirrorNodeClient } from '../../../../src/lib/clients';
@@ -37,7 +36,6 @@ import { IOpcodesResponse } from '../../../../src/lib/clients/models/IOpcodesRes
 import { strip0x } from '../../../../src/formatters';
 import { RequestDetails } from '../../../../src/lib/types';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 chai.use(chaiAsPromised);
 
 const logger = pino();
@@ -268,7 +266,7 @@ describe('Debug API Test Suite', async function () {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL!,
+      ConfigService.get('MIRROR_NODE_URL')!,
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -333,7 +331,7 @@ describe('Debug API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: false }, () => {
       it('should throw UNSUPPORTED_METHOD', async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
@@ -345,7 +343,7 @@ describe('Debug API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ DEBUG_API_ENABLED: true }, () => {
       it('should successfully debug a transaction', async function () {
         const traceTransaction = await debugService.debug_traceTransaction(
           transactionHash,

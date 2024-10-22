@@ -27,6 +27,7 @@ import { generateRandomHex } from '../../../../formatters';
 import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
 import { CacheService } from '../../cacheService/cacheService';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '../../../types';
 
 /**
@@ -101,7 +102,7 @@ export class FilterService implements IFilterService {
    * Checks if the Filter API is enabled
    */
   static requireFiltersEnabled(): void {
-    if (!process.env.FILTER_API_ENABLED || process.env.FILTER_API_ENABLED !== 'true') {
+    if (!ConfigService.get('FILTER_API_ENABLED')) {
       throw predefined.UNSUPPORTED_METHOD;
     }
   }

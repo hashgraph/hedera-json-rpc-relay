@@ -36,10 +36,10 @@ import Constants from '../../tests/helpers/constants';
 import RelayCalls from '../../../../packages/server/tests/helpers/constants';
 
 // Other imports
-import { numberTo0x } from '../../../../packages/relay/src/formatters';
 import RelayClient from '../clients/relayClient';
 import ServicesClient from '../clients/servicesClient';
 import MirrorClient from '../clients/mirrorClient';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 
 describe('EstimatePrecompileContract tests', function () {
   const signers: AliasAccount[] = [];

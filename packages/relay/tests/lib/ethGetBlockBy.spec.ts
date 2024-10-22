@@ -18,15 +18,13 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { register, Registry } from 'prom-client';
 import { EthImpl } from '../../src/lib/eth';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-
 import pino from 'pino';
 import { EventEmitter } from 'events';
 import { Hbar } from '@hashgraph/sdk';
@@ -41,10 +39,6 @@ import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLi
 import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 use(chaiAsPromised);
 
@@ -127,14 +121,14 @@ describe('eth_getBlockBy', async function () {
   const requestDetails = new RequestDetails({ requestId: 'ethGetBlockByTest', ipAddress: '0.0.0.0' });
 
   useInMemoryRedisServer(logger, 5031);
-  overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: 'false' });
+  overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: false });
 
   this.beforeAll(async () => {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
 
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL ?? '',
+      ConfigService.get('MIRROR_NODE_URL') ?? '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

@@ -18,8 +18,7 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
@@ -40,8 +39,6 @@ import { predefined } from '../../../../src';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { RequestDetails } from '../../../../src/lib/types';
 import { v4 as uuid } from 'uuid';
-
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 
 const logger = pino();
 const registry = new Registry();
@@ -85,7 +82,7 @@ describe('Filter API Test Suite', async function () {
   this.beforeAll(() => {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL ?? '',
+      ConfigService.get('MIRROR_NODE_URL'),
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -145,7 +142,7 @@ describe('Filter API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: true }, () => {
       let filterId: string;
 
       beforeEach(async () => {
@@ -175,7 +172,7 @@ describe('Filter API Test Suite', async function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: false }, () => {
       it(`should throw UNSUPPORTED_METHOD for newFilter`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,
