@@ -103,21 +103,6 @@ export class EthAddressHbarSpendingPlanRepository {
   }
 
   /**
-   * Deletes all spending plans associted with EVM addresses from cache.
-   *
-   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
-   * @returns {Promise<void>} - A promise that resolves when all IP address spending plans are deleted.
-   */
-  async deleteAll(requestDetails: RequestDetails): Promise<void> {
-    const key = this.getKey('*');
-    const keys = await this.cache.keys(key, this.deleteAll.name, requestDetails);
-    for (const key of keys) {
-      await this.cache.delete(key, this.deleteAll.name, requestDetails);
-    }
-    this.logger.trace(`${requestDetails.formattedRequestId} Deleted all EVM address spending plans`);
-  }
-
-  /**
    * Finds an {@link EthAddressHbarSpendingPlan} for an ETH address.
    *
    * @param {string} ethAddress - The ETH address to search for.
