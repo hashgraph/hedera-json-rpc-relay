@@ -69,22 +69,27 @@ export class HbarSpendingPlanConfigService {
    * @returns {Set<string>} - A set of cache keys for the pre-configured spending plans.
    */
   public static getPreconfiguredSpendingPlanKeys(logger: Logger): Set<string> {
-    return new Set<string>(
-      this.loadSpendingPlansConfig(logger).flatMap((plan) => {
-        const { id, ethAddresses = [], ipAddresses = [] } = plan;
-        return [
-          `${HbarSpendingPlanRepository.collectionKey}:${id}`,
-          `${HbarSpendingPlanRepository.collectionKey}:${id}:amountSpent`,
-          `${HbarSpendingPlanRepository.collectionKey}:${id}:spendingHistory`,
-          ...ethAddresses.map((ethAddress) => {
-            return `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress.trim().toLowerCase()}`;
-          }),
-          ...ipAddresses.map((ipAddress) => {
-            return `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`;
-          }),
-        ];
-      }),
-    );
+    try {
+      return new Set<string>(
+        this.loadSpendingPlansConfig(logger).flatMap((plan) => {
+          const { id, ethAddresses = [], ipAddresses = [] } = plan;
+          return [
+            `${HbarSpendingPlanRepository.collectionKey}:${id}`,
+            `${HbarSpendingPlanRepository.collectionKey}:${id}:amountSpent`,
+            `${HbarSpendingPlanRepository.collectionKey}:${id}:spendingHistory`,
+            ...ethAddresses.map((ethAddress) => {
+              return `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress.trim().toLowerCase()}`;
+            }),
+            ...ipAddresses.map((ipAddress) => {
+              return `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`;
+            }),
+          ];
+        }),
+      );
+    } catch (error: any) {
+      logger.error(`Failed to get pre-configured spending plan keys: ${error.message}`);
+      return new Set<string>();
+    }
   }
 
   /**
