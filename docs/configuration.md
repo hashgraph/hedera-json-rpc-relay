@@ -19,6 +19,8 @@ These properties are noted below and should be custom set per deployment.
 - `OPERATOR_KEY_MAIN`
 - `SERVER_PORT`
 
+**Note**: The default logging level in the TypeScript application is set to trace.
+
 ## Server
 
 The following table lists the available properties along with their default values for the [Server package](/packages/server/).
@@ -31,6 +33,7 @@ Unless you need to set a non-default value, it is recommended to only populate o
 | `CHAIN_ID`                  | ""        | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively.                                                 |
 | `HEDERA_NETWORK`            | ""        | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `previewnet`, `testnet`, `mainnet` or a map of network IPs -> node accountIds e.g. `{"127.0.0.1:50211":"0.0.3"}`               |
 | `INPUT_SIZE_LIMIT`          | "1mb"     | The [koa-jsonrpc](https://github.com/Bitclimb/koa-jsonrpc) maximum size allowed for requests                                                                                                                                      |
+| `LOG_LEVEL       `          | "trace"   | The logging level for the application. Valid values are `trace`, `debug`, `info`, `warn`, `error`, and `fatal`.                                                                                                                       |
 | `MAX_BLOCK_RANGE`           | "5"       | The maximum block number greater than the mirror node's latest block to query for                                                                                                                                                 |
 | `OPERATOR_ID_MAIN`          | ""        | Operator account ID used to pay for transactions. In `S.R.N` format, e.g. `0.0.1001`.                                                                                                                                             |
 | `OPERATOR_KEY_FORMAT`       | "DER"     | Operator private key format. Valid types are `DER`, `HEX_ECDSA`, or `HEX_ED25519`                                                                                                                                                 |

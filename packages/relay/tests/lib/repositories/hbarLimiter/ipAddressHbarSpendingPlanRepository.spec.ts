@@ -62,7 +62,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6383);
     } else {
-      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: false });
     }
 
     afterEach(async () => {

@@ -20,6 +20,7 @@
 
 import { Eth } from '../index';
 import { Logger } from 'pino';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { Gauge, Registry } from 'prom-client';
 import { RequestDetails } from './types';
 import { Utils } from '../utils';
@@ -49,9 +50,9 @@ export class Poller {
     this.eth = eth;
     this.logger = logger;
     this.polls = [];
-    this.pollingInterval = Number(process.env.WS_POLLING_INTERVAL) || 500;
-    this.newHeadsEnabled =
-      typeof process.env.WS_NEW_HEADS_ENABLED !== 'undefined' ? process.env.WS_NEW_HEADS_ENABLED === 'true' : true;
+    this.pollingInterval = Number(ConfigService.get('WS_POLLING_INTERVAL')) || 500;
+    // @ts-ignore
+    this.newHeadsEnabled = ConfigService.get('WS_NEW_HEADS_ENABLED') ?? true;
 
     const activePollsGaugeName = 'rpc_websocket_active_polls';
     register.removeSingleMetric(activePollsGaugeName);

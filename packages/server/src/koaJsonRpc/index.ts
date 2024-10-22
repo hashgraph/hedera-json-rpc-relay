@@ -22,10 +22,7 @@ import { IMethodRateLimitConfiguration, methodConfiguration } from './lib/method
 import jsonResp from './lib/RpcResponse';
 import RateLimit from '../rateLimit';
 import parse from 'co-body';
-import dotenv from 'dotenv';
-import path from 'path';
 import { Logger } from 'pino';
-
 import {
   InternalError,
   InvalidRequest,
@@ -36,8 +33,8 @@ import {
 } from './lib/RpcError';
 import Koa from 'koa';
 import { Histogram, Registry } from 'prom-client';
-import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay';
 import { IRequestDetails, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay/dist';
 import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
 import {
   getBatchRequestsEnabled,
@@ -49,8 +46,6 @@ import {
 } from './lib/utils';
 import { IJsonRpcRequest } from './lib/IJsonRpcRequest';
 import { IJsonRpcResponse } from './lib/IJsonRpcResponse';
-
-dotenv.config({ path: path.resolve(__dirname, '../../../../../.env') });
 
 const INVALID_REQUEST = 'INVALID REQUEST';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';

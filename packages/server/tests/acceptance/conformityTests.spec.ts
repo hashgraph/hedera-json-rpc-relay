@@ -25,15 +25,14 @@ import axios from 'axios';
 import openRpcData from '../../../../docs/openrpc.json';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { signTransaction } from '../../../relay/tests/helpers';
+import { signTransaction } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { expect } from 'chai';
-import { config } from 'dotenv';
 import WebSocket from 'ws';
 import LogsContract from '../contracts/Logs.json';
 import CallerContract from '../contracts/Caller.json';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
-config();
 
 let currentBlockHash;
 let legacyTransactionAndBlockHash;
@@ -67,7 +66,7 @@ const ajv = new Ajv({ strict: false });
 addFormats(ajv);
 let execApisOpenRpcData;
 
-const chainId = Number(process.env.CHAIN_ID || 0x12a);
+const chainId = Number(ConfigService.get('CHAIN_ID') || 0x12a);
 
 let legacyTransaction = {
   chainId,
@@ -775,4 +774,13 @@ describe('@api-conformity @conformity-batch-4 Ethereum execution apis tests', as
   };
 
   synthesizeTestCases(TEST_CASES_BATCH_4, updateParamIfNeeded);
+});
+
+describe('@api-conformity @conformity-batch-5 Ethereum execution apis tests', async function () {
+  this.timeout(240 * 1000);
+
+  const TEST_CASES_BATCH_5 = require('./data/conformity-tests-batch-5.json');
+
+  const updateParamIfNeeded = (_testName, request) => request;
+  synthesizeTestCases(TEST_CASES_BATCH_5, updateParamIfNeeded);
 });

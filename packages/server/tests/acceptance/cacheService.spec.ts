@@ -19,7 +19,7 @@
  */
 
 import { expect } from 'chai';
-import { CacheService } from '../../../../packages/relay/src/lib/services/cacheService/cacheService';
+import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../../relay/tests/helpers';
@@ -83,7 +83,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
     expect(deletedCacheFromService).to.eq(null, 'getAsync method cannot read expired cache');
   });
 
-  withOverriddenEnvsInMochaTest({ REDIS_ENABLED: 'false' }, () => {
+  withOverriddenEnvsInMochaTest({ REDIS_ENABLED: false }, () => {
     it('Falls back to local cache for REDIS_ENABLED !== true', async () => {
       const dataLabel = `${DATA_LABEL_PREFIX}3`;
 
@@ -113,7 +113,7 @@ describe('@cache-service Acceptance Tests for shared cache', function () {
 
     let cacheService: CacheService;
 
-    overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'true' });
+    overrideEnvsInMochaDescribe({ REDIS_ENABLED: true });
 
     before(async () => {
       cacheService = new CacheService(global.logger, registry);

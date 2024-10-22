@@ -23,17 +23,18 @@ import WebSocket from 'ws';
 import { ethers } from 'ethers';
 import chai, { expect } from 'chai';
 import { solidity } from 'ethereum-waffle';
-import { predefined } from '@hashgraph/json-rpc-relay';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { WsTestHelper } from '../helper';
 import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
 import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
 
 chai.use(solidity);
 
-const WS_RELAY_URL = `${process.env.WS_RELAY_URL}`;
+const WS_RELAY_URL = `${ConfigService.get('WS_RELAY_URL')}`;
 const ethAddressRegex = /^0x[a-fA-F0-9]*$/;
 
 function verifyResponse(response: any, done: Mocha.Done, webSocket: any, includeTransactions: boolean) {
@@ -97,7 +98,7 @@ function verifyResponse(response: any, done: Mocha.Done, webSocket: any, include
 describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const accounts: AliasAccount[] = [];
-  const CHAIN_ID = process.env.CHAIN_ID || 0;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let mirrorNodeServer, requestId, rpcServer, wsServer;
@@ -142,7 +143,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   });
 
   describe('Configuration', async function () {
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: 'false' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: false }, () => {
       it('Should return unsupported method when WS_NEW_HEADS_ENABLED is set to false', async function () {
         const webSocket = new WebSocket(WS_RELAY_URL);
         const messagePromise = new Promise<void>((resolve, reject) => {
@@ -173,7 +174,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       });
     });
 
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_SUBSCRIPTION_LIMIT: '2', WS_NEW_HEADS_ENABLED: 'true' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_SUBSCRIPTION_LIMIT: 2, WS_NEW_HEADS_ENABLED: true }, () => {
       it('Does not allow more subscriptions per connection than the specified limit with newHeads', async function () {
         // Create different subscriptions
         for (let i = 0; i < 3; i++) {
@@ -194,7 +195,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
 
     WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: undefined }, () => {
       it('@release should subscribe to newHeads and receive a valid JSON RPC response', async (done) => {
-        expect(process.env.WS_NEW_HEADS_ENABLED).to.be.undefined;
+        expect(ConfigService.get('WS_NEW_HEADS_ENABLED')).to.be.undefined;
 
         const webSocket = new WebSocket(WS_RELAY_URL);
         const subscriptionId = 1;
@@ -226,7 +227,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   });
 
   describe('Subscriptions for newHeads', async function () {
-    WsTestHelper.overrideEnvsInMochaDescribe({ WS_NEW_HEADS_ENABLED: 'true' });
+    WsTestHelper.overrideEnvsInMochaDescribe({ WS_NEW_HEADS_ENABLED: true });
 
     it('should subscribe to newHeads, include transactions true, and receive a valid JSON RPC response', (done) => {
       const webSocket = new WebSocket(WS_RELAY_URL);

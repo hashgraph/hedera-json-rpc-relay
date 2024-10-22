@@ -22,7 +22,7 @@ import { ethers } from 'ethers';
 import Assertions from './assertions';
 import crypto from 'crypto';
 import RelayClient from '../clients/relayClient';
-import { numberTo0x } from '../../../relay/src/formatters';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import RelayCall from '../../tests/helpers/constants';
 import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
 import { AliasAccount } from '../types/AliasAccount';
@@ -34,6 +34,7 @@ import { Context } from 'mocha';
 import { GitHubClient } from '../clients/githubClient';
 import MirrorClient from '../clients/mirrorClient';
 import { HeapDifferenceStatistics } from '../types/HeapDifferenceStatistics';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 export class Utils {
@@ -301,7 +302,7 @@ export class Utils {
     const mirrorNodeAccount = (await mirrorNode.get(`/accounts/${address}`, requestId)).account;
     const accountId = AccountId.fromString(mirrorNodeAccount);
     const client: ServicesClient = new ServicesClient(
-      process.env.HEDERA_NETWORK!,
+      ConfigService.get('HEDERA_NETWORK')!,
       accountId.toString(),
       privateKey.toStringDer(),
       creator.client.getLogger(),
@@ -482,7 +483,7 @@ export class Utils {
             existing.includes(`\`${testTitle}\``),
           );
           // write a heap snapshot if the memory leak is more than 1 MB
-          const isMemoryLeakSnapshotEnabled = process.env.WRITE_SNAPSHOT_ON_MEMORY_LEAK === 'true';
+          const isMemoryLeakSnapshotEnabled = ConfigService.get('WRITE_SNAPSHOT_ON_MEMORY_LEAK');
           if (isMemoryLeakSnapshotEnabled && totalDiffBytes > Utils.HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD) {
             console.info('Writing heap snapshot...');
             await Utils.writeHeapSnapshotAsync();

@@ -19,9 +19,9 @@
  */
 
 import { Validator } from '.';
-import { predefined } from '@hashgraph/json-rpc-relay';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { IObjectSchema, IObjectValidation } from '../types/validator';
-import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfigWrapper } from '@hashgraph/json-rpc-relay/src/lib/types';
+import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfigWrapper } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 export const OBJECTS_VALIDATIONS: { [key: string]: IObjectSchema } = {
   blockHashObject: {
