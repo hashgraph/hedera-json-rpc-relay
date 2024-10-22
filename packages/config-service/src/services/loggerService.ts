@@ -25,6 +25,7 @@ export class LoggerService {
     GlobalConfig.ENTRIES.OPERATOR_KEY_MAIN.envName,
     GlobalConfig.ENTRIES.OPERATOR_KEY_ETH_SENDRAWTRANSACTION.envName,
     GlobalConfig.ENTRIES.GITHUB_TOKEN.envName,
+    GlobalConfig.ENTRIES.GH_ACCESS_TOKEN.envName,
   ];
 
   /**

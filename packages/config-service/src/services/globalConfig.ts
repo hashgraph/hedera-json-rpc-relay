@@ -231,6 +231,12 @@ export class GlobalConfig {
       required: false,
       defaultValue: null,
     },
+    GH_ACCESS_TOKEN: {
+      envName: 'GH_ACCESS_TOKEN',
+      type: 'string',
+      required: false,
+      defaultValue: null,
+    },
     GITHUB_PR_NUMBER: {
       envName: 'GITHUB_PR_NUMBER',
       type: 'string',
