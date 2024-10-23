@@ -10,6 +10,10 @@ services:
     tty: true
     volumes:
       - ./.env:/home/node/app/.env
+    environment:
+      REDIS_ENABLED: "true"
+      REDIS_URL: "redis://redis:6379"
+
   relay-ws:
     container_name: hedera-json-rpc-relay-ws
     image: "ghcr.io/hashgraph/hedera-json-rpc-relay:main"
@@ -17,6 +21,8 @@ services:
     environment:
       HEALTHCHECK_PORT: 8547
       SUBSCRIPTIONS_ENABLED: true
+      REDIS_ENABLED: "true"
+      REDIS_URL: "redis://redis:6379"
     restart: "unless-stopped"
     ports:
       - 8546:8546
@@ -25,3 +31,16 @@ services:
     tty: true
     volumes:
       - ./.env:/home/node/app/.env
+
+  redis:
+    image: redis:latest
+    container_name: redis_cache
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    restart: always
+
+volumes:
+  redis-data:
+    
