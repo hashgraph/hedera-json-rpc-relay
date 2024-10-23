@@ -59,6 +59,14 @@ export class HbarSpendingPlanConfigService {
     ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE') || 'spendingPlansConfig.json';
 
   /**
+   * The environment variable that contains the spending plans configuration JSON.
+   *
+   * @type {string}
+   * @private
+   */
+  private readonly SPENDING_PLANS_CONFIG_JSON: string | undefined = process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
+
+  /**
    * Creates an instance of `HbarSpendingPlanConfigService`.
    *
    * @constructor
@@ -108,6 +116,14 @@ export class HbarSpendingPlanConfigService {
    * @private
    */
   private loadSpendingPlansConfig(): SpendingPlanConfig[] {
+    if (this.SPENDING_PLANS_CONFIG_JSON) {
+      try {
+        return JSON.parse(this.SPENDING_PLANS_CONFIG_JSON) as SpendingPlanConfig[];
+      } catch (error: any) {
+        throw new Error(`Failed to parse JSON from HBAR_SPENDING_PLANS_CONFIG_JSON: ${error.message}`);
+      }
+    }
+
     const configPath = findConfig(this.SPENDING_PLANS_CONFIG_FILE);
     if (!configPath || !fs.existsSync(configPath)) {
       this.logger.trace(`Configuration file not found at path "${configPath ?? this.SPENDING_PLANS_CONFIG_FILE}"`);

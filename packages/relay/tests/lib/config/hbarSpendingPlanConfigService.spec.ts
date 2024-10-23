@@ -37,6 +37,24 @@ import { Registry } from 'prom-client';
 
 chai.use(chaiAsPromised);
 
+// Dynamically import the service **after** setting the environment variable
+async function reloadHBarSPendingPlanConfigService(
+  hbarSpendingPlanConfigService: HbarSpendingPlanConfigService,
+  logger,
+  hbarSpendingPlanRepository: HbarSpendingPlanRepository,
+  ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
+  ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
+) {
+  const { HbarSpendingPlanConfigService } = await import('../../../src/lib/config/hbarSpendingPlanConfigService');
+  hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
+    logger,
+    hbarSpendingPlanRepository,
+    ethAddressHbarSpendingPlanRepository,
+    ipAddressHbarSpendingPlanRepository,
+  );
+  return hbarSpendingPlanConfigService;
+}
+
 describe('HbarSpendingPlanConfigService', function () {
   const logger = pino();
   const registry = new Registry();
@@ -498,6 +516,107 @@ describe('HbarSpendingPlanConfigService', function () {
                 }
               });
             }
+          });
+        });
+      });
+    });
+
+    describe('Environment variable defined spending plans', function () {
+      const spendingPlansConfigExample = [
+        {
+          id: 'c758c095-342c-4607-9db5-867d7e90ab9d',
+          name: 'partner name',
+          ethAddresses: ['0x123', '0x124'],
+          ipAddresses: ['127.0.0.1', '128.0.0.1'],
+          subscriptionTier: 'PRIVILEGED',
+        },
+        {
+          id: 'a68488b0-6f7d-44a0-87c1-774ad64615f2',
+          name: 'some other partner that has given us only eth addresses',
+          ethAddresses: ['0x125', '0x126'],
+          subscriptionTier: 'PRIVILEGED',
+        },
+        {
+          id: 'af13d6ed-d676-4d33-8b9d-cf05d1ad7134',
+          name: 'supported project name',
+          ethAddresses: ['0x127', '0x128'],
+          ipAddresses: ['129.0.0.1', '130.0.0.1'],
+          subscriptionTier: 'EXTENDED',
+        },
+        {
+          id: '7f665aa3-6b73-41d7-bf9b-92d04cdab96b',
+          name: 'some other supported project that has given us only ip addresses',
+          ipAddresses: ['131.0.0.1', '132.0.0.1'],
+          subscriptionTier: 'EXTENDED',
+        },
+      ];
+
+      describe('when HBAR_SPENDING_PLANS_CONFIG_JSON is not set', function () {
+        overrideEnvsInMochaDescribe({
+          HBAR_SPENDING_PLANS_CONFIG_JSON: undefined,
+        });
+
+        it('should not throw an error if the environment variable is not set', async function () {
+          expect(process.env.HBAR_SPENDING_PLANS_CONFIG_JSON).to.be.undefined;
+          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).not.to.be.rejected;
+        });
+      });
+
+      describe('when HBAR_SPENDING_PLANS_CONFIG_JSON is invalid JSON', function () {
+        before(function () {
+          delete process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
+          process.env.HBAR_SPENDING_PLANS_CONFIG_JSON = 'invalid JSON';
+        });
+
+        after(function () {
+          delete process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
+        });
+
+        it('should throw an error if environment variable contains invalid JSON', async function () {
+          hbarSpendingPlanConfigService = await reloadHBarSPendingPlanConfigService(
+            hbarSpendingPlanConfigService,
+            logger,
+            hbarSpendingPlanRepository,
+            ethAddressHbarSpendingPlanRepository,
+            ipAddressHbarSpendingPlanRepository,
+          );
+          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
+            /Failed to parse JSON from HBAR_SPENDING_PLANS_CONFIG_JSON: /,
+          );
+        });
+      });
+
+      describe('when HBAR_SPENDING_PLANS_CONFIG_JSON is valid JSON', function () {
+        before(function () {
+          process.env.HBAR_SPENDING_PLANS_CONFIG_JSON = JSON.stringify(spendingPlansConfigExample);
+        });
+
+        after(function () {
+          delete process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
+        });
+
+        it('should populate the database with pre-configured spending plans from the HBAR_SPENDING_PLANS_CONFIG_JSON environment variable', async function () {
+          hbarSpendingPlanConfigService = await reloadHBarSPendingPlanConfigService(
+            hbarSpendingPlanConfigService,
+            logger,
+            hbarSpendingPlanRepository,
+            ethAddressHbarSpendingPlanRepository,
+            ipAddressHbarSpendingPlanRepository,
+          );
+          await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
+
+          spendingPlansConfigExample.forEach(({ id, name, subscriptionTier }) => {
+            sinon.assert.calledWith(
+              hbarSpendingPlanRepositorySpy.create,
+              subscriptionTier,
+              emptyRequestDetails,
+              neverExpireTtl,
+              id,
+            );
+            sinon.assert.calledWith(
+              loggerSpy.info,
+              `Created HBAR spending plan "${name}" with ID "${id}" and subscriptionTier "${subscriptionTier}"`,
+            );
           });
         });
       });
