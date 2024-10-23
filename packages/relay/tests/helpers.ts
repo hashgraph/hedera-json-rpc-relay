@@ -23,7 +23,7 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { v4 as uuid } from 'uuid';
 import constants from '../src/lib/constants';
-import { Hbar, HbarUnit } from '@hashgraph/sdk';
+import { Hbar, HbarUnit } from 'kosi-sdk';
 import { formatRequestIdMessage, numberTo0x, toHash32 } from '../src/formatters';
 import { RedisInMemoryServer } from './redisInMemoryServer';
 import { Logger } from 'pino';

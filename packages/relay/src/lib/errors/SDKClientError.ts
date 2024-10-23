@@ -18,7 +18,7 @@
  *
  */
 
-import { Status } from '@hashgraph/sdk';
+import { Status } from 'kosi-sdk';
 
 export class SDKClientError extends Error {
   public status: Status = Status.Unknown;

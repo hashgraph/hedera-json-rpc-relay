@@ -22,7 +22,7 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import pino from 'pino';
 import { expect } from 'chai';
 import EventEmitter from 'events';
-import { Client, Hbar } from '@hashgraph/sdk';
+import { Client, Hbar } from 'kosi-sdk';
 import constants from '../../src/lib/constants';
 import { register, Registry } from 'prom-client';
 import { SDKClient } from '../../src/lib/clients';

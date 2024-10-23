@@ -29,7 +29,7 @@ import { SDKClient } from '../../clients/sdkClient';
 import { HbarLimitService } from '../hbarLimitService';
 import { CacheService } from '../cacheService/cacheService';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { AccountId, Client, LogLevel, PrivateKey, Logger as SDKLogger } from '@hashgraph/sdk';
+import { AccountId, Client, LogLevel, PrivateKey, Logger as SDKLogger } from 'kosi-sdk';
 import fs from 'fs';
 
 export default class HAPIService {

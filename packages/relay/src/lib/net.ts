@@ -20,8 +20,8 @@
 
 import { Net } from '../index';
 import constants from './constants';
-import { Client } from '@hashgraph/sdk';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { Client } from 'kosi-sdk';
 
 export class NetImpl implements Net {
   private client: Client;

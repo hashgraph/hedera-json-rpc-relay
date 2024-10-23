@@ -28,7 +28,7 @@ import Axios from 'axios';
 import chai, { expect } from 'chai';
 import chaiExclude from 'chai-exclude';
 import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { ContractId } from '@hashgraph/sdk';
+import { ContractId } from 'kosi-sdk';
 
 // Assertions and constants from local resources
 import Assertions from '../helpers/assertions';

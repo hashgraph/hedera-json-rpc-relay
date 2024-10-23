@@ -1,4 +1,4 @@
-const HederaSDK = require('@hashgraph/sdk');
+const HederaSDK = require('kosi-sdk');
 const ethers = require('ethers');
 const fs = require('fs');
 const path = require('path');

@@ -18,7 +18,7 @@
  *
  */
 
-import { PrivateKey } from '@hashgraph/sdk';
+import { PrivateKey } from 'kosi-sdk';
 import constants from './lib/constants';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import crypto from 'crypto';

@@ -26,8 +26,8 @@ import { Utils } from '../helpers/utils';
 import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
-import { ContractId, Hbar, HbarUnit } from '@hashgraph/sdk';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ContractId, Hbar, HbarUnit } from 'kosi-sdk';
 
 // Assertions from local resources
 import Assertions from '../helpers/assertions';
