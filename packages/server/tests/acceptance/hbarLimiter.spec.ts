@@ -521,7 +521,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           };
 
           describe('Pre-configured spending plans', async () => {
-            const expectedPrivilegedPlans = {
+            const expectedNonBasicPlans = {
               PRIVILEGED_ALPHA: {
                 id: 'c758c095-342c-4607-9db5-867d7e90ab9d',
                 name: 'PRIVILEGED_ALPHA',
@@ -537,7 +537,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               },
             };
 
-            const expectedPrivilegedEvmAddresses = {
+            const expectedNonBasicEvmAddresses = {
               PRIVILEGED_ALPHA: ['0x7d102fe71af42790fe31b126c1f49766376ca2b5'],
               PRIVILEGED_BETA: ['0x40183ec818c1826114767391989ff2eaebc2b91e'],
             };
@@ -547,35 +547,35 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             };
 
             it('Should successfully populate all pre-configured spending plans', async () => {
-              Object.values(expectedPrivilegedPlans).forEach(async (plan) => {
+              Object.values(expectedNonBasicPlans).forEach(async (plan) => {
                 const hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.id, requestDetails);
                 expect(hbarSpendingPlan.id).to.eq(plan.id);
                 expect(hbarSpendingPlan.active).to.be.true;
-                expect(hbarSpendingPlan.subscriptionTier).to.eq(SubscriptionTier.PRIVILEGED);
+                expect(hbarSpendingPlan.subscriptionTier).to.eq(plan.subscriptionTier);
               });
             });
 
-            it('Should successfully link all pre-configured spending plans to correct PRIVILEGED EVM addresses', async () => {
-              Object.entries(expectedPrivilegedEvmAddresses).forEach(([key, evmAddresses]) => {
+            it('Should successfully link all pre-configured spending plans to correct NON-BASIC EVM addresses', async () => {
+              Object.entries(expectedNonBasicEvmAddresses).forEach(([key, evmAddresses]) => {
                 evmAddresses.forEach(async (evmAddress) => {
                   const associatedPlanByEVMAddress = await ethAddressSpendingPlanRepository.findByAddress(
                     evmAddress,
                     requestDetails,
                   );
-                  expect(associatedPlanByEVMAddress.planId).to.eq(expectedPrivilegedPlans[key].id);
+                  expect(associatedPlanByEVMAddress.planId).to.eq(expectedNonBasicPlans[key].id);
                   expect(associatedPlanByEVMAddress.ethAddress).to.eq(evmAddress);
                 });
               });
             });
 
-            it('Should successfully link all pre-configured spending plans to correct PRIVILEGED IP addresses', async () => {
+            it('Should successfully link all pre-configured spending plans to correct NON-BASIC IP addresses', async () => {
               Object.entries(expectedPrivilegedIpAddresses).forEach(([key, ipAddresses]) => {
                 ipAddresses.forEach(async (ipAddress) => {
                   const associatedPlanByIpAddress = await ipSpendingPlanRepository.findByAddress(
                     ipAddress,
                     requestDetails,
                   );
-                  expect(associatedPlanByIpAddress.planId).to.eq(expectedPrivilegedPlans[key].id);
+                  expect(associatedPlanByIpAddress.planId).to.eq(expectedNonBasicPlans[key].id);
                   expect(associatedPlanByIpAddress.ipAddress).to.eq(ipAddress);
                 });
               });
