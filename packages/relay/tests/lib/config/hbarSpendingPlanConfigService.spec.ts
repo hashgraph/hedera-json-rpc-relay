@@ -68,7 +68,8 @@ describe('HbarSpendingPlanConfigService', function () {
     }
 
     before(function () {
-      cacheService = new CacheService(logger, registry);
+      const reservedKeys = HbarSpendingPlanConfigService.getPreconfiguredSpendingPlanKeys(logger);
+      cacheService = new CacheService(logger, registry, reservedKeys);
       hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
       ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
       ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
