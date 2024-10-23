@@ -35,15 +35,13 @@ import RelayClient from '../clients/relayClient';
 import MirrorClient from '../clients/mirrorClient';
 import MetricsClient from '../clients/metricsClient';
 import { AliasAccount } from '../types/AliasAccount';
-import {
-  estimateFileTransactionsFee,
-  overrideEnvsInMochaDescribe
-} from '@hashgraph/json-rpc-relay/tests/helpers';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hbarLimitService';
 import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
+import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
+import { IDetailedHbarSpendingPlan } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/hbarSpendingPlan';
 import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
@@ -74,11 +72,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     metrics: MetricsClient;
     relayIsLocal: boolean;
   } = global;
+  const mockTTL = 60000; // 60 secs
   const operatorAccount = ConfigService.get('OPERATOR_ID_MAIN') || DOT_ENV.OPERATOR_ID_MAIN || '';
   const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
   const cacheService = new CacheService(logger.child({ name: 'cache-service' }), new Registry());
+  const maxBasicSpendingLimit = HbarLimitService.TIER_LIMITS.BASIC.toTinybars().toNumber();
+  const maxPrivilegedSpendingLimit = HbarLimitService.TIER_LIMITS.PRIVILEGED.toTinybars().toNumber();
 
   const ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
   const ipSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
@@ -194,10 +195,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       };
 
       before(async function () {
-        // Restart the relay to reset the limits
-        await global.restartLocalRelay();
-        await cacheService.clear(requestDetails);
-
         logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
         logger.info(
           `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get(
@@ -450,7 +447,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
           it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts', async function () {
             const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
-            const maxBasicSpendingLimit = HbarLimitService.TIER_LIMITS.BASIC.toTinybars().toNumber();
             const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
             const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
             const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
@@ -501,6 +497,186 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                 expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
               }
             }
+          });
+        });
+
+        describe('NON-BASIC Tiers', () => {
+          const createAliasForNonBasicPlans = async (mode: SubscriptionTier) => {
+            const aliasAccount = await Utils.createAliasAccount(
+              mirrorNode,
+              global.accounts[0],
+              requestId,
+              initialBalance,
+            );
+
+            const hbarSpendingPlan = await hbarSpendingPlanRepository.create(mode, requestDetails, mockTTL);
+
+            await ethAddressSpendingPlanRepository.save(
+              { ethAddress: aliasAccount.address, planId: hbarSpendingPlan.id },
+              requestDetails,
+              mockTTL,
+            );
+
+            return { aliasAccount, hbarSpendingPlan };
+          };
+
+          describe('Pre-configured spending plans', async () => {
+            const expectedPrivilegedPlans = {
+              PRIVILEGED_ALPHA: {
+                id: 'c758c095-342c-4607-9db5-867d7e90ab9d',
+                name: 'PRIVILEGED_ALPHA',
+                ethAddresses: ['0x7d102fe71af42790fe31b126c1f49766376ca2b5'],
+                ipAddresses: ['127.0.0.1'],
+                subscriptionTier: 'PRIVILEGED',
+              },
+              PRIVILEGED_BETA: {
+                id: 'a68488b0-6f7d-44a0-87c1-774ad64615f2',
+                name: 'PRIVILEGED_BETA',
+                ethAddresses: ['0x40183ec818c1826114767391989ff2eaebc2b91e'],
+                subscriptionTier: 'PRIVILEGED',
+              },
+            };
+
+            const expectedPrivilegedEvmAddresses = {
+              PRIVILEGED_ALPHA: ['0x7d102fe71af42790fe31b126c1f49766376ca2b5'],
+              PRIVILEGED_BETA: ['0x40183ec818c1826114767391989ff2eaebc2b91e'],
+            };
+
+            const expectedPrivilegedIpAddresses = {
+              PRIVILEGED_ALPHA: ['127.0.0.1'],
+            };
+
+            it('Should successfully populate all pre-configured spending plans', async () => {
+              Object.values(expectedPrivilegedPlans).forEach(async (plan) => {
+                const hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.id, requestDetails);
+                expect(hbarSpendingPlan.id).to.eq(plan.id);
+                expect(hbarSpendingPlan.active).to.be.true;
+                expect(hbarSpendingPlan.subscriptionTier).to.eq(SubscriptionTier.PRIVILEGED);
+              });
+            });
+
+            it('Should successfully link all pre-configured spending plans to correct PRIVILEGED EVM addresses', async () => {
+              Object.entries(expectedPrivilegedEvmAddresses).forEach(([key, evmAddresses]) => {
+                evmAddresses.forEach(async (evmAddress) => {
+                  const associatedPlanByEVMAddress = await ethAddressSpendingPlanRepository.findByAddress(
+                    evmAddress,
+                    requestDetails,
+                  );
+                  expect(associatedPlanByEVMAddress.planId).to.eq(expectedPrivilegedPlans[key].id);
+                  expect(associatedPlanByEVMAddress.ethAddress).to.eq(evmAddress);
+                });
+              });
+            });
+
+            it('Should successfully link all pre-configured spending plans to correct PRIVILEGED IP addresses', async () => {
+              Object.entries(expectedPrivilegedIpAddresses).forEach(([key, ipAddresses]) => {
+                ipAddresses.forEach(async (ipAddress) => {
+                  const associatedPlanByIpAddress = await ipSpendingPlanRepository.findByAddress(
+                    ipAddress,
+                    requestDetails,
+                  );
+                  expect(associatedPlanByIpAddress.planId).to.eq(expectedPrivilegedPlans[key].id);
+                  expect(associatedPlanByIpAddress.ipAddress).to.eq(ipAddress);
+                });
+              });
+            });
+          });
+
+          describe('PRIVILEGED Tier', () => {
+            let priviledgedEvmAccount: AliasAccount;
+            let privilegedHbarSpendingPlan: IDetailedHbarSpendingPlan;
+
+            beforeEach(async () => {
+              const result = await createAliasForNonBasicPlans(SubscriptionTier.PRIVILEGED);
+              priviledgedEvmAccount = result.aliasAccount;
+              privilegedHbarSpendingPlan = result.hbarSpendingPlan;
+            });
+
+            afterEach(async () => {
+              await hbarSpendingPlanRepository.delete(privilegedHbarSpendingPlan.id, requestDetails);
+              await ethAddressSpendingPlanRepository.delete(priviledgedEvmAccount.address, requestDetails);
+            });
+
+            it('Should successfully add spending plans', async () => {
+              const plan = await ethAddressSpendingPlanRepository.findByAddress(
+                priviledgedEvmAccount.address,
+                requestDetails,
+              );
+
+              expect(plan.ethAddress).to.eq(priviledgedEvmAccount.address);
+              expect(plan.planId).to.eq(privilegedHbarSpendingPlan.id);
+
+              const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.planId, requestDetails);
+              expect(spendingPlan.active).to.be.true;
+              expect(spendingPlan.amountSpent).to.eq(0);
+              expect(spendingPlan.subscriptionTier).to.eq(SubscriptionTier.PRIVILEGED);
+            });
+
+            it('Should increase the amount spent by the privileged spending plan', async () => {
+              const contract = await deployContract(largeContractJson, priviledgedEvmAccount.wallet);
+
+              // awaiting for HBAR limiter to finish updating expenses in the background
+              await Utils.wait(6000);
+
+              const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
+                privilegedHbarSpendingPlan.id,
+                requestDetails,
+              );
+
+              const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
+              const amountSpent = spendingPlan.amountSpent;
+
+              expect(amountSpent).to.be.approximately(expectedCost, 0.009 * expectedCost);
+            });
+
+            it('Should eventually exhaust the hbar limit for PRIVILEDGED user', async () => {
+              const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+              const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
+              const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
+              const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+
+              const factory = new ethers.ContractFactory(
+                largeContractJson.abi,
+                largeContractJson.bytecode,
+                accounts[0].wallet,
+              );
+              const deployedTransaction = await factory.getDeployTransaction();
+              const estimatedTxFee = estimateFileTransactionsFee(
+                deployedTransaction.data.length,
+                fileChunkSize,
+                exchangeRateInCents,
+              );
+
+              try {
+                for (let i = 0; i < 50; i++) {
+                  await deployContract(largeContractJson, priviledgedEvmAccount.wallet);
+                }
+                expect.fail(`Expected an error but nothing was thrown`);
+              } catch (e: any) {
+                expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+
+                // awaiting for HBAR limiter to finish updating expenses in the background
+                await Utils.wait(6000);
+
+                const spendingPlanAssociated = await hbarSpendingPlanRepository.findByIdWithDetails(
+                  privilegedHbarSpendingPlan.id,
+                  requestDetails,
+                );
+                const amountSpent = spendingPlanAssociated.amountSpent;
+                const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+
+                // Explanation:
+                // An HBAR limit check triggers the HBAR_RATE_LIMIT_EXCEED error in two scenarios:
+                //    a. if remainingHbarsBefore > maxPrivilegedSpendingLimit ===> (totalHbarSpentByPrivilegedPlan + estimatedTxFee) > maxPrivilegedSpendingLimit
+                //    b. if remainingHbarsBefore <= maxPrivilegedSpendingLimit ===> remainingBudget < estimatedTxFee
+                if (remainingHbarsBefore > maxPrivilegedSpendingLimit) {
+                  expect(amountSpent).to.be.gt(maxBasicSpendingLimit);
+                  expect(amountSpent + estimatedTxFee).to.be.gt(maxPrivilegedSpendingLimit);
+                } else {
+                  expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
+                }
+              }
+            });
           });
         });
       });
