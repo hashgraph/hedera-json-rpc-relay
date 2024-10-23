@@ -40,7 +40,7 @@ describe('LoggerService tests', async function () {
     const { envName } = GlobalConfig.ENTRIES.HBAR_SPENDING_PLANS_CONFIG_FILE;
 
     for (const prefix of LoggerService.KNOWN_SECRET_PREFIXES) {
-      const value = prefix + crypto.randomBytes(16).toString('hex');
+      const value = prefix + '_VVurqVVh68wgxgcVjrvVVVcNcVVVVi3CRwl1';
       const res = LoggerService.maskUpEnv(envName, value);
       expect(res).to.equal(`${envName} = **********`);
     }

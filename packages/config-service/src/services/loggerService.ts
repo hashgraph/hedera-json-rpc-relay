@@ -45,8 +45,9 @@ export class LoggerService {
   static maskUpEnv(envName: string, envValue: string | undefined): string {
     const isSensitiveField: boolean = this.SENSITIVE_FIELDS.indexOf(envName) > -1;
     const isKnownSecret: boolean =
-      GlobalConfig.ENTRIES[envName].type === 'string' &&
-      this.KNOWN_SECRET_PREFIXES.indexOf(envValue ? envValue.slice(0, 3) : '') > -1;
+      GlobalConfig.ENTRIES[envName].type === 'string' && envValue
+        ? !!envValue.match(/^(gh[pousr]_[a-zA-Z0-9]{36,251}|github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59})$/)
+        : false;
 
     if (isSensitiveField || isKnownSecret) {
       return `${envName} = **********`;
