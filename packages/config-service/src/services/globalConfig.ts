@@ -325,7 +325,7 @@ export class GlobalConfig {
       envName: 'HBAR_SPENDING_PLANS_CONFIG_FILE',
       type: 'string',
       required: false,
-      defaultValue: null,
+      defaultValue: 'spendingPlansConfig.json',
     },
     INITIAL_BALANCE: {
       envName: 'INITIAL_BALANCE',

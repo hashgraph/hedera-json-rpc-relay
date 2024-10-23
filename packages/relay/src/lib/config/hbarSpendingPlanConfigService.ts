@@ -127,7 +127,7 @@ export class HbarSpendingPlanConfigService {
    * @private
    */
   private static loadSpendingPlansConfig(logger: Logger): SpendingPlanConfig[] {
-    const filename = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE') || 'spendingPlansConfig.json';
+    const filename = String(ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE'));
     const configPath = findConfig(filename);
     if (!configPath || !fs.existsSync(configPath)) {
       logger.trace(`Configuration file not found at path "${configPath ?? filename}"`);
