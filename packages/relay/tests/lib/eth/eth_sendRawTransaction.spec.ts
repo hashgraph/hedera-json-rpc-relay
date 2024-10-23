@@ -31,7 +31,7 @@ import {
   Long,
   TransactionId,
   TransactionResponse,
-} from '@hashgraph/sdk';
+} from 'kosi-sdk';
 import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
 import { EventEmitter } from 'events';
 import pino from 'pino';

@@ -38,7 +38,7 @@ import {
   IPAddressHbarSpendingPlanNotFoundError,
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { RequestDetails } from '../../../../src/lib/types';
-import { Hbar } from '@hashgraph/sdk';
+import { Hbar } from 'kosi-sdk';
 import { Long } from 'long';
 
 chai.use(chaiAsPromised);

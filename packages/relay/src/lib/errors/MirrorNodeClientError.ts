@@ -18,7 +18,7 @@
  *
  */
 
-import { Status } from '@hashgraph/sdk';
+import { Status } from 'kosi-sdk';
 
 export class MirrorNodeClientError extends Error {
   public statusCode: number;

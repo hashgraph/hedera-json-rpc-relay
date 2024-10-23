@@ -15,12 +15,12 @@
     "koa-cors": "^0.0.16",
     "koa-logger": "^3.2.1",
     "koa-router": "^13.0.1",
+    "kosi-sdk": "1.0.1",
     "pino": "^7.11.0",
     "pino-pretty": "^7.6.1",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "@hashgraph/sdk": "^2.50.0-beta.3",
     "@koa/cors": "^5.0.0",
     "@types/chai": "^4.3.0",
     "@types/cors": "^2.8.12",

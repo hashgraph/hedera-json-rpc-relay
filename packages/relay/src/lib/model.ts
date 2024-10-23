@@ -19,7 +19,7 @@
  */
 
 // Used for fake implementation of block history
-import { Status, TransactionRecord } from '@hashgraph/sdk';
+import { Status, TransactionRecord } from 'kosi-sdk';
 
 export class Block {
   public readonly timestamp: string = '0x' + new Date().valueOf().toString(16);

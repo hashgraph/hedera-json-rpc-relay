@@ -51,7 +51,7 @@ import {
   TransactionRecord,
   TransactionRecordQuery,
   TransactionResponse,
-} from '@hashgraph/sdk';
+} from 'kosi-sdk';
 import { Logger } from 'pino';
 import { Utils } from '../../utils';
 import { EventEmitter } from 'events';

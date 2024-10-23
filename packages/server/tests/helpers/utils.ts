@@ -24,7 +24,7 @@ import crypto from 'crypto';
 import RelayClient from '../clients/relayClient';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import RelayCall from '../../tests/helpers/constants';
-import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
+import { AccountId, KeyList, PrivateKey } from 'kosi-sdk';
 import { AliasAccount } from '../types/AliasAccount';
 import ServicesClient from '../clients/servicesClient';
 import http from 'http';
