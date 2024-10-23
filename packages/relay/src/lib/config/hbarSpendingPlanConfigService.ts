@@ -70,19 +70,19 @@ export class HbarSpendingPlanConfigService {
    */
   public static getPreconfiguredSpendingPlanKeys(logger: Logger): Set<string> {
     try {
+      const { collectionKey: hbarSpendingPlanKey } = HbarSpendingPlanRepository;
+      const { collectionKey: ethAddressHbarSpendingPlanKey } = EthAddressHbarSpendingPlanRepository;
+      const { collectionKey: ipAddressHbarSpendingPlanKey } = IPAddressHbarSpendingPlanRepository;
+
       return new Set<string>(
         this.loadSpendingPlansConfig(logger).flatMap((plan) => {
           const { id, ethAddresses = [], ipAddresses = [] } = plan;
           return [
-            `${HbarSpendingPlanRepository.collectionKey}:${id}`,
-            `${HbarSpendingPlanRepository.collectionKey}:${id}:amountSpent`,
-            `${HbarSpendingPlanRepository.collectionKey}:${id}:spendingHistory`,
-            ...ethAddresses.map((ethAddress) => {
-              return `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress.trim().toLowerCase()}`;
-            }),
-            ...ipAddresses.map((ipAddress) => {
-              return `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`;
-            }),
+            `${hbarSpendingPlanKey}:${id}`,
+            `${hbarSpendingPlanKey}:${id}:amountSpent`,
+            `${hbarSpendingPlanKey}:${id}:spendingHistory`,
+            ...ethAddresses.map((ethAddress) => `${ethAddressHbarSpendingPlanKey}:${ethAddress.trim().toLowerCase()}`),
+            ...ipAddresses.map((ipAddress) => `${ipAddressHbarSpendingPlanKey}:${ipAddress}`),
           ];
         }),
       );
