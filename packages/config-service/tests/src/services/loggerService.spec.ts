@@ -36,6 +36,16 @@ describe('LoggerService tests', async function () {
     }
   });
 
+  it('should be able to mask every value if it starts with known secret prefix', async () => {
+    const { envName } = GlobalConfig.ENTRIES.HBAR_SPENDING_PLANS_CONFIG_FILE;
+
+    for (const prefix of LoggerService.KNOWN_SECRET_PREFIXES) {
+      const value = prefix + crypto.randomBytes(16).toString('hex');
+      const res = LoggerService.maskUpEnv(envName, value);
+      expect(res).to.equal(`${envName} = **********`);
+    }
+  });
+
   it('should be able to return plain information', async () => {
     const envName = GlobalConfig.ENTRIES.CHAIN_ID.envName;
     const res = ConfigService.get(envName);
