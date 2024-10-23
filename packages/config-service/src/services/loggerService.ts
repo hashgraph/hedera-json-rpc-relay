@@ -36,6 +36,9 @@ export class LoggerService {
     'ghr', // refresh tokens
   ];
 
+  public static readonly GITHUB_SECRET_PATTERN: RegExp =
+    /^(gh[pousr]_[a-zA-Z0-9]{36,251}|github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59})$/;
+
   /**
    * Hide sensitive information
    *
@@ -46,7 +49,7 @@ export class LoggerService {
     const isSensitiveField: boolean = this.SENSITIVE_FIELDS.indexOf(envName) > -1;
     const isKnownSecret: boolean =
       GlobalConfig.ENTRIES[envName].type === 'string' && envValue
-        ? !!envValue.match(/^(gh[pousr]_[a-zA-Z0-9]{36,251}|github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59})$/)
+        ? !!envValue.match(this.GITHUB_SECRET_PATTERN)
         : false;
 
     if (isSensitiveField || isKnownSecret) {
