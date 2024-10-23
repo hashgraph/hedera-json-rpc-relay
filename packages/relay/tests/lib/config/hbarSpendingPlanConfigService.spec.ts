@@ -29,7 +29,7 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { SpendingPlanConfig } from '../../../src/lib/types/spendingPlanConfig';
 import { RequestDetails } from '../../../src/lib/types';
-import { overrideEnvsInMochaDescribe, toHex, useInMemoryRedisServer } from '../../helpers';
+import { overrideEnvsInMochaDescribe, toHex, useInMemoryRedisServer, verifyResult } from '../../helpers';
 import findConfig from 'find-config';
 import { HbarSpendingPlanConfigService } from '../../../src/lib/config/hbarSpendingPlanConfigService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
@@ -232,6 +232,7 @@ describe('HbarSpendingPlanConfigService', function () {
       });
 
       describe('positive scenarios', function () {
+        // Helper function to save spending plans and their associations from the configurations
         const saveSpendingPlans = async (spendingPlansConfig: SpendingPlanConfig[]) => {
           for (const plan of spendingPlansConfig) {
             await hbarSpendingPlanRepository.create(
@@ -260,100 +261,96 @@ describe('HbarSpendingPlanConfigService', function () {
           ipAddressHbarSpendingPlanRepositorySpy.save.resetHistory();
         };
 
+        // Helper to find obsolete associations (deleted or associated with a different plan in the new config file)
+        const findObsoleteAssociations = (
+          oldConfig: SpendingPlanConfig[],
+          newConfig: SpendingPlanConfig[],
+          fieldName: 'ethAddresses' | 'ipAddresses',
+        ) => {
+          const obsoleteAssociations: { address: string; oldPlanId: string; newPlanId?: string }[] = [];
+
+          oldConfig.forEach((oldPlan) => {
+            oldPlan[fieldName]?.forEach((address) => {
+              const newPlan = newConfig.find((plan) => plan[fieldName]?.includes(address));
+              if (!newPlan || newPlan.id !== oldPlan.id) {
+                obsoleteAssociations.push({ address, oldPlanId: oldPlan.id, newPlanId: newPlan?.id });
+              }
+            });
+          });
+
+          newConfig.forEach((newPlan) => {
+            newPlan[fieldName]?.forEach((address) => {
+              const oldPlan = oldConfig.find((oldPlan) => oldPlan[fieldName]?.includes(address));
+              if (oldPlan) {
+                obsoleteAssociations.push({ address, oldPlanId: oldPlan.id, newPlanId: newPlan.id });
+              }
+            });
+          });
+
+          return obsoleteAssociations;
+        };
+
+        // Helper function to verify spending plans based on the changes in configuration file
         const verifySpendingPlans = async (oldConfig: SpendingPlanConfig[], newConfig?: SpendingPlanConfig[]) => {
-          const spendingPlansConfig = newConfig || oldConfig;
-          for (const plan of spendingPlansConfig) {
-            await expect(hbarSpendingPlanRepository.findById(plan.id, emptyRequestDetails)).to.eventually.deep.include({
+          const spendingPlans = newConfig || oldConfig;
+
+          // Validate existence of the configured spending plans and their associations to eth and ip addresses
+          for (const plan of spendingPlans) {
+            await verifyResult(() => hbarSpendingPlanRepository.findById(plan.id, emptyRequestDetails), {
               id: plan.id,
               subscriptionTier: plan.subscriptionTier,
               active: true,
             });
+
             for (const ethAddress of plan.ethAddresses || []) {
-              await expect(
-                ethAddressHbarSpendingPlanRepository.findByAddress(ethAddress, emptyRequestDetails),
-              ).to.eventually.deep.eq({
-                ethAddress,
-                planId: plan.id,
-              });
+              await verifyResult(
+                () => ethAddressHbarSpendingPlanRepository.findByAddress(ethAddress, emptyRequestDetails),
+                { ethAddress, planId: plan.id },
+              );
             }
+
             for (const ipAddress of plan.ipAddresses || []) {
-              await expect(
-                ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress, emptyRequestDetails),
-              ).to.eventually.deep.eq({
-                ipAddress,
-                planId: plan.id,
-              });
+              await verifyResult(
+                () => ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress, emptyRequestDetails),
+                { ipAddress, planId: plan.id },
+              );
             }
           }
 
+          // If the config has been changed, check for deleted plans and associations which are no longer valid
           if (newConfig) {
-            type ObsoleteEthAssociation = { ethAddress: string; oldPlanId: string; newPlanId?: string };
-            type ObsoleteIpAssociation = { ipAddress: string; oldPlanId: string; newPlanId?: string };
-
             const obsoletePlans = oldConfig.filter((oldPlan) => !newConfig.some((plan) => plan.id === oldPlan.id));
-            const obsoleteEthAddressAssociations: ObsoleteEthAssociation[] = obsoletePlans
-              .flatMap((plan) => (plan.ethAddresses || []).map((ethAddress) => ({ ethAddress, oldPlanId: plan.id })))
-              .filter((association) => !newConfig.some((plan) => plan.ethAddresses?.includes(association.ethAddress!)));
-            const obsoleteIpAddressAssociations: ObsoleteIpAssociation[] = obsoletePlans
-              .flatMap((plan) => (plan.ipAddresses || []).map((ipAddress) => ({ ipAddress, oldPlanId: plan.id })))
-              .filter((association) => !newConfig.some((plan) => plan.ipAddresses?.includes(association.ipAddress!)));
+            const obsoleteEthAssociations = findObsoleteAssociations(oldConfig, newConfig, 'ethAddresses');
+            const obsoleteIpAssociations = findObsoleteAssociations(oldConfig, newConfig, 'ipAddresses');
 
-            newConfig.forEach((plan) => {
-              plan.ethAddresses?.forEach((ethAddress) => {
-                const oldPlan = oldConfig.find((oldPlan) => oldPlan.ethAddresses?.includes(ethAddress));
-                if (oldPlan) {
-                  obsoleteEthAddressAssociations.push({ ethAddress, oldPlanId: oldPlan.id, newPlanId: plan.id });
-                }
-              });
-              plan.ipAddresses?.forEach((ipAddress) => {
-                const oldPlan = oldConfig.find((oldPlan) => oldPlan.ipAddresses?.includes(ipAddress));
-                if (oldPlan) {
-                  obsoleteIpAddressAssociations.push({ ipAddress, oldPlanId: oldPlan.id, newPlanId: plan.id });
-                }
-              });
-            });
-
+            // Validate non-existence of obsolete plans
             for (const plan of obsoletePlans) {
-              await expect(hbarSpendingPlanRepository.findById(plan.id, emptyRequestDetails)).eventually.rejectedWith(
-                HbarSpendingPlanNotFoundError,
+              await verifyResult(
+                () => hbarSpendingPlanRepository.findById(plan.id, emptyRequestDetails),
+                null,
                 `HbarSpendingPlan with ID ${plan.id} not found`,
+                HbarSpendingPlanNotFoundError,
               );
             }
-            for (const { ethAddress } of obsoleteEthAddressAssociations) {
-              const newPlan = newConfig.find((plan) => plan.ethAddresses?.includes(ethAddress));
-              if (newPlan) {
-                await expect(
-                  ethAddressHbarSpendingPlanRepository.findByAddress(ethAddress, emptyRequestDetails),
-                ).to.eventually.deep.include({
-                  ethAddress,
-                  planId: newPlan.id,
-                });
-              } else {
-                await expect(
-                  ethAddressHbarSpendingPlanRepository.findByAddress(ethAddress, emptyRequestDetails),
-                ).eventually.rejectedWith(
-                  EthAddressHbarSpendingPlanNotFoundError,
-                  `EthAddressHbarSpendingPlan with address ${ethAddress} not found`,
-                );
-              }
+
+            // Validate non-existence of obsolete ETH address associations
+            for (const { address, newPlanId } of obsoleteEthAssociations) {
+              await verifyResult(
+                () => ethAddressHbarSpendingPlanRepository.findByAddress(address, emptyRequestDetails),
+                newPlanId ? { ethAddress: address, planId: newPlanId } : null,
+                `EthAddressHbarSpendingPlan with address ${address} not found`,
+                EthAddressHbarSpendingPlanNotFoundError,
+              );
             }
-            for (const { ipAddress } of obsoleteIpAddressAssociations) {
-              const newPlan = newConfig.find((plan) => plan.ipAddresses?.includes(ipAddress));
-              if (newPlan) {
-                await expect(
-                  ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress, emptyRequestDetails),
-                ).to.eventually.deep.include({
-                  ipAddress,
-                  planId: newPlan.id,
-                });
-              } else {
-                await expect(
-                  ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress, emptyRequestDetails),
-                ).eventually.rejectedWith(
-                  IPAddressHbarSpendingPlanNotFoundError,
-                  `IPAddressHbarSpendingPlan not found`,
-                );
-              }
+
+            // Validate non-existence of obsolete IP address associations
+            for (const { address, newPlanId } of obsoleteIpAssociations) {
+              await verifyResult(
+                () => ipAddressHbarSpendingPlanRepository.findByAddress(address, emptyRequestDetails),
+                newPlanId ? { ipAddress: address, planId: newPlanId } : null,
+                `IPAddressHbarSpendingPlan not found`,
+                IPAddressHbarSpendingPlanNotFoundError,
+              );
             }
           }
         };
