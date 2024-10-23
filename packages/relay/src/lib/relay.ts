@@ -18,8 +18,6 @@
  *
  */
 
-import dotenv from 'dotenv';
-import findConfig from 'find-config';
 import { Logger } from 'pino';
 import { NetImpl } from './net';
 import { EthImpl } from './eth';
@@ -39,12 +37,11 @@ import { HbarLimitService } from './services/hbarLimitService';
 import { SubscriptionController } from './subscriptionController';
 import MetricService from './services/metricService/metricService';
 import { CacheService } from './services/cacheService/cacheService';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigService';
 import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
-
-dotenv.config({ path: findConfig('.env') || '' });
 
 export class RelayImpl implements Relay {
   /**
@@ -132,8 +129,9 @@ export class RelayImpl implements Relay {
   ) {
     logger.info('Configurations successfully loaded');
 
-    const hederaNetwork: string = (process.env.HEDERA_NETWORK || '{}').toLowerCase();
-    const configuredChainId = process.env.CHAIN_ID || constants.CHAIN_IDS[hederaNetwork] || '298';
+    // @ts-ignore
+    const hederaNetwork: string = (ConfigService.get('HEDERA_NETWORK') || '{}').toLowerCase();
+    const configuredChainId = ConfigService.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = prepend0x(Number(configuredChainId).toString(16));
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
@@ -173,12 +171,13 @@ export class RelayImpl implements Relay {
     this.netImpl = new NetImpl(this.clientMain);
 
     this.mirrorNodeClient = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      // @ts-ignore
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       register,
       this.cacheService,
       undefined,
-      process.env.MIRROR_NODE_URL_WEB3 || process.env.MIRROR_NODE_URL || '',
+      ConfigService.get('MIRROR_NODE_URL_WEB3') || ConfigService.get('MIRROR_NODE_URL') || '',
     );
 
     this.metricService = new MetricService(
@@ -206,7 +205,7 @@ export class RelayImpl implements Relay {
       ipAddressHbarSpendingPlanRepository,
     );
 
-    if (process.env.SUBSCRIPTIONS_ENABLED && process.env.SUBSCRIPTIONS_ENABLED === 'true') {
+    if (ConfigService.get('SUBSCRIPTIONS_ENABLED')) {
       const poller = new Poller(this.ethImpl, logger.child({ name: `poller` }), register);
       this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }

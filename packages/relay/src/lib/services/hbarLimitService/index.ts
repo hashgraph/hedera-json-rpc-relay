@@ -229,13 +229,21 @@ export class HbarLimitService implements IHbarLimitService {
 
     const ipAddress = requestDetails.ipAddress;
     if (!ethAddress && !ipAddress) {
-      throw new Error('Cannot add expense without an eth address or ip address');
+      this.logger.trace('Cannot add expense to a spending plan without an eth address or ip address');
+      return;
     }
 
     let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
     if (!spendingPlan) {
-      // Create a basic spending plan if none exists for the eth address or ip address
-      spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestDetails);
+      if (ethAddress) {
+        // Create a basic spending plan if none exists for the eth address
+        spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestDetails);
+      } else {
+        this.logger.warn(
+          `${requestDetails.formattedRequestId} Cannot add expense to a spending plan without an eth address or ip address`,
+        );
+        return;
+      }
     }
 
     this.logger.trace(
@@ -454,9 +462,8 @@ export class HbarLimitService implements IHbarLimitService {
     ethAddress: string,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan> {
-    const ipAddress = requestDetails.ipAddress;
-    if (!ethAddress && !ipAddress) {
-      throw new Error('Cannot create a spending plan without an associated eth address or ip address');
+    if (!ethAddress) {
+      throw new Error('Cannot create a spending plan without an associated eth address');
     }
 
     const spendingPlan = await this.hbarSpendingPlanRepository.create(
@@ -464,26 +471,16 @@ export class HbarLimitService implements IHbarLimitService {
       requestDetails,
       this.limitDuration,
     );
-    if (ethAddress) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`,
-      );
-      await this.ethAddressHbarSpendingPlanRepository.save(
-        { ethAddress, planId: spendingPlan.id },
-        requestDetails,
-        this.limitDuration,
-      );
-    }
-    if (ipAddress) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to ip address`,
-      );
-      await this.ipAddressHbarSpendingPlanRepository.save(
-        { ipAddress, planId: spendingPlan.id },
-        requestDetails,
-        this.limitDuration,
-      );
-    }
+
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`,
+    );
+    await this.ethAddressHbarSpendingPlanRepository.save(
+      { ethAddress, planId: spendingPlan.id },
+      requestDetails,
+      this.limitDuration,
+    );
+
     return spendingPlan;
   }
 }

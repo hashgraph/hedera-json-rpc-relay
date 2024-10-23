@@ -21,9 +21,7 @@
 import pino from 'pino';
 import Long from 'long';
 import { expect } from 'chai';
-import { resolve } from 'path';
 import * as sinon from 'sinon';
-import { config } from 'dotenv';
 import EventEmitter from 'events';
 import { Utils } from '../../src/utils';
 import axios, { AxiosInstance } from 'axios';
@@ -46,6 +44,7 @@ import {
 import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import {
   AccountId,
   Client,
@@ -67,7 +66,6 @@ import {
 } from '@hashgraph/sdk';
 import { Context } from 'mocha';
 
-config({ path: resolve(__dirname, '../test.env') });
 const registry = new Registry();
 const logger = pino();
 
@@ -101,10 +99,10 @@ describe('SdkClient', async function () {
     },
   } as unknown as FeeSchedules;
 
-  overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
+  overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true });
 
   before(() => {
-    const hederaNetwork = process.env.HEDERA_NETWORK!;
+    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
@@ -112,8 +110,8 @@ describe('SdkClient', async function () {
     }
 
     client = client.setOperator(
-      AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
-      Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')!),
+      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     const total = constants.HBAR_RATE_LIMIT_TOTAL;
@@ -152,7 +150,7 @@ describe('SdkClient', async function () {
 
     // mirror node client
     mirrorNodeClient = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -288,7 +286,7 @@ describe('SdkClient', async function () {
     };
 
     this.beforeEach(() => {
-      if (process.env.OPERATOR_KEY_FORMAT !== 'BAD_FORMAT') {
+      if (ConfigService.get('OPERATOR_KEY_FORMAT') !== 'BAD_FORMAT') {
         hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
       }
     });
@@ -339,8 +337,8 @@ describe('SdkClient', async function () {
   });
 
   describe('HBAR Limiter', async () => {
-    const FILE_APPEND_CHUNK_SIZE = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
-    const MAX_CHUNKS = Number(process.env.FILE_APPEND_MAX_CHUNKS) || 20;
+    const FILE_APPEND_CHUNK_SIZE = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+    const MAX_CHUNKS = Number(ConfigService.get('FILE_APPEND_MAX_CHUNKS')) || 20;
     const transactionBuffer = new Uint8Array([
       2, 249, 250, 182, 130, 1, 42, 7, 1, 133, 209, 56, 92, 123, 240, 131, 228, 225, 192, 148, 61, 176, 51, 137, 34,
       205, 229, 74, 102, 224, 197, 133, 1, 18, 73, 145, 93, 50, 210, 37, 134, 9, 24, 78, 114, 160, 0, 185, 250, 68, 130,
@@ -2148,7 +2146,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileCreateFee / 10 ** 8) : fileCreateFee;
           transfers = [
             {
-              accountId: process.env.OPERATOR_ID_MAIN,
+              accountId: ConfigService.get('OPERATOR_ID_MAIN'),
               amount: Hbar.fromTinybars(-1 * fileCreateFee),
               is_approval: false,
             },
@@ -2158,7 +2156,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileAppendFee / 10 ** 8) : fileAppendFee;
           transfers = [
             {
-              accountId: process.env.OPERATOR_ID_MAIN,
+              accountId: ConfigService.get('OPERATOR_ID_MAIN'),
               amount: Hbar.fromTinybars(-1 * fileAppendFee),
               is_approval: false,
             },
@@ -2168,7 +2166,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileDeleteFee / 10 ** 8) : fileDeleteFee;
           transfers = [
             {
-              accountId: process.env.OPERATOR_ID_MAIN,
+              accountId: ConfigService.get('OPERATOR_ID_MAIN'),
               amount: Hbar.fromTinybars(-1 * fileDeleteFee),
               is_approval: false,
             },
@@ -2183,12 +2181,12 @@ describe('SdkClient', async function () {
               is_approval: false,
             },
             {
-              accountId: process.env.OPERATOR_ID_MAIN,
+              accountId: ConfigService.get('OPERATOR_ID_MAIN'),
               amount: Hbar.fromTinybars(-1 * defaultTransactionFee),
               is_approval: false,
             },
             {
-              accountId: process.env.OPERATOR_ID_MAIN,
+              accountId: ConfigService.get('OPERATOR_ID_MAIN'),
               amount: Hbar.fromTinybars(defaultTransactionFee),
               is_approval: false,
             },
@@ -2247,7 +2245,7 @@ describe('SdkClient', async function () {
     let hbarLimitServiceMock: sinon.SinonMock;
     let sdkClientMock: sinon.SinonMock;
 
-    overrideEnvsInMochaDescribe({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: 'true' });
+    overrideEnvsInMochaDescribe({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: true });
 
     beforeEach(() => {
       hbarLimitServiceMock = sinon.mock(hbarLimitService);
@@ -2610,7 +2608,7 @@ describe('SdkClient', async function () {
       expect(transactionRecordStub.called).to.be.true;
     });
 
-    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: false }, () => {
       it('should execute EthereumTransaction, retrieve transactionStatus and expenses via MIRROR NODE', async () => {
         const mockedTransactionId = transactionId.toString();
         const mockedTransactionIdFormatted = formatTransactionId(mockedTransactionId);
@@ -2627,7 +2625,7 @@ describe('SdkClient', async function () {
                   is_approval: false,
                 },
                 {
-                  account: process.env.OPERATOR_ID_MAIN,
+                  account: ConfigService.get('OPERATOR_ID_MAIN'),
                   amount: -1 * defaultTransactionFee,
                   is_approval: false,
                 },
@@ -2720,7 +2718,7 @@ describe('SdkClient', async function () {
     });
 
     it('Should execute getTransferAmountSumForAccount() to calculate transactionFee by only transfers that are paid by the specify accountId', () => {
-      const accountId = process.env.OPERATOR_ID_MAIN || '';
+      const accountId = ConfigService.get('OPERATOR_ID_MAIN') || '';
       const mockedTxRecord = getMockedTransactionRecord(EthereumTransaction.name, true);
 
       const transactionFee = sdkClient.getTransferAmountSumForAccount(mockedTxRecord, accountId);

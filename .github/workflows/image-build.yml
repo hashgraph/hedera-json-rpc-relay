@@ -40,7 +40,13 @@ jobs:
 
       - name: Start server
         run: |
-          docker run -d -p 7546:7546 --name relay relay:latest
+          docker run \
+            -e CHAIN_ID='0x12a' \
+            -e HEDERA_NETWORK='{"127.0.0.1:50211":"0.0.3"}' \
+            -e MIRROR_NODE_URL='http://127.0.0.1:5551' \
+            -e OPERATOR_ID_MAIN='0.0.1002' \
+            -e OPERATOR_KEY_MAIN='302e020100300506032b65700422042077d69b53642d0000000000000000000000000000000000000000000000000000' \
+            -d -p 7546:7546 --name relay relay:latest
 
       - name: Test server
         run: |

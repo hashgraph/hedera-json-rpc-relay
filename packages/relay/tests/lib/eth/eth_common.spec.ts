@@ -17,8 +17,8 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { expect, use } from 'chai';
 import { Registry } from 'prom-client';
 import pino from 'pino';
@@ -26,7 +26,6 @@ import chaiAsPromised from 'chai-as-promised';
 import { RelayImpl } from '../../../src';
 import { RequestDetails } from '../../../src/lib/types';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 describe('@ethCommon', async function () {
@@ -43,7 +42,7 @@ describe('@ethCommon', async function () {
     it('should execute "eth_chainId"', async function () {
       const chainId = Relay.eth().chainId(requestDetails);
 
-      expect(chainId).to.be.equal('0x' + Number(process.env.CHAIN_ID).toString(16));
+      expect(chainId).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
     });
 
     it('should execute "eth_accounts"', async function () {

@@ -17,13 +17,11 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
 import { expect, use } from 'chai';
 import { ethers } from 'ethers';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-
 import { EthImpl } from '../../../src/lib/eth';
 import { SDKClient } from '../../../src/lib/clients';
 import {
@@ -50,7 +48,6 @@ import MockAdapter from 'axios-mock-adapter';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
@@ -72,7 +69,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     expect(result).equal(DEFAULT_CURRENT_CONTRACT_STATE.state[0].value);
   }
 
-  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1' });
+  overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1 });
 
   this.beforeEach(async () => {
     // reset cache and restMock

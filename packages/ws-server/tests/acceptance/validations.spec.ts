@@ -23,7 +23,7 @@ import WebSocket from 'ws';
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { predefined } from '@hashgraph/json-rpc-relay/src';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { InvalidRequest, MethodNotFound } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 
 describe('@release @web-socket-batch-1 JSON-RPC requests validation', async function () {
@@ -49,7 +49,7 @@ describe('@release @web-socket-batch-1 JSON-RPC requests validation', async func
 
   const UNSUPPORTED_METHODS = ['eth_getChainId', 'getLogs', 'ethCall', 'blockNum', 'getGasPrice'];
 
-  WsTestHelper.overrideEnvsInMochaDescribe({ REQUEST_ID_IS_OPTIONAL: 'true' });
+  WsTestHelper.overrideEnvsInMochaDescribe({ REQUEST_ID_IS_OPTIONAL: true });
 
   let ethersWsProvider: WebSocketProvider;
 

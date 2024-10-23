@@ -28,6 +28,7 @@ import { RequestDetails } from '../types';
 import { Logger } from 'pino';
 import { SubscriptionTier } from '../db/types/hbarLimiter/subscriptionTier';
 import { IDetailedHbarSpendingPlan } from '../db/types/hbarLimiter/hbarSpendingPlan';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 /**
  * Service for managing pre-configured {@link HbarSpendingPlan} entities.
@@ -126,7 +127,7 @@ export class HbarSpendingPlanConfigService {
    * @private
    */
   private static loadSpendingPlansConfig(logger: Logger): SpendingPlanConfig[] {
-    const filename = process.env.HBAR_SPENDING_PLANS_CONFIG_FILE || 'spendingPlansConfig.json';
+    const filename = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE') || 'spendingPlansConfig.json';
     const configPath = findConfig(filename);
     if (!configPath || !fs.existsSync(configPath)) {
       logger.trace(`Configuration file not found at path "${configPath ?? filename}"`);

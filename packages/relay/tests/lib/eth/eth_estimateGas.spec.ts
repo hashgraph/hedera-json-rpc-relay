@@ -17,8 +17,7 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
 import { expect, use } from 'chai';
 import { v4 as uuid } from 'uuid';
 import { AbiCoder, keccak256 } from 'ethers';
@@ -41,12 +40,13 @@ import {
 } from './eth-config';
 import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../helpers';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub: SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: SinonStub<[], SDKClient>;
 let ethImplOverridden: Eth;
+let currentMaxBlockRange: number;
+const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
 
 describe('@ethEstimateGas Estimate Gas spec', async function () {
   this.timeout(10000);
@@ -79,7 +79,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
 
   overrideEnvsInMochaDescribe({
-    ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: '1',
+    ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1,
     TX_DEFAULT_GAS: defaultGasOverride.toString(),
   });
 

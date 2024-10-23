@@ -59,7 +59,10 @@ describe('HbarSpendingPlanConfigService', function () {
     let ethAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<EthAddressHbarSpendingPlanRepository>;
     let ipAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<IPAddressHbarSpendingPlanRepository>;
 
-    overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: spendingPlansConfigFile });
+    overrideEnvsInMochaDescribe({
+      HBAR_SPENDING_PLANS_CONFIG_FILE: spendingPlansConfigFile,
+      CACHE_TTL: '100',
+    });
 
     if (isSharedCacheEnabled) {
       useInMemoryRedisServer(logger, 6384);
@@ -231,6 +234,32 @@ describe('HbarSpendingPlanConfigService', function () {
           ipAddressHbarSpendingPlanRepositorySpy.save.resetHistory();
         };
 
+        const verifySpendingPlans = async (spendingPlansConfig: SpendingPlanConfig[]) => {
+          for (const plan of spendingPlansConfig) {
+            await expect(hbarSpendingPlanRepository.findById(plan.id, emptyRequestDetails)).to.eventually.deep.include({
+              id: plan.id,
+              subscriptionTier: plan.subscriptionTier,
+              active: true,
+            });
+            for (const ethAddress of plan.ethAddresses || []) {
+              await expect(
+                ethAddressHbarSpendingPlanRepository.findByAddress(ethAddress, emptyRequestDetails),
+              ).to.eventually.deep.eq({
+                ethAddress,
+                planId: plan.id,
+              });
+            }
+            for (const ipAddress of plan.ipAddresses || []) {
+              await expect(
+                ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress, emptyRequestDetails),
+              ).to.eventually.deep.eq({
+                ipAddress,
+                planId: plan.id,
+              });
+            }
+          }
+        };
+
         it('should populate the database with pre-configured spending plans', async function () {
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
@@ -247,6 +276,16 @@ describe('HbarSpendingPlanConfigService', function () {
               `Created HBAR spending plan "${name}" with ID "${id}" and subscriptionTier "${subscriptionTier}"`,
             );
           });
+
+          await verifySpendingPlans(spendingPlansConfig);
+        });
+
+        it('should not delete pre-configured spending plans after default cache TTL expires', async function () {
+          await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
+
+          await new Promise((resolve) => setTimeout(resolve, Number(process.env.CACHE_TTL || '100')));
+
+          await verifySpendingPlans(spendingPlansConfig);
         });
 
         it('should remove associations of addresses which were previously linked to BASIC spending plans, but now appear in the configuration file', async function () {

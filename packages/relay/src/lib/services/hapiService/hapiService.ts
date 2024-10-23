@@ -18,7 +18,6 @@
  *
  */
 
-import fs from 'fs';
 import dotenv from 'dotenv';
 import { Logger } from 'pino';
 import EventEmitter from 'events';
@@ -30,6 +29,8 @@ import { SDKClient } from '../../clients/sdkClient';
 import { HbarLimitService } from '../hbarLimitService';
 import { CacheService } from '../cacheService/cacheService';
 import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
+import fs from 'fs';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 export default class HAPIService {
   /**
@@ -203,16 +204,19 @@ export default class HAPIService {
 
     this.hbarLimitService = hbarLimitService;
     this.eventEmitter = eventEmitter;
-    this.hederaNetwork = (process.env.HEDERA_NETWORK || this.config.HEDERA_NETWORK || '{}').toLowerCase();
+    this.hederaNetwork = (ConfigService.get('HEDERA_NETWORK') || this.config.HEDERA_NETWORK || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
     this.cacheService = cacheService;
     this.client = this.initSDKClient(logger);
 
     const currentDateNow = Date.now();
-    this.initialTransactionCount = parseInt(process.env.HAPI_CLIENT_TRANSACTION_RESET!) || 0;
-    this.initialResetDuration = parseInt(process.env.HAPI_CLIENT_DURATION_RESET!) || 0;
-    this.initialErrorCodes = JSON.parse(process.env.HAPI_CLIENT_ERROR_RESET || '[21, 50]');
+    // @ts-ignore
+    this.initialTransactionCount = parseInt(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')!) || 0;
+    // @ts-ignore
+    this.initialResetDuration = parseInt(ConfigService.get('HAPI_CLIENT_DURATION_RESET')!) || 0;
+    // @ts-ignore
+    this.initialErrorCodes = JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET') || '[21, 50]');
 
     this.transactionCount = this.initialTransactionCount;
     this.resetDuration = currentDateNow + this.initialResetDuration;
@@ -328,15 +332,23 @@ export default class HAPIService {
     }
 
     if (type === 'eth_sendRawTransaction') {
-      if (process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION && process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION) {
-        privateKey = Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_ETH_SENDRAWTRANSACTION);
-        client = client.setOperator(AccountId.fromString(process.env.OPERATOR_ID_ETH_SENDRAWTRANSACTION), privateKey);
+      if (
+        ConfigService.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION') &&
+        ConfigService.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION')
+      ) {
+        // @ts-ignore
+        privateKey = Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION'));
+        client = client.setOperator(
+          // @ts-ignore
+          AccountId.fromString(ConfigService.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION')),
+          privateKey,
+        );
       } else {
         logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
       }
     } else {
-      const operatorId: string = process.env.OPERATOR_ID_MAIN || this.config.OPERATOR_ID_MAIN || '';
-      const operatorKey: string = process.env.OPERATOR_KEY_MAIN || this.config.OPERATOR_KEY_MAIN || '';
+      const operatorId: string = ConfigService.get('OPERATOR_ID_MAIN') || this.config.OPERATOR_ID_MAIN || '';
+      const operatorKey: string = ConfigService.get('OPERATOR_KEY_MAIN') || this.config.OPERATOR_KEY_MAIN || '';
 
       if (operatorId && operatorKey) {
         privateKey = Utils.createPrivateKeyBasedOnFormat(operatorKey);
@@ -346,9 +358,11 @@ export default class HAPIService {
       }
     }
 
-    client.setTransportSecurity(process.env.CLIENT_TRANSPORT_SECURITY === 'true' || false);
+    // @ts-ignore
+    client.setTransportSecurity(ConfigService.get('CLIENT_TRANSPORT_SECURITY') ?? false);
 
-    const SDK_REQUEST_TIMEOUT = parseInt(process.env.SDK_REQUEST_TIMEOUT || '10000');
+    // @ts-ignore
+    const SDK_REQUEST_TIMEOUT = parseInt(ConfigService.get('SDK_REQUEST_TIMEOUT') || '10000');
     client.setRequestTimeout(SDK_REQUEST_TIMEOUT);
 
     logger.info(

@@ -29,6 +29,7 @@ import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
 import { Log } from '../../../model';
 import * as _ from 'lodash';
 import { CacheService } from '../../cacheService/cacheService';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '../../../types';
 
 /**
@@ -59,15 +60,15 @@ export class CommonService implements ICommonService {
    */
   private readonly cacheService: CacheService;
 
-  static blockLatest = 'latest';
-  static blockEarliest = 'earliest';
-  static blockPending = 'pending';
-  static blockSafe = 'safe';
-  static blockFinalized = 'finalized';
-  static isDevMode = process.env.DEV_MODE === 'true';
+  public static readonly blockLatest = 'latest';
+  public static readonly blockEarliest = 'earliest';
+  public static readonly blockPending = 'pending';
+  public static readonly blockSafe = 'safe';
+  public static readonly blockFinalized = 'finalized';
+  public static readonly isDevMode = ConfigService.get('DEV_MODE');
 
   // function callerNames
-  static latestBlockNumber = 'getLatestBlockNumber';
+  public static readonly latestBlockNumber = 'getLatestBlockNumber';
 
   private readonly maxBlockRange = parseNumericEnvVar('MAX_BLOCK_RANGE', 'MAX_BLOCK_RANGE');
   private readonly ethBlockNumberCacheTtlMs = parseNumericEnvVar(

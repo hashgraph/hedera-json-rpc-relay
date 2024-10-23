@@ -18,11 +18,9 @@
  *
  */
 
-import dotenv from 'dotenv';
-import findConfig from 'find-config';
 import { BigNumber } from 'bignumber.js';
 
-dotenv.config({ path: findConfig('.env') || '' });
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 enum CACHE_KEY {
   ACCOUNT = 'account',
@@ -77,8 +75,9 @@ export default {
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
   TOTAL_SUPPLY_TINYBARS: 5_000_000_000_000_000_000,
   // 131072 bytes are 128kbytes
-  SEND_RAW_TRANSACTION_SIZE_LIMIT: process.env.SEND_RAW_TRANSACTION_SIZE_LIMIT
-    ? parseInt(process.env.SEND_RAW_TRANSACTION_SIZE_LIMIT)
+  SEND_RAW_TRANSACTION_SIZE_LIMIT: ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT')
+    ? // @ts-ignore
+      parseInt(ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT'))
     : 131072,
 
   CACHE_KEY,
@@ -143,17 +142,23 @@ export default {
     DURATION: 60000,
   },
 
-  HBAR_RATE_LIMIT_DURATION: parseInt(process.env.HBAR_RATE_LIMIT_DURATION || '86400000'), // 1 day
-  HBAR_RATE_LIMIT_TOTAL: BigNumber(process.env.HBAR_RATE_LIMIT_TINYBAR || '800000000000'), // 8000 HBARs
-  HBAR_RATE_LIMIT_BASIC: BigNumber(process.env.HBAR_RATE_LIMIT_BASIC || '1120000000'), // 11.2 HBARs
-  HBAR_RATE_LIMIT_EXTENDED: BigNumber(process.env.HBAR_RATE_LIMIT_EXTENDED || '3200000000'), // 32 HBARs
-  HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(process.env.HBAR_RATE_LIMIT_PRIVILEGED || '8000000000'), // 80 HBARs
-  GAS_PRICE_TINY_BAR_BUFFER: parseInt(process.env.GAS_PRICE_TINY_BAR_BUFFER || '10000000000'),
-  WEB_SOCKET_PORT: process.env.WEB_SOCKET_PORT || 8546,
-  WEB_SOCKET_HTTP_PORT: process.env.WEB_SOCKET_HTTP_PORT || 8547,
+  // @ts-ignore
+  HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION') || '86400000'), // 1 day
+  // @ts-ignore
+  HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR') || '800000000000'), // 8000 HBARs
+  // @ts-ignore
+  HBAR_RATE_LIMIT_BASIC: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_BASIC') || '1120000000'), // 11.2 HBARs
+  // @ts-ignore
+  HBAR_RATE_LIMIT_EXTENDED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_EXTENDED') || '3200000000'), // 32 HBARs
+  // @ts-ignore
+  HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_PRIVILEGED') || '8000000000'), // 80 HBARs
+  // @ts-ignore
+  GAS_PRICE_TINY_BAR_BUFFER: parseInt(ConfigService.get('GAS_PRICE_TINY_BAR_BUFFER') || '10000000000'),
+  WEB_SOCKET_PORT: ConfigService.get('WEB_SOCKET_PORT') || 8546,
+  WEB_SOCKET_HTTP_PORT: ConfigService.get('WEB_SOCKET_HTTP_PORT') || 8547,
 
-  RELAY_PORT: process.env.SERVER_PORT || 7546,
-  RELAY_HOST: process.env.SERVER_HOST || 'localhost',
+  RELAY_PORT: ConfigService.get('SERVER_PORT') || 7546,
+  RELAY_HOST: ConfigService.get('SERVER_HOST') || 'localhost',
 
   FUNCTION_SELECTOR_CHAR_LENGTH: 10,
   MIRROR_NODE_RETRY_DELAY_DEFAULT: 2000,
@@ -175,7 +180,8 @@ export default {
       LOG: 'log',
       PENDING_TRANSACTION: 'pendingTransaction',
     },
-    TTL: parseInt(process.env.FILTER_TTL || '300000'), // default is 5 minutes
+    // @ts-ignore
+    TTL: parseInt(ConfigService.get('FILTER_TTL') || '300000'), // default is 5 minutes
   },
 
   METHODS: {

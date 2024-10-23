@@ -35,11 +35,12 @@ import RelayClient from '../clients/relayClient';
 import MirrorClient from '../clients/mirrorClient';
 import MetricsClient from '../clients/metricsClient';
 import { AliasAccount } from '../types/AliasAccount';
+import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hbarLimitService';
 import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
-import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
@@ -70,8 +71,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     metrics: MetricsClient;
     relayIsLocal: boolean;
   } = global;
-  const operatorAccount = process.env.OPERATOR_ID_MAIN || DOT_ENV.OPERATOR_ID_MAIN || '';
-  const fileAppendChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+  const operatorAccount = ConfigService.get('OPERATOR_ID_MAIN') || DOT_ENV.OPERATOR_ID_MAIN || '';
+  const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
   const cacheService = new CacheService(logger.child({ name: 'cache-service' }), new Registry());
@@ -176,13 +177,13 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     };
 
     describe('HBAR Rate Limit Tests', function () {
-      overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' });
+      overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true });
       this.timeout(480 * 1000); // 480 seconds
 
       const accounts: AliasAccount[] = [];
       const defaultLondonTransactionData = {
         value: Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10))), // 1 tinybar
-        chainId: Number(process.env.CHAIN_ID || 0),
+        chainId: Number(ConfigService.get('CHAIN_ID') || 0),
         maxPriorityFeePerGas: Assertions.defaultGasPrice,
         maxFeePerGas: Assertions.defaultGasPrice,
         gasLimit: 3_000_000,
@@ -196,7 +197,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
         logger.info(
-          `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${process.env.HBAR_RATE_LIMIT_TINYBAR}`,
+          `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get(
+            'HBAR_RATE_LIMIT_TINYBAR',
+          )}`,
         );
 
         const initialAccount: AliasAccount = global.accounts[0];
@@ -344,7 +347,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             contract.deploymentTransaction()!.data,
           );
 
-          const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+          const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
           const estimatedTxFee = estimateFileTransactionsFee(
             contract.deploymentTransaction()!.data.length,
             fileChunkSize,
@@ -371,8 +374,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
             );
 
-            //Unlinking the ipAdress, since the deployContract will link the ip address to a spending plan and the following transaction will use the same plan
-            await ipSpendingPlanRepository.deleteAll(requestDetails);
             expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
             const gasPrice = await relay.gasPrice(requestId);
             const transaction = {
@@ -423,7 +424,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             );
             expect(amountSpendAfterFirst).to.be.lt(spendingPlanAssociatedAfterSecond.amountSpent);
 
-            await ipSpendingPlanRepository.deleteAll(requestDetails);
             // it should use a different BASIC plan for another user
             const thirdTransaction = {
               ...defaultLondonTransactionData,
@@ -446,7 +446,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
 
           it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts', async function () {
-            const fileChunkSize = Number(process.env.FILE_APPEND_CHUNK_SIZE) || 5120;
+            const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
             const maxBasicSpendingLimit = HbarLimitService.TIER_LIMITS.BASIC.toTinybars().toNumber();
             const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
             const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;

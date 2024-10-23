@@ -18,11 +18,10 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import pino from 'pino';
 import { expect } from 'chai';
-import { resolve } from 'path';
 import * as sinon from 'sinon';
-import { config } from 'dotenv';
 import EventEmitter from 'events';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
@@ -44,7 +43,6 @@ import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/
 import { IPAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 
-config({ path: resolve(__dirname, '../../../test.env') });
 const registry = new Registry();
 const logger = pino();
 
@@ -108,15 +106,15 @@ describe('Metric Service', function () {
 
   before(() => {
     // consensus node client
-    const hederaNetwork = process.env.HEDERA_NETWORK!;
+    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
     client = client.setOperator(
-      AccountId.fromString(process.env.OPERATOR_ID_MAIN!),
-      Utils.createPrivateKeyBasedOnFormat(process.env.OPERATOR_KEY_MAIN!),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')!),
+      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')!),
     );
 
     // mirror node client
@@ -129,7 +127,7 @@ describe('Metric Service', function () {
       timeout: 20 * 1000,
     });
     mirrorNodeClient = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -186,7 +184,7 @@ describe('Metric Service', function () {
       originalCallerAddress: mockedOriginalCallerAddress,
     };
 
-    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'false' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: false }, () => {
       it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
         mock
           .onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`)
@@ -213,7 +211,7 @@ describe('Metric Service', function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true }, () => {
       it('Should execute captureTransactionMetrics() by retrieving transaction record from CONSENSUS NODE client', async () => {
         const mockedExchangeRateInCents = 12;
         const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
@@ -274,7 +272,7 @@ describe('Metric Service', function () {
       });
     });
 
-    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: 'true' }, () => {
+    withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true }, () => {
       it('Should listen to EXECUTE_TRANSACTION event to kick off captureTransactionMetrics()', async () => {
         const mockedExchangeRateInCents = 12;
         const expectedTxRecordFee = calculateTxRecordChargeAmount(mockedExchangeRateInCents);
