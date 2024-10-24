@@ -586,7 +586,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               await ethAddressSpendingPlanRepository.delete(priviledgedEvmAccount.address, requestDetails);
             });
 
-            it('Should increase the amount spent by the privileged spending plan', async () => {
+            it('Should increase the amount spent of the spending plan by the transaction cost', async () => {
               const contract = await deployContract(largeContractJson, priviledgedEvmAccount.wallet);
 
               // awaiting for HBAR limiter to finish updating expenses in the background
