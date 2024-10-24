@@ -1009,3 +1009,31 @@ export const estimateFileTransactionsFee = (
 
   return estimatedTxFee;
 };
+
+/**
+ * Verifies the result of a function call.
+ * @param {() => Promise<T>} func - The function to call.
+ * @param {Partial<T> | null} expected - The expected result.
+ * @param {string} [errorMessage] - The expected error message.
+ * @param {Function | Error} [errorType] - The expected error type.
+ * @returns {Promise<void>} - A promise that resolves when the verification is complete.
+ * @template T
+ */
+export const verifyResult = async <T>(
+  func: () => Promise<T>,
+  expected: Partial<T> | null,
+  errorMessage?: string,
+  errorType?: Function | Error,
+): Promise<void> => {
+  if (expected) {
+    await expect(func()).to.eventually.deep.include(expected);
+  } else {
+    if (errorType) {
+      await expect(func()).to.eventually.be.rejectedWith(errorType, errorMessage);
+    } else if (errorMessage) {
+      await expect(func()).to.eventually.be.rejectedWith(errorMessage);
+    } else {
+      await expect(func()).to.eventually.be.rejected;
+    }
+  }
+};

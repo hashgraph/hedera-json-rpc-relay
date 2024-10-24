@@ -134,6 +134,37 @@ describe('LocalLRUCache Test Suite', async function () {
       expect(key3).to.be.equal(keyValuePairs.key3);
     });
 
+    it('should not evict reserved keys from the cache on reaching the max cache size limit', async function () {
+      const reservedKeys = ['key1', 'key2'];
+      const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry, new Set(reservedKeys));
+      const keyValuePairs = {
+        key1: 'value1',
+        key2: 'value2',
+        key3: 'value3',
+        key4: 'value4',
+        key5: 'value5',
+      };
+
+      for (const [key, value] of Object.entries(keyValuePairs)) {
+        await customLocalLRUCache.set(key, value, callingMethod, requestDetails);
+      }
+
+      const key1 = await customLocalLRUCache.get('key1', callingMethod, requestDetails);
+      const key2 = await customLocalLRUCache.get('key2', callingMethod, requestDetails);
+      const key3 = await customLocalLRUCache.get('key3', callingMethod, requestDetails);
+      const key4 = await customLocalLRUCache.get('key4', callingMethod, requestDetails);
+      const key5 = await customLocalLRUCache.get('key5', callingMethod, requestDetails);
+      // expect cache to have capped at max size
+      expect(key1).to.be.equal(keyValuePairs.key1); // key1 should not have been evicted, as it is a reserved key
+      expect(key2).to.be.equal(keyValuePairs.key2); // key2 should not have been evicted, as it is a reserved key
+      expect(key3).to.be.null; // key3 should have been evicted
+      expect(key4).to.be.equal(keyValuePairs.key4);
+      expect(key5).to.be.equal(keyValuePairs.key5);
+
+      const allKeys = await customLocalLRUCache.keys('*', callingMethod, requestDetails);
+      expect(allKeys).to.have.members(['key1', 'key2', 'key4', 'key5']);
+    });
+
     it('verify cache LRU nature', async function () {
       const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
       const key = 'key';
