@@ -58,6 +58,7 @@ import {
 import { generateEthTestEnv } from './eth-helpers';
 import { IContractCallRequest, IContractCallResponse, RequestDetails } from '../../../src/lib/types';
 import { ContractFunctionResult } from '@hashgraph/sdk';
+import { Counter } from 'prom-client';
 
 use(chaiAsPromised);
 
@@ -66,7 +67,7 @@ let getSdkClientStub: sinon.SinonStub;
 
 describe('@ethCall Eth Call spec', async function () {
   this.timeout(10000);
-  let { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  let { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService, registry } = generateEthTestEnv();
 
   const ETH_CALL_REQ_ARGS = {
     from: ACCOUNT_ADDRESS_1,
@@ -447,6 +448,15 @@ describe('@ethCall Eth Call spec', async function () {
       expect((result as JsonRpcError).message).to.equal(
         'Error invoking RPC: Invalid contractCallResponse from consensus-node: undefined',
       );
+    });
+
+    it('should update execution counter and list the correct data when eth_call is executed', async function () {
+      const metrics = await registry.metrics();
+      await ethImpl.call(ETH_CALL_REQ_ARGS, 'latest', requestDetails);
+      const expectedMetricData = `rpc_relay_eth_executions{method="eth_call",function="${ETH_CALL_REQ_ARGS.data}",from="${ETH_CALL_REQ_ARGS.from}",to="${ETH_CALL_REQ_ARGS.to}"}`;
+
+      expect(ethImpl['ethExecutionsCounter']).to.be.instanceOf(Counter);
+      assert.include(metrics, expectedMetricData);
     });
   });
 
