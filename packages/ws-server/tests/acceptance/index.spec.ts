@@ -23,7 +23,7 @@ import pino from 'pino';
 import dotenv from 'dotenv';
 import chaiAsPromised from 'chai-as-promised';
 import fs from 'fs';
-import { AccountId, Hbar } from '@hashgraph/sdk';
+import { AccountId, Hbar } from 'kosi-sdk';
 import app from '@hashgraph/json-rpc-server/dist/server';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';

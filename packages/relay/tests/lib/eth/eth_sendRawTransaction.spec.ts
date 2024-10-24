@@ -22,7 +22,8 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-import { Hbar, HbarUnit, TransactionId, TransactionResponse } from '@hashgraph/sdk';
+import { Hbar, HbarUnit, TransactionId, TransactionResponse } from 'kosi-sdk';
+
 import { SDKClient } from '../../../src/lib/clients';
 import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
 import { JsonRpcError, predefined } from '../../../src';

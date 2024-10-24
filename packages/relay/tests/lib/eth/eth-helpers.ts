@@ -32,7 +32,7 @@ import { EthAddressHbarSpendingPlanRepository } from '../../../src/lib/db/reposi
 import { HbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
-import { Hbar } from '@hashgraph/sdk';
+import { Hbar } from 'kosi-sdk';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 export function contractResultsByNumberByIndexURL(number: number, index: number): string {

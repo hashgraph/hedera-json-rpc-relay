@@ -34,7 +34,7 @@ import { Transaction as EthersTransaction } from 'ethers';
 import HAPIService from './services/hapiService/hapiService';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { Block, Log, Transaction, Transaction1559 } from './model';
-import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
+import { FileId, Hbar, PrecheckStatusError } from 'kosi-sdk';
 import { CacheService } from './services/cacheService/cacheService';
 import { CommonService, FilterService } from './services/ethService';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';

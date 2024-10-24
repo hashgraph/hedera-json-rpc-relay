@@ -39,7 +39,7 @@ import app from '../../dist/server';
 import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
 
 // Hashgraph SDK
-import { AccountId, Hbar } from '@hashgraph/sdk';
+import { AccountId, Hbar } from 'kosi-sdk';
 
 // Constants
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';

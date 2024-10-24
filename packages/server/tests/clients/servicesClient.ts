@@ -52,7 +52,7 @@ import {
   TransactionId,
   TransactionResponse,
   TransferTransaction,
-} from '@hashgraph/sdk';
+} from 'kosi-sdk';
 import { Logger } from 'pino';
 import { ethers, JsonRpcProvider } from 'ethers';
 import { Utils } from '../helpers/utils';

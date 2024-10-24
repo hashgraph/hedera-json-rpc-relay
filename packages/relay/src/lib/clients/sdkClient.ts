@@ -51,7 +51,7 @@ import {
   TransactionRecord,
   TransactionRecordQuery,
   TransactionResponse,
-} from '@hashgraph/sdk';
+} from 'kosi-sdk';
 import { Logger } from 'pino';
 import { Utils } from '../../utils';
 import { EventEmitter } from 'events';
@@ -731,6 +731,14 @@ export class SDKClient {
         throw sdkClientError;
       }
 
+      this.logger.warn(
+        `${
+          requestDetails.formattedRequestId
+        } Logging more info about failed transaction LogID: ${transaction._getLogId()} Max attempts: ${
+          transaction._maxAttempts
+        }, Grpc deadline ${transaction._grpcDeadline}, NodeIds ${transaction.nodeAccountIds} ${this.clientMain} 
+        Tranasaction ${transaction} `,
+      );
       this.logger.warn(
         sdkClientError,
         `${requestDetails.formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}) message=${sdkClientError.message}`,

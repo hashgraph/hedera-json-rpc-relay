@@ -26,7 +26,7 @@ import { Poller } from './poller';
 import { Web3Impl } from './web3';
 import EventEmitter from 'events';
 import constants from './constants';
-import { Client, Hbar } from '@hashgraph/sdk';
+import { Client, Hbar } from 'kosi-sdk';
 import { RequestDetails } from './types';
 import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';

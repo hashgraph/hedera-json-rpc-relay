@@ -28,9 +28,9 @@ import { Counter, Registry } from 'prom-client';
 import { SDKClient } from '../../clients/sdkClient';
 import { HbarLimitService } from '../hbarLimitService';
 import { CacheService } from '../cacheService/cacheService';
-import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
-import fs from 'fs';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { AccountId, Client, LogLevel, PrivateKey, Logger as SDKLogger } from 'kosi-sdk';
+import fs from 'fs';
 
 export default class HAPIService {
   /**
@@ -250,6 +250,7 @@ export default class HAPIService {
     }
 
     this.transactionCount--;
+    this.logger.info(`Transaction count for sdk client, ${this.transactionCount}`);
     if (this.transactionCount <= 0) {
       this.shouldReset = true;
     }
@@ -364,7 +365,8 @@ export default class HAPIService {
     // @ts-ignore
     const SDK_REQUEST_TIMEOUT = parseInt(ConfigService.get('SDK_REQUEST_TIMEOUT') || '10000');
     client.setRequestTimeout(SDK_REQUEST_TIMEOUT);
-
+    const sdkLogger = new SDKLogger(LogLevel.Debug);
+    client.setLogger(sdkLogger);
     logger.info(
       `SDK client successfully configured to ${JSON.stringify(hederaNetwork)} for account ${
         client.operatorAccountId

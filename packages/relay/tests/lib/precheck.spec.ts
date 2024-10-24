@@ -21,7 +21,7 @@
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
-import { Hbar, HbarUnit } from '@hashgraph/sdk';
+import { Hbar, HbarUnit } from 'kosi-sdk';
 import pino from 'pino';
 import { Precheck } from '../../src/lib/precheck';
 import {

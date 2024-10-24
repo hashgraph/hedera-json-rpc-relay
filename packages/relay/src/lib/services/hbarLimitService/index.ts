@@ -28,7 +28,7 @@ import { EthAddressHbarSpendingPlanRepository } from '../../db/repositories/hbar
 import { IPAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { RequestDetails } from '../../types';
 import constants from '../../constants';
-import { Hbar } from '@hashgraph/sdk';
+import { Hbar } from 'kosi-sdk';
 
 export class HbarLimitService implements IHbarLimitService {
   static readonly TIER_LIMITS: Record<SubscriptionTier, Hbar> = {

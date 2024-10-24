@@ -19,8 +19,8 @@
  */
 
 import { Web3 } from '../index';
-import { Client } from '@hashgraph/sdk';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { Client } from 'kosi-sdk';
 
 export class Web3Impl implements Web3 {
   private client: Client;
