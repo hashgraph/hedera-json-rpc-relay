@@ -93,7 +93,9 @@ export class FilterService implements IFilterService {
       requestDetails,
       constants.FILTER.TTL,
     );
-    this.logger.trace(`${requestDetails.formattedRequestId} created filter with TYPE=${type}, params: ${params}`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} created filter with TYPE=${type}, params: ${params}`);
+    }
     return filterId;
   }
 
@@ -122,9 +124,11 @@ export class FilterService implements IFilterService {
     topics?: any[],
   ): Promise<string> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(
-      `${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} newFilter(fromBlock=${fromBlock}, toBlock=${toBlock}, address=${address}, topics=${topics})`,
+      );
+    }
     try {
       FilterService.requireFiltersEnabled();
 
@@ -151,7 +155,9 @@ export class FilterService implements IFilterService {
 
   async newBlockFilter(requestDetails: RequestDetails): Promise<string> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} newBlockFilter()`);
+    }
     try {
       FilterService.requireFiltersEnabled();
       return await this.createFilter(
@@ -168,7 +174,9 @@ export class FilterService implements IFilterService {
 
   public async uninstallFilter(filterId: string, requestDetails: RequestDetails): Promise<boolean> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(`${requestIdPrefix} uninstallFilter(${filterId})`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} uninstallFilter(${filterId})`);
+    }
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
@@ -183,12 +191,16 @@ export class FilterService implements IFilterService {
   }
 
   public newPendingTransactionFilter(requestDetails: RequestDetails): JsonRpcError {
-    this.logger.trace(`${requestDetails.formattedRequestId} newPendingTransactionFilter()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} newPendingTransactionFilter()`);
+    }
     return predefined.UNSUPPORTED_METHOD;
   }
 
   public async getFilterLogs(filterId: string, requestDetails: RequestDetails): Promise<Log[]> {
-    this.logger.trace(`${requestDetails.formattedRequestId} getFilterLogs(${filterId})`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} getFilterLogs(${filterId})`);
+    }
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;
@@ -208,7 +220,9 @@ export class FilterService implements IFilterService {
   }
 
   public async getFilterChanges(filterId: string, requestDetails: RequestDetails): Promise<string[] | Log[]> {
-    this.logger.trace(`${requestDetails.formattedRequestId} getFilterChanges(${filterId})`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} getFilterChanges(${filterId})`);
+    }
     FilterService.requireFiltersEnabled();
 
     const cacheKey = `${constants.CACHE_KEY.FILTERID}_${filterId}`;

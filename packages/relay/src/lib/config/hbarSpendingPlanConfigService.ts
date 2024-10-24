@@ -108,7 +108,9 @@ export class HbarSpendingPlanConfigService {
   private loadSpendingPlansConfig(): SpendingPlanConfig[] {
     const configPath = findConfig(this.SPENDING_PLANS_CONFIG_FILE);
     if (!configPath || !fs.existsSync(configPath)) {
-      this.logger.trace(`Configuration file not found at path "${configPath ?? this.SPENDING_PLANS_CONFIG_FILE}"`);
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(`Configuration file not found at path "${configPath ?? this.SPENDING_PLANS_CONFIG_FILE}"`);
+      }
       return [];
     }
     try {
@@ -205,9 +207,11 @@ export class HbarSpendingPlanConfigService {
     requestDetails: RequestDetails,
   ): Promise<void> {
     for (const planConfig of spendingPlanConfigs) {
-      this.logger.trace(
-        `Updating associations for HBAR spending plan '${planConfig.name}' with ID ${planConfig.id}...`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `Updating associations for HBAR spending plan '${planConfig.name}' with ID ${planConfig.id}...`,
+        );
+      }
       await this.deleteObsoleteEthAddressAssociations(planConfig, requestDetails);
       await this.deleteObsoleteIpAddressAssociations(planConfig, requestDetails);
       await this.updateEthAddressAssociations(planConfig, requestDetails);

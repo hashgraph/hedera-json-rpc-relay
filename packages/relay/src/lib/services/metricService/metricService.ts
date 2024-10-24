@@ -212,9 +212,11 @@ export default class MetricService {
     status,
     requestDetails,
   }: IExecuteQueryEventPayload): void => {
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} Capturing HBAR charged: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Capturing HBAR charged: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
+      );
+    }
 
     this.hbarLimiter.addExpense(cost, Date.now(), requestDetails);
     this.captureMetrics(executionMode, txConstructorName, status, cost, gasUsed, callerName, interactingEntity);

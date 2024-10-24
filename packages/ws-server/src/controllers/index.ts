@@ -71,7 +71,9 @@ const handleSendingRequestsToRelay = async ({
   logger,
   requestDetails,
 }: ISharedParams): Promise<IJsonRpcResponse> => {
-  logger.trace(`${requestDetails.formattedLogPrefix}: Submitting request=${JSON.stringify(request)} to relay.`);
+  if (logger.isLevelEnabled('trace')) {
+    logger.trace(`${requestDetails.formattedLogPrefix}: Submitting request=${JSON.stringify(request)} to relay.`);
+  }
   try {
     const resolvedParams = resolveParams(method, params);
     const [service, methodName] = method.split('_');
@@ -100,11 +102,13 @@ const handleSendingRequestsToRelay = async ({
     }
 
     if (!txRes) {
-      logger.trace(
-        `${requestDetails.formattedLogPrefix}: Fail to retrieve result for request=${JSON.stringify(
-          request,
-        )}. Result=${txRes}`,
-      );
+      if (logger.isLevelEnabled('trace')) {
+        logger.trace(
+          `${requestDetails.formattedLogPrefix}: Fail to retrieve result for request=${JSON.stringify(
+            request,
+          )}. Result=${txRes}`,
+        );
+      }
     }
 
     return jsonResp(request.id, null, txRes);

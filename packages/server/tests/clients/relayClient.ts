@@ -43,11 +43,13 @@ export default class RelayClient {
   async call(methodName: string, params: any[], requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const result = await this.provider.send(methodName, params);
-    this.logger.trace(
-      `${requestIdPrefix} [POST] to relay '${methodName}' with params [${JSON.stringify(
-        params,
-      )}] returned ${JSON.stringify(result)}`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} [POST] to relay '${methodName}' with params [${JSON.stringify(
+          params,
+        )}] returned ${JSON.stringify(result)}`,
+      );
+    }
     return result;
   }
 
@@ -86,9 +88,11 @@ export default class RelayClient {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     try {
       const res = await this.call(methodName, params, requestId);
-      this.logger.trace(
-        `${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestIdPrefix} [POST] to relay '${methodName}' with params [${params}] returned ${JSON.stringify(res)}`,
+        );
+      }
       Assertions.expectedError();
     } catch (e: any) {
       if (expectedRpcError.message.includes('execution reverted')) {
@@ -128,7 +132,9 @@ export default class RelayClient {
    */
   async getBalance(address: ethers.AddressLike, block: BlockTag = 'latest', requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-    this.logger.debug(`${requestIdPrefix} [POST] to relay eth_getBalance for address ${address}]`);
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(`${requestIdPrefix} [POST] to relay eth_getBalance for address ${address}]`);
+    }
     return this.provider.getBalance(address, block);
   }
 
@@ -139,7 +145,9 @@ export default class RelayClient {
    */
   async getAccountNonce(evmAddress: string, requestId?: string): Promise<number> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-    this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_getTransactionCount for address ${evmAddress}`);
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_getTransactionCount for address ${evmAddress}`);
+    }
     const nonce = await this.provider.send('eth_getTransactionCount', [evmAddress, 'latest']);
     return Number(nonce);
   }
@@ -153,7 +161,9 @@ export default class RelayClient {
    */
   async sendRawTransaction(signedTx, requestId?: string): Promise<string> {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-    this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_sendRawTransaction`);
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(`${requestIdPrefix} [POST] to relay for eth_sendRawTransaction`);
+    }
     return this.provider.send('eth_sendRawTransaction', [signedTx]);
   }
 

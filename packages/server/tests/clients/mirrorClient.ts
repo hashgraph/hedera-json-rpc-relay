@@ -65,7 +65,9 @@ export default class MirrorClient {
 
   async get(path: string, requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-    this.logger.debug(`${requestIdPrefix} [GET] MirrorNode ${path} endpoint`);
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(`${requestIdPrefix} [GET] MirrorNode ${path} endpoint`);
+    }
     return (await this.client.get(path)).data;
   }
 }

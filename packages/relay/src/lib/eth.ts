@@ -306,7 +306,9 @@ export class EthImpl implements Eth {
    * with the behavior of Infura.
    */
   accounts(requestDetails: RequestDetails): never[] {
-    this.logger.trace(`${requestDetails.formattedRequestId} accounts()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} accounts()`);
+    }
     return EthImpl.accounts;
   }
 
@@ -332,9 +334,11 @@ export class EthImpl implements Eth {
         ? constants.DEFAULT_FEE_HISTORY_MAX_RESULTS
         : Number(process.env.FEE_HISTORY_MAX_RESULTS);
 
-    this.logger.trace(
-      `${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`,
+      );
+    }
 
     try {
       const latestBlockNumber = await this.translateBlockTag(EthImpl.blockLatest, requestDetails);
@@ -487,9 +491,12 @@ export class EthImpl implements Eth {
     }
 
     if (_.isNil(networkFees)) {
-      this.logger.debug(
-        `${requestDetails.formattedRequestId} Mirror Node returned no network fees. Fallback to consensus node.`,
-      );
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestDetails.formattedRequestId} Mirror Node returned no network fees. Fallback to consensus node.`,
+        );
+      }
+
       networkFees = {
         fees: [
           {
@@ -517,7 +524,9 @@ export class EthImpl implements Eth {
    * Gets the most recent block number.
    */
   async blockNumber(requestDetails: RequestDetails): Promise<string> {
-    this.logger.trace(`${requestDetails.formattedRequestId} blockNumber()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} blockNumber()`);
+    }
     return await this.common.getLatestBlockNumber(requestDetails);
   }
 
@@ -525,7 +534,9 @@ export class EthImpl implements Eth {
    * Gets the most recent block number and timestamp.to which represents the block finality.
    */
   async blockNumberTimestamp(caller: string, requestDetails: RequestDetails): Promise<LatestBlockNumberTimestamp> {
-    this.logger.trace(`${requestDetails.formattedRequestId} blockNumber()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} blockNumber()`);
+    }
 
     const cacheKey = `${constants.CACHE_KEY.ETH_BLOCK_NUMBER}`;
 
@@ -550,7 +561,9 @@ export class EthImpl implements Eth {
    * `CHAIN_ID`.
    */
   chainId(requestDetails: RequestDetails): string {
-    this.logger.trace(`${requestDetails.formattedRequestId} chainId()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} chainId()`);
+    }
     return this.chain;
   }
 
@@ -573,9 +586,11 @@ export class EthImpl implements Eth {
         .inc();
     }
 
-    this.logger.trace(
-      `${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} estimateGas(transaction=${JSON.stringify(transaction)}, _blockParam=${_blockParam})`,
+      );
+    }
 
     try {
       const response = await this.estimateGasFromMirrorNode(transaction, requestDetails);
@@ -742,7 +757,9 @@ export class EthImpl implements Eth {
    * @throws Will throw an error if unable to retrieve the gas price.
    */
   async gasPrice(requestDetails: RequestDetails): Promise<string> {
-    this.logger.trace(`${requestDetails.formattedRequestId} eth_gasPrice`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} eth_gasPrice`);
+    }
     try {
       let gasPrice: number | undefined = await this.cacheService.getAsync(
         constants.CACHE_KEY.GAS_PRICE,
@@ -772,7 +789,9 @@ export class EthImpl implements Eth {
    * Gets whether this "Ethereum client" is a miner. We don't mine, so this always returns false.
    */
   async mining(requestDetails: RequestDetails): Promise<boolean> {
-    this.logger.trace(`${requestDetails.formattedRequestId} mining()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} mining()`);
+    }
     return false;
   }
 
@@ -780,7 +799,9 @@ export class EthImpl implements Eth {
    * TODO Needs docs, or be removed?
    */
   async submitWork(requestDetails: RequestDetails): Promise<boolean> {
-    this.logger.trace(`${requestDetails.formattedRequestId} submitWork()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} submitWork()`);
+    }
     return false;
   }
 
@@ -788,7 +809,9 @@ export class EthImpl implements Eth {
    * TODO Needs docs, or be removed?
    */
   async syncing(requestDetails: RequestDetails): Promise<boolean> {
-    this.logger.trace(`${requestDetails.formattedRequestId} syncing()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} syncing()`);
+    }
     return false;
   }
 
@@ -796,7 +819,9 @@ export class EthImpl implements Eth {
    * Always returns null. There are no uncles in Hedera.
    */
   async getUncleByBlockHashAndIndex(requestDetails: RequestDetails): Promise<null> {
-    this.logger.trace(`${requestDetails.formattedRequestId} getUncleByBlockHashAndIndex()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} getUncleByBlockHashAndIndex()`);
+    }
     return null;
   }
 
@@ -804,7 +829,9 @@ export class EthImpl implements Eth {
    * Always returns null. There are no uncles in Hedera.
    */
   async getUncleByBlockNumberAndIndex(requestDetails: RequestDetails): Promise<null> {
-    this.logger.trace(`${requestDetails.formattedRequestId} getUncleByBlockNumberAndIndex()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} getUncleByBlockNumberAndIndex()`);
+    }
     return null;
   }
 
@@ -812,7 +839,9 @@ export class EthImpl implements Eth {
    * Always returns '0x0'. There are no uncles in Hedera.
    */
   async getUncleCountByBlockHash(requestDetails: RequestDetails): Promise<string> {
-    this.logger.trace(`${requestDetails.formattedRequestId} getUncleCountByBlockHash()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} getUncleCountByBlockHash()`);
+    }
     return EthImpl.zeroHex;
   }
 
@@ -820,7 +849,9 @@ export class EthImpl implements Eth {
    * Always returns '0x0'. There are no uncles in Hedera.
    */
   async getUncleCountByBlockNumber(requestDetails: RequestDetails): Promise<string> {
-    this.logger.trace(`${requestDetails.formattedRequestId} getUncleCountByBlockNumber()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} getUncleCountByBlockNumber()`);
+    }
     return EthImpl.zeroHex;
   }
 
@@ -828,7 +859,9 @@ export class EthImpl implements Eth {
    * TODO Needs docs, or be removed?
    */
   async hashrate(requestDetails: RequestDetails): Promise<string> {
-    this.logger.trace(`${requestDetails.formattedRequestId} hashrate()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} hashrate()`);
+    }
     return EthImpl.zeroHex;
   }
 
@@ -836,7 +869,9 @@ export class EthImpl implements Eth {
    * Always returns UNSUPPORTED_METHOD error.
    */
   getWork(requestDetails: RequestDetails): JsonRpcError {
-    this.logger.trace(`${requestDetails.formattedRequestId} getWork()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} getWork()`);
+    }
     return predefined.UNSUPPORTED_METHOD;
   }
 
@@ -844,32 +879,44 @@ export class EthImpl implements Eth {
    * Unsupported methods always return UNSUPPORTED_METHOD error.
    */
   submitHashrate(requestDetails: RequestDetails): JsonRpcError {
-    this.logger.trace(`${requestDetails.formattedRequestId} submitHashrate()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} submitHashrate()`);
+    }
     return predefined.UNSUPPORTED_METHOD;
   }
 
   signTransaction(requestDetails: RequestDetails): JsonRpcError {
-    this.logger.trace(`${requestDetails.formattedRequestId} signTransaction()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} signTransaction()`);
+    }
     return predefined.UNSUPPORTED_METHOD;
   }
 
   sign(requestDetails: RequestDetails): JsonRpcError {
-    this.logger.trace(`${requestDetails.formattedRequestId} sign()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} sign()`);
+    }
     return predefined.UNSUPPORTED_METHOD;
   }
 
   sendTransaction(requestDetails: RequestDetails): JsonRpcError {
-    this.logger.trace(`${requestDetails.formattedRequestId} sendTransaction()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} sendTransaction()`);
+    }
     return predefined.UNSUPPORTED_METHOD;
   }
 
   protocolVersion(requestDetails: RequestDetails): JsonRpcError {
-    this.logger.trace(`${requestDetails.formattedRequestId} protocolVersion()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} protocolVersion()`);
+    }
     return predefined.UNSUPPORTED_METHOD;
   }
 
   coinbase(requestDetails: RequestDetails): JsonRpcError {
-    this.logger.trace(`${requestDetails.formattedRequestId} coinbase()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} coinbase()`);
+    }
     return predefined.UNSUPPORTED_METHOD;
   }
 
@@ -888,9 +935,11 @@ export class EthImpl implements Eth {
     blockNumberOrTagOrHash?: string | null,
   ): Promise<string> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(
-      `${requestIdPrefix} getStorageAt(address=${address}, slot=${slot}, blockNumberOrOrHashTag=${blockNumberOrTagOrHash})`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} getStorageAt(address=${address}, slot=${slot}, blockNumberOrOrHashTag=${blockNumberOrTagOrHash})`,
+      );
+    }
 
     let result = EthImpl.zeroHex32Byte; // if contract or slot not found then return 32 byte 0
 
@@ -944,7 +993,11 @@ export class EthImpl implements Eth {
   ): Promise<string> {
     const requestIdPrefix = requestDetails.formattedRequestId;
     const latestBlockTolerance = 1;
-    this.logger.trace(`${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTagOrHash})`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} getBalance(account=${account}, blockNumberOrTag=${blockNumberOrTagOrHash})`,
+      );
+    }
 
     let latestBlock: LatestBlockNumberTimestamp | null | undefined;
     // this check is required, because some tools like Metamask pass for parameter latest block, with a number (ex 0x30ea)
@@ -955,7 +1008,11 @@ export class EthImpl implements Eth {
       const blockNumberCached = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetBalance, requestDetails);
 
       if (blockNumberCached) {
-        this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`);
+        if (this.logger.isLevelEnabled('trace')) {
+          this.logger.trace(
+            `${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`,
+          );
+        }
         latestBlock = { blockNumber: blockNumberCached, timeStampTo: '0' };
       } else {
         latestBlock = await this.blockNumberTimestamp(EthImpl.ethGetBalance, requestDetails);
@@ -985,7 +1042,9 @@ export class EthImpl implements Eth {
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BALANCE}-${account}-${blockNumberOrTagOrHash}`;
     let cachedBalance = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetBalance, requestDetails);
     if (cachedBalance && this.shouldUseCacheForBalance(blockNumberOrTagOrHash)) {
-      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(cachedBalance)}`);
+      }
       return cachedBalance;
     }
 
@@ -1069,17 +1128,22 @@ export class EthImpl implements Eth {
       }
 
       if (!balanceFound) {
-        this.logger.debug(
-          `${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(
-            blockNumber,
-          )}(${blockNumberOrTagOrHash}), returning 0x0 balance`,
-        );
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(
+            `${requestIdPrefix} Unable to find account ${account} in block ${JSON.stringify(
+              blockNumber,
+            )}(${blockNumberOrTagOrHash}), returning 0x0 balance`,
+          );
+        }
+
         return EthImpl.zeroHex;
       }
 
       // save in cache the current balance for the account and blockNumberOrTag
       cachedBalance = numberTo0x(weibars);
-      this.logger.trace(`${requestIdPrefix} Value cached balance ${cachedBalance}`);
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(`${requestIdPrefix} Value cached balance ${cachedBalance}`);
+      }
       await this.cacheService.set(
         cacheKey,
         cachedBalance,
@@ -1111,14 +1175,18 @@ export class EthImpl implements Eth {
         `The value passed is not a valid blockHash/blockNumber/blockTag value: ${blockNumber}`,
       );
     }
-    this.logger.trace(`${requestIdPrefix} getCode(address=${address}, blockNumber=${blockNumber})`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} getCode(address=${address}, blockNumber=${blockNumber})`);
+    }
 
     // check for static precompile cases first before consulting nodes
     // this also account for environments where system entities were not yet exposed to the mirror node
     if (address === EthImpl.iHTSAddress) {
-      this.logger.trace(
-        `${requestIdPrefix} HTS precompile case, return ${EthImpl.invalidEVMInstruction} for byte code`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestIdPrefix} HTS precompile case, return ${EthImpl.invalidEVMInstruction} for byte code`,
+        );
+      }
       return EthImpl.invalidEVMInstruction;
     }
 
@@ -1139,7 +1207,9 @@ export class EthImpl implements Eth {
       ]);
       if (result) {
         if (result?.type === constants.TYPE_TOKEN) {
-          this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
+          if (this.logger.isLevelEnabled('trace')) {
+            this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
+          }
           return EthImpl.redirectBytecodeAddressReplace(address);
         } else if (result?.type === constants.TYPE_CONTRACT) {
           if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
@@ -1168,9 +1238,11 @@ export class EthImpl implements Eth {
       if (e instanceof SDKClientError) {
         // handle INVALID_CONTRACT_ID or CONTRACT_DELETED
         if (e.isInvalidContractId() || e.isContractDeleted()) {
-          this.logger.debug(
-            `${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.statusCode}`,
-          );
+          if (this.logger.isLevelEnabled('debug')) {
+            this.logger.debug(
+              `${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.statusCode}`,
+            );
+          }
           return EthImpl.emptyHex;
         }
 
@@ -1184,9 +1256,11 @@ export class EthImpl implements Eth {
           e.status._code === constants.PRECHECK_STATUS_ERROR_STATUS_CODES.INVALID_CONTRACT_ID ||
           e.status._code === constants.PRECHECK_STATUS_ERROR_STATUS_CODES.CONTRACT_DELETED
         ) {
-          this.logger.debug(
-            `${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.message}`,
-          );
+          if (this.logger.isLevelEnabled('debug')) {
+            this.logger.debug(
+              `${requestIdPrefix} Unable to find code for contract ${address} in block "${blockNumber}", returning 0x0, err code: ${e.message}`,
+            );
+          }
           return EthImpl.emptyHex;
         }
 
@@ -1212,7 +1286,9 @@ export class EthImpl implements Eth {
    */
   async getBlockByHash(hash: string, showDetails: boolean, requestDetails: RequestDetails): Promise<Block | null> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} getBlockByHash(hash=${hash}, showDetails=${showDetails})`);
+    }
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_HASH}_${hash}_${showDetails}`;
     let block = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetBlockByHash, requestDetails);
@@ -1238,7 +1314,9 @@ export class EthImpl implements Eth {
     requestDetails: RequestDetails,
   ): Promise<Block | null> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} getBlockByNumber(blockNum=${blockNumOrTag}, showDetails=${showDetails})`);
+    }
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_BLOCK_BY_NUMBER}_${blockNumOrTag}_${showDetails}`;
     let block = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetBlockByNumber, requestDetails);
@@ -1266,7 +1344,9 @@ export class EthImpl implements Eth {
    */
   async getBlockTransactionCountByHash(hash: string, requestDetails: RequestDetails): Promise<string | null> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByHash(hash=${hash}, showDetails=%o)`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByHash(hash=${hash}, showDetails=%o)`);
+    }
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_HASH}_${hash}`;
     const cachedResponse = await this.cacheService.getAsync(
@@ -1275,9 +1355,11 @@ export class EthImpl implements Eth {
       requestDetails,
     );
     if (cachedResponse) {
-      this.logger.debug(
-        `${requestIdPrefix} getBlockTransactionCountByHash returned cached response: ${cachedResponse}`,
-      );
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestIdPrefix} getBlockTransactionCountByHash returned cached response: ${cachedResponse}`,
+        );
+      }
       return cachedResponse;
     }
 
@@ -1302,7 +1384,11 @@ export class EthImpl implements Eth {
     requestDetails: RequestDetails,
   ): Promise<string | null> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(`${requestIdPrefix} getBlockTransactionCountByNumber(blockNum=${blockNumOrTag}, showDetails=%o)`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} getBlockTransactionCountByNumber(blockNum=${blockNumOrTag}, showDetails=%o)`,
+      );
+    }
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestDetails);
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_COUNT_BY_NUMBER}_${blockNum}`;
@@ -1312,9 +1398,11 @@ export class EthImpl implements Eth {
       requestDetails,
     );
     if (cachedResponse) {
-      this.logger.debug(
-        `${requestIdPrefix} getBlockTransactionCountByNumber returned cached response: ${cachedResponse}`,
-      );
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestIdPrefix} getBlockTransactionCountByNumber returned cached response: ${cachedResponse}`,
+        );
+      }
       return cachedResponse;
     }
 
@@ -1345,9 +1433,11 @@ export class EthImpl implements Eth {
     requestDetails: RequestDetails,
   ): Promise<Transaction | null> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(
-      `${requestIdPrefix} getTransactionByBlockHashAndIndex(hash=${blockHash}, index=${transactionIndex})`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} getTransactionByBlockHashAndIndex(hash=${blockHash}, index=${transactionIndex})`,
+      );
+    }
 
     try {
       return await this.getTransactionByBlockHashOrBlockNumAndIndex(
@@ -1376,9 +1466,11 @@ export class EthImpl implements Eth {
     requestDetails: RequestDetails,
   ): Promise<Transaction | null> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(
-      `${requestIdPrefix} getTransactionByBlockNumberAndIndex(blockNum=${blockNumOrTag}, index=${transactionIndex})`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} getTransactionByBlockNumberAndIndex(blockNum=${blockNumOrTag}, index=${transactionIndex})`,
+      );
+    }
     const blockNum = await this.translateBlockTag(blockNumOrTag, requestDetails);
 
     try {
@@ -1411,13 +1503,17 @@ export class EthImpl implements Eth {
     requestDetails: RequestDetails,
   ): Promise<string | JsonRpcError> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(`${requestIdPrefix} getTransactionCount(address=${address}, blockNumOrTag=${blockNumOrTag})`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} getTransactionCount(address=${address}, blockNumOrTag=${blockNumOrTag})`);
+    }
 
     // cache considerations for high load
     const cacheKey = `eth_getTransactionCount_${address}_${blockNumOrTag}`;
     let nonceCount = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetTransactionCount, requestDetails);
     if (nonceCount) {
-      this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(nonceCount)}`);
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(`${requestIdPrefix} returning cached value ${cacheKey}:${JSON.stringify(nonceCount)}`);
+      }
       return nonceCount;
     }
 
@@ -1465,9 +1561,11 @@ export class EthImpl implements Eth {
       const parsedTx = Precheck.parseTxIfNeeded(transaction);
       interactingEntity = parsedTx.to?.toString() || '';
       originatingAddress = parsedTx.from?.toString() || '';
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`,
+        );
+      }
 
       await this.precheck.sendRawTransactionCheck(parsedTx, networkGasPriceInWeiBars, requestDetails);
       return parsedTx;
@@ -1510,11 +1608,14 @@ export class EthImpl implements Eth {
             break;
           }
 
-          this.logger.trace(
-            `${
-              requestDetails.formattedRequestId
-            } Repeating retry to poll for updated account nonce. Count ${i} of ${mirrorNodeGetContractResultRetries}. Waiting ${this.mirrorNodeClient.getMirrorNodeRetryDelay()} ms before initiating a new request`,
-          );
+          if (this.logger.isLevelEnabled('trace')) {
+            this.logger.trace(
+              `${
+                requestDetails.formattedRequestId
+              } Repeating retry to poll for updated account nonce. Count ${i} of ${mirrorNodeGetContractResultRetries}. Waiting ${this.mirrorNodeClient.getMirrorNodeRetryDelay()} ms before initiating a new request`,
+            );
+          }
+
           await new Promise((r) => setTimeout(r, this.mirrorNodeClient.getMirrorNodeRetryDelay()));
         }
 
@@ -1654,7 +1755,9 @@ export class EthImpl implements Eth {
     );
     // log call data size
     const callDataSize = callData ? callData.length : 0;
-    this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}`);
+    }
     // metrics for selector
     if (callDataSize >= constants.FUNCTION_SELECTOR_CHAR_LENGTH) {
       this.ethExecutionsCounter
@@ -1692,7 +1795,9 @@ export class EthImpl implements Eth {
         result = await this.callMirrorNode(call, gas, call.value, blockNumberOrTag, requestDetails);
       }
 
-      this.logger.debug(`${requestIdPrefix} eth_call response: ${JSON.stringify(result)}`);
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(`${requestIdPrefix} eth_call response: ${JSON.stringify(result)}`);
+      }
 
       return result;
     } catch (e: any) {
@@ -1796,14 +1901,16 @@ export class EthImpl implements Eth {
     const requestIdPrefix = requestDetails.formattedRequestId;
     let callData: IContractCallRequest = {};
     try {
-      this.logger.debug(
-        `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" at blockBlockNumberOrTag: "${block}" using mirror-node.`,
-        call.to,
-        gas,
-        call.data,
-        call.from,
-        block,
-      );
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" at blockBlockNumberOrTag: "${block}" using mirror-node.`,
+          call.to,
+          gas,
+          call.data,
+          call.from,
+          block,
+        );
+      }
       callData = {
         ...call,
         ...(gas !== null ? { gas } : {}), // Add gas only if it's not null
@@ -1830,9 +1937,11 @@ export class EthImpl implements Eth {
         }
 
         if (e.isContractReverted()) {
-          this.logger.trace(
-            `${requestIdPrefix} mirror node eth_call request encountered contract revert. message: ${e.message}, details: ${e.detail}, data: ${e.data}`,
-          );
+          if (this.logger.isLevelEnabled('trace')) {
+            this.logger.trace(
+              `${requestIdPrefix} mirror node eth_call request encountered contract revert. message: ${e.message}, details: ${e.detail}, data: ${e.data}`,
+            );
+          }
           return predefined.CONTRACT_REVERT(e.detail || e.message, e.data);
         }
 
@@ -1841,11 +1950,13 @@ export class EthImpl implements Eth {
         if (e.isNotSupported() || e.isNotSupportedSystemContractOperaton()) {
           const errorTypeMessage =
             e.isNotSupported() || e.isNotSupportedSystemContractOperaton() ? 'Unsupported' : 'Unhandled';
-          this.logger.trace(
-            `${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node. details: ${JSON.stringify(
-              callData,
-            )} with error: "${e.message}"`,
-          );
+          if (this.logger.isLevelEnabled('trace')) {
+            this.logger.trace(
+              `${requestIdPrefix} ${errorTypeMessage} mirror node eth_call request, retrying with consensus node. details: ${JSON.stringify(
+                callData,
+              )} with error: "${e.message}"`,
+            );
+          }
           return await this.callConsensusNode(call, gas, requestDetails);
         }
       }
@@ -1874,13 +1985,15 @@ export class EthImpl implements Eth {
       gas = Number.parseInt(this.defaultGas);
     }
 
-    this.logger.debug(
-      `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using consensus-node.`,
-      call.to,
-      gas,
-      call.data,
-      call.from,
-    );
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(
+        `${requestIdPrefix} Making eth_call on contract ${call.to} with gas ${gas} and call data "${call.data}" from "${call.from}" using consensus-node.`,
+        call.to,
+        gas,
+        call.data,
+        call.from,
+      );
+    }
 
     // If "From" is distinct from blank, we check is a valid account
     if (call.from) {
@@ -1904,7 +2017,9 @@ export class EthImpl implements Eth {
       const cachedResponse = await this.cacheService.getAsync(cacheKey, EthImpl.ethCall, requestDetails);
 
       if (cachedResponse != undefined) {
-        this.logger.debug(`${requestIdPrefix} eth_call returned cached response: ${cachedResponse}`);
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(`${requestIdPrefix} eth_call returned cached response: ${cachedResponse}`);
+        }
         return cachedResponse;
       }
 
@@ -1986,7 +2101,9 @@ export class EthImpl implements Eth {
    */
   async getTransactionByHash(hash: string, requestDetails: RequestDetails): Promise<Transaction | null> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(`${requestIdPrefix} getTransactionByHash(hash=${hash})`, hash);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} getTransactionByHash(hash=${hash})`, hash);
+    }
 
     const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestDetails);
     if (contractResult === null || contractResult.hash === undefined) {
@@ -2001,7 +2118,9 @@ export class EthImpl implements Eth {
 
       // no tx found
       if (!syntheticLogs.length) {
-        this.logger.trace(`${requestIdPrefix} no tx for ${hash}`);
+        if (this.logger.isLevelEnabled('trace')) {
+          this.logger.trace(`${requestIdPrefix} no tx for ${hash}`);
+        }
         return null;
       }
 
@@ -2033,14 +2152,18 @@ export class EthImpl implements Eth {
    */
   async getTransactionReceipt(hash: string, requestDetails: RequestDetails): Promise<any> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} getTransactionReceipt(${hash})`);
+    }
 
     const cacheKey = `${constants.CACHE_KEY.ETH_GET_TRANSACTION_RECEIPT}_${hash}`;
     const cachedResponse = await this.cacheService.getAsync(cacheKey, EthImpl.ethGetTransactionReceipt, requestDetails);
     if (cachedResponse) {
-      this.logger.debug(
-        `${requestIdPrefix} getTransactionReceipt returned cached response: ${JSON.stringify(cachedResponse)}`,
-      );
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestIdPrefix} getTransactionReceipt returned cached response: ${JSON.stringify(cachedResponse)}`,
+        );
+      }
       return cachedResponse;
     }
 
@@ -2057,7 +2180,9 @@ export class EthImpl implements Eth {
 
       // no tx found
       if (!syntheticLogs.length) {
-        this.logger.trace(`${requestIdPrefix} no receipt for ${hash}`);
+        if (this.logger.isLevelEnabled('trace')) {
+          this.logger.trace(`${requestIdPrefix} no receipt for ${hash}`);
+        }
         return null;
       }
 
@@ -2080,7 +2205,9 @@ export class EthImpl implements Eth {
         type: null, // null from HAPI transactions
       };
 
-      this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
+      }
 
       await this.cacheService.set(
         cacheKey,
@@ -2131,7 +2258,9 @@ export class EthImpl implements Eth {
           : prepend0x(ASCIIToHex(receiptResponse.error_message));
       }
 
-      this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(`${requestIdPrefix} receipt for ${hash} found in block ${receipt.blockNumber}`);
+      }
 
       await this.cacheService.set(
         cacheKey,
@@ -2218,9 +2347,11 @@ export class EthImpl implements Eth {
     // With values over the gas limit, the call will fail with BUSY error so we cap it at 15_000_000
     const gas = Number.parseInt(gasString);
     if (gas > constants.MAX_GAS_PER_SEC) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.MAX_GAS_PER_SEC}`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} eth_call gas amount (${gas}) exceeds network limit, capping gas to ${constants.MAX_GAS_PER_SEC}`,
+        );
+      }
       return constants.MAX_GAS_PER_SEC;
     }
 
@@ -2249,9 +2380,11 @@ export class EthImpl implements Eth {
       });
     }
 
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} Synthetic transaction hashes will be populated in the block response`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Synthetic transaction hashes will be populated in the block response`,
+      );
+    }
 
     return transactionsArray;
   }
@@ -2506,7 +2639,9 @@ export class EthImpl implements Eth {
   }
 
   async maxPriorityFeePerGas(requestDetails: RequestDetails): Promise<string> {
-    this.logger.trace(`${requestDetails.formattedRequestId} maxPriorityFeePerGas()`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} maxPriorityFeePerGas()`);
+    }
     return EthImpl.zeroHex;
   }
 
