@@ -19,6 +19,8 @@
  */
 
 // External resources
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { BaseContract, ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
@@ -74,7 +76,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   let mirrorPrimaryAccount: ethers.Wallet;
   let mirrorSecondaryAccount: ethers.Wallet;
 
-  const CHAIN_ID = process.env.CHAIN_ID || 0x12a;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0x12a;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let reverterContract: ethers.Contract;
@@ -545,10 +547,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           });
 
           // value is processed only when eth_call goes through the mirror node
-          if (
-            process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE &&
-            process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'false'
-          ) {
+          if (!ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE')) {
             it('010 Should call msgValue', async function () {
               const callData = {
                 ...defaultCallData,
@@ -612,7 +611,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       };
 
       // Since we want the http status code, we need to perform the call using a client http request instead of using the relay instance directly
-      const testClientPort = process.env.E2E_SERVER_PORT || '7546';
+      const testClientPort = ConfigService.get('E2E_SERVER_PORT') || '7546';
       const testClient = Axios.create({
         baseURL: 'http://localhost:' + testClientPort,
         responseType: 'json' as const,
@@ -798,7 +797,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       let initialEthCallSelectorsAlwaysToConsensus: any, hrc719Contract: ethers.Contract;
 
       before(async () => {
-        initialEthCallSelectorsAlwaysToConsensus = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+        initialEthCallSelectorsAlwaysToConsensus = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS');
 
         hrc719Contract = await Utils.deployContract(
           HRC719ContractJson.abi,
@@ -808,11 +807,14 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       });
 
       after(() => {
-        process.env.ETH_CALL_CONSENSUS_SELECTORS = initialEthCallSelectorsAlwaysToConsensus;
+        ConfigServiceTestHelper.dynamicOverride(
+          'ETH_CALL_CONSENSUS_SELECTORS',
+          initialEthCallSelectorsAlwaysToConsensus,
+        );
       });
 
       it('should NOT allow eth_call to process IHRC719.isAssociated() method', async () => {
-        const selectorsList = process.env.ETH_CALL_CONSENSUS_SELECTORS;
+        const selectorsList = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS');
         expect(selectorsList).to.be.undefined;
 
         // If the selector for `isAssociated` is not included in `ETH_CALL_CONSENSUS_SELECTORS`, the request will fail with a `CALL_EXCEPTION` error code.
@@ -829,7 +831,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         );
 
         // Add the selector for isAssociated to ETH_CALL_CONSENSUS_SELECTORS to ensure isAssociated() passes
-        process.env.ETH_CALL_CONSENSUS_SELECTORS = JSON.stringify([isAssociatedSelector]);
+        ConfigServiceTestHelper.dynamicOverride('ETH_CALL_CONSENSUS_SELECTORS', JSON.stringify([isAssociatedSelector]));
         const isAssociatedResult = await hrc719Contract.isAssociated(tokenAddress);
         expect(isAssociatedResult).to.be.false; // associate status of the token with the caller
       });
@@ -2024,7 +2026,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   });
 
   describe('Batch Request Test Suite BATCH_REQUESTS_ENABLED = true', async function () {
-    overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: 'true' });
+    overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: true });
 
     it('Should return a batch of requests', async function () {
       const testAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId);

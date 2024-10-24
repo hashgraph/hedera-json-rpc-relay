@@ -23,6 +23,7 @@ config:
   GAS_PRICE_TINY_BAR_BUFFER: 10000000000
   HBAR_RATE_LIMIT_TINYBAR: 5000000000
   HBAR_RATE_LIMIT_DURATION: 60000
+  HBAR_RATE_LIMIT_BASIC: 5000000000
   # Valid options are `previewnet`, `testnet`, and `mainnet` for remote options. For local use {"127.0.01:50211":"0.0.3"}. For IPs use {"$IPv4_ADDR_1:$PORT_1":"$ACCOUNT_ID_1"} form
   HEDERA_NETWORK: ''
   INPUT_SIZE_LIMIT: 1

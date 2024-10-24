@@ -19,9 +19,7 @@
  */
 
 import Koa from 'koa';
-import path from 'path';
 import pino from 'pino';
-import dotenv from 'dotenv';
 import { v4 as uuid } from 'uuid';
 import websockify from 'koa-websocket';
 import { collectDefaultMetrics, Registry } from 'prom-client';
@@ -31,16 +29,16 @@ import WsMetricRegistry from './metrics/wsMetricRegistry';
 import ConnectionLimiter from './metrics/connectionLimiter';
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
-import { JsonRpcError, predefined, type Relay, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { JsonRpcError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
 import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
-  level: process.env.LOG_LEVEL || 'trace',
+  // @ts-ignore
+  level: ConfigService.get('LOG_LEVEL') || 'trace',
   transport: {
     target: 'pino-pretty',
     options: {
@@ -57,7 +55,7 @@ const mirrorNodeClient = relay.mirrorClient();
 const limiter = new ConnectionLimiter(logger, register);
 const wsMetricRegistry = new WsMetricRegistry(register);
 
-const pingInterval = Number(process.env.WS_PING_INTERVAL || 100000);
+const pingInterval = Number(ConfigService.get('WS_PING_INTERVAL') || 100000);
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx: Koa.Context) => {

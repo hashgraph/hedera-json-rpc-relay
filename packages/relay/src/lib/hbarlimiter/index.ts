@@ -47,9 +47,7 @@ export default class HbarLimit {
     this.remainingBudget = this.total;
     this.reset = currentDateNow + this.duration;
 
-    if (this.logger.isLevelEnabled('trace')) {
-      this.logger.trace(`remainingBudget=${this.remainingBudget} tℏ, resetTimestamp=${this.reset}`);
-    }
+    this.logger.trace(`remainingBudget=${this.remainingBudget} tℏ, resetTimestamp=${this.reset}`);
 
     const metricCounterName = 'rpc_relay_hbar_rate_limit';
     register.removeSingleMetric(metricCounterName);
@@ -98,11 +96,9 @@ export default class HbarLimit {
 
     // check if the caller is a whitelisted caller
     if (this.isAccountWhiteListed(originalCallerAddress)) {
-      if (this.logger.isLevelEnabled('trace')) {
-        this.logger.trace(
-          `${requestIdPrefix} HBAR rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
-        );
-      }
+      this.logger.trace(
+        `${requestIdPrefix} HBAR rate limit bypassed - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
+      );
       return false;
     }
 
@@ -117,11 +113,9 @@ export default class HbarLimit {
       );
       return true;
     } else {
-      if (this.logger.isLevelEnabled('trace')) {
-        this.logger.trace(
-          `${requestIdPrefix} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}.`,
-        );
-      }
+      this.logger.trace(
+        `${requestIdPrefix} HBAR rate limit not reached: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}.`,
+      );
       return false;
     }
   }
@@ -147,11 +141,9 @@ export default class HbarLimit {
     requestDetails: RequestDetails,
   ): boolean {
     if (this.isAccountWhiteListed(originalCallerAddress)) {
-      if (this.logger.isLevelEnabled('trace')) {
-        this.logger.trace(
-          `${requestDetails.formattedRequestId} Request bypasses the preemptive limit check - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
-        );
-      }
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Request bypasses the preemptive limit check - the caller is a whitelisted account: originalCallerAddress=${originalCallerAddress}`,
+      );
       return false;
     }
 
@@ -168,12 +160,9 @@ export default class HbarLimit {
       return true;
     }
 
-    if (this.logger.isLevelEnabled('trace')) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Request passes the preemptive limit check - the remaining HBAR budget is enough to accommodate the estimated transaction fee: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
-      );
-    }
-
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} Request passes the preemptive limit check - the remaining HBAR budget is enough to accommodate the estimated transaction fee: remainingBudget=${this.remainingBudget}, total=${this.total}, resetTimestamp=${this.reset}, callDataSize=${callDataSize}, estimatedTxFee=${estimatedTxFee}, exchangeRateInCents=${currentNetworkExchangeRateInCents}`,
+    );
     return false;
   }
 
@@ -191,11 +180,9 @@ export default class HbarLimit {
     this.remainingBudget -= cost;
     this.hbarLimitRemainingGauge.set(this.remainingBudget);
 
-    if (this.logger.isLevelEnabled('trace')) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost}, remainingBudget=${this.remainingBudget}, resetTimestamp=${this.reset}`,
-      );
-    }
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost}, remainingBudget=${this.remainingBudget}, resetTimestamp=${this.reset}`,
+    );
   }
 
   /**
@@ -281,10 +268,8 @@ export default class HbarLimit {
   private resetLimiter(currentDateNow: number, requestDetails: RequestDetails) {
     this.reset = currentDateNow + this.duration;
     this.remainingBudget = this.total;
-    if (this.logger.isLevelEnabled('trace')) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget= ${this.remainingBudget}, newResetTimestamp= ${this.reset}`,
-      );
-    }
+    this.logger.trace(
+      `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget= ${this.remainingBudget}, newResetTimestamp= ${this.reset}`,
+    );
   }
 }

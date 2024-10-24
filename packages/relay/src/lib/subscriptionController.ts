@@ -24,6 +24,7 @@ import crypto from 'crypto';
 import constants from './constants';
 import { Poller } from './poller';
 import { generateRandomHex } from '../formatters';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { Counter, Histogram, Registry } from 'prom-client';
 import { Subs } from '../index';
 
@@ -33,7 +34,7 @@ export interface Subscriber {
   endTimer: () => void;
 }
 
-const CACHE_TTL = Number(process.env.WS_CACHE_TTL) || 20000;
+const CACHE_TTL = Number(ConfigService.get('WS_CACHE_TTL')) || 20000;
 
 export class SubscriptionController implements Subs {
   private poller: Poller;
@@ -42,7 +43,6 @@ export class SubscriptionController implements Subs {
   private cache;
   private activeSubscriptionHistogram: Histogram;
   private resultsSentToSubscribersCounter: Counter;
-  private useTheSameSubscriptionForTheSameEvent: boolean;
 
   constructor(poller: Poller, logger: Logger, register: Registry) {
     this.poller = poller;
@@ -78,9 +78,6 @@ export class SubscriptionController implements Subs {
       registers: [register],
       labelNames: ['subId', 'tag'],
     });
-
-    // Default: true
-    this.useTheSameSubscriptionForTheSameEvent = process.env.WS_SAME_SUB_FOR_SAME_EVENT?.toLowerCase() !== 'false';
   }
 
   createHash(data) {
@@ -104,7 +101,7 @@ export class SubscriptionController implements Subs {
       this.subscriptions[tag] = [];
     }
 
-    if (this.useTheSameSubscriptionForTheSameEvent) {
+    if (ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT') ?? true) {
       // Check if the connection is already subscribed to this event
       const existingSub = this.subscriptions[tag].find((sub) => sub.connection.id === connection.id);
       if (existingSub) {

@@ -47,7 +47,7 @@
     "acceptancetest:api_batch3": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@api-batch-3' --exit",
     "acceptancetest:erc20": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@erc20' --exit",
     "acceptancetest:ratelimiter": "nyc ts-mocha packages/ws-server/tests/acceptance/index.spec.ts -g '@web-socket-ratelimiter' --exit && ts-mocha packages/server/tests/acceptance/index.spec.ts -g '@ratelimiter' --exit",
-    "acceptancetest:hbarlimiter": "HBAR_RATE_LIMIT_TINYBAR=3000000000 nyc ts-mocha packages/server/tests/acceptance/index.spec.ts -g '@hbarlimiter' --exit",
+    "acceptancetest:hbarlimiter": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts -g '@hbarlimiter' --exit",
     "acceptancetest:tokencreate": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokencreate' --exit",
     "acceptancetest:tokenmanagement": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokenmanagement' --exit",
     "acceptancetest:htsprecompilev1": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompilev1' --exit",
@@ -79,7 +79,8 @@
     "test": "npx lerna run test",
     "openrpctest": "ts-mocha packages/relay/tests/lib/openrpc.spec.ts --exit",
     "bump-version": "SEM_VER=${npm_config_semver} SNAPSHOT=${npm_config_snapshot} node scripts/.bump-version.js",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "print-env": "npx lerna exec --scope @hashgraph/json-rpc-config-service -- npm run print-env"
   },
   "dependencies": {
     "@ethereumjs/rlp": "^5.0.2",

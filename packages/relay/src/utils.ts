@@ -20,6 +20,7 @@
 
 import { PrivateKey } from '@hashgraph/sdk';
 import constants from './lib/constants';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import crypto from 'crypto';
 
 export class Utils {
@@ -34,7 +35,8 @@ export class Utils {
     //   buffered gas price = 126 + 12.6 = 138.6 <--- invalid tinybars
     gasPrice +=
       Math.round(
-        (gasPrice / constants.TINYBAR_TO_WEIBAR_COEF) * (Number(process.env.GAS_PRICE_PERCENTAGE_BUFFER || 0) / 100),
+        (gasPrice / constants.TINYBAR_TO_WEIBAR_COEF) *
+          (Number(ConfigService.get('GAS_PRICE_PERCENTAGE_BUFFER') || 0) / 100),
       ) * constants.TINYBAR_TO_WEIBAR_COEF;
 
     return gasPrice;
@@ -45,7 +47,7 @@ export class Utils {
    * @returns PrivateKey
    */
   public static createPrivateKeyBasedOnFormat(operatorMainKey: string): PrivateKey {
-    switch (process.env.OPERATOR_KEY_FORMAT) {
+    switch (ConfigService.get('OPERATOR_KEY_FORMAT')) {
       case 'DER':
       case undefined:
       case null:
@@ -55,7 +57,7 @@ export class Utils {
       case 'HEX_ECDSA':
         return PrivateKey.fromStringECDSA(operatorMainKey);
       default:
-        throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${process.env.OPERATOR_KEY_FORMAT}`);
+        throw new Error(`Invalid OPERATOR_KEY_FORMAT provided: ${ConfigService.get('OPERATOR_KEY_FORMAT')}`);
     }
   }
 
@@ -67,4 +69,42 @@ export class Utils {
   public static generateRequestId = (): string => {
     return crypto.randomUUID();
   };
+
+  /**
+   * Estimates the transaction fees for file create and file append transactions based on the provided
+   * call data size, file chunk size, and current network exchange rate.
+   *
+   * @param {number} callDataSize - The size of the call data in bytes.
+   * @param {number} fileChunkSize - The size of each file chunk in bytes.
+   * @param {number} currentNetworkExchangeRateInCents - The current network exchange rate in cents.
+   * @returns {number} The estimated transaction fee in tinybars.
+   */
+  public static estimateFileTransactionsFee(
+    callDataSize: number,
+    fileChunkSize: number,
+    currentNetworkExchangeRateInCents: number,
+  ): number {
+    const fileCreateTransactions = 1;
+    const fileCreateFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_CREATE_PER_5_KB;
+
+    // The first chunk goes in with FileCreateTransaciton, the rest are FileAppendTransactions
+    const fileAppendTransactions = Math.floor(callDataSize / fileChunkSize) - 1;
+    const lastFileAppendChunkSize = callDataSize % fileChunkSize;
+
+    const fileAppendFeeInCents = constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_PER_5_KB;
+    const lastFileAppendChunkFeeInCents =
+      constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_BASE_FEE +
+      lastFileAppendChunkSize * constants.NETWORK_FEES_IN_CENTS.FILE_APPEND_RATE_PER_BYTE;
+
+    const totalTxFeeInCents =
+      fileCreateTransactions * fileCreateFeeInCents +
+      fileAppendFeeInCents * fileAppendTransactions +
+      lastFileAppendChunkFeeInCents;
+
+    const estimatedTxFee = Math.round(
+      (totalTxFeeInCents / currentNetworkExchangeRateInCents) * constants.HBAR_TO_TINYBAR_COEF,
+    );
+
+    return estimatedTxFee;
+  }
 }

@@ -25,6 +25,7 @@ import { Registry } from 'prom-client';
 import { RedisCacheError } from '../../errors/RedisCacheError';
 import constants from '../../constants';
 import { IRedisCacheClient } from './IRedisCacheClient';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '../../types';
 import { Utils } from '../../../utils';
 
@@ -39,7 +40,8 @@ export class RedisCache implements IRedisCacheClient {
    */
   private readonly options = {
     // Max time to live in ms, for items before they are considered stale.
-    ttl: Number.parseInt(process.env.CACHE_TTL ?? constants.CACHE_TTL.ONE_HOUR.toString()),
+    // @ts-ignore
+    ttl: Number.parseInt(ConfigService.get('CACHE_TTL') ?? constants.CACHE_TTL.ONE_HOUR.toString()),
   };
 
   /**
@@ -76,9 +78,11 @@ export class RedisCache implements IRedisCacheClient {
     this.logger = logger;
     this.register = register;
 
-    const redisUrl = process.env.REDIS_URL!;
-    const reconnectDelay = parseInt(process.env.REDIS_RECONNECT_DELAY_MS || '1000');
+    const redisUrl = ConfigService.get('REDIS_URL')!;
+    // @ts-ignore
+    const reconnectDelay = parseInt(ConfigService.get('REDIS_RECONNECT_DELAY_MS') || '1000');
     this.client = createClient({
+      // @ts-ignore
       url: redisUrl,
       socket: {
         reconnectStrategy: (retries: number) => {

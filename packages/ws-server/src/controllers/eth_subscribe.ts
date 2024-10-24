@@ -18,12 +18,13 @@
  *
  */
 
-import { predefined, Relay } from '@hashgraph/json-rpc-relay';
+import { predefined, Relay } from '@hashgraph/json-rpc-relay/dist';
 import { validateSubscribeEthLogsParams } from '../utils/validators';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
 import { constructValidLogSubscriptionFilter, getMultipleAddressesEnabled } from '../utils/utils';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { ISharedParams } from './index';
 import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
@@ -73,8 +74,7 @@ const handleEthSubscribeNewHeads = (
   logger: Logger,
   requestDetails: RequestDetails,
 ): IJsonRpcResponse => {
-  const wsNewHeadsEnabled =
-    typeof process.env.WS_NEW_HEADS_ENABLED !== 'undefined' ? process.env.WS_NEW_HEADS_ENABLED === 'true' : true;
+  const wsNewHeadsEnabled = ConfigService.get('WS_NEW_HEADS_ENABLED');
 
   if (!wsNewHeadsEnabled) {
     logger.warn(

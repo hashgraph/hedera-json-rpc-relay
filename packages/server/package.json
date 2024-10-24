@@ -1,11 +1,12 @@
 {
   "name": "@hashgraph/json-rpc-server",
-  "version": "0.58.0-SNAPSHOT",
+  "version": "0.59.0-SNAPSHOT",
   "description": "Hedera Hashgraph Ethereum JSON RPC server. Accepts requests for Ethereum JSON RPC 2.0 APIs",
   "main": "dist/index.js",
   "keywords": [],
   "author": "Hedera Smart Contracts Team",
   "dependencies": {
+    "@hashgraph/json-rpc-config-service": "file:../config-service",
     "@hashgraph/json-rpc-relay": "file:../relay",
     "co-body": "6.2.0",
     "dotenv": "^16.0.0",

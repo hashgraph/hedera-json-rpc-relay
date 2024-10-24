@@ -23,6 +23,7 @@ import { Gauge, Registry } from 'prom-client';
 import { ICacheClient } from './ICacheClient';
 import constants from '../../constants';
 import LRUCache, { LimitedByCount, LimitedByTTL } from 'lru-cache';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '../../types';
 import { Utils } from '../../../utils';
 
@@ -39,9 +40,11 @@ export class LocalLRUCache implements ICacheClient {
    */
   private readonly options: LimitedByCount & LimitedByTTL = {
     // The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
-    max: Number.parseInt(process.env.CACHE_MAX ?? constants.CACHE_MAX.toString()),
+    // @ts-ignore
+    max: Number.parseInt(ConfigService.get('CACHE_MAX') ?? constants.CACHE_MAX.toString()),
     // Max time to live in ms, for items before they are considered stale.
-    ttl: Number.parseInt(process.env.CACHE_TTL ?? constants.CACHE_TTL.ONE_HOUR.toString()),
+    // @ts-ignore
+    ttl: Number.parseInt(ConfigService.get('CACHE_TTL') ?? constants.CACHE_TTL.ONE_HOUR.toString()),
   };
 
   /**

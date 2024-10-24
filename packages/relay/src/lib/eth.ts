@@ -37,6 +37,7 @@ import { Block, Log, Transaction, Transaction1559 } from './model';
 import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import { CacheService } from './services/cacheService/cacheService';
 import { CommonService, FilterService } from './services/ethService';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { IDebugService } from './services/debugService/IDebugService';
 import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
 import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
@@ -166,8 +167,8 @@ export class EthImpl implements Eth {
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
   );
-  private readonly estimateGasThrows = process.env.ESTIMATE_GAS_THROWS
-    ? process.env.ESTIMATE_GAS_THROWS === 'true'
+  private readonly estimateGasThrows = ConfigService.get('ESTIMATE_GAS_THROWS')
+    ? ConfigService.get('ESTIMATE_GAS_THROWS')
     : true;
 
   private readonly ethGasPRiceCacheTtlMs = parseNumericEnvVar(
@@ -313,10 +314,8 @@ export class EthImpl implements Eth {
   }
 
   private getEthFeeHistoryFixedFee(): boolean {
-    if (process.env.ETH_FEE_HISTORY_FIXED === undefined) {
-      return true;
-    }
-    return process.env.ETH_FEE_HISTORY_FIXED === 'true';
+    // @ts-ignore
+    return ConfigService.get('ETH_FEE_HISTORY_FIXED') ?? true;
   }
 
   /**
@@ -329,10 +328,9 @@ export class EthImpl implements Eth {
     requestDetails: RequestDetails,
   ): Promise<IFeeHistory | JsonRpcError> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    const maxResults =
-      process.env.TEST === 'true'
-        ? constants.DEFAULT_FEE_HISTORY_MAX_RESULTS
-        : Number(process.env.FEE_HISTORY_MAX_RESULTS);
+    const maxResults = ConfigService.get('TEST')
+      ? constants.DEFAULT_FEE_HISTORY_MAX_RESULTS
+      : Number(ConfigService.get('FEE_HISTORY_MAX_RESULTS'));
 
     if (this.logger.isLevelEnabled('trace')) {
       this.logger.trace(
@@ -727,7 +725,7 @@ export class EthImpl implements Eth {
       transaction.gas = parseInt(transaction.gas.toString());
     }
     if (!transaction.from && transaction.value && (transaction.value as number) > 0) {
-      if (process.env.OPERATOR_KEY_FORMAT === 'HEX_ECDSA') {
+      if (ConfigService.get('OPERATOR_KEY_FORMAT') === 'HEX_ECDSA') {
         transaction.from = this.hapiService.getMainClientInstance().operatorPublicKey?.toEvmAddress();
       } else {
         const operatorId = this.hapiService.getMainClientInstance().operatorAccountId!.toString();
@@ -1621,7 +1619,7 @@ export class EthImpl implements Eth {
 
         if (!accountNonce) {
           this.logger.warn(`${requestDetails.formattedRequestId} Cannot find updated account nonce.`);
-          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONT_NONCE error.`);
+          throw predefined.INTERNAL_ERROR(`Cannot find updated account nonce for WRONG_NONCE error.`);
         }
 
         if (parsedTx.nonce > accountNonce) {
@@ -1778,12 +1776,12 @@ export class EthImpl implements Eth {
     // When eth_call is invoked with a selector listed in specialSelectors, it will be routed through the consensus node, regardless of ETH_CALL_DEFAULT_TO_CONSENSUS_NODE.
     // note: this feature is a workaround for when a feature is supported by consensus node but not yet by mirror node.
     // Follow this ticket https://github.com/hashgraph/hedera-json-rpc-relay/issues/2984 to revisit and remove special selectors.
-    const specialSelectors: string[] = JSON.parse(process.env.ETH_CALL_CONSENSUS_SELECTORS || '[]');
-
+    // @ts-ignore
+    const specialSelectors: string[] = JSON.parse(ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS') || '[]');
     const shouldForceToConsensus = selector !== '' && specialSelectors.includes(selector);
 
     // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node
-    const shouldDefaultToConsensus = process.env.ETH_CALL_DEFAULT_TO_CONSENSUS_NODE === 'true';
+    const shouldDefaultToConsensus = ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE');
 
     let result: string | JsonRpcError = '';
     try {

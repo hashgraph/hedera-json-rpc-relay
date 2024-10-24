@@ -26,6 +26,7 @@ import {
   getMultipleAddressesEnabled,
   getWsBatchRequestsEnabled,
   handleConnectionClose,
+  paramRearrangementMap,
   resolveParams,
   sendToClient,
 } from '../../src/utils/utils';
@@ -255,13 +256,13 @@ describe('Utilities unit tests', async function () {
   });
 
   describe('getMultipleAddressesEnabled', () => {
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: 'true' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: true }, () => {
       it('should return true', () => {
         expect(getMultipleAddressesEnabled()).to.be.true;
       });
     });
 
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: 'false' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_MULTIPLE_ADDRESSES_ENABLED: false }, () => {
       it('should return false', () => {
         expect(getMultipleAddressesEnabled()).to.be.false;
       });
@@ -275,13 +276,13 @@ describe('Utilities unit tests', async function () {
   });
 
   describe('getWsBatchRequestsEnabled', () => {
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: 'true' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: true }, () => {
       it('should return true', () => {
         expect(getWsBatchRequestsEnabled()).to.be.true;
       });
     });
 
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: 'false' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_ENABLED: false }, () => {
       it('should return false', () => {
         expect(getWsBatchRequestsEnabled()).to.be.false;
       });
@@ -295,13 +296,13 @@ describe('Utilities unit tests', async function () {
   });
 
   describe('getBatchRequestsMaxSize', () => {
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: '50' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: 50 }, () => {
       it('should return 50', () => {
         expect(getBatchRequestsMaxSize()).to.equal(50);
       });
     });
 
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: '0' }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: 0 }, () => {
       it('should return 0', () => {
         expect(getBatchRequestsMaxSize()).to.equal(0);
       });
@@ -310,6 +311,58 @@ describe('Utilities unit tests', async function () {
     WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: undefined }, () => {
       it('should return 20', () => {
         expect(getBatchRequestsMaxSize()).to.equal(20);
+      });
+    });
+  });
+
+  describe('paramRearrangementMap', () => {
+    const requestDetails = new RequestDetails({ ipAddress: '0.0.0.0', requestId: 'test-id' });
+    const specialMethodNames = [`chainId`, `estimateGas`, `getStorageAt`, `newFilter`, `default`];
+
+    const mockResolvedParams = {
+      chainId: [],
+      estimateGas: [
+        {
+          to: '0xD7d454ea421FA3E98c988c2A33b5292C70A43b1E',
+          data: '0x18160ddd',
+        },
+        'latest',
+      ],
+      getStorageAt: ['0xd7d454ea421fa3e98c988c2a33b5292c70a43b1e', '0x0', 'latest'],
+      newFilter: [
+        '0x0',
+        'latest',
+        ['0xf72ea4E404618E9DCcA79748236910887be9e2bd'],
+        ['0x25d719d88a4512dd76c7442b910a83360845505894eb444ef299409e180f8fb9'],
+      ],
+      default: ['0x7cb9357e', '0x7cb9357e', '0x00abv'],
+    };
+
+    const expectedRearrangedParams = {
+      chainId: [requestDetails],
+      estimateGas: [...mockResolvedParams.estimateGas, requestDetails],
+      getStorageAt: [
+        mockResolvedParams.getStorageAt[0],
+        mockResolvedParams.getStorageAt[1],
+        requestDetails,
+        mockResolvedParams.getStorageAt[2],
+      ],
+      newFilter: [
+        mockResolvedParams.newFilter[0],
+        mockResolvedParams.newFilter[1],
+        requestDetails,
+        mockResolvedParams.newFilter[2],
+        mockResolvedParams.newFilter[3],
+      ],
+      default: [...mockResolvedParams.default, requestDetails],
+    };
+
+    specialMethodNames.forEach((methodName) => {
+      it(`Should correctly rearrange parameters for ${methodName}`, () => {
+        const rearrangeParamsFn = paramRearrangementMap[methodName];
+        const rearrangedParamsArray = rearrangeParamsFn(mockResolvedParams[methodName], requestDetails);
+        const expectedResult = expectedRearrangedParams[methodName];
+        expect(rearrangedParamsArray).to.deep.eq(expectedResult);
       });
     });
   });

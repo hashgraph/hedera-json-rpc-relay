@@ -22,6 +22,8 @@ import { expect } from 'chai';
 import { Utils } from '../../src/utils';
 import constants from '../../src/lib/constants';
 import { overrideEnvsInMochaDescribe } from '../helpers';
+import { estimateFileTransactionsFee } from '../helpers';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 describe('Utils', () => {
   describe('addPercentageBufferToGasPrice', () => {
@@ -49,5 +51,16 @@ describe('Utils', () => {
         });
       });
     }
+  });
+
+  describe('estimateFileTransactionsFee', () => {
+    const callDataSize = 6000;
+    const mockedExchangeRateInCents: number = 12;
+    const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+    it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
+      const result = Utils.estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
+      const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
+      expect(result).to.eq(expectedResult);
+    });
   });
 });

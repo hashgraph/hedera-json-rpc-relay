@@ -18,24 +18,27 @@
  *
  */
 
-import path from 'path';
-import dotenv from 'dotenv';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { expect } from 'chai';
 import { Registry } from 'prom-client';
 import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from '../helpers';
+import { getRequestId, mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from '../helpers';
 import pino from 'pino';
 import { ethers } from 'ethers';
 import { MirrorNodeClientError, predefined } from '../../src';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+
+const registry = new Registry();
 import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { BigNumber } from 'bignumber.js';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
+const logger = pino();
+const noTransactions = '?transactions=false';
+const requestDetails = new RequestDetails({ requestId: getRequestId(), ipAddress: '0.0.0.0' });
 
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
@@ -59,7 +62,8 @@ describe('MirrorNodeClient', async function () {
     });
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
-      process.env.MIRROR_NODE_URL || '',
+      // @ts-ignore
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -135,7 +139,8 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`restUrl` is exposed and correct', async () => {
-    const domain = (process.env.MIRROR_NODE_URL || '').replace(/^https?:\/\//, '');
+    // @ts-ignore
+    const domain = (ConfigService.get('MIRROR_NODE_URL') || '').replace(/^https?:\/\//, '');
     const prodMirrorNodeInstance = new MirrorNodeClient(
       domain,
       logger.child({ name: `mirror-node` }),
@@ -162,14 +167,14 @@ describe('MirrorNodeClient', async function () {
   withOverriddenEnvsInMochaTest({ MIRROR_NODE_URL_HEADER_X_API_KEY: 'abc123iAManAPIkey' }, () => {
     it('Can provide custom x-api-key header', async () => {
       const mirrorNodeInstanceOverridden = new MirrorNodeClient(
-        process.env.MIRROR_NODE_URL || '',
+        ConfigService.get('MIRROR_NODE_URL') || '',
         logger.child({ name: `mirror-node` }),
         registry,
         cacheService,
       );
       const axiosHeaders = mirrorNodeInstanceOverridden.getMirrorNodeRestInstance().defaults.headers.common;
       expect(axiosHeaders).has.property('x-api-key');
-      expect(axiosHeaders['x-api-key']).to.eq(process.env.MIRROR_NODE_URL_HEADER_X_API_KEY);
+      expect(axiosHeaders['x-api-key']).to.eq(ConfigService.get('MIRROR_NODE_URL_HEADER_X_API_KEY'));
     });
   });
 

@@ -17,14 +17,12 @@
  * limitations under the License.
  *
  */
-import path from 'path';
-import dotenv from 'dotenv';
+
 import { expect, use } from 'chai';
 import sinon from 'sinon';
 import * as _ from 'lodash';
 import chaiAsPromised from 'chai-as-promised';
-
-import { Eth, predefined } from '../../../src';
+import { predefined } from '../../../src/lib/errors/JsonRpcError';
 import { defaultContractResults, defaultDetailedContractResults } from '../../helpers';
 import { Transaction } from '../../../src/lib/model';
 import { SDKClient } from '../../../src/lib/clients';
@@ -48,7 +46,6 @@ import MockAdapter from 'axios-mock-adapter';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
-dotenv.config({ path: path.resolve(__dirname, '../test.env') });
 use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;

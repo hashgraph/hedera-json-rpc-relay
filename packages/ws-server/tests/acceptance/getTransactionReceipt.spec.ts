@@ -22,17 +22,18 @@
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
 import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@web-socket-batch-2 eth_getTransactionReceipt', async function () {
   const METHOD_NAME = 'eth_getTransactionReceipt';
-  const CHAIN_ID = process.env.CHAIN_ID || '0x12a';
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
   const INVALID_PARAMS = [
     [],
     [''],

@@ -23,10 +23,10 @@ import WsMetricRegistry from '../metrics/wsMetricRegistry';
 import ConnectionLimiter from '../metrics/connectionLimiter';
 import { Validator } from '@hashgraph/json-rpc-server/dist/validator';
 import { handleEthSubscribe, handleEthUnsubscribe } from './eth_subscribe';
-import { JsonRpcError, predefined, Relay } from '@hashgraph/json-rpc-relay';
+import { JsonRpcError, predefined, Relay } from '@hashgraph/json-rpc-relay/dist';
 import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
-import { resolveParams, validateJsonRpcRequest, verifySupportedMethod } from '../utils/utils';
+import { paramRearrangementMap, resolveParams, validateJsonRpcRequest, verifySupportedMethod } from '../utils/utils';
 import {
   InvalidRequest,
   IPRateLimitExceeded,
@@ -78,16 +78,8 @@ const handleSendingRequestsToRelay = async ({
     const resolvedParams = resolveParams(method, params);
     const [service, methodName] = method.split('_');
 
-    // Rearrange the parameters for certain methods, since not everywhere requestDetails is last aparameter
-    const paramRearrangementMap: { [key: string]: (params: any[], requestDetails: RequestDetails) => any[] } = {
-      chainId: (_, requestDetails) => [requestDetails],
-      estimateGas: (params, requestDetails) => [...params, null, requestDetails],
-      getStorageAt: (params, requestDetails) => [params[0], params[1], requestDetails, params[2]],
-      default: (params, requestDetails) => [...params, requestDetails],
-    };
-
-    const rearrangeParams = paramRearrangementMap[methodName] || paramRearrangementMap['default'];
-    const rearrangedParams = rearrangeParams(resolvedParams, requestDetails);
+    const rearrangeParamsFn = paramRearrangementMap[methodName] || paramRearrangementMap['default'];
+    const rearrangedParamsArray = rearrangeParamsFn(resolvedParams, requestDetails);
 
     // Call the relay method with the resolved parameters.
     // Method will be validated by "verifySupportedMethod" before reaching this point.
@@ -96,9 +88,9 @@ const handleSendingRequestsToRelay = async ({
       txRes = await relay
         .eth()
         .filterService()
-        [methodName](...rearrangedParams);
+        [methodName](...rearrangedParamsArray);
     } else {
-      txRes = await relay[service]()[methodName](...rearrangedParams);
+      txRes = await relay[service]()[methodName](...rearrangedParamsArray);
     }
 
     if (!txRes) {
