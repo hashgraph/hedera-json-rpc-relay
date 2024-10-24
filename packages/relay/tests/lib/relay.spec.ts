@@ -93,21 +93,22 @@ describe('RelayImpl', () => {
       sinon.restore();
     });
 
-    describe('when a configuration file is provided', () => {
-      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: 'spendingPlansConfig.example.json' });
+    describe('when a configuration file is provided', async () => {
+      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'spendingPlansConfig.example.json' });
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // wait for the environment to load
 
       it('should populate preconfigured spending plans successfully', async () => {
         expect((relay = new RelayImpl(logger, register))).to.not.throw;
-
         expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
         await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).to.not.be.rejected;
         expect(loggerSpy.info.calledWith('Pre-configured spending plans populated successfully')).to.be.true;
       });
     });
 
-    describe('when no configuration file is provided', () => {
+    describe('when no configuration file is provided', async () => {
       const nonExistingFile = 'nonExistingFile.json';
-      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: nonExistingFile });
+      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: nonExistingFile });
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       it('should not throw an error', async () => {
         expect((relay = new RelayImpl(logger, register))).to.not.throw;
@@ -118,10 +119,11 @@ describe('RelayImpl', () => {
       });
     });
 
-    describe('when a configuration file with invalid JSON is provided', () => {
+    describe('when a configuration file with invalid JSON is provided', async () => {
       let path: string | null;
 
-      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: 'spendingPlansConfig.example.json' });
+      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'spendingPlansConfig.example.json' });
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       beforeEach(() => {
         path = findConfig('spendingPlansConfig.example.json');

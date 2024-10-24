@@ -34,26 +34,9 @@ import findConfig from 'find-config';
 import { HbarSpendingPlanConfigService } from '../../../src/lib/config/hbarSpendingPlanConfigService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
+import { ConfigServiceTestHelper } from '@hashgraph/json-rpc-config-service/tests/configServiceTestHelper';
 
 chai.use(chaiAsPromised);
-
-// Dynamically import the service **after** setting the environment variable
-async function reloadHBarSPendingPlanConfigService(
-  hbarSpendingPlanConfigService: HbarSpendingPlanConfigService,
-  logger,
-  hbarSpendingPlanRepository: HbarSpendingPlanRepository,
-  ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
-  ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
-) {
-  const { HbarSpendingPlanConfigService } = await import('../../../src/lib/config/hbarSpendingPlanConfigService');
-  hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
-    logger,
-    hbarSpendingPlanRepository,
-    ethAddressHbarSpendingPlanRepository,
-    ipAddressHbarSpendingPlanRepository,
-  );
-  return hbarSpendingPlanConfigService;
-}
 
 describe('HbarSpendingPlanConfigService', function () {
   const logger = pino();
@@ -64,7 +47,7 @@ describe('HbarSpendingPlanConfigService', function () {
   const path = findConfig(spendingPlansConfigFile);
   const spendingPlansConfig = JSON.parse(fs.readFileSync(path!, 'utf-8')) as SpendingPlanConfig[];
 
-  const tests = (isSharedCacheEnabled: boolean) => {
+  const tests = (isSharedCacheEnabled: boolean, isSpendingPlansConfigFile: boolean) => {
     let cacheService: CacheService;
     let hbarSpendingPlanRepository: HbarSpendingPlanRepository;
     let ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository;
@@ -77,7 +60,11 @@ describe('HbarSpendingPlanConfigService', function () {
     let ethAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<EthAddressHbarSpendingPlanRepository>;
     let ipAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<IPAddressHbarSpendingPlanRepository>;
 
-    overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: spendingPlansConfigFile });
+    if (isSpendingPlansConfigFile) {
+      ConfigServiceTestHelper.dynamicOverride('HBAR_SPENDING_PLANS_CONFIG', spendingPlansConfigFile);
+    } else {
+      ConfigServiceTestHelper.dynamicOverride('HBAR_SPENDING_PLANS_CONFIG', JSON.stringify(spendingPlansConfig));
+    }
 
     before(function () {
       cacheService = new CacheService(logger, registry);
@@ -111,18 +98,24 @@ describe('HbarSpendingPlanConfigService', function () {
 
     describe('populatePreconfiguredSpendingPlans', function () {
       describe('negative scenarios', function () {
-        it('should not throw an error if the configuration file is not found', async function () {
-          sinon.stub(fs, 'existsSync').returns(false);
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).not.to.be.rejected;
-        });
+        if (isSpendingPlansConfigFile) {
+          overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'non-existent-file.json' });
+        }
+        // Only relevant when the configuration is a file
+        if (isSpendingPlansConfigFile) {
+          it('should throw an error if the configuration file is not found', async function () {
+            await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
+              /Failed to load HBAR_SPENDING_PLAN. JSON parse error: /,
+            );
+          });
 
-        it('should throw an error if configuration file is not a parsable JSON', async function () {
-          sinon.stub(fs, 'readFileSync').returns('invalid JSON');
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Failed to parse JSON from ${path}: Unexpected token 'i', "invalid JSON" is not valid JSON`,
-          );
-        });
-
+          it('should throw an error if configuration file is not a parsable JSON', async function () {
+            // this.sandbox.stub(fs, 'readFileSync').returns('invalid JSON');
+            await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
+              /Failed to load HBAR_SPENDING_PLAN. JSON parse error: /,
+            );
+          });
+        }
         it('should throw an error if the configuration file has entry without ID', async function () {
           const invalidPlan = {
             name: 'Plan without ID',
@@ -520,114 +513,21 @@ describe('HbarSpendingPlanConfigService', function () {
         });
       });
     });
-
-    describe('Environment variable defined spending plans', function () {
-      const spendingPlansConfigExample = [
-        {
-          id: 'c758c095-342c-4607-9db5-867d7e90ab9d',
-          name: 'partner name',
-          ethAddresses: ['0x123', '0x124'],
-          ipAddresses: ['127.0.0.1', '128.0.0.1'],
-          subscriptionTier: 'PRIVILEGED',
-        },
-        {
-          id: 'a68488b0-6f7d-44a0-87c1-774ad64615f2',
-          name: 'some other partner that has given us only eth addresses',
-          ethAddresses: ['0x125', '0x126'],
-          subscriptionTier: 'PRIVILEGED',
-        },
-        {
-          id: 'af13d6ed-d676-4d33-8b9d-cf05d1ad7134',
-          name: 'supported project name',
-          ethAddresses: ['0x127', '0x128'],
-          ipAddresses: ['129.0.0.1', '130.0.0.1'],
-          subscriptionTier: 'EXTENDED',
-        },
-        {
-          id: '7f665aa3-6b73-41d7-bf9b-92d04cdab96b',
-          name: 'some other supported project that has given us only ip addresses',
-          ipAddresses: ['131.0.0.1', '132.0.0.1'],
-          subscriptionTier: 'EXTENDED',
-        },
-      ];
-
-      describe('when HBAR_SPENDING_PLANS_CONFIG_JSON is not set', function () {
-        overrideEnvsInMochaDescribe({
-          HBAR_SPENDING_PLANS_CONFIG_JSON: undefined,
-        });
-
-        it('should not throw an error if the environment variable is not set', async function () {
-          expect(process.env.HBAR_SPENDING_PLANS_CONFIG_JSON).to.be.undefined;
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).not.to.be.rejected;
-        });
-      });
-
-      describe('when HBAR_SPENDING_PLANS_CONFIG_JSON is invalid JSON', function () {
-        before(function () {
-          delete process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
-          process.env.HBAR_SPENDING_PLANS_CONFIG_JSON = 'invalid JSON';
-        });
-
-        after(function () {
-          delete process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
-        });
-
-        it('should throw an error if environment variable contains invalid JSON', async function () {
-          hbarSpendingPlanConfigService = await reloadHBarSPendingPlanConfigService(
-            hbarSpendingPlanConfigService,
-            logger,
-            hbarSpendingPlanRepository,
-            ethAddressHbarSpendingPlanRepository,
-            ipAddressHbarSpendingPlanRepository,
-          );
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            /Failed to parse JSON from HBAR_SPENDING_PLANS_CONFIG_JSON: /,
-          );
-        });
-      });
-
-      describe('when HBAR_SPENDING_PLANS_CONFIG_JSON is valid JSON', function () {
-        before(function () {
-          process.env.HBAR_SPENDING_PLANS_CONFIG_JSON = JSON.stringify(spendingPlansConfigExample);
-        });
-
-        after(function () {
-          delete process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
-        });
-
-        it('should populate the database with pre-configured spending plans from the HBAR_SPENDING_PLANS_CONFIG_JSON environment variable', async function () {
-          hbarSpendingPlanConfigService = await reloadHBarSPendingPlanConfigService(
-            hbarSpendingPlanConfigService,
-            logger,
-            hbarSpendingPlanRepository,
-            ethAddressHbarSpendingPlanRepository,
-            ipAddressHbarSpendingPlanRepository,
-          );
-          await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
-
-          spendingPlansConfigExample.forEach(({ id, name, subscriptionTier }) => {
-            sinon.assert.calledWith(
-              hbarSpendingPlanRepositorySpy.create,
-              subscriptionTier,
-              emptyRequestDetails,
-              neverExpireTtl,
-              id,
-            );
-            sinon.assert.calledWith(
-              loggerSpy.info,
-              `Created HBAR spending plan "${name}" with ID "${id}" and subscriptionTier "${subscriptionTier}"`,
-            );
-          });
-        });
-      });
-    });
   };
 
-  describe('with shared cache enabled', function () {
-    tests(true);
+  describe('with shared cache enabled and spending plan config file', function () {
+    tests(true, true);
   });
 
-  describe('with shared cache disabled', function () {
-    tests(false);
+  describe('with shared cache disabled and spending plan config variable', function () {
+    tests(false, false);
+  });
+
+  describe('with shared cache enabled and spending plan config variable', function () {
+    tests(true, false);
+  });
+
+  describe('with shared cache disabled and spending plan config file', function () {
+    tests(false, true);
   });
 });
