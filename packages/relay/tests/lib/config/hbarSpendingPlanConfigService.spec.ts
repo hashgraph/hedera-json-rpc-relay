@@ -55,7 +55,7 @@ async function reloadHBarSpendingPlanConfigService(
   return hbarSpendingPlanConfigService;
 }
 
-describe.only('HbarSpendingPlanConfigService', function () {
+describe('HbarSpendingPlanConfigService', function () {
   const logger = pino();
   const registry = new Registry();
   const neverExpireTtl = -1;
