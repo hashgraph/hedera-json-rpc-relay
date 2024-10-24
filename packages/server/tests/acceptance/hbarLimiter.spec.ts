@@ -22,6 +22,7 @@ import fs from 'fs';
 import { expect } from 'chai';
 import { resolve } from 'path';
 import { Logger } from 'pino';
+import findConfig from 'find-config';
 import { Registry } from 'prom-client';
 import dotenv, { config } from 'dotenv';
 import { BaseContract, ethers } from 'ethers';
@@ -37,6 +38,7 @@ import MetricsClient from '../clients/metricsClient';
 import { AliasAccount } from '../types/AliasAccount';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { SpendingPlanConfig } from '@hashgraph/json-rpc-relay/src/lib/types/spendingPlanConfig';
 import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hbarLimitService';
 import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
 import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
@@ -521,63 +523,42 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           };
 
           describe('given a valid JSON file with pre-configured spending plans', async () => {
-            const expectedNonBasicPlans = {
-              PRIVILEGED_ALPHA: {
-                id: 'c758c095-342c-4607-9db5-867d7e90ab9d',
-                name: 'PRIVILEGED_ALPHA',
-                ethAddresses: ['0x7d102fe71af42790fe31b126c1f49766376ca2b5'],
-                ipAddresses: ['127.0.0.1'],
-                subscriptionTier: 'PRIVILEGED',
-              },
-              PRIVILEGED_BETA: {
-                id: 'a68488b0-6f7d-44a0-87c1-774ad64615f2',
-                name: 'PRIVILEGED_BETA',
-                ethAddresses: ['0x40183ec818c1826114767391989ff2eaebc2b91e'],
-                subscriptionTier: 'PRIVILEGED',
-              },
-            };
-
-            const expectedNonBasicEvmAddresses = {
-              PRIVILEGED_ALPHA: ['0x7d102fe71af42790fe31b126c1f49766376ca2b5'],
-              PRIVILEGED_BETA: ['0x40183ec818c1826114767391989ff2eaebc2b91e'],
-            };
-
-            const expectedPrivilegedIpAddresses = {
-              PRIVILEGED_ALPHA: ['127.0.0.1'],
-            };
+            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE') as string;
+            const configPath = findConfig(SPENDING_PLANS_CONFIG_FILE);
+            const rawData = fs.readFileSync(configPath!, 'utf-8');
+            const expectedNonBasicPlans2 = JSON.parse(rawData) as SpendingPlanConfig[];
 
             it('Should successfully populate all pre-configured spending plans', async () => {
-              Object.values(expectedNonBasicPlans).forEach(async (plan) => {
-                const hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.id, requestDetails);
-                expect(hbarSpendingPlan.id).to.eq(plan.id);
+              expectedNonBasicPlans2.forEach(async (expectedPlan) => {
+                const hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
+                  expectedPlan.id,
+                  requestDetails,
+                );
                 expect(hbarSpendingPlan.active).to.be.true;
-                expect(hbarSpendingPlan.subscriptionTier).to.eq(plan.subscriptionTier);
-              });
-            });
+                expect(hbarSpendingPlan.id).to.eq(expectedPlan.id);
+                expect(hbarSpendingPlan.subscriptionTier).to.eq(expectedPlan.subscriptionTier);
 
-            it('Should successfully link all pre-configured spending plans to correct NON-BASIC EVM addresses', async () => {
-              Object.entries(expectedNonBasicEvmAddresses).forEach(([key, evmAddresses]) => {
-                evmAddresses.forEach(async (evmAddress) => {
-                  const associatedPlanByEVMAddress = await ethAddressSpendingPlanRepository.findByAddress(
-                    evmAddress,
-                    requestDetails,
-                  );
-                  expect(associatedPlanByEVMAddress.planId).to.eq(expectedNonBasicPlans[key].id);
-                  expect(associatedPlanByEVMAddress.ethAddress).to.eq(evmAddress);
-                });
-              });
-            });
+                if (expectedPlan.ethAddresses) {
+                  expectedPlan.ethAddresses.forEach(async (evmAddress) => {
+                    const associatedPlanByEVMAddress = await ethAddressSpendingPlanRepository.findByAddress(
+                      evmAddress,
+                      requestDetails,
+                    );
+                    expect(associatedPlanByEVMAddress.planId).to.eq(expectedPlan.id);
+                    expect(associatedPlanByEVMAddress.ethAddress).to.eq(evmAddress);
+                  });
+                }
 
-            it('Should successfully link all pre-configured spending plans to correct NON-BASIC IP addresses', async () => {
-              Object.entries(expectedPrivilegedIpAddresses).forEach(([key, ipAddresses]) => {
-                ipAddresses.forEach(async (ipAddress) => {
-                  const associatedPlanByIpAddress = await ipSpendingPlanRepository.findByAddress(
-                    ipAddress,
-                    requestDetails,
-                  );
-                  expect(associatedPlanByIpAddress.planId).to.eq(expectedNonBasicPlans[key].id);
-                  expect(associatedPlanByIpAddress.ipAddress).to.eq(ipAddress);
-                });
+                if (expectedPlan.ipAddresses) {
+                  expectedPlan.ipAddresses.forEach(async (ipAddress) => {
+                    const associatedPlanByIpAddress = await ipSpendingPlanRepository.findByAddress(
+                      ipAddress,
+                      requestDetails,
+                    );
+                    expect(associatedPlanByIpAddress.planId).to.eq(expectedPlan.id);
+                    expect(associatedPlanByIpAddress.ipAddress).to.eq(ipAddress);
+                  });
+                }
               });
             });
           });
