@@ -99,6 +99,7 @@ describe('HBAR Rate Limit Service', function () {
 
   it('should initialize metrics correctly', () => {
     expect(hbarLimitService['hbarLimitCounter']).to.be.instanceOf(Counter);
+    expect(hbarLimitService['activeUsersPerLimitPeriodCounter']).to.be.instanceOf(Counter);
     expect(hbarLimitService['hbarLimitRemainingGauge']).to.be.instanceOf(Gauge);
     Object.values(SubscriptionTier).forEach((tier) => {
       expect(hbarLimitService['uniqueSpendingPlansCounter'][tier]).to.be.instanceOf(Counter);
@@ -171,6 +172,16 @@ describe('HBAR Rate Limit Service', function () {
       await hbarLimitService.resetLimiter(requestDetails);
       const resetDate = hbarLimitService['reset'];
       expect(new Date(resetDate)).to.deep.equal(new Date(expectedDate));
+    });
+
+    it('should reset the active user counter', async function () {
+      const activeUsersPerLimitPeriodCounterSpy = sinon.spy(hbarLimitService['hbarLimitCounter'], 'inc');
+      hbarLimitService['hbarLimitCounter'].inc(1);
+      sinon.assert.calledOnceWithExactly(activeUsersPerLimitPeriodCounterSpy, 1);
+
+      expect(hbarLimitService['hbarLimitCounter'].get()).to.eventually.eq(1);
+      await hbarLimitService.resetLimiter(requestDetails);
+      expect(hbarLimitService['hbarLimitCounter'].get()).to.eventually.eq(0);
     });
   });
 
@@ -692,7 +703,7 @@ describe('HBAR Rate Limit Service', function () {
       sinon.assert.calledOnceWithExactly(incUniqueSpendingPlansCounterSpy, 1);
     };
 
-    it('should create a basic spending plan if none exists', async function () {
+    it('should create a basic spending plan if none exists and increment the active users counter with 1', async function () {
       const newSpendingPlan = createSpendingPlan(mockPlanId);
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
       ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(
@@ -704,6 +715,7 @@ describe('HBAR Rate Limit Service', function () {
 
       expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
       expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
+      expect(hbarLimitService['hbarLimitCounter'].get()).to.eventually.eq(1);
     });
 
     it('should add the expense to the spending plan and update the remaining budget when both ethAddress and ipAddress are provided', async function () {
