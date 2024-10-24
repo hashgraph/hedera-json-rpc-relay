@@ -110,21 +110,18 @@ export class HbarSpendingPlanConfigService {
    */
   private loadSpendingPlansConfig(): SpendingPlanConfig[] {
     const configPath = findConfig(this.SPENDING_PLANS_CONFIG);
-    if (!configPath || !fs.existsSync(configPath)) {
-      try {
-        if (this.SPENDING_PLANS_CONFIG) {
-          return JSON.parse(this.SPENDING_PLANS_CONFIG) as SpendingPlanConfig[];
-        }
-        throw new Error('SPENDING_PLANS_CONFIG is undefined');
-      } catch (error: any) {
-        throw new Error(`Failed to parse JSON from HBAR_SPENDING_PLANS_CONFIG: ${error.message}`);
-      }
+    if (!this.SPENDING_PLANS_CONFIG) {
+      throw new Error('SPENDING_PLANS_CONFIG is undefined');
     }
     try {
-      const rawData = fs.readFileSync(configPath, 'utf-8');
-      return JSON.parse(rawData) as SpendingPlanConfig[];
+      // Try to parse the value as a file path
+      if (configPath && fs.existsSync(configPath)) {
+        return JSON.parse(fs.readFileSync(configPath, 'utf-8')) as SpendingPlanConfig[];
+      }
+      // If it's not a valid file path, try to parse it directly as JSON
+      return JSON.parse(this.SPENDING_PLANS_CONFIG) as SpendingPlanConfig[];
     } catch (error: any) {
-      throw new Error(`Failed to parse JSON from ${configPath}: ${error.message}`);
+      throw new Error(`Failed to parse SPENDING_PLANS_CONFIG: ${error.message}`);
     }
   }
 

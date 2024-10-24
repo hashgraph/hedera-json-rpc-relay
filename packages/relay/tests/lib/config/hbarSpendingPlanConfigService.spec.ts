@@ -110,9 +110,6 @@ describe('HbarSpendingPlanConfigService', function () {
     });
 
     describe('populatePreconfiguredSpendingPlans', function () {
-      // overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: spendingPlansConfig });
-      // overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: spendingPlansConfigFile });
-
       describe('negative scenarios', function () {
         it('should not throw an error if the configuration file is not found', async function () {
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).not.to.be.rejected;
@@ -121,7 +118,7 @@ describe('HbarSpendingPlanConfigService', function () {
         it('should throw an error if configuration file is not a parsable JSON', async function () {
           sinon.stub(fs, 'readFileSync').returns('invalid JSON');
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Failed to parse JSON from ${path}: Unexpected token 'i', "invalid JSON" is not valid JSON`,
+            `Failed to parse SPENDING_PLANS_CONFIG: Unexpected token 'i', "invalid JSON" is not valid JSON`,
           );
         });
 
@@ -568,7 +565,6 @@ describe('HbarSpendingPlanConfigService', function () {
         overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'invalid JSON' });
 
         it('should throw an error if environment variable contains invalid JSON', async function () {
-          console.log('process.env.HBAR_SPENDING_PLANS_CONFIG', process.env.HBAR_SPENDING_PLANS_CONFIG);
           hbarSpendingPlanConfigService = await reloadHBarSpendingPlanConfigService(
             hbarSpendingPlanConfigService,
             logger,
@@ -577,7 +573,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ipAddressHbarSpendingPlanRepository,
           );
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            /Failed to parse JSON from HBAR_SPENDING_PLANS_CONFIG: /,
+            /Failed to parse SPENDING_PLANS_CONFIG: /,
           );
         });
       });
