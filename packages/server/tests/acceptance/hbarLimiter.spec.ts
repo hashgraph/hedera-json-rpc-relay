@@ -519,6 +519,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               mockTTL,
             );
 
+            const plan = await ethAddressSpendingPlanRepository.findByAddress(aliasAccount.address, requestDetails);
+            expect(plan.ethAddress).to.eq(aliasAccount.address);
+            expect(plan.planId).to.eq(hbarSpendingPlan.id);
+            const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.planId, requestDetails);
+            expect(spendingPlan.active).to.be.true;
+            expect(spendingPlan.amountSpent).to.eq(0);
+            expect(spendingPlan.subscriptionTier).to.eq(SubscriptionTier.PRIVILEGED);
+
             return { aliasAccount, hbarSpendingPlan };
           };
 
@@ -576,21 +584,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             afterEach(async () => {
               await hbarSpendingPlanRepository.delete(privilegedHbarSpendingPlan.id, requestDetails);
               await ethAddressSpendingPlanRepository.delete(priviledgedEvmAccount.address, requestDetails);
-            });
-
-            it('Should successfully add spending plans', async () => {
-              const plan = await ethAddressSpendingPlanRepository.findByAddress(
-                priviledgedEvmAccount.address,
-                requestDetails,
-              );
-
-              expect(plan.ethAddress).to.eq(priviledgedEvmAccount.address);
-              expect(plan.planId).to.eq(privilegedHbarSpendingPlan.id);
-
-              const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.planId, requestDetails);
-              expect(spendingPlan.active).to.be.true;
-              expect(spendingPlan.amountSpent).to.eq(0);
-              expect(spendingPlan.subscriptionTier).to.eq(SubscriptionTier.PRIVILEGED);
             });
 
             it('Should increase the amount spent by the privileged spending plan', async () => {
