@@ -49,23 +49,16 @@ export class HbarSpendingPlanConfigService {
   private readonly TTL: number = -1;
 
   /**
-   * The name of the spending plans configuration file. Defaults to `spendingPlansConfig.json`.
+   * The environment variable that contains the spending plans configuration.
+   * It can be either a file path or a JSON string.
    *
    * @type {string}
    * @private
    */
-  // @ts-ignore
-  private readonly SPENDING_PLANS_CONFIG_FILE: string =
-    ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE') || 'spendingPlansConfig.json';
-
-  /**
-   * The environment variable that contains the spending plans configuration JSON.
-   *
-   * @type {string}
-   * @private
-   */
-  private readonly SPENDING_PLANS_CONFIG_JSON: string | undefined = process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
-
+  private readonly SPENDING_PLANS_CONFIG: string | undefined =
+    typeof ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') === 'string'
+      ? (ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') as string)
+      : undefined;
   /**
    * Creates an instance of `HbarSpendingPlanConfigService`.
    *
@@ -116,18 +109,16 @@ export class HbarSpendingPlanConfigService {
    * @private
    */
   private loadSpendingPlansConfig(): SpendingPlanConfig[] {
-    if (this.SPENDING_PLANS_CONFIG_JSON) {
-      try {
-        return JSON.parse(this.SPENDING_PLANS_CONFIG_JSON) as SpendingPlanConfig[];
-      } catch (error: any) {
-        throw new Error(`Failed to parse JSON from HBAR_SPENDING_PLANS_CONFIG_JSON: ${error.message}`);
-      }
-    }
-
-    const configPath = findConfig(this.SPENDING_PLANS_CONFIG_FILE);
+    const configPath = findConfig(this.SPENDING_PLANS_CONFIG);
     if (!configPath || !fs.existsSync(configPath)) {
-      this.logger.trace(`Configuration file not found at path "${configPath ?? this.SPENDING_PLANS_CONFIG_FILE}"`);
-      return [];
+      try {
+        if (this.SPENDING_PLANS_CONFIG) {
+          return JSON.parse(this.SPENDING_PLANS_CONFIG) as SpendingPlanConfig[];
+        }
+        throw new Error('SPENDING_PLANS_CONFIG is undefined');
+      } catch (error: any) {
+        throw new Error(`Failed to parse JSON from HBAR_SPENDING_PLANS_CONFIG: ${error.message}`);
+      }
     }
     try {
       const rawData = fs.readFileSync(configPath, 'utf-8');

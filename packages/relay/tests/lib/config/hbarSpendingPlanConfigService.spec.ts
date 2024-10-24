@@ -38,7 +38,7 @@ import { Registry } from 'prom-client';
 chai.use(chaiAsPromised);
 
 // Dynamically import the service **after** setting the environment variable
-async function reloadHBarSPendingPlanConfigService(
+async function reloadHBarSpendingPlanConfigService(
   hbarSpendingPlanConfigService: HbarSpendingPlanConfigService,
   logger,
   hbarSpendingPlanRepository: HbarSpendingPlanRepository,
@@ -55,7 +55,7 @@ async function reloadHBarSPendingPlanConfigService(
   return hbarSpendingPlanConfigService;
 }
 
-describe('HbarSpendingPlanConfigService', function () {
+describe.only('HbarSpendingPlanConfigService', function () {
   const logger = pino();
   const registry = new Registry();
   const neverExpireTtl = -1;
@@ -77,7 +77,7 @@ describe('HbarSpendingPlanConfigService', function () {
     let ethAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<EthAddressHbarSpendingPlanRepository>;
     let ipAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<IPAddressHbarSpendingPlanRepository>;
 
-    overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: spendingPlansConfigFile });
+    overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: spendingPlansConfigFile });
 
     before(function () {
       cacheService = new CacheService(logger, registry);
@@ -110,9 +110,11 @@ describe('HbarSpendingPlanConfigService', function () {
     });
 
     describe('populatePreconfiguredSpendingPlans', function () {
+      // overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: spendingPlansConfig });
+      // overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: spendingPlansConfigFile });
+
       describe('negative scenarios', function () {
         it('should not throw an error if the configuration file is not found', async function () {
-          sinon.stub(fs, 'existsSync').returns(false);
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).not.to.be.rejected;
         });
 
@@ -525,7 +527,7 @@ describe('HbarSpendingPlanConfigService', function () {
       const spendingPlansConfigExample = [
         {
           id: 'c758c095-342c-4607-9db5-867d7e90ab9d',
-          name: 'partner name',
+          name: 'A different partner name',
           ethAddresses: ['0x123', '0x124'],
           ipAddresses: ['127.0.0.1', '128.0.0.1'],
           subscriptionTier: 'PRIVILEGED',
@@ -551,29 +553,23 @@ describe('HbarSpendingPlanConfigService', function () {
         },
       ];
 
-      describe('when HBAR_SPENDING_PLANS_CONFIG_JSON is not set', function () {
+      describe('when HBAR_SPENDING_PLANS_CONFIG is not set', function () {
         overrideEnvsInMochaDescribe({
-          HBAR_SPENDING_PLANS_CONFIG_JSON: undefined,
+          HBAR_SPENDING_PLANS_CONFIG: undefined,
         });
 
         it('should not throw an error if the environment variable is not set', async function () {
-          expect(process.env.HBAR_SPENDING_PLANS_CONFIG_JSON).to.be.undefined;
+          expect(process.env.HBAR_SPENDING_PLANS_CONFIG).to.be.undefined;
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).not.to.be.rejected;
         });
       });
 
-      describe('when HBAR_SPENDING_PLANS_CONFIG_JSON is invalid JSON', function () {
-        before(function () {
-          delete process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
-          process.env.HBAR_SPENDING_PLANS_CONFIG_JSON = 'invalid JSON';
-        });
-
-        after(function () {
-          delete process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
-        });
+      describe('when HBAR_SPENDING_PLANS_CONFIG is invalid JSON', function () {
+        overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'invalid JSON' });
 
         it('should throw an error if environment variable contains invalid JSON', async function () {
-          hbarSpendingPlanConfigService = await reloadHBarSPendingPlanConfigService(
+          console.log('process.env.HBAR_SPENDING_PLANS_CONFIG', process.env.HBAR_SPENDING_PLANS_CONFIG);
+          hbarSpendingPlanConfigService = await reloadHBarSpendingPlanConfigService(
             hbarSpendingPlanConfigService,
             logger,
             hbarSpendingPlanRepository,
@@ -581,22 +577,16 @@ describe('HbarSpendingPlanConfigService', function () {
             ipAddressHbarSpendingPlanRepository,
           );
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            /Failed to parse JSON from HBAR_SPENDING_PLANS_CONFIG_JSON: /,
+            /Failed to parse JSON from HBAR_SPENDING_PLANS_CONFIG: /,
           );
         });
       });
 
-      describe('when HBAR_SPENDING_PLANS_CONFIG_JSON is valid JSON', function () {
-        before(function () {
-          process.env.HBAR_SPENDING_PLANS_CONFIG_JSON = JSON.stringify(spendingPlansConfigExample);
-        });
+      describe('when HBAR_SPENDING_PLANS_CONFIG is valid JSON', function () {
+        overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: JSON.stringify(spendingPlansConfigExample) });
 
-        after(function () {
-          delete process.env.HBAR_SPENDING_PLANS_CONFIG_JSON;
-        });
-
-        it('should populate the database with pre-configured spending plans from the HBAR_SPENDING_PLANS_CONFIG_JSON environment variable', async function () {
-          hbarSpendingPlanConfigService = await reloadHBarSPendingPlanConfigService(
+        it('should populate the database with pre-configured spending plans from the HBAR_SPENDING_PLANS_CONFIG environment variable', async function () {
+          hbarSpendingPlanConfigService = await reloadHBarSpendingPlanConfigService(
             hbarSpendingPlanConfigService,
             logger,
             hbarSpendingPlanRepository,
