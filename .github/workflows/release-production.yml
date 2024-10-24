@@ -9,6 +9,9 @@ env:
   PACKAGE_NAME: hedera-json-rpc-relay
   REGISTRY: ghcr.io
 
+permissions:
+  contents: read
+
 jobs:
   docker-image-publish:
     runs-on: smart-contracts-linux-medium

@@ -43,7 +43,7 @@ jobs:
     runs-on: smart-contracts-linux-large
     timeout-minutes: 50
     permissions:
-      contents: write
+      contents: read
       actions: read
       checks: write
       # issues: read
