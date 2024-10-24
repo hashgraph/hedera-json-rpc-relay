@@ -520,7 +520,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             return { aliasAccount, hbarSpendingPlan };
           };
 
-          describe('Pre-configured spending plans', async () => {
+          describe('given a valid JSON file with pre-configured spending plans', async () => {
             const expectedNonBasicPlans = {
               PRIVILEGED_ALPHA: {
                 id: 'c758c095-342c-4607-9db5-867d7e90ab9d',
