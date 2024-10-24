@@ -11,7 +11,7 @@ services:
     volumes:
       - ./.env:/home/node/app/.env
     environment:
-      REDIS_ENABLED: "true"
+      REDIS_ENABLED: true
       REDIS_URL: "redis://redis:6379"
 
   relay-ws:
@@ -21,7 +21,7 @@ services:
     environment:
       HEALTHCHECK_PORT: 8547
       SUBSCRIPTIONS_ENABLED: true
-      REDIS_ENABLED: "true"
+      REDIS_ENABLED: true
       REDIS_URL: "redis://redis:6379"
     restart: "unless-stopped"
     ports:
@@ -43,4 +43,3 @@ services:
 
 volumes:
   redis-data:
-    
