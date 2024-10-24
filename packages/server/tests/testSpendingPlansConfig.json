@@ -9,13 +9,17 @@
   {
     "id": "a68488b0-6f7d-44a0-87c1-774ad64615f2",
     "name": "PRIVILEGED_BETA",
-    "ethAddresses": ["0x40183ec818c1826114767391989ff2eaebc2b91e"],
+    "ethAddresses": ["0x40183ec818c1826114767391989ff2eaebc2b91e", "0xcdad5844f865f379bea057fb435aefef38361b68"],
     "subscriptionTier": "PRIVILEGED"
   },
   {
     "id": "af13d6ed-d676-4d33-8b9d-cf05d1ad7134",
     "name": "EXTENDED_ALPHA",
-    "ethAddresses": ["0x149294f355f62827748988071de70ab195d0eb23"],
+    "ethAddresses": [
+      "0x149294f355f62827748988071de70ab195d0eb23",
+      "0x17b2b8c63fa35402088640e426c6709a254c7ffb",
+      "0x6e5d3858f53fc66727188690946631bde0466b1a"
+    ],
     "ipAddresses": ["127.0.0.2"],
     "subscriptionTier": "EXTENDED"
   },
