@@ -249,7 +249,9 @@ export class MirrorNodeClient {
         const requestId = request ? request.split('\n')[3].substring(11, 47) : '';
         const requestIdPrefix = formatRequestIdMessage(requestId);
         const delay = isDevMode ? mirrorNodeRetryDelayDevMode || 200 : mirrorNodeRetryDelay * retryCount;
-        this.logger.trace(`${requestIdPrefix} Retry delay ${delay} ms on '${error?.request?.path}'`);
+        if (this.logger.isLevelEnabled('trace')) {
+          this.logger.trace(`${requestIdPrefix} Retry delay ${delay} ms on '${error?.request?.path}'`);
+        }
         return delay;
       },
       retryCondition: (error) => {
@@ -364,7 +366,9 @@ export class MirrorNodeClient {
       }
 
       const ms = Date.now() - start;
-      this.logger.debug(`${requestDetails.formattedRequestId} [${method}] ${path} ${response.status} ${ms} ms`);
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(`${requestDetails.formattedRequestId} [${method}] ${path} ${response.status} ${ms} ms`);
+      }
       this.mirrorResponseHistogram.labels(pathLabel, response.status?.toString()).observe(ms);
       return response.data;
     } catch (error: any) {
@@ -421,17 +425,21 @@ export class MirrorNodeClient {
     const acceptedErrorResponses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
 
     if (error.response && acceptedErrorResponses?.includes(effectiveStatusCode)) {
-      this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
+      }
       return null;
     }
 
     // Contract Call returns 400 for a CONTRACT_REVERT but is a valid response, expected and should not be logged as error:
     if (pathLabel === MirrorNodeClient.CONTRACT_CALL_ENDPOINT && effectiveStatusCode === 400) {
-      this.logger.debug(
-        `${requestIdPrefix} [${method}] ${path} Contract Revert: ( StatusCode: '${effectiveStatusCode}', StatusText: '${
-          error.response.statusText
-        }', Detail: '${JSON.stringify(error.response.detail)}',Data: '${JSON.stringify(error.response.data)}')`,
-      );
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestIdPrefix} [${method}] ${path} Contract Revert: ( StatusCode: '${effectiveStatusCode}', StatusText: '${
+            error.response.statusText
+          }', Detail: '${JSON.stringify(error.response.detail)}',Data: '${JSON.stringify(error.response.data)}')`,
+        );
+      }
     } else {
       this.logger.error(
         new Error(error.message),
@@ -459,9 +467,11 @@ export class MirrorNodeClient {
 
     if (page === pageMax) {
       // max page reached
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Max page reached ${pageMax} with ${results.length} results`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Max page reached ${pageMax} with ${results.length} results`,
+        );
+      }
       throw predefined.PAGINATION_MAX(pageMax);
     }
 
@@ -1305,11 +1315,13 @@ export class MirrorNodeClient {
         break;
       }
 
-      this.logger.trace(
-        `${requestDetails?.formattedRequestId} Repeating request ${methodName} with args ${JSON.stringify(
-          args,
-        )} retry count ${i} of ${repeatCount}. Waiting ${this.MIRROR_NODE_RETRY_DELAY} ms before repeating request`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails?.formattedRequestId} Repeating request ${methodName} with args ${JSON.stringify(
+            args,
+          )} retry count ${i} of ${repeatCount}. Waiting ${this.MIRROR_NODE_RETRY_DELAY} ms before repeating request`,
+        );
+      }
 
       // Backoff before repeating request
       await new Promise((r) => setTimeout(r, this.MIRROR_NODE_RETRY_DELAY));
@@ -1337,9 +1349,11 @@ export class MirrorNodeClient {
   ): Promise<ITransactionRecordMetric> {
     const formattedRequestId = requestDetails.formattedRequestId;
 
-    this.logger.trace(
-      `${formattedRequestId} Get transaction record via mirror node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${formattedRequestId} Get transaction record via mirror node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
+      );
+    }
 
     const transactionRecords = await this.repeatedRequest(
       this.getTransactionById.name,

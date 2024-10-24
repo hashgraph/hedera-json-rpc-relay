@@ -216,9 +216,13 @@ export class CommonService implements ICommonService {
     );
 
     if (blockNumberCached) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} returning cached value ${cacheKey}:${JSON.stringify(blockNumberCached)}`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} returning cached value ${cacheKey}:${JSON.stringify(
+            blockNumberCached,
+          )}`,
+        );
+      }
       return blockNumberCached;
     }
 

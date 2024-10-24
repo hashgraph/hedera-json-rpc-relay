@@ -126,9 +126,11 @@ export default class ServicesClient {
     );
     const address = wallet.address;
 
-    this.logger.trace(
-      `${requestIdPrefix} Create new Eth compatible account w alias: ${address} and balance ~${initialBalance} HBar`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} Create new Eth compatible account w alias: ${address} and balance ~${initialBalance} HBar`,
+      );
+    }
 
     const aliasCreationResponse = await this.executeTransaction(
       new TransferTransaction()
@@ -203,7 +205,9 @@ export default class ServicesClient {
   async createToken(initialSupply: number = 1000, requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     const symbol = Math.random().toString(36).slice(2, 6).toUpperCase();
-    this.logger.trace(`${requestIdPrefix} symbol = ${symbol}`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestIdPrefix} symbol = ${symbol}`);
+    }
     const resp = await this.executeAndGetTransactionReceipt(
       new TokenCreateTransaction()
         .setTokenName(`relay-acceptance token ${symbol}`)
@@ -231,9 +235,11 @@ export default class ServicesClient {
       requestId,
     );
 
-    this.logger.debug(
-      `${requestIdPrefix} Associated account ${this._thisAccountId()} with token ${tokenId.toString()}`,
-    );
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(
+        `${requestIdPrefix} Associated account ${this._thisAccountId()} with token ${tokenId.toString()}`,
+      );
+    }
   }
 
   async transferToken(tokenId: string | TokenId, recipient: AccountId, amount = 10, requestId?: string) {
@@ -246,15 +252,19 @@ export default class ServicesClient {
       requestId,
     );
 
-    this.logger.debug(
-      `${requestIdPrefix} Sent 10 tokens from account ${this._thisAccountId()} to account ${recipient.toString()} on token ${tokenId.toString()}`,
-    );
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(
+        `${requestIdPrefix} Sent 10 tokens from account ${this._thisAccountId()} to account ${recipient.toString()} on token ${tokenId.toString()}`,
+      );
+    }
 
     const balances = await this.executeQuery(new AccountBalanceQuery().setAccountId(recipient), requestId);
 
-    this.logger.debug(
-      `${requestIdPrefix} Token balances for ${recipient.toString()} are ${balances?.tokens?.toString()}`,
-    );
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(
+        `${requestIdPrefix} Token balances for ${recipient.toString()} are ${balances?.tokens?.toString()}`,
+      );
+    }
 
     return receipt;
   }
@@ -386,9 +396,11 @@ export default class ServicesClient {
     // Create a KeyList of both keys and specify that only 1 is required for signing transactions
     const keyList = new KeyList(keys, 1);
 
-    this.logger.trace(
-      `${requestIdPrefix} Create new Eth compatible account w ContractId key: ${contractId}, privateKey: ${privateKey}, alias: ${publicKey.toEvmAddress()} and balance ~${initialBalance} hb`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} Create new Eth compatible account w ContractId key: ${contractId}, privateKey: ${privateKey}, alias: ${publicKey.toEvmAddress()} and balance ~${initialBalance} hb`,
+      );
+    }
 
     const accountCreateTx = await new AccountCreateTransaction()
       .setInitialBalance(new Hbar(initialBalance))
@@ -414,9 +426,11 @@ export default class ServicesClient {
     const publicKey = privateKey.publicKey;
     const aliasAccountId = publicKey.toAccountId(0, 0);
 
-    this.logger.trace(
-      `${requestIdPrefix} Create new Eth compatible account w alias: ${aliasAccountId.toString()} and balance ~${initialBalance} hb`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestIdPrefix} Create new Eth compatible account w alias: ${aliasAccountId.toString()} and balance ~${initialBalance} hb`,
+      );
+    }
 
     const aliasCreationResponse = await this.executeTransaction(
       new TransferTransaction()
@@ -426,7 +440,9 @@ export default class ServicesClient {
       requestId,
     );
 
-    this.logger.debug(`${requestIdPrefix} Get ${aliasAccountId.toString()} receipt`);
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(`${requestIdPrefix} Get ${aliasAccountId.toString()} receipt`);
+    }
     await aliasCreationResponse?.getReceipt(this.client);
 
     return this.getAliasAccountInfo(aliasAccountId, privateKey, provider, requestId);
@@ -711,7 +727,9 @@ export default class ServicesClient {
 
       const rec = await tokenTransfer.getReceipt(this.client);
       this.logger.info(`${requestIdPrefix} ${amount} of HTS Token ${tokenId} can be spent by ${accountId}`);
-      this.logger.debug(`${requestIdPrefix} ${rec}`);
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(`${requestIdPrefix} ${rec}`);
+      }
     } catch (e) {
       this.logger.error(e, `${requestIdPrefix} TransferTransaction failed`);
     }

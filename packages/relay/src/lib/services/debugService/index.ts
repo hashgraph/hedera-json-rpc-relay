@@ -102,7 +102,9 @@ export class DebugService implements IDebugService {
     tracerConfig: ITracerConfig,
     requestDetails: RequestDetails,
   ): Promise<any> {
-    this.logger.trace(`${requestDetails.formattedRequestId} debug_traceTransaction(${transactionIdOrHash})`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} debug_traceTransaction(${transactionIdOrHash})`);
+    }
     try {
       DebugService.requireDebugAPIEnabled();
       if (tracer === TracerType.CallTracer) {

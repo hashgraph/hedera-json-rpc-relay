@@ -148,14 +148,18 @@ export class HbarLimitService implements IHbarLimitService {
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
    */
   async resetLimiter(requestDetails: RequestDetails): Promise<void> {
-    this.logger.trace(`${requestDetails.formattedRequestId} Resetting HBAR rate limiter...`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} Resetting HBAR rate limiter...`);
+    }
     await this.hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
     this.resetBudget();
     this.resetTemporaryMetrics();
     this.reset = this.getResetTimestamp();
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
+      );
+    }
   }
 
   /**
@@ -189,7 +193,9 @@ export class HbarLimitService implements IHbarLimitService {
       return false;
     }
     const user = `(ethAddress=${ethAddress})`;
-    this.logger.trace(`${requestDetails.formattedRequestId} Checking if ${user} should be limited...`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} Checking if ${user} should be limited...`);
+    }
     let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
     if (!spendingPlan) {
       // Create a basic spending plan if none exists for the eth address or ip address
@@ -264,9 +270,11 @@ export class HbarLimitService implements IHbarLimitService {
     // Done asynchronously in the background
     this.updateAverageAmountSpentPerSubscriptionTier(spendingPlan.subscriptionTier, requestDetails).then();
 
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost} tℏ, remainingBudget=${this.remainingBudget}`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost} tℏ, remainingBudget=${this.remainingBudget}`,
+      );
+    }
   }
 
   /**
