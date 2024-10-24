@@ -600,7 +600,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
               const amountSpent = spendingPlan.amountSpent;
 
-              expect(amountSpent).to.be.approximately(expectedCost, 0.009 * expectedCost);
+              const tolerance = 0.009;
+              expect(amountSpent).to.be.approximately(expectedCost, tolerance * expectedCost);
             });
 
             it('Should eventually exhaust the hbar limit for PRIVILEDGED user', async () => {
