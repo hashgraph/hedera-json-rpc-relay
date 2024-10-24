@@ -49,15 +49,16 @@ export class HbarSpendingPlanConfigService {
   private readonly TTL: number = -1;
 
   /**
-   * The name of the spending plans configuration file. Defaults to `spendingPlansConfig.json`.
+   * The environment variable that contains the spending plans configuration.
+   * It can be either a file path or a JSON string.
    *
    * @type {string}
    * @private
    */
-  // @ts-ignore
-  private readonly SPENDING_PLANS_CONFIG_FILE: string =
-    ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE') || 'spendingPlansConfig.json';
-
+  private readonly SPENDING_PLANS_CONFIG: string | undefined =
+    typeof ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') === 'string'
+      ? (ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') as string)
+      : undefined;
   /**
    * Creates an instance of `HbarSpendingPlanConfigService`.
    *
@@ -108,16 +109,19 @@ export class HbarSpendingPlanConfigService {
    * @private
    */
   private loadSpendingPlansConfig(): SpendingPlanConfig[] {
-    const configPath = findConfig(this.SPENDING_PLANS_CONFIG_FILE);
-    if (!configPath || !fs.existsSync(configPath)) {
-      this.logger.trace(`Configuration file not found at path "${configPath ?? this.SPENDING_PLANS_CONFIG_FILE}"`);
-      return [];
+    const configPath = findConfig(this.SPENDING_PLANS_CONFIG);
+    if (!this.SPENDING_PLANS_CONFIG) {
+      throw new Error('SPENDING_PLANS_CONFIG is undefined');
     }
     try {
-      const rawData = fs.readFileSync(configPath, 'utf-8');
-      return JSON.parse(rawData) as SpendingPlanConfig[];
+      // Try to parse the value as a file path
+      if (configPath && fs.existsSync(configPath)) {
+        return JSON.parse(fs.readFileSync(configPath, 'utf-8')) as SpendingPlanConfig[];
+      }
+      // If it's not a valid file path, try to parse it directly as JSON
+      return JSON.parse(this.SPENDING_PLANS_CONFIG) as SpendingPlanConfig[];
     } catch (error: any) {
-      throw new Error(`Failed to parse JSON from ${configPath}: ${error.message}`);
+      throw new Error(`Failed to parse SPENDING_PLANS_CONFIG: ${error.message}`);
     }
   }
 

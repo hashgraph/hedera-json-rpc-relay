@@ -37,6 +37,24 @@ import { Registry } from 'prom-client';
 
 chai.use(chaiAsPromised);
 
+// Dynamically import the service **after** setting the environment variable
+async function reloadHBarSpendingPlanConfigService(
+  hbarSpendingPlanConfigService: HbarSpendingPlanConfigService,
+  logger,
+  hbarSpendingPlanRepository: HbarSpendingPlanRepository,
+  ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
+  ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
+) {
+  const { HbarSpendingPlanConfigService } = await import('../../../src/lib/config/hbarSpendingPlanConfigService');
+  hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
+    logger,
+    hbarSpendingPlanRepository,
+    ethAddressHbarSpendingPlanRepository,
+    ipAddressHbarSpendingPlanRepository,
+  );
+  return hbarSpendingPlanConfigService;
+}
+
 describe('HbarSpendingPlanConfigService', function () {
   const logger = pino();
   const registry = new Registry();
@@ -59,7 +77,7 @@ describe('HbarSpendingPlanConfigService', function () {
     let ethAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<EthAddressHbarSpendingPlanRepository>;
     let ipAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<IPAddressHbarSpendingPlanRepository>;
 
-    overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: spendingPlansConfigFile });
+    overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: spendingPlansConfigFile });
 
     before(function () {
       cacheService = new CacheService(logger, registry);
@@ -94,14 +112,13 @@ describe('HbarSpendingPlanConfigService', function () {
     describe('populatePreconfiguredSpendingPlans', function () {
       describe('negative scenarios', function () {
         it('should not throw an error if the configuration file is not found', async function () {
-          sinon.stub(fs, 'existsSync').returns(false);
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).not.to.be.rejected;
         });
 
         it('should throw an error if configuration file is not a parsable JSON', async function () {
           sinon.stub(fs, 'readFileSync').returns('invalid JSON');
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Failed to parse JSON from ${path}: Unexpected token 'i', "invalid JSON" is not valid JSON`,
+            `Failed to parse SPENDING_PLANS_CONFIG: Unexpected token 'i', "invalid JSON" is not valid JSON`,
           );
         });
 
@@ -498,6 +515,94 @@ describe('HbarSpendingPlanConfigService', function () {
                 }
               });
             }
+          });
+        });
+      });
+    });
+
+    describe('Environment variable defined spending plans', function () {
+      const spendingPlansConfigExample = [
+        {
+          id: 'c758c095-342c-4607-9db5-867d7e90ab9d',
+          name: 'A different partner name',
+          ethAddresses: ['0x123', '0x124'],
+          ipAddresses: ['127.0.0.1', '128.0.0.1'],
+          subscriptionTier: 'PRIVILEGED',
+        },
+        {
+          id: 'a68488b0-6f7d-44a0-87c1-774ad64615f2',
+          name: 'some other partner that has given us only eth addresses',
+          ethAddresses: ['0x125', '0x126'],
+          subscriptionTier: 'PRIVILEGED',
+        },
+        {
+          id: 'af13d6ed-d676-4d33-8b9d-cf05d1ad7134',
+          name: 'supported project name',
+          ethAddresses: ['0x127', '0x128'],
+          ipAddresses: ['129.0.0.1', '130.0.0.1'],
+          subscriptionTier: 'EXTENDED',
+        },
+        {
+          id: '7f665aa3-6b73-41d7-bf9b-92d04cdab96b',
+          name: 'some other supported project that has given us only ip addresses',
+          ipAddresses: ['131.0.0.1', '132.0.0.1'],
+          subscriptionTier: 'EXTENDED',
+        },
+      ];
+
+      describe('when HBAR_SPENDING_PLANS_CONFIG is not set', function () {
+        overrideEnvsInMochaDescribe({
+          HBAR_SPENDING_PLANS_CONFIG: undefined,
+        });
+
+        it('should not throw an error if the environment variable is not set', async function () {
+          expect(process.env.HBAR_SPENDING_PLANS_CONFIG).to.be.undefined;
+          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).not.to.be.rejected;
+        });
+      });
+
+      describe('when HBAR_SPENDING_PLANS_CONFIG is invalid JSON', function () {
+        overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'invalid JSON' });
+
+        it('should throw an error if environment variable contains invalid JSON', async function () {
+          hbarSpendingPlanConfigService = await reloadHBarSpendingPlanConfigService(
+            hbarSpendingPlanConfigService,
+            logger,
+            hbarSpendingPlanRepository,
+            ethAddressHbarSpendingPlanRepository,
+            ipAddressHbarSpendingPlanRepository,
+          );
+          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
+            /Failed to parse SPENDING_PLANS_CONFIG: /,
+          );
+        });
+      });
+
+      describe('when HBAR_SPENDING_PLANS_CONFIG is valid JSON', function () {
+        overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: JSON.stringify(spendingPlansConfigExample) });
+
+        it('should populate the database with pre-configured spending plans from the HBAR_SPENDING_PLANS_CONFIG environment variable', async function () {
+          hbarSpendingPlanConfigService = await reloadHBarSpendingPlanConfigService(
+            hbarSpendingPlanConfigService,
+            logger,
+            hbarSpendingPlanRepository,
+            ethAddressHbarSpendingPlanRepository,
+            ipAddressHbarSpendingPlanRepository,
+          );
+          await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
+
+          spendingPlansConfigExample.forEach(({ id, name, subscriptionTier }) => {
+            sinon.assert.calledWith(
+              hbarSpendingPlanRepositorySpy.create,
+              subscriptionTier,
+              emptyRequestDetails,
+              neverExpireTtl,
+              id,
+            );
+            sinon.assert.calledWith(
+              loggerSpy.info,
+              `Created HBAR spending plan "${name}" with ID "${id}" and subscriptionTier "${subscriptionTier}"`,
+            );
           });
         });
       });
