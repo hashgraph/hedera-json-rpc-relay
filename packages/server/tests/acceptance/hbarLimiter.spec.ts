@@ -349,10 +349,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             contract.deploymentTransaction()!.data,
           );
 
-          const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
           const estimatedTxFee = estimateFileTransactionsFee(
             contract.deploymentTransaction()!.data.length,
-            fileChunkSize,
+            fileAppendChunkSize,
             exchangeRateInCents,
           );
 
@@ -448,7 +447,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
 
           it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts', async function () {
-            const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
             const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
             const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
             const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
@@ -461,7 +459,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             const deployedTransaction = await factory.getDeployTransaction();
             const estimatedTxFee = estimateFileTransactionsFee(
               deployedTransaction.data.length,
-              fileChunkSize,
+              fileAppendChunkSize,
               exchangeRateInCents,
             );
 
@@ -605,7 +603,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             });
 
             it('Should eventually exhaust the hbar limit for PRIVILEDGED user', async () => {
-              const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
               const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
               const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
               const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
@@ -618,7 +615,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               const deployedTransaction = await factory.getDeployTransaction();
               const estimatedTxFee = estimateFileTransactionsFee(
                 deployedTransaction.data.length,
-                fileChunkSize,
+                fileAppendChunkSize,
                 exchangeRateInCents,
               );
 
