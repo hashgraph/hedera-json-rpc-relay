@@ -500,7 +500,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
         });
 
-        describe('NON-BASIC Tiers', () => {
+        describe('Preconfigured Tiers', () => {
           const createAliasForNonBasicPlans = async (mode: SubscriptionTier) => {
             const aliasAccount = await Utils.createAliasAccount(
               mirrorNode,
