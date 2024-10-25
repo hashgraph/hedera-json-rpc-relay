@@ -32,7 +32,7 @@ import {
 } from '../../helpers';
 import { SDKClient } from '../../../src/lib/clients';
 import RelayAssertions from '../../assertions';
-import { numberTo0x } from '../../../dist/formatters';
+import { ASCIIToHex, numberTo0x, prepend0x } from '../../../dist/formatters';
 import {
   ACCOUNT_WITHOUT_TRANSACTIONS,
   BLOCK_HASH,
@@ -332,6 +332,66 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       true,
       ethImplLowTransactionCount,
       args,
+    );
+  });
+
+  it('eth_getBlockByHash should skip transactions with wrong nonces when showDetails = false', async function () {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, {
+      results: [
+        ...defaultContractResults.results,
+        { ...defaultContractResults.results[0], result: 'WRONG_NONCE' },
+        { ...defaultContractResults.results[0], error_message: prepend0x(ASCIIToHex('WRONG_NONCE')) },
+      ],
+    });
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
+
+    const showDetails = false;
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, showDetails, requestDetails);
+
+    RelayAssertions.assertBlock(
+      result,
+      {
+        hash: BLOCK_HASH_TRIMMED,
+        gasUsed: TOTAL_GAS_USED,
+        number: BLOCK_NUMBER_HEX,
+        parentHash: BLOCK_HASH_PREV_TRIMMED,
+        timestamp: BLOCK_TIMESTAMP_HEX,
+        transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2], // should not include the transaction with wrong nonce
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
+      },
+      showDetails,
+    );
+  });
+
+  it('eth_getBlockByHash should skip transactions with wrong nonces when showDetails = true', async function () {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, {
+      results: [
+        ...defaultContractResults.results,
+        { ...defaultContractResults.results[1], result: 'WRONG_NONCE' },
+        { ...defaultContractResults.results[1], error_message: prepend0x(ASCIIToHex('WRONG_NONCE')) },
+      ],
+    });
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
+
+    const showDetails = true;
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, showDetails, requestDetails);
+
+    RelayAssertions.assertBlock(
+      result,
+      {
+        hash: BLOCK_HASH_TRIMMED,
+        gasUsed: TOTAL_GAS_USED,
+        number: BLOCK_NUMBER_HEX,
+        parentHash: BLOCK_HASH_PREV_TRIMMED,
+        timestamp: BLOCK_TIMESTAMP_HEX,
+        transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2], // should not include the transaction with wrong nonce
+        receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
+      },
+      showDetails,
     );
   });
 });
