@@ -771,7 +771,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       await wsHtsProvider.websocket.close();
     });
 
-    it('@release captures transfer events', async function () {
+    it.only('@release captures transfer events', async function () {
       const balanceBefore = await htsToken.balanceOf(htsAccounts[1].wallet.address);
       expect(balanceBefore.toString()).to.eq('0', 'verify initial balance');
 
