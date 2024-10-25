@@ -449,6 +449,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
 
           it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts', async function () {
+            let deploymentCounts: number = 0;
             const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
             const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
             const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
@@ -468,12 +469,15 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
             expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
             try {
-              for (let i = 0; i < 50; i++) {
+              for (deploymentCounts = 0; deploymentCounts < 50; deploymentCounts++) {
                 await deployContract(largeContractJson, accounts[2].wallet);
               }
               expect.fail(`Expected an error but nothing was thrown`);
             } catch (e: any) {
               expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+              const largeContractDeploymentCost = await getExpectedCostOfLastLargeTx(deployedTransaction.data);
+              const expectedAmountOfDeployments = Math.floor(maxBasicSpendingLimit / largeContractDeploymentCost);
+              expect(deploymentCounts).to.eq(expectedAmountOfDeployments);
 
               // awaiting for HBAR limiter to finish updating expenses in the background
               await Utils.wait(6000);
@@ -559,6 +563,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             });
 
             it(`Should eventually exhaust the hbar limit for ${subsriptionTier} user`, async () => {
+              let deploymentCounts: number = 0;
               const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
               const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
               const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
@@ -576,12 +581,15 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               );
 
               try {
-                for (let i = 0; i < 50; i++) {
+                for (deploymentCounts = 0; deploymentCounts < 50; deploymentCounts++) {
                   await deployContract(largeContractJson, aliasAccount.wallet);
                 }
                 expect.fail(`Expected an error but nothing was thrown`);
               } catch (e: any) {
                 expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+                const largeContractDeploymentCost = await getExpectedCostOfLastLargeTx(deployedTransaction.data);
+                const expectedAmountOfDeployments = Math.floor(maxSpendingLimit / largeContractDeploymentCost);
+                expect(deploymentCounts).to.eq(expectedAmountOfDeployments);
 
                 // awaiting for HBAR limiter to finish updating expenses in the background
                 await Utils.wait(6000);
