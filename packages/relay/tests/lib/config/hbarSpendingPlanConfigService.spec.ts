@@ -110,7 +110,6 @@ describe('HbarSpendingPlanConfigService', function () {
           });
 
           it('should throw an error if configuration file is not a parsable JSON', async function () {
-            // this.sandbox.stub(fs, 'readFileSync').returns('invalid JSON');
             await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
               /Failed to load HBAR_SPENDING_PLAN. JSON parse error: /,
             );

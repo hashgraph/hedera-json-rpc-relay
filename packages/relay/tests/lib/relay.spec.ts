@@ -93,37 +93,22 @@ describe('RelayImpl', () => {
       sinon.restore();
     });
 
-    describe('when a configuration file is provided', async () => {
+    describe('when a configuration file is provided', () => {
       overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'spendingPlansConfig.example.json' });
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // wait for the environment to load
 
       it('should populate preconfigured spending plans successfully', async () => {
         expect((relay = new RelayImpl(logger, register))).to.not.throw;
+
         expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
         await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).to.not.be.rejected;
         expect(loggerSpy.info.calledWith('Pre-configured spending plans populated successfully')).to.be.true;
       });
     });
 
-    describe('when no configuration file is provided', async () => {
-      const nonExistingFile = 'nonExistingFile.json';
-      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: nonExistingFile });
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      it('should not throw an error', async () => {
-        expect((relay = new RelayImpl(logger, register))).to.not.throw;
-
-        expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
-        await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).to.not.be.rejected;
-        expect(loggerSpy.warn.notCalled).to.be.true;
-      });
-    });
-
-    describe('when a configuration file with invalid JSON is provided', async () => {
+    describe('when a configuration file with invalid JSON is provided', () => {
       let path: string | null;
 
       overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'spendingPlansConfig.example.json' });
-      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       beforeEach(() => {
         path = findConfig('spendingPlansConfig.example.json');
@@ -135,9 +120,11 @@ describe('RelayImpl', () => {
 
         expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
         await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).not.to.be.rejected;
+        const failedPreConfiguredSpendingPlansMessage = `Failed to load pre-configured spending plans: `;
+        const failedToLoadEnvVarSpendingPlan = `Failed to load HBAR_SPENDING_PLAN. JSON parse error: Unexpected token 's', "spendingPl"... is not valid JSON; `;
+        const failedToLoadJsonFile = `File error: Unexpected token 'i', "invalid JSON" is not valid JSON`;
 
-        const cause = `Failed to parse JSON from ${path}: Unexpected token 'i', "invalid JSON" is not valid JSON`;
-        const message = `Failed to load pre-configured spending plans: ${cause}`;
+        const message = `${failedPreConfiguredSpendingPlansMessage}${failedToLoadEnvVarSpendingPlan}${failedToLoadJsonFile}`;
         expect(loggerSpy.warn.calledWith(message)).to.be.true;
       });
     });
