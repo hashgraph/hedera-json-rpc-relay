@@ -209,7 +209,11 @@ export class HbarLimitService implements IHbarLimitService {
         exceedsLimit ? 'has' : 'has NOT'
       } exceeded HBAR rate limit threshold: user=${user}, amountSpent=${
         spendingPlan.amountSpent
-      }, estimatedTxFee=${estimatedTxFee}, spendingLimit=${spendingLimit}, txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
+      }, estimatedTxFee=${estimatedTxFee}, spendingLimit=${spendingLimit}, spandingPlanId=${
+        spendingPlan.id
+      }, subscriptionTier=${
+        spendingPlan.subscriptionTier
+      }, txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
     );
 
     return exceedsLimit;
