@@ -220,16 +220,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         global.accounts.push(...accounts);
       });
 
-      beforeEach(async function () {
-        const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
-          [SubscriptionTier.BASIC],
-          requestDetails,
-        );
-        for (const plan of basicPlans) {
-          await hbarSpendingPlanRepository.delete(plan.id, requestDetails);
-          await ethAddressSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
-          await ipSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
-        }
+      afterEach(async () => {
+        hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
       });
 
       describe('@hbarlimiter-batch1 Total HBAR Limit', () => {
@@ -367,6 +359,18 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       describe('HBAR Rate Limit For Different Spending Plan Tiers', () => {
         describe('@hbarlimiter-batch1 BASIC Tier', () => {
+          beforeEach(async function () {
+            const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
+              [SubscriptionTier.BASIC],
+              requestDetails,
+            );
+            for (const plan of basicPlans) {
+              await hbarSpendingPlanRepository.delete(plan.id, requestDetails);
+              await ethAddressSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
+              await ipSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
+            }
+          });
+
           it('should create a BASIC spending plan for a new user and use the same plan on second transaction and different plan on third transaction from another user', async function () {
             const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
             // awaiting for HBAR limiter to finish updating expenses in the background
