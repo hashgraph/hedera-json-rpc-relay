@@ -358,6 +358,33 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('HBAR Rate Limit For Different Spending Plan Tiers', () => {
+        const createAliasAndAssociateSpendingPlan = async (subscriptionTier: SubscriptionTier) => {
+          const aliasAccount = await Utils.createAliasAccount(
+            mirrorNode,
+            global.accounts[0],
+            requestId,
+            initialBalance,
+          );
+
+          const hbarSpendingPlan = await hbarSpendingPlanRepository.create(subscriptionTier, requestDetails, mockTTL);
+
+          await ethAddressSpendingPlanRepository.save(
+            { ethAddress: aliasAccount.address, planId: hbarSpendingPlan.id },
+            requestDetails,
+            mockTTL,
+          );
+
+          const plan = await ethAddressSpendingPlanRepository.findByAddress(aliasAccount.address, requestDetails);
+          expect(plan.ethAddress).to.eq(aliasAccount.address);
+          expect(plan.planId).to.eq(hbarSpendingPlan.id);
+          const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.planId, requestDetails);
+          expect(spendingPlan.active).to.be.true;
+          expect(spendingPlan.amountSpent).to.eq(0);
+          expect(spendingPlan.subscriptionTier).to.eq(subscriptionTier);
+
+          return { aliasAccount, hbarSpendingPlan };
+        };
+
         describe('@hbarlimiter-batch1 BASIC Tier', () => {
           beforeEach(async function () {
             const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
@@ -511,39 +538,12 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         describe('@hbarlimiter-batch2 Preconfigured Tiers', () => {
-          const createAliasForNonBasicPlans = async (subscriptionTier: SubscriptionTier) => {
-            const aliasAccount = await Utils.createAliasAccount(
-              mirrorNode,
-              global.accounts[0],
-              requestId,
-              initialBalance,
-            );
-
-            const hbarSpendingPlan = await hbarSpendingPlanRepository.create(subscriptionTier, requestDetails, mockTTL);
-
-            await ethAddressSpendingPlanRepository.save(
-              { ethAddress: aliasAccount.address, planId: hbarSpendingPlan.id },
-              requestDetails,
-              mockTTL,
-            );
-
-            const plan = await ethAddressSpendingPlanRepository.findByAddress(aliasAccount.address, requestDetails);
-            expect(plan.ethAddress).to.eq(aliasAccount.address);
-            expect(plan.planId).to.eq(hbarSpendingPlan.id);
-            const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.planId, requestDetails);
-            expect(spendingPlan.active).to.be.true;
-            expect(spendingPlan.amountSpent).to.eq(0);
-            expect(spendingPlan.subscriptionTier).to.eq(subscriptionTier);
-
-            return { aliasAccount, hbarSpendingPlan };
-          };
-
           const reusableTestsForNonBasicTiers = (subsriptionTier: SubscriptionTier, maxSpendingLimit: number) => {
             let aliasAccount: AliasAccount;
             let hbarSpendingPlan: IDetailedHbarSpendingPlan;
 
             beforeEach(async () => {
-              const result = await createAliasForNonBasicPlans(subsriptionTier);
+              const result = await createAliasAndAssociateSpendingPlan(subsriptionTier);
               aliasAccount = result.aliasAccount;
               hbarSpendingPlan = result.hbarSpendingPlan;
             });
