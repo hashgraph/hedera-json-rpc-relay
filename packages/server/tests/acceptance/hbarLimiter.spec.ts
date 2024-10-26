@@ -75,7 +75,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     relayIsLocal: boolean;
   } = global;
   const mockTTL = 60000; // 60 secs
-  const operatorAccount = ConfigService.get('OPERATOR_ID_MAIN') || DOT_ENV.OPERATOR_ID_MAIN || '';
+  const operatorAccount = (ConfigService.get('OPERATOR_ID_MAIN') as string) || DOT_ENV.OPERATOR_ID_MAIN || '';
   const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
