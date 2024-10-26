@@ -621,42 +621,45 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           describe('given a valid JSON file with pre-configured spending plans', async () => {
             const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE') as string;
             const configPath = findConfig(SPENDING_PLANS_CONFIG_FILE);
-            const rawData = fs.readFileSync(configPath!, 'utf-8');
-            const expectedNonBasicPlans2 = JSON.parse(rawData) as SpendingPlanConfig[];
 
-            it('Should successfully populate all pre-configured spending plans', async () => {
-              expectedNonBasicPlans2.forEach(async (expectedPlan) => {
-                const hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
-                  expectedPlan.id,
-                  requestDetails,
-                );
-                expect(hbarSpendingPlan.active).to.be.true;
-                expect(hbarSpendingPlan.id).to.eq(expectedPlan.id);
-                expect(hbarSpendingPlan.subscriptionTier).to.eq(expectedPlan.subscriptionTier);
+            if (configPath) {
+              const rawData = fs.readFileSync(configPath!, 'utf-8');
+              const expectedNonBasicPlans2 = JSON.parse(rawData) as SpendingPlanConfig[];
 
-                if (expectedPlan.ethAddresses) {
-                  expectedPlan.ethAddresses.forEach(async (evmAddress) => {
-                    const associatedPlanByEVMAddress = await ethAddressSpendingPlanRepository.findByAddress(
-                      evmAddress,
-                      requestDetails,
-                    );
-                    expect(associatedPlanByEVMAddress.planId).to.eq(expectedPlan.id);
-                    expect(associatedPlanByEVMAddress.ethAddress).to.eq(evmAddress);
-                  });
-                }
+              it('Should successfully populate all pre-configured spending plans', async () => {
+                expectedNonBasicPlans2.forEach(async (expectedPlan) => {
+                  const hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
+                    expectedPlan.id,
+                    requestDetails,
+                  );
+                  expect(hbarSpendingPlan.active).to.be.true;
+                  expect(hbarSpendingPlan.id).to.eq(expectedPlan.id);
+                  expect(hbarSpendingPlan.subscriptionTier).to.eq(expectedPlan.subscriptionTier);
 
-                if (expectedPlan.ipAddresses) {
-                  expectedPlan.ipAddresses.forEach(async (ipAddress) => {
-                    const associatedPlanByIpAddress = await ipSpendingPlanRepository.findByAddress(
-                      ipAddress,
-                      requestDetails,
-                    );
-                    expect(associatedPlanByIpAddress.planId).to.eq(expectedPlan.id);
-                    expect(associatedPlanByIpAddress.ipAddress).to.eq(ipAddress);
-                  });
-                }
+                  if (expectedPlan.ethAddresses) {
+                    expectedPlan.ethAddresses.forEach(async (evmAddress) => {
+                      const associatedPlanByEVMAddress = await ethAddressSpendingPlanRepository.findByAddress(
+                        evmAddress,
+                        requestDetails,
+                      );
+                      expect(associatedPlanByEVMAddress.planId).to.eq(expectedPlan.id);
+                      expect(associatedPlanByEVMAddress.ethAddress).to.eq(evmAddress);
+                    });
+                  }
+
+                  if (expectedPlan.ipAddresses) {
+                    expectedPlan.ipAddresses.forEach(async (ipAddress) => {
+                      const associatedPlanByIpAddress = await ipSpendingPlanRepository.findByAddress(
+                        ipAddress,
+                        requestDetails,
+                      );
+                      expect(associatedPlanByIpAddress.planId).to.eq(expectedPlan.id);
+                      expect(associatedPlanByIpAddress.ipAddress).to.eq(ipAddress);
+                    });
+                  }
+                });
               });
-            });
+            }
           });
 
           describe('EXTENDED Tier', () => {
