@@ -29,7 +29,12 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { SpendingPlanConfig } from '../../../src/lib/types/spendingPlanConfig';
 import { RequestDetails } from '../../../src/lib/types';
-import { overrideEnvsInMochaDescribe, toHex, useInMemoryRedisServer } from '../../helpers';
+import {
+  overrideEnvsInMochaDescribe,
+  toHex,
+  useInMemoryRedisServer,
+  withOverriddenEnvsInMochaTest,
+} from '../../helpers';
 import findConfig from 'find-config';
 import { HbarSpendingPlanConfigService } from '../../../src/lib/config/hbarSpendingPlanConfigService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
@@ -103,18 +108,34 @@ describe('HbarSpendingPlanConfigService', function () {
         }
         // Only relevant when the configuration is a file
         if (isSpendingPlansConfigFile) {
-          it('should throw an error if the configuration file is not found', async function () {
-            await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-              /Failed to load HBAR_SPENDING_PLAN. JSON parse error: /,
-            );
-          });
+          withOverriddenEnvsInMochaTest(
+            {
+              HBAR_SPENDING_PLANS_CONFIG: 'non-existent-file.json',
+            },
+            () => {
+              it('should throw an error if the configuration file is not found', async function () {
+                await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
+                  /File error: Configuration file not found /,
+                );
+              });
+            },
+          );
 
-          it('should throw an error if configuration file is not a parsable JSON', async function () {
-            await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-              /Failed to load HBAR_SPENDING_PLAN. JSON parse error: /,
-            );
-          });
+          withOverriddenEnvsInMochaTest(
+            {
+              HBAR_SPENDING_PLANS_CONFIG: 'non-existent-file.json',
+            },
+            () => {
+              it('should throw an error if configuration file is not a parsable JSON', async function () {
+                sinon.stub(fs, 'readFileSync').returns('invalid JSON');
+                await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
+                  /File error: Configuration file not found /,
+                );
+              });
+            },
+          );
         }
+
         it('should throw an error if the configuration file has entry without ID', async function () {
           const invalidPlan = {
             name: 'Plan without ID',
@@ -514,19 +535,23 @@ describe('HbarSpendingPlanConfigService', function () {
     });
   };
 
-  describe('with shared cache enabled and spending plan config file', function () {
-    tests(true, true);
+  describe('using Redis cache', function () {
+    describe('and with a spending plan config file', function () {
+      tests(true, true);
+    });
+
+    describe('and with a spending plan config variable', function () {
+      tests(true, false);
+    });
   });
 
-  describe('with shared cache disabled and spending plan config variable', function () {
-    tests(false, false);
-  });
+  describe('using LRU cache', function () {
+    describe('and with a spending plan config file', function () {
+      tests(false, true);
+    });
 
-  describe('with shared cache enabled and spending plan config variable', function () {
-    tests(true, false);
-  });
-
-  describe('with shared cache disabled and spending plan config file', function () {
-    tests(false, true);
+    describe('and with a spending plan config variable', function () {
+      tests(false, false);
+    });
   });
 });

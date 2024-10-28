@@ -120,11 +120,8 @@ describe('RelayImpl', () => {
 
         expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
         await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).not.to.be.rejected;
-        const failedPreConfiguredSpendingPlansMessage = `Failed to load pre-configured spending plans: `;
-        const failedToLoadEnvVarSpendingPlan = `Failed to load HBAR_SPENDING_PLAN. JSON parse error: Unexpected token 's', "spendingPl"... is not valid JSON; `;
-        const failedToLoadJsonFile = `File error: Unexpected token 'i', "invalid JSON" is not valid JSON`;
 
-        const message = `${failedPreConfiguredSpendingPlansMessage}${failedToLoadEnvVarSpendingPlan}${failedToLoadJsonFile}`;
+        const message = `Failed to load pre-configured spending plans: File error: Unexpected token 'i', "invalid JSON" is not valid JSON`;
         expect(loggerSpy.warn.calledWith(message)).to.be.true;
       });
     });

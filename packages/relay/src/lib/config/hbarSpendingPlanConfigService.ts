@@ -30,14 +30,6 @@ import { SubscriptionTier } from '../db/types/hbarLimiter/subscriptionTier';
 import { IDetailedHbarSpendingPlan } from '../db/types/hbarLimiter/hbarSpendingPlan';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
-/**
- * Service for managing pre-configured {@link HbarSpendingPlan} entities.
- *
- * It reads the pre-configured spending plans from a JSON file and populates the cache with them.
- *
- * @see SpendingPlanConfig
- * @see SPENDING_PLANS_CONFIG
- */
 export class HbarSpendingPlanConfigService {
   /**
    * The time-to-live (TTL) for the pre-configured spending plans in the cache.
@@ -109,6 +101,9 @@ export class HbarSpendingPlanConfigService {
       return JSON.parse(spendingPlanConfig) as SpendingPlanConfig[];
     } catch (jsonParseError: any) {
       // If parsing as JSON fails, treat it as a file path
+      this.logger.trace(
+        `Failed to parse HBAR_SPENDING_PLAN as JSON: ${jsonParseError.message}, now treating it as a file path...`,
+      );
       try {
         const configFilePath = findConfig(spendingPlanConfig);
         if (configFilePath && fs.existsSync(configFilePath)) {
@@ -118,9 +113,7 @@ export class HbarSpendingPlanConfigService {
           throw new Error(`Configuration file not found at path "${configFilePath ?? spendingPlanConfig}"`);
         }
       } catch (fileError: any) {
-        throw new Error(
-          `Failed to load HBAR_SPENDING_PLAN. JSON parse error: ${jsonParseError.message}; File error: ${fileError.message}`,
-        );
+        throw new Error(`File error: ${fileError.message}`);
       }
     }
   }
