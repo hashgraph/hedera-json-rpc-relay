@@ -37,6 +37,8 @@ describe('LoggerService tests', async function () {
   });
 
   it('should be able to mask every value if it starts with known secret prefix', async () => {
+    const { envName } = GlobalConfig.ENTRIES.HBAR_SPENDING_PLANS_CONFIG;
+
     for (const prefix of LoggerService.KNOWN_SECRET_PREFIXES) {
       const value = prefix + '_VVurqVVh68wgxgcVjrvVVVcNcVVVVi3CRwl1';
       const res = LoggerService.maskUpEnv(envName, value);
