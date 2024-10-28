@@ -91,11 +91,11 @@ export class CacheService {
 
   private readonly cacheMethodsCounter: Counter;
 
-  public constructor(logger: Logger, register: Registry) {
+  public constructor(logger: Logger, register: Registry, reservedKeys: Set<string> = new Set()) {
     this.logger = logger;
     this.register = register;
 
-    this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register);
+    this.internalCache = new LocalLRUCache(logger.child({ name: 'localLRUCache' }), register, reservedKeys);
     this.sharedCache = this.internalCache;
     // @ts-ignore
     this.isSharedCacheEnabled = !ConfigService.get('TEST') && this.isRedisEnabled();

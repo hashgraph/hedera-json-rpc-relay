@@ -326,10 +326,9 @@ export class EthImpl implements Eth {
     requestDetails: RequestDetails,
   ): Promise<IFeeHistory | JsonRpcError> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    const maxResults =
-      ConfigService.get('TEST')
-        ? constants.DEFAULT_FEE_HISTORY_MAX_RESULTS
-        : Number(ConfigService.get('FEE_HISTORY_MAX_RESULTS'));
+    const maxResults = ConfigService.get('TEST')
+      ? constants.DEFAULT_FEE_HISTORY_MAX_RESULTS
+      : Number(ConfigService.get('FEE_HISTORY_MAX_RESULTS'));
 
     this.logger.trace(
       `${requestIdPrefix} feeHistory(blockCount=${blockCount}, newestBlock=${newestBlock}, rewardPercentiles=${rewardPercentiles})`,

@@ -30,7 +30,7 @@ import { HbarSpendingPlan } from '../../entities/hbarLimiter/hbarSpendingPlan';
 import { RequestDetails } from '../../../types';
 
 export class HbarSpendingPlanRepository {
-  private readonly collectionKey = 'hbarSpendingPlan';
+  public static readonly collectionKey = 'hbarSpendingPlan';
 
   /**
    * The cache service used for storing data.
@@ -266,7 +266,7 @@ export class HbarSpendingPlanRepository {
    * @private
    */
   private getKey(id: string): string {
-    return `${this.collectionKey}:${id}`;
+    return `${HbarSpendingPlanRepository.collectionKey}:${id}`;
   }
 
   /**
@@ -275,7 +275,7 @@ export class HbarSpendingPlanRepository {
    * @private
    */
   private getAmountSpentKey(id: string): string {
-    return `${this.collectionKey}:${id}:amountSpent`;
+    return `${HbarSpendingPlanRepository.collectionKey}:${id}:amountSpent`;
   }
 
   /**
@@ -284,6 +284,6 @@ export class HbarSpendingPlanRepository {
    * @private
    */
   private getSpendingHistoryKey(id: string): string {
-    return `${this.collectionKey}:${id}:spendingHistory`;
+    return `${HbarSpendingPlanRepository.collectionKey}:${id}:spendingHistory`;
   }
 }

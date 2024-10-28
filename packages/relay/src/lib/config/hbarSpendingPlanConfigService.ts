@@ -36,7 +36,6 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
  * It reads the pre-configured spending plans from a JSON file and populates the cache with them.
  *
  * @see SpendingPlanConfig
- * @see SPENDING_PLANS_CONFIG_FILE
  */
 export class HbarSpendingPlanConfigService {
   /**
@@ -47,16 +46,6 @@ export class HbarSpendingPlanConfigService {
    * @private
    */
   private readonly TTL: number = -1;
-
-  /**
-   * The name of the spending plans configuration file. Defaults to `spendingPlansConfig.json`.
-   *
-   * @type {string}
-   * @private
-   */
-  // @ts-ignore
-  private readonly SPENDING_PLANS_CONFIG_FILE: string =
-    ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE') || 'spendingPlansConfig.json';
 
   /**
    * Creates an instance of `HbarSpendingPlanConfigService`.
@@ -75,13 +64,43 @@ export class HbarSpendingPlanConfigService {
   ) {}
 
   /**
+   * Returns the cache keys for the pre-configured spending plans.
+   *
+   * @param {Logger} logger - The logger instance.
+   * @returns {Set<string>} - A set of cache keys for the pre-configured spending plans.
+   */
+  public static getPreconfiguredSpendingPlanKeys(logger: Logger): Set<string> {
+    try {
+      const { collectionKey: hbarSpendingPlanKey } = HbarSpendingPlanRepository;
+      const { collectionKey: ethAddressHbarSpendingPlanKey } = EthAddressHbarSpendingPlanRepository;
+      const { collectionKey: ipAddressHbarSpendingPlanKey } = IPAddressHbarSpendingPlanRepository;
+
+      return new Set<string>(
+        this.loadSpendingPlansConfig(logger).flatMap((plan) => {
+          const { id, ethAddresses = [], ipAddresses = [] } = plan;
+          return [
+            `${hbarSpendingPlanKey}:${id}`,
+            `${hbarSpendingPlanKey}:${id}:amountSpent`,
+            `${hbarSpendingPlanKey}:${id}:spendingHistory`,
+            ...ethAddresses.map((ethAddress) => `${ethAddressHbarSpendingPlanKey}:${ethAddress.trim().toLowerCase()}`),
+            ...ipAddresses.map((ipAddress) => `${ipAddressHbarSpendingPlanKey}:${ipAddress}`),
+          ];
+        }),
+      );
+    } catch (error: any) {
+      logger.error(`Failed to get pre-configured spending plan keys: ${error.message}`);
+      return new Set<string>();
+    }
+  }
+
+  /**
    * Populates the database with pre-configured spending plans.
    *
    * @returns {Promise<number>} - A promise that resolves with the number of spending plans which were added or deleted.
    * @throws {Error} - If the spending plans configuration file is not found or cannot be loaded.
    */
   public async populatePreconfiguredSpendingPlans(): Promise<number> {
-    const spendingPlanConfigs = this.loadSpendingPlansConfig();
+    const spendingPlanConfigs = HbarSpendingPlanConfigService.loadSpendingPlansConfig(this.logger);
     if (!spendingPlanConfigs.length) {
       return 0;
     }
@@ -107,10 +126,11 @@ export class HbarSpendingPlanConfigService {
    * @throws {Error} If the configuration file is not found or cannot be read or parsed.
    * @private
    */
-  private loadSpendingPlansConfig(): SpendingPlanConfig[] {
-    const configPath = findConfig(this.SPENDING_PLANS_CONFIG_FILE);
+  private static loadSpendingPlansConfig(logger: Logger): SpendingPlanConfig[] {
+    const filename = String(ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE'));
+    const configPath = findConfig(filename);
     if (!configPath || !fs.existsSync(configPath)) {
-      this.logger.trace(`Configuration file not found at path "${configPath ?? this.SPENDING_PLANS_CONFIG_FILE}"`);
+      logger.trace(`Configuration file not found at path "${configPath ?? filename}"`);
       return [];
     }
     try {

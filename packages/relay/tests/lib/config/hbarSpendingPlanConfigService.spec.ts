@@ -29,16 +29,32 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { SpendingPlanConfig } from '../../../src/lib/types/spendingPlanConfig';
 import { RequestDetails } from '../../../src/lib/types';
-import { overrideEnvsInMochaDescribe, toHex, useInMemoryRedisServer } from '../../helpers';
+import { overrideEnvsInMochaDescribe, toHex, useInMemoryRedisServer, verifyResult } from '../../helpers';
 import findConfig from 'find-config';
 import { HbarSpendingPlanConfigService } from '../../../src/lib/config/hbarSpendingPlanConfigService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import { Registry } from 'prom-client';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import {
+  EthAddressHbarSpendingPlanNotFoundError,
+  HbarSpendingPlanNotFoundError,
+  IPAddressHbarSpendingPlanNotFoundError,
+} from '../../../src/lib/db/types/hbarLimiter/errors';
 
 chai.use(chaiAsPromised);
 
 describe('HbarSpendingPlanConfigService', function () {
-  const logger = pino();
+  const logger = pino({
+    name: 'hbar-spending-plan-config-service',
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: true,
+        ignore: 'pid,hostname',
+      },
+    },
+  });
   const registry = new Registry();
   const neverExpireTtl = -1;
   const emptyRequestDetails = new RequestDetails({ requestId: '', ipAddress: '' });
@@ -59,13 +75,33 @@ describe('HbarSpendingPlanConfigService', function () {
     let ethAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<EthAddressHbarSpendingPlanRepository>;
     let ipAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<IPAddressHbarSpendingPlanRepository>;
 
-    overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: spendingPlansConfigFile });
+    overrideEnvsInMochaDescribe({
+      HBAR_SPENDING_PLANS_CONFIG_FILE: spendingPlansConfigFile,
+      CACHE_TTL: '100',
+      CACHE_MAX: spendingPlansConfig.length.toString(),
+    });
+
+    if (isSharedCacheEnabled) {
+      useInMemoryRedisServer(logger, 6384);
+    } else {
+      overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
+    }
 
     before(function () {
-      cacheService = new CacheService(logger, registry);
-      hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
-      ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
-      ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
+      const reservedKeys = HbarSpendingPlanConfigService.getPreconfiguredSpendingPlanKeys(logger);
+      cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry, reservedKeys);
+      hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
+        cacheService,
+        logger.child({ name: 'hbar-spending-plan-repository' }),
+      );
+      ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
+        cacheService,
+        logger.child({ name: 'evm-address-spending-plan-repository' }),
+      );
+      ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(
+        cacheService,
+        logger.child({ name: 'ip-address-spending-plan-repository' }),
+      );
       hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
         logger,
         hbarSpendingPlanRepository,
@@ -73,10 +109,6 @@ describe('HbarSpendingPlanConfigService', function () {
         ipAddressHbarSpendingPlanRepository,
       );
     });
-
-    if (isSharedCacheEnabled) {
-      useInMemoryRedisServer(logger, 6384);
-    }
 
     beforeEach(function () {
       loggerSpy = sinon.spy(logger);
@@ -112,7 +144,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ethAddresses: ['0x123'],
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -127,7 +159,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ethAddresses: ['0x123'],
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -142,7 +174,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ethAddresses: ['0x123'],
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -158,7 +190,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ethAddresses: ['0x123'],
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -173,7 +205,7 @@ describe('HbarSpendingPlanConfigService', function () {
             subscriptionTier: SubscriptionTier.EXTENDED,
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -190,7 +222,7 @@ describe('HbarSpendingPlanConfigService', function () {
             ipAddresses: [],
           };
           sinon
-            .stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
+            .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
           await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
@@ -200,6 +232,7 @@ describe('HbarSpendingPlanConfigService', function () {
       });
 
       describe('positive scenarios', function () {
+        // Helper function to save spending plans and their associations from the configurations
         const saveSpendingPlans = async (spendingPlansConfig: SpendingPlanConfig[]) => {
           for (const plan of spendingPlansConfig) {
             await hbarSpendingPlanRepository.create(
@@ -228,6 +261,100 @@ describe('HbarSpendingPlanConfigService', function () {
           ipAddressHbarSpendingPlanRepositorySpy.save.resetHistory();
         };
 
+        // Helper to find obsolete associations (deleted or associated with a different plan in the new config file)
+        const findObsoleteAssociations = (
+          oldConfig: SpendingPlanConfig[],
+          newConfig: SpendingPlanConfig[],
+          fieldName: 'ethAddresses' | 'ipAddresses',
+        ) => {
+          const obsoleteAssociations: { address: string; oldPlanId: string; newPlanId?: string }[] = [];
+
+          oldConfig.forEach((oldPlan) => {
+            oldPlan[fieldName]?.forEach((address) => {
+              const newPlan = newConfig.find((plan) => plan[fieldName]?.includes(address));
+              if (!newPlan || newPlan.id !== oldPlan.id) {
+                obsoleteAssociations.push({ address, oldPlanId: oldPlan.id, newPlanId: newPlan?.id });
+              }
+            });
+          });
+
+          newConfig.forEach((newPlan) => {
+            newPlan[fieldName]?.forEach((address) => {
+              const oldPlan = oldConfig.find((oldPlan) => oldPlan[fieldName]?.includes(address));
+              if (oldPlan) {
+                obsoleteAssociations.push({ address, oldPlanId: oldPlan.id, newPlanId: newPlan.id });
+              }
+            });
+          });
+
+          return obsoleteAssociations;
+        };
+
+        // Helper function to verify spending plans based on the changes in configuration file
+        const verifySpendingPlans = async (oldConfig: SpendingPlanConfig[], newConfig?: SpendingPlanConfig[]) => {
+          const spendingPlans = newConfig || oldConfig;
+
+          // Validate existence of the configured spending plans and their associations to eth and ip addresses
+          for (const plan of spendingPlans) {
+            await verifyResult(() => hbarSpendingPlanRepository.findById(plan.id, emptyRequestDetails), {
+              id: plan.id,
+              subscriptionTier: plan.subscriptionTier,
+              active: true,
+            });
+
+            for (const ethAddress of plan.ethAddresses || []) {
+              await verifyResult(
+                () => ethAddressHbarSpendingPlanRepository.findByAddress(ethAddress, emptyRequestDetails),
+                { ethAddress, planId: plan.id },
+              );
+            }
+
+            for (const ipAddress of plan.ipAddresses || []) {
+              await verifyResult(
+                () => ipAddressHbarSpendingPlanRepository.findByAddress(ipAddress, emptyRequestDetails),
+                { ipAddress, planId: plan.id },
+              );
+            }
+          }
+
+          // If the config has been changed, check for deleted plans and associations which are no longer valid
+          if (newConfig) {
+            const obsoletePlans = oldConfig.filter((oldPlan) => !newConfig.some((plan) => plan.id === oldPlan.id));
+            const obsoleteEthAssociations = findObsoleteAssociations(oldConfig, newConfig, 'ethAddresses');
+            const obsoleteIpAssociations = findObsoleteAssociations(oldConfig, newConfig, 'ipAddresses');
+
+            // Validate non-existence of obsolete plans
+            for (const plan of obsoletePlans) {
+              await verifyResult(
+                () => hbarSpendingPlanRepository.findById(plan.id, emptyRequestDetails),
+                null,
+                `HbarSpendingPlan with ID ${plan.id} not found`,
+                HbarSpendingPlanNotFoundError,
+              );
+            }
+
+            // Validate non-existence of obsolete ETH address associations
+            for (const { address, newPlanId } of obsoleteEthAssociations) {
+              await verifyResult(
+                () => ethAddressHbarSpendingPlanRepository.findByAddress(address, emptyRequestDetails),
+                newPlanId ? { ethAddress: address, planId: newPlanId } : null,
+                `EthAddressHbarSpendingPlan with address ${address} not found`,
+                EthAddressHbarSpendingPlanNotFoundError,
+              );
+            }
+
+            // Validate non-existence of obsolete IP address associations
+            for (const { address, newPlanId } of obsoleteIpAssociations) {
+              await verifyResult(
+                () => ipAddressHbarSpendingPlanRepository.findByAddress(address, emptyRequestDetails),
+                newPlanId ? { ipAddress: address, planId: newPlanId } : null,
+                `IPAddressHbarSpendingPlan not found`,
+                IPAddressHbarSpendingPlanNotFoundError,
+              );
+            }
+          }
+        };
+
         it('should populate the database with pre-configured spending plans', async function () {
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
@@ -244,6 +371,16 @@ describe('HbarSpendingPlanConfigService', function () {
               `Created HBAR spending plan "${name}" with ID "${id}" and subscriptionTier "${subscriptionTier}"`,
             );
           });
+
+          await verifySpendingPlans(spendingPlansConfig);
+        });
+
+        it('should not delete pre-configured spending plans after default cache TTL expires', async function () {
+          await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
+
+          await new Promise((resolve) => setTimeout(resolve, Number(ConfigService.get('CACHE_TTL'))));
+
+          await verifySpendingPlans(spendingPlansConfig);
         });
 
         it('should remove associations of addresses which were previously linked to BASIC spending plans, but now appear in the configuration file', async function () {
@@ -285,6 +422,8 @@ describe('HbarSpendingPlanConfigService', function () {
               });
             }
           });
+
+          await verifySpendingPlans(spendingPlansConfig);
         });
 
         it('should delete obsolete EXTENDED and PRIVILEGED plans from the database', async function () {
@@ -337,6 +476,8 @@ describe('HbarSpendingPlanConfigService', function () {
               sinon.assert.calledWithMatch(cacheServiceSpy.delete, key);
             });
           }
+
+          await verifySpendingPlans(spendingPlansConfig);
         });
 
         it('should not duplicate already existing spending plans and their associations', async function () {
@@ -347,18 +488,19 @@ describe('HbarSpendingPlanConfigService', function () {
           sinon.assert.notCalled(hbarSpendingPlanRepositorySpy.create);
           sinon.assert.notCalled(ethAddressHbarSpendingPlanRepositorySpy.save);
           sinon.assert.notCalled(ipAddressHbarSpendingPlanRepositorySpy.save);
+
+          await verifySpendingPlans(spendingPlansConfig);
         });
 
         it('should save only new associations for ETH addresses', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
-            spendingPlansConfig.map((plan, index) => ({
-              id: plan.id,
-              name: plan.name,
-              subscriptionTier: plan.subscriptionTier,
-              ethAddresses: [toHex(index)].concat(plan.ethAddresses ? plan.ethAddresses : []),
-              ipAddresses: plan.ipAddresses,
-            })),
-          );
+          const newSpendingPlansConfig = spendingPlansConfig.map((plan, index) => ({
+            id: plan.id,
+            name: plan.name,
+            subscriptionTier: plan.subscriptionTier,
+            ethAddresses: [toHex(index)].concat(plan.ethAddresses ? plan.ethAddresses : []),
+            ipAddresses: plan.ipAddresses,
+          }));
+          sinon.stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(newSpendingPlansConfig);
           await saveSpendingPlans(spendingPlansConfig);
 
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
@@ -386,18 +528,19 @@ describe('HbarSpendingPlanConfigService', function () {
               });
             }
           });
+
+          await verifySpendingPlans(spendingPlansConfig, newSpendingPlansConfig);
         });
 
         it('should save only new associations for IP addresses', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
-            spendingPlansConfig.map((plan, index) => ({
-              id: plan.id,
-              name: plan.name,
-              subscriptionTier: plan.subscriptionTier,
-              ethAddresses: plan.ethAddresses,
-              ipAddresses: [`255.0.0.${index}`].concat(plan.ipAddresses ? plan.ipAddresses : []),
-            })),
-          );
+          const newSpendingPlansConfig = spendingPlansConfig.map((plan, index) => ({
+            id: plan.id,
+            name: plan.name,
+            subscriptionTier: plan.subscriptionTier,
+            ethAddresses: plan.ethAddresses,
+            ipAddresses: [`255.0.0.${index}`].concat(plan.ipAddresses ? plan.ipAddresses : []),
+          }));
+          sinon.stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(newSpendingPlansConfig);
           await saveSpendingPlans(spendingPlansConfig);
 
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
@@ -421,18 +564,19 @@ describe('HbarSpendingPlanConfigService', function () {
               });
             }
           });
+
+          await verifySpendingPlans(spendingPlansConfig, newSpendingPlansConfig);
         });
 
         it('should delete obsolete associations for ETH addresses', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
-            spendingPlansConfig.map((plan) => ({
-              id: plan.id,
-              name: plan.name,
-              subscriptionTier: plan.subscriptionTier,
-              ethAddresses: plan.ethAddresses ? [plan.ethAddresses[0]] : [],
-              ipAddresses: plan.ipAddresses,
-            })),
-          );
+          const newSpendingPlansConfig = spendingPlansConfig.map((plan) => ({
+            id: plan.id,
+            name: plan.name,
+            subscriptionTier: plan.subscriptionTier,
+            ethAddresses: plan.ethAddresses ? [plan.ethAddresses[0]] : [],
+            ipAddresses: plan.ipAddresses,
+          }));
+          sinon.stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(newSpendingPlansConfig);
           await saveSpendingPlans(spendingPlansConfig);
 
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
@@ -460,18 +604,19 @@ describe('HbarSpendingPlanConfigService', function () {
               });
             }
           });
+
+          await verifySpendingPlans(spendingPlansConfig, newSpendingPlansConfig);
         });
 
         it('should delete obsolete associations for IP addresses', async function () {
-          sinon.stub(hbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(
-            spendingPlansConfig.map((plan) => ({
-              id: plan.id,
-              name: plan.name,
-              subscriptionTier: plan.subscriptionTier,
-              ethAddresses: plan.ethAddresses,
-              ipAddresses: plan.ipAddresses ? [plan.ipAddresses[0]] : [],
-            })),
-          );
+          const newSpendingPlansConfig = spendingPlansConfig.map((plan) => ({
+            id: plan.id,
+            name: plan.name,
+            subscriptionTier: plan.subscriptionTier,
+            ethAddresses: plan.ethAddresses,
+            ipAddresses: plan.ipAddresses ? [plan.ipAddresses[0]] : [],
+          }));
+          sinon.stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any).returns(newSpendingPlansConfig);
           await saveSpendingPlans(spendingPlansConfig);
 
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
@@ -499,6 +644,8 @@ describe('HbarSpendingPlanConfigService', function () {
               });
             }
           });
+
+          await verifySpendingPlans(spendingPlansConfig, newSpendingPlansConfig);
         });
       });
     });

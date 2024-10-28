@@ -138,7 +138,8 @@ export class RelayImpl implements Relay {
     const total = constants.HBAR_RATE_LIMIT_TOTAL;
 
     this.eventEmitter = new EventEmitter();
-    this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register);
+    const reservedKeys = HbarSpendingPlanConfigService.getPreconfiguredSpendingPlanKeys(logger);
+    this.cacheService = new CacheService(logger.child({ name: 'cache-service' }), register, reservedKeys);
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
       this.cacheService,
