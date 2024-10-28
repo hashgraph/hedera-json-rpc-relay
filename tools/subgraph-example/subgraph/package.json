@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@graphprotocol/graph-ts": "0.35.1",
-    "@graphprotocol/graph-cli": "0.84.0"
+    "@graphprotocol/graph-cli": "0.85.0"
   },
   "devDependencies": {
     "matchstick-as": "0.5.2"
