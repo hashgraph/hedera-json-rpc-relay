@@ -153,13 +153,13 @@ describe('HbarSpendingPlanConfigService', function () {
 
         withOverriddenEnvsInMochaTest(
           {
-            HBAR_SPENDING_PLANS_CONFIG: 'non-existent-file.json',
+            HBAR_SPENDING_PLANS_CONFIG: spendingPlansConfigFile,
           },
           () => {
             it('should throw an error if configuration file is not a parsable JSON', async function () {
               sinon.stub(fs, 'readFileSync').returns('invalid JSON');
               await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-                `File error: Configuration file not found `,
+                `Unexpected token 'i', "invalid JSON" is not valid JSON`,
               );
             });
           },
