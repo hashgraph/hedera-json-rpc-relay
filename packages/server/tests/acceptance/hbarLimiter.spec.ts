@@ -450,13 +450,20 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTxSecond], requestId))
               .to.be.fulfilled;
 
-            // awaiting for HBAR limiter to finish updating expenses in the background
-            await Utils.wait(6000);
-
-            const spendingPlanAssociatedAfterSecond = await hbarSpendingPlanRepository.findByIdWithDetails(
+            let spendingPlanAssociatedAfterSecond = await hbarSpendingPlanRepository.findByIdWithDetails(
               ethSpendingPlan.planId,
               requestDetails,
             );
+
+            while (spendingPlanAssociatedAfterSecond.amountSpent === amountSpendAfterFirst) {
+              // awaiting for HBAR limiter to finish updating expenses in the background
+              await Utils.wait(1000);
+              spendingPlanAssociatedAfterSecond = await hbarSpendingPlanRepository.findByIdWithDetails(
+                ethSpendingPlan.planId,
+                requestDetails,
+              );
+            }
+
             expect(amountSpendAfterFirst).to.be.lt(spendingPlanAssociatedAfterSecond.amountSpent);
 
             // it should use a different BASIC plan for another user
