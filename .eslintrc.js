@@ -17,6 +17,7 @@
  * limitations under the License.
  *
  */
+const path = require('path');
 
 module.exports = {
     "env": {
@@ -27,6 +28,9 @@ module.exports = {
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
         "prettier"
+    ],
+    "plugins": [
+        "license-header"
     ],
     "overrides": [
         {
@@ -49,9 +53,21 @@ module.exports = {
         "@typescript-eslint/ban-ts-comment": "off",
         "@typescript-eslint/no-empty-interface": "off",
         "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/no-var-requires": "off",
         "@typescript-eslint/semi": "off",
+        "@typescript-eslint/no-var-requires": "warn",
+        "@typescript-eslint/ban-types": "warn",
+        "no-trailing-spaces": "error",
+        "no-prototype-builtins": "warn",
+        "prefer-const": "error",
+        "no-unsafe-optional-chaining": "warn",
+        'license-header/header': ['error', path.resolve(__dirname, 'resources/license-header.js')],
         "comma-dangle": [2, "only-multiline"],
-        "semi": [2, "always"]
-    }
+        "semi": [2, "always"],
+        "sort-imports": ["error", {
+            "ignoreCase": true,
+            "ignoreDeclarationSort": true,
+            "ignoreMemberSort": false,
+            "memberSyntaxSortOrder": ["none", "all", "multiple", "single"],
+        }],
+    },
 };
