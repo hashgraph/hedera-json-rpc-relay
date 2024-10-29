@@ -229,11 +229,11 @@ describe('MyClass', () => {
 
 ## Utilizing Helper Methods
 
-### `overrideEnvs`
+### `overrideEnvsInMochaDescribe`
 
 Temporarily overrides environment variables for the duration of the encapsulating describe block.
 
-### `withOverriddenEnvs`
+### `withOverriddenEnvsInMochaTest`
 
 Overrides environment variables for the duration of the provided tests.
 
@@ -252,16 +252,24 @@ Stops the in-memory Redis server.
 ### Example
 
 ```typescript
-import { overrideEnvs, withOverriddenEnvs, useInMemoryRedisServer } from './test-helpers';
-import { overrideEnvsInMochaDescribe } from './helpers';
-import { userInfo } from 'node:os';
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
+import pino from 'pino';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer, withOverriddenEnvsInMochaTest } from './helpers';
+
+chai.use(chaiAsPromised);
 
 describe('MyClass', () => {
   const logger = pino();
 
-  useInMemoryRedisServer(logger, 'port-which-you-want-to-use-for-redis');
+  // Start an in-memory Redis server on a specific port
+  useInMemoryRedisServer(logger, 6379);
+  
+  // Override environment variables for the duration of the describe block
   overrideEnvsInMochaDescribe({
     MY_ENV_VAR: 'common-value-of-env-applied-to-tests-unless-overridden-in-inner-describe',
+    MY_ENV_VAR_2: 'another-common-value-of-env-applied-to-tests-unless-overridden-in-inner-describe',
   });
 
   let serviceThatDependsOnEnv: ServiceThatDependsOnEnv;
@@ -287,7 +295,8 @@ describe('MyClass', () => {
       expect(result).to.equal(expectedValue);
     });
 
-    withOverriddenEnvs({ MY_ENV_VAR: 'overridden-value-of-env' }, () => {
+    // Override environment variables for the duration of the provided tests
+    withOverriddenEnvsInMochaTest({ MY_ENV_VAR: 'overridden-value-of-env' }, () => {
       it('should <expected behavior when MY_ENV_VAR is overridden>', () => {
         const expectedValue = 'expected result when MY_ENV_VAR is overridden';
         const result = myClass.myMethod();
