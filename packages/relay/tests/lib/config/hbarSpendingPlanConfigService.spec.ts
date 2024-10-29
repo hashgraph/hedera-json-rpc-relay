@@ -146,6 +146,11 @@ describe('HbarSpendingPlanConfigService', function () {
 
     describe('populatePreconfiguredSpendingPlans', function () {
       describe('negative scenarios', function () {
+        it('should not throw an error if the configuration file is not found', async function () {
+          sinon.stub(fs, 'existsSync').returns(false);
+          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).not.to.be.rejected;
+        });
+
         withOverriddenEnvsInMochaTest(
           {
             HBAR_SPENDING_PLANS_CONFIG: 'non-existent-file.json',

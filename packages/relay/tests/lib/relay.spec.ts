@@ -105,6 +105,19 @@ describe('RelayImpl', () => {
       });
     });
 
+    describe('when no configuration file is provided', () => {
+      const nonExistingFile = 'nonExistingFile.json';
+      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: nonExistingFile });
+
+      it('should not throw an error', async () => {
+        expect((relay = new RelayImpl(logger, register))).to.not.throw;
+
+        expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
+        await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).to.not.be.rejected;
+        expect(loggerSpy.warn.notCalled).to.be.true;
+      });
+    });
+
     describe('when a configuration file with invalid JSON is provided', () => {
       let path: string | null;
 
