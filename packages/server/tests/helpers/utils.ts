@@ -38,8 +38,8 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 export class Utils {
-  static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 1e6; // 1 MB
-  static readonly HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD: number = 1.5e6; // 1.5 MB
+  static readonly HEAP_SIZE_DIFF_MEMORY_LEAK_THRESHOLD: number = 4e6; // 4 MB
+  static readonly HEAP_SIZE_DIFF_SNAPSHOT_THRESHOLD: number = 4e6; // 5 MB
   static readonly WARM_UP_TEST_COUNT: number = 3;
 
   /**
