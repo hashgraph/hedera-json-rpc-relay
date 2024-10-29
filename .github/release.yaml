@@ -10,3 +10,5 @@ changelog:
       labels: ['documentation']
     - title: 'Dependency Upgrades'
       labels: ['dependencies']
+    - title: 'Internal Changes'
+      labels: ['internal', 'github_action']
