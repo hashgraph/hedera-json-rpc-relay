@@ -48,6 +48,7 @@ import {
   formatContractResult,
   formatTransactionIdWithoutQueryParams,
   getFunctionSelector,
+  hexToASCII,
   isHex,
   isValidEthereumAddress,
   nanOrNumberTo0x,
@@ -55,6 +56,7 @@ import {
   numberTo0x,
   parseNumericEnvVar,
   prepend0x,
+  strip0x,
   toHash32,
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
@@ -2296,9 +2298,20 @@ export class EthImpl implements Eth {
       throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
     }
 
+    const isWrongNonce = (contractResult: { result: string; error_message: any }) => {
+      return (
+        contractResult.result === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE ||
+        hexToASCII(strip0x(contractResult.error_message ?? '')) === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE
+      );
+    };
+
     // prepare transactionArray
     let transactionArray: any[] = [];
     for (const contractResult of contractResults) {
+      if (isWrongNonce(contractResult)) {
+        // skip wrong nonce transactions as they are not valid transactions which should be included in the block
+        continue;
+      }
       contractResult.from = await this.resolveEvmAddress(contractResult.from, requestDetails, [constants.TYPE_ACCOUNT]);
       contractResult.to = await this.resolveEvmAddress(contractResult.to, requestDetails);
       contractResult.chain_id = contractResult.chain_id || this.chain;
@@ -2307,7 +2320,7 @@ export class EthImpl implements Eth {
     }
 
     transactionArray = this.populateSyntheticTransactions(showDetails, logs, transactionArray, requestDetails);
-    transactionArray = showDetails ? _.uniqBy(transactionArray, 'hash') : _.uniq(transactionArray);
+    transactionArray = showDetails ? transactionArray : _.uniq(transactionArray);
 
     const formattedReceipts: IReceiptRootHash[] = ReceiptsRootUtils.buildReceiptRootHashes(
       transactionArray.map((tx) => (showDetails ? tx.hash : tx)),
