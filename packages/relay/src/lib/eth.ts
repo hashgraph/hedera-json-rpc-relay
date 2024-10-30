@@ -34,7 +34,7 @@ import { Transaction as EthersTransaction } from 'ethers';
 import HAPIService from './services/hapiService/hapiService';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { Block, Log, Transaction, Transaction1559 } from './model';
-import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
+import { FileId, Hbar, PrecheckStatusError, TransactionId } from '@hashgraph/sdk';
 import { CacheService } from './services/cacheService/cacheService';
 import { CommonService, FilterService } from './services/ethService';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
@@ -1581,8 +1581,12 @@ export class EthImpl implements Eth {
               await this.getCurrentNetworkExchangeRateInCents(requestDetails),
             ),
         {
-          canRetry: (e: unknown) => {
-            return e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded());
+          canRetry: async (e: unknown) => {
+            return (
+              e instanceof SDKClientError &&
+              (e.isConnectionDropped() || e.isTimeoutExceeded()) &&
+              (await this.isFailedTransaction(requestDetails, e.transactionId))
+            );
           },
           onError: (e: SDKClientError) => {
             this.logger.warn(
@@ -1648,6 +1652,26 @@ export class EthImpl implements Eth {
     }
   }
 
+  async isFailedTransaction(requestDetails: RequestDetails, transactionId?: string): Promise<boolean> {
+    const retryCount = 5;
+    try {
+      const transaction = await this.mirrorNodeClient.repeatedRequest(
+        this.mirrorNodeClient.getTransactionById.name,
+        [transactionId, requestDetails],
+        retryCount,
+        requestDetails,
+      );
+      const isFailed = transaction !== null ? true : false;
+      return isFailed;
+    } catch (e: any) {
+      this.logger.error(
+        e,
+        `${requestDetails.formattedRequestId} Failed to check if transaction ${transactionId} is failed`,
+      );
+      return true;
+    }
+  }
+
   /**
    * Sends a raw transaction with retry logic.
    *
@@ -1665,12 +1689,12 @@ export class EthImpl implements Eth {
     {
       maxAttempts = 2,
       backOff = 500,
-      canRetry = (e: unknown) => true,
+      canRetry,
       onError = (e: SDKClientError) => {},
     }: {
       maxAttempts?: number;
       backOff?: number;
-      canRetry?: (error: unknown) => boolean;
+      canRetry: (error: unknown) => Promise<boolean>;
       onError?: (error: SDKClientError) => void;
     },
   ): Promise<T | undefined> {

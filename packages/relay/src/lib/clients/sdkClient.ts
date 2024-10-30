@@ -724,7 +724,7 @@ export class SDKClient {
         throw e;
       }
 
-      const sdkClientError = new SDKClientError(e, e.message);
+      const sdkClientError = new SDKClientError(e, e.message, transaction.transactionId?.toString());
 
       // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler().
       if (sdkClientError.status && sdkClientError.status === Status.WrongNonce) {
