@@ -1684,6 +1684,7 @@ export class EthImpl implements Eth {
    * @param {(error: SDKClientError) => void} [options.onError=(error) => {}] A function to handle errors that occur during retry attempts.
    * @returns {Promise<T>} A promise resolving to the result of the transaction.
    */
+  //backOff and maxAttempts are hardcoded since this is planned to be just a workaround for issue #3118
   private async sendRawTransactionWithRetry<T>(
     sendRawTransaction: () => T,
     {
