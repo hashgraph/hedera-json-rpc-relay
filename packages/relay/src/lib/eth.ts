@@ -1689,12 +1689,12 @@ export class EthImpl implements Eth {
     {
       maxAttempts = 2,
       backOff = 500,
-      canRetry,
+      canRetry = (error: unknown) => Promise.resolve(true),
       onError = (e: SDKClientError) => {},
     }: {
       maxAttempts?: number;
       backOff?: number;
-      canRetry: (error: unknown) => Promise<boolean>;
+      canRetry?: (error: unknown) => Promise<boolean>;
       onError?: (error: SDKClientError) => void;
     },
   ): Promise<T | undefined> {
@@ -1703,7 +1703,8 @@ export class EthImpl implements Eth {
       try {
         return await sendRawTransaction();
       } catch (e: unknown) {
-        if (!canRetry(e) || count === maxAttempts - 1) {
+        const shouldRetry = await canRetry(e);
+        if (!shouldRetry || count === maxAttempts - 1) {
           throw e;
         }
         onError(e as SDKClientError);
