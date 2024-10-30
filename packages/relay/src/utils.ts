@@ -119,10 +119,10 @@ export class Utils {
     error_message: any;
   }): boolean {
     // @ts-ignore
-    const statuses = JSON.parse(ConfigService.get('EXCLUDED_TRANSACTION_STATUSES'));
+    const statuses = JSON.parse(ConfigService.get('HEDERA_SPECIFIC_REVERT_STATUSES'));
     return (
-      statuses.indexOf(contractResult.result) > -1 ||
-      statuses.indexOf(hexToASCII(strip0x(contractResult.error_message ?? ''))) > -1
+      statuses.includes(contractResult.result) ||
+      statuses.includes(hexToASCII(strip0x(contractResult.error_message ?? '')))
     );
   }
 }

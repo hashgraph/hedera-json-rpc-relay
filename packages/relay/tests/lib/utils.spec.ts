@@ -79,7 +79,7 @@ describe('Utils', () => {
     });
 
     // @ts-ignore
-    JSON.parse(ConfigService.get('EXCLUDED_TRANSACTION_STATUSES')).forEach((status) => {
+    JSON.parse(ConfigService.get('HEDERA_SPECIFIC_REVERT_STATUSES')).forEach((status) => {
       it(`should exclude transaction with result ${status}`, () => {
         expect(Utils.isRevertedDueToHederaSpecificValidation({ result: status, error_message: null })).to.be.true;
       });

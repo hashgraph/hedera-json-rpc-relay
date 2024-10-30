@@ -183,8 +183,8 @@ export class GlobalConfig {
       required: false,
       defaultValue: null,
     },
-    EXCLUDED_TRANSACTION_STATUSES: {
-      envName: 'EXCLUDED_TRANSACTION_STATUSES',
+    HEDERA_SPECIFIC_REVERT_STATUSES: {
+      envName: 'HEDERA_SPECIFIC_REVERT_STATUSES',
       type: 'string',
       required: false,
       defaultValue: '["WRONG_NONCE", "INVALID_ACCOUNT_ID"]',
