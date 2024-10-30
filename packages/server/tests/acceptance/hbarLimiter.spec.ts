@@ -544,10 +544,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               }
               expect.fail(`Expected an error but nothing was thrown`);
             } catch (e: any) {
-              console.error(e.message);
               logger.error(e.message);
               expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
-              const largeContractDeploymentCost = await getExpectedCostOfLastLargeTx(deployedTransaction.data);
               const expectedAmountOfDeployments = Math.floor(maxBasicSpendingLimit / expectedTxCost);
               expect(deploymentCounts).to.eq(expectedAmountOfDeployments);
 
@@ -692,7 +690,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
         });
 
-        describe('Multiple users with different tiers', () => {
+        describe('@hbarlimiter-batch2 Multiple users with different tiers', () => {
           interface AliasAccountPlan {
             aliasAccount: AliasAccount;
             hbarSpendingPlan: IDetailedHbarSpendingPlan;
