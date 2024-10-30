@@ -2298,18 +2298,12 @@ export class EthImpl implements Eth {
       throw predefined.MAX_BLOCK_SIZE(blockResponse.count);
     }
 
-    const isWrongNonce = (contractResult: { result: string; error_message: any }) => {
-      return (
-        contractResult.result === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE ||
-        hexToASCII(strip0x(contractResult.error_message ?? '')) === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE
-      );
-    };
-
     // prepare transactionArray
     let transactionArray: any[] = [];
     for (const contractResult of contractResults) {
-      if (isWrongNonce(contractResult)) {
-        // skip wrong nonce transactions as they are not valid transactions which should be included in the block
+      // there are several hedera-specific validations that occur right before entering the evm
+      // if a transaction has reverted there, we should not include that tx in the block response
+      if (Utils.isRevertedDueToHederaSpecificValidation(contractResult)) {
         continue;
       }
       contractResult.from = await this.resolveEvmAddress(contractResult.from, requestDetails, [constants.TYPE_ACCOUNT]);

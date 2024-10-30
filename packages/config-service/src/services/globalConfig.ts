@@ -183,6 +183,12 @@ export class GlobalConfig {
       required: false,
       defaultValue: null,
     },
+    EXCLUDED_TRANSACTION_STATUSES: {
+      envName: 'EXCLUDED_TRANSACTION_STATUSES',
+      type: 'string',
+      required: false,
+      defaultValue: '["WRONG_NONCE", "INVALID_ACCOUNT_ID"]',
+    },
     FEE_HISTORY_MAX_RESULTS: {
       envName: 'FEE_HISTORY_MAX_RESULTS',
       type: 'number',
