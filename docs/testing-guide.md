@@ -159,62 +159,72 @@ import { CacheService } from './cache-service';
 
 chai.use(chaiAsPromised);
 
-describe('MyClass', () => {
+describe('MyClass', function() {
   let cacheService: CacheService;
   let myClass: MyClass;
 
-  beforeEach(() => {
+  beforeEach(function() {
     // Common setup for all tests
     cacheService = new CacheService();
     myClass = new MyClass(cacheService);
   });
-  
-  afterEach(async () => {
+
+  afterEach(async function() {
     // Do not forget to clean up any changes in the state of the system
     await cacheService.clear();
   });
 
-  describe('myMethod', () => {
-    describe('given a valid input', () => {
+  describe('myMethod', function() {
+    describe('given a valid input', function() {
       let validInput: string;
 
-      beforeEach(() => {
+      beforeEach(function() {
         // Set up for a valid input
         validInput = 'valid input';
       });
 
-      it('should return the expected result', () => {
+      it('should return the expected result', function() {
         const result = myClass.myMethod(validInput);
         expect(result).to.equal('expected result');
       });
 
-      it('should call the dependency method with correct arguments', () => {
+      it('should call the dependency method with correct arguments', async function() {
         const expectedArgs = ['expected', 'arguments'];
         const spy = sinon.spy(myClass, 'dependencyMethod');
+
         myClass.myMethod(validInput);
+
         expect(spy).to.have.been.calledOnceWith(...expectedArgs);
+      });
+
+      it('should change someState after calling myMethod', async function() {
+        const expectedArgs = ['expected', 'arguments'];
+        const spy = sinon.spy(myClass, 'dependencyMethod');
+
+        myClass.myMethod(validInput);
+
+        // Await until the asynchronous dependency method has finished executing before doing the assertions
+        expect(spy).to.have.been.calledOnce;
+        await expect(spy.returnValues[0]).to.be.fulfilled; // or .rejectedWith('expected error message')
+        expect(myClass.someState).to.equal('expected value');
       });
     });
 
-    describe('given an invalid input', () => {
+    describe('given an invalid input', function() {
       let invalidInput: string;
 
-      beforeEach(() => {
+      beforeEach(function() {
         // Set up for an invalid input
         invalidInput = 'invalid input';
       });
 
-      it('should throw an error', () => {
+      it('should throw an error', function() {
         expect(() => myClass.myMethod(invalidInput)).to.throw('expected error message');
       });
 
-      it('should not call the dependency method', () => {
+      it('should not call the dependency method', function() {
         const spy = sinon.spy(myClass, 'dependencyMethod');
-        try {
-          myClass.myMethod(invalidInput);
-        } catch (e) {
-          // Ignore the error, we are only focusing on the spy in this test case
-        }
+        expect(() => myClass.myMethod(invalidInput)).to.throw;
         expect(spy).not.to.have.been.called;
       });
     });
@@ -260,7 +270,7 @@ import { overrideEnvsInMochaDescribe, useInMemoryRedisServer, withOverriddenEnvs
 
 chai.use(chaiAsPromised);
 
-describe('MyClass', () => {
+describe('MyClass', function() {
   const logger = pino();
 
   // Start an in-memory Redis server on a specific port
@@ -275,35 +285,35 @@ describe('MyClass', () => {
   let serviceThatDependsOnEnv: ServiceThatDependsOnEnv;
   let cacheService: CacheService;
   let myClass: MyClass;
-  
-  beforeEach(() => {
+
+  beforeEach(function() {
     // Common setup for all tests
     serviceThatDependsOnEnv = new ServiceThatDependsOnEnv();
     cacheService = new CacheService();
     myClass = new MyClass(serviceThatDependsOnEnv, cacheService);
   });
 
-  afterEach(async () => {
+  afterEach(async function() {
     // Do not forget to clean up any changes in the state of the system
     await cacheService.clear();
   });
 
-  describe('myMethod', () => {
-    it('should <expected behavior>', () => {
+  describe('myMethod', function() {
+    it('should <expected behavior>', function() {
       const expectedValue = 'expected result when MY_ENV_VAR is not overridden';
       const result = myClass.myMethod();
       expect(result).to.equal(expectedValue);
     });
 
     // Override environment variables for the duration of the provided tests
-    withOverriddenEnvsInMochaTest({ MY_ENV_VAR: 'overridden-value-of-env' }, () => {
+    withOverriddenEnvsInMochaTest({ MY_ENV_VAR: 'overridden-value-of-env' }, function() {
       it('should <expected behavior when MY_ENV_VAR is overridden>', () => {
         const expectedValue = 'expected result when MY_ENV_VAR is overridden';
         const result = myClass.myMethod();
         expect(result).to.equal(expectedValue);
       });
 
-      it('should <another expected behavior when MY_ENV_VAR is overridden>', () => {
+      it('should <another expected behavior when MY_ENV_VAR is overridden>', function() {
         const expectedArgs = ['expected', 'arguments'];
         const spy = sinon.spy(serviceThatDependsOnEnv, 'methodThatDependsOnEnv');
         myClass.myMethod();
