@@ -37,12 +37,15 @@ import { EventEmitter } from 'events';
 import pino from 'pino';
 import { SDKClient } from '../../../src/lib/clients';
 import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
-import { JsonRpcError, predefined } from '../../../src';
+import { Eth, JsonRpcError, predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
 import { getRequestId, mockData, overrideEnvsInMochaDescribe, signTransaction } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
 import { RequestDetails } from '../../../src/lib/types';
+import MockAdapter from 'axios-mock-adapter';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 use(chaiAsPromised);
 
@@ -51,7 +54,13 @@ let getSdkClientStub: sinon.SinonStub;
 
 describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  const {
+    restMock,
+    hapiServiceInstance,
+    ethImpl,
+    cacheService,
+  }: { restMock: MockAdapter; hapiServiceInstance: HAPIService; ethImpl: Eth; cacheService: CacheService } =
+    generateEthTestEnv();
 
   const requestDetails = new RequestDetails({ requestId: 'eth_sendRawTransactionTest', ipAddress: '0.0.0.0' });
 
@@ -280,6 +289,55 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         ethImpl,
         [signed, getRequestId()],
       );
+    });
+
+    it('should not send second transaction upon succession', async function () {
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+
+      sdkClientStub.submitEthereumTransaction.resolves({
+        txResponse: {
+          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        } as TransactionResponse,
+        fileId: null,
+      });
+
+      const signed = await signTransaction(transaction);
+
+      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
+      expect(resultingHash).to.equal(ethereumHash);
+      sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
+    });
+
+    it('should send second transaction upon time out', async function () {
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+
+      sdkClientStub.submitEthereumTransaction.onCall(0).throws(new SDKClientError({ status: 21 }, 'timeout exceeded'));
+
+      sdkClientStub.submitEthereumTransaction.onCall(1).resolves({
+        txResponse: {
+          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        } as TransactionResponse,
+        fileId: null,
+      });
+
+      const signed = await signTransaction(transaction);
+
+      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
+      expect(resultingHash).to.equal(ethereumHash);
+      sinon.assert.calledTwice(sdkClientStub.submitEthereumTransaction);
+    });
+
+    it('should not send second transaction on error different from timeout', async function () {
+      sdkClientStub.submitEthereumTransaction
+        .onCall(0)
+        .throws(new SDKClientError({ status: 50 }, 'wrong transaction body'));
+
+      const signed = await signTransaction(transaction);
+
+      const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
+      expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
+      expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
+      sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
     });
   });
 });
