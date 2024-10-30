@@ -121,7 +121,8 @@ jobs:
       - api_batch_3
       - erc20
       - ratelimiter
-      - hbarlimiter
+      - hbarlimiter_batch_1
+      - hbarlimiter_batch_2
       - tokencreate
       - tokenmanagement
       - htsprecompilev1
