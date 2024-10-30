@@ -29,9 +29,6 @@ module.exports = {
         "plugin:@typescript-eslint/recommended",
         "prettier"
     ],
-    "plugins": [
-        "license-header"
-    ],
     "overrides": [
         {
             "env": {
@@ -60,7 +57,6 @@ module.exports = {
         "no-prototype-builtins": "warn",
         "prefer-const": "error",
         "no-unsafe-optional-chaining": "warn",
-        'license-header/header': ['error', path.resolve(__dirname, 'resources/license-header.js')],
         "comma-dangle": [2, "only-multiline"],
         "semi": [2, "always"],
         "sort-imports": ["error", {
