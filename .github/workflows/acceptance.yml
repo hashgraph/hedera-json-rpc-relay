@@ -43,11 +43,17 @@ jobs:
       testfilter: ratelimiter
       test_ws_server: true
 
-  hbarlimiter:
-    name: HBar Limiter
+  hbarlimiter_batch_1:
+    name: HBar Limiter Batch 1
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
-      testfilter: hbarlimiter
+      testfilter: hbarlimiter_batch1
+
+  hbarlimiter_batch_2:
+    name: HBar Limiter Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: hbarlimiter_batch2
 
   tokencreate:
     name: Token Create

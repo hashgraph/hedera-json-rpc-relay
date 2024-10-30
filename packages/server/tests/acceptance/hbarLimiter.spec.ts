@@ -232,7 +232,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         }
       });
 
-      describe('Total HBAR Limit', () => {
+      describe('@hbarlimiter-batch1 Total HBAR Limit', () => {
         it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
           const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
 
@@ -366,7 +366,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('HBAR Rate Limit For Different Spending Plan Tiers', () => {
-        describe('BASIC Tier', () => {
+        describe('@hbarlimiter-batch1 BASIC Tier', () => {
           it('should create a BASIC spending plan for a new user and use the same plan on second transaction and different plan on third transaction from another user', async function () {
             const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
             // awaiting for HBAR limiter to finish updating expenses in the background
@@ -506,7 +506,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
         });
 
-        describe('Preconfigured Tiers', () => {
+        describe('@hbarlimiter-batch2 Preconfigured Tiers', () => {
           const createAliasForNonBasicPlans = async (subscriptionTier: SubscriptionTier) => {
             const aliasAccount = await Utils.createAliasAccount(
               mirrorNode,
