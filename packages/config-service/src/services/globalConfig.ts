@@ -495,10 +495,11 @@ export class GlobalConfig {
       required: false,
       defaultValue: null,
     },
-    NPM_PACKAGE_VERSION: {
+    // the actual env var in the node process is npm_package_version
+    npm_package_version: {
       envName: 'npm_package_version',
       type: 'string',
-      required: false,
+      required: true,
       defaultValue: null,
     },
     OPERATOR_ID_ETH_SENDRAWTRANSACTION: {

@@ -22,6 +22,7 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { GlobalConfig } from '../../../dist/services/globalConfig';
 import { ValidationService } from '../../../dist/services/validationService';
+import { overrideEnvsInMochaDescribe } from '../../../../relay/tests/helpers';
 
 chai.use(chaiAsPromised);
 
@@ -31,6 +32,7 @@ describe('ValidationService tests', async function () {
       CHAIN_ID: '0x12a',
       HEDERA_NETWORK: '{"127.0.0.1:50211":"0.0.3"}',
       MIRROR_NODE_URL: 'http://127.0.0.1:5551',
+      npm_package_version: '1.0.0',
       OPERATOR_ID_MAIN: '0.0.1002',
       OPERATOR_KEY_MAIN:
         '302000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
@@ -52,6 +54,30 @@ describe('ValidationService tests', async function () {
         }),
       ).to.throw('SERVER_PORT must be a valid number.');
       GlobalConfig.ENTRIES.SERVER_PORT.required = false;
+    });
+  });
+
+  describe('package-version', () => {
+    overrideEnvsInMochaDescribe({
+      npm_package_version: undefined,
+    });
+
+    const mandatoryStartUpFields = {
+      CHAIN_ID: '0x12a',
+      HEDERA_NETWORK: '{"127.0.0.1:50211":"0.0.3"}',
+      MIRROR_NODE_URL: 'http://127.0.0.1:5551',
+      OPERATOR_ID_MAIN: '0.0.1002',
+      OPERATOR_KEY_MAIN:
+        '302000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+      SERVER_PORT: '7546',
+    };
+
+    it('should fail fast if npm_package_version is not set', async () => {
+      expect(() =>
+        ValidationService.startUp({
+          ...mandatoryStartUpFields,
+        }),
+      ).to.throw('npm_package_version is a mandatory and the relay cannot operate without its value.');
     });
   });
 
