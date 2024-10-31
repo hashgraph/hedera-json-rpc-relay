@@ -44,6 +44,10 @@ run configuration. You should be able to just run that configuration, and it sho
 
 ## Testing
 
+### Best Practices
+
+- It is highly recommended to read the [Testing Guide](docs/testing-guide.md) for detailed testing strategies and best practices.
+
 ### Postman
 
 First ensure newman is installed locally using `npm`, then execute `newman`.
