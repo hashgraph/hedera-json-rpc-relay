@@ -706,6 +706,125 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             reusableTestsForNonBasicTiers(SubscriptionTier.PRIVILEGED, maxPrivilegedSpendingLimit);
           });
         });
+
+        describe('@hbarlimiter-batch2 Multiple users with different tiers', () => {
+          interface AliasAccountPlan {
+            aliasAccount: AliasAccount;
+            hbarSpendingPlan: IDetailedHbarSpendingPlan;
+          }
+
+          let accountPlanObject: Record<SubscriptionTier, AliasAccountPlan[]>;
+
+          const accountPlanRequirements: Record<SubscriptionTier, number> = {
+            BASIC: 2,
+            EXTENDED: 2,
+            PRIVILEGED: 2,
+          };
+
+          const createMultipleAliasAccountsWithSpendingPlans = async (
+            accountPlanRequirements: Record<SubscriptionTier, number>,
+          ) => {
+            const accountPlanObject: Record<SubscriptionTier, AliasAccountPlan[]> = {
+              BASIC: [],
+              EXTENDED: [],
+              PRIVILEGED: [],
+            };
+
+            for (const [subscriptionTier, numOfAccounts] of Object.entries(accountPlanRequirements)) {
+              for (let i = 0; i < numOfAccounts; i++) {
+                const accountCreatedResult = await createAliasAndAssociateSpendingPlan(
+                  subscriptionTier as SubscriptionTier,
+                );
+                accountPlanObject[subscriptionTier].push(accountCreatedResult);
+              }
+            }
+
+            return accountPlanObject;
+          };
+
+          before(async () => {
+            accountPlanObject = await createMultipleAliasAccountsWithSpendingPlans(accountPlanRequirements);
+          });
+
+          it('should individually update amountSpents of different spending plans', async () => {
+            const callingAccountAddresses: string[] = [];
+            const allAccountAliases = Object.values(accountPlanObject)
+              .flat()
+              .map((accountAliasPlan) => accountAliasPlan.aliasAccount);
+
+            const deployPromises = allAccountAliases.map(async (accountAlias) => {
+              if (Math.random() < 0.5) {
+                const tx = await deployContract(mediumSizeContract, accountAlias.wallet);
+                await tx.waitForDeployment();
+                return accountAlias.address; // Return the address for those that made deployments
+              }
+              return null;
+            });
+
+            const results = await Promise.all(deployPromises);
+            callingAccountAddresses.push(...results.filter((address) => address !== null));
+
+            expect(callingAccountAddresses.length).to.gt(0);
+
+            // awaiting for HBAR limiter to finish updating expenses in the background
+            await Utils.wait(6000);
+
+            // If an account has made a state-changing call, it will have a non-zero `amountSpent` in its associated spending plan.
+            // Otherwise, its `amountSpent` in the associated plan should remain 0.
+            for (const aliasAccountPlan of Object.values(accountPlanObject).flat()) {
+              const associatedSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
+                aliasAccountPlan.hbarSpendingPlan.id,
+                requestDetails,
+              );
+
+              if (callingAccountAddresses.includes(aliasAccountPlan.aliasAccount.address)) {
+                expect(associatedSpendingPlan.amountSpent).to.not.eq(0);
+              } else {
+                expect(associatedSpendingPlan.amountSpent).to.eq(0);
+              }
+            }
+          });
+
+          it(`Should eventually exhaust the total HBAR limits after many large contract deployments by different tiered users`, async () => {
+            const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
+            const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
+
+            const allAccountAliases = Object.values(accountPlanObject)
+              .flat()
+              .map((accountAliasPlan) => accountAliasPlan.aliasAccount);
+
+            let totalHbarSpent = 0;
+            const totalHbarBudget = ConfigService.get(`HBAR_RATE_LIMIT_TINYBAR`) as number;
+            const estimatedTxFee = estimateFileTransactionsFee(
+              largeContractJson.bytecode.length,
+              fileAppendChunkSize,
+              exchangeRateInCents,
+            );
+
+            while (totalHbarSpent + estimatedTxFee < totalHbarBudget) {
+              const promises = allAccountAliases.map(async (accountAlias) => {
+                try {
+                  for (let i = 0; i < 50; i++) {
+                    await deployContract(largeContractJson, accountAlias.wallet);
+                  }
+                  expect.fail(`Expected an error but nothing was thrown`);
+                } catch (e) {
+                  logger.error(e.message);
+                  expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
+
+                  // awaiting for HBAR limiter to finish updating expenses in the background
+                  await Utils.wait(6000);
+                  const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+                  totalHbarSpent = totalHbarBudget - remainingHbars;
+                }
+              });
+
+              await Promise.all(promises);
+            }
+
+            expect(totalHbarSpent + estimatedTxFee).to.gte(totalHbarBudget);
+          });
+        });
       });
     });
   }
