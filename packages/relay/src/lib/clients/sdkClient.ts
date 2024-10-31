@@ -51,7 +51,7 @@ import {
   TransactionRecord,
   TransactionRecordQuery,
   TransactionResponse,
-} from '@hashgraph/sdk';
+} from 'kosi-sdk';
 import { Logger } from 'pino';
 import { Utils } from '../../utils';
 import { EventEmitter } from 'events';
@@ -429,6 +429,7 @@ export class SDKClient {
         originalCallerAddress,
         currentNetworkExchangeRateInCents,
       );
+      this.logger.info('Created file...');
       if (!fileId) {
         throw new SDKClientError({}, `${requestDetails.formattedRequestId} No fileId created for transaction. `);
       }
@@ -440,7 +441,7 @@ export class SDKClient {
     ethereumTransaction.setMaxTransactionFee(
       Hbar.fromTinybars(Math.floor(networkGasPriceInTinyBars * constants.MAX_GAS_PER_SEC)),
     );
-
+    this.logger.info('About to execute transaction...');
     return {
       fileId,
       txResponse: await this.executeTransaction(
@@ -709,9 +710,9 @@ export class SDKClient {
     try {
       this.logger.info(`${requestDetails.formattedRequestId} Execute ${txConstructorName} transaction`);
       transactionResponse = await transaction.execute(this.clientMain);
-
+      this.logger.info('Transaction Response before receipt', transactionResponse);
       transactionId = transactionResponse.transactionId.toString();
-
+      this.logger.info('Transaction Id before receipt', transactionId);
       // .getReceipt() will throw an error if, in any case, the status !== 22 (SUCCESS).
       const transactionReceipt = await transactionResponse.getReceipt(this.clientMain);
 
@@ -732,11 +733,20 @@ export class SDKClient {
       }
 
       this.logger.warn(
+        `${
+          requestDetails.formattedRequestId
+        } Logging more info about failed transaction LogID: ${transaction._getLogId()} Max attempts: ${
+          transaction._maxAttempts
+        }, Grpc deadline ${transaction._grpcDeadline}, NodeIds ${transaction.nodeAccountIds} ${this.clientMain} 
+        Tranasaction ${transaction} `,
+      );
+      this.logger.warn(
         sdkClientError,
         `${requestDetails.formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}) message=${sdkClientError.message}`,
       );
 
       if (!transactionResponse) {
+        this.logger.info('Transaction Response in if', transactionResponse);
         throw predefined.INTERNAL_ERROR(
           `${requestDetails.formattedRequestId} Transaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
         );

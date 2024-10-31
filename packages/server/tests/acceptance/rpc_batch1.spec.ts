@@ -23,7 +23,7 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import { AliasAccount } from '../types/AliasAccount';
 import { Utils } from '../helpers/utils';
-import { FileInfo, FileInfoQuery, Hbar, TransferTransaction } from '@hashgraph/sdk';
+import { FileInfo, FileInfoQuery, Hbar, TransferTransaction } from 'kosi-sdk';
 
 // Assertions from local resources
 import Assertions from '../helpers/assertions';

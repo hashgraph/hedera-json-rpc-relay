@@ -7,8 +7,8 @@
     "@types/co-body": "6.1.0",
     "@types/find-config": "^1.0.4",
     "@types/koa-cors": "^0.0.6",
-    "@types/sinon": "^10.0.20",
     "@types/lodash": "^4.17.7",
+    "@types/sinon": "^10.0.20",
     "@typescript-eslint/eslint-plugin": "^6.5.0",
     "@typescript-eslint/parser": "^6.5.0",
     "ajv": "^8.16.0",
@@ -90,12 +90,14 @@
     "keyv-file": "^0.3.3",
     "koa-cors": "^0.0.16",
     "koa-websocket": "^7.0.0",
+    "kosi-sdk": "1.0.1",
     "lerna": "^8.1.8",
     "pino": "^7.11.0",
     "pino-pretty": "^7.6.1",
-    "prom-client": "^14.0.1",
     "pnpm": "^8.7.1",
-    "redis": "^4.7.0"
+    "prom-client": "^14.0.1",
+    "redis": "^4.7.0",
+    "type": "^2.7.3"
   },
   "overrides": {
     "protobufjs": "^7.2.4",

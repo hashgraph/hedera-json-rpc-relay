@@ -57,7 +57,7 @@ import {
 } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
 import { IContractCallRequest, IContractCallResponse, RequestDetails } from '../../../src/lib/types';
-import { ContractFunctionResult } from '@hashgraph/sdk';
+import { ContractFunctionResult } from 'kosi-sdk';
 
 use(chaiAsPromised);
 

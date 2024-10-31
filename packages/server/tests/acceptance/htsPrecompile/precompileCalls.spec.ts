@@ -21,7 +21,7 @@
 // external resources
 import { solidity } from 'ethereum-waffle';
 import chai, { expect } from 'chai';
-import { ContractId } from '@hashgraph/sdk';
+import { ContractId } from 'kosi-sdk';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../helpers/constants';
 import RelayCall from '../../helpers/constants';

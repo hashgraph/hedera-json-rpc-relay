@@ -18,7 +18,7 @@
  *
  */
 
-import { AccountId, KeyList, PrivateKey } from '@hashgraph/sdk';
+import { AccountId, KeyList, PrivateKey } from 'kosi-sdk';
 import ServicesClient from '../clients/servicesClient';
 import { ethers } from 'ethers';
 

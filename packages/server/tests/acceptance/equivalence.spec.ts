@@ -21,7 +21,7 @@
 import { assert, expect } from 'chai';
 import { Utils } from '../helpers/utils';
 import ServicesClient from '../clients/servicesClient';
-import { ContractFunctionParameters } from '@hashgraph/sdk';
+import { ContractFunctionParameters } from 'kosi-sdk';
 import EstimatePrecompileContractJson from '../contracts/EstimatePrecompileContract.json';
 import Constants from '../helpers/constants';
 import EquivalenceContractJson from '../contracts/EquivalenceContract.json';

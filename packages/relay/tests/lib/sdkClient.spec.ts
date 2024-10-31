@@ -63,7 +63,7 @@ import {
   TransactionId,
   TransactionRecordQuery,
   TransactionResponse,
-} from '@hashgraph/sdk';
+} from 'kosi-sdk';
 import { Context } from 'mocha';
 
 const registry = new Registry();
