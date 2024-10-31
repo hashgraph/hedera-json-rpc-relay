@@ -30,6 +30,14 @@ import { SubscriptionTier } from '../db/types/hbarLimiter/subscriptionTier';
 import { IDetailedHbarSpendingPlan } from '../db/types/hbarLimiter/hbarSpendingPlan';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
+/**
+ * Service for managing pre-configured {@link HbarSpendingPlan} entities.
+ *
+ * It reads the pre-configured spending plans from a JSON file and populates the cache with them.
+ *
+ * @see SpendingPlanConfig
+ * @see SPENDING_PLANS_CONFIG
+ */
 export class HbarSpendingPlanConfigService {
   /**
    * The time-to-live (TTL) for the pre-configured spending plans in the cache.
@@ -328,7 +336,7 @@ export class HbarSpendingPlanConfigService {
   /**
    * Deletes obsolete ETH address associations from the cache.
    *
-   * For example, if an ETH address is associated with a plan different from the one in the {@link SPENDING_PLANS_CONFIG_FILE},
+   * For example, if an ETH address is associated with a plan different from the one in the {@link SPENDING_PLANS_CONFIG},
    * the association is deleted from the cache to allow the new association from the configuration file to take effect.
    *
    * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
@@ -356,7 +364,7 @@ export class HbarSpendingPlanConfigService {
   /**
    * Deletes obsolete IP address associations from the cache.
    *
-   * For example, if an IP address is associated with a plan different from the one in the {@link SPENDING_PLANS_CONFIG_FILE},
+   * For example, if an IP address is associated with a plan different from the one in the {@link SPENDING_PLANS_CONFIG},
    * the association is deleted from the cache to allow the new association from the configuration file to take effect.
    *
    * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
