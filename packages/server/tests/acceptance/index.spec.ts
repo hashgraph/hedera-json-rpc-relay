@@ -82,9 +82,6 @@ global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 describe('RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
-  let relayServer; // Relay Server
-  let socketServer;
-
   global.servicesNode = new ServicesClient(
     NETWORK,
     OPERATOR_ID,
