@@ -239,7 +239,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
           while (initialRemainingHbars - updatedRemainingHbars > expectedTxCost + delta) {
             logger.warn(
-              `Fail to retrieve proper updated remaining HBARs. Polling for the proper updated remaining HBARs: expectedTxCost=${expectedTxCost}, delta=${delta}, initialRemainingHbars=${initialRemainingHbars}, currentUpdatedRemainingHbars=${updatedRemainingHbars}, properUpdatedRemainingHbar=${
+              `Failed to retrieve proper updated remaining HBARs. Polling for the proper updated remaining HBARs: expectedTxCost=${expectedTxCost}, delta=${delta}, initialRemainingHbars=${initialRemainingHbars}, currentUpdatedRemainingHbars=${updatedRemainingHbars}, properUpdatedRemainingHbar=${
                 initialRemainingHbars - expectedTxCost - delta
               }`,
             );
@@ -248,7 +248,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           }
 
           logger.info(
-            `Successfully retrieve proper updated remaining HBARs: expectedTxCost=${expectedTxCost}, delta=${delta}, initialRemainingHbars=${initialRemainingHbars}, currentUpdatedRemainingHbars=${updatedRemainingHbars}, properUpdatedRemainingHbar=${
+            `Successfully retrieved proper updated remaining HBARs: expectedTxCost=${expectedTxCost}, delta=${delta}, initialRemainingHbars=${initialRemainingHbars}, currentUpdatedRemainingHbars=${updatedRemainingHbars}, properUpdatedRemainingHbar=${
               initialRemainingHbars - expectedTxCost - delta
             }`,
           );
