@@ -110,6 +110,12 @@ describe('HbarSpendingPlanConfigService', function () {
       );
     });
 
+    after(async function () {
+      if (ConfigService.get('REDIS_ENABLED')) {
+        await cacheService.disconnectRedisClient();
+      }
+    });
+
     beforeEach(async function () {
       loggerSpy = sinon.spy(logger);
       cacheServiceSpy = sinon.spy(cacheService);
