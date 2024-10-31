@@ -670,7 +670,7 @@ describe('HbarSpendingPlanConfigService', function () {
     });
   });
 
-  describe.only('using LRU cache', function () {
+  describe('using LRU cache', function () {
     overrideEnvsInMochaDescribe({ REDIS_ENABLED: false });
 
     describe('and with a spending plan config file', function () {
