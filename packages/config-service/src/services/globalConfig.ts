@@ -604,6 +604,12 @@ export class GlobalConfig {
       required: false,
       defaultValue: null,
     },
+    TEST_TRANSACTION_RECORD_COST_TOLERANCE: {
+      envName: 'TEST_TRANSACTION_RECORD_COST_TOLERANCE',
+      type: 'boolean',
+      required: false,
+      defaultValue: null,
+    },
     TEST_WS_SERVER: {
       envName: 'TEST_WS_SERVER',
       type: 'boolean',

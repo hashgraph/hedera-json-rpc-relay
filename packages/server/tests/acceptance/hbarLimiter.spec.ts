@@ -101,9 +101,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       return contract;
     };
+    const transactionReecordCostTolerance = Number(ConfigService.get(`TEST_TRANSACTION_RECORD_COST_TOLERANCE`) || 0.02);
 
     const verifyRemainingLimit = (expectedCost: number, remainingHbarsBefore: number, remainingHbarsAfter: number) => {
-      const delta = 0.05 * expectedCost;
+      const delta = transactionReecordCostTolerance * expectedCost;
+      global.logger.debug(`Tolerance: ${transactionReecordCostTolerance}`);
       global.logger.debug(`Expected cost: ${expectedCost} ±${delta}`);
       global.logger.debug(`Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
       global.logger.debug(`Actual delta: ${(remainingHbarsBefore - remainingHbarsAfter) / (expectedCost * 100)}`);
@@ -235,7 +237,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
           // Note: expectedTxCost may be retrieved from mirror node which doesn't include the getRecord transaction fee.
           //       calculating delta = expectedTxCost * tolerance to account for this difference in transaction costs.
-          const delta = expectedTxCost * 0.002;
+          const delta = expectedTxCost * transactionReecordCostTolerance;
 
           while (initialRemainingHbars - updatedRemainingHbars > expectedTxCost + delta) {
             logger.warn(
@@ -320,7 +322,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         });
 
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
-          const TOLERANCE = 0.02;
           const initialRemainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           expect(initialRemainingHbars).to.be.gt(0);
 
@@ -341,8 +342,12 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const hbarLimitReducedAmount = initialRemainingHbars - updatedRemainingHbars;
 
           expect(updatedRemainingHbars).to.be.lt(initialRemainingHbars);
-          Assertions.expectWithinTolerance(amountPaidByOperator, hbarLimitReducedAmount, TOLERANCE);
-          Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
+          Assertions.expectWithinTolerance(
+            amountPaidByOperator,
+            hbarLimitReducedAmount,
+            transactionReecordCostTolerance,
+          );
+          Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, transactionReecordCostTolerance);
         });
 
         it('should verify the estimated and actual transaction fees for file transactions are approximately equal', async function () {
@@ -606,8 +611,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
               const amountSpent = await pollForProperAmountSpent(hbarSpendingPlan, 1, expectedTxCost);
 
-              const tolerance = 0.01;
-              expect(amountSpent).to.be.approximately(expectedTxCost, tolerance * expectedTxCost);
+              expect(amountSpent).to.be.approximately(expectedTxCost, transactionReecordCostTolerance * expectedTxCost);
             });
 
             it(`Should eventually exhaust the hbar limit for ${subscriptionTier} user and still allow another ${subscriptionTier} user to make calls`, async () => {
