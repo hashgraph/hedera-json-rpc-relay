@@ -2302,6 +2302,9 @@ export class EthImpl implements Eth {
       // there are several hedera-specific validations that occur right before entering the evm
       // if a transaction has reverted there, we should not include that tx in the block response
       if (Utils.isRevertedDueToHederaSpecificValidation(contractResult)) {
+        this.logger.debug(
+          `Transaction with hash ${contractResult.hash} is skipped due to hedera-specific validation failure`,
+        );
         continue;
       }
       contractResult.from = await this.resolveEvmAddress(contractResult.from, requestDetails, [constants.TYPE_ACCOUNT]);

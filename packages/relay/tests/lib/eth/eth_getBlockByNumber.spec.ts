@@ -576,8 +576,16 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
         restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, {
           results: [
             ...defaultContractResults.results,
-            { ...defaultContractResults.results[0], result: status },
-            { ...defaultContractResults.results[0], error_message: prepend0x(ASCIIToHex(status)) },
+            {
+              ...defaultContractResults.results[0],
+              result: status,
+              hash: '0xf84b9a38205131431901ca6a945046369f5be81bb579167458d4992427d03bb1',
+            },
+            {
+              ...defaultContractResults.results[0],
+              error_message: prepend0x(ASCIIToHex(status)),
+              hash: '0x9c8d9d99e033c56bec1669a0ea68887b7df69ec1bac55899150b6ed5bc3f4b79',
+            },
           ],
         });
         restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, DEFAULT_ETH_GET_BLOCK_BY_LOGS);
@@ -592,7 +600,8 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
             number: BLOCK_NUMBER_HEX,
             parentHash: BLOCK_HASH_PREV_TRIMMED,
             timestamp: BLOCK_TIMESTAMP_HEX,
-            transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2], // should not include the transaction with wrong nonce
+            // should not include the transaction with wrong nonce or invalid account id
+            transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
             receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
           },
           showDetails,
