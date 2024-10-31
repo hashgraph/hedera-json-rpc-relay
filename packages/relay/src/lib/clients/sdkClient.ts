@@ -473,9 +473,10 @@ export class SDKClient {
       if (e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded())) {
         if (!(await this.isFailedTransaction(requestDetails, e.transactionId))) {
           txResponse = { transactionId: e.transactionId };
+        } else {
+          throw e;
         }
       }
-      throw e;
     }
 
     return {

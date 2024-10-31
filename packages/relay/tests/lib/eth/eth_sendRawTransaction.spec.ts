@@ -35,7 +35,7 @@ import {
 import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
 import { EventEmitter } from 'events';
 import pino from 'pino';
-import { SDKClient } from '../../../src/lib/clients';
+import { MirrorNodeClient, SDKClient } from '../../../src/lib/clients';
 import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
 import { Eth, JsonRpcError, predefined } from '../../../src';
 import RelayAssertions from '../../assertions';
@@ -46,11 +46,14 @@ import { RequestDetails } from '../../../src/lib/types';
 import MockAdapter from 'axios-mock-adapter';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
+import * as utils from '../../../src/formatters';
 
 use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
+let mirrorNodeStub: sinon.SinonStubbedInstance<MirrorNodeClient>;
 let getSdkClientStub: sinon.SinonStub;
+let formatTransactionIdWithoutQueryParamsStub: sinon.SinonStub;
 
 describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
   this.timeout(10000);
@@ -71,6 +74,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     await cacheService.clear(requestDetails);
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
+    mirrorNodeStub = sinon.createStubInstance(MirrorNodeClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
   });
@@ -291,53 +295,61 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       );
     });
 
-    it('should not send second transaction upon succession', async function () {
+    it('should call mirror node upon time out and return successful if found', async function () {
+      const transactionId = '0.0.902';
+      const contractResultEndpoint = `contracts/results/${transactionId}`;
+      formatTransactionIdWithoutQueryParamsStub = sinon.stub(utils, 'formatTransactionIdWithoutQueryParams');
+      formatTransactionIdWithoutQueryParamsStub.returns(transactionId);
+
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
-      sdkClientStub.submitEthereumTransaction.resolves({
-        txResponse: {
-          transactionId: TransactionId.fromString(transactionIdServicesFormat),
-        } as TransactionResponse,
-        fileId: null,
-      });
-
-      const signed = await signTransaction(transaction);
-
-      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
-      expect(resultingHash).to.equal(ethereumHash);
-      sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
-    });
-
-    it('should send second transaction upon time out', async function () {
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
-
-      sdkClientStub.submitEthereumTransaction.onCall(0).throws(new SDKClientError({ status: 21 }, 'timeout exceeded'));
-
-      sdkClientStub.submitEthereumTransaction.onCall(1).resolves({
-        txResponse: {
-          transactionId: TransactionId.fromString(transactionIdServicesFormat),
-        } as TransactionResponse,
-        fileId: null,
-      });
-
-      const signed = await signTransaction(transaction);
-
-      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
-      expect(resultingHash).to.equal(ethereumHash);
-      sinon.assert.calledTwice(sdkClientStub.submitEthereumTransaction);
-    });
-
-    it('should not send second transaction on error different from timeout', async function () {
-      sdkClientStub.submitEthereumTransaction
+      sdkClientStub.submitEthereumTransaction.restore();
+      mirrorNodeStub.repeatedRequest = sinon.stub();
+      mirrorNodeStub.getTransactionById = sinon.stub();
+      sdkClientStub.deleteFile.resolves();
+      sdkClientStub.createFile.resolves(new FileId(0, 0, 5644));
+      sdkClientStub.executeTransaction
         .onCall(0)
-        .throws(new SDKClientError({ status: 50 }, 'wrong transaction body'));
+        .throws(new SDKClientError({ status: 21 }, 'timeout exceeded', transactionId));
+      sdkClientStub.isFailedTransaction.resolves(false);
+      const signed = await signTransaction(transaction);
 
+      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
+      expect(resultingHash).to.equal(ethereumHash);
+    });
+
+    it('should call mirror node upon time out and throw error if not found', async function () {
+      sdkClientStub.submitEthereumTransaction.restore();
+      mirrorNodeStub.repeatedRequest = sinon.stub();
+      mirrorNodeStub.getTransactionById = sinon.stub();
+
+      sdkClientStub.createFile.resolves(new FileId(0, 0, 5644));
+      sdkClientStub.executeTransaction.onCall(0).throws(new SDKClientError({ status: 21 }, 'timeout exceeded'));
+      sdkClientStub.isFailedTransaction.resolves(true);
       const signed = await signTransaction(transaction);
 
       const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
-      expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
-      expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
-      sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
+      console.log(response);
+      expect(response).to.be.instanceOf(JsonRpcError);
+      expect(response.message).to.include('timeout exceeded');
+      sinon.assert.called(sdkClientStub.isFailedTransaction);
+    });
+
+    it('should call mirror node upon connection dropped and throw error if not found', async function () {
+      sdkClientStub.submitEthereumTransaction.restore();
+      mirrorNodeStub.repeatedRequest = sinon.stub();
+      mirrorNodeStub.getTransactionById = sinon.stub();
+
+      sdkClientStub.createFile.resolves(new FileId(0, 0, 5644));
+      sdkClientStub.executeTransaction.onCall(0).throws(new SDKClientError({ status: 21 }, 'Connection dropped'));
+      sdkClientStub.isFailedTransaction.resolves(true);
+      const signed = await signTransaction(transaction);
+
+      const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
+      console.log(response);
+      expect(response).to.be.instanceOf(JsonRpcError);
+      expect(response.message).to.include('Connection dropped');
+      sinon.assert.called(sdkClientStub.isFailedTransaction);
     });
   });
 });
