@@ -39,6 +39,7 @@ jobs:
   title-check:
     name: Title Check
     runs-on: smart-contracts-linux-medium
+    if: ${{ !github.event.pull_request.base.repo.fork }}
     permissions:
       statuses: write
     steps:
