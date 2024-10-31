@@ -384,11 +384,6 @@ describe('HbarSpendingPlanConfigService', function () {
         };
 
         it('should populate the database with pre-configured spending plans', async function () {
-          // Clear existing spending plans.  Needed in CI environment where the plans are already populated
-          for (const plan of spendingPlansConfig) {
-            await hbarSpendingPlanRepository.delete(plan.id, emptyRequestDetails);
-          }
-
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
           spendingPlansConfig.forEach(({ id, name, subscriptionTier }) => {
