@@ -20,6 +20,7 @@
 
 import ws from 'k6/ws';
 import { check } from 'k6';
+import { scenarioDurationGauge } from './index.js';
 
 const errorField = 'error';
 const resultField = 'result';
@@ -37,9 +38,10 @@ function getPayLoad(methodName, paramInput = []) {
   });
 }
 
-function connectToWebSocket(url, methodName, params = [], responseChecks = {}) {
+function connectToWebSocket(url, methodName, scenarioName, params = [], responseChecks = {}) {
   return ws.connect(url, {}, (socket) => {
     socket.on('open', () => {
+      const startTime = Date.now();
       const message = getPayLoad(methodName, params);
       if (isDebugMode) {
         console.log('Connected, sending request: ' + message);
@@ -48,6 +50,7 @@ function connectToWebSocket(url, methodName, params = [], responseChecks = {}) {
 
       socket.on('message', (message) => {
         check(message, responseChecks);
+        scenarioDurationGauge.add(Date.now() - startTime, { scenario: scenarioName });
         socket.close();
       });
     });
