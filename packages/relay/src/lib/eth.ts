@@ -2303,7 +2303,7 @@ export class EthImpl implements Eth {
       // if a transaction has reverted there, we should not include that tx in the block response
       if (Utils.isRevertedDueToHederaSpecificValidation(contractResult)) {
         this.logger.debug(
-          `Transaction with hash ${contractResult.hash} is skipped due to hedera-specific validation failure`,
+          `${requestDetails.formattedRequestId} Transaction with hash ${contractResult.hash} is skipped due to hedera-specific validation failure (${contractResult.result})`,
         );
         continue;
       }
