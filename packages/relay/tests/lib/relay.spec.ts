@@ -20,7 +20,6 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import findConfig from 'find-config';
 import fs from 'fs';
 import pino from 'pino';
 import sinon from 'sinon';
@@ -94,7 +93,7 @@ describe('RelayImpl', () => {
     });
 
     describe('when a configuration file is provided', () => {
-      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: 'spendingPlansConfig.example.json' });
+      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'spendingPlansConfig.example.json' });
 
       it('should populate preconfigured spending plans successfully', async () => {
         expect((relay = new RelayImpl(logger, register))).to.not.throw;
@@ -107,7 +106,7 @@ describe('RelayImpl', () => {
 
     describe('when no configuration file is provided', () => {
       const nonExistingFile = 'nonExistingFile.json';
-      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: nonExistingFile });
+      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: nonExistingFile });
 
       it('should not throw an error', async () => {
         expect((relay = new RelayImpl(logger, register))).to.not.throw;
@@ -119,12 +118,9 @@ describe('RelayImpl', () => {
     });
 
     describe('when a configuration file with invalid JSON is provided', () => {
-      let path: string | null;
-
-      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: 'spendingPlansConfig.example.json' });
+      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'spendingPlansConfig.example.json' });
 
       beforeEach(() => {
-        path = findConfig('spendingPlansConfig.example.json');
         sinon.stub(fs, 'readFileSync').returns('invalid JSON');
       });
 
@@ -134,8 +130,7 @@ describe('RelayImpl', () => {
         expect(populatePreconfiguredSpendingPlansSpy.calledOnce).to.be.true;
         await expect(populatePreconfiguredSpendingPlansSpy.returnValues[0]).not.to.be.rejected;
 
-        const cause = `Failed to parse JSON from ${path}: Unexpected token 'i', "invalid JSON" is not valid JSON`;
-        const message = `Failed to load pre-configured spending plans: ${cause}`;
+        const message = `Failed to load pre-configured spending plans: File error: Unexpected token 'i', "invalid JSON" is not valid JSON`;
         expect(loggerSpy.warn.calledWith(message)).to.be.true;
       });
     });

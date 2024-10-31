@@ -12,6 +12,9 @@
     - [Early Detection and Prevention (Preemptive Rate Limit)](#early-detection-and-prevention-preemptive-rate-limit)
   - [Architecture](#architecture)
     - [High-Level Design](#high-level-design)
+    - [What is an HbarSpendingPlan?](#what-is-an-hbarspendingplan)
+    - [General Users (BASIC tier):](#general-users-basic-tier)
+    - [Supported Projects (EXTENDED tier) and Trusted Partners (PRIVILEGED tier):](#supported-projects-extended-tier-and-trusted-partners-privileged-tier)
     - [Class Diagram](#class-diagram)
       - [Service Layer](#service-layer)
       - [Database Layer:](#database-layer)
@@ -21,6 +24,12 @@
         - [Allocation Algorithm](#allocation-algorithm)
   - [Configurations](#configurations)
     - [Pre-populating the Cache with Spending Plans for Supported Projects and Partner Projects](#pre-populating-the-cache-with-spending-plans-for-supported-projects-and-partner-projects)
+    - [JSON Configuration File](#json-configuration-file)
+      - [The JSON file should have the following structure:](#the-json-file-should-have-the-following-structure)
+      - [Important notes](#important-notes)
+    - [Incremental changes to the JSON file](#incremental-changes-to-the-json-file)
+      - [Adding new partners or supported projects](#adding-new-partners-or-supported-projects)
+      - [Removing or updating existing partners or supported projects](#removing-or-updating-existing-partners-or-supported-projects)
     - [Spending Limits of Different Tiers](#spending-limits-of-different-tiers)
     - [Total Budget and Limit Duration](#total-budget-and-limit-duration)
   - [Additional Considerations](#additional-considerations)
@@ -319,8 +328,8 @@ All other users (ETH and IP addresses which are not specified in the configurati
 
 The relay will read the pre-configured spending plans from a JSON file. This file should be placed in the root directory of the relay.
 
-The default filename for the configuration file is `spendingPlansConfig.json`, but it could also be specified by the environment variable `HBAR_SPENDING_PLANS_CONFIG_FILE`.
-- `HBAR_SPENDING_PLANS_CONFIG_FILE`: The name of the file containing the pre-configured spending plans for supported projects and partners.
+The default filename for the configuration file is `spendingPlansConfig.json`, but it could also be specified by the environment variable `HBAR_SPENDING_PLANS_CONFIG`.
+- `HBAR_SPENDING_PLANS_CONFIG`: The name of the file or environment variable containing the pre-configured spending plans for supported projects and partners.
 
 #### The JSON file should have the following structure:
 ```json
