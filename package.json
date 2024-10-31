@@ -104,16 +104,20 @@
   },
   "lint-staged": {
     "packages/**/src/**/*.ts": [
-      "prettier --write"
+      "prettier --write",
+      "eslint --fix"
     ],
     "packages/**/tests/**/*.ts": [
-      "prettier --write"
+      "prettier --write",
+      "eslint --fix"
     ],
     "!(packages/**/dist/)*.ts": [
-      "prettier --write"
+      "prettier --write",
+      "eslint --fix"
     ],
     "!(packages/**/node_modules/)*.ts": [
-      "prettier --write"
+      "prettier --write",
+      "eslint --fix"
     ]
   },
   "husky": {
