@@ -140,7 +140,9 @@ export class HbarSpendingPlanConfigService {
           const fileContent = fs.readFileSync(configFilePath, 'utf-8');
           return JSON.parse(fileContent) as SpendingPlanConfig[];
         } else {
-          throw new Error(`Configuration file not found at path "${configFilePath ?? spendingPlanConfig}"`);
+          throw new Error(
+            `HBAR Spending Configuration file not found at path "${configFilePath ?? spendingPlanConfig}"`,
+          );
         }
       } catch (fileError: any) {
         throw new Error(`File error: ${fileError.message}`);
