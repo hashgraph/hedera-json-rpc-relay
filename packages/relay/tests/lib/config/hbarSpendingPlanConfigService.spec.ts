@@ -31,9 +31,8 @@ import { SpendingPlanConfig } from '../../../src/lib/types/spendingPlanConfig';
 import { RequestDetails } from '../../../src/lib/types';
 import {
   overrideEnvsInMochaDescribe,
-  startRedisInMemoryServer,
-  stopRedisInMemoryServer,
   toHex,
+  useInMemoryRedisServer,
   verifyResult,
   withOverriddenEnvsInMochaTest,
 } from '../../helpers';
@@ -47,8 +46,6 @@ import {
   HbarSpendingPlanNotFoundError,
   IPAddressHbarSpendingPlanNotFoundError,
 } from '../../../src/lib/db/types/hbarLimiter/errors';
-import { ConfigServiceTestHelper } from '@hashgraph/json-rpc-config-service/tests/configServiceTestHelper';
-import { RedisInMemoryServer } from '../../redisInMemoryServer';
 
 chai.use(chaiAsPromised);
 
@@ -71,7 +68,7 @@ describe('HbarSpendingPlanConfigService', function () {
   const path = findConfig(spendingPlansConfigFile);
   const spendingPlansConfig = JSON.parse(fs.readFileSync(path!, 'utf-8')) as SpendingPlanConfig[];
 
-  const tests = (isSharedCacheEnabled: boolean, isSpendingPlansConfigFile: boolean) => {
+  const tests = (hbarSpendingPlansConfigEnv: string) => {
     let cacheService: CacheService;
     let hbarSpendingPlanRepository: HbarSpendingPlanRepository;
     let ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository;
@@ -83,26 +80,14 @@ describe('HbarSpendingPlanConfigService', function () {
     let hbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<HbarSpendingPlanRepository>;
     let ethAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<EthAddressHbarSpendingPlanRepository>;
     let ipAddressHbarSpendingPlanRepositorySpy: sinon.SinonSpiedInstance<IPAddressHbarSpendingPlanRepository>;
-    let redisInMemoryServer: RedisInMemoryServer;
 
     overrideEnvsInMochaDescribe({
+      HBAR_SPENDING_PLANS_CONFIG: hbarSpendingPlansConfigEnv,
       CACHE_TTL: '100',
       CACHE_MAX: spendingPlansConfig.length.toString(),
     });
 
-    if (isSpendingPlansConfigFile) {
-      ConfigServiceTestHelper.dynamicOverride('HBAR_SPENDING_PLANS_CONFIG', spendingPlansConfigFile);
-    } else {
-      ConfigServiceTestHelper.dynamicOverride('HBAR_SPENDING_PLANS_CONFIG', JSON.stringify(spendingPlansConfig));
-    }
-
     before(async function () {
-      if (isSharedCacheEnabled) {
-        redisInMemoryServer = await startRedisInMemoryServer(logger, 6384);
-      } else {
-        overrideEnvsInMochaDescribe({ REDIS_ENABLED: 'false' });
-      }
-
       const reservedKeys = HbarSpendingPlanConfigService.getPreconfiguredSpendingPlanKeys(logger);
       cacheService = new CacheService(logger.child({ name: 'cache-service' }), registry, reservedKeys);
       hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
@@ -125,13 +110,7 @@ describe('HbarSpendingPlanConfigService', function () {
       );
     });
 
-    after(async function () {
-      if (isSharedCacheEnabled) {
-        await stopRedisInMemoryServer(redisInMemoryServer);
-      }
-    });
-
-    beforeEach(function () {
+    beforeEach(async function () {
       loggerSpy = sinon.spy(logger);
       cacheServiceSpy = sinon.spy(cacheService);
       hbarSpendingPlanRepositorySpy = sinon.spy(hbarSpendingPlanRepository);
@@ -158,9 +137,9 @@ describe('HbarSpendingPlanConfigService', function () {
           () => {
             it('should throw an error if configuration file is not a parsable JSON', async function () {
               sinon.stub(fs, 'readFileSync').returns('invalid JSON');
-              await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-                `Unexpected token 'i', "invalid JSON" is not valid JSON`,
-              );
+              await expect(
+                hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans(),
+              ).to.be.eventually.rejectedWith(`Unexpected token 'i', "invalid JSON" is not valid JSON`);
             });
           },
         );
@@ -175,9 +154,9 @@ describe('HbarSpendingPlanConfigService', function () {
             .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`,
-          );
+          await expect(
+            hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans(),
+          ).to.be.eventually.rejectedWith(`Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`);
         });
 
         it('should throw an error if the configuration file has entry without name', async function () {
@@ -190,9 +169,9 @@ describe('HbarSpendingPlanConfigService', function () {
             .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`,
-          );
+          await expect(
+            hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans(),
+          ).to.be.eventually.rejectedWith(`Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`);
         });
 
         it('should throw an error if the configuration file has entry without subscriptionTier', async function () {
@@ -205,9 +184,9 @@ describe('HbarSpendingPlanConfigService', function () {
             .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`,
-          );
+          await expect(
+            hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans(),
+          ).to.be.eventually.rejectedWith(`Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`);
         });
 
         it('should throw an error if the configuration file has entry with invalid subscriptionTier', async function () {
@@ -221,9 +200,9 @@ describe('HbarSpendingPlanConfigService', function () {
             .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`,
-          );
+          await expect(
+            hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans(),
+          ).to.be.eventually.rejectedWith(`Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`);
         });
 
         it('should throw an error if the configuration file has entry without ethAddresses and ipAddresses', async function () {
@@ -236,9 +215,9 @@ describe('HbarSpendingPlanConfigService', function () {
             .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`,
-          );
+          await expect(
+            hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans(),
+          ).to.be.eventually.rejectedWith(`Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`);
         });
 
         it('should throw an error if the configuration file has entry with empty ethAddresses and ipAddresses', async function () {
@@ -253,9 +232,9 @@ describe('HbarSpendingPlanConfigService', function () {
             .stub(HbarSpendingPlanConfigService, 'loadSpendingPlansConfig' as any)
             .returns([...spendingPlansConfig, invalidPlan]);
 
-          await expect(hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans()).to.be.rejectedWith(
-            `Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`,
-          );
+          await expect(
+            hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans(),
+          ).to.be.eventually.rejectedWith(`Invalid spending plan configuration: ${JSON.stringify(invalidPlan)}`);
         });
       });
 
@@ -680,22 +659,26 @@ describe('HbarSpendingPlanConfigService', function () {
   };
 
   describe('using Redis cache', function () {
+    useInMemoryRedisServer(logger, 6384);
+
     describe('and with a spending plan config file', function () {
-      tests(true, true);
+      tests(spendingPlansConfigFile);
     });
 
     describe('and with a spending plan config variable', function () {
-      tests(true, false);
+      tests(JSON.stringify(spendingPlansConfig));
     });
   });
 
-  describe('using LRU cache', function () {
+  describe.only('using LRU cache', function () {
+    overrideEnvsInMochaDescribe({ REDIS_ENABLED: false });
+
     describe('and with a spending plan config file', function () {
-      tests(false, true);
+      tests(spendingPlansConfigFile);
     });
 
     describe('and with a spending plan config variable', function () {
-      tests(false, false);
+      tests(JSON.stringify(spendingPlansConfig));
     });
   });
 });

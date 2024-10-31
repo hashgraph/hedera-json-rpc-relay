@@ -20,7 +20,6 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import findConfig from 'find-config';
 import fs from 'fs';
 import pino from 'pino';
 import sinon from 'sinon';
@@ -107,7 +106,7 @@ describe('RelayImpl', () => {
 
     describe('when no configuration file is provided', () => {
       const nonExistingFile = 'nonExistingFile.json';
-      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG_FILE: nonExistingFile });
+      overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: nonExistingFile });
 
       it('should not throw an error', async () => {
         expect((relay = new RelayImpl(logger, register))).to.not.throw;
@@ -119,12 +118,9 @@ describe('RelayImpl', () => {
     });
 
     describe('when a configuration file with invalid JSON is provided', () => {
-      let path: string | null;
-
       overrideEnvsInMochaDescribe({ HBAR_SPENDING_PLANS_CONFIG: 'spendingPlansConfig.example.json' });
 
       beforeEach(() => {
-        path = findConfig('spendingPlansConfig.example.json');
         sinon.stub(fs, 'readFileSync').returns('invalid JSON');
       });
 

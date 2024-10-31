@@ -131,7 +131,8 @@ export class HbarSpendingPlanConfigService {
     const spendingPlanConfig = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') as string;
 
     if (!spendingPlanConfig) {
-      throw new Error('HBAR_SPENDING_PLANS_CONFIG is undefined');
+      logger.trace('HBAR_SPENDING_PLANS_CONFIG is undefined');
+      return [];
     }
 
     // Try to parse the value directly as JSON
@@ -148,9 +149,8 @@ export class HbarSpendingPlanConfigService {
           const fileContent = fs.readFileSync(configFilePath, 'utf-8');
           return JSON.parse(fileContent) as SpendingPlanConfig[];
         } else {
-          throw new Error(
-            `HBAR Spending Configuration file not found at path "${configFilePath ?? spendingPlanConfig}"`,
-          );
+          logger.trace(`HBAR Spending Configuration file not found at path "${configFilePath ?? spendingPlanConfig}"`);
+          return [];
         }
       } catch (fileError: any) {
         throw new Error(`File error: ${fileError.message}`);
