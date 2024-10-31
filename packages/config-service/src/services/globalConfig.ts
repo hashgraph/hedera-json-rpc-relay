@@ -606,7 +606,7 @@ export class GlobalConfig {
     },
     TEST_TRANSACTION_RECORD_COST_TOLERANCE: {
       envName: 'TEST_TRANSACTION_RECORD_COST_TOLERANCE',
-      type: 'boolean',
+      type: 'number',
       required: false,
       defaultValue: null,
     },
