@@ -1568,34 +1568,16 @@ export class EthImpl implements Eth {
     let fileId: FileId | null = null;
     let txSubmitted = false;
     try {
-      const sendRawTransactionResult = await this.sendRawTransactionWithRetry(
-        async () =>
-          await this.hapiService
-            .getSDKClient()
-            .submitEthereumTransaction(
-              transactionBuffer,
-              EthImpl.ethSendRawTransaction,
-              requestDetails,
-              originalCallerAddress,
-              networkGasPriceInWeiBars,
-              await this.getCurrentNetworkExchangeRateInCents(requestDetails),
-            ),
-        {
-          canRetry: async (e: unknown) => {
-            return (
-              e instanceof SDKClientError &&
-              (e.isConnectionDropped() || e.isTimeoutExceeded()) &&
-              (await this.isFailedTransaction(requestDetails, e.transactionId))
-            );
-          },
-          onError: (e: SDKClientError) => {
-            this.logger.warn(
-              `${requestIdPrefix} SDK Client has probably timed out, trying again with a new instance...`,
-            );
-            this.hapiService.decrementErrorCounter(e.statusCode);
-          },
-        },
-      );
+      const sendRawTransactionResult = await this.hapiService
+        .getSDKClient()
+        .submitEthereumTransaction(
+          transactionBuffer,
+          EthImpl.ethSendRawTransaction,
+          requestDetails,
+          originalCallerAddress,
+          networkGasPriceInWeiBars,
+          await this.getCurrentNetworkExchangeRateInCents(requestDetails),
+        );
 
       txSubmitted = true;
       fileId = sendRawTransactionResult!.fileId;
@@ -1648,69 +1630,6 @@ export class EthImpl implements Eth {
           .getSDKClient()
           .deleteFile(fileId, requestDetails, EthImpl.ethSendRawTransaction, fileId.toString(), originalCallerAddress)
           .then();
-      }
-    }
-  }
-
-  async isFailedTransaction(requestDetails: RequestDetails, transactionId?: string): Promise<boolean> {
-    const retryCount = 5;
-    try {
-      const transaction = await this.mirrorNodeClient.repeatedRequest(
-        this.mirrorNodeClient.getTransactionById.name,
-        [transactionId, requestDetails],
-        retryCount,
-        requestDetails,
-      );
-      const isFailed = transaction !== null ? true : false;
-      return isFailed;
-    } catch (e: any) {
-      this.logger.error(
-        e,
-        `${requestDetails.formattedRequestId} Failed to check if transaction ${transactionId} is failed`,
-      );
-      return true;
-    }
-  }
-
-  /**
-   * Sends a raw transaction with retry logic.
-   *
-   * @template T The type of the result returned by the sendRawTransaction function.
-   * @param {Function} sendRawTransaction The function responsible for sending the raw transaction.
-   * @param {object} options The options for retrying the transaction.
-   * @param {number} [options.maxAttempts=2] The maximum number of attempts to send the transaction.
-   * @param {number} [options.backOff=500] The backoff period in milliseconds between retry attempts.
-   * @param {(error: unknown) => boolean} [options.canRetry=(error) => true] A function that determines whether a retry attempt can be made based on the error received.
-   * @param {(error: SDKClientError) => void} [options.onError=(error) => {}] A function to handle errors that occur during retry attempts.
-   * @returns {Promise<T>} A promise resolving to the result of the transaction.
-   */
-  //backOff and maxAttempts are hardcoded since this is planned to be just a workaround for issue #3118
-  private async sendRawTransactionWithRetry<T>(
-    sendRawTransaction: () => T,
-    {
-      maxAttempts = 2,
-      backOff = 500,
-      canRetry = (error: unknown) => Promise.resolve(true),
-      onError = (e: SDKClientError) => {},
-    }: {
-      maxAttempts?: number;
-      backOff?: number;
-      canRetry?: (error: unknown) => Promise<boolean>;
-      onError?: (error: SDKClientError) => void;
-    },
-  ): Promise<T | undefined> {
-    const delay = (backOff) => new Promise((resolve) => setTimeout(resolve, backOff));
-    for (let count = 0; count < maxAttempts; count++) {
-      try {
-        return await sendRawTransaction();
-      } catch (e: unknown) {
-        const shouldRetry = await canRetry(e);
-        if (!shouldRetry || count === maxAttempts - 1) {
-          throw e;
-        }
-        onError(e as SDKClientError);
-        // eslint-disable-next-line no-await-in-loop
-        await delay(backOff);
       }
     }
   }
