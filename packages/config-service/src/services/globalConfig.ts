@@ -321,8 +321,8 @@ export class GlobalConfig {
       required: true,
       defaultValue: null,
     },
-    HBAR_SPENDING_PLANS_CONFIG_FILE: {
-      envName: 'HBAR_SPENDING_PLANS_CONFIG_FILE',
+    HBAR_SPENDING_PLANS_CONFIG: {
+      envName: 'HBAR_SPENDING_PLANS_CONFIG',
       type: 'string',
       required: false,
       defaultValue: 'spendingPlansConfig.json',

@@ -36,6 +36,7 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
  * It reads the pre-configured spending plans from a JSON file and populates the cache with them.
  *
  * @see SpendingPlanConfig
+ * @see SPENDING_PLANS_CONFIG
  */
 export class HbarSpendingPlanConfigService {
   /**
@@ -127,17 +128,33 @@ export class HbarSpendingPlanConfigService {
    * @private
    */
   private static loadSpendingPlansConfig(logger: Logger): SpendingPlanConfig[] {
-    const filename = String(ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE'));
-    const configPath = findConfig(filename);
-    if (!configPath || !fs.existsSync(configPath)) {
-      logger.trace(`Configuration file not found at path "${configPath ?? filename}"`);
+    const spendingPlanConfig = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') as string;
+
+    if (!spendingPlanConfig) {
+      logger.trace('HBAR_SPENDING_PLANS_CONFIG is undefined');
       return [];
     }
+
+    // Try to parse the value directly as JSON
     try {
-      const rawData = fs.readFileSync(configPath, 'utf-8');
-      return JSON.parse(rawData) as SpendingPlanConfig[];
-    } catch (error: any) {
-      throw new Error(`Failed to parse JSON from ${configPath}: ${error.message}`);
+      return JSON.parse(spendingPlanConfig) as SpendingPlanConfig[];
+    } catch (jsonParseError: any) {
+      // If parsing as JSON fails, treat it as a file path
+      logger.trace(
+        `Failed to parse HBAR_SPENDING_PLAN as JSON: ${jsonParseError.message}, now treating it as a file path...`,
+      );
+      try {
+        const configFilePath = findConfig(spendingPlanConfig);
+        if (configFilePath && fs.existsSync(configFilePath)) {
+          const fileContent = fs.readFileSync(configFilePath, 'utf-8');
+          return JSON.parse(fileContent) as SpendingPlanConfig[];
+        } else {
+          logger.trace(`HBAR Spending Configuration file not found at path "${configFilePath ?? spendingPlanConfig}"`);
+          return [];
+        }
+      } catch (fileError: any) {
+        throw new Error(`File error: ${fileError.message}`);
+      }
     }
   }
 
@@ -319,7 +336,7 @@ export class HbarSpendingPlanConfigService {
   /**
    * Deletes obsolete ETH address associations from the cache.
    *
-   * For example, if an ETH address is associated with a plan different from the one in the {@link SPENDING_PLANS_CONFIG_FILE},
+   * For example, if an ETH address is associated with a plan different from the one in the {@link SPENDING_PLANS_CONFIG},
    * the association is deleted from the cache to allow the new association from the configuration file to take effect.
    *
    * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
@@ -347,7 +364,7 @@ export class HbarSpendingPlanConfigService {
   /**
    * Deletes obsolete IP address associations from the cache.
    *
-   * For example, if an IP address is associated with a plan different from the one in the {@link SPENDING_PLANS_CONFIG_FILE},
+   * For example, if an IP address is associated with a plan different from the one in the {@link SPENDING_PLANS_CONFIG},
    * the association is deleted from the cache to allow the new association from the configuration file to take effect.
    *
    * @param {SpendingPlanConfig} planConfig - The spending plan configuration.
