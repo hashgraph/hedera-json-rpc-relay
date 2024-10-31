@@ -237,7 +237,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
 
           // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(10000);
+          await Utils.wait(6000);
 
           const parentContractAddress = parentContract.target as string;
           global.logger.trace(
@@ -261,7 +261,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
 
           // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(10000);
+          await Utils.wait(6000);
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
@@ -276,7 +276,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
 
           // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(10000);
+          await Utils.wait(6000);
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
@@ -292,7 +292,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
 
           // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(10000);
+          await Utils.wait(6000);
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
@@ -308,7 +308,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
 
           // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(10000);
+          await Utils.wait(6000);
 
           const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
@@ -325,7 +325,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const totalOperatorFees = await getExpectedCostOfLastLargeTx(largeContract.deploymentTransaction()!.data);
 
           // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(10000);
+          await Utils.wait(6000);
 
           const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
             .balance;
@@ -370,7 +370,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           it('should create a BASIC spending plan for a new user and use the same plan on second transaction and different plan on third transaction from another user', async function () {
             const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
             // awaiting for HBAR limiter to finish updating expenses in the background
-            await Utils.wait(10000);
+            await Utils.wait(6000);
 
             const parentContractAddress = parentContract.target as string;
             global.logger.trace(
@@ -392,7 +392,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               .fulfilled;
 
             // awaiting for HBAR limiter to finish updating expenses in the background
-            await Utils.wait(10000);
+            await Utils.wait(6000);
 
             const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
               accounts[2].address,
@@ -419,7 +419,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               .to.be.fulfilled;
 
             // awaiting for HBAR limiter to finish updating expenses in the background
-            await Utils.wait(10000);
+            await Utils.wait(6000);
 
             const spendingPlanAssociatedAfterSecond = await hbarSpendingPlanRepository.findByIdWithDetails(
               ethSpendingPlan.planId,
@@ -480,7 +480,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               expect(deploymentCounts).to.eq(expectedAmountOfDeployments);
 
               // awaiting for HBAR limiter to finish updating expenses in the background
-              await Utils.wait(10000);
+              await Utils.wait(6000);
 
               const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
                 accounts[2].wallet.address,
@@ -549,7 +549,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
 
               // awaiting for HBAR limiter to finish updating expenses in the background
-              await Utils.wait(10000);
+              await Utils.wait(6000);
 
               const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
                 hbarSpendingPlan.id,
@@ -592,7 +592,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                 expect(deploymentCounts).to.eq(expectedAmountOfDeployments);
 
                 // awaiting for HBAR limiter to finish updating expenses in the background
-                await Utils.wait(10000);
+                await Utils.wait(6000);
 
                 const spendingPlanAssociated = await hbarSpendingPlanRepository.findByIdWithDetails(
                   hbarSpendingPlan.id,
