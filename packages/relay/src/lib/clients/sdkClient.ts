@@ -795,9 +795,13 @@ export class SDKClient {
       );
 
       if (!transactionResponse) {
-        throw predefined.INTERNAL_ERROR(
-          `${requestDetails.formattedRequestId} Transaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
-        );
+        if (sdkClientError.isConnectionDropped() || sdkClientError.isTimeoutExceeded()) {
+          throw sdkClientError;
+        } else {
+          throw predefined.INTERNAL_ERROR(
+            `${requestDetails.formattedRequestId} Transaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
+          );
+        }
       }
       return transactionResponse;
     } finally {
