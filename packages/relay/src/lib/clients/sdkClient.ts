@@ -501,7 +501,7 @@ export class SDKClient {
         retryCount,
         requestDetails,
       );
-      const isFailed = transaction !== null ? true : false;
+      const isFailed = transaction !== null;
       return isFailed;
     } catch (e: any) {
       this.logger.error(

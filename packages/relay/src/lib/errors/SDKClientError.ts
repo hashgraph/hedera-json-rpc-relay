@@ -32,7 +32,7 @@ export class SDKClientError extends Error {
       this.validNetworkError = true;
       this.status = e.status;
     }
-    this.failedTransactionId = transactionId ? transactionId : '';
+    this.failedTransactionId = transactionId || '';
     Object.setPrototypeOf(this, SDKClientError.prototype);
   }
 
