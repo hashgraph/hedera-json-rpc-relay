@@ -28,7 +28,13 @@ module.exports = {
         "plugin:@typescript-eslint/recommended",
         "prettier",
     ],
+<<<<<<< HEAD
     "plugins": ["simple-import-sort"],
+=======
+    "plugins":  [
+        "header"
+    ],
+>>>>>>> 497d7a52 (Adds check for license header)
     "overrides": [
         {
             "env": {
