@@ -471,11 +471,13 @@ export class SDKClient {
       );
     } catch (e: any) {
       if (e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded())) {
-        if (!(await this.isFailedTransaction(requestDetails, e.transactionId))) {
-          txResponse = { transactionId: e.transactionId };
-        } else {
+        const isFailed = await this.isFailedTransaction(requestDetails, e.transactionId);
+        if (isFailed) {
           throw e;
         }
+        txResponse = { transactionId: e.transactionId };
+      } else {
+        throw e;
       }
     }
 
