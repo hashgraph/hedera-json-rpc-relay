@@ -27,13 +27,13 @@ The following table lists the available properties along with their default valu
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
 | Name                        | Default   | Description                                                                                                                                                                                                                       |
-|-----------------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `BATCH_REQUESTS_ENABLED`    | "true"    | Flag to disable or enable batch requests.                                                                                                                                                                                         |
 | `BATCH_REQUESTS_MAX_SIZE`   | "100"     | Maximum number of requests allowed in a batch.                                                                                                                                                                                    |
 | `CHAIN_ID`                  | ""        | The network chain id. Local and previewnet envs should use `0x12a` (298). Previewnet, Testnet and Mainnet should use `0x129` (297), `0x128` (296) and `0x127` (295) respectively.                                                 |
 | `HEDERA_NETWORK`            | ""        | Which network to connect to. Automatically populates the main node & mirror node endpoints. Can be `previewnet`, `testnet`, `mainnet` or a map of network IPs -> node accountIds e.g. `{"127.0.0.1:50211":"0.0.3"}`               |
 | `INPUT_SIZE_LIMIT`          | "1mb"     | The [koa-jsonrpc](https://github.com/Bitclimb/koa-jsonrpc) maximum size allowed for requests                                                                                                                                      |
-| `LOG_LEVEL       `          | "trace"   | The logging level for the application. Valid values are `trace`, `debug`, `info`, `warn`, `error`, and `fatal`.                                                                                                                       |
+| `LOG_LEVEL       `          | "trace"   | The logging level for the application. Valid values are `trace`, `debug`, `info`, `warn`, `error`, and `fatal`.                                                                                                                   |
 | `MAX_BLOCK_RANGE`           | "5"       | The maximum block number greater than the mirror node's latest block to query for                                                                                                                                                 |
 | `OPERATOR_ID_MAIN`          | ""        | Operator account ID used to pay for transactions. In `S.R.N` format, e.g. `0.0.1001`.                                                                                                                                             |
 | `OPERATOR_KEY_FORMAT`       | "DER"     | Operator private key format. Valid types are `DER`, `HEX_ECDSA`, or `HEX_ED25519`                                                                                                                                                 |
@@ -50,7 +50,7 @@ The following table lists the available properties along with their default valu
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
 | Name                                        | Default                    | Description                                                                                                                                                                                                                                                                                            |
-|---------------------------------------------|----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `CACHE_MAX`                                 | "1000"                     | The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).                                                                                                                                                                                        |
 | `CACHE_TTL`                                 | "3_600_000"                | Max time to live in ms, for items before they are considered stale. Default is one hour in milliseconds                                                                                                                                                                                                |
 | `CLIENT_TRANSPORT_SECURITY`                 | "false"                    | Flag to enable or disable TLS for both networks.                                                                                                                                                                                                                                                       |
@@ -117,7 +117,7 @@ The following table lists the available properties along with their default valu
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
 | Name                            | Default     | Description                                                                                                                                                                                                                                 |
-|---------------------------------|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `WS_BATCH_REQUESTS_ENABLED`     | "true"      | Flag to disable or enable batch requests on the websocket server.                                                                                                                                                                           |
 | `WS_BATCH_REQUESTS_MAX_SIZE`    | "20"        | Maximum number of requests allowed in a batch on websocket server.                                                                                                                                                                          |
 | `SUBSCRIPTIONS_ENABLED`         | "false"     | If enabled eth_subscribe will be enabled using WebSockets.                                                                                                                                                                                  |
@@ -182,13 +182,14 @@ See [`.env.previewnet.sample`](./examples/.env.previewnet.sample).
 The following table lists the available properties along with their default values for the tests utilized in the [Server](/packages/server/) and [Relay](/packages/relay/) packages.
 Unless you need to set a non-default value, it is recommended to only populate overridden properties in the custom `.env`.
 
-| Name                       | Default | Description                                                                   |
-| -------------------------- | ------- | ----------------------------------------------------------------------------- |
-| `LOCAL_NODE`               | ""      | Flag if relay is hosted in the Hedera local node setup.                       |
-| `E2E_RELAY_HOST`           | ""      | Remote relay url to point to.                                                 |
-| `DEV_MODE`                 | "false" | Flag if relay should operate in developer optimization mode.                  |
-| `TEST_WS_SERVER`           | "false" | Flag config for enable or disable the WS server tests.                        |
-| `TEST_GAS_PRICE_DEVIATION` | 0.2     | Value to use as deviation when comparing gas prices in the rpc-batch1.spec.ts |
+| Name                                     | Default | Description                                                                                        |
+| ---------------------------------------- | ------- | -------------------------------------------------------------------------------------------------- |
+| `LOCAL_NODE`                             | ""      | Flag if relay is hosted in the Hedera local node setup.                                            |
+| `E2E_RELAY_HOST`                         | ""      | Remote relay url to point to.                                                                      |
+| `DEV_MODE`                               | "false" | Flag if relay should operate in developer optimization mode.                                       |
+| `TEST_WS_SERVER`                         | "false" | Flag config for enable or disable the WS server tests.                                             |
+| `TEST_GAS_PRICE_DEVIATION`               | 0.2     | Value to use as deviation when comparing gas prices in the rpc-batch1.spec.ts                      |
+| `TEST_TRANSACTION_RECORD_COST_TOLERANCE` | 0.02    | Defines the acceptable tolerance level for discrepancies in transaction record costs during tests. |
 
 For test context additional fields need to be set. The following example showcases a `hedera-local-node` instance (where values match those noted on [Local Node Network Variables](https://github.com/hashgraph/hedera-local-node#network-variables)
 
@@ -230,6 +231,7 @@ CLIENT_DURATION_RESET= 21600
 CLIENT_ERROR_RESET= 100
 MAX_CHUNKS=20
 TEST_GAS_PRICE_DEVIATION=0.80
+TEST_TRANSACTION_RECORD_COST_TOLERANCE=0.05
 ```
 
 > **_NOTE:_** Acceptance tests can be pointed at a remote locations (previewnet and testnet and custom environments). In this case configuration will require details for remote consensus node gRPC endpoints [previewnet / testnet](https://docs.hedera.com/hedera/networks/testnet/testnet-nodes) / [mainnet](https://docs.hedera.com/hedera/networks/mainnet/mainnet-nodes) and [Mirror Node REST API endpoints](https://docs.hedera.com/hedera/sdks-and-apis/rest-api), be sure to configure `HEDERA_NETWORK` and `MIRROR_NODE_URL` appropriately to point away from your local host and to valid deployed services. When pointing to previewnet and testnet, account Ids (`OPERATOR_ID_MAIN`) and private keys (`OPERATOR_KEY_MAIN`) for previewnet and tests may be obtained from the [Hedera Portal](http://portal.hedera.com).
