@@ -75,7 +75,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     relayIsLocal: boolean;
   } = global;
   const mockTTL = 60000; // 60 secs
-  const operatorAccount = ConfigService.get('OPERATOR_ID_MAIN') || DOT_ENV.OPERATOR_ID_MAIN || '';
+  const operatorAccount = (ConfigService.get('OPERATOR_ID_MAIN') as string) || DOT_ENV.OPERATOR_ID_MAIN || '';
   const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
@@ -101,9 +101,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       return contract;
     };
+    const transactionReecordCostTolerance = Number(ConfigService.get(`TEST_TRANSACTION_RECORD_COST_TOLERANCE`) || 0.02);
 
     const verifyRemainingLimit = (expectedCost: number, remainingHbarsBefore: number, remainingHbarsAfter: number) => {
-      const delta = 0.02 * expectedCost;
+      const delta = transactionReecordCostTolerance * expectedCost;
+      global.logger.debug(`Tolerance: ${transactionReecordCostTolerance}`);
       global.logger.debug(`Expected cost: ${expectedCost} ±${delta}`);
       global.logger.debug(`Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
       global.logger.debug(`Actual delta: ${(remainingHbarsBefore - remainingHbarsAfter) / (expectedCost * 100)}`);
@@ -220,36 +222,49 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         global.accounts.push(...accounts);
       });
 
-      beforeEach(async function () {
-        const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
-          [SubscriptionTier.BASIC],
-          requestDetails,
-        );
-        for (const plan of basicPlans) {
-          await hbarSpendingPlanRepository.delete(plan.id, requestDetails);
-          await ethAddressSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
-          await ipSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
-        }
+      afterEach(async () => {
+        hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
+
+        // Note: Since the total HBAR budget is shared across the entire Relay instance by multiple test cases,
+        //       and expense updates occur asynchronously, the wait below ensures that the HBAR amount has sufficient time
+        //       to update properly after each test.
+        await Utils.wait(1500);
       });
 
       describe('@hbarlimiter-batch1 Total HBAR Limit', () => {
-        it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
-          const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
+        const pollForProperRemainingHbar = async (initialRemainingHbars: number, expectedTxCost: number) => {
+          let updatedRemainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
-          // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(6000);
+          // Note: expectedTxCost may be retrieved from mirror node which doesn't include the getRecord transaction fee.
+          //       calculating delta = expectedTxCost * tolerance to account for this difference in transaction costs.
+          const delta = expectedTxCost * transactionReecordCostTolerance;
 
-          const parentContractAddress = parentContract.target as string;
-          global.logger.trace(
-            `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
+          while (initialRemainingHbars - updatedRemainingHbars > expectedTxCost + delta) {
+            logger.warn(
+              `Failed to retrieve proper updated remaining HBARs. Polling for the proper updated remaining HBARs: expectedTxCost=${expectedTxCost}, delta=${delta}, initialRemainingHbars=${initialRemainingHbars}, currentUpdatedRemainingHbars=${updatedRemainingHbars}, properUpdatedRemainingHbar=${
+                initialRemainingHbars - expectedTxCost - delta
+              }`,
+            );
+            await Utils.wait(1000);
+            updatedRemainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          }
+
+          logger.info(
+            `Successfully retrieved proper updated remaining HBARs: expectedTxCost=${expectedTxCost}, delta=${delta}, initialRemainingHbars=${initialRemainingHbars}, currentUpdatedRemainingHbars=${updatedRemainingHbars}, properUpdatedRemainingHbar=${
+              initialRemainingHbars - expectedTxCost - delta
+            }`,
           );
 
-          const gasPrice = await relay.gasPrice(requestId);
-          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          return updatedRemainingHbars;
+        };
 
+        it('should execute "eth_sendRawTransaction" without triggering HBAR rate limit exceeded', async function () {
+          const initialRemainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+
+          const gasPrice = await relay.gasPrice(requestId);
           const transaction = {
             ...defaultLondonTransactionData,
-            to: parentContractAddress,
+            to: accounts[0].address,
             nonce: await relay.getAccountNonce(accounts[1].address, requestId),
             maxPriorityFeePerGas: gasPrice,
             maxFeePerGas: gasPrice,
@@ -258,86 +273,81 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
           await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
             .fulfilled;
-          const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
 
-          // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(6000);
+          const expectedTxCost = await getExpectedCostOfLastSmallTx(requestId);
+          const updatedRemainingHbars = await pollForProperRemainingHbar(initialRemainingHbars, expectedTxCost);
 
-          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-
-          verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
+          verifyRemainingLimit(expectedTxCost, initialRemainingHbars, updatedRemainingHbars);
         });
 
         it('should deploy a large contract and decrease remaining HBAR in limiter when transaction data is large', async function () {
-          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          expect(remainingHbarsBefore).to.be.gt(0);
+          const initialRemainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(initialRemainingHbars).to.be.gt(0);
 
           const contract = await deployContract(largeContractJson, accounts[0].wallet);
-          const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
+          await contract.waitForDeployment();
 
-          // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(6000);
+          const expectedTxCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
+          const updatedRemainingHbars = await pollForProperRemainingHbar(initialRemainingHbars, expectedTxCost);
 
-          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-
-          verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
+          verifyRemainingLimit(expectedTxCost, initialRemainingHbars, updatedRemainingHbars);
         });
 
         it('should be able to deploy a contract without creating file', async function () {
-          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          expect(remainingHbarsBefore).to.be.gt(0);
+          const initialRemainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(initialRemainingHbars).to.be.gt(0);
 
           // This flow should not spend any major amount of hbars from the operator but only small query fees
-          await deployContract(EstimateGasContract, accounts[0].wallet);
-          const expectedCost = await getExpectedCostOfLastSmallTx(requestId);
+          const tx = await deployContract(EstimateGasContract, accounts[0].wallet);
+          await tx.waitForDeployment();
 
-          // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(6000);
+          const expectedTxCost = await getExpectedCostOfLastSmallTx(requestId);
+          const updatedRemainingHbars = await pollForProperRemainingHbar(initialRemainingHbars, expectedTxCost);
 
-          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-
-          verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
+          verifyRemainingLimit(expectedTxCost, initialRemainingHbars, updatedRemainingHbars);
         });
 
         it('should be able to deploy a medium size contract with fileCreate', async function () {
-          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          expect(remainingHbarsBefore).to.be.gt(0);
+          const initialRemainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(initialRemainingHbars).to.be.gt(0);
 
           // This flow should spend hbars from the operator, for fileCreate
           const contract = await deployContract(mediumSizeContract, accounts[0].wallet);
-          const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
+          await contract.waitForDeployment();
 
-          // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(6000);
+          const expectedTxCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
+          const updatedRemainingHbars = await pollForProperRemainingHbar(initialRemainingHbars, expectedTxCost);
 
-          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-
-          verifyRemainingLimit(expectedCost, remainingHbarsBefore, remainingHbarsAfter);
+          verifyRemainingLimit(expectedTxCost, initialRemainingHbars, updatedRemainingHbars);
         });
 
         it('HBAR limiter is updated within acceptable tolerance range in relation to actual spent amount by the relay operator', async function () {
-          const TOLERANCE = 0.02;
-          const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          expect(remainingHbarsBefore).to.be.gt(0);
+          const initialRemainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+          expect(initialRemainingHbars).to.be.gt(0);
+
           const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
             .balance;
+
           const largeContract = await deployContract(largeContractJson, accounts[0].wallet);
+          await largeContract.waitForDeployment();
           const totalOperatorFees = await getExpectedCostOfLastLargeTx(largeContract.deploymentTransaction()!.data);
 
-          // awaiting for HBAR limiter to finish updating expenses in the background
-          await Utils.wait(6000);
+          const updatedRemainingHbars = await pollForProperRemainingHbar(initialRemainingHbars, totalOperatorFees);
 
           const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance
             .balance;
 
           const amountPaidByOperator = operatorBalanceBefore - operatorBalanceAfter;
 
-          const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-          const hbarLimitReducedAmount = remainingHbarsBefore - remainingHbarsAfter;
+          const hbarLimitReducedAmount = initialRemainingHbars - updatedRemainingHbars;
 
-          expect(remainingHbarsAfter).to.be.lt(remainingHbarsBefore);
-          Assertions.expectWithinTolerance(amountPaidByOperator, hbarLimitReducedAmount, TOLERANCE);
-          Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, TOLERANCE);
+          expect(updatedRemainingHbars).to.be.lt(initialRemainingHbars);
+          Assertions.expectWithinTolerance(
+            amountPaidByOperator,
+            hbarLimitReducedAmount,
+            transactionReecordCostTolerance,
+          );
+          Assertions.expectWithinTolerance(amountPaidByOperator, totalOperatorFees, transactionReecordCostTolerance);
         });
 
         it('should verify the estimated and actual transaction fees for file transactions are approximately equal', async function () {
@@ -366,7 +376,74 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('HBAR Rate Limit For Different Spending Plan Tiers', () => {
+        const createAliasAndAssociateSpendingPlan = async (subscriptionTier: SubscriptionTier) => {
+          const aliasAccount = await Utils.createAliasAccount(
+            mirrorNode,
+            global.accounts[0],
+            requestId,
+            initialBalance,
+          );
+          global.accounts.push(aliasAccount);
+
+          const hbarSpendingPlan = await hbarSpendingPlanRepository.create(subscriptionTier, requestDetails, mockTTL);
+
+          await ethAddressSpendingPlanRepository.save(
+            { ethAddress: aliasAccount.address, planId: hbarSpendingPlan.id },
+            requestDetails,
+            mockTTL,
+          );
+
+          const plan = await ethAddressSpendingPlanRepository.findByAddress(aliasAccount.address, requestDetails);
+          expect(plan.ethAddress).to.eq(aliasAccount.address);
+          expect(plan.planId).to.eq(hbarSpendingPlan.id);
+          const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.planId, requestDetails);
+          expect(spendingPlan.active).to.be.true;
+          expect(spendingPlan.amountSpent).to.eq(0);
+          expect(spendingPlan.subscriptionTier).to.eq(subscriptionTier);
+
+          return { aliasAccount, hbarSpendingPlan };
+        };
+
+        const pollForProperAmountSpent = async (
+          hbarSpendingPlan: IDetailedHbarSpendingPlan,
+          deploymentCounts: number,
+          expectedTxCost: number,
+        ) => {
+          let amountSpent = (await hbarSpendingPlanRepository.findByIdWithDetails(hbarSpendingPlan.id, requestDetails))
+            .amountSpent;
+
+          while (amountSpent < deploymentCounts * expectedTxCost) {
+            logger.warn(
+              `Fail to retrieve proper amount spent by the spending plan. Polling for the proper amount: deploymentCounts=${deploymentCounts}, expectedTxCost=${expectedTxCost}, amountSpent=${amountSpent}, properAmountSpent=${
+                deploymentCounts * expectedTxCost
+              }, planId=${hbarSpendingPlan.id}`,
+            );
+            await Utils.wait(3000);
+            amountSpent = (await hbarSpendingPlanRepository.findByIdWithDetails(hbarSpendingPlan.id, requestDetails))
+              .amountSpent;
+          }
+
+          logger.info(
+            `Successfully retrieve proper amount spent by hbarSpendingPlan: deploymentCounts=${deploymentCounts}, expectedTxCost=${expectedTxCost}, amountSpent=${amountSpent}, properAmountSpent=${
+              deploymentCounts * expectedTxCost
+            }, planId=${hbarSpendingPlan.id}`,
+          );
+          return amountSpent;
+        };
+
         describe('@hbarlimiter-batch1 BASIC Tier', () => {
+          beforeEach(async function () {
+            const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
+              [SubscriptionTier.BASIC],
+              requestDetails,
+            );
+            for (const plan of basicPlans) {
+              await hbarSpendingPlanRepository.delete(plan.id, requestDetails);
+              await ethAddressSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
+              await ipSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
+            }
+          });
+
           it('should create a BASIC spending plan for a new user and use the same plan on second transaction and different plan on third transaction from another user', async function () {
             const parentContract = await deployContract(parentContractJson, accounts[0].wallet);
             // awaiting for HBAR limiter to finish updating expenses in the background
@@ -418,13 +495,20 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTxSecond], requestId))
               .to.be.fulfilled;
 
-            // awaiting for HBAR limiter to finish updating expenses in the background
-            await Utils.wait(6000);
-
-            const spendingPlanAssociatedAfterSecond = await hbarSpendingPlanRepository.findByIdWithDetails(
+            let spendingPlanAssociatedAfterSecond = await hbarSpendingPlanRepository.findByIdWithDetails(
               ethSpendingPlan.planId,
               requestDetails,
             );
+
+            while (spendingPlanAssociatedAfterSecond.amountSpent === amountSpendAfterFirst) {
+              // awaiting for HBAR limiter to finish updating expenses in the background
+              await Utils.wait(1000);
+              spendingPlanAssociatedAfterSecond = await hbarSpendingPlanRepository.findByIdWithDetails(
+                ethSpendingPlan.planId,
+                requestDetails,
+              );
+            }
+
             expect(amountSpendAfterFirst).to.be.lt(spendingPlanAssociatedAfterSecond.amountSpent);
 
             // it should use a different BASIC plan for another user
@@ -449,167 +533,123 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
 
           it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts', async function () {
-            let deploymentCounts: number = 0;
+            let expectedTxCost = 0;
+            let deploymentCounts = 0;
+            let hbarSpendingPlan: IDetailedHbarSpendingPlan | null = null;
             const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-            const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
-            const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
-
-            const factory = new ethers.ContractFactory(
-              largeContractJson.abi,
-              largeContractJson.bytecode,
-              accounts[0].wallet,
-            );
-            const deployedTransaction = await factory.getDeployTransaction();
-            const estimatedTxFee = estimateFileTransactionsFee(
-              deployedTransaction.data.length,
-              fileAppendChunkSize,
-              exchangeRateInCents,
-            );
 
             //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
             expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
             try {
               for (deploymentCounts = 0; deploymentCounts < 50; deploymentCounts++) {
-                await deployContract(largeContractJson, accounts[2].wallet);
+                const tx = await deployContract(largeContractJson, accounts[2].wallet);
+                await tx.waitForDeployment();
+
+                expectedTxCost ||= await getExpectedCostOfLastLargeTx(largeContractJson.bytecode);
+
+                if (!hbarSpendingPlan) {
+                  const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+                    accounts[2].wallet.address,
+                    requestDetails,
+                  );
+                  hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
+                    ethSpendingPlan.planId,
+                    requestDetails,
+                  );
+                }
+
+                await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts + 1, expectedTxCost);
               }
               expect.fail(`Expected an error but nothing was thrown`);
             } catch (e: any) {
+              logger.error(e.message);
               expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
-              const largeContractDeploymentCost = await getExpectedCostOfLastLargeTx(deployedTransaction.data);
-              const expectedAmountOfDeployments = Math.floor(maxBasicSpendingLimit / largeContractDeploymentCost);
+              const expectedAmountOfDeployments = Math.floor(maxBasicSpendingLimit / expectedTxCost);
               expect(deploymentCounts).to.eq(expectedAmountOfDeployments);
 
-              // awaiting for HBAR limiter to finish updating expenses in the background
-              await Utils.wait(6000);
-
-              const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
-                accounts[2].wallet.address,
-                requestDetails,
-              );
-              const spendingPlanAssociated = await hbarSpendingPlanRepository.findByIdWithDetails(
-                ethSpendingPlan.planId,
-                requestDetails,
-              );
-              const amountSpent = spendingPlanAssociated.amountSpent;
+              if (!hbarSpendingPlan) {
+                const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+                  accounts[2].wallet.address,
+                  requestDetails,
+                );
+                hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
+                  ethSpendingPlan.planId,
+                  requestDetails,
+                );
+              }
+              const amountSpent = await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts, expectedTxCost);
               const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
               // Explanation:
               // An HBAR limit check triggers the HBAR_RATE_LIMIT_EXCEED error in two scenarios:
-              //    a. if remainingHbarsBefore > maxBasicSpendingLimit ===> (totalHbarSpentByBasicPlan + estimatedTxFee) > maxBasicSpendingLimit
-              //    b. if remainingHbarsBefore <= maxBasicSpendingLimit ===> (remainingBudget - estimatedTxFee) < 0
+              //    a. if remainingHbarsBefore > maxBasicSpendingLimit ===> (totalHbarSpentByBasicPlan + expectedTxCost) > maxBasicSpendingLimit
+              //    b. if remainingHbarsBefore <= maxBasicSpendingLimit ===> (remainingBudget - expectedTxCost) < 0
               if (remainingHbarsBefore > maxBasicSpendingLimit) {
-                expect(amountSpent + estimatedTxFee).to.be.gt(maxBasicSpendingLimit);
+                expect(amountSpent + expectedTxCost).to.be.gt(maxBasicSpendingLimit);
               } else {
-                expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
+                expect(remainingHbarsAfter).to.be.lt(expectedTxCost);
               }
             }
           });
         });
 
         describe('@hbarlimiter-batch2 Preconfigured Tiers', () => {
-          const createAliasForNonBasicPlans = async (subscriptionTier: SubscriptionTier) => {
-            const aliasAccount = await Utils.createAliasAccount(
-              mirrorNode,
-              global.accounts[0],
-              requestId,
-              initialBalance,
-            );
-
-            const hbarSpendingPlan = await hbarSpendingPlanRepository.create(subscriptionTier, requestDetails, mockTTL);
-
-            await ethAddressSpendingPlanRepository.save(
-              { ethAddress: aliasAccount.address, planId: hbarSpendingPlan.id },
-              requestDetails,
-              mockTTL,
-            );
-
-            const plan = await ethAddressSpendingPlanRepository.findByAddress(aliasAccount.address, requestDetails);
-            expect(plan.ethAddress).to.eq(aliasAccount.address);
-            expect(plan.planId).to.eq(hbarSpendingPlan.id);
-            const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.planId, requestDetails);
-            expect(spendingPlan.active).to.be.true;
-            expect(spendingPlan.amountSpent).to.eq(0);
-            expect(spendingPlan.subscriptionTier).to.eq(subscriptionTier);
-
-            return { aliasAccount, hbarSpendingPlan };
-          };
-
-          const reusableTestsForNonBasicTiers = (subsriptionTier: SubscriptionTier, maxSpendingLimit: number) => {
+          const reusableTestsForNonBasicTiers = (subscriptionTier: SubscriptionTier, maxSpendingLimit: number) => {
             let aliasAccount: AliasAccount;
             let hbarSpendingPlan: IDetailedHbarSpendingPlan;
 
             beforeEach(async () => {
-              const result = await createAliasForNonBasicPlans(subsriptionTier);
+              const result = await createAliasAndAssociateSpendingPlan(subscriptionTier);
               aliasAccount = result.aliasAccount;
               hbarSpendingPlan = result.hbarSpendingPlan;
             });
 
             it('Should increase the amount spent of the spending plan by the transaction cost', async () => {
               const contract = await deployContract(largeContractJson, aliasAccount.wallet);
-              const expectedCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
+              await contract.waitForDeployment();
+              const expectedTxCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
 
-              // awaiting for HBAR limiter to finish updating expenses in the background
-              await Utils.wait(6000);
+              const amountSpent = await pollForProperAmountSpent(hbarSpendingPlan, 1, expectedTxCost);
 
-              const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
-                hbarSpendingPlan.id,
-                requestDetails,
-              );
-
-              const amountSpent = spendingPlan.amountSpent;
-
-              const tolerance = 0.01;
-              expect(amountSpent).to.be.approximately(expectedCost, tolerance * expectedCost);
+              expect(amountSpent).to.be.approximately(expectedTxCost, transactionReecordCostTolerance * expectedTxCost);
             });
 
-            it(`Should eventually exhaust the hbar limit for ${subsriptionTier} user`, async () => {
-              let deploymentCounts: number = 0;
-              const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
-              const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
+            it(`Should eventually exhaust the hbar limit for ${subscriptionTier} user and still allow another ${subscriptionTier} user to make calls`, async () => {
+              let expectedTxCost = 0;
+              let deploymentCounts = 0;
               const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-
-              const factory = new ethers.ContractFactory(
-                largeContractJson.abi,
-                largeContractJson.bytecode,
-                accounts[0].wallet,
-              );
-              const deployedTransaction = await factory.getDeployTransaction();
-              const estimatedTxFee = estimateFileTransactionsFee(
-                deployedTransaction.data.length,
-                fileAppendChunkSize,
-                exchangeRateInCents,
-              );
 
               try {
                 for (deploymentCounts = 0; deploymentCounts < 50; deploymentCounts++) {
-                  await deployContract(largeContractJson, aliasAccount.wallet);
+                  const tx = await deployContract(largeContractJson, aliasAccount.wallet);
+                  await tx.waitForDeployment();
+
+                  expectedTxCost ||= await getExpectedCostOfLastLargeTx(largeContractJson.bytecode);
+                  await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts + 1, expectedTxCost);
                 }
                 expect.fail(`Expected an error but nothing was thrown`);
               } catch (e: any) {
+                logger.error(e.message);
                 expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
-                const largeContractDeploymentCost = await getExpectedCostOfLastLargeTx(deployedTransaction.data);
-                const expectedAmountOfDeployments = Math.floor(maxSpendingLimit / largeContractDeploymentCost);
+                const expectedAmountOfDeployments = Math.floor(maxSpendingLimit / expectedTxCost);
                 expect(deploymentCounts).to.eq(expectedAmountOfDeployments);
 
-                // awaiting for HBAR limiter to finish updating expenses in the background
-                await Utils.wait(6000);
-
-                const spendingPlanAssociated = await hbarSpendingPlanRepository.findByIdWithDetails(
-                  hbarSpendingPlan.id,
-                  requestDetails,
-                );
-                const amountSpent = spendingPlanAssociated.amountSpent;
+                const amountSpent = await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts, expectedTxCost);
                 const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
                 // Explanation:
                 // An HBAR limit check triggers the HBAR_RATE_LIMIT_EXCEED error in two scenarios:
-                //    a. if remainingHbarsBefore > maxSpendingLimit ===> (totalHbarSpentByPrivilegedPlan + estimatedTxFee) > maxSpendingLimit
-                //    b. if remainingHbarsBefore <= maxSpendingLimit ===> remainingBudget < estimatedTxFee
+                //    a. if remainingHbarsBefore > maxSpendingLimit ===> (totalHbarSpentByPrivilegedPlan + expectedTxCost) > maxSpendingLimit
+                //    b. if remainingHbarsBefore <= maxSpendingLimit ===> remainingBudget < expectedTxCost
                 if (remainingHbarsBefore > maxSpendingLimit) {
-                  expect(amountSpent + estimatedTxFee).to.be.gt(maxSpendingLimit);
+                  expect(amountSpent + expectedTxCost).to.be.gt(maxSpendingLimit);
                 } else {
-                  expect(remainingHbarsAfter).to.be.lt(estimatedTxFee);
+                  expect(remainingHbarsAfter).to.be.lt(expectedTxCost);
                 }
+
+                // should allow another same tiered user to make calls
+                const differentAccount = (await createAliasAndAssociateSpendingPlan(subscriptionTier)).aliasAccount;
+                await expect(deployContract(largeContractJson, differentAccount.wallet)).to.be.fulfilled;
               }
             });
           };
@@ -617,42 +657,45 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           describe('given a valid JSON file with pre-configured spending plans', async () => {
             const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') as string;
             const configPath = findConfig(SPENDING_PLANS_CONFIG_FILE);
-            const rawData = fs.readFileSync(configPath!, 'utf-8');
-            const expectedNonBasicPlans2 = JSON.parse(rawData) as SpendingPlanConfig[];
 
-            it('Should successfully populate all pre-configured spending plans', async () => {
-              expectedNonBasicPlans2.forEach(async (expectedPlan) => {
-                const hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
-                  expectedPlan.id,
-                  requestDetails,
-                );
-                expect(hbarSpendingPlan.active).to.be.true;
-                expect(hbarSpendingPlan.id).to.eq(expectedPlan.id);
-                expect(hbarSpendingPlan.subscriptionTier).to.eq(expectedPlan.subscriptionTier);
+            if (configPath) {
+              const rawData = fs.readFileSync(configPath!, 'utf-8');
+              const expectedNonBasicPlans2 = JSON.parse(rawData) as SpendingPlanConfig[];
 
-                if (expectedPlan.ethAddresses) {
-                  expectedPlan.ethAddresses.forEach(async (evmAddress) => {
-                    const associatedPlanByEVMAddress = await ethAddressSpendingPlanRepository.findByAddress(
-                      evmAddress,
-                      requestDetails,
-                    );
-                    expect(associatedPlanByEVMAddress.planId).to.eq(expectedPlan.id);
-                    expect(associatedPlanByEVMAddress.ethAddress).to.eq(evmAddress);
-                  });
-                }
+              it('Should successfully populate all pre-configured spending plans', async () => {
+                expectedNonBasicPlans2.forEach(async (expectedPlan) => {
+                  const hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
+                    expectedPlan.id,
+                    requestDetails,
+                  );
+                  expect(hbarSpendingPlan.active).to.be.true;
+                  expect(hbarSpendingPlan.id).to.eq(expectedPlan.id);
+                  expect(hbarSpendingPlan.subscriptionTier).to.eq(expectedPlan.subscriptionTier);
 
-                if (expectedPlan.ipAddresses) {
-                  expectedPlan.ipAddresses.forEach(async (ipAddress) => {
-                    const associatedPlanByIpAddress = await ipSpendingPlanRepository.findByAddress(
-                      ipAddress,
-                      requestDetails,
-                    );
-                    expect(associatedPlanByIpAddress.planId).to.eq(expectedPlan.id);
-                    expect(associatedPlanByIpAddress.ipAddress).to.eq(ipAddress);
-                  });
-                }
+                  if (expectedPlan.ethAddresses) {
+                    expectedPlan.ethAddresses.forEach(async (evmAddress) => {
+                      const associatedPlanByEVMAddress = await ethAddressSpendingPlanRepository.findByAddress(
+                        evmAddress,
+                        requestDetails,
+                      );
+                      expect(associatedPlanByEVMAddress.planId).to.eq(expectedPlan.id);
+                      expect(associatedPlanByEVMAddress.ethAddress).to.eq(evmAddress);
+                    });
+                  }
+
+                  if (expectedPlan.ipAddresses) {
+                    expectedPlan.ipAddresses.forEach(async (ipAddress) => {
+                      const associatedPlanByIpAddress = await ipSpendingPlanRepository.findByAddress(
+                        ipAddress,
+                        requestDetails,
+                      );
+                      expect(associatedPlanByIpAddress.planId).to.eq(expectedPlan.id);
+                      expect(associatedPlanByIpAddress.ipAddress).to.eq(ipAddress);
+                    });
+                  }
+                });
               });
-            });
+            }
           });
 
           describe('EXTENDED Tier', () => {
