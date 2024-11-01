@@ -615,7 +615,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           };
 
           describe('given a valid JSON file with pre-configured spending plans', async () => {
-            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG_FILE') as string;
+            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') as string;
             const configPath = findConfig(SPENDING_PLANS_CONFIG_FILE);
             const rawData = fs.readFileSync(configPath!, 'utf-8');
             const expectedNonBasicPlans2 = JSON.parse(rawData) as SpendingPlanConfig[];

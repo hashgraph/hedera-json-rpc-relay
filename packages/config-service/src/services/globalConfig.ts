@@ -327,8 +327,8 @@ export class GlobalConfig {
       required: true,
       defaultValue: null,
     },
-    HBAR_SPENDING_PLANS_CONFIG_FILE: {
-      envName: 'HBAR_SPENDING_PLANS_CONFIG_FILE',
+    HBAR_SPENDING_PLANS_CONFIG: {
+      envName: 'HBAR_SPENDING_PLANS_CONFIG',
       type: 'string',
       required: false,
       defaultValue: 'spendingPlansConfig.json',
@@ -501,10 +501,11 @@ export class GlobalConfig {
       required: false,
       defaultValue: null,
     },
-    NPM_PACKAGE_VERSION: {
+    // the actual env var in the node process is npm_package_version
+    npm_package_version: {
       envName: 'npm_package_version',
       type: 'string',
-      required: false,
+      required: true,
       defaultValue: null,
     },
     OPERATOR_ID_ETH_SENDRAWTRANSACTION: {
