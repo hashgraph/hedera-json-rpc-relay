@@ -69,6 +69,8 @@ import {
   ITransactionRecordMetric,
   RequestDetails,
 } from '../types';
+import { MirrorNodeClient } from './mirrorNodeClient';
+import { Registry } from 'prom-client';
 
 const _ = require('lodash');
 
@@ -123,6 +125,14 @@ export class SDKClient {
   private readonly hbarLimitService: HbarLimitService;
 
   /**
+   * An instance of the MirrorNodeClient
+   * @private
+   * @readonly
+   * @type {MirrorNodeClient}
+   */
+  private readonly mirrorNodeClient: MirrorNodeClient;
+
+  /**
    * Constructs an instance of the SDKClient and initializes various services and settings.
    *
    * @param {Client} clientMain - The primary Hedera client instance used for executing transactions and queries.
@@ -136,6 +146,7 @@ export class SDKClient {
     cacheService: CacheService,
     eventEmitter: EventEmitter,
     hbarLimitService: HbarLimitService,
+    register: Registry,
   ) {
     this.clientMain = clientMain;
 
@@ -151,6 +162,13 @@ export class SDKClient {
     this.hbarLimitService = hbarLimitService;
     this.maxChunks = Number(ConfigService.get('FILE_APPEND_MAX_CHUNKS')) || 20;
     this.fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+    this.mirrorNodeClient = new MirrorNodeClient(
+      // @ts-ignore
+      ConfigService.get('MIRROR_NODE_URL') || '',
+      logger,
+      register,
+      cacheService,
+    );
   }
 
   /**
@@ -441,17 +459,59 @@ export class SDKClient {
       Hbar.fromTinybars(Math.floor(networkGasPriceInTinyBars * constants.MAX_GAS_PER_SEC)),
     );
 
-    return {
-      fileId,
-      txResponse: await this.executeTransaction(
+    let txResponse;
+    try {
+      txResponse = await this.executeTransaction(
         ethereumTransaction,
         callerName,
         interactingEntity,
         requestDetails,
         true,
         originalCallerAddress,
-      ),
+      );
+    } catch (e: any) {
+      if (e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded())) {
+        const isFailed = await this.isFailedTransaction(requestDetails, e.transactionId);
+        if (isFailed) {
+          throw e;
+        }
+        txResponse = { transactionId: e.transactionId };
+      } else {
+        throw e;
+      }
+    }
+
+    return {
+      fileId,
+      txResponse,
     };
+  }
+
+  /**
+   * Checks if a transaction has failed by querying the mirror node.
+   *
+   * @param {RequestDetails} requestDetails - The details of the request.
+   * @param {string} [transactionId] - The ID of the transaction to check.
+   * @returns {Promise<boolean>} - A promise that resolves to `true` if the transaction has failed, `false` otherwise.
+   */
+  async isFailedTransaction(requestDetails: RequestDetails, transactionId?: string): Promise<boolean> {
+    const retryCount = 5;
+    try {
+      const transaction = await this.mirrorNodeClient.repeatedRequest(
+        this.mirrorNodeClient.getTransactionById.name,
+        [transactionId, requestDetails],
+        retryCount,
+        requestDetails,
+      );
+      const isFailed = transaction !== null;
+      return isFailed;
+    } catch (e: any) {
+      this.logger.error(
+        e,
+        `${requestDetails.formattedRequestId} Failed to check if transaction ${transactionId} is failed`,
+      );
+      return true;
+    }
   }
 
   /**
@@ -724,7 +784,7 @@ export class SDKClient {
         throw e;
       }
 
-      const sdkClientError = new SDKClientError(e, e.message);
+      const sdkClientError = new SDKClientError(e, e.message, transaction.transactionId?.toString());
 
       // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler().
       if (sdkClientError.status && sdkClientError.status === Status.WrongNonce) {
@@ -737,9 +797,13 @@ export class SDKClient {
       );
 
       if (!transactionResponse) {
-        throw predefined.INTERNAL_ERROR(
-          `${requestDetails.formattedRequestId} Transaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
-        );
+        if (sdkClientError.isConnectionDropped() || sdkClientError.isTimeoutExceeded()) {
+          throw sdkClientError;
+        } else {
+          throw predefined.INTERNAL_ERROR(
+            `${requestDetails.formattedRequestId} Transaction execution returns a null value: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
+          );
+        }
       }
       return transactionResponse;
     } finally {
