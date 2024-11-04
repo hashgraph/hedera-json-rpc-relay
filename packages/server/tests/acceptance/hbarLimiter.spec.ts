@@ -376,32 +376,40 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       describe('HBAR Rate Limit For Different Spending Plan Tiers', () => {
-        const createAliasAndAssociateSpendingPlan = async (subscriptionTier: SubscriptionTier) => {
-          const aliasAccount = await Utils.createAliasAccount(
-            mirrorNode,
-            global.accounts[0],
-            requestId,
-            initialBalance,
-          );
-          global.accounts.push(aliasAccount);
-
+        const createAliasAndAssociateSpendingPlan = async (
+          subscriptionTier: SubscriptionTier,
+          accountCounts: number = 1,
+        ) => {
+          let aliasAccounts: AliasAccount[] = [];
           const hbarSpendingPlan = await hbarSpendingPlanRepository.create(subscriptionTier, requestDetails, mockTTL);
 
-          await ethAddressSpendingPlanRepository.save(
-            { ethAddress: aliasAccount.address, planId: hbarSpendingPlan.id },
-            requestDetails,
-            mockTTL,
-          );
+          for (let i = 0; i < accountCounts; i++) {
+            const aliasAccount = await Utils.createAliasAccount(
+              mirrorNode,
+              global.accounts[0],
+              requestId,
+              initialBalance,
+            );
+            global.accounts.push(aliasAccount);
 
-          const plan = await ethAddressSpendingPlanRepository.findByAddress(aliasAccount.address, requestDetails);
-          expect(plan.ethAddress).to.eq(aliasAccount.address);
-          expect(plan.planId).to.eq(hbarSpendingPlan.id);
-          const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.planId, requestDetails);
-          expect(spendingPlan.active).to.be.true;
-          expect(spendingPlan.amountSpent).to.eq(0);
-          expect(spendingPlan.subscriptionTier).to.eq(subscriptionTier);
+            await ethAddressSpendingPlanRepository.save(
+              { ethAddress: aliasAccount.address, planId: hbarSpendingPlan.id },
+              requestDetails,
+              mockTTL,
+            );
 
-          return { aliasAccount, hbarSpendingPlan };
+            const plan = await ethAddressSpendingPlanRepository.findByAddress(aliasAccount.address, requestDetails);
+            expect(plan.ethAddress).to.eq(aliasAccount.address);
+            expect(plan.planId).to.eq(hbarSpendingPlan.id);
+            const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.planId, requestDetails);
+            expect(spendingPlan.active).to.be.true;
+            expect(spendingPlan.amountSpent).to.eq(0);
+            expect(spendingPlan.subscriptionTier).to.eq(subscriptionTier);
+
+            aliasAccounts.push(aliasAccount);
+          }
+
+          return { aliasAccounts, hbarSpendingPlan };
         };
 
         const pollForProperAmountSpent = async (
@@ -595,17 +603,17 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         describe('@hbarlimiter-batch2 Preconfigured Tiers', () => {
           const reusableTestsForNonBasicTiers = (subscriptionTier: SubscriptionTier, maxSpendingLimit: number) => {
-            let aliasAccount: AliasAccount;
+            let aliasAccountA: AliasAccount, aliasAccountB: AliasAccount;
             let hbarSpendingPlan: IDetailedHbarSpendingPlan;
 
             beforeEach(async () => {
               const result = await createAliasAndAssociateSpendingPlan(subscriptionTier);
-              aliasAccount = result.aliasAccount;
+              aliasAccountA = result.aliasAccounts[0];
               hbarSpendingPlan = result.hbarSpendingPlan;
             });
 
             it('Should increase the amount spent of the spending plan by the transaction cost', async () => {
-              const contract = await deployContract(largeContractJson, aliasAccount.wallet);
+              const contract = await deployContract(largeContractJson, aliasAccountA.wallet);
               await contract.waitForDeployment();
               const expectedTxCost = await getExpectedCostOfLastLargeTx(contract.deploymentTransaction()!.data);
 
@@ -621,7 +629,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
               try {
                 for (deploymentCounts = 0; deploymentCounts < 50; deploymentCounts++) {
-                  const tx = await deployContract(largeContractJson, aliasAccount.wallet);
+                  const tx = await deployContract(largeContractJson, aliasAccountA.wallet);
                   await tx.waitForDeployment();
 
                   expectedTxCost ||= await getExpectedCostOfLastLargeTx(largeContractJson.bytecode);
@@ -647,8 +655,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                   expect(remainingHbarsAfter).to.be.lt(expectedTxCost);
                 }
 
-                // should allow another same tiered user to make calls
-                const differentAccount = (await createAliasAndAssociateSpendingPlan(subscriptionTier)).aliasAccount;
+                // should also limit a different account in the same HbarSpendingPlan
+
+                // should allow another account, who has the same tier but not in the same HbarSpendingPlan, to make call
+                const differentAccount = (await createAliasAndAssociateSpendingPlan(subscriptionTier)).aliasAccounts[0];
                 await expect(deployContract(largeContractJson, differentAccount.wallet)).to.be.fulfilled;
               }
             });
@@ -709,7 +719,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         describe('@hbarlimiter-batch2 Multiple users with different tiers', () => {
           interface AliasAccountPlan {
-            aliasAccount: AliasAccount;
+            aliasAccounts: AliasAccount[];
             hbarSpendingPlan: IDetailedHbarSpendingPlan;
           }
 
@@ -750,7 +760,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             const callingAccountAddresses: string[] = [];
             const allAccountAliases = Object.values(accountPlanObject)
               .flat()
-              .map((accountAliasPlan) => accountAliasPlan.aliasAccount);
+              .map((accountAliasPlan) => accountAliasPlan.aliasAccounts[0]);
 
             const deployPromises = allAccountAliases.map(async (accountAlias) => {
               if (Math.random() < 0.5) {
@@ -777,7 +787,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                 requestDetails,
               );
 
-              if (callingAccountAddresses.includes(aliasAccountPlan.aliasAccount.address)) {
+              if (callingAccountAddresses.includes(aliasAccountPlan.aliasAccounts[0].address)) {
                 expect(associatedSpendingPlan.amountSpent).to.not.eq(0);
               } else {
                 expect(associatedSpendingPlan.amountSpent).to.eq(0);
@@ -791,7 +801,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
             const allAccountAliases = Object.values(accountPlanObject)
               .flat()
-              .map((accountAliasPlan) => accountAliasPlan.aliasAccount);
+              .map((accountAliasPlan) => accountAliasPlan.aliasAccounts[0]);
 
             let totalHbarSpent = 0;
             const totalHbarBudget = ConfigService.get(`HBAR_RATE_LIMIT_TINYBAR`) as number;
