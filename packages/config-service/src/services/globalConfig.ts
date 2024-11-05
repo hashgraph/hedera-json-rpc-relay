@@ -183,6 +183,12 @@ export class GlobalConfig {
       required: false,
       defaultValue: null,
     },
+    HEDERA_SPECIFIC_REVERT_STATUSES: {
+      envName: 'HEDERA_SPECIFIC_REVERT_STATUSES',
+      type: 'string',
+      required: false,
+      defaultValue: '["WRONG_NONCE", "INVALID_ACCOUNT_ID"]',
+    },
     FEE_HISTORY_MAX_RESULTS: {
       envName: 'FEE_HISTORY_MAX_RESULTS',
       type: 'number',
