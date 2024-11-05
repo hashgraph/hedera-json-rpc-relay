@@ -340,6 +340,15 @@ describe('Formatters', () => {
       const formattedResult = formatContractResult({ ...contractResult, type: undefined });
       expect(formattedResult).to.be.null;
     });
+
+    it('Should return formatted result even when `from` and `hash` fields are null', () => {
+      const formattedResult: any = formatContractResult({ ...contractResult, from: null, hash: null, to: null });
+
+      expect(formattedResult).to.not.be.undefined;
+      expect(formattedResult.from).to.be.null;
+      expect(formattedResult.hash).to.be.null;
+      expect(formattedResult.to).to.be.null;
+    });
   });
 
   describe('prepend0x', () => {
