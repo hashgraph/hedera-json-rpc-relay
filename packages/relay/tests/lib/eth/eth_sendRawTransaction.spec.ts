@@ -311,7 +311,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sdkClientStub.executeTransaction
         .onCall(0)
         .throws(new SDKClientError({ status: 21 }, 'timeout exceeded', transactionId));
-      sdkClientStub.isFailedTransaction.resolves(false);
       const signed = await signTransaction(transaction);
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
@@ -325,14 +324,11 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
       sdkClientStub.createFile.resolves(new FileId(0, 0, 5644));
       sdkClientStub.executeTransaction.onCall(0).throws(new SDKClientError({ status: 21 }, 'timeout exceeded'));
-      sdkClientStub.isFailedTransaction.resolves(true);
       const signed = await signTransaction(transaction);
 
       const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
-      console.log(response);
       expect(response).to.be.instanceOf(JsonRpcError);
       expect(response.message).to.include('timeout exceeded');
-      sinon.assert.called(sdkClientStub.isFailedTransaction);
     });
 
     it('should call mirror node upon connection dropped and throw error if not found', async function () {
@@ -342,14 +338,11 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
       sdkClientStub.createFile.resolves(new FileId(0, 0, 5644));
       sdkClientStub.executeTransaction.onCall(0).throws(new SDKClientError({ status: 21 }, 'Connection dropped'));
-      sdkClientStub.isFailedTransaction.resolves(true);
       const signed = await signTransaction(transaction);
 
       const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
-      console.log(response);
       expect(response).to.be.instanceOf(JsonRpcError);
       expect(response.message).to.include('Connection dropped');
-      sinon.assert.called(sdkClientStub.isFailedTransaction);
     });
   });
 });

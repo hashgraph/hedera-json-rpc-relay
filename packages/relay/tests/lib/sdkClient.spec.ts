@@ -137,7 +137,6 @@ describe('SdkClient', async function () {
       new CacheService(logger.child({ name: `cache` }), registry),
       eventEmitter,
       hbarLimitService,
-      register,
     );
 
     instance = axios.create({

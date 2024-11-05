@@ -1563,8 +1563,13 @@ export class EthImpl implements Eth {
     const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestDetails, networkGasPriceInWeiBars);
     const originalCallerAddress = parsedTx.from?.toString() || '';
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
+
     let fileId: FileId | null = null;
     let txSubmitted = false;
+    let submittedTransactionId: string = '';
+    let sendRawTransactionError: any;
+    let formattedTransactionId: string | null = null;
+
     try {
       const sendRawTransactionResult = await this.hapiService
         .getSDKClient()
@@ -1578,46 +1583,24 @@ export class EthImpl implements Eth {
         );
 
       txSubmitted = true;
-      fileId = sendRawTransactionResult!.fileId;
-
-      // Wait for the record from the execution.
-      const txId = sendRawTransactionResult!.txResponse.transactionId.toString();
-      const formattedId = formatTransactionIdWithoutQueryParams(txId);
-
-      // handle formattedId being null
-      if (!formattedId) {
-        throw predefined.INTERNAL_ERROR(`Invalid transactionID: ${txId}`);
-      }
-
-      const contractResult = await this.mirrorNodeClient.repeatedRequest(
-        this.mirrorNodeClient.getContractResult.name,
-        [formattedId, requestDetails],
-        this.mirrorNodeClient.getMirrorNodeRequestRetryCount(),
-        requestDetails,
-      );
-
-      if (!contractResult) {
-        this.logger.warn(`${requestIdPrefix} No record retrieved`);
-        throw predefined.INTERNAL_ERROR(`No matching record found for transaction id ${txId}`);
-      }
-
-      if (contractResult.hash == null) {
-        this.logger.error(
-          `${requestIdPrefix} The ethereumHash can never be null for an ethereum transaction, and yet it was!!`,
+      fileId = sendRawTransactionResult.fileId;
+      submittedTransactionId = sendRawTransactionResult.txResponse.transactionId?.toString();
+      formattedTransactionId = formatTransactionIdWithoutQueryParams(submittedTransactionId);
+      if (!formattedTransactionId) {
+        this.logger.warn(
+          `${requestIdPrefix} Transaction successfully submitted but returned invalid transactionID: transactionId==${submittedTransactionId}`,
         );
-        throw predefined.INTERNAL_ERROR();
+        throw predefined.INTERNAL_ERROR(
+          `Transaction successfully submitted but returned invalid transactionID: transactionId==${submittedTransactionId}`,
+        );
+      }
+    } catch (e: any) {
+      if (e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded())) {
+        submittedTransactionId = e.transactionId || '';
+        formattedTransactionId = formatTransactionIdWithoutQueryParams(submittedTransactionId);
       }
 
-      return contractResult.hash;
-    } catch (e: any) {
-      return this.sendRawTransactionErrorHandler(
-        e,
-        transaction,
-        transactionBuffer,
-        txSubmitted,
-        parsedTx,
-        requestDetails,
-      );
+      sendRawTransactionError = e;
     } finally {
       /**
        *  For transactions of type CONTRACT_CREATE, if the contract's bytecode (calldata) exceeds 5120 bytes, HFS is employed to temporarily store the bytecode on the network.
@@ -1630,6 +1613,61 @@ export class EthImpl implements Eth {
           .then();
       }
     }
+
+    // After the try-catch process above, the `formattedTransactionId` is potentially valid in only two scenarios:
+    //   - The transaction was successfully submitted and fully processed by CN and MN.
+    //   - The transaction encountered "SDK timeout exceeded" or "Connection Dropped" errors from the SDK but still potentially reached the consensus level.
+    // In both scenarios, polling the MN is required to verify the transaction's validity before return the transaction hash to clients.
+    if (formattedTransactionId) {
+      try {
+        const contractResult = await this.mirrorNodeClient.repeatedRequest(
+          this.mirrorNodeClient.getContractResult.name,
+          [formattedTransactionId, requestDetails],
+          this.mirrorNodeClient.getMirrorNodeRequestRetryCount(),
+          requestDetails,
+        );
+
+        if (!contractResult) {
+          if (
+            sendRawTransactionError instanceof SDKClientError &&
+            (sendRawTransactionError.isConnectionDropped() || sendRawTransactionError.isTimeoutExceeded())
+          ) {
+            throw sendRawTransactionError;
+          }
+
+          this.logger.warn(
+            `${requestIdPrefix} No matching transaction record retrieved: transactionId=${submittedTransactionId}`,
+          );
+
+          throw predefined.INTERNAL_ERROR(
+            `No matching transaction record retrieved: transactionId=${submittedTransactionId}`,
+          );
+        }
+
+        if (contractResult.hash == null) {
+          this.logger.error(
+            `${requestIdPrefix} Transaction returned a null transaction hash: transactionId=${submittedTransactionId}`,
+          );
+          throw predefined.INTERNAL_ERROR(
+            `Transaction returned a null transaction hash: transactionId=${submittedTransactionId}`,
+          );
+        }
+
+        return contractResult.hash;
+      } catch (e: any) {
+        sendRawTransactionError = e;
+      }
+    }
+
+    // If this point is reached, it means that no valid transaction hash was returned. Therefore, an error must have occurred.
+    return await this.sendRawTransactionErrorHandler(
+      sendRawTransactionError,
+      transaction,
+      transactionBuffer,
+      txSubmitted,
+      parsedTx,
+      requestDetails,
+    );
   }
 
   /**
