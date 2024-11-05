@@ -159,7 +159,7 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
     expect(result).to.equal(null);
   });
 
-  it('eth_getTransactionByBlockNumberAndIndex should NOT throw for internal error if `from` field is null', async function () {
+  it('eth_getTransactionByBlockNumberAndIndex should throw for internal error', async function () {
     const defaultContractResultsWithNullableFrom = _.cloneDeep(defaultContractResults);
     defaultContractResultsWithNullableFrom.results[0].from = null;
     const randomBlock = {
@@ -170,14 +170,16 @@ describe('@ethGetTransactionByBlockNumberAndIndex using MirrorNode', async funct
       .onGet(contractResultsByNumberByIndexURL(randomBlock.number, randomBlock.count))
       .reply(200, defaultContractResultsWithNullableFrom);
 
-    const result = await ethImpl.getTransactionByBlockNumberAndIndex(
-      numberTo0x(randomBlock.number),
-      numberTo0x(randomBlock.count),
-      requestDetails,
-    );
+    const args = [numberTo0x(randomBlock.number), numberTo0x(randomBlock.count), requestDetails];
+    const errMessage = "Cannot read properties of null (reading 'substring')";
 
-    expect(result).to.not.be.null;
-    expect(result.from).to.be.null;
+    await RelayAssertions.assertRejection(
+      predefined.INTERNAL_ERROR(errMessage),
+      ethImpl.getTransactionByBlockNumberAndIndex,
+      true,
+      ethImpl,
+      args,
+    );
   });
 
   it('eth_getTransactionByBlockNumberAndIndex with no contract results', async function () {

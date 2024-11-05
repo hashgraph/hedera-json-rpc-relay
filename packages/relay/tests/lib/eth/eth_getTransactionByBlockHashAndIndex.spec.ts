@@ -120,7 +120,7 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
     verifyAggregatedInfo(result);
   });
 
-  it('eth_getTransactionByBlockHashAndIndex should NOT throw for internal error if `from` field is null', async function () {
+  it('eth_getTransactionByBlockHashAndIndex should throw for internal error', async function () {
     const randomBlock = {
       hash: '0x5f827a801c579c84eca738827b65612b28ed425b7578bfdd10177e24fc3db8d4b1a7f3d56d83c39b950cc5e4d175dd64',
       count: 9,
@@ -131,9 +131,16 @@ describe('@ethGetTransactionByBlockHashAndIndex using MirrorNode', async functio
       .onGet(contractResultsByHashByIndexURL(randomBlock.hash, randomBlock.count))
       .reply(200, defaultContractResultsWithNullableFrom);
 
-    const result = await ethImpl.getTransactionByBlockHashAndIndex(randomBlock.hash, randomBlock.count, requestDetails);
-    expect(result).to.not.be.null;
-    expect(result.from).to.be.null;
+    const args = [randomBlock.hash, numberTo0x(randomBlock.count), requestDetails];
+    const errMessage = "Cannot read properties of null (reading 'substring')";
+
+    await RelayAssertions.assertRejection(
+      predefined.INTERNAL_ERROR(errMessage),
+      ethImpl.getTransactionByBlockHashAndIndex,
+      true,
+      ethImpl,
+      args,
+    );
   });
 
   it('eth_getTransactionByBlockHashAndIndex with no contract result match', async function () {
