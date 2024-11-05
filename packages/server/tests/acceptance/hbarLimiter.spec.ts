@@ -786,27 +786,41 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
 
           it('should individually update amountSpents of different spending plans', async () => {
-            const callingAccountAddresses: string[] = [];
-            const allAccountAliases = Object.values(accountPlanObject)
-              .flat()
-              .map((accountAliasPlan) => accountAliasPlan.aliasAccounts[0]);
+            const callingAliasAccountPlans: AliasAccountPlan[] = [];
+            const aliasAccountPlans = Object.values(accountPlanObject).flat();
 
-            const deployPromises = allAccountAliases.map(async (accountAlias) => {
+            const deployPromises = aliasAccountPlans.map(async (aliasAccountPlan) => {
               if (Math.random() < 0.5) {
-                const tx = await deployContract(mediumSizeContract, accountAlias.wallet);
+                const tx = await deployContract(mediumSizeContract, aliasAccountPlan.aliasAccounts[0].wallet);
                 await tx.waitForDeployment();
-                return accountAlias.address; // Return the address for those that made deployments
+                return aliasAccountPlan; // Return the address for those that made deployments
               }
               return null;
             });
 
             const results = await Promise.all(deployPromises);
-            callingAccountAddresses.push(...results.filter((address) => address !== null));
+            callingAliasAccountPlans.push(...results.filter((address) => address !== null));
+            const callingAccountAddresses = callingAliasAccountPlans
+              .flat()
+              .map((aliasAccountPlan) => aliasAccountPlan.aliasAccounts[0].address);
 
-            expect(callingAccountAddresses.length).to.gt(0);
+            // polling for proper updated amountSpent for one of the calling plan
+            let amountSpent = (
+              await hbarSpendingPlanRepository.findByIdWithDetails(
+                callingAliasAccountPlans[0].hbarSpendingPlan.id,
+                requestDetails,
+              )
+            ).amountSpent;
 
-            // awaiting for HBAR limiter to finish updating expenses in the background
-            await Utils.wait(6000);
+            while (amountSpent === 0) {
+              await Utils.wait(1000);
+              amountSpent = (
+                await hbarSpendingPlanRepository.findByIdWithDetails(
+                  callingAliasAccountPlans[0].hbarSpendingPlan.id,
+                  requestDetails,
+                )
+              ).amountSpent;
+            }
 
             // If an account has made a state-changing call, it will have a non-zero `amountSpent` in its associated spending plan.
             // Otherwise, its `amountSpent` in the associated plan should remain 0.
