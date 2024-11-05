@@ -22,6 +22,7 @@ import { PrivateKey } from '@hashgraph/sdk';
 import constants from './lib/constants';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import crypto from 'crypto';
+import { hexToASCII, strip0x } from './formatters';
 
 export class Utils {
   public static readonly IP_ADDRESS_REGEX = /\b((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}\b/g;
@@ -106,5 +107,22 @@ export class Utils {
     );
 
     return estimatedTxFee;
+  }
+
+  /**
+   * Check whether the transaction has reverted by a hedera-specific validation before the actual evm execution
+   * @param contractResult
+   * @returns {boolean}
+   */
+  public static isRevertedDueToHederaSpecificValidation(contractResult: {
+    result: string;
+    error_message: any;
+  }): boolean {
+    // @ts-ignore
+    const statuses = JSON.parse(ConfigService.get('HEDERA_SPECIFIC_REVERT_STATUSES'));
+    return (
+      statuses.includes(contractResult.result) ||
+      statuses.includes(hexToASCII(strip0x(contractResult.error_message ?? '')))
+    );
   }
 }

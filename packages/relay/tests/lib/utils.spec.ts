@@ -21,9 +21,9 @@
 import { expect } from 'chai';
 import { Utils } from '../../src/utils';
 import constants from '../../src/lib/constants';
-import { overrideEnvsInMochaDescribe } from '../helpers';
-import { estimateFileTransactionsFee } from '../helpers';
+import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '../helpers';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ASCIIToHex, prepend0x } from '../../src/formatters';
 
 describe('Utils', () => {
   describe('addPercentageBufferToGasPrice', () => {
@@ -61,6 +61,36 @@ describe('Utils', () => {
       const result = Utils.estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
       const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
       expect(result).to.eq(expectedResult);
+    });
+  });
+
+  describe('isRevertedDueToHederaSpecificValidation', () => {
+    it('should not exclude transaction with status SUCCESS', () => {
+      expect(Utils.isRevertedDueToHederaSpecificValidation({ result: 'SUCCESS', error_message: null })).to.be.false;
+    });
+
+    it('should not exclude evm reverted transaction', () => {
+      expect(
+        Utils.isRevertedDueToHederaSpecificValidation({
+          result: 'CONTRACT_REVERT_EXECUTED',
+          error_message: 'Error',
+        }),
+      ).to.be.false;
+    });
+
+    // @ts-ignore
+    JSON.parse(ConfigService.get('HEDERA_SPECIFIC_REVERT_STATUSES')).forEach((status) => {
+      it(`should exclude transaction with result ${status}`, () => {
+        expect(Utils.isRevertedDueToHederaSpecificValidation({ result: status, error_message: null })).to.be.true;
+      });
+      it(`should exclude transaction with error_message ${status}`, () => {
+        expect(
+          Utils.isRevertedDueToHederaSpecificValidation({
+            result: '',
+            error_message: prepend0x(ASCIIToHex(status)),
+          }),
+        ).to.be.true;
+      });
     });
   });
 });
