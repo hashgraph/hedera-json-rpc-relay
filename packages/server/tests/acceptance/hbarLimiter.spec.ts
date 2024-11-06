@@ -624,7 +624,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
             it('Should allow different accounts associated in the same HbarSpendingPlan to contribute to the same budget', async () => {
               let expectedTxCost = 0;
-              // const aliasAccounts = [aliasAccountA, aliasAccountB];
 
               for (const aliasAccount of aliasAccounts) {
                 const contract = await deployContract(mediumSizeContract, aliasAccount.wallet);
@@ -793,13 +792,17 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               if (Math.random() < 0.5) {
                 const tx = await deployContract(mediumSizeContract, aliasAccountPlan.aliasAccounts[0].wallet);
                 await tx.waitForDeployment();
-                return aliasAccountPlan; // Return the address for those that made deployments
+                return aliasAccountPlan; // Return the aliasAccountPlan for those that made deployments
               }
               return null;
             });
 
             const results = await Promise.all(deployPromises);
-            callingAliasAccountPlans.push(...results.filter((address) => address !== null));
+
+            callingAliasAccountPlans.push(
+              ...results.filter((callingAliasAccountPlan) => callingAliasAccountPlan !== null),
+            );
+
             const callingAccountAddresses = callingAliasAccountPlans
               .flat()
               .map((aliasAccountPlan) => aliasAccountPlan.aliasAccounts[0].address);
