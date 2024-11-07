@@ -208,17 +208,21 @@ export class CacheService {
    * @returns {Promise<any>} A Promise that resolves with the cached value or null if not found.
    */
   private async getFromSharedCache(key: string, callingMethod: string, requestDetails: RequestDetails): Promise<any> {
+    const redactedKey = this.redactIpAddress(key);
+    try {
     try {
       this.cacheMethodsCounter
         .labels(callingMethod, CacheService.cacheTypes.REDIS, CacheService.methods.GET_ASYNC)
         .inc(1);
 
-      return await this.sharedCache.get(key, callingMethod, requestDetails);
+      const result = await this.sharedCache.get(key, callingMethod, requestDetails);
+      this.logger.trace(`${requestDetails.formattedRequestId} Retrieved value for key ${redactedKey} from shared cache`);
+      return result;
     } catch (error) {
       const redisError = new RedisCacheError(error);
       this.logger.error(
         redisError,
-        `${requestDetails.formattedRequestId} Error occurred while getting the cache from Redis. Fallback to internal cache.`,
+        `${requestDetails.formattedRequestId} Error occurred while getting the cache from Redis for key ${redactedKey}. Fallback to internal cache.`,
       );
 
       // fallback to internal cache in case of Redis error
