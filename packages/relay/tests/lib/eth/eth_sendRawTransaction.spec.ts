@@ -243,6 +243,23 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       expect(resultingHash).to.equal(ethereumHash);
     });
 
+    it('should throw internal error if ContractResult from mirror node contains a null hash', async function () {
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: null });
+
+      sdkClientStub.submitEthereumTransaction.resolves({
+        txResponse: {
+          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        } as unknown as TransactionResponse,
+        fileId: null,
+      });
+      const signed = await signTransaction(transaction);
+
+      const response = await ethImpl.sendRawTransaction(signed, requestDetails);
+
+      expect(response).to.be.instanceOf(JsonRpcError);
+      expect((response as JsonRpcError).message).to.include(`Transaction returned a null transaction hash`);
+    });
+
     it('should not send second transaction upon succession', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
