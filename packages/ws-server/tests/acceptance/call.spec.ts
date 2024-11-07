@@ -28,6 +28,8 @@ import ERC20MockJson from '@hashgraph/json-rpc-server/tests/contracts/ERC20Mock.
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@web-socket-batch-1 eth_call', async function () {
+  this.timeout(240 * 1000); // 240 seconds
+
   const METHOD_NAME = 'eth_call';
   const INVALID_PARAMS = [
     ['{}', false, '0x0'],

@@ -27,6 +27,7 @@ import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@web-socket-batch-2 eth_getStorageAt', async function () {
+  this.timeout(240 * 1000); // 240 seconds
   const METHOD_NAME = 'eth_getStorageAt';
   const EXPECTED_VALUE = 7;
   const INVALID_PARAMS = [

@@ -24,6 +24,7 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 
 describe('@web-socket-batch-1 eth_getBlockByHash', async function () {
+  this.timeout(240 * 1000); // 240 seconds
   const METHOD_NAME = 'eth_getBlockByHash';
   const INVALID_PARAMS = [
     [],

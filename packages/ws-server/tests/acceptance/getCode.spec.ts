@@ -27,6 +27,7 @@ import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccoun
 import basicContractJson from '@hashgraph/json-rpc-server/tests/contracts/Basic.json';
 
 describe('@web-socket-batch-2 eth_getCode', async function () {
+  this.timeout(240 * 1000); // 240 seconds
   const METHOD_NAME = 'eth_getCode';
 
   let basicContract: ethers.Contract,

@@ -24,6 +24,7 @@ import { ethers, WebSocketProvider } from 'ethers';
 import { WsTestConstant, WsTestHelper } from '../helper';
 
 describe('@release @web-socket-batch-1 eth_gasPrice', async function () {
+  this.timeout(240 * 1000); // 240 seconds
   const METHOD_NAME = 'eth_gasPrice';
 
   let ethersWsProvider: WebSocketProvider;

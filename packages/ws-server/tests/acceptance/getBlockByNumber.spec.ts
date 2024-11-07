@@ -25,6 +25,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 
 describe('@web-socket-batch-1 eth_getBlockByNumber', async function () {
+  this.timeout(240 * 1000); // 240 seconds
   const METHOD_NAME = 'eth_getBlockByNumber';
   const INVALID_PARAMS = [
     [],

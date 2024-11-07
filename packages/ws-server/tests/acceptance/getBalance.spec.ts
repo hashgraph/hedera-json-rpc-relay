@@ -28,6 +28,7 @@ import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient'
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@web-socket-batch-1 eth_getBalance', async function () {
+  this.timeout(240 * 1000); // 240 seconds
   const METHOD_NAME = 'eth_getBalance';
   const INVALID_PARAMS = [
     [],

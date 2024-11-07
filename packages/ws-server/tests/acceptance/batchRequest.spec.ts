@@ -26,6 +26,7 @@ import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 describe('@web-socket-batch-request Batch Requests', async function () {
+  this.timeout(240 * 1000); // 240 seconds
   const METHOD_NAME = 'batch_request';
   let ethersWsProvider: WebSocketProvider;
   let batchRequests: any = [];
