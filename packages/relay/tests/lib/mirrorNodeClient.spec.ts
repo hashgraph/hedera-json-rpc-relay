@@ -574,6 +574,9 @@ describe('MirrorNodeClient', async function () {
     expect(result.to).equal(detailedContractResult.to);
     expect(result.v).equal(detailedContractResult.v);
     expect(result.transaction_index).equal(detailedContractResult.transaction_index);
+    expect(result.block_gas_used).equal(detailedContractResult.block_gas_used);
+    expect(result.block_number).equal(detailedContractResult.block_number);
+    expect(result.block_hash).equal(detailedContractResult.block_hash);
     expect(mock.history.get.length).to.eq(1); // is called once
   });
 

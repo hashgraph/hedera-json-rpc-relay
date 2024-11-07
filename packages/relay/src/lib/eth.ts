@@ -2089,7 +2089,7 @@ export class EthImpl implements Eth {
       );
       return receipt;
     } else {
-      const effectiveGas = await this.getCurrentGasPriceForBlock(receiptResponse.blockHash, requestDetails);
+      const effectiveGas = await this.getCurrentGasPriceForBlock(receiptResponse.block_hash, requestDetails);
       // support stricter go-eth client which requires the transaction hash property on logs
       const logs = receiptResponse.logs.map((log) => {
         return new Log({
