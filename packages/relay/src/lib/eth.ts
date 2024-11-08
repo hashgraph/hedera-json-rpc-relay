@@ -1568,7 +1568,6 @@ export class EthImpl implements Eth {
     let txSubmitted = false;
     let submittedTransactionId: string = '';
     let sendRawTransactionError: any;
-    let formattedTransactionId: string | null = null;
 
     try {
       const sendRawTransactionResult = await this.hapiService
@@ -1585,8 +1584,7 @@ export class EthImpl implements Eth {
       txSubmitted = true;
       fileId = sendRawTransactionResult.fileId;
       submittedTransactionId = sendRawTransactionResult.txResponse.transactionId?.toString();
-      formattedTransactionId = formatTransactionIdWithoutQueryParams(submittedTransactionId);
-      if (!formattedTransactionId) {
+      if (!constants.TRANSACTION_ID_REGEX.test(submittedTransactionId)) {
         this.logger.warn(
           `${requestIdPrefix} Transaction successfully submitted but returned invalid transactionID: transactionId==${submittedTransactionId}`,
         );
@@ -1597,7 +1595,6 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       if (e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded())) {
         submittedTransactionId = e.transactionId || '';
-        formattedTransactionId = formatTransactionIdWithoutQueryParams(submittedTransactionId);
       }
 
       sendRawTransactionError = e;
@@ -1614,12 +1611,13 @@ export class EthImpl implements Eth {
       }
     }
 
-    // After the try-catch process above, the `formattedTransactionId` is potentially valid in only two scenarios:
+    // After the try-catch process above, the `submittedTransactionId` is potentially valid in only two scenarios:
     //   - The transaction was successfully submitted and fully processed by CN and MN.
     //   - The transaction encountered "SDK timeout exceeded" or "Connection Dropped" errors from the SDK but still potentially reached the consensus level.
     // In both scenarios, polling the MN is required to verify the transaction's validity before return the transaction hash to clients.
-    if (formattedTransactionId) {
+    if (submittedTransactionId) {
       try {
+        const formattedTransactionId = formatTransactionIdWithoutQueryParams(submittedTransactionId);
         const contractResult = await this.mirrorNodeClient.repeatedRequest(
           this.mirrorNodeClient.getContractResult.name,
           [formattedTransactionId, requestDetails],
