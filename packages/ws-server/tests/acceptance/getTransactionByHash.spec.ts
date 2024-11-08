@@ -117,8 +117,8 @@ describe('@web-socket-batch-2 eth_getTransactionByHash', async function () {
       expect(txReceipt.to).to.be.eq(accounts[1].address.toLowerCase());
       expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));
       expect(txReceipt.hash).to.be.eq(expectedTxReceipt.hash);
-      expect(txReceipt.r).to.be.eq(expectedTxReceipt.r);
-      expect(txReceipt.s).to.be.eq(expectedTxReceipt.s);
+      expect(txReceipt.r).to.be.eq(ethers.toQuantity(expectedTxReceipt.r));
+      expect(txReceipt.s).to.be.eq(ethers.toQuantity(expectedTxReceipt.s));
       expect(Number(txReceipt.v)).to.be.eq(expectedTxReceipt.v);
     });
   });
@@ -136,8 +136,8 @@ describe('@web-socket-batch-2 eth_getTransactionByHash', async function () {
       expect(txReceipt.to).to.be.eq(accounts[1].address.toLowerCase());
       expect(txReceipt.blockHash).to.be.eq(expectedTxReceipt.block_hash.slice(0, 66));
       expect(txReceipt.hash).to.be.eq(expectedTxReceipt.hash);
-      expect(txReceipt.r).to.be.eq(expectedTxReceipt.r);
-      expect(txReceipt.s).to.be.eq(expectedTxReceipt.s);
+      expect(txReceipt.r).to.be.eq(ethers.toQuantity(expectedTxReceipt.r));
+      expect(txReceipt.s).to.be.eq(ethers.toQuantity(expectedTxReceipt.s));
       expect(Number(txReceipt.v)).to.be.eq(expectedTxReceipt.v);
     });
   });
