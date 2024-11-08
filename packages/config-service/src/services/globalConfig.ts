@@ -710,7 +710,7 @@ export class GlobalConfig {
       envName: 'WS_NEW_HEADS_ENABLED',
       type: 'boolean',
       required: false,
-      defaultValue: null,
+      defaultValue: true,
     },
     WS_PING_INTERVAL: {
       envName: 'WS_PING_INTERVAL',
