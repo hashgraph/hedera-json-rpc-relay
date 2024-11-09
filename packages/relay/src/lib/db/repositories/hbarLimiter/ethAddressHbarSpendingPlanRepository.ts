@@ -94,9 +94,11 @@ export class EthAddressHbarSpendingPlanRepository {
     for (const key of keys) {
       const addressPlan = await this.cache.getAsync<IEthAddressHbarSpendingPlan>(key, callingMethod, requestDetails);
       if (addressPlan?.planId === planId) {
-        this.logger.trace(
-          `${requestDetails.formattedRequestId} Removing ETH address ${addressPlan.ethAddress} from HbarSpendingPlan with ID ${planId}`,
-        );
+        if (this.logger.isLevelEnabled('trace')) {
+          this.logger.trace(
+            `${requestDetails.formattedRequestId} Removing ETH address ${addressPlan.ethAddress} from HbarSpendingPlan with ID ${planId}`,
+          );
+        }
         await this.cache.delete(key, callingMethod, requestDetails);
       }
     }
@@ -115,9 +117,11 @@ export class EthAddressHbarSpendingPlanRepository {
     if (!addressPlan) {
       throw new EthAddressHbarSpendingPlanNotFoundError(ethAddress);
     }
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} Retrieved link between ETH address ${ethAddress} and HbarSpendingPlan with ID ${addressPlan.planId}`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Retrieved link between ETH address ${ethAddress} and HbarSpendingPlan with ID ${addressPlan.planId}`,
+      );
+    }
     return new EthAddressHbarSpendingPlan(addressPlan);
   }
 
@@ -132,9 +136,11 @@ export class EthAddressHbarSpendingPlanRepository {
   async save(addressPlan: IEthAddressHbarSpendingPlan, requestDetails: RequestDetails, ttl: number): Promise<void> {
     const key = this.getKey(addressPlan.ethAddress);
     await this.cache.set(key, addressPlan, 'save', requestDetails, ttl);
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} Linked ETH address ${addressPlan.ethAddress} to HbarSpendingPlan with ID ${addressPlan.planId}`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Linked ETH address ${addressPlan.ethAddress} to HbarSpendingPlan with ID ${addressPlan.planId}`,
+      );
+    }
   }
 
   /**
@@ -151,7 +157,9 @@ export class EthAddressHbarSpendingPlanRepository {
     const errorMessage = ethAddressPlan
       ? `Removed ETH address ${ethAddress} from HbarSpendingPlan with ID ${ethAddressPlan.planId}`
       : `Trying to remove ETH address ${ethAddress}, which is not linked to a spending plan`;
-    this.logger.trace(`${requestDetails.formattedRequestId} ${errorMessage}`);
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(`${requestDetails.formattedRequestId} ${errorMessage}`);
+    }
   }
 
   /**

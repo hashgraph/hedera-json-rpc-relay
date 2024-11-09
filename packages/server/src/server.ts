@@ -205,18 +205,22 @@ const logAndHandleResponse = async (methodName: string, methodParams: any[], met
   try {
     const methodValidations = Validator.METHODS[methodName];
     if (methodValidations) {
-      logger.debug(
-        `${requestDetails.formattedRequestId} Validating method parameters for ${methodName}, params: ${JSON.stringify(
-          methodParams,
-        )}`,
-      );
+      if (logger.isLevelEnabled('debug')) {
+        logger.debug(
+          `${
+            requestDetails.formattedRequestId
+          } Validating method parameters for ${methodName}, params: ${JSON.stringify(methodParams)}`,
+        );
+      }
       Validator.validateParams(methodParams, methodValidations);
     }
     const response = await methodFunction(requestDetails);
     if (response instanceof JsonRpcError) {
       // log error only if it is not a contract revert, otherwise log it as debug
       if (response.code === predefined.CONTRACT_REVERT().code) {
-        logger.debug(`${requestDetails.formattedRequestId} ${response.message}`);
+        if (logger.isLevelEnabled('debug')) {
+          logger.debug(`${requestDetails.formattedRequestId} ${response.message}`);
+        }
       } else {
         logger.error(`${requestDetails.formattedRequestId} ${response.message}`);
       }

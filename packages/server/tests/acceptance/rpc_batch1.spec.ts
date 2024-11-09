@@ -120,9 +120,11 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         accounts[0].wallet,
       );
       parentContractAddress = parentContract.target as string;
-      global.logger.trace(
-        `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
-      );
+      if (global.logger.isLevelEnabled('trace')) {
+        global.logger.trace(
+          `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
+        );
+      }
 
       await accounts[0].wallet.sendTransaction({
         to: parentContractAddress,
@@ -132,9 +134,11 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       // @ts-ignore
       const createChildTx: ethers.ContractTransactionResponse = await parentContract.createChild(1);
 
-      global.logger.trace(
-        `${requestDetails.formattedRequestId} Contract call createChild on parentContract results in tx hash: ${createChildTx.hash}`,
-      );
+      if (global.logger.isLevelEnabled('trace')) {
+        global.logger.trace(
+          `${requestDetails.formattedRequestId} Contract call createChild on parentContract results in tx hash: ${createChildTx.hash}`,
+        );
+      }
       // get contract result details
       mirrorContractDetails = await mirrorNode.get(`/contracts/results/${createChildTx.hash}`, requestId);
 

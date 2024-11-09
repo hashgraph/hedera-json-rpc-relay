@@ -587,9 +587,11 @@ export class SDKClient {
         const sdkClientError = new SDKClientError(e, e.message);
         if (sdkClientError.isTimeoutExceeded()) {
           const delay = retries * 1000;
-          this.logger.trace(
-            `${requestDetails.formattedRequestId} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`,
-          );
+          if (this.logger.isLevelEnabled('trace')) {
+            this.logger.trace(
+              `${requestDetails.formattedRequestId} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`,
+            );
+          }
           retries++;
           await new Promise((r) => setTimeout(r, delay));
           continue;
@@ -702,9 +704,11 @@ export class SDKClient {
         throw predefined.REQUEST_TIMEOUT;
       }
 
-      this.logger.debug(
-        `${requestIdPrefix} Fail to execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${queryCost} tinybars`,
-      );
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestIdPrefix} Fail to execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${queryCost} tinybars`,
+        );
+      }
 
       throw sdkClientError;
     } finally {
@@ -982,9 +986,11 @@ export class SDKClient {
         this.logger.warn(`${requestDetails.formattedRequestId} File ${fileId} is empty.`);
         throw new SDKClientError({}, `${requestDetails.formattedRequestId} Created file is empty. `);
       }
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Created file with fileId: ${fileId} and file size ${fileInfo.size}`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Created file with fileId: ${fileId} and file size ${fileInfo.size}`,
+        );
+      }
     }
 
     return fileId;
@@ -1033,7 +1039,9 @@ export class SDKClient {
       );
 
       if (fileInfo.isDeleted) {
-        this.logger.trace(`${requestDetails.formattedRequestId} Deleted file with fileId: ${fileId}`);
+        if (this.logger.isLevelEnabled('trace')) {
+          this.logger.trace(`${requestDetails.formattedRequestId} Deleted file with fileId: ${fileId}`);
+        }
       } else {
         this.logger.warn(`${requestDetails.formattedRequestId} Fail to delete file with fileId: ${fileId} `);
       }
@@ -1088,9 +1096,11 @@ export class SDKClient {
     let transactionFee: number = 0;
     let txRecordChargeAmount: number = 0;
     try {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
+        );
+      }
 
       const transactionRecord = await new TransactionRecordQuery()
         .setTransactionId(transactionId)

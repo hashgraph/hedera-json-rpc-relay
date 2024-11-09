@@ -84,11 +84,13 @@ export const sendToClient = (
   logger: Logger,
   requestDetails: RequestDetails,
 ) => {
-  logger.trace(
-    `${requestDetails.formattedLogPrefix}: Sending result=${JSON.stringify(
-      response,
-    )} to client for request=${JSON.stringify(request)}`,
-  );
+  if (logger.isLevelEnabled('trace')) {
+    logger.trace(
+      `${requestDetails.formattedLogPrefix}: Sending result=${JSON.stringify(
+        response,
+      )} to client for request=${JSON.stringify(request)}`,
+    );
+  }
 
   connection.send(JSON.stringify(response));
   connection.limiter.resetInactivityTTLTimer(connection);

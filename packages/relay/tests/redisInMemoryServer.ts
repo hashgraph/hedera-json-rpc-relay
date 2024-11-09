@@ -53,7 +53,9 @@ export class RedisInMemoryServer {
   }
 
   async start(): Promise<void> {
-    this.logger.trace('Starting Redis in-memory server....');
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace('Starting Redis in-memory server....');
+    }
     const started = await this.inMemoryRedisServer.start();
     if (started) {
       const host = await this.getHost();
@@ -74,7 +76,9 @@ export class RedisInMemoryServer {
   }
 
   async stop(): Promise<void> {
-    this.logger.trace('Stopping Redis in-memory server....');
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace('Stopping Redis in-memory server....');
+    }
     const stopped = await this.inMemoryRedisServer.stop();
     if (stopped) {
       this.logger.info('Stopped Redis in-memory server successfully.');
@@ -87,7 +91,11 @@ export class RedisInMemoryServer {
     try {
       // Ensure that the instance is running -> throws error if instance cannot be started
       const instanceData = await this.inMemoryRedisServer.ensureInstance();
-      this.logger.debug(`Redis in-memory server health check passed, server is running on port ${instanceData.port}.`);
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `Redis in-memory server health check passed, server is running on port ${instanceData.port}.`,
+        );
+      }
     } catch (error) {
       this.logger.warn(`Redis in-memory server health check failed: ${error}`);
     }

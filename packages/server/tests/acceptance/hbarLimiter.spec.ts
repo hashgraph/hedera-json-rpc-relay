@@ -105,10 +105,12 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
     const verifyRemainingLimit = (expectedCost: number, remainingHbarsBefore: number, remainingHbarsAfter: number) => {
       const delta = transactionReecordCostTolerance * expectedCost;
-      global.logger.debug(`Tolerance: ${transactionReecordCostTolerance}`);
-      global.logger.debug(`Expected cost: ${expectedCost} ±${delta}`);
-      global.logger.debug(`Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
-      global.logger.debug(`Actual delta: ${(remainingHbarsBefore - remainingHbarsAfter) / (expectedCost * 100)}`);
+      if (global.logger.isLevelEnabled('debug')) {
+        global.logger.debug(`Tolerance: ${transactionReecordCostTolerance}`);
+        global.logger.debug(`Expected cost: ${expectedCost} ±${delta}`);
+        global.logger.debug(`Actual cost: ${remainingHbarsBefore - remainingHbarsAfter}`);
+        global.logger.debug(`Actual delta: ${(remainingHbarsBefore - remainingHbarsAfter) / (expectedCost * 100)}`);
+      }
       expect(remainingHbarsAfter).to.be.approximately(remainingHbarsBefore - expectedCost, delta);
     };
 
@@ -458,9 +460,11 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             await Utils.wait(6000);
 
             const parentContractAddress = parentContract.target as string;
-            global.logger.trace(
-              `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
-            );
+            if (global.logger.isLevelEnabled('trace')) {
+              global.logger.trace(
+                `${requestDetails.formattedRequestId} Deploy parent contract on address ${parentContractAddress}`,
+              );
+            }
 
             expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
             const gasPrice = await relay.gasPrice(requestId);
