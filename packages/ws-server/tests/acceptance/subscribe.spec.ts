@@ -50,7 +50,7 @@ const unsubscribeAndCloseConnections = async (provider: ethers.WebSocketProvider
   return result;
 };
 
-const createLogs = async (contract: ethers.Contract, requestId) => {
+const createLogs = async (wsProvider: ethers.WebSocketProvider, contract: ethers.Contract, requestId) => {
   const gasOptions = await Utils.gasOptions(requestId);
 
   const tx1 = await contract.log0(10, gasOptions);
@@ -68,8 +68,21 @@ const createLogs = async (contract: ethers.Contract, requestId) => {
   const tx5 = await contract.log4(11, 22, 33, 44, gasOptions);
   await tx5.wait();
 
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  fetchTransactionWithRetry(wsProvider, tx5.hash);
 };
+
+async function fetchTransactionWithRetry(txHash, maxRetries = 5, delay = 1000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const transaction = await WsTestHelper.sendRequestToStandardWebSocket('eth_getTransactionByHash', [txHash]);
+    if (transaction && transaction.result.blockNumber) {
+      // Transaction is fully populated
+      return transaction;
+    }
+    // Wait for a specified delay before retrying
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+  throw new Error(`Transaction ${txHash} not fully populated after ${maxRetries} attempts.`);
+}
 
 describe('@web-socket-batch-3 eth_subscribe', async function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -123,11 +136,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   });
 
   afterEach(async () => {
-    if (wsProvider) {
-      await wsProvider.destroy();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-    if (server) expect(server._connections).to.equal(0);
+    wsProvider = await WsTestHelper.closeWebsocketConnections(wsProvider);
   });
 
   describe('Connection', async function () {
@@ -561,7 +570,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
   describe('Subscribes to log events', async function () {
     let logContractSigner2, logContractSigner3, wsLogsProvider, contracts, cLen;
     let ANONYMOUS_LOG_DATA, topic1, topic2;
-    let eventsReceivedGlobal: any[] = [];
+    const eventsReceivedGlobal: any[] = [];
 
     // Deploy several contracts
     before(async function () {
@@ -573,7 +582,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       logContractSigner2 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
       logContractSigner3 = await Utils.deployContractWithEthersV2([], LogContractJson, accounts[0].wallet);
 
-      await createLogs(logContractSigner2, requestId);
+      await createLogs(wsLogsProvider, logContractSigner2, requestId);
       const mirrorLogs = await mirrorNode.get(`/contracts/${logContractSigner2.target}/results/logs`, requestId);
 
       expect(mirrorLogs).to.exist;
@@ -633,7 +642,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
       // Create logs from all deployed contracts
       for (let i = 0; i < cLen; i++) {
-        await createLogs(contracts[i], requestId);
+        await createLogs(wsLogsProvider, contracts[i], requestId);
       }
 
       await wsLogsProvider.websocket.close();
@@ -652,7 +661,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
     });
 
     it('@release Subscribes for contract logs for a specific contract address (using evmAddress)', async function () {
-      let eventsReceived = eventsReceivedGlobal[1];
+      const eventsReceived = eventsReceivedGlobal[1];
 
       // Only the logs from logContractSigner.target are captured
       expect(eventsReceived.length).to.eq(5);

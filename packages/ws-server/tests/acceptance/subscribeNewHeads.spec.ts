@@ -136,10 +136,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   });
 
   afterEach(async () => {
-    if (wsProvider) {
-      await wsProvider.destroy();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
+    wsProvider = await WsTestHelper.closeWebsocketConnections(wsProvider);
   });
 
   describe('Configuration', async function () {

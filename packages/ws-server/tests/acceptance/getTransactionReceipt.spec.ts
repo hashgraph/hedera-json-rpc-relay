@@ -92,7 +92,7 @@ describe('@web-socket-batch-2 eth_getTransactionReceipt', async function () {
   });
 
   afterEach(async () => {
-    if (ethersWsProvider) await ethersWsProvider.destroy();
+    ethersWsProvider = await WsTestHelper.closeWebsocketConnections(ethersWsProvider);
   });
 
   after(async () => {

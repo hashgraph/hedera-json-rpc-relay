@@ -51,14 +51,14 @@ describe('@release @web-socket-batch-1 JSON-RPC requests validation', async func
 
   WsTestHelper.overrideEnvsInMochaDescribe({ REQUEST_ID_IS_OPTIONAL: true });
 
-  let ethersWsProvider: WebSocketProvider;
+  let ethersWsProvider: WebSocketProvider | null;
 
   beforeEach(async () => {
     ethersWsProvider = new ethers.WebSocketProvider(WsTestConstant.WS_RELAY_URL);
   });
 
   afterEach(async () => {
-    if (ethersWsProvider) await ethersWsProvider.destroy();
+    ethersWsProvider = await WsTestHelper.closeWebsocketConnections(ethersWsProvider);
   });
 
   after(async () => {

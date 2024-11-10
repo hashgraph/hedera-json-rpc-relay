@@ -44,7 +44,7 @@ describe('@web-socket-batch-1 eth_getBlockByNumber', async function () {
   });
 
   afterEach(async () => {
-    if (ethersWsProvider) await ethersWsProvider.destroy();
+    ethersWsProvider = await WsTestHelper.closeWebsocketConnections(ethersWsProvider);
   });
 
   after(async () => {
@@ -63,8 +63,10 @@ describe('@web-socket-batch-1 eth_getBlockByNumber', async function () {
 
     it(`@release Should execute eth_getBlockByNumber on Standard Web Socket and handle valid requests correctly`, async () => {
       const expectedResult = await global.relay.call(METHOD_NAME, ['latest', false]);
-      const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [expectedResult.number, true]);
-      await Utils.wait(1000);
+      const response = await WsTestHelper.sendRequestToStandardWebSocketWithResolve(METHOD_NAME, [
+        expectedResult.number,
+        true,
+      ]);
       WsTestHelper.assertJsonRpcObject(response);
       expect(response.result).to.deep.eq(expectedResult);
     });

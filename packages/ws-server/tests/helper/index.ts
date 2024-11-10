@@ -20,7 +20,7 @@
 
 import WebSocket from 'ws';
 import { expect } from 'chai';
-import { WebSocketProvider } from 'ethers';
+import { ethers, WebSocketProvider } from 'ethers';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 
@@ -66,6 +66,52 @@ export class WsTestHelper {
 
     webSocket.close();
     return response;
+  }
+
+  static sendRequestToStandardWebSocketWithResolve(method: string, params: any, timeout = 5000): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const BATCH_REQUEST_METHOD_NAME = 'batch_request';
+      const webSocket = new WebSocket(WsTestConstant.WS_RELAY_URL);
+      let isResolved = false;
+
+      const timer = setTimeout(() => {
+        if (!isResolved) {
+          webSocket.close();
+          reject(new Error('WebSocket response timeout'));
+        }
+      }, timeout);
+
+      webSocket.on('error', (error) => {
+        if (!isResolved) {
+          isResolved = true;
+          clearTimeout(timer);
+          webSocket.close();
+          reject(error);
+        }
+      });
+
+      webSocket.on('open', () => {
+        let request;
+
+        if (method === BATCH_REQUEST_METHOD_NAME) {
+          request = JSON.stringify(params);
+        } else {
+          request = JSON.stringify(WsTestHelper.prepareJsonRpcObject(method, params));
+        }
+
+        webSocket.send(request);
+      });
+
+      webSocket.on('message', (data: string) => {
+        if (!isResolved) {
+          isResolved = true;
+          clearTimeout(timer);
+          const response = JSON.parse(data);
+          webSocket.close();
+          resolve(response);
+        }
+      });
+    });
   }
 
   static async assertFailInvalidParamsStandardWebSocket(method: string, params: any[]) {
@@ -161,6 +207,31 @@ export class WsTestHelper {
 
       tests();
     });
+  }
+
+  static async closeWebsocketConnections(ethersWsProvider: ethers.WebSocketProvider | null) {
+    if (ethersWsProvider) {
+      const ws = ethersWsProvider._websocket;
+      if (ws) {
+        if (ws.readyState === WebSocket.CONNECTING) {
+          // Wait for the WebSocket to either open or close
+          await new Promise((resolve) => {
+            const handleOpenOrClose = () => {
+              ws.removeEventListener('open', handleOpenOrClose);
+              ws.removeEventListener('close', handleOpenOrClose);
+              resolve();
+            };
+            ws.addEventListener('open', handleOpenOrClose);
+            ws.addEventListener('close', handleOpenOrClose);
+          });
+        }
+        // Now it's safe to destroy the provider
+        await ethersWsProvider.destroy();
+      }
+      ethersWsProvider = null;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    return ethersWsProvider;
   }
 }
 

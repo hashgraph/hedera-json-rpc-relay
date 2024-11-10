@@ -83,7 +83,7 @@ describe('@web-socket-batch-2 eth_newFilter', async function () {
     }
 
     it(`@release Should execute eth_newFilter on Standard Web Socket and handle valid requests correctly`, async () => {
-      const response = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, [wsFilterObj]);
+      const response = await WsTestHelper.sendRequestToStandardWebSocketWithResolve(METHOD_NAME, [wsFilterObj]);
       WsTestHelper.assertJsonRpcObject(response);
       const filterId = response.result;
 

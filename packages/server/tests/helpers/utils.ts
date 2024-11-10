@@ -256,13 +256,17 @@ export class Utils {
     requestId: any,
     mirrorNodeServer: any,
   ) => {
+    const gasPriceDeviation = parseFloat(ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2');
+    const gasPrice = await rpcServer.gasPrice(requestId);
+    const gasPriceWithDeviation = gasPrice * (1 + gasPriceDeviation);
+
     const transaction = {
       value: ONE_TINYBAR,
       gasLimit: numberTo0x(30000),
       chainId: Number(CHAIN_ID),
       to: accounts[1].address,
       nonce: await rpcServer.getAccountNonce(accounts[0].address, requestId),
-      maxFeePerGas: await rpcServer.gasPrice(requestId),
+      maxFeePerGas: gasPriceWithDeviation,
     };
 
     const signedTx = await accounts[0].wallet.signTransaction(transaction);
