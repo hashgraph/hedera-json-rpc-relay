@@ -208,7 +208,7 @@ export default class HAPIService {
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
     this.cacheService = cacheService;
-    this.client = this.initSDKClient(logger, register);
+    this.client = this.initSDKClient(logger);
 
     const currentDateNow = Date.now();
     // @ts-ignore
@@ -287,7 +287,7 @@ export default class HAPIService {
       .inc(1);
 
     this.clientMain = this.initClient(this.logger, this.hederaNetwork);
-    this.client = this.initSDKClient(this.logger, this.register);
+    this.client = this.initSDKClient(this.logger);
     this.resetCounters();
   }
 
@@ -306,14 +306,13 @@ export default class HAPIService {
    * @param {Logger} logger
    * @returns SDK Client
    */
-  private initSDKClient(logger: Logger, register: Registry): SDKClient {
+  private initSDKClient(logger: Logger): SDKClient {
     return new SDKClient(
       this.clientMain,
       logger.child({ name: `consensus-node` }),
       this.cacheService,
       this.eventEmitter,
       this.hbarLimitService,
-      register,
     );
   }
 

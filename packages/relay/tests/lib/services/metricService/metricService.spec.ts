@@ -163,7 +163,6 @@ describe('Metric Service', function () {
       new CacheService(logger.child({ name: `cache` }), registry),
       eventEmitter,
       hbarLimitService,
-      register,
     );
     // Init new MetricService instance
     metricService = new MetricService(logger, sdkClient, mirrorNodeClient, registry, eventEmitter, hbarLimitService);
