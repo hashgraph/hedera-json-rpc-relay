@@ -610,6 +610,12 @@ export class GlobalConfig {
       required: false,
       defaultValue: null,
     },
+    TEST_INITIAL_ACCOUNT_STARTING_BALANCE: {
+      envName: 'TEST_INITIAL_ACCOUNT_STARTING_BALANCE',
+      type: 'number',
+      required: false,
+      defaultValue: null,
+    },
     TEST_TRANSACTION_RECORD_COST_TOLERANCE: {
       envName: 'TEST_TRANSACTION_RECORD_COST_TOLERANCE',
       type: 'number',
