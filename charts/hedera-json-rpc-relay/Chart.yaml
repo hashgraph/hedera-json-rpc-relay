@@ -21,4 +21,4 @@ name: hedera-json-rpc-relay
 sources:
   - https://github.com/hashgraph/hedera-json-rpc-relay
 type: application
-version: 0.59.20-node-alpha
+version: 0.59.6-alpha-node-v20-alpha
