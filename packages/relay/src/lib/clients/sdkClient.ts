@@ -721,18 +721,10 @@ export class SDKClient {
       return transactionResponse;
     } catch (e: any) {
       if (e instanceof JsonRpcError) {
-        this.logger.warn(
-          e,
-          `${requestDetails.formattedRequestId} Failed to execute ${txConstructorName} transaction due to a JsonRpcError: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${e.code} message=${e.message}`,
-        );
         throw e;
       }
 
       const sdkClientError = new SDKClientError(e, e.message, transaction.transactionId?.toString());
-      this.logger.warn(
-        sdkClientError,
-        `${requestDetails.formattedRequestId} Failed to execute ${txConstructorName} transaction due to an SDKClientError: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}) message=${sdkClientError.message}`,
-      );
 
       // WRONG_NONCE is one of the special errors where the SDK still returns a valid transactionResponse.
       // Throw the WRONG_NONCE error, as additional handling logic is expected in a higher layer.

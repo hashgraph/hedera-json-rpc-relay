@@ -1585,9 +1585,6 @@ export class EthImpl implements Eth {
       fileId = sendRawTransactionResult.fileId;
       submittedTransactionId = sendRawTransactionResult.txResponse.transactionId?.toString();
       if (!constants.TRANSACTION_ID_REGEX.test(submittedTransactionId)) {
-        this.logger.warn(
-          `${requestIdPrefix} Transaction successfully submitted but returned invalid transactionID: transactionId==${submittedTransactionId}`,
-        );
         throw predefined.INTERNAL_ERROR(
           `Transaction successfully submitted but returned invalid transactionID: transactionId==${submittedTransactionId}`,
         );
