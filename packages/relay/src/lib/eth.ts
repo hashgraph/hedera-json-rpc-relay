@@ -2316,6 +2316,11 @@ export class EthImpl implements Eth {
       );
       return receipt;
     } else {
+      if (
+        receiptResponse.function_parameters.substring(2, constants.FUNCTION_SELECTOR_CHAR_LENGTH).includes('0x0fb65bf3')
+      ) {
+        console.log('WE ARE HEREEE');
+      }
       const effectiveGas = await this.getCurrentGasPriceForBlock(receiptResponse.block_hash, requestDetails);
       // support stricter go-eth client which requires the transaction hash property on logs
       const logs = receiptResponse.logs.map((log) => {
@@ -2331,7 +2336,11 @@ export class EthImpl implements Eth {
           transactionIndex: nullableNumberTo0x(receiptResponse.transaction_index),
         });
       });
-
+      const isCreationViaSystemContract = receiptResponse.function_parameters
+        .substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)
+        .includes('0x0fb65bf3');
+      const tokenAddress = receiptResponse.call_result.substring(90);
+      const contractAddress = isCreationViaSystemContract ? `0x${tokenAddress}` : receiptResponse.address;
       const receipt: ITransactionReceipt = {
         blockHash: toHash32(receiptResponse.block_hash),
         blockNumber: numberTo0x(receiptResponse.block_number),
@@ -2339,7 +2348,7 @@ export class EthImpl implements Eth {
         to: await this.resolveEvmAddress(receiptResponse.to, requestDetails),
         cumulativeGasUsed: numberTo0x(receiptResponse.block_gas_used),
         gasUsed: nanOrNumberTo0x(receiptResponse.gas_used),
-        contractAddress: receiptResponse.address,
+        contractAddress: contractAddress,
         logs: logs,
         logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
         transactionHash: toHash32(receiptResponse.hash),
