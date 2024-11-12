@@ -96,13 +96,15 @@ export class Precheck {
   async verifyAccount(tx: Transaction, requestDetails: RequestDetails): Promise<any> {
     const accountInfo = await this.mirrorNodeClient.getAccount(tx.from!, requestDetails);
     if (accountInfo == null) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Failed to retrieve address '${
-          tx.from
-        }' account details from mirror node on verify account precheck for sendRawTransaction(transaction=${JSON.stringify(
-          tx,
-        )})`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Failed to retrieve address '${
+            tx.from
+          }' account details from mirror node on verify account precheck for sendRawTransaction(transaction=${JSON.stringify(
+            tx,
+          )})`,
+        );
+      }
       throw predefined.RESOURCE_NOT_FOUND(`address '${tx.from}'.`);
     }
 
@@ -116,9 +118,11 @@ export class Precheck {
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    */
   nonce(tx: Transaction, accountInfoNonce: number, requestDetails: RequestDetails): void {
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Nonce precheck for sendRawTransaction(tx.nonce=${tx.nonce}, accountInfoNonce=${accountInfoNonce})`,
+      );
+    }
 
     if (accountInfoNonce > tx.nonce) {
       throw predefined.NONCE_TOO_LOW(tx.nonce, accountInfoNonce);
@@ -134,11 +138,13 @@ export class Precheck {
     const txChainId = prepend0x(Number(tx.chainId).toString(16));
     const passes = this.isLegacyUnprotectedEtx(tx) || txChainId === this.chain;
     if (!passes) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)`,
-        JSON.stringify(tx),
-        txChainId,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Failed chainId precheck for sendRawTransaction(transaction=%s, chainId=%s)`,
+          JSON.stringify(tx),
+          txChainId,
+        );
+      }
       throw predefined.UNSUPPORTED_CHAIN_ID(txChainId, this.chain);
     }
   }
@@ -181,12 +187,14 @@ export class Precheck {
         }
       }
 
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`,
-        JSON.stringify(tx),
-        txGasPrice,
-        networkGasPrice,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Failed gas price precheck for sendRawTransaction(transaction=%s, gasPrice=%s, requiredGasPrice=%s)`,
+          JSON.stringify(tx),
+          txGasPrice,
+          networkGasPrice,
+        );
+      }
       throw predefined.GAS_PRICE_TOO_LOW(txGasPrice, networkGasPrice);
     }
   }
@@ -215,13 +223,15 @@ export class Precheck {
     const txTotalValue = tx.value + txGas * tx.gasLimit;
 
     if (account == null) {
-      this.logger.trace(
-        `${
-          requestDetails.formattedRequestId
-        } Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(
-          tx,
-        )}, totalValue=${txTotalValue})`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${
+            requestDetails.formattedRequestId
+          } Failed to retrieve account details from mirror node on balance precheck for sendRawTransaction(transaction=${JSON.stringify(
+            tx,
+          )}, totalValue=${txTotalValue})`,
+        );
+      }
       throw predefined.RESOURCE_NOT_FOUND(`tx.from '${tx.from}'.`);
     }
 
@@ -230,12 +240,14 @@ export class Precheck {
       tinybars = BigInt(account.balance.balance.toString()) * BigInt(constants.TINYBAR_TO_WEIBAR_COEF);
       result.passes = tinybars >= txTotalValue;
     } catch (error: any) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`,
-        JSON.stringify(tx),
-        txTotalValue,
-        error.message,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Error on balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, error=%s)`,
+          JSON.stringify(tx),
+          txTotalValue,
+          error.message,
+        );
+      }
       if (error instanceof JsonRpcError) {
         // preserve original error
         throw error;
@@ -245,12 +257,14 @@ export class Precheck {
     }
 
     if (!result.passes) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountTinyBarBalance=%s)`,
-        JSON.stringify(tx),
-        txTotalValue,
-        tinybars,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Failed balance precheck for sendRawTransaction(transaction=%s, totalValue=%s, accountTinyBarBalance=%s)`,
+          JSON.stringify(tx),
+          txTotalValue,
+          tinybars,
+        );
+      }
       throw predefined.INSUFFICIENT_ACCOUNT_BALANCE;
     }
   }
@@ -267,20 +281,24 @@ export class Precheck {
     const intrinsicGasCost = Precheck.transactionIntrinsicGasCost(tx.data);
 
     if (gasLimit > constants.MAX_GAS_PER_SEC) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} ${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`,
-        JSON.stringify(tx),
-        gasLimit,
-        constants.MAX_GAS_PER_SEC,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} ${failBaseLog} Gas Limit was too high: %s, block gas limit: %s`,
+          JSON.stringify(tx),
+          gasLimit,
+          constants.MAX_GAS_PER_SEC,
+        );
+      }
       throw predefined.GAS_LIMIT_TOO_HIGH(gasLimit, constants.MAX_GAS_PER_SEC);
     } else if (gasLimit < intrinsicGasCost) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} ${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`,
-        JSON.stringify(tx),
-        gasLimit,
-        intrinsicGasCost,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} ${failBaseLog} Gas Limit was too low: %s, intrinsic gas cost: %s`,
+          JSON.stringify(tx),
+          gasLimit,
+          intrinsicGasCost,
+        );
+      }
       throw predefined.GAS_LIMIT_TOO_LOW(gasLimit, intrinsicGasCost);
     }
   }
@@ -348,11 +366,13 @@ export class Precheck {
   transactionType(tx: Transaction, requestDetails: RequestDetails) {
     // Blob transactions are not supported as per HIP 866
     if (tx.type === 3) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Transaction with type=${
-          tx.type
-        } is unsupported for sendRawTransaction(transaction=${JSON.stringify(tx)})`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Transaction with type=${
+            tx.type
+          } is unsupported for sendRawTransaction(transaction=${JSON.stringify(tx)})`,
+        );
+      }
       throw predefined.UNSUPPORTED_TRANSACTION_TYPE;
     }
   }

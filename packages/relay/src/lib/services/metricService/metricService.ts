@@ -218,9 +218,11 @@ export default class MetricService {
     requestDetails,
     originalCallerAddress,
   }: IExecuteQueryEventPayload): Promise<void> => {
-    this.logger.trace(
-      `${requestDetails.formattedRequestId} Capturing transaction fee charged to operator: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
-    );
+    if (this.logger.isLevelEnabled('trace')) {
+      this.logger.trace(
+        `${requestDetails.formattedRequestId} Capturing transaction fee charged to operator: executionMode=${executionMode} transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}, cost=${cost} tinybars`,
+      );
+    }
 
     await this.hbarLimitService.addExpense(cost, originalCallerAddress ?? '', requestDetails);
     this.captureMetrics(executionMode, txConstructorName, status, cost, gasUsed, callerName, interactingEntity);

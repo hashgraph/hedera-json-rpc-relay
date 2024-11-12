@@ -26,7 +26,7 @@ import { Poller } from '../../src/lib/poller';
 import sinon from 'sinon';
 import { Registry } from 'prom-client';
 
-const logger = pino();
+const logger = pino({ level: 'trace' });
 
 describe('Polling', async function () {
   this.timeout(20000);
@@ -207,7 +207,9 @@ describe('Polling', async function () {
 
     it('should poll single line of log data', async () => {
       const notifySubscriber = (data) => {
-        logger.debug(SINGLE_LINE);
+        if (logger.isLevelEnabled('debug')) {
+          logger.debug(SINGLE_LINE);
+        }
         expect(data).to.eq(logs);
         return;
       };
@@ -229,7 +231,9 @@ describe('Polling', async function () {
 
     it('should poll an array of log data', async () => {
       const notifySubscriber = (data) => {
-        logger.debug(ARRAY_OF_LOGS);
+        if (logger.isLevelEnabled('debug')) {
+          logger.debug(ARRAY_OF_LOGS);
+        }
         expect(data).to.deep.eq(logsArray);
         return;
       };

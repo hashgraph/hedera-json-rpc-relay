@@ -134,7 +134,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       accounts[0].wallet,
     );
     parentContractAddress = parentContract.target as string;
-    global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
+    if (global.logger.isLevelEnabled('trace')) {
+      global.logger.trace(`${requestIdPrefix} Deploy parent contract on address ${parentContractAddress}`);
+    }
 
     const mirrorNodeContractRes = await mirrorNode.get(`/contracts/${parentContractAddress}`, requestId);
     const parentContractId = ContractId.fromString(mirrorNodeContractRes.contract_id);
@@ -148,9 +150,11 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     // @ts-ignore
     createChildTx = await parentContract.createChild(1);
 
-    global.logger.trace(
-      `${requestIdPrefix} Contract call createChild on parentContract results in tx hash: ${createChildTx.hash}`,
-    );
+    if (global.logger.isLevelEnabled('trace')) {
+      global.logger.trace(
+        `${requestIdPrefix} Contract call createChild on parentContract results in tx hash: ${createChildTx.hash}`,
+      );
+    }
 
     tokenId = await servicesNode.createToken(1000, requestId);
     htsAddress = Utils.idToEvmAddress(tokenId.toString());

@@ -28,7 +28,7 @@ import { Registry } from 'prom-client';
 import ConnectionLimiter from '@hashgraph/json-rpc-ws-server/src/metrics/connectionLimiter';
 import { overrideEnvsInMochaDescribe } from '../helpers';
 
-const logger = pino();
+const logger = pino({ level: 'trace' });
 const register = new Registry();
 const limiter = new ConnectionLimiter(logger, register);
 let ethImpl: EthImpl;
