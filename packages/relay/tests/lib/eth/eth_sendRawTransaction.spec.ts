@@ -46,6 +46,7 @@ import { RequestDetails } from '../../../src/lib/types';
 import MockAdapter from 'axios-mock-adapter';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
+import { Counter } from 'prom-client';
 
 use(chaiAsPromised);
 
@@ -59,8 +60,12 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     hapiServiceInstance,
     ethImpl,
     cacheService,
-  }: { restMock: MockAdapter; hapiServiceInstance: HAPIService; ethImpl: Eth; cacheService: CacheService } =
-    generateEthTestEnv();
+  }: {
+    restMock: MockAdapter;
+    hapiServiceInstance: HAPIService;
+    ethImpl: Eth;
+    cacheService: CacheService;
+  } = generateEthTestEnv();
 
   const requestDetails = new RequestDetails({ requestId: 'eth_sendRawTransactionTest', ipAddress: '0.0.0.0' });
 
@@ -343,6 +348,22 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         expect(response).to.be.instanceOf(JsonRpcError);
         expect(response.message).to.include(error);
       });
+    });
+
+    it('should update execution counter and list the correct data when eth_sendRawTransation is executed', async function () {
+      const labelsSpy = sinon.spy(ethImpl['ethExecutionsCounter'], 'labels');
+      const expectedLabelsValue = ['eth_sendRawTransaction', '0x', transaction.from, transaction.to];
+
+      const signed = await signTransaction(transaction);
+
+      await ethImpl.sendRawTransaction(signed, requestDetails);
+
+      expect(ethImpl['ethExecutionsCounter']).to.be.instanceOf(Counter);
+      labelsSpy.args[0].map((labelValue, index) => {
+        expect(labelValue).to.equal(expectedLabelsValue[index]);
+      });
+
+      sinon.restore();
     });
   });
 });

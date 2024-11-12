@@ -227,7 +227,7 @@ export class EthImpl implements Eth {
   private readonly chain: string;
 
   /**
-   * The ethExecutionsCounter used to track the number of active contract execution requests.
+   * The ethExecutionsCounter used to track the number of daily active users and active contract execution requests.
    * @private
    */
   private readonly ethExecutionsCounter: Counter;
@@ -272,7 +272,11 @@ export class EthImpl implements Eth {
     this.cacheService = cacheService;
     this.mirrorNodeClient = mirrorNodeClient;
     this.precheck = new Precheck(mirrorNodeClient, logger, chain);
-    this.ethExecutionsCounter = this.initEthExecutionCounter(registry);
+    this.ethExecutionsCounter = this.initCounter(
+      'rpc_relay_eth_executions',
+      ['method', 'function', 'from', 'to'],
+      registry,
+    );
     this.common = new CommonService(mirrorNodeClient, logger, cacheService);
     this.debugServiceImpl = new DebugService(mirrorNodeClient, logger, this.common);
     this.filterServiceImpl = new FilterService(mirrorNodeClient, logger, cacheService, this.common);
@@ -283,13 +287,12 @@ export class EthImpl implements Eth {
     return !CommonService.blockTagIsLatestOrPendingStrict(tag) && !CommonService.isDevMode;
   }
 
-  private initEthExecutionCounter(register: Registry): Counter {
-    const metricCounterName = 'rpc_relay_eth_executions';
+  private initCounter(metricCounterName: string, labelNames: string[], register: Registry): Counter {
     register.removeSingleMetric(metricCounterName);
     return new Counter({
       name: metricCounterName,
       help: `Relay ${metricCounterName} function`,
-      labelNames: ['method', 'function'],
+      labelNames: labelNames,
       registers: [register],
     });
   }
@@ -579,7 +582,12 @@ export class EthImpl implements Eth {
 
     if (callDataSize >= constants.FUNCTION_SELECTOR_CHAR_LENGTH) {
       this.ethExecutionsCounter
-        .labels(EthImpl.ethEstimateGas, callData!.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
+        .labels(
+          EthImpl.ethEstimateGas,
+          callData!.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH),
+          transaction.from || '',
+          transaction.to || '',
+        )
         .inc();
     }
 
@@ -1643,17 +1651,22 @@ export class EthImpl implements Eth {
    */
   async sendRawTransaction(transaction: string, requestDetails: RequestDetails): Promise<string | JsonRpcError> {
     const requestIdPrefix = requestDetails.formattedRequestId;
-    if (transaction?.length >= constants.FUNCTION_SELECTOR_CHAR_LENGTH)
-      this.ethExecutionsCounter
-        .labels(EthImpl.ethSendRawTransaction, transaction.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
-        .inc();
-
     const networkGasPriceInWeiBars = Utils.addPercentageBufferToGasPrice(
       await this.getFeeWeibars(EthImpl.ethGasPrice, requestDetails),
     );
-
     const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestDetails, networkGasPriceInWeiBars);
     const originalCallerAddress = parsedTx.from?.toString() || '';
+    const toAddress = parsedTx.to?.toString() || '';
+
+    this.ethExecutionsCounter
+      .labels(
+        EthImpl.ethSendRawTransaction,
+        parsedTx.data.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH) || '',
+        originalCallerAddress,
+        toAddress,
+      )
+      .inc();
+
     const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
 
     let fileId: FileId | null = null;
@@ -1780,12 +1793,15 @@ export class EthImpl implements Eth {
     if (this.logger.isLevelEnabled('trace')) {
       this.logger.trace(`${requestIdPrefix} call data size: ${callDataSize}`);
     }
-    // metrics for selector
-    if (callDataSize >= constants.FUNCTION_SELECTOR_CHAR_LENGTH) {
-      this.ethExecutionsCounter
-        .labels(EthImpl.ethCall, callData!.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH))
-        .inc();
-    }
+
+    this.ethExecutionsCounter
+      .labels(
+        EthImpl.ethCall,
+        callData?.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH) ?? '',
+        call.from || '',
+        call.to || '',
+      )
+      .inc();
 
     const blockNumberOrTag = await this.extractBlockNumberOrTag(blockParam, requestDetails);
     await this.performCallChecks(call);
