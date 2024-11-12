@@ -46,7 +46,7 @@ import { RequestDetails } from '../../../src/lib/types';
 import MockAdapter from 'axios-mock-adapter';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
-import { Registry } from 'prom-client';
+import { Counter, Registry } from 'prom-client';
 
 use(chaiAsPromised);
 
@@ -353,12 +353,14 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     });
 
     it('should update execution counter and list the correct data when eth_sendRawTransation is executed', async function () {
-      const metrics = await registry.metrics();
       const signed = await signTransaction(transaction);
 
       await ethImpl.sendRawTransaction(signed, requestDetails);
+
+      const metrics = await registry.metrics();
       const expectedMetricData = `rpc_relay_eth_executions{method="eth_sendRawTransaction",function="0x",from="${transaction.from}",to="${transaction.to}"}`;
 
+      expect(ethImpl['ethExecutionsCounter']).to.be.instanceOf(Counter);
       assert.include(metrics, expectedMetricData);
     });
   });

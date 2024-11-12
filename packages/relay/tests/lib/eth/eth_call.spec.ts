@@ -451,8 +451,9 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('should update execution counter and list the correct data when eth_call is executed', async function () {
-      const metrics = await registry.metrics();
       await ethImpl.call(ETH_CALL_REQ_ARGS, 'latest', requestDetails);
+
+      const metrics = await registry.metrics();
       const expectedMetricData = `rpc_relay_eth_executions{method="eth_call",function="${ETH_CALL_REQ_ARGS.data}",from="${ETH_CALL_REQ_ARGS.from}",to="${ETH_CALL_REQ_ARGS.to}"}`;
 
       expect(ethImpl['ethExecutionsCounter']).to.be.instanceOf(Counter);
