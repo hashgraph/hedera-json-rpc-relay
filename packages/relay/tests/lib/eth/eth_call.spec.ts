@@ -67,7 +67,7 @@ let getSdkClientStub: sinon.SinonStub;
 
 describe('@ethCall Eth Call spec', async function () {
   this.timeout(10000);
-  let { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService, registry } = generateEthTestEnv();
+  let { restMock, web3Mock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
   const ETH_CALL_REQ_ARGS = {
     from: ACCOUNT_ADDRESS_1,
@@ -451,13 +451,17 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('should update execution counter and list the correct data when eth_call is executed', async function () {
+      const labelsSpy = sinon.spy(ethImpl['ethExecutionsCounter'], 'labels');
+      const expectedLabelsValue = ['eth_call', ETH_CALL_REQ_ARGS.data, ETH_CALL_REQ_ARGS.from, ETH_CALL_REQ_ARGS.to];
+
       await ethImpl.call(ETH_CALL_REQ_ARGS, 'latest', requestDetails);
 
-      const metrics = await registry.metrics();
-      const expectedMetricData = `rpc_relay_eth_executions{method="eth_call",function="${ETH_CALL_REQ_ARGS.data}",from="${ETH_CALL_REQ_ARGS.from}",to="${ETH_CALL_REQ_ARGS.to}"}`;
-
       expect(ethImpl['ethExecutionsCounter']).to.be.instanceOf(Counter);
-      assert.include(metrics, expectedMetricData);
+      labelsSpy.args[0].map((labelValue, index) => {
+        expect(labelValue).to.equal(expectedLabelsValue[index]);
+      });
+
+      sinon.restore();
     });
   });
 
@@ -787,6 +791,29 @@ describe('@ethCall Eth Call spec', async function () {
       );
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.eq(EXAMPLE_CONTRACT_BYTECODE);
+    });
+
+    it('should update execution counter and list the correct data when eth_call is executed', async function () {
+      const labelsSpy = sinon.spy(ethImpl['ethExecutionsCounter'], 'labels');
+      const expectedLabelsValue = ['eth_call', CONTRACT_CALL_DATA, ACCOUNT_ADDRESS_1, CONTRACT_ADDRESS_2];
+
+      const callData = {
+        ...defaultCallData,
+        from: ACCOUNT_ADDRESS_1,
+        to: CONTRACT_ADDRESS_2,
+        data: CONTRACT_CALL_DATA,
+        gas: MAX_GAS_LIMIT,
+      };
+      await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' }, requestDetails);
+      await ethImpl.call(callData, 'latest', requestDetails);
+
+      expect(ethImpl['ethExecutionsCounter']).to.be.instanceOf(Counter);
+
+      labelsSpy.args[0].map((labelValue, index) => {
+        expect(labelValue).to.equal(expectedLabelsValue[index]);
+      });
+
+      sinon.restore();
     });
 
     async function mockContractCall(
