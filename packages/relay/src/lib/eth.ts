@@ -2336,11 +2336,14 @@ export class EthImpl implements Eth {
           transactionIndex: nullableNumberTo0x(receiptResponse.transaction_index),
         });
       });
-      const isCreationViaSystemContract = receiptResponse.function_parameters
-        .substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH)
-        .includes('0x0fb65bf3');
+      const functionSelectors = constants.HTS_CREATE_FUNCTIONS_SIGNATURE.map((signature) =>
+        Utils.calculateFunctionSelector(signature),
+      );
+      const isCreationViaSystemContract = functionSelectors.includes(
+        receiptResponse.function_parameters.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH),
+      );
       const tokenAddress = receiptResponse.call_result.substring(90);
-      const contractAddress = isCreationViaSystemContract ? `0x${tokenAddress}` : receiptResponse.address;
+      const contractAddress = isCreationViaSystemContract ? prepend0x(tokenAddress) : receiptResponse.address;
       const receipt: ITransactionReceipt = {
         blockHash: toHash32(receiptResponse.block_hash),
         blockNumber: numberTo0x(receiptResponse.block_number),

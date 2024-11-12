@@ -69,6 +69,11 @@ export enum CallType {
   CALL = 'CALL',
 }
 
+const CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE =
+  'createNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))';
+const CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE =
+  'createFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32)';
+
 export default {
   HBAR_TO_TINYBAR_COEF: 100_000_000,
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
@@ -210,6 +215,10 @@ export default {
   DEFAULT_ROOT_HASH: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
 
   MASKED_IP_ADDRESS: 'xxx.xxx.xxx.xxx',
+  HTS_CREATE_FUNCTIONS_SIGNATURE: [
+    CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE,
+    CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE,
+  ],
 
   // The fee is calculated via the fee calculator: https://docs.hedera.com/hedera/networks/mainnet/fees
   // The maximum fileAppendChunkSize is currently set to 5KB by default; therefore, the estimated fees for FileCreate below are based on a file size of 5KB.
