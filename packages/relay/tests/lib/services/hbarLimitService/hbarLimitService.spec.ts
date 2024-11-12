@@ -494,6 +494,29 @@ describe('HBAR Rate Limit Service', function () {
         expect(result).to.be.false;
       });
     });
+
+    describe('It should be able to disable the rate limiter', function () {
+      const hbarLimitServiceDisabled = new HbarLimitService(
+        hbarSpendingPlanRepositoryStub,
+        ethAddressHbarSpendingPlanRepositoryStub,
+        ipAddressHbarSpendingPlanRepositoryStub,
+        logger,
+        register,
+        Hbar.fromTinybars(0),
+        limitDuration,
+      );
+      it('should return false if the rate limiter is disabled by setting HBAR_RATE_LIMIT_TINYBAR to zero', async function () {
+        // hbarLimitServiceDisabled.disableRateLimiter();
+        const result = await hbarLimitServiceDisabled.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          '',
+          requestDetails,
+        );
+        expect(result).to.be.false;
+      });
+    });
   });
 
   describe('getSpendingPlan', function () {

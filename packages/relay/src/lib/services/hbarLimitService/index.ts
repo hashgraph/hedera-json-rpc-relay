@@ -38,6 +38,12 @@ export class HbarLimitService implements IHbarLimitService {
   };
 
   /**
+   * Disables the rate limiter.
+   * @private
+   */
+  private readonly disableRateLimiter: boolean = false;
+
+  /**
    * Counts the number of times the rate limit has been reached.
    * @private
    */
@@ -89,6 +95,10 @@ export class HbarLimitService implements IHbarLimitService {
   ) {
     this.reset = this.getResetTimestamp();
     this.remainingBudget = this.totalBudget;
+
+    if (this.remainingBudget.toTinybars().isZero()) {
+      this.disableRateLimiter = true;
+    }
 
     const metricCounterName = 'rpc_relay_hbar_rate_limit';
     this.register.removeSingleMetric(metricCounterName);
@@ -181,6 +191,10 @@ export class HbarLimitService implements IHbarLimitService {
     requestDetails: RequestDetails,
     estimatedTxFee: number = 0,
   ): Promise<boolean> {
+    if (this.disableRateLimiter) {
+      return false;
+    }
+
     const ipAddress = requestDetails.ipAddress;
     if (await this.isTotalBudgetExceeded(mode, methodName, txConstructorName, estimatedTxFee, requestDetails)) {
       return true;
