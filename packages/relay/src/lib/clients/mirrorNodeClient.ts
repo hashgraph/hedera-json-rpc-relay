@@ -45,6 +45,7 @@ import {
   MirrorNodeTransactionRecord,
   RequestDetails,
 } from '../types';
+import { EthImpl } from '../eth';
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
@@ -733,6 +734,7 @@ export class MirrorNodeClient {
       response != undefined &&
       response.transaction_index != undefined &&
       response.block_number != undefined &&
+      response.block_hash != EthImpl.emptyHex &&
       response.result === 'SUCCESS'
     ) {
       await this.cacheService.set(
@@ -749,14 +751,21 @@ export class MirrorNodeClient {
 
   /**
    * In some very rare cases the /contracts/results api is called before all the data is saved in
-   * the mirror node DB and `transaction_index` or `block_number` is returned as `undefined`. A single re-fetch is sufficient to
-   * resolve this problem.
+   * the mirror node DB and `transaction_index` or `block_number` is returned as `undefined` or `block_hash` as `0x`.
+   * A single re-fetch is sufficient to resolve this problem.
    * @param {string} transactionIdOrHash - The transaction ID or hash
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    */
   public async getContractResultWithRetry(transactionIdOrHash: string, requestDetails: RequestDetails) {
     const contractResult = await this.getContractResult(transactionIdOrHash, requestDetails);
-    if (contractResult && !(contractResult.transaction_index && contractResult.block_number)) {
+    if (
+      contractResult &&
+      !(
+        contractResult.transaction_index &&
+        contractResult.block_number &&
+        contractResult.block_hash != EthImpl.emptyHex
+      )
+    ) {
       return this.getContractResult(transactionIdOrHash, requestDetails);
     }
     return contractResult;
