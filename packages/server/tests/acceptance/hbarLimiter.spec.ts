@@ -57,33 +57,6 @@ import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeCont
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
 
-const pollForProperAmountSpent = async (
-  hbarSpendingPlan: IDetailedHbarSpendingPlan,
-  deploymentCounts: number,
-  expectedTxCost: number,
-) => {
-  let amountSpent = (await hbarSpendingPlanRepository.findByIdWithDetails(hbarSpendingPlan.id, requestDetails))
-    .amountSpent;
-
-  while (amountSpent < deploymentCounts * expectedTxCost) {
-    logger.warn(
-      `Fail to retrieve proper amount spent by the spending plan. Polling for the proper amount: deploymentCounts=${deploymentCounts}, expectedTxCost=${expectedTxCost}, amountSpent=${amountSpent}, properAmountSpent=${
-        deploymentCounts * expectedTxCost
-      }, planId=${hbarSpendingPlan.id}`,
-    );
-    await Utils.wait(3000);
-    amountSpent = (await hbarSpendingPlanRepository.findByIdWithDetails(hbarSpendingPlan.id, requestDetails))
-      .amountSpent;
-  }
-
-  logger.info(
-    `Successfully retrieve proper amount spent by hbarSpendingPlan: deploymentCounts=${deploymentCounts}, expectedTxCost=${expectedTxCost}, amountSpent=${amountSpent}, properAmountSpent=${
-      deploymentCounts * expectedTxCost
-    }, planId=${hbarSpendingPlan.id}`,
-  );
-  return amountSpent;
-};
-
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   // @ts-ignore
   const {
@@ -915,7 +888,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
     });
 
-    describe('@hbarlimiter-batch3 BASIC Tier', () => {
+    describe('@hbarlimiter-batch3 Unlimited', () => {
       const accounts: AliasAccount[] = [];
 
       beforeEach(async function () {
@@ -928,7 +901,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         const initialAccount: AliasAccount = global.accounts[0];
 
-        const neededAccounts: number = 3;
+        const neededAccounts: number = 1;
         accounts.push(
           ...(await Utils.createMultipleAliasAccounts(
             mirrorNode,
@@ -943,27 +916,24 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           [SubscriptionTier.BASIC],
           requestDetails,
         );
-        for (const plan of basicPlans) {
-          await hbarSpendingPlanRepository.delete(plan.id, requestDetails);
-          await ethAddressSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
-          await ipSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
-        }
       });
 
       it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts, and not throw an error', async function () {
+        // confirm that HBAR_RATE_LIMIT_TINYBAR is set to zero
+        expect(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR')).to.eq(0);
         let expectedTxCost = 0;
         let deploymentCounts = 0;
         let hbarSpendingPlan: IDetailedHbarSpendingPlan | null = null;
 
         for (deploymentCounts = 0; deploymentCounts < 3; deploymentCounts++) {
-          const tx = await deployContract(largeContractJson, accounts[2].wallet);
+          const tx = await deployContract(largeContractJson, accounts[0].wallet);
           await tx.waitForDeployment();
 
           expectedTxCost ||= await getExpectedCostOfLastLargeTx(largeContractJson.bytecode);
 
           if (!hbarSpendingPlan) {
             const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
-              accounts[2].wallet.address,
+              accounts[0].wallet.address,
               requestDetails,
             );
             hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
@@ -973,6 +943,16 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           }
 
           await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts + 1, expectedTxCost);
+        }
+        if (!hbarSpendingPlan) {
+          const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+            accounts[0].wallet.address,
+            requestDetails,
+          );
+          hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
+            ethSpendingPlan.planId,
+            requestDetails,
+          );
         }
         // Verify that the amount spent exceeds the HBAR limit
         const amountSpent = await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts, expectedTxCost);
@@ -984,6 +964,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         // Confirm that deployments continued even after the limit was exhausted
         expect(deploymentCounts).to.be.gte(1);
+        await expect(deployContract(largeContractJson, accounts[0].wallet)).to.be.fulfilled;
       });
     });
   }
