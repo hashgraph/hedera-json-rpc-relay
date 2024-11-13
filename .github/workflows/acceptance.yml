@@ -129,6 +129,7 @@ jobs:
       - ratelimiter
       - hbarlimiter_batch_1
       - hbarlimiter_batch_2
+      - hbarlimiter_batch_3
       - tokencreate
       - tokenmanagement
       - htsprecompilev1
