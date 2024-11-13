@@ -898,24 +898,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             'HBAR_RATE_LIMIT_TINYBAR',
           )}`,
         );
-
-        const initialAccount: AliasAccount = global.accounts[0];
-
-        const neededAccounts: number = 1;
-        accounts.push(
-          ...(await Utils.createMultipleAliasAccounts(
-            mirrorNode,
-            initialAccount,
-            neededAccounts,
-            initialBalance,
-            requestDetails,
-          )),
-        );
-        global.accounts.push(...accounts);
-        const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
-          [SubscriptionTier.BASIC],
-          requestDetails,
-        );
       });
 
       it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts, and not throw an error', async function () {
@@ -926,14 +908,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         let hbarSpendingPlan: IDetailedHbarSpendingPlan | null = null;
 
         for (deploymentCounts = 0; deploymentCounts < 3; deploymentCounts++) {
-          const tx = await deployContract(largeContractJson, accounts[0].wallet);
+          const tx = await deployContract(largeContractJson, global.accounts[0].wallet);
           await tx.waitForDeployment();
 
           expectedTxCost ||= await getExpectedCostOfLastLargeTx(largeContractJson.bytecode);
 
           if (!hbarSpendingPlan) {
             const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
-              accounts[0].wallet.address,
+              global.accounts[0].wallet.address,
               requestDetails,
             );
             hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
@@ -946,7 +928,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         }
         if (!hbarSpendingPlan) {
           const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
-            accounts[0].wallet.address,
+            global.accounts[0].wallet.address,
             requestDetails,
           );
           hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
@@ -964,7 +946,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
         // Confirm that deployments continued even after the limit was exhausted
         expect(deploymentCounts).to.be.gte(1);
-        await expect(deployContract(largeContractJson, accounts[0].wallet)).to.be.fulfilled;
+        await expect(deployContract(largeContractJson, global.accounts[0].wallet)).to.be.fulfilled;
       });
     });
   }

@@ -38,7 +38,7 @@ export class HbarLimitService implements IHbarLimitService {
   };
 
   /**
-   * Disables the rate limiter.
+   * Flag to turn off the HBarRateLimitService.
    * @private
    */
   private readonly disableRateLimiter: boolean = false;
