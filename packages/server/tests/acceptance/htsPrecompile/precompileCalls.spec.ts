@@ -40,11 +40,24 @@ import TokenManagementContractJson from '../../contracts/TokenManagementContract
 import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { Utils } from '../../helpers/utils';
 import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import ServicesClient from '../../clients/servicesClient';
+import MirrorClient from '../../clients/mirrorClient';
+import RelayClient from '../../clients/relayClient';
 
 chai.use(solidity);
 describe('@precompile-calls Tests for eth_call with HTS', async function () {
   this.timeout(240 * 1000); // 240 seconds
-  const { servicesNode, mirrorNode, relay }: any = global;
+
+  //@ts-ignore
+  const {
+    servicesNode,
+    mirrorNode,
+    relay,
+  }: {
+    servicesNode: ServicesClient;
+    mirrorNode: MirrorClient;
+    relay: RelayClient;
+  } = global;
 
   const TX_SUCCESS_CODE = BigInt(22);
 
@@ -58,6 +71,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
   const NFT_METADATA = 'ABCDE';
 
   const ZERO_HEX = '0x0000000000000000000000000000000000000000';
+  const HTS_SYTEM_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000167';
   const EMPTY_HEX = '0x';
 
   const accounts: AliasAccount[] = [];
@@ -600,6 +614,33 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         expect(res.ECDSA_secp256k1).to.eq(EMPTY_HEX);
         expect(res.delegatableContractId).to.eq(ZERO_HEX);
       });
+    });
+  });
+
+  describe('Create HTS token via Hedera Token service', async () => {
+    it('createFungibleToken', async () => {
+      const myImmutableFungibleToken = {
+        name: 'myImmutableFungibleToken',
+        symbol: 'MIFT',
+        treasury: accounts[0].wallet.address, // The key for this address must sign the transaction or be the caller
+        memo: 'This is an immutable fungible token created via the HTS system contract',
+        tokenSupplyType: true, // true for finite, false for infinite
+        maxSupply: 1000000,
+        freezeDefault: false, // true to freeze by default, false to not freeze by default
+        tokenKeys: [], // No keys. The token is immutable
+        expiry: {
+          second: 0,
+          autoRenewAccount: accounts[0].wallet.address,
+          autoRenewPeriod: 8000000,
+        },
+      };
+      const contract = new ethers.Contract(HTS_SYTEM_CONTRACT_ADDRESS, IHederaTokenServiceJson.abi, accounts[0].wallet);
+      const tx = await contract.createFungibleToken(myImmutableFungibleToken, 100, 18, {
+        value: BigInt('35000000000000000000'),
+        gasLimit: 10_000_000,
+      });
+      const receipt = await tx.wait();
+      expect(receipt.address).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
     });
   });
 
