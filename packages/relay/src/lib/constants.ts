@@ -71,7 +71,9 @@ export enum CallType {
 
 const CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE =
   'createNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))';
-const CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE =
+const CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V1 =
+  'createFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),uint64,uint32)';
+const CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V2 =
   'createFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32)';
 
 export default {
@@ -216,7 +218,8 @@ export default {
 
   MASKED_IP_ADDRESS: 'xxx.xxx.xxx.xxx',
   HTS_CREATE_FUNCTIONS_SIGNATURE: [
-    CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE,
+    CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V1,
+    CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V2,
     CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE,
   ],
 
