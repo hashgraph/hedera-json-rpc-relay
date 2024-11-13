@@ -154,6 +154,7 @@ export class HbarLimitService implements IHbarLimitService {
 
   /**
    * Checks if the rate limiter is enabled.
+   * returns {boolean} - `true` if the rate limiter is enabled, otherwise `false`.
    */
   isEnabled(): boolean {
     return !this.disableRateLimiter;
