@@ -50,6 +50,7 @@
     "acceptancetest:ratelimiter": "nyc ts-mocha packages/ws-server/tests/acceptance/index.spec.ts -g '@web-socket-ratelimiter' --exit && ts-mocha packages/server/tests/acceptance/index.spec.ts -g '@ratelimiter' --exit",
     "acceptancetest:hbarlimiter_batch1": "HBAR_RATE_LIMIT_BASIC=1000000000 HBAR_RATE_LIMIT_EXTENDED=1500000000 HBAR_RATE_LIMIT_PRIVILEGED=2000000000 nyc ts-mocha packages/server/tests/acceptance/index.spec.ts -g '@hbarlimiter-batch1' --exit",
     "acceptancetest:hbarlimiter_batch2": "HBAR_RATE_LIMIT_BASIC=1000000000 HBAR_RATE_LIMIT_EXTENDED=1500000000 HBAR_RATE_LIMIT_PRIVILEGED=2000000000 nyc ts-mocha packages/server/tests/acceptance/index.spec.ts -g '@hbarlimiter-batch2' --exit",
+    "acceptancetest:hbarlimiter_batch3": "HBAR_RATE_LIMIT_TINYBAR=0 HBAR_RATE_LIMIT_BASIC=1000000000 HBAR_RATE_LIMIT_EXTENDED=1500000000 HBAR_RATE_LIMIT_PRIVILEGED=2000000000 nyc ts-mocha packages/server/tests/acceptance/index.spec.ts -g '@hbarlimiter-batch3' --exit",
     "acceptancetest:tokencreate": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokencreate' --exit",
     "acceptancetest:tokenmanagement": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@tokenmanagement' --exit",
     "acceptancetest:htsprecompilev1": "nyc ts-mocha packages/server/tests/acceptance/index.spec.ts  -g '@htsprecompilev1' --exit",

@@ -57,6 +57,33 @@ import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeCont
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
 
+const pollForProperAmountSpent = async (
+  hbarSpendingPlan: IDetailedHbarSpendingPlan,
+  deploymentCounts: number,
+  expectedTxCost: number,
+) => {
+  let amountSpent = (await hbarSpendingPlanRepository.findByIdWithDetails(hbarSpendingPlan.id, requestDetails))
+    .amountSpent;
+
+  while (amountSpent < deploymentCounts * expectedTxCost) {
+    logger.warn(
+      `Fail to retrieve proper amount spent by the spending plan. Polling for the proper amount: deploymentCounts=${deploymentCounts}, expectedTxCost=${expectedTxCost}, amountSpent=${amountSpent}, properAmountSpent=${
+        deploymentCounts * expectedTxCost
+      }, planId=${hbarSpendingPlan.id}`,
+    );
+    await Utils.wait(3000);
+    amountSpent = (await hbarSpendingPlanRepository.findByIdWithDetails(hbarSpendingPlan.id, requestDetails))
+      .amountSpent;
+  }
+
+  logger.info(
+    `Successfully retrieve proper amount spent by hbarSpendingPlan: deploymentCounts=${deploymentCounts}, expectedTxCost=${expectedTxCost}, amountSpent=${amountSpent}, properAmountSpent=${
+      deploymentCounts * expectedTxCost
+    }, planId=${hbarSpendingPlan.id}`,
+  );
+  return amountSpent;
+};
+
 describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   // @ts-ignore
   const {
@@ -90,6 +117,33 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     cacheService,
     logger.child({ name: 'hbar-spending-plan-repository' }),
   );
+
+  const pollForProperAmountSpent = async (
+    hbarSpendingPlan: IDetailedHbarSpendingPlan,
+    deploymentCounts: number,
+    expectedTxCost: number,
+  ) => {
+    let amountSpent = (await hbarSpendingPlanRepository.findByIdWithDetails(hbarSpendingPlan.id, requestDetails))
+      .amountSpent;
+
+    while (amountSpent < deploymentCounts * expectedTxCost) {
+      logger.warn(
+        `Fail to retrieve proper amount spent by the spending plan. Polling for the proper amount: deploymentCounts=${deploymentCounts}, expectedTxCost=${expectedTxCost}, amountSpent=${amountSpent}, properAmountSpent=${
+          deploymentCounts * expectedTxCost
+        }, planId=${hbarSpendingPlan.id}`,
+      );
+      await Utils.wait(3000);
+      amountSpent = (await hbarSpendingPlanRepository.findByIdWithDetails(hbarSpendingPlan.id, requestDetails))
+        .amountSpent;
+    }
+
+    logger.info(
+      `Successfully retrieve proper amount spent by hbarSpendingPlan: deploymentCounts=${deploymentCounts}, expectedTxCost=${expectedTxCost}, amountSpent=${amountSpent}, properAmountSpent=${
+        deploymentCounts * expectedTxCost
+      }, planId=${hbarSpendingPlan.id}`,
+    );
+    return amountSpent;
+  };
 
   // The following tests exhaust the hbar limit, so they should only be run against a local relay
   if (relayIsLocal) {
@@ -412,33 +466,6 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           }
 
           return { aliasAccounts, hbarSpendingPlan };
-        };
-
-        const pollForProperAmountSpent = async (
-          hbarSpendingPlan: IDetailedHbarSpendingPlan,
-          deploymentCounts: number,
-          expectedTxCost: number,
-        ) => {
-          let amountSpent = (await hbarSpendingPlanRepository.findByIdWithDetails(hbarSpendingPlan.id, requestDetails))
-            .amountSpent;
-
-          while (amountSpent < deploymentCounts * expectedTxCost) {
-            logger.warn(
-              `Fail to retrieve proper amount spent by the spending plan. Polling for the proper amount: deploymentCounts=${deploymentCounts}, expectedTxCost=${expectedTxCost}, amountSpent=${amountSpent}, properAmountSpent=${
-                deploymentCounts * expectedTxCost
-              }, planId=${hbarSpendingPlan.id}`,
-            );
-            await Utils.wait(3000);
-            amountSpent = (await hbarSpendingPlanRepository.findByIdWithDetails(hbarSpendingPlan.id, requestDetails))
-              .amountSpent;
-          }
-
-          logger.info(
-            `Successfully retrieve proper amount spent by hbarSpendingPlan: deploymentCounts=${deploymentCounts}, expectedTxCost=${expectedTxCost}, amountSpent=${amountSpent}, properAmountSpent=${
-              deploymentCounts * expectedTxCost
-            }, planId=${hbarSpendingPlan.id}`,
-          );
-          return amountSpent;
         };
 
         describe('@hbarlimiter-batch1 BASIC Tier', () => {
@@ -885,6 +912,78 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             expect(totalHbarSpent + estimatedTxFee).to.gte(totalHbarBudget);
           });
         });
+      });
+    });
+
+    describe('@hbarlimiter-batch3 BASIC Tier', () => {
+      const accounts: AliasAccount[] = [];
+
+      beforeEach(async function () {
+        logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
+        logger.info(
+          `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get(
+            'HBAR_RATE_LIMIT_TINYBAR',
+          )}`,
+        );
+
+        const initialAccount: AliasAccount = global.accounts[0];
+
+        const neededAccounts: number = 3;
+        accounts.push(
+          ...(await Utils.createMultipleAliasAccounts(
+            mirrorNode,
+            initialAccount,
+            neededAccounts,
+            initialBalance,
+            requestDetails,
+          )),
+        );
+        global.accounts.push(...accounts);
+        const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
+          [SubscriptionTier.BASIC],
+          requestDetails,
+        );
+        for (const plan of basicPlans) {
+          await hbarSpendingPlanRepository.delete(plan.id, requestDetails);
+          await ethAddressSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
+          await ipSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
+        }
+      });
+
+      it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts, and not throw an error', async function () {
+        let expectedTxCost = 0;
+        let deploymentCounts = 0;
+        let hbarSpendingPlan: IDetailedHbarSpendingPlan | null = null;
+
+        for (deploymentCounts = 0; deploymentCounts < 3; deploymentCounts++) {
+          const tx = await deployContract(largeContractJson, accounts[2].wallet);
+          await tx.waitForDeployment();
+
+          expectedTxCost ||= await getExpectedCostOfLastLargeTx(largeContractJson.bytecode);
+
+          if (!hbarSpendingPlan) {
+            const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+              accounts[2].wallet.address,
+              requestDetails,
+            );
+            hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
+              ethSpendingPlan.planId,
+              requestDetails,
+            );
+          }
+
+          await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts + 1, expectedTxCost);
+        }
+        // Verify that the amount spent exceeds the HBAR limit
+        const amountSpent = await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts, expectedTxCost);
+        expect(amountSpent).to.be.gte(maxBasicSpendingLimit);
+
+        // Verify that remaining HBAR limit is zero or negative
+        const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        expect(remainingHbarsAfter).to.be.lte(0);
+
+        // Confirm that deployments continued even after the limit was exhausted
+        expect(deploymentCounts).to.be.gte(1);
       });
     });
   }

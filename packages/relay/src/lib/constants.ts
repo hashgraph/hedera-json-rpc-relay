@@ -145,7 +145,7 @@ export default {
   // @ts-ignore
   HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION') || '86400000'), // 1 day
   // @ts-ignore
-  HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR') || '800000000000'), // 8000 HBARs
+  HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR') ?? '800000000000'), // 8000 HBARs
   // @ts-ignore
   HBAR_RATE_LIMIT_BASIC: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_BASIC') || '1120000000'), // 11.2 HBARs
   // @ts-ignore
