@@ -1,15 +1,15 @@
 # HTS Token Creation via SystemContract Receipt Enhancement
 
 ## Purpose
-The purpose of this enhancement is to improve the interoperability between Hedera Token Service (HTS) and Ethereum-compatible tools, like ethers, by ensuring access to the necessary information about newly created tokens, in this case token address. This change specifically addresses the gap in Web3 tooling support when creating tokens through HTS precompile contracts, making user experience more smooth.
+The purpose of this enhancement is to improve the interoperability between Hedera Token Service (HTS) and Ethereum-compatible tools, like ethers, by ensuring access to the necessary information about newly created tokens, in this case token address. This change specifically addresses the gap in Web3 tooling support when creating tokens through HTS precompile contracts, making user experience smoother.
 
 
 ## Problem Statement
-When users create tokens (fungible and non-fungible) by directly calling the 0x167 contract there is no way for to get the contract address of the newly created token via ethers. This is because the transaction receipt's contractAddress field is not being populated correctly for HTS token creation operations, since essentially they are just a contract call, but not a contract create (deploy).
+When users create tokens (fungible and non-fungible) by directly calling the 0x167 contract there is no way for to get the contract address of the newly created token via ethers. This is because the transaction receipt's contractAddress field is not being populated with the HTS token address, since essentially the operations is just a contract call, but not a contract create (deploy).
 
 ## Current Behaviour
 
-Currently, when creating a token via HTS the address of the system contract ic returned as a contractAddress in the transaction receipt.
+Currently, when creating a token via HTS the address of the system contract is returned as a contractAddress in the transaction receipt.
 
 ## Proposed Solution
 
