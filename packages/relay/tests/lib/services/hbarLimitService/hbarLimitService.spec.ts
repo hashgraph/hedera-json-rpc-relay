@@ -506,14 +506,26 @@ describe('HBAR Rate Limit Service', function () {
         limitDuration,
       );
       it('should return false if the rate limiter is disabled by setting HBAR_RATE_LIMIT_TINYBAR to zero', async function () {
-        // hbarLimitServiceDisabled.disableRateLimiter();
+        const spendingPlan = createSpendingPlan(
+          mockPlanId,
+          HbarLimitService.TIER_LIMITS[SubscriptionTier.BASIC].toTinybars().sub(mockEstimatedTxFee).add(1),
+        );
+        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+          ethAddress: mockEthAddress,
+          planId: mockPlanId,
+        });
+        hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
         const result = await hbarLimitServiceDisabled.shouldLimit(
           mode,
           methodName,
           txConstructorName,
-          '',
+          mockEthAddress,
           requestDetails,
+          mockEstimatedTxFee,
         );
+
+        // Rate limiter is disabled, so it should return false
         expect(result).to.be.false;
       });
     });

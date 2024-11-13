@@ -96,7 +96,7 @@ export class HbarLimitService implements IHbarLimitService {
     this.reset = this.getResetTimestamp();
     this.remainingBudget = this.totalBudget;
 
-    if (this.remainingBudget.toTinybars().isZero()) {
+    if (this.remainingBudget.toTinybars().lte(0)) {
       this.disableRateLimiter = true;
     }
 
@@ -153,6 +153,13 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
+   * Checks if the rate limiter is enabled.
+   */
+  isEnabled(): boolean {
+    return !this.disableRateLimiter;
+  }
+
+  /**
    * Resets the {@link HbarSpendingPlan#amountSpent} field for all existing plans.
    * @param {RequestDetails} requestDetails - The request details used for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
@@ -191,7 +198,7 @@ export class HbarLimitService implements IHbarLimitService {
     requestDetails: RequestDetails,
     estimatedTxFee: number = 0,
   ): Promise<boolean> {
-    if (this.disableRateLimiter) {
+    if (!this.isEnabled()) {
       return false;
     }
 
