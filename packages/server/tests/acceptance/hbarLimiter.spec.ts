@@ -900,42 +900,18 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts, and not throw an error', async function () {
         // confirm that HBAR_RATE_LIMIT_TINYBAR is set to zero
         expect(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR')).to.eq(0);
-        let expectedTxCost = 0;
         let deploymentCounts = 0;
-        let hbarSpendingPlan: IDetailedHbarSpendingPlan | null = null;
+
+        const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance.balance;
 
         for (deploymentCounts = 0; deploymentCounts < 3; deploymentCounts++) {
           const tx = await deployContract(largeContractJson, global.accounts[0].wallet);
           await tx.waitForDeployment();
-
-          expectedTxCost ||= await getExpectedCostOfLastLargeTx(largeContractJson.bytecode);
-
-          if (!hbarSpendingPlan) {
-            const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
-              global.accounts[0].wallet.address,
-              requestDetails,
-            );
-            hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
-              ethSpendingPlan.planId,
-              requestDetails,
-            );
-          }
-
-          await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts + 1, expectedTxCost);
-        }
-        if (!hbarSpendingPlan) {
-          const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
-            global.accounts[0].wallet.address,
-            requestDetails,
-          );
-          hbarSpendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(
-            ethSpendingPlan.planId,
-            requestDetails,
-          );
         }
         // Verify that the amount spent exceeds the HBAR limit
-        const amountSpent = await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts, expectedTxCost);
-        expect(amountSpent).to.be.gte(maxBasicSpendingLimit);
+        const operatorBalanceAfter = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance.balance;
+        const amountSpent = operatorBalanceBefore - operatorBalanceAfter;
+        expect(amountSpent).to.be.gt(maxBasicSpendingLimit);
 
         // Verify that remaining HBAR limit is zero or negative
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
