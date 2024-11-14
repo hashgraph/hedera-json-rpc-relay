@@ -15,7 +15,7 @@ Currently, when creating a token via HTS the address of the system contract is r
 
 ### Technical Details
 
-1. Function Signature Detection
+### 1. Function Signature Detection
 
 Detect in the transactionResponse from the mirror node, if the transaction was calling any of the HTS methods - createFungibleToken/createNonFungibleToken/createFungibleTokenWithCustomFees/createNonFungibleTokenWithCustomFees
 
@@ -34,13 +34,22 @@ const isTokenCreation = HTS_CREATE_FUNCTIONS_SIGNATURE.some(signature =>
 );
 ```
 
-2. Extract the token address from the call_result field in the transaction response. The extractions can happen with brute force since we know what the function response is beforehand and we know the last 40 characters of the response are the token address.
+### 2. Extract the token address from the call_result field in the transaction response. The extractions can happen with brute force since we know what the function response is beforehand and we know the last 40 characters of the response are the token address.
+
+Example call_result. First 64 characters excluding 0x prefix are the response code, second 64 characters are the token address:
+```json
+"call_result": "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000040a"
+```
 
 ```javascript
 const tokenAddress = receiptResponse.call_result.substring(receiptResponse.call_result.length - 40);
 ```
+After extraction, the expected output is:
+```
+"0x000000000000000000000000000000000000000000000000000000000000040a"
+```
 
-3. Add the token address to the receipt
+### 3. Add the token address to the receipt
 
 
 ## Testing Requirements
