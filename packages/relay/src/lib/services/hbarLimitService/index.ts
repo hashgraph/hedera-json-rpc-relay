@@ -41,7 +41,7 @@ export class HbarLimitService implements IHbarLimitService {
    * Flag to turn off the HBarRateLimitService.
    * @private
    */
-  private readonly disableRateLimiter: boolean = false;
+  private readonly isHBarRateLimiterEnabled: boolean = true;
 
   /**
    * Counts the number of times the rate limit has been reached.
@@ -97,7 +97,7 @@ export class HbarLimitService implements IHbarLimitService {
     this.remainingBudget = this.totalBudget;
 
     if (this.totalBudget.toTinybars().lte(0)) {
-      this.disableRateLimiter = true;
+      this.isHBarRateLimiterEnabled = false;
     }
 
     const metricCounterName = 'rpc_relay_hbar_rate_limit';
@@ -157,7 +157,7 @@ export class HbarLimitService implements IHbarLimitService {
    * returns {boolean} - `true` if the rate limiter is enabled, otherwise `false`.
    */
   isEnabled(): boolean {
-    return !this.disableRateLimiter;
+    return this.isHBarRateLimiterEnabled;
   }
 
   /**

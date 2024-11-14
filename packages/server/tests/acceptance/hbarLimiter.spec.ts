@@ -900,6 +900,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts, and not throw an error', async function () {
         // confirm that HBAR_RATE_LIMIT_TINYBAR is set to zero
         expect(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR')).to.eq(0);
+        // This should set the remaining HBAR limit to zero
+        const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+        expect(remainingHbarsBefore).to.eq(0);
         let deploymentCounts = 0;
 
         const operatorBalanceBefore = (await mirrorNode.get(`/accounts/${operatorAccount}`, requestId)).balance.balance;
@@ -913,9 +916,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         const amountSpent = operatorBalanceBefore - operatorBalanceAfter;
         expect(amountSpent).to.be.gt(maxBasicSpendingLimit);
 
-        // Verify that remaining HBAR limit is zero or negative
+        // Verify that remaining HBAR limit is zero
         const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-        expect(remainingHbarsAfter).to.be.lte(0);
+        expect(remainingHbarsAfter).to.be.eq(0);
 
         // Confirm that deployments continued even after the limit was exhausted
         expect(deploymentCounts).to.be.gte(1);
