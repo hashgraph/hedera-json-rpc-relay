@@ -54,7 +54,7 @@ After extraction, the expected output is:
 
 ## Testing Requirements
 
-1. Acceptance tests
+### Acceptance tests
    1. Test creation of fungible token via ethers and correct receipt response
    2. Test creation of non fungible token via ethers and correct receipt response
    3. Test creation of fungible token with custom fees via ethers and correct receipt response
