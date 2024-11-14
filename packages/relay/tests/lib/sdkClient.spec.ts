@@ -18,32 +18,6 @@
  *
  */
 
-import pino from 'pino';
-import Long from 'long';
-import { expect } from 'chai';
-import * as sinon from 'sinon';
-import EventEmitter from 'events';
-import { Utils } from '../../src/utils';
-import axios, { AxiosInstance } from 'axios';
-import MockAdapter from 'axios-mock-adapter';
-import constants from '../../src/lib/constants';
-import { register, Registry } from 'prom-client';
-import { RequestDetails } from '../../src/lib/types';
-import { formatTransactionId } from '../../src/formatters';
-import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
-import HAPIService from '../../src/lib/services/hapiService/hapiService';
-import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
-import MetricService from '../../src/lib/services/metricService/metricService';
-import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import {
-  calculateTxRecordChargeAmount,
-  overrideEnvsInMochaDescribe,
-  random20BytesAddress,
-  withOverriddenEnvsInMochaTest,
-} from '../helpers';
-import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
-import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import {
   AccountId,
@@ -64,7 +38,34 @@ import {
   TransactionRecordQuery,
   TransactionResponse,
 } from '@hashgraph/sdk';
+import axios, { AxiosInstance } from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { expect } from 'chai';
+import EventEmitter from 'events';
+import Long from 'long';
 import { Context } from 'mocha';
+import pino from 'pino';
+import { register, Registry } from 'prom-client';
+import * as sinon from 'sinon';
+
+import { formatTransactionId } from '../../src/formatters';
+import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
+import constants from '../../src/lib/constants';
+import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
+import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
+import MetricService from '../../src/lib/services/metricService/metricService';
+import { RequestDetails } from '../../src/lib/types';
+import { Utils } from '../../src/utils';
+import {
+  calculateTxRecordChargeAmount,
+  overrideEnvsInMochaDescribe,
+  random20BytesAddress,
+  withOverriddenEnvsInMochaTest,
+} from '../helpers';
 
 const registry = new Registry();
 const logger = pino();
@@ -80,7 +81,6 @@ describe('SdkClient', async function () {
   let cacheService: CacheService;
   let mirrorNodeClient: MirrorNodeClient;
   let hbarLimitService: HbarLimitService;
-  let randomVariable: any;
 
   const requestDetails = new RequestDetails({ requestId: 'sdkClientTest', ipAddress: '0.0.0.0' });
   const feeSchedules = {
@@ -193,10 +193,6 @@ describe('SdkClient', async function () {
       expect(resp).to.eq(successResponse);
       expect(cost.toTinybars().toNumber()).to.eq(costTinybars);
       expect(queryStub.callCount).to.eq(1);
-    });
-
-    it('just a test', async function () {
-      console.log('test 2');
     });
 
     it('increases the cost when INSUFFICIENT_TX_FEE is thrown', async () => {
