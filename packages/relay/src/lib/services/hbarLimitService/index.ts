@@ -257,6 +257,10 @@ export class HbarLimitService implements IHbarLimitService {
    * @returns {Promise<void>} - A promise that resolves when the expense has been added.
    */
   async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails): Promise<void> {
+    if (!this.isEnabled()) {
+      return;
+    }
+
     const newRemainingBudget = this.remainingBudget.toTinybars().sub(cost);
     this.remainingBudget = Hbar.fromTinybars(newRemainingBudget);
     this.hbarLimitRemainingGauge.set(newRemainingBudget.toNumber());
