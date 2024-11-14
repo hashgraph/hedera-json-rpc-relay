@@ -96,7 +96,7 @@ export class HbarLimitService implements IHbarLimitService {
     this.reset = this.getResetTimestamp();
     this.remainingBudget = this.totalBudget;
 
-    if (this.remainingBudget.toTinybars().lte(0)) {
+    if (this.totalBudget.toTinybars().lte(0)) {
       this.disableRateLimiter = true;
     }
 
