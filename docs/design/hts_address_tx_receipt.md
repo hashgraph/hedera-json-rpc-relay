@@ -5,7 +5,7 @@ The purpose of this enhancement is to improve the interoperability between Heder
 
 
 ## Problem Statement
-When users create tokens (fungible and non-fungible) by directly calling the 0x167 contract there is no way for to get the contract address of the newly created token via ethers. This is because the transaction receipt's contractAddress field is not being populated with the HTS token address, since essentially the operations is just a contract call, but not a contract create (deploy).
+When users create tokens (fungible and non-fungible) by directly calling the 0x167 contract there is no way for them to get the evm address of the newly created token via standard EVM tooling e.g ethers. This is because the transaction receipt's contractAddress field is not being populated with the HTS token address, since essentially the operations is just a contract call, but not a contract create (deploy).
 
 ## Current Behaviour
 
@@ -17,13 +17,30 @@ Currently, when creating a token via HTS the address of the system contract is r
 
 1. Function Signature Detection
 
-Detect in the transactionResponse from the mirror node, if the transaction was calling any of the HTS method e.g createFungibleToken/createNonFungibleToken etc.
+Detect in the transactionResponse from the mirror node, if the transaction was calling any of the HTS methods - createFungibleToken/createNonFungibleToken/createFungibleTokenWithCustomFees/createNonFungibleTokenWithCustomFees
 
 N.B Currently, HTS supports both v1 and v2 security model function selectors
 
-1. Extract the token address from the call_result field in the transaction response.
+```javascript
+const HTS_CREATE_FUNCTIONS_SIGNATURE = [
+  "createFungibleToken(...)",
+  "createNonFungibleToken(...)",
+  "createFungibleTokenWithCustomFees(...)",
+  "createNonFungibleTokenWithCustomFees(...)"
+];
+const functionSelector = receiptResponse.function_parameters.substring(0, FUNCTION_SELECTOR_CHAR_LENGTH);
+const isTokenCreation = HTS_CREATE_FUNCTIONS_SIGNATURE.some(signature => 
+  Utils.calculateFunctionSelector(signature) === functionSelector
+);
+```
 
-2. Add the token address to the receipt
+2. Extract the token address from the call_result field in the transaction response. The extractions can happen with brute force since we know what the function response is beforehand and we know the last 40 characters of the response are the token address.
+
+```javascript
+const tokenAddress = receiptResponse.call_result.substring(receiptResponse.call_result.length - 40);
+```
+
+3. Add the token address to the receipt
 
 
 ## Testing Requirements
