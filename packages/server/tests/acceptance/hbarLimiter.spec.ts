@@ -889,10 +889,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     });
 
     describe('@hbarlimiter-batch3 Unlimited', () => {
-      const accounts: AliasAccount[] = [];
-
-      beforeEach(async function () {
-        logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
+      before(async function () {
         logger.info(
           `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get(
             'HBAR_RATE_LIMIT_TINYBAR',
