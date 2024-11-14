@@ -45,9 +45,8 @@ const tokenAddress = receiptResponse.call_result.substring(receiptResponse.call_
 
 ## Testing Requirements
 
-1. Unit tests
-   1. Test token creation function signature detection
-
-2. Acceptance tests
-   1. Test fungible token creation flow via ethers and correct receipt response
-   2. Test non fungible token creation flow via ethers and correct receipt response
+1. Acceptance tests
+   1. Test creation of fungible token via ethers and correct receipt response
+   2. Test creation of non fungible token via ethers and correct receipt response
+   3. Test creation of fungible token with custom fees via ethers and correct receipt response
+   4. Test creation of non fungible token with custom fees via ethers and correct receipt response
