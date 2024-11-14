@@ -196,7 +196,7 @@ describe('SdkClient', async function () {
     });
 
     it('just a test', async function () {
-      console.log('test');
+      console.log('test 2');
     });
 
     it('increases the cost when INSUFFICIENT_TX_FEE is thrown', async () => {
