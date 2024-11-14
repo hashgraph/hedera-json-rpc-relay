@@ -80,6 +80,7 @@ describe('SdkClient', async function () {
   let cacheService: CacheService;
   let mirrorNodeClient: MirrorNodeClient;
   let hbarLimitService: HbarLimitService;
+  let randomVariable: any;
 
   const requestDetails = new RequestDetails({ requestId: 'sdkClientTest', ipAddress: '0.0.0.0' });
   const feeSchedules = {
@@ -181,7 +182,7 @@ describe('SdkClient', async function () {
 
     it('executes the query', async () => {
       queryStub.returns(successResponse);
-      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
+      const { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
         contractCallQuery,
         baseCost,
         client,
@@ -194,13 +195,17 @@ describe('SdkClient', async function () {
       expect(queryStub.callCount).to.eq(1);
     });
 
+    it('just a test', async function () {
+      console.log('test');
+    });
+
     it('increases the cost when INSUFFICIENT_TX_FEE is thrown', async () => {
       queryStub.onCall(0).throws({
         status: Status.InsufficientTxFee,
       });
 
       queryStub.onCall(1).returns(successResponse);
-      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
+      const { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
         contractCallQuery,
         baseCost,
         client,
@@ -224,7 +229,7 @@ describe('SdkClient', async function () {
 
       queryStub.onCall(2).returns(successResponse);
 
-      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
+      const { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
         contractCallQuery,
         baseCost,
         client,

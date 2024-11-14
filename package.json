@@ -104,15 +104,19 @@
   },
   "lint-staged": {
     "packages/**/src/**/*.ts": [
+      "eslint --fix",
       "prettier --write"
     ],
     "packages/**/tests/**/*.ts": [
+      "eslint --fix",
       "prettier --write"
     ],
     "!(packages/**/dist/)*.ts": [
+      "eslint --fix",
       "prettier --write"
     ],
     "!(packages/**/node_modules/)*.ts": [
+      "eslint --fix",
       "prettier --write"
     ]
   },
