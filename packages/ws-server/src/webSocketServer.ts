@@ -122,7 +122,9 @@ app.ws.use(async (ctx: Koa.Context) => {
 
     // check if request is a batch request (array) or a signle request (JSON)
     if (Array.isArray(request)) {
-      logger.trace(`${requestDetails.formattedLogPrefix}: Receive batch request=${JSON.stringify(request)}`);
+      if (logger.isLevelEnabled('trace')) {
+        logger.trace(`${requestDetails.formattedLogPrefix}: Receive batch request=${JSON.stringify(request)}`);
+      }
 
       // Increment metrics for batch_requests
       wsMetricRegistry.getCounter('methodsCounter').labels(WS_CONSTANTS.BATCH_REQUEST_METHOD_NAME).inc();
@@ -161,7 +163,9 @@ app.ws.use(async (ctx: Koa.Context) => {
       // send to client
       sendToClient(ctx.websocket, request, responses, logger, requestDetails);
     } else {
-      logger.trace(`${requestDetails.formattedLogPrefix}: Receive single request=${JSON.stringify(request)}`);
+      if (logger.isLevelEnabled('trace')) {
+        logger.trace(`${requestDetails.formattedLogPrefix}: Receive single request=${JSON.stringify(request)}`);
+      }
 
       // process requests
       const response = await getRequestResult(

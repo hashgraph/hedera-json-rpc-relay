@@ -69,8 +69,6 @@ import {
   ITransactionRecordMetric,
   RequestDetails,
 } from '../types';
-import { MirrorNodeClient } from './mirrorNodeClient';
-import { Registry } from 'prom-client';
 
 const _ = require('lodash');
 
@@ -125,14 +123,6 @@ export class SDKClient {
   private readonly hbarLimitService: HbarLimitService;
 
   /**
-   * An instance of the MirrorNodeClient
-   * @private
-   * @readonly
-   * @type {MirrorNodeClient}
-   */
-  private readonly mirrorNodeClient: MirrorNodeClient;
-
-  /**
    * Constructs an instance of the SDKClient and initializes various services and settings.
    *
    * @param {Client} clientMain - The primary Hedera client instance used for executing transactions and queries.
@@ -146,7 +136,6 @@ export class SDKClient {
     cacheService: CacheService,
     eventEmitter: EventEmitter,
     hbarLimitService: HbarLimitService,
-    register: Registry,
   ) {
     this.clientMain = clientMain;
 
@@ -162,13 +151,6 @@ export class SDKClient {
     this.hbarLimitService = hbarLimitService;
     this.maxChunks = Number(ConfigService.get('FILE_APPEND_MAX_CHUNKS')) || 20;
     this.fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
-    this.mirrorNodeClient = new MirrorNodeClient(
-      // @ts-ignore
-      ConfigService.get('MIRROR_NODE_URL') || '',
-      logger,
-      register,
-      cacheService,
-    );
   }
 
   /**
@@ -459,59 +441,17 @@ export class SDKClient {
       Hbar.fromTinybars(Math.floor(networkGasPriceInTinyBars * constants.MAX_GAS_PER_SEC)),
     );
 
-    let txResponse;
-    try {
-      txResponse = await this.executeTransaction(
+    return {
+      fileId,
+      txResponse: await this.executeTransaction(
         ethereumTransaction,
         callerName,
         interactingEntity,
         requestDetails,
         true,
         originalCallerAddress,
-      );
-    } catch (e: any) {
-      if (e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded())) {
-        const isFailed = await this.isFailedTransaction(requestDetails, e.transactionId);
-        if (isFailed) {
-          throw e;
-        }
-        txResponse = { transactionId: e.transactionId };
-      } else {
-        throw e;
-      }
-    }
-
-    return {
-      fileId,
-      txResponse,
+      ),
     };
-  }
-
-  /**
-   * Checks if a transaction has failed by querying the mirror node.
-   *
-   * @param {RequestDetails} requestDetails - The details of the request.
-   * @param {string} [transactionId] - The ID of the transaction to check.
-   * @returns {Promise<boolean>} - A promise that resolves to `true` if the transaction has failed, `false` otherwise.
-   */
-  async isFailedTransaction(requestDetails: RequestDetails, transactionId?: string): Promise<boolean> {
-    const retryCount = 5;
-    try {
-      const transaction = await this.mirrorNodeClient.repeatedRequest(
-        this.mirrorNodeClient.getTransactionById.name,
-        [transactionId, requestDetails],
-        retryCount,
-        requestDetails,
-      );
-      const isFailed = transaction !== null;
-      return isFailed;
-    } catch (e: any) {
-      this.logger.error(
-        e,
-        `${requestDetails.formattedRequestId} Failed to check if transaction ${transactionId} is failed`,
-      );
-      return true;
-    }
   }
 
   /**
@@ -587,9 +527,11 @@ export class SDKClient {
         const sdkClientError = new SDKClientError(e, e.message);
         if (sdkClientError.isTimeoutExceeded()) {
           const delay = retries * 1000;
-          this.logger.trace(
-            `${requestDetails.formattedRequestId} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`,
-          );
+          if (this.logger.isLevelEnabled('trace')) {
+            this.logger.trace(
+              `${requestDetails.formattedRequestId} Contract call query failed with status ${sdkClientError.message}. Retrying again after ${delay} ms ...`,
+            );
+          }
           retries++;
           await new Promise((r) => setTimeout(r, delay));
           continue;
@@ -702,9 +644,11 @@ export class SDKClient {
         throw predefined.REQUEST_TIMEOUT;
       }
 
-      this.logger.debug(
-        `${requestIdPrefix} Fail to execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${queryCost} tinybars`,
-      );
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestIdPrefix} Fail to execute ${queryConstructorName} query: paymentTransactionId=${query.paymentTransactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}), cost=${queryCost} tinybars`,
+        );
+      }
 
       throw sdkClientError;
     } finally {
@@ -786,17 +730,15 @@ export class SDKClient {
 
       const sdkClientError = new SDKClientError(e, e.message, transaction.transactionId?.toString());
 
-      // Throw WRONG_NONCE error as more error handling logic for WRONG_NONCE is awaited in eth.sendRawTransactionErrorHandler().
+      // WRONG_NONCE is one of the special errors where the SDK still returns a valid transactionResponse.
+      // Throw the WRONG_NONCE error, as additional handling logic is expected in a higher layer.
       if (sdkClientError.status && sdkClientError.status === Status.WrongNonce) {
         throw sdkClientError;
       }
 
-      this.logger.warn(
-        sdkClientError,
-        `${requestDetails.formattedRequestId} Fail to execute ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, status=${sdkClientError.status}(${sdkClientError.status._code}) message=${sdkClientError.message}`,
-      );
-
       if (!transactionResponse) {
+        // Transactions may experience "SDK timeout exceeded" or "Connection Dropped" errors from the SDK, yet they may still be able to reach the consensus layer.
+        // Throw Connection Drop and Timeout errors as additional handling logic is expected in a higher layer.
         if (sdkClientError.isConnectionDropped() || sdkClientError.isTimeoutExceeded()) {
           throw sdkClientError;
         } else {
@@ -982,9 +924,11 @@ export class SDKClient {
         this.logger.warn(`${requestDetails.formattedRequestId} File ${fileId} is empty.`);
         throw new SDKClientError({}, `${requestDetails.formattedRequestId} Created file is empty. `);
       }
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Created file with fileId: ${fileId} and file size ${fileInfo.size}`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Created file with fileId: ${fileId} and file size ${fileInfo.size}`,
+        );
+      }
     }
 
     return fileId;
@@ -1033,7 +977,9 @@ export class SDKClient {
       );
 
       if (fileInfo.isDeleted) {
-        this.logger.trace(`${requestDetails.formattedRequestId} Deleted file with fileId: ${fileId}`);
+        if (this.logger.isLevelEnabled('trace')) {
+          this.logger.trace(`${requestDetails.formattedRequestId} Deleted file with fileId: ${fileId}`);
+        }
       } else {
         this.logger.warn(`${requestDetails.formattedRequestId} Fail to delete file with fileId: ${fileId} `);
       }
@@ -1088,9 +1034,11 @@ export class SDKClient {
     let transactionFee: number = 0;
     let txRecordChargeAmount: number = 0;
     try {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
-      );
+      if (this.logger.isLevelEnabled('trace')) {
+        this.logger.trace(
+          `${requestDetails.formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
+        );
+      }
 
       const transactionRecord = await new TransactionRecordQuery()
         .setTransactionId(transactionId)

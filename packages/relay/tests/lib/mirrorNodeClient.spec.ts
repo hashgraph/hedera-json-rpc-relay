@@ -625,6 +625,35 @@ describe('MirrorNodeClient', async function () {
     expect(mock.history.get.length).to.eq(2); // is called twice
   });
 
+  it('`getContractResultsWithRetry` by hash retries once because of block_hash equals 0x', async () => {
+    const hash = '0x2a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb3391';
+    mock.onGet(`contracts/results/${hash}`).replyOnce(200, { ...detailedContractResult, block_hash: '0x' });
+    mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
+
+    const result = await mirrorNodeInstance.getContractResultWithRetry(hash, requestDetails);
+    expect(result).to.exist;
+    expect(result.block_hash).equal(detailedContractResult.block_hash);
+    expect(mock.history.get.length).to.eq(2);
+  });
+
+  it('`getContractResultsWithRetry` by hash retries once because of missing transaction_index, block_number and block_hash equals 0x', async () => {
+    const hash = '0x2a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
+    mock.onGet(`contracts/results/${hash}`).replyOnce(200, {
+      ...detailedContractResult,
+      transaction_index: undefined,
+      block_number: undefined,
+      block_hash: '0x',
+    });
+    mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
+
+    const result = await mirrorNodeInstance.getContractResultWithRetry(hash, requestDetails);
+    expect(result).to.exist;
+    expect(result.transaction_index).equal(detailedContractResult.transaction_index);
+    expect(result.block_number).equal(detailedContractResult.block_number);
+    expect(result.block_hash).equal(detailedContractResult.block_hash);
+    expect(mock.history.get.length).to.eq(2);
+  });
+
   it('`getContractResults` detailed', async () => {
     mock
       .onGet(`contracts/results?limit=100&order=asc`)
