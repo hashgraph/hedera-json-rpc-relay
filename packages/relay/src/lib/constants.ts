@@ -145,6 +145,8 @@ export default {
   // @ts-ignore
   HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION') || '86400000'), // 1 day
   // @ts-ignore
+  // The logical OR operator || returns the first truthy value and 0 is falsy.
+  // The nullish coalescing operator ?? falls back to the default value when the left-hand operand is null or undefined, not when it's 0 or any other falsy value.
   HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR') ?? '800000000000'), // 8000 HBARs
   // @ts-ignore
   HBAR_RATE_LIMIT_BASIC: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_BASIC') || '1120000000'), // 11.2 HBARs
