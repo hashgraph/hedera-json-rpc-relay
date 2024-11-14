@@ -22,49 +22,48 @@ const path = require('path');
 module.exports = {
     "env": {
         "node": true,
-        "es2021": true
+        "es2021": true,
     },
     "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
-        "prettier"
+        "prettier",
     ],
+    "plugins": ["simple-import-sort"],
     "overrides": [
         {
             "env": {
-                "node": true
+                "node": true,
             },
             "files": [
-                ".eslintrc.{js,cjs}"
+                ".eslintrc.{js,cjs}",
             ],
             "parserOptions": {
-                "sourceType": "script"
-            }
-        }
+                "sourceType": "script",
+            },
+        },
     ],
     "parserOptions": {
         "ecmaVersion": "latest",
-        "sourceType": "module"
+        "sourceType": "module",
     },
     "rules": {
         "@typescript-eslint/ban-ts-comment": "off",
-        // "@typescript-eslint/no-empty-interface": "off",
         "@typescript-eslint/no-explicit-any": "off",
-        // "@typescript-eslint/semi": "off",
         "@typescript-eslint/no-var-requires": "warn",
         "@typescript-eslint/no-unused-vars": "warn",
         "@typescript-eslint/ban-types": "warn",
         "no-trailing-spaces": "error",
-        // "no-prototype-builtins": "warn",
+        "no-useless-escape": "warn",
         "prefer-const": "error",
-        // "no-unsafe-optional-chaining": "warn",
-        // "comma-dangle": [2, "only-multiline"],
-        // "semi": [2, "always"],
-        "sort-imports": ["error", {
-            "ignoreCase": true,
-            "ignoreDeclarationSort": true,
-            "ignoreMemberSort": false,
-            "memberSyntaxSortOrder": ["none", "all", "multiple", "single"],
+        "comma-dangle": ["error", {
+            "arrays": "always-multiline",
+            "objects": "always-multiline",
+            "imports": "always-multiline",
+            "exports": "always-multiline",
+            "functions": "always-multiline",
         }],
+        "simple-import-sort/imports": "error",
+        "simple-import-sort/exports": "off",
     },
 };
