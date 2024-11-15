@@ -18,32 +18,6 @@
  *
  */
 
-import pino from 'pino';
-import Long from 'long';
-import { expect } from 'chai';
-import * as sinon from 'sinon';
-import EventEmitter from 'events';
-import { Utils } from '../../src/utils';
-import axios, { AxiosInstance } from 'axios';
-import MockAdapter from 'axios-mock-adapter';
-import constants from '../../src/lib/constants';
-import { register, Registry } from 'prom-client';
-import { RequestDetails } from '../../src/lib/types';
-import { formatTransactionId } from '../../src/formatters';
-import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
-import HAPIService from '../../src/lib/services/hapiService/hapiService';
-import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
-import MetricService from '../../src/lib/services/metricService/metricService';
-import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import {
-  calculateTxRecordChargeAmount,
-  overrideEnvsInMochaDescribe,
-  random20BytesAddress,
-  withOverriddenEnvsInMochaTest,
-} from '../helpers';
-import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
-import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import {
   AccountId,
@@ -64,7 +38,34 @@ import {
   TransactionRecordQuery,
   TransactionResponse,
 } from '@hashgraph/sdk';
+import axios, { AxiosInstance } from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { expect } from 'chai';
+import EventEmitter from 'events';
+import Long from 'long';
 import { Context } from 'mocha';
+import pino from 'pino';
+import { register, Registry } from 'prom-client';
+import * as sinon from 'sinon';
+
+import { formatTransactionId } from '../../src/formatters';
+import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
+import constants from '../../src/lib/constants';
+import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
+import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
+import MetricService from '../../src/lib/services/metricService/metricService';
+import { RequestDetails } from '../../src/lib/types';
+import { Utils } from '../../src/utils';
+import {
+  calculateTxRecordChargeAmount,
+  overrideEnvsInMochaDescribe,
+  random20BytesAddress,
+  withOverriddenEnvsInMochaTest,
+} from '../helpers';
 
 const registry = new Registry();
 const logger = pino();
@@ -181,7 +182,7 @@ describe('SdkClient', async function () {
 
     it('executes the query', async () => {
       queryStub.returns(successResponse);
-      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
+      const { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
         contractCallQuery,
         baseCost,
         client,
@@ -200,7 +201,7 @@ describe('SdkClient', async function () {
       });
 
       queryStub.onCall(1).returns(successResponse);
-      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
+      const { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
         contractCallQuery,
         baseCost,
         client,
@@ -224,7 +225,7 @@ describe('SdkClient', async function () {
 
       queryStub.onCall(2).returns(successResponse);
 
-      let { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
+      const { resp, cost } = await sdkClient.increaseCostAndRetryExecution(
         contractCallQuery,
         baseCost,
         client,
