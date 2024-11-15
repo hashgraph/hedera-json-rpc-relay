@@ -1722,7 +1722,7 @@ export class EthImpl implements Eth {
         const formattedTransactionId = formatTransactionIdWithoutQueryParams(submittedTransactionId);
         const contractResult = await this.mirrorNodeClient.repeatedRequest(
           this.mirrorNodeClient.getContractResult.name,
-          [formattedTransactionId, requestDetails],
+          [formattedTransactionId],
           this.mirrorNodeClient.getMirrorNodeRequestRetryCount(),
           requestDetails,
         );
