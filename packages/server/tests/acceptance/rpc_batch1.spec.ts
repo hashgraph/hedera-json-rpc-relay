@@ -68,10 +68,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let account2Address: string;
   let expectedGasPrice: string;
 
-  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
+  const CHAIN_ID = (ConfigService.get('CHAIN_ID') as string) || '0x12a';
   const requestId = 'rpc_batch1Test';
   const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
-  const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
+  const requestDetails = JSON.stringify(new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' }));
   const INCORRECT_CHAIN_ID = 999;
   const GAS_PRICE_TOO_LOW = '0x1';
   const GAS_PRICE_REF = '0x123456';
@@ -79,6 +79,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   const TEN_HBAR = Utils.add0xPrefix(
     (BigInt(new Hbar(10).toTinybars().toString()) * BigInt(Constants.TINYBAR_TO_WEIBAR_COEF)).toString(16),
   );
+  const gasPriceDeviation = parseFloat((ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2') as string);
   const sendRawTransaction = relay.sendRawTransaction;
 
   /**
@@ -94,6 +95,12 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       to: toAccountInfo?.evm_address ?? tx.to,
     };
   };
+
+  async function getGasWithDeviation(relay: RelayClient, requestDetails: string, gasPriceDeviation: number) {
+    const gasPrice = await relay.gasPrice(requestDetails);
+    const gasPriceWithDeviation = gasPrice * (1 + gasPriceDeviation);
+    return gasPriceWithDeviation;
+  }
 
   describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
@@ -742,8 +749,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         type: 1,
       };
 
-      const gasPriceDeviation = parseFloat(ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2');
-
       it('@release should execute "eth_getTransactionByBlockHashAndIndex"', async function () {
         const response = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX,
@@ -799,11 +804,12 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('@release-light, @release should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
+        const gasPriceWithDeviation = await getGasWithDeviation(relay, requestDetails, gasPriceDeviation);
         const transaction = {
           ...default155TransactionData,
           to: parentContractAddress,
           nonce: await relay.getAccountNonce(accounts[2].address, requestId),
-          gasPrice: await relay.gasPrice(requestId),
+          gasPrice: gasPriceWithDeviation,
           type: 0,
         };
 
@@ -826,13 +832,13 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('@release-light, @release should execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
-        const gasPrice = await relay.gasPrice(requestDetails);
+        const gasPriceWithDeviation = await getGasWithDeviation(relay, requestDetails, gasPriceDeviation);
         const transaction = {
           ...defaultLondonTransactionData,
           to: parentContractAddress,
           nonce: await relay.getAccountNonce(accounts[2].address, requestId),
-          maxFeePerGas: gasPrice,
-          maxPriorityFeePerGas: gasPrice,
+          maxFeePerGas: gasPriceWithDeviation,
+          maxPriorityFeePerGas: gasPriceWithDeviation,
         };
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
@@ -854,11 +860,12 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('@release-light, @release should execute "eth_getTransactionReceipt" for hash of 2930 transaction', async function () {
+        const gasPriceWithDeviation = await getGasWithDeviation(relay, requestDetails, gasPriceDeviation);
         const transaction = {
           ...defaultLegacy2930TransactionData,
           to: parentContractAddress,
           nonce: await relay.getAccountNonce(accounts[2].address, requestId),
-          gasPrice: await relay.gasPrice(requestId),
+          gasPrice: gasPriceWithDeviation,
         };
 
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
@@ -1037,11 +1044,12 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
       it('@release-light, @release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
         const receiverInitialBalance = await relay.getBalance(parentContractAddress, 'latest', requestDetails);
+        const gasPriceWithDeviation = await getGasWithDeviation(relay, requestDetails, gasPriceDeviation);
         const transaction = {
           ...default155TransactionData,
           to: parentContractAddress,
           nonce: await relay.getAccountNonce(accounts[2].address, requestId),
-          gasPrice: await relay.gasPrice(requestId),
+          gasPrice: gasPriceWithDeviation,
         };
         const signedTx = await accounts[2].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
