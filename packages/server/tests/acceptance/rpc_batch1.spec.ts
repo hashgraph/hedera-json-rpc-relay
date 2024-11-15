@@ -96,6 +96,12 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     };
   };
 
+  async function getGasWithDeviation(relay: RelayClient, requestDetails: string, gasPriceDeviation: number) {
+    const gasPrice = await relay.gasPrice(requestDetails);
+    const gasPriceWithDeviation = gasPrice * (1 + gasPriceDeviation);
+    return gasPriceWithDeviation;
+  }
+
   describe('RPC Server Acceptance Tests', function () {
     this.timeout(240 * 1000); // 240 seconds
 
@@ -794,8 +800,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('@release-light, @release should execute "eth_getTransactionReceipt" for hash of legacy transaction', async function () {
-        const gasPrice = await relay.gasPrice(requestDetails);
-        const gasPriceWithDeviation = gasPrice * (1 + gasPriceDeviation);
+        const gasPriceWithDeviation = await getGasWithDeviation(relay, requestDetails, gasPriceDeviation);
         const transaction = {
           ...default155TransactionData,
           to: parentContractAddress,
@@ -823,8 +828,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('@release-light, @release should execute "eth_getTransactionReceipt" for hash of London transaction', async function () {
-        const gasPrice = await relay.gasPrice(requestDetails);
-        const gasPriceWithDeviation = gasPrice * (1 + gasPriceDeviation);
+        const gasPriceWithDeviation = await getGasWithDeviation(relay, requestDetails, gasPriceDeviation);
         const transaction = {
           ...defaultLondonTransactionData,
           to: parentContractAddress,
@@ -852,8 +856,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('@release-light, @release should execute "eth_getTransactionReceipt" for hash of 2930 transaction', async function () {
-        const gasPrice = await relay.gasPrice(requestDetails);
-        const gasPriceWithDeviation = gasPrice * (1 + gasPriceDeviation);
+        const gasPriceWithDeviation = await getGasWithDeviation(relay, requestDetails, gasPriceDeviation);
         const transaction = {
           ...defaultLegacy2930TransactionData,
           to: parentContractAddress,
@@ -1037,8 +1040,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
       it('@release-light, @release should execute "eth_sendRawTransaction" for legacy EIP 155 transactions', async function () {
         const receiverInitialBalance = await relay.getBalance(parentContractAddress, 'latest', requestDetails);
-        const gasPrice = await relay.gasPrice(requestDetails);
-        const gasPriceWithDeviation = gasPrice * (1 + gasPriceDeviation);
+        const gasPriceWithDeviation = await getGasWithDeviation(relay, requestDetails, gasPriceDeviation);
         const transaction = {
           ...default155TransactionData,
           to: parentContractAddress,
