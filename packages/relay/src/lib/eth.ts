@@ -18,31 +18,13 @@
  *
  */
 
-import crypto from 'crypto';
-import { Logger } from 'pino';
-import { Eth } from '../index';
-import { Utils } from '../utils';
-import constants from './constants';
-import { Precheck } from './precheck';
-import { MirrorNodeClient } from './clients';
-import { Counter, Registry } from 'prom-client';
-import { IAccountInfo } from './types/mirrorNode';
-import { LogsBloomUtils } from '../logsBloomUtils';
-import { DebugService } from './services/debugService';
-import { SDKClientError } from './errors/SDKClientError';
-import { Transaction as EthersTransaction } from 'ethers';
-import HAPIService from './services/hapiService/hapiService';
-import { JsonRpcError, predefined } from './errors/JsonRpcError';
-import { Block, Log, Transaction, Transaction1559 } from './model';
-import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
-import { CacheService } from './services/cacheService/cacheService';
-import { CommonService, FilterService } from './services/ethService';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { IDebugService } from './services/debugService/IDebugService';
-import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
-import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
-import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
-import { IContractCallRequest, IContractCallResponse, IFeeHistory, ITransactionReceipt, RequestDetails } from './types';
+import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
+import crypto from 'crypto';
+import { Transaction as EthersTransaction } from 'ethers';
+import { Logger } from 'pino';
+import { Counter, Registry } from 'prom-client';
+
 import {
   ASCIIToHex,
   formatContractResult,
@@ -59,6 +41,25 @@ import {
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
 } from '../formatters';
+import { Eth } from '../index';
+import { LogsBloomUtils } from '../logsBloomUtils';
+import { IReceiptRootHash, ReceiptsRootUtils } from '../receiptsRootUtils';
+import { Utils } from '../utils';
+import { MirrorNodeClient } from './clients';
+import constants from './constants';
+import { JsonRpcError, predefined } from './errors/JsonRpcError';
+import { MirrorNodeClientError } from './errors/MirrorNodeClientError';
+import { SDKClientError } from './errors/SDKClientError';
+import { Block, Log, Transaction, Transaction1559 } from './model';
+import { Precheck } from './precheck';
+import { CacheService } from './services/cacheService/cacheService';
+import { DebugService } from './services/debugService';
+import { IDebugService } from './services/debugService/IDebugService';
+import { CommonService, FilterService } from './services/ethService';
+import { IFilterService } from './services/ethService/ethFilterService/IFilterService';
+import HAPIService from './services/hapiService/hapiService';
+import { IContractCallRequest, IContractCallResponse, IFeeHistory, ITransactionReceipt, RequestDetails } from './types';
+import { IAccountInfo } from './types/mirrorNode';
 
 const _ = require('lodash');
 const createHash = require('keccak');
@@ -1720,9 +1721,16 @@ export class EthImpl implements Eth {
     if (submittedTransactionId) {
       try {
         const formattedTransactionId = formatTransactionIdWithoutQueryParams(submittedTransactionId);
+
+        // Create a modified copy of requestDetails
+        const modifiedRequestDetails = {
+          ...requestDetails,
+          ipAddress: 'xxx.xxx.xxx.xxx',
+        };
+
         const contractResult = await this.mirrorNodeClient.repeatedRequest(
           this.mirrorNodeClient.getContractResult.name,
-          [formattedTransactionId],
+          [formattedTransactionId, modifiedRequestDetails],
           this.mirrorNodeClient.getMirrorNodeRequestRetryCount(),
           requestDetails,
         );
