@@ -31,4 +31,5 @@ export interface IHbarLimitService {
     estimatedTxFee?: number,
   ): Promise<boolean>;
   addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails, ipAddress?: string): Promise<void>;
+  isEnabled(): boolean;
 }

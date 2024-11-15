@@ -55,6 +55,12 @@ jobs:
     with:
       testfilter: hbarlimiter_batch2
 
+  hbarlimiter_batch_3:
+    name: HBar Limiter Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: hbarlimiter_batch3
+
   tokencreate:
     name: Token Create
     uses: ./.github/workflows/acceptance-workflow.yml
@@ -123,6 +129,7 @@ jobs:
       - ratelimiter
       - hbarlimiter_batch_1
       - hbarlimiter_batch_2
+      - hbarlimiter_batch_3
       - tokencreate
       - tokenmanagement
       - htsprecompilev1
