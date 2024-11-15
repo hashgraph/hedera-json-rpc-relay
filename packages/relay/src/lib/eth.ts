@@ -62,7 +62,6 @@ import { IContractCallRequest, IContractCallResponse, IFeeHistory, ITransactionR
 import { IAccountInfo } from './types/mirrorNode';
 
 const _ = require('lodash');
-const createHash = require('keccak');
 const asm = require('@ethersproject/asm');
 
 interface LatestBlockNumberTimestamp {
@@ -1550,43 +1549,42 @@ export class EthImpl implements Eth {
 
   async parseRawTxAndPrecheck(
     transaction: string,
-    requestDetails: RequestDetails,
     networkGasPriceInWeiBars: number,
+    requestDetails: RequestDetails,
   ): Promise<EthersTransaction> {
-    let interactingEntity = '';
-    let originatingAddress = '';
+    const parsedTx = Precheck.parseTxIfNeeded(transaction);
     try {
-      this.precheck.checkSize(transaction);
-      const parsedTx = Precheck.parseTxIfNeeded(transaction);
-      interactingEntity = parsedTx.to?.toString() || '';
-      originatingAddress = parsedTx.from?.toString() || '';
       if (this.logger.isLevelEnabled('trace')) {
         this.logger.trace(
-          `${requestDetails.formattedRequestId} sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`,
+          `${requestDetails.formattedRequestId} Transaction undergoing prechecks: transaction=${JSON.stringify(
+            parsedTx,
+          )}`,
         );
       }
 
+      this.precheck.checkSize(transaction);
       await this.precheck.sendRawTransactionCheck(parsedTx, networkGasPriceInWeiBars, requestDetails);
       return parsedTx;
     } catch (e: any) {
-      this.logger.warn(
-        `${requestDetails.formattedRequestId} Error on precheck sendRawTransaction(from=${originatingAddress}, to=${interactingEntity}, transaction=${transaction})`,
+      this.logger.error(
+        `${requestDetails.formattedRequestId} Precheck failed: transaction=${JSON.stringify(parsedTx)}`,
       );
       throw this.common.genericErrorHandler(e);
     }
   }
 
   async sendRawTransactionErrorHandler(
-    e,
-    transaction,
-    transactionBuffer,
-    txSubmitted,
-    parsedTx,
+    e: any,
+    transactionBuffer: Buffer,
+    txSubmitted: boolean,
+    parsedTx: EthersTransaction,
     requestDetails: RequestDetails,
   ): Promise<string | JsonRpcError> {
     this.logger.error(
       e,
-      `${requestDetails.formattedRequestId} Failed to successfully submit sendRawTransaction for transaction ${transaction}`,
+      `${
+        requestDetails.formattedRequestId
+      } Failed to successfully submit sendRawTransaction: transaction=${JSON.stringify(parsedTx)}`,
     );
     if (e instanceof JsonRpcError) {
       return e;
@@ -1638,24 +1636,39 @@ export class EthImpl implements Eth {
 
     this.logger.error(
       e,
-      `${requestDetails.formattedRequestId} Failed sendRawTransaction during record retrieval for transaction ${transaction}, returning computed hash`,
+      `${
+        requestDetails.formattedRequestId
+      } Failed sendRawTransaction during record retrieval for transaction, returning computed hash: transaction=${JSON.stringify(
+        parsedTx,
+      )}`,
     );
     //Return computed hash if unable to retrieve EthereumHash from record due to error
-    return prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+    return Utils.computeTransactionHash(transactionBuffer);
   }
 
   /**
-   * Submits a transaction to the network for execution.
+   * Asynchronously processes a raw transaction by submitting it to the network, managing HFS, polling the MN, handling errors, and returning the transaction hash.
    *
-   * @param {string} transaction The raw transaction to submit
-   * @param {RequestDetails} requestDetails The request details for logging and tracking
+   * @async
+   * @param {Buffer} transactionBuffer - The raw transaction data as a buffer.
+   * @param {EthersTransaction} parsedTx - The parsed Ethereum transaction object.
+   * @param {number} networkGasPriceInWeiBars - The current network gas price in wei bars.
+   * @param {RequestDetails} requestDetails - Details of the request for logging and tracking purposes.
+   * @returns {Promise<string | JsonRpcError>} A promise that resolves to the transaction hash if successful, or a JsonRpcError if an error occurs.
+   * @throws {JsonRpcError} If there's an error during transaction processing.
    */
-  async sendRawTransaction(transaction: string, requestDetails: RequestDetails): Promise<string | JsonRpcError> {
+  async sendRawTransactionTxProcessor(
+    transactionBuffer: Buffer,
+    parsedTx: EthersTransaction,
+    networkGasPriceInWeiBars: number,
+    requestDetails: RequestDetails,
+  ): Promise<string | JsonRpcError> {
+    let fileId: FileId | null = null;
+    let txSubmitted = false;
+    let submittedTransactionId: string = '';
+    let sendRawTransactionError: any;
+
     const requestIdPrefix = requestDetails.formattedRequestId;
-    const networkGasPriceInWeiBars = Utils.addPercentageBufferToGasPrice(
-      await this.getFeeWeibars(EthImpl.ethGasPrice, requestDetails),
-    );
-    const parsedTx = await this.parseRawTxAndPrecheck(transaction, requestDetails, networkGasPriceInWeiBars);
     const originalCallerAddress = parsedTx.from?.toString() || '';
     const toAddress = parsedTx.to?.toString() || '';
 
@@ -1667,13 +1680,6 @@ export class EthImpl implements Eth {
         toAddress,
       )
       .inc();
-
-    const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
-
-    let fileId: FileId | null = null;
-    let txSubmitted = false;
-    let submittedTransactionId: string = '';
-    let sendRawTransactionError: any;
 
     try {
       const sendRawTransactionResult = await this.hapiService
@@ -1770,10 +1776,47 @@ export class EthImpl implements Eth {
     // If this point is reached, it means that no valid transaction hash was returned. Therefore, an error must have occurred.
     return await this.sendRawTransactionErrorHandler(
       sendRawTransactionError,
-      transaction,
       transactionBuffer,
       txSubmitted,
       parsedTx,
+      requestDetails,
+    );
+  }
+
+  /**
+   * Submits a transaction to the network for execution.
+   *
+   * @param {string} transaction - The raw transaction to submit.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @returns {Promise<string | JsonRpcError>} A promise that resolves to the transaction hash if successful, or a JsonRpcError if an error occurs.
+   */
+  async sendRawTransaction(transaction: string, requestDetails: RequestDetails): Promise<string | JsonRpcError> {
+    const transactionBuffer = Buffer.from(EthImpl.prune0x(transaction), 'hex');
+
+    const networkGasPriceInWeiBars = Utils.addPercentageBufferToGasPrice(
+      await this.getFeeWeibars(EthImpl.ethGasPrice, requestDetails),
+    );
+    const parsedTx = await this.parseRawTxAndPrecheck(transaction, networkGasPriceInWeiBars, requestDetails);
+
+    /**
+     * Note: If the USE_ASYNC_TX_PROCESSING feature flag is enabled,
+     * the transaction hash is calculated and returned immediately after passing all prechecks.
+     * All transaction processing logic is then handled asynchronously in the background.
+     */
+    const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING') as boolean;
+    if (useAsyncTxProcessing) {
+      this.sendRawTransactionTxProcessor(transactionBuffer, parsedTx, networkGasPriceInWeiBars, requestDetails);
+      return Utils.computeTransactionHash(transactionBuffer);
+    }
+
+    /**
+     * Note: If the USE_ASYNC_TX_PROCESSING feature flag is disabled,
+     * wait for all transaction processing logic to complete before returning the transaction hash.
+     */
+    return await this.sendRawTransactionTxProcessor(
+      transactionBuffer,
+      parsedTx,
+      networkGasPriceInWeiBars,
       requestDetails,
     );
   }
