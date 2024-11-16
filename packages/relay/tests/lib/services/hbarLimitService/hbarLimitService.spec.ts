@@ -494,6 +494,46 @@ describe('HBAR Rate Limit Service', function () {
         expect(result).to.be.false;
       });
     });
+
+    describe('disable the rate limiter', function () {
+      const hbarLimitServiceDisabled = new HbarLimitService(
+        hbarSpendingPlanRepositoryStub,
+        ethAddressHbarSpendingPlanRepositoryStub,
+        ipAddressHbarSpendingPlanRepositoryStub,
+        logger,
+        register,
+        Hbar.fromTinybars(0),
+        limitDuration,
+      );
+
+      it('should return false if the rate limiter is disabled by setting HBAR_RATE_LIMIT_TINYBAR to zero', async function () {
+        const spendingPlan = createSpendingPlan(
+          mockPlanId,
+          HbarLimitService.TIER_LIMITS[SubscriptionTier.BASIC].toTinybars().sub(mockEstimatedTxFee).add(1),
+        );
+        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+          ethAddress: mockEthAddress,
+          planId: mockPlanId,
+        });
+        hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
+
+        const result = await hbarLimitServiceDisabled.shouldLimit(
+          mode,
+          methodName,
+          txConstructorName,
+          mockEthAddress,
+          requestDetails,
+          mockEstimatedTxFee,
+        );
+
+        // Rate limiter is disabled, so it should return false
+        expect(result).to.be.false;
+      });
+
+      it('should return undefined if the rate limiter is disabled and addExpense is called', async function () {
+        expect(await hbarLimitServiceDisabled.addExpense(100, mockEthAddress, requestDetails)).to.be.undefined;
+      });
+    });
   });
 
   describe('getSpendingPlan', function () {

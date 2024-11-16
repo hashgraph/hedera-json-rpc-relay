@@ -38,6 +38,12 @@ export class HbarLimitService implements IHbarLimitService {
   };
 
   /**
+   * Flag to turn off the HBarRateLimitService.
+   * @private
+   */
+  private readonly isHBarRateLimiterEnabled: boolean = true;
+
+  /**
    * Counts the number of times the rate limit has been reached.
    * @private
    */
@@ -89,6 +95,10 @@ export class HbarLimitService implements IHbarLimitService {
   ) {
     this.reset = this.getResetTimestamp();
     this.remainingBudget = this.totalBudget;
+
+    if (this.totalBudget.toTinybars().lte(0)) {
+      this.isHBarRateLimiterEnabled = false;
+    }
 
     const metricCounterName = 'rpc_relay_hbar_rate_limit';
     this.register.removeSingleMetric(metricCounterName);
@@ -143,6 +153,14 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
+   * Checks if the rate limiter is enabled.
+   * returns {boolean} - `true` if the rate limiter is enabled, otherwise `false`.
+   */
+  isEnabled(): boolean {
+    return this.isHBarRateLimiterEnabled;
+  }
+
+  /**
    * Resets the {@link HbarSpendingPlan#amountSpent} field for all existing plans.
    * @param {RequestDetails} requestDetails - The request details used for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.
@@ -181,6 +199,10 @@ export class HbarLimitService implements IHbarLimitService {
     requestDetails: RequestDetails,
     estimatedTxFee: number = 0,
   ): Promise<boolean> {
+    if (!this.isEnabled()) {
+      return false;
+    }
+
     const ipAddress = requestDetails.ipAddress;
     if (await this.isTotalBudgetExceeded(mode, methodName, txConstructorName, estimatedTxFee, requestDetails)) {
       return true;
@@ -235,6 +257,10 @@ export class HbarLimitService implements IHbarLimitService {
    * @returns {Promise<void>} - A promise that resolves when the expense has been added.
    */
   async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails): Promise<void> {
+    if (!this.isEnabled()) {
+      return;
+    }
+
     const newRemainingBudget = this.remainingBudget.toTinybars().sub(cost);
     this.remainingBudget = Hbar.fromTinybars(newRemainingBudget);
     this.hbarLimitRemainingGauge.set(newRemainingBudget.toNumber());
