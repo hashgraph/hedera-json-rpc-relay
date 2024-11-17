@@ -18,13 +18,14 @@
  *
  */
 
-import { JsonRpcError, predefined } from './errors/JsonRpcError';
-import { MirrorNodeClient } from './clients';
-import { EthImpl } from './eth';
-import { Logger } from 'pino';
-import constants from './constants';
 import { ethers, Transaction } from 'ethers';
+import { Logger } from 'pino';
+
 import { prepend0x } from '../formatters';
+import { MirrorNodeClient } from './clients';
+import constants from './constants';
+import { JsonRpcError, predefined } from './errors/JsonRpcError';
+import { EthImpl } from './eth';
 import { RequestDetails } from './types';
 
 /**
@@ -124,8 +125,10 @@ export class Precheck {
       );
     }
 
-    if (accountInfoNonce > tx.nonce) {
-      throw predefined.NONCE_TOO_LOW(tx.nonce, accountInfoNonce);
+    if (tx.nonce !== accountInfoNonce) {
+      throw tx.nonce < accountInfoNonce
+        ? predefined.NONCE_TOO_LOW(tx.nonce, accountInfoNonce)
+        : predefined.NONCE_TOO_HIGH(tx.nonce, accountInfoNonce);
     }
   }
 

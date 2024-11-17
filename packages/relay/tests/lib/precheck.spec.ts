@@ -19,11 +19,19 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { expect } from 'chai';
-import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { expect } from 'chai';
+import { ethers, Transaction } from 'ethers';
 import pino from 'pino';
+import { Registry } from 'prom-client';
+
+import { JsonRpcError, predefined } from '../../src';
+import { MirrorNodeClient } from '../../src/lib/clients';
+import constants from '../../src/lib/constants';
 import { Precheck } from '../../src/lib/precheck';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import {
   blobVersionedHash,
   contractAddress1,
@@ -32,13 +40,6 @@ import {
   overrideEnvsInMochaDescribe,
   signTransaction,
 } from '../helpers';
-import { MirrorNodeClient } from '../../src/lib/clients';
-import axios from 'axios';
-import MockAdapter from 'axios-mock-adapter';
-import { ethers, Transaction } from 'ethers';
-import constants from '../../src/lib/constants';
-import { JsonRpcError, predefined } from '../../src';
-import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { ONE_TINYBAR_IN_WEI_HEX } from './eth/eth-config';
 
 const registry = new Registry();
@@ -402,7 +403,7 @@ describe('Precheck', async function () {
       ethereum_nonce: defaultNonce,
     };
 
-    it(`should fail for low nonce`, async function () {
+    it(`should fail for lowwer nonce`, async function () {
       const tx = {
         ...defaultTx,
         nonce: 1,
@@ -412,15 +413,12 @@ describe('Precheck', async function () {
 
       mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
 
-      try {
-        precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce, requestDetails);
-        expectedError();
-      } catch (e: any) {
-        expect(e).to.eql(predefined.NONCE_TOO_LOW(parsedTx.nonce, mirrorAccount.ethereum_nonce));
-      }
+      expect(() => precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce, requestDetails))
+        .to.throw()
+        .and.eql(predefined.NONCE_TOO_LOW(parsedTx.nonce, mirrorAccount.ethereum_nonce));
     });
 
-    it(`should not fail for next nonce`, async function () {
+    it(`should fail for higher nonce`, async function () {
       const tx = {
         ...defaultTx,
         nonce: 4,
@@ -430,7 +428,22 @@ describe('Precheck', async function () {
 
       mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
 
-      precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce, requestDetails);
+      expect(() => precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce, requestDetails))
+        .to.throw()
+        .and.eql(predefined.NONCE_TOO_HIGH(parsedTx.nonce, mirrorAccount.ethereum_nonce));
+    });
+
+    it(`should not fail for correct nonce`, async function () {
+      const tx = {
+        ...defaultTx,
+        nonce: defaultNonce,
+      };
+      const signed = await signTransaction(tx);
+      const parsedTx = ethers.Transaction.from(signed);
+
+      mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
+
+      expect(() => precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce, requestDetails)).to.not.throw();
     });
   });
 
