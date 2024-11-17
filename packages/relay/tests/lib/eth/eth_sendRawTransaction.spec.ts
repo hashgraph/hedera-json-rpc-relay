@@ -35,7 +35,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { EventEmitter } from 'events';
 import pino from 'pino';
 import { Counter } from 'prom-client';
-import sinon from 'sinon';
+import sinon, { useFakeTimers } from 'sinon';
 
 import { Eth, JsonRpcError, predefined } from '../../../src';
 import { formatTransactionIdWithoutQueryParams } from '../../../src/formatters';
@@ -46,8 +46,15 @@ import { CacheService } from '../../../src/lib/services/cacheService/cacheServic
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
 import { RequestDetails } from '../../../src/lib/types';
+import { Utils } from '../../../src/utils';
 import RelayAssertions from '../../assertions';
-import { getRequestId, mockData, overrideEnvsInMochaDescribe, signTransaction } from '../../helpers';
+import {
+  getRequestId,
+  mockData,
+  overrideEnvsInMochaDescribe,
+  signTransaction,
+  withOverriddenEnvsInMochaTest,
+} from '../../helpers';
 import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
 
@@ -89,6 +96,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
   });
 
   describe('eth_sendRawTransaction', async function () {
+    let clock: any;
     const accountAddress = '0x9eaee9E66efdb91bfDcF516b034e001cc535EB57';
     const accountEndpoint = `accounts/${accountAddress}${NO_TRANSACTIONS}`;
     const gasPrice = '0xad78ebc5ac620000';
@@ -119,8 +127,10 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
       },
     };
+    const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING') as boolean;
 
     beforeEach(() => {
+      clock = useFakeTimers();
       sinon.restore();
       sdkClientStub = sinon.createStubInstance(SDKClient);
       sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
@@ -130,9 +140,16 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
     afterEach(() => {
       sinon.restore();
+      clock.restore();
     });
 
     it('should emit tracking event (limiter and metrics) only for successful tx responses from FileAppend transaction', async function () {
+      const signed = await signTransaction({
+        ...transaction,
+        data: '0x' + '22'.repeat(13000),
+      });
+      const expectedTxHash = Utils.computeTransactionHash(Buffer.from(signed.replace('0x', ''), 'hex'));
+
       const FILE_ID = new FileId(0, 0, 5644);
       sdkClientStub.submitEthereumTransaction.restore();
       sdkClientStub.createFile.restore();
@@ -164,18 +181,14 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sdkClientStub.logger = pino();
       sdkClientStub.deleteFile.resolves();
 
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
-
-      const signed = await signTransaction({
-        ...transaction,
-        data: '0x' + '22'.repeat(13000),
-      });
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: expectedTxHash });
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
+      if (useAsyncTxProcessing) await clock.tickAsync(1);
 
       expect(eventEmitterMock.emit.callCount).to.equal(1);
       expect(hbarLimiterMock.shouldLimit.callCount).to.equal(1);
-      expect(resultingHash).to.equal(ethereumHash);
+      expect(resultingHash).to.equal(expectedTxHash);
     });
 
     it('should return a predefined GAS_LIMIT_TOO_HIGH instead of NUMERIC_FAULT as precheck exception', async function () {
@@ -200,42 +213,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       expect(resultingHash).to.equal(ethereumHash);
     });
 
-    it('should throw internal error when transaction returned from mirror node is null', async function () {
-      const signed = await signTransaction(transaction);
-
-      restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
-
-      sdkClientStub.submitEthereumTransaction.resolves({
-        txResponse: {
-          transactionId: transactionIdServicesFormat,
-        } as unknown as TransactionResponse,
-        fileId: null,
-      });
-
-      const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
-
-      expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
-      expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
-    });
-
-    it('should throw internal error when transactionID is invalid', async function () {
-      const signed = await signTransaction(transaction);
-
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
-
-      sdkClientStub.submitEthereumTransaction.resolves({
-        txResponse: {
-          transactionId: '',
-        } as unknown as TransactionResponse,
-        fileId: null,
-      });
-
-      const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
-
-      expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
-      expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
-    });
-
     it('should return hash from ContractResult mirror node api', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
@@ -251,23 +228,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       expect(resultingHash).to.equal(ethereumHash);
     });
 
-    it('should throw internal error if ContractResult from mirror node contains a null hash', async function () {
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: null });
-
-      sdkClientStub.submitEthereumTransaction.resolves({
-        txResponse: {
-          transactionId: TransactionId.fromString(transactionIdServicesFormat),
-        } as unknown as TransactionResponse,
-        fileId: null,
-      });
-      const signed = await signTransaction(transaction);
-
-      const response = await ethImpl.sendRawTransaction(signed, requestDetails);
-
-      expect(response).to.be.instanceOf(JsonRpcError);
-      expect((response as JsonRpcError).message).to.include(`Transaction returned a null transaction hash`);
-    });
-
     it('should not send second transaction upon succession', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
@@ -281,6 +241,8 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       const signed = await signTransaction(transaction);
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
+      if (useAsyncTxProcessing) await clock.tickAsync(1);
+
       expect(resultingHash).to.equal(ethereumHash);
       sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
     });
@@ -302,6 +264,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       const newRequestDetails = { ...requestDetails, ipAddress: constants.MASKED_IP_ADDRESS };
       const formattedTransactionId = formatTransactionIdWithoutQueryParams(transactionIdServicesFormat);
 
+      await clock.tickAsync(1);
       expect(resultingHash).to.equal(ethereumHash);
       sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
       sinon.assert.calledOnceWithExactly(
@@ -311,19 +274,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         mirrorNodeRetry,
         requestDetails,
       );
-    });
-
-    it('should call repeated request passing masked IP address', async function () {
-      sdkClientStub.submitEthereumTransaction
-        .onCall(0)
-        .throws(new SDKClientError({ status: 50 }, 'wrong transaction body'));
-
-      const signed = await signTransaction(transaction);
-
-      const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
-      expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
-      expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
-      sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
     });
 
     it('should throw precheck error for type=3 transactions', async function () {
@@ -344,43 +294,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       );
     });
 
-    ['timeout exceeded', 'Connection dropped'].forEach((error) => {
-      it(`should poll mirror node upon ${error} error for valid transaction and return correct transaction hash`, async function () {
-        restMock
-          .onGet(contractResultEndpoint)
-          .replyOnce(404, mockData.notFound)
-          .onGet(contractResultEndpoint)
-          .reply(200, { hash: ethereumHash });
-
-        sdkClientStub.submitEthereumTransaction
-          .onCall(0)
-          .throws(new SDKClientError({ status: 21 }, error, transactionIdServicesFormat));
-
-        const signed = await signTransaction(transaction);
-
-        const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
-        expect(resultingHash).to.equal(ethereumHash);
-      });
-
-      it(`should poll mirror node upon ${error} error for valid transaction and return correct ${error} error if no transaction is found`, async function () {
-        restMock
-          .onGet(contractResultEndpoint)
-          .replyOnce(404, mockData.notFound)
-          .onGet(contractResultEndpoint)
-          .reply(200, null);
-
-        sdkClientStub.submitEthereumTransaction
-          .onCall(0)
-          .throws(new SDKClientError({ status: 21 }, error, transactionIdServicesFormat));
-
-        const signed = await signTransaction(transaction);
-
-        const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
-        expect(response).to.be.instanceOf(JsonRpcError);
-        expect(response.message).to.include(error);
-      });
-    });
-
     it('should update execution counter and list the correct data when eth_sendRawTransation is executed', async function () {
       const labelsSpy = sinon.spy(ethImpl['ethExecutionsCounter'], 'labels');
       const expectedLabelsValue = ['eth_sendRawTransaction', '0x', transaction.from, transaction.to];
@@ -395,6 +308,166 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       });
 
       sinon.restore();
+    });
+
+    withOverriddenEnvsInMochaTest({ USE_ASYNC_TX_PROCESSING: false }, () => {
+      it('[USE_ASYNC_TX_PROCESSING=true] should throw internal error when transaction returned from mirror node is null', async function () {
+        const signed = await signTransaction(transaction);
+
+        restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
+
+        sdkClientStub.submitEthereumTransaction.resolves({
+          txResponse: {
+            transactionId: transactionIdServicesFormat,
+          } as unknown as TransactionResponse,
+          fileId: null,
+        });
+
+        const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
+
+        expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
+        expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
+      });
+
+      it('[USE_ASYNC_TX_PROCESSING=false] should throw internal error when transactionID is invalid', async function () {
+        const signed = await signTransaction(transaction);
+
+        restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+
+        sdkClientStub.submitEthereumTransaction.resolves({
+          txResponse: {
+            transactionId: '',
+          } as unknown as TransactionResponse,
+          fileId: null,
+        });
+
+        const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
+
+        expect(response.code).to.equal(predefined.INTERNAL_ERROR().code);
+        expect(`Error invoking RPC: ${response.message}`).to.equal(predefined.INTERNAL_ERROR(response.message).message);
+      });
+
+      it('[USE_ASYNC_TX_PROCESSING=false] should throw internal error if ContractResult from mirror node contains a null hash', async function () {
+        restMock.onGet(contractResultEndpoint).reply(200, { hash: null });
+
+        sdkClientStub.submitEthereumTransaction.resolves({
+          txResponse: {
+            transactionId: TransactionId.fromString(transactionIdServicesFormat),
+          } as unknown as TransactionResponse,
+          fileId: null,
+        });
+        const signed = await signTransaction(transaction);
+
+        const response = await ethImpl.sendRawTransaction(signed, requestDetails);
+
+        expect(response).to.be.instanceOf(JsonRpcError);
+        expect((response as JsonRpcError).message).to.include(`Transaction returned a null transaction hash`);
+      });
+
+      ['timeout exceeded', 'Connection dropped'].forEach((error) => {
+        it(`[USE_ASYNC_TX_PROCESSING=false] should poll mirror node upon ${error} error for valid transaction and return correct transaction hash`, async function () {
+          restMock
+            .onGet(contractResultEndpoint)
+            .replyOnce(404, mockData.notFound)
+            .onGet(contractResultEndpoint)
+            .reply(200, { hash: ethereumHash });
+
+          sdkClientStub.submitEthereumTransaction
+            .onCall(0)
+            .throws(new SDKClientError({ status: 21 }, error, transactionIdServicesFormat));
+
+          const signed = await signTransaction(transaction);
+
+          const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
+          expect(resultingHash).to.equal(ethereumHash);
+        });
+
+        it(`[USE_ASYNC_TX_PROCESSING=false] should poll mirror node upon ${error} error for valid transaction and return correct ${error} error if no transaction is found`, async function () {
+          restMock
+            .onGet(contractResultEndpoint)
+            .replyOnce(404, mockData.notFound)
+            .onGet(contractResultEndpoint)
+            .reply(200, null);
+
+          sdkClientStub.submitEthereumTransaction
+            .onCall(0)
+            .throws(new SDKClientError({ status: 21 }, error, transactionIdServicesFormat));
+
+          const signed = await signTransaction(transaction);
+
+          const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
+          expect(response).to.be.instanceOf(JsonRpcError);
+          expect(response.message).to.include(error);
+        });
+      });
+    });
+
+    withOverriddenEnvsInMochaTest({ USE_ASYNC_TX_PROCESSING: true }, () => {
+      it('[USE_ASYNC_TX_PROCESSING=true] should still return expected transaction hash even when transaction returned from mirror node is null', async function () {
+        const signed = await signTransaction(transaction);
+
+        restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
+
+        sdkClientStub.submitEthereumTransaction.resolves({
+          txResponse: {
+            transactionId: transactionIdServicesFormat,
+          } as unknown as TransactionResponse,
+          fileId: null,
+        });
+
+        const response = await ethImpl.sendRawTransaction(signed, requestDetails);
+        expect(response).to.equal(ethereumHash);
+      });
+
+      it('[USE_ASYNC_TX_PROCESSING=true] should still return expected transaction hash even when submitted transactionID is invalid', async function () {
+        const signed = await signTransaction(transaction);
+
+        restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+
+        sdkClientStub.submitEthereumTransaction.resolves({
+          txResponse: {
+            transactionId: '',
+          } as unknown as TransactionResponse,
+          fileId: null,
+        });
+
+        const response = await ethImpl.sendRawTransaction(signed, requestDetails);
+        expect(response).to.equal(ethereumHash);
+      });
+
+      it('[USE_ASYNC_TX_PROCESSING=true] should still return expected transaction hash even when ContractResult from mirror node contains a null hash', async function () {
+        restMock.onGet(contractResultEndpoint).reply(200, { hash: null });
+
+        sdkClientStub.submitEthereumTransaction.resolves({
+          txResponse: {
+            transactionId: TransactionId.fromString(transactionIdServicesFormat),
+          } as unknown as TransactionResponse,
+          fileId: null,
+        });
+        const signed = await signTransaction(transaction);
+
+        const response = await ethImpl.sendRawTransaction(signed, requestDetails);
+        expect(response).to.equal(ethereumHash);
+      });
+
+      ['timeout exceeded', 'Connection dropped'].forEach((error) => {
+        it(`[USE_ASYNC_TX_PROCESSING=true] should still return expected transaction hash even when hit ${error} error`, async function () {
+          restMock
+            .onGet(contractResultEndpoint)
+            .replyOnce(404, mockData.notFound)
+            .onGet(contractResultEndpoint)
+            .reply(200, { hash: ethereumHash });
+
+          sdkClientStub.submitEthereumTransaction
+            .onCall(0)
+            .throws(new SDKClientError({ status: 21 }, error, transactionIdServicesFormat));
+
+          const signed = await signTransaction(transaction);
+
+          const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
+          expect(resultingHash).to.equal(ethereumHash);
+        });
+      });
     });
   });
 });
