@@ -49,8 +49,9 @@ After extraction, the expected output is:
 "0x000000000000000000000000000000000000000000000000000000000000040a"
 ```
 
-### 3. Add the token address to the receipt
+### 3. Add the evm address of the newly created token to the receipt
 
+Currently, the receipt contains the evm address of the system contract that is being called as a 'contractAddress' field. With this enhancement, the system contract address will be replaced with the evm address of the newly created token.
 
 ## Testing Requirements
 
