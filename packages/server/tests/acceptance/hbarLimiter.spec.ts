@@ -18,41 +18,40 @@
  *
  */
 
-import fs from 'fs';
-import { expect } from 'chai';
-import { resolve } from 'path';
-import { Logger } from 'pino';
-import findConfig from 'find-config';
-import { Registry } from 'prom-client';
-import dotenv, { config } from 'dotenv';
-import { BaseContract, ethers } from 'ethers';
-import { predefined } from '@hashgraph/json-rpc-relay';
-
-// Local resources
-import { Utils } from '../helpers/utils';
-import Assertions from '../helpers/assertions';
-import testConstants from '../helpers/constants';
-import RelayClient from '../clients/relayClient';
-import MirrorClient from '../clients/mirrorClient';
-import MetricsClient from '../clients/metricsClient';
-import { AliasAccount } from '../types/AliasAccount';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
-import { SpendingPlanConfig } from '@hashgraph/json-rpc-relay/src/lib/types/spendingPlanConfig';
-import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hbarLimitService';
-import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
-import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
-import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
-import { IDetailedHbarSpendingPlan } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/hbarSpendingPlan';
+import { predefined } from '@hashgraph/json-rpc-relay';
+import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { IDetailedHbarSpendingPlan } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/hbarSpendingPlan';
+import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
+import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
+import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hbarLimitService';
+import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { SpendingPlanConfig } from '@hashgraph/json-rpc-relay/src/lib/types/spendingPlanConfig';
+import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
+import { expect } from 'chai';
+import dotenv, { config } from 'dotenv';
+import { BaseContract, ethers } from 'ethers';
+import findConfig from 'find-config';
+import fs from 'fs';
+import { resolve } from 'path';
+import { Logger } from 'pino';
+import { Registry } from 'prom-client';
 
-// Contracts used in tests
-import parentContractJson from '../contracts/Parent.json';
+import MetricsClient from '../clients/metricsClient';
+import MirrorClient from '../clients/mirrorClient';
+import RelayClient from '../clients/relayClient';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
+// Contracts used in tests
+import parentContractJson from '../contracts/Parent.json';
+import Assertions from '../helpers/assertions';
+import testConstants from '../helpers/constants';
+// Local resources
+import { Utils } from '../helpers/utils';
+import { AliasAccount } from '../types/AliasAccount';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
@@ -74,7 +73,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     metrics: MetricsClient;
     relayIsLocal: boolean;
   } = global;
-  const mockTTL = 60000; // 60 secs
+  const mockTTL = (ConfigService.get('HBAR_RATE_LIMIT_DURATION') as number) || 86400000; // 1 day
   const operatorAccount = (ConfigService.get('OPERATOR_ID_MAIN') as string) || DOT_ENV.OPERATOR_ID_MAIN || '';
   const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   const requestId = 'hbarLimiterTest';
@@ -252,7 +251,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       afterEach(async () => {
-        hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
+        await hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
 
         // Note: Since the total HBAR budget is shared across the entire Relay instance by multiple test cases,
         //       and expense updates occur asynchronously, the wait below ensures that the HBAR amount has sufficient time
@@ -299,9 +298,10 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             maxFeePerGas: gasPrice,
           };
           const signedTx = await accounts[1].wallet.signTransaction(transaction);
+          const txHash = await relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId);
+          const txReceipt = await relay.pollForValidTransactionReceipt(txHash);
 
-          await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
-            .fulfilled;
+          expect(txReceipt).to.not.be.null;
 
           const expectedTxCost = await getExpectedCostOfLastSmallTx(requestId);
           const updatedRemainingHbars = await pollForProperRemainingHbar(initialRemainingHbars, expectedTxCost);
@@ -409,7 +409,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           subscriptionTier: SubscriptionTier,
           accountCounts: number = 1,
         ) => {
-          let aliasAccounts: AliasAccount[] = [];
+          const aliasAccounts: AliasAccount[] = [];
           const hbarSpendingPlan = await hbarSpendingPlanRepository.create(subscriptionTier, requestDetails, mockTTL);
 
           for (let i = 0; i < accountCounts; i++) {
@@ -441,7 +441,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           return { aliasAccounts, hbarSpendingPlan };
         };
 
-        describe('@hbarlimiter-batch1 BASIC Tier', () => {
+        describe('@hbarlimiter-batch2 BASIC Tier', () => {
           beforeEach(async function () {
             const basicPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
               [SubscriptionTier.BASIC],
@@ -476,9 +476,13 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               maxFeePerGas: gasPrice,
             };
             const signedTx = await accounts[2].wallet.signTransaction(transaction);
-
-            await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTx], requestId)).to.be
-              .fulfilled;
+            const txHash = await relay.call(
+              testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION,
+              [signedTx],
+              requestId,
+            );
+            const txReceipt = await relay.pollForValidTransactionReceipt(txHash);
+            expect(txReceipt).to.not.be.null;
 
             // awaiting for HBAR limiter to finish updating expenses in the background
             await Utils.wait(6000);
@@ -504,8 +508,13 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             };
             const signedTxSecond = await accounts[2].wallet.signTransaction(secondTransaction);
 
-            await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTxSecond], requestId))
-              .to.be.fulfilled;
+            const txHashSecond = await relay.call(
+              testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION,
+              [signedTxSecond],
+              requestId,
+            );
+            const txReceiptSecond = await relay.pollForValidTransactionReceipt(txHashSecond);
+            expect(txReceiptSecond).to.not.be.null;
 
             let spendingPlanAssociatedAfterSecond = await hbarSpendingPlanRepository.findByIdWithDetails(
               ethSpendingPlan.planId,
@@ -533,8 +542,13 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             };
             const signedTxThird = await accounts[1].wallet.signTransaction(thirdTransaction);
 
-            await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTxThird], requestId))
-              .to.be.fulfilled;
+            const txHashThird = await relay.call(
+              testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION,
+              [signedTxThird],
+              requestId,
+            );
+            const txReceiptThird = await relay.pollForValidTransactionReceipt(txHashThird);
+            expect(txReceiptThird).to.not.be.null;
 
             const ethSpendingPlanThird = await ethAddressSpendingPlanRepository.findByAddress(
               accounts[1].address,
@@ -570,14 +584,22 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                   );
                 }
 
-                await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts + 1, expectedTxCost);
+                const amountSpent = await pollForProperAmountSpent(
+                  hbarSpendingPlan,
+                  deploymentCounts + 1,
+                  expectedTxCost,
+                );
+
+                if (amountSpent + expectedTxCost > maxBasicSpendingLimit) {
+                  throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+                }
               }
               expect.fail(`Expected an error but nothing was thrown`);
             } catch (e: any) {
               logger.error(e.message);
               expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
               const expectedAmountOfDeployments = Math.floor(maxBasicSpendingLimit / expectedTxCost);
-              expect(deploymentCounts).to.eq(expectedAmountOfDeployments);
+              expect(deploymentCounts + 1).to.eq(expectedAmountOfDeployments);
 
               if (!hbarSpendingPlan) {
                 const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
@@ -657,14 +679,22 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                   await tx.waitForDeployment();
 
                   expectedTxCost ||= await getExpectedCostOfLastLargeTx(largeContractJson.bytecode);
-                  await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts + 1, expectedTxCost);
+                  const amountSpent = await pollForProperAmountSpent(
+                    hbarSpendingPlan,
+                    deploymentCounts + 1,
+                    expectedTxCost,
+                  );
+
+                  if (amountSpent + expectedTxCost > maxSpendingLimit) {
+                    throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+                  }
                 }
                 expect.fail(`Expected an error but nothing was thrown`);
               } catch (e: any) {
                 logger.error(e.message);
                 expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
                 const expectedAmountOfDeployments = Math.floor(maxSpendingLimit / expectedTxCost);
-                expect(deploymentCounts).to.eq(expectedAmountOfDeployments);
+                expect(deploymentCounts + 1).to.eq(expectedAmountOfDeployments);
 
                 const amountSpent = await pollForProperAmountSpent(hbarSpendingPlan, deploymentCounts, expectedTxCost);
                 const remainingHbarsAfter = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
@@ -679,15 +709,16 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                   expect(remainingHbarsAfter).to.be.lt(expectedTxCost);
                 }
 
-                // should also limit a different account but in the same HbarSpendingPlan
-                try {
-                  const tx = await deployContract(largeContractJson, aliasAccounts[1].wallet);
-                  await tx.waitForDeployment();
-                  expect.fail(`Expected an error but nothing was thrown`);
-                } catch (error) {
-                  logger.error(e.message);
-                  expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
-                }
+                // should make sure accounts in the same plan also share the same amountSpent which should also be hbar rate limited
+                const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+                  aliasAccounts[1].address,
+                  requestDetails,
+                );
+                const account1SpendingPlanAmountSpent = (
+                  await hbarSpendingPlanRepository.findByIdWithDetails(ethSpendingPlan.planId, requestDetails)
+                ).amountSpent;
+                expect(account1SpendingPlanAmountSpent).to.eq(amountSpent);
+                expect(account1SpendingPlanAmountSpent + expectedTxCost).to.gt(maxSpendingLimit);
 
                 // should allow another account, who has the same tier but not in the same HbarSpendingPlan, to make call
                 const differentAccount = (await createAliasAndAssociateSpendingPlan(subscriptionTier)).aliasAccounts[0];
@@ -749,7 +780,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           });
         });
 
-        describe('@hbarlimiter-batch2 Multiple users with different tiers', () => {
+        describe('@hbarlimiter-batch1 Multiple users with different tiers', () => {
           interface AliasAccountPlan {
             aliasAccounts: AliasAccount[];
             hbarSpendingPlan: IDetailedHbarSpendingPlan;
@@ -758,9 +789,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           let accountPlanObject: Record<SubscriptionTier, AliasAccountPlan[]>;
 
           const accountPlanRequirements: Record<SubscriptionTier, number> = {
-            BASIC: 2,
-            EXTENDED: 2,
-            PRIVILEGED: 2,
+            BASIC: 3,
+            EXTENDED: 3,
+            PRIVILEGED: 3,
           };
 
           const createMultipleAliasAccountsWithSpendingPlans = async (
@@ -845,16 +876,22 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             }
           });
 
-          it(`Should eventually exhaust the total HBAR limits after many large contract deployments by different tiered users`, async () => {
+          it(`Should eventually exhaust the total HBAR limits after many large contract deployments`, async () => {
+            let expectedTxCost = 0;
             const exchangeRateResult = (await mirrorNode.get(`/network/exchangerate`, requestId)).current_rate;
             const exchangeRateInCents = exchangeRateResult.cent_equivalent / exchangeRateResult.hbar_equivalent;
 
             const allAccountAliases = Object.values(accountPlanObject)
               .flat()
-              .map((accountAliasPlan) => accountAliasPlan.aliasAccounts[0]);
+              .map((accountAliasPlan) => {
+                const aliasAccount = accountAliasPlan.aliasAccounts[0];
+                return { ...aliasAccount, hbarSpendingPlan: accountAliasPlan.hbarSpendingPlan };
+              });
 
-            let totalHbarSpent = 0;
             const totalHbarBudget = ConfigService.get(`HBAR_RATE_LIMIT_TINYBAR`) as number;
+
+            let totalHbarSpent =
+              totalHbarBudget - Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
             const estimatedTxFee = estimateFileTransactionsFee(
               largeContractJson.bytecode.length,
               fileAppendChunkSize,
@@ -862,24 +899,40 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             );
 
             while (totalHbarSpent + estimatedTxFee < totalHbarBudget) {
-              const promises = allAccountAliases.map(async (accountAlias) => {
+              for (const accountAlias of allAccountAliases) {
+                let deploymentCounts = 0;
+                const maxSpendingLimit = HbarLimitService.TIER_LIMITS[accountAlias.hbarSpendingPlan.subscriptionTier]
+                  .toTinybars()
+                  .toNumber();
                 try {
-                  for (let i = 0; i < 50; i++) {
-                    await deployContract(largeContractJson, accountAlias.wallet);
+                  for (deploymentCounts = 0; deploymentCounts < 50; deploymentCounts++) {
+                    if (totalHbarSpent + expectedTxCost > totalHbarBudget) {
+                      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+                    }
+
+                    const tx = await deployContract(largeContractJson, accountAlias.wallet);
+                    await tx.waitForDeployment();
+
+                    expectedTxCost ||= await getExpectedCostOfLastLargeTx(largeContractJson.bytecode);
+                    const amountSpent = await pollForProperAmountSpent(
+                      accountAlias.hbarSpendingPlan,
+                      deploymentCounts + 1,
+                      expectedTxCost,
+                    );
+
+                    const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
+                    totalHbarSpent = totalHbarBudget - remainingHbars;
+
+                    if (amountSpent + expectedTxCost > maxSpendingLimit) {
+                      throw predefined.HBAR_RATE_LIMIT_EXCEEDED;
+                    }
                   }
                   expect.fail(`Expected an error but nothing was thrown`);
                 } catch (e) {
                   logger.error(e.message);
                   expect(e.message).to.contain(predefined.HBAR_RATE_LIMIT_EXCEEDED.message);
-
-                  // awaiting for HBAR limiter to finish updating expenses in the background
-                  await Utils.wait(6000);
-                  const remainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
-                  totalHbarSpent = totalHbarBudget - remainingHbars;
                 }
-              });
-
-              await Promise.all(promises);
+              }
             }
 
             expect(totalHbarSpent + estimatedTxFee).to.gte(totalHbarBudget);
