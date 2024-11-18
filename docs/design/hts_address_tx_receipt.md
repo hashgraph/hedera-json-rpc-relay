@@ -17,9 +17,9 @@ Currently, when creating a token via HTS the address of the system contract is r
 
 ### 1. Function Signature Detection
 
-Detect in the transactionResponse from the mirror node, if the transaction was calling any of the HTS methods - createFungibleToken/createNonFungibleToken/createFungibleTokenWithCustomFees/createNonFungibleTokenWithCustomFees
+Detect in the transactionResponse from the mirror node, if the transaction was calling any of the following HTS methods - createFungibleToken/createNonFungibleToken/createFungibleTokenWithCustomFees/createNonFungibleTokenWithCustomFees
 
-N.B Currently, HTS supports both v1 and v2 security model function selectors
+N.B The following forms of the [HTS system contract](https://github.com/hashgraph/hedera-smart-contracts/tree/v0.10.1/contracts/system-contracts/hedera-token-service) create token function selectors will be supported. This is as of the 0.56 version of the services.
 
 ```javascript
 const HTS_CREATE_FUNCTIONS_SIGNATURE = [
