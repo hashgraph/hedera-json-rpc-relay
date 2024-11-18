@@ -19,33 +19,30 @@
  */
 
 // External resources
-import { expect } from 'chai';
-import { ethers } from 'ethers';
-import { AliasAccount } from '../types/AliasAccount';
-import { Utils } from '../helpers/utils';
-import { FileInfo, FileInfoQuery, Hbar, TransferTransaction } from '@hashgraph/sdk';
-
-// Assertions from local resources
-import Assertions from '../helpers/assertions';
-
-// Local resources from contracts directory
-import parentContractJson from '../contracts/Parent.json';
-import logsContractJson from '../contracts/Logs.json';
-import basicContract from '../../tests/contracts/Basic.json';
-
-// Errors and constants from local resources
-import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
-import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import RelayCalls from '../../tests/helpers/constants';
-
 // Other imports
 import { numberTo0x, prepend0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+// Errors and constants from local resources
+import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { FileInfo, FileInfoQuery, Hbar, TransferTransaction } from '@hashgraph/sdk';
+import { expect } from 'chai';
+import { ethers } from 'ethers';
+
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import basicContract from '../../tests/contracts/Basic.json';
+import RelayCalls from '../../tests/helpers/constants';
+import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
 import ServicesClient from '../clients/servicesClient';
-import MirrorClient from '../clients/mirrorClient';
+import logsContractJson from '../contracts/Logs.json';
+// Local resources from contracts directory
+import parentContractJson from '../contracts/Parent.json';
+// Assertions from local resources
+import Assertions from '../helpers/assertions';
+import { Utils } from '../helpers/utils';
+import { AliasAccount } from '../types/AliasAccount';
 
 const Address = RelayCalls;
 
@@ -126,6 +123,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         parentContractJson.bytecode,
         accounts[0].wallet,
       );
+
       parentContractAddress = parentContract.target as string;
       if (global.logger.isLevelEnabled('trace')) {
         global.logger.trace(
@@ -133,13 +131,15 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
       }
 
-      await accounts[0].wallet.sendTransaction({
+      const response = await accounts[0].wallet.sendTransaction({
         to: parentContractAddress,
         value: ethers.parseEther('1'),
       });
+      await relay.pollForValidTransactionReceipt(response.hash);
 
       // @ts-ignore
       const createChildTx: ethers.ContractTransactionResponse = await parentContract.createChild(1);
+      await relay.pollForValidTransactionReceipt(createChildTx.hash);
 
       if (global.logger.isLevelEnabled('trace')) {
         global.logger.trace(
@@ -1107,12 +1107,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         };
         const signedTx = await accounts[1].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-
-        const transactionResult = await relay.call(
-          RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
-          [transactionHash],
-          requestIdPrefix,
-        );
+        const transactionResult = await relay.pollForValidTransactionReceipt(transactionHash);
 
         const result = Object.prototype.hasOwnProperty.call(transactionResult, 'chainId');
         expect(result).to.be.false;
@@ -1570,28 +1565,13 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             maxFeePerGas: await relay.gasPrice(requestId),
           };
 
-          const signedTx1 = await accounts[2].wallet.signTransaction(transaction1);
+          const signedTx = await accounts[2].wallet.signTransaction(transaction1);
 
-          await Promise.all([
-            Promise.allSettled([
-              relay.sendRawTransaction(signedTx1, requestId),
-              relay.sendRawTransaction(signedTx1, requestId),
-            ]).then((values) => {
-              const fulfilled = values.find((obj) => obj.status === 'fulfilled');
-              const rejected = values.find((obj) => obj.status === 'rejected');
+          const res = await relay.sendRawTransaction(signedTx, requestId);
+          await relay.pollForValidTransactionReceipt(res);
 
-              expect(fulfilled).to.exist;
-              expect(fulfilled).to.have.property('value');
-              expect(rejected).to.exist;
-              expect(rejected).to.have.property('reason');
-
-              Assertions.jsonRpcError(
-                // @ts-ignore
-                rejected?.reason?.info?.error,
-                predefined.NONCE_TOO_LOW(nonce, nonce + 1),
-              );
-            }),
-          ]);
+          const error = predefined.NONCE_TOO_LOW(nonce, nonce + 1);
+          await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestDetails]);
         });
       });
 
