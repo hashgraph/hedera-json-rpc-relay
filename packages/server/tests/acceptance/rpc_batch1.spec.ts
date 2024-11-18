@@ -78,6 +78,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   );
   const gasPriceDeviation = parseFloat((ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2') as string);
   const sendRawTransaction = relay.sendRawTransaction;
+  const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING') as boolean;
 
   /**
    * resolves long zero addresses to EVM addresses by querying mirror node
@@ -435,30 +436,32 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         }
       });
 
-      it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
-        //for the purpose of the test, we are settings limit to 2, and fetching all.
-        //setting mirror node limit to 2 for this test only
-        ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
-        // calculate blocks behind latest, so we can fetch logs from the past.
-        // if current block is less than 10, we will fetch logs from the beginning otherwise we will fetch logs from 10 blocks behind latest
-        const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestIdPrefix));
-        let blocksBehindLatest = 0;
-        if (currentBlock > 10) {
-          blocksBehindLatest = currentBlock - 10;
-        }
-        const logs = await relay.call(
-          RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
-          [
-            {
-              fromBlock: numberTo0x(blocksBehindLatest),
-              toBlock: 'latest',
-              address: [contractAddress, contractAddress2],
-            },
-          ],
-          requestIdPrefix,
-        );
-        expect(logs.length).to.be.greaterThan(2);
-      });
+      if (!useAsyncTxProcessing) {
+        it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
+          //for the purpose of the test, we are settings limit to 2, and fetching all.
+          //setting mirror node limit to 2 for this test only
+          ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
+          // calculate blocks behind latest, so we can fetch logs from the past.
+          // if current block is less than 10, we will fetch logs from the beginning otherwise we will fetch logs from 10 blocks behind latest
+          const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestIdPrefix));
+          let blocksBehindLatest = 0;
+          if (currentBlock > 10) {
+            blocksBehindLatest = currentBlock - 10;
+          }
+          const logs = await relay.call(
+            RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
+            [
+              {
+                fromBlock: numberTo0x(blocksBehindLatest),
+                toBlock: 'latest',
+                address: [contractAddress, contractAddress2],
+              },
+            ],
+            requestIdPrefix,
+          );
+          expect(logs.length).to.be.greaterThan(2);
+        });
+      }
 
       it('should return empty logs if address = ZeroAddress', async () => {
         const logs = await relay.call(
@@ -1393,22 +1396,27 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
       });
 
-      it('should execute "eth_sendRawTransaction" and deploy a contract with more than max transaction fee', async function () {
-        const gasPrice = await relay.gasPrice(requestId);
-        const transaction = {
-          type: 2,
-          chainId: Number(CHAIN_ID),
-          nonce: await relay.getAccountNonce(accounts[2].address, requestId),
-          maxPriorityFeePerGas: gasPrice,
-          maxFeePerGas: gasPrice,
-          gasLimit: Constants.MAX_GAS_PER_SEC,
-          data: '0x' + '00'.repeat(60000),
-        };
-        const signedTx = await accounts[2].wallet.signTransaction(transaction);
-        const error = predefined.INTERNAL_ERROR();
+      if (!useAsyncTxProcessing) {
+        it('should execute "eth_sendRawTransaction" and deploy a contract with more than max transaction fee', async function () {
+          const gasPrice = await relay.gasPrice(requestId);
+          const transaction = {
+            type: 2,
+            chainId: Number(CHAIN_ID),
+            nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+            maxPriorityFeePerGas: gasPrice,
+            maxFeePerGas: gasPrice,
+            gasLimit: Constants.MAX_GAS_PER_SEC,
+            data: '0x' + '00'.repeat(60000),
+          };
+          const signedTx = await accounts[2].wallet.signTransaction(transaction);
+          const error = predefined.INTERNAL_ERROR();
 
-        await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestDetails]);
-      });
+          await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [
+            signedTx,
+            requestDetails,
+          ]);
+        });
+      }
 
       describe('Prechecks', async function () {
         it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
@@ -1539,21 +1547,26 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestDetails]);
         });
 
-        it('@release fail "eth_getTransactionReceipt" on precheck with wrong nonce error when sending a tx with a higher nonce', async function () {
-          const nonce = await relay.getAccountNonce(accounts[2].address, requestId);
+        if (!useAsyncTxProcessing) {
+          it('@release fail "eth_getTransactionReceipt" on precheck with wrong nonce error when sending a tx with a higher nonce', async function () {
+            const nonce = await relay.getAccountNonce(accounts[2].address, requestId);
 
-          const transaction = {
-            ...default155TransactionData,
-            to: parentContractAddress,
-            nonce: nonce + 100,
-            gasPrice: await relay.gasPrice(requestId),
-          };
+            const transaction = {
+              ...default155TransactionData,
+              to: parentContractAddress,
+              nonce: nonce + 100,
+              gasPrice: await relay.gasPrice(requestId),
+            };
 
-          const signedTx = await accounts[2].wallet.signTransaction(transaction);
-          const error = predefined.NONCE_TOO_HIGH(nonce + 100, nonce);
+            const signedTx = await accounts[2].wallet.signTransaction(transaction);
+            const error = predefined.NONCE_TOO_HIGH(nonce + 100, nonce);
 
-          await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestDetails]);
-        });
+            await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [
+              signedTx,
+              requestDetails,
+            ]);
+          });
+        }
 
         it('@release fail "eth_getTransactionReceipt" on submitting with wrong nonce error when sending a tx with the same nonce twice', async function () {
           const nonce = await relay.getAccountNonce(accounts[2].address, requestId);
