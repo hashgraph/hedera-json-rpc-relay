@@ -20,44 +20,42 @@
 
 // External resources
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
-import { BaseContract, ethers } from 'ethers';
-import { AliasAccount } from '../types/AliasAccount';
-import { Utils } from '../helpers/utils';
+import { predefined } from '@hashgraph/json-rpc-relay';
+import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
+import { TracerType } from '@hashgraph/json-rpc-relay/src/lib/constants';
+// Helper functions/constants from local resources
+import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
+import RelayAssertions from '@hashgraph/json-rpc-relay/tests/assertions';
+import { ContractId } from '@hashgraph/sdk';
 import Axios from 'axios';
 import chai, { expect } from 'chai';
 import chaiExclude from 'chai-exclude';
-import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { ContractId } from '@hashgraph/sdk';
+import { BaseContract, ethers } from 'ethers';
 
-// Assertions and constants from local resources
-import Assertions from '../helpers/assertions';
-import RelayAssertions from '@hashgraph/json-rpc-relay/tests/assertions';
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { overrideEnvsInMochaDescribe } from '../../../relay/tests/helpers';
+import { TYPES } from '../../src/validator';
 import RelayCall from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
-import RelayCalls from '../helpers/constants';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/src/formatters';
-import { TracerType } from '@hashgraph/json-rpc-relay/src/lib/constants';
-
-// Contracts and JSON files from local resources
-import reverterContractJson from '../contracts/Reverter.json';
+import MirrorClient from '../clients/mirrorClient';
+import RelayClient from '../clients/relayClient';
+import ServicesClient from '../clients/servicesClient';
 import basicContractJson from '../contracts/Basic.json';
 import callerContractJson from '../contracts/Caller.json';
 import DeployerContractJson from '../contracts/Deployer.json';
-import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
+import HederaTokenServiceImplJson from '../contracts/HederaTokenServiceImpl.json';
 import HRC719ContractJson from '../contracts/HRC719Contract.json';
-
-// Helper functions/constants from local resources
-import { EthImpl } from '@hashgraph/json-rpc-relay/src/lib/eth';
-import { predefined } from '@hashgraph/json-rpc-relay';
-import { TYPES } from '../../src/validator';
-import { overrideEnvsInMochaDescribe } from '../../../relay/tests/helpers';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
-import RelayClient from '../clients/relayClient';
-import ServicesClient from '../clients/servicesClient';
-import MirrorClient from '../clients/mirrorClient';
+// Contracts and JSON files from local resources
+import reverterContractJson from '../contracts/Reverter.json';
+// Assertions and constants from local resources
+import Assertions from '../helpers/assertions';
+import RelayCalls from '../helpers/constants';
+import { Utils } from '../helpers/utils';
+import { AliasAccount } from '../types/AliasAccount';
 
 chai.use(chaiExclude);
 
@@ -154,8 +152,10 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       const transactionReceipt = await accounts[0].wallet.provider?.getTransactionReceipt(basicContractTxHash!);
       expect(transactionReceipt).to.not.be.null;
 
-      deploymentBlockNumber = transactionReceipt?.blockNumber!;
-      deploymentBlockHash = transactionReceipt?.blockHash!;
+      if (transactionReceipt) {
+        deploymentBlockNumber = transactionReceipt.blockNumber;
+        deploymentBlockHash = transactionReceipt.blockHash;
+      }
     });
 
     it('@release should execute "eth_call" request to Basic contract', async function () {
@@ -784,7 +784,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
         data: IS_TOKEN_ADDRESS_SIGNATURE + tokenAddress.replace('0x', ''),
       };
 
-      let res = await Utils.ethCallWRetries(relay, callData, 'latest', requestId);
+      const res = await Utils.ethCallWRetries(relay, callData, 'latest', requestId);
       expect(res).to.eq(RESULT_TRUE);
     });
 
@@ -1256,6 +1256,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
       const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+      await relay.pollForValidTransactionReceipt(transactionHash);
       estimateGasContractAddress = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
     });
 
@@ -1329,6 +1330,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           };
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1359,6 +1361,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1390,6 +1393,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1415,6 +1419,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1440,6 +1445,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
             [transactionHash, { tracer: callTracer, tracerConfig: tracerConfigTrue }],
@@ -1464,6 +1470,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1489,6 +1496,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1514,6 +1522,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1541,6 +1550,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1572,6 +1582,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1598,6 +1609,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[2].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1623,6 +1635,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1648,6 +1661,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1679,6 +1693,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1704,6 +1719,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1729,6 +1745,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[1].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1756,6 +1773,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1785,6 +1803,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1815,6 +1834,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[2].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1839,6 +1859,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1864,6 +1885,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1894,6 +1916,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1918,6 +1941,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1943,6 +1967,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
           const signedTransaction = await accounts[1].wallet.signTransaction(transaction);
           const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
 
           const resultDebug = await relay.call(
             RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_TRANSACTION,
@@ -1984,6 +2009,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
+        await relay.pollForValidTransactionReceipt(transactionHash);
 
         const expectedError = predefined.INVALID_PARAMETER(
           "'tracerConfig' for TracerConfigWrapper",
@@ -2009,7 +2035,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
         const signedTransaction = await accounts[0].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTransaction, requestId);
-
+        await relay.pollForValidTransactionReceipt(transactionHash);
         const expectedError = predefined.INVALID_PARAMETER(
           "'tracer' for TracerConfigWrapper",
           `${TYPES.tracerType.error}, value: invalidTracer`,
@@ -2088,6 +2114,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           maxFeePerGas: gasPrice,
         });
         transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+        await relay.pollForValidTransactionReceipt(transactionHash);
 
         const res = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_COUNT,
@@ -2121,7 +2148,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
   describe('Shard Blob Transactions', async function () {
     let defaultLondonTransactionData, defaultGasPrice, defaultGasLimit;
-    let defaultBlobVersionedHashes = ['0x6265617665726275696c642e6f7267476265617665726275696c642e6f726747'];
+    const defaultBlobVersionedHashes = ['0x6265617665726275696c642e6f7267476265617665726275696c642e6f726747'];
 
     before(() => {
       defaultGasPrice = numberTo0x(Assertions.defaultGasPrice);
