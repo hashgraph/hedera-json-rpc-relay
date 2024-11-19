@@ -15,7 +15,7 @@ Currently, when creating a token via HTS the address of the system contract is r
 
 ### Targeted endpoints
 
-[getTransactionReceipt]
+- eth_getTransactionReceipt
 
 ### Technical Details
 
