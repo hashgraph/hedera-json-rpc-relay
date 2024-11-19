@@ -23,10 +23,10 @@ N.B The following forms of the [HTS system contract](https://github.com/hashgrap
 
 ```javascript
 const HTS_CREATE_FUNCTIONS_SIGNATURE = [
-  "createFungibleToken(...)",
-  "createNonFungibleToken(...)",
-  "createFungibleTokenWithCustomFees(...)",
-  "createNonFungibleTokenWithCustomFees(...)"
+  "createFungibleToken(HederaToken memory token, uint initialTotalSupply, uint decimals)",
+  "createNonFungibleToken(HederaToken memory token)",
+  "createFungibleTokenWithCustomFees(HederaToken memory token, uint initialTotalSupply, uint decimals, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees)",
+  "createNonFungibleTokenWithCustomFees(HederaToken memory token, FixedFee[] memory fixedFees, RoyaltyFee[] memory royaltyFees)"
 ];
 const functionSelector = receiptResponse.function_parameters.substring(0, FUNCTION_SELECTOR_CHAR_LENGTH);
 const isTokenCreation = HTS_CREATE_FUNCTIONS_SIGNATURE.some(signature => 
