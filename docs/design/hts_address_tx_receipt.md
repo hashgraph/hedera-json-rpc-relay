@@ -13,6 +13,10 @@ Currently, when creating a token via HTS the address of the system contract is r
 
 ## Proposed Solution
 
+### Targeted endpoints
+
+[getTransactionReceipt]
+
 ### Technical Details
 
 ### 1. Function Signature Detection
