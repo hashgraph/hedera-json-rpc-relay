@@ -19,12 +19,13 @@
  */
 
 // external resources
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
+
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 describe('@web-socket-batch-2 eth_getStorageAt', async function () {
   const METHOD_NAME = 'eth_getStorageAt';
@@ -51,9 +52,9 @@ describe('@web-socket-batch-2 eth_getStorageAt', async function () {
     '0x6080604052348015600f57600080fd5b506007600081905550603f8060256000396000f3fe6080604052600080fdfea2646970667358221220416347bd1607cf1f0e7ec93afab3d5fe283173dd5e6ce3928dce940edd5c1fb564736f6c63430008180033';
   // @ts-ignore
   const { mirrorNode } = global;
-  let params: any[],
-    accounts: AliasAccount[] = [],
-    ethersWsProvider: WebSocketProvider;
+  let params: any[], ethersWsProvider: WebSocketProvider;
+
+  const accounts: AliasAccount[] = [];
 
   const requestDetails = new RequestDetails({ requestId: 'ws_getStorageAtTest', ipAddress: '0.0.0.0' });
 
@@ -79,6 +80,7 @@ describe('@web-socket-batch-2 eth_getStorageAt', async function () {
       accounts[0].wallet,
     );
     const contract = await contractFactory.deploy();
+    await contract.waitForDeployment();
 
     // prepare transaction params - [contract address, position, blockTag]
     params = [contract.target, '0x0', 'latest'];
