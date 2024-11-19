@@ -19,9 +19,6 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { expect, use } from 'chai';
-import sinon from 'sinon';
-import chaiAsPromised from 'chai-as-promised';
 import {
   FileAppendTransaction,
   FileId,
@@ -32,21 +29,27 @@ import {
   TransactionId,
   TransactionResponse,
 } from '@hashgraph/sdk';
-import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
+import MockAdapter from 'axios-mock-adapter';
+import { expect, use } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import { EventEmitter } from 'events';
 import pino from 'pino';
-import { SDKClient } from '../../../src/lib/clients';
-import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
+import { Counter } from 'prom-client';
+import sinon from 'sinon';
+
 import { Eth, JsonRpcError, predefined } from '../../../src';
+import { formatTransactionIdWithoutQueryParams } from '../../../src/formatters';
+import { SDKClient } from '../../../src/lib/clients';
+import constants from '../../../src/lib/constants';
+import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
+import { RequestDetails } from '../../../src/lib/types';
 import RelayAssertions from '../../assertions';
 import { getRequestId, mockData, overrideEnvsInMochaDescribe, signTransaction } from '../../helpers';
+import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
-import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
-import { RequestDetails } from '../../../src/lib/types';
-import MockAdapter from 'axios-mock-adapter';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
-import { Counter } from 'prom-client';
 
 use(chaiAsPromised);
 
@@ -283,6 +286,34 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     });
 
     it('should not send second transaction on error different from timeout', async function () {
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+      const repeatedRequestSpy = sinon.spy(ethImpl['mirrorNodeClient'], 'repeatedRequest');
+      sdkClientStub.submitEthereumTransaction.resolves({
+        txResponse: {
+          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        } as unknown as TransactionResponse,
+        fileId: null,
+      });
+
+      const signed = await signTransaction(transaction);
+
+      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
+      const mirrorNodeRetry = 10;
+      const newRequestDetails = { ...requestDetails, ipAddress: constants.MASKED_IP_ADDRESS };
+      const formattedTransactionId = formatTransactionIdWithoutQueryParams(transactionIdServicesFormat);
+
+      expect(resultingHash).to.equal(ethereumHash);
+      sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
+      sinon.assert.calledOnceWithExactly(
+        repeatedRequestSpy,
+        'getContractResult',
+        [formattedTransactionId, newRequestDetails],
+        mirrorNodeRetry,
+        requestDetails,
+      );
+    });
+
+    it('should call repeated request passing masked IP address', async function () {
       sdkClientStub.submitEthereumTransaction
         .onCall(0)
         .throws(new SDKClientError({ status: 50 }, 'wrong transaction body'));
