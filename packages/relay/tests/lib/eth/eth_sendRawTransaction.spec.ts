@@ -53,7 +53,7 @@ use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: sinon.SinonStub;
-let mirrorNodeClientSpy: sinon.SinonSpiedInstance<MirrorNodeClient>;
+let mirrorNodeClientSpy: sinon.Spy;
 
 describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
   this.timeout(10000);
@@ -81,7 +81,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    mirrorNodeClientSpy = sinon.spy(mirrorNodeInstance);
+    mirrorNodeClientSpy = sinon.spy(mirrorNodeInstance, 'repeatedRequest');
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
   });
 
@@ -287,7 +287,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
     });
 
-    it.only('should not send second transaction on error different from timeout', async function () {
+    it('should not send second transaction on error different from timeout', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
       sdkClientStub.submitEthereumTransaction.resolves({
@@ -304,7 +304,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       expect(resultingHash).to.equal(ethereumHash);
       sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
       // 'getContractResult', [transactionIdServicesFormat, { ipAddress: 'xxxx.xxxx.xxxx' }], mirrorNodeRetry, requestDetails
-      sinon.assert.calledOnce(mirrorNodeClientSpy.repeatedRequest);
+      sinon.assert.calledOnce(mirrorNodeClientSpy);
     });
 
     it('should call repeated request passing masked IP address', async function () {
