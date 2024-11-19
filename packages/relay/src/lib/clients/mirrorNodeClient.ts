@@ -18,22 +18,22 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axiosRetry from 'axios-retry';
+import { install as betterLookupInstall } from 'better-lookup';
+import { ethers } from 'ethers';
 import http from 'http';
 import https from 'https';
 import { Logger } from 'pino';
-import { ethers } from 'ethers';
-import axiosRetry from 'axios-retry';
-import constants from './../constants';
 import { Histogram, Registry } from 'prom-client';
-import { predefined } from '../errors/JsonRpcError';
-import { SDKClientError } from '../errors/SDKClientError';
-import { IOpcodesResponse } from './models/IOpcodesResponse';
-import { install as betterLookupInstall } from 'better-lookup';
-import { CacheService } from '../services/cacheService/cacheService';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
-import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+
 import { formatRequestIdMessage, formatTransactionId, parseNumericEnvVar } from '../../formatters';
+import { predefined } from '../errors/JsonRpcError';
+import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
+import { SDKClientError } from '../errors/SDKClientError';
+import { EthImpl } from '../eth';
+import { CacheService } from '../services/cacheService/cacheService';
 import {
   IContractCallRequest,
   IContractCallResponse,
@@ -45,7 +45,8 @@ import {
   MirrorNodeTransactionRecord,
   RequestDetails,
 } from '../types';
-import { EthImpl } from '../eth';
+import constants from './../constants';
+import { IOpcodesResponse } from './models/IOpcodesResponse';
 
 type REQUEST_METHODS = 'GET' | 'POST';
 
@@ -1364,9 +1365,15 @@ export class MirrorNodeClient {
       );
     }
 
+    // Create a modified copy of requestDetails
+    const modifiedRequestDetails = {
+      ...requestDetails,
+      ipAddress: constants.MASKED_IP_ADDRESS,
+    };
+
     const transactionRecords = await this.repeatedRequest(
       this.getTransactionById.name,
-      [transactionId, requestDetails, 0],
+      [transactionId, modifiedRequestDetails, 0],
       this.MIRROR_NODE_REQUEST_RETRY_COUNT,
       requestDetails,
     );

@@ -18,9 +18,8 @@
  *
  */
 
-import { BigNumber } from 'bignumber.js';
-
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { BigNumber } from 'bignumber.js';
 
 enum CACHE_KEY {
   ACCOUNT = 'account',
@@ -209,6 +208,8 @@ export default {
 
   // computed hash of an empty Trie object
   DEFAULT_ROOT_HASH: '0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421',
+
+  MASKED_IP_ADDRESS: 'xxx.xxx.xxx.xxx',
 
   // The fee is calculated via the fee calculator: https://docs.hedera.com/hedera/networks/mainnet/fees
   // The maximum fileAppendChunkSize is currently set to 5KB by default; therefore, the estimated fees for FileCreate below are based on a file size of 5KB.
