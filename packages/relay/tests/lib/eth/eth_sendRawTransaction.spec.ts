@@ -39,7 +39,7 @@ import sinon from 'sinon';
 
 import { Eth, JsonRpcError, predefined } from '../../../src';
 import { formatTransactionIdWithoutQueryParams } from '../../../src/formatters';
-import { MirrorNodeClient, SDKClient } from '../../../src/lib/clients';
+import { SDKClient } from '../../../src/lib/clients';
 import constants from '../../../src/lib/constants';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
@@ -63,13 +63,11 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     hapiServiceInstance,
     ethImpl,
     cacheService,
-    mirrorNodeInstance,
   }: {
     restMock: MockAdapter;
     hapiServiceInstance: HAPIService;
     ethImpl: Eth;
     cacheService: CacheService;
-    mirrorNodeInstance: MirrorNodeClient;
   } = generateEthTestEnv();
 
   const requestDetails = new RequestDetails({ requestId: 'eth_sendRawTransactionTest', ipAddress: '0.0.0.0' });
