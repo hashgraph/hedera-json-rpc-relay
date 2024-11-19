@@ -38,7 +38,9 @@ import { Counter } from 'prom-client';
 import sinon from 'sinon';
 
 import { Eth, JsonRpcError, predefined } from '../../../src';
+import { formatTransactionIdWithoutQueryParams } from '../../../src/formatters';
 import { MirrorNodeClient, SDKClient } from '../../../src/lib/clients';
+import constants from '../../../src/lib/constants';
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
@@ -53,7 +55,6 @@ use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: sinon.SinonStub;
-let mirrorNodeClientSpy: sinon.Spy;
 
 describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
   this.timeout(10000);
@@ -81,7 +82,6 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    mirrorNodeClientSpy = sinon.spy(mirrorNodeInstance, 'repeatedRequest');
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
   });
 
@@ -289,7 +289,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
     it('should not send second transaction on error different from timeout', async function () {
       restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
-
+      const repeatedRequestSpy = sinon.spy(ethImpl['mirrorNodeClient'], 'repeatedRequest');
       sdkClientStub.submitEthereumTransaction.resolves({
         txResponse: {
           transactionId: TransactionId.fromString(transactionIdServicesFormat),
@@ -301,10 +301,18 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
       const mirrorNodeRetry = 10;
+      const newRequestDetails = { ...requestDetails, ipAddress: constants.MASKED_IP_ADDRESS };
+      const formattedTransactionId = formatTransactionIdWithoutQueryParams(transactionIdServicesFormat);
+
       expect(resultingHash).to.equal(ethereumHash);
       sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
-      // 'getContractResult', [transactionIdServicesFormat, { ipAddress: 'xxxx.xxxx.xxxx' }], mirrorNodeRetry, requestDetails
-      sinon.assert.calledOnce(mirrorNodeClientSpy);
+      sinon.assert.calledOnceWithExactly(
+        repeatedRequestSpy,
+        'getContractResult',
+        [formattedTransactionId, newRequestDetails],
+        mirrorNodeRetry,
+        requestDetails,
+      );
     });
 
     it('should call repeated request passing masked IP address', async function () {
