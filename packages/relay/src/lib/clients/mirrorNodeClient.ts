@@ -1368,7 +1368,7 @@ export class MirrorNodeClient {
     // Create a modified copy of requestDetails
     const modifiedRequestDetails = {
       ...requestDetails,
-      ipAddress: 'xxx.xxx.xxx.xxx',
+      ipAddress: constants.MASKED_IP_ADDRESS,
     };
 
     const transactionRecords = await this.repeatedRequest(

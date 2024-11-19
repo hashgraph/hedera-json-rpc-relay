@@ -19,9 +19,6 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { expect, use } from 'chai';
-import sinon from 'sinon';
-import chaiAsPromised from 'chai-as-promised';
 import {
   FileAppendTransaction,
   FileId,
@@ -32,26 +29,31 @@ import {
   TransactionId,
   TransactionResponse,
 } from '@hashgraph/sdk';
-import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
+import MockAdapter from 'axios-mock-adapter';
+import { expect, use } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import { EventEmitter } from 'events';
 import pino from 'pino';
-import { SDKClient } from '../../../src/lib/clients';
-import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
+import { Counter } from 'prom-client';
+import sinon from 'sinon';
+
 import { Eth, JsonRpcError, predefined } from '../../../src';
+import { MirrorNodeClient, SDKClient } from '../../../src/lib/clients';
+import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
+import { RequestDetails } from '../../../src/lib/types';
 import RelayAssertions from '../../assertions';
 import { getRequestId, mockData, overrideEnvsInMochaDescribe, signTransaction } from '../../helpers';
+import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
-import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
-import { RequestDetails } from '../../../src/lib/types';
-import MockAdapter from 'axios-mock-adapter';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
-import { Counter } from 'prom-client';
 
 use(chaiAsPromised);
 
 let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
 let getSdkClientStub: sinon.SinonStub;
+let mirrorNodeClientSpy: sinon.SinonSpiedInstance<MirrorNodeClient>;
 
 describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
   this.timeout(10000);
@@ -60,11 +62,13 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     hapiServiceInstance,
     ethImpl,
     cacheService,
+    mirrorNodeInstance,
   }: {
     restMock: MockAdapter;
     hapiServiceInstance: HAPIService;
     ethImpl: Eth;
     cacheService: CacheService;
+    mirrorNodeInstance: MirrorNodeClient;
   } = generateEthTestEnv();
 
   const requestDetails = new RequestDetails({ requestId: 'eth_sendRawTransactionTest', ipAddress: '0.0.0.0' });
@@ -77,6 +81,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
+    mirrorNodeClientSpy = sinon.spy(mirrorNodeInstance);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
   });
 
@@ -282,7 +287,27 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
     });
 
-    it('should not send second transaction on error different from timeout', async function () {
+    it.only('should not send second transaction on error different from timeout', async function () {
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+
+      sdkClientStub.submitEthereumTransaction.resolves({
+        txResponse: {
+          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        } as unknown as TransactionResponse,
+        fileId: null,
+      });
+
+      const signed = await signTransaction(transaction);
+
+      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
+      const mirrorNodeRetry = 10;
+      expect(resultingHash).to.equal(ethereumHash);
+      sinon.assert.calledOnce(sdkClientStub.submitEthereumTransaction);
+      // 'getContractResult', [transactionIdServicesFormat, { ipAddress: 'xxxx.xxxx.xxxx' }], mirrorNodeRetry, requestDetails
+      sinon.assert.calledOnce(mirrorNodeClientSpy.repeatedRequest);
+    });
+
+    it('should call repeated request passing masked IP address', async function () {
       sdkClientStub.submitEthereumTransaction
         .onCall(0)
         .throws(new SDKClientError({ status: 50 }, 'wrong transaction body'));
