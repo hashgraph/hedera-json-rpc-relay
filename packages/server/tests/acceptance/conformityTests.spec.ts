@@ -152,6 +152,9 @@ function splitReqAndRes(content) {
 async function sendRequestToRelay(request, needError) {
   try {
     const response = await axios.post(relayUrl, request);
+    if (request.method === 'eth_sendRawTransaction') {
+      await global.relay.pollForValidTransactionReceipt(response.data.result);
+    }
     return response.data;
   } catch (error) {
     console.error(error);
