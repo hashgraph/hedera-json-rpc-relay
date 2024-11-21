@@ -32,6 +32,7 @@ However, challenges such as error handling for failed requests and user experien
 
    - Return a transaction hash immediately after passing prechecks.
    - Perform signature validation and hash computation synchronously.
+   - Allowing subsequent processing logic to occur asynchronously
 
 2. The client is responsible for tracking the transaction’s processing status (e.g., via `eth_getTransactionReceipt`).
 
@@ -112,7 +113,14 @@ This approach enhances the existing `eth_getTransactionReceipt` method to includ
 
 1. **Storage and Retention for Failed `eth_sendRawTransaction` Transactions**:
 
-   - For `eth_sendRawTransaction` silent failures, retain only records of failed transactions in the cache system. Failure metadata can be stored for quick reference.
+   - For `eth_sendRawTransaction` silent failures, retain only records of failed transactions in the cache system. The key-value object can be constructed as below:
+
+     ```
+     {
+       transaction_hash: error #SDKClientError or JsonRpcError
+     }
+     ```
+
    - Establish a retention period for these records, such as a TTL of one hour or less, or a duration based on blocks (e.g., 10–20 blocks, approximately 20–40 seconds). Since these transactions fail silently and never reach consensus, the metadata acts as a temporary reference for `eth_getTransactionReceipt`.
 
 2. **`eth_getTransactionReceipt` Behavior Update**:
@@ -161,23 +169,17 @@ This approach enhances the existing `eth_getTransactionReceipt` method to includ
      }
      ```
    - **Failure Case** (Enhanced):
-     If the transaction hash is found in the cache, it signifies that the transaction failed silently. The response could include detailed failure metadata:
+     If the transaction hash is found in the cache, it signifies that the transaction failed silently. The response could object should contain the error member:
      ```json
      {
        "id": 1,
        "jsonrpc": "2.0",
-       "result": {
-         "transactionHash": "transaction_hash",
-         "failureReason": "error_reason",
-         "details": {
-           "error_detail": "error_value"
-         },
-         "timestamp": "failure_timestamp"
+       "error": {
+         "code": "cached_error.code",
+         "message": "cached_error.message"
        }
      }
      ```
-     \*note: the response structure is TBD
-     \*note: should it be `result` or `error`?
 
 #### **Benefits**
 
