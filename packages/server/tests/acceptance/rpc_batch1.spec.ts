@@ -155,7 +155,13 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     });
 
     describe('eth_getLogs', () => {
-      let log0Block, log4Block, contractAddress: string, contractAddress2: string, latestBlock, previousBlock;
+      let log0Block,
+        log4Block,
+        contractAddress: string,
+        contractAddress2: string,
+        latestBlock,
+        previousBlock,
+        expectedAmountOfLogs;
 
       before(async () => {
         const logsContract = await Utils.deployContract(
@@ -186,6 +192,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // @ts-ignore
         await (await logsContract2.connect(accounts[1].wallet).log4(1, 1, 1, 1)).wait();
 
+        expectedAmountOfLogs = 6;
         latestBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestIdPrefix));
       });
 
@@ -436,32 +443,25 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         }
       });
 
-      if (!useAsyncTxProcessing) {
-        it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
-          //for the purpose of the test, we are settings limit to 2, and fetching all.
-          //setting mirror node limit to 2 for this test only
-          ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
-          // calculate blocks behind latest, so we can fetch logs from the past.
-          // if current block is less than 10, we will fetch logs from the beginning otherwise we will fetch logs from 10 blocks behind latest
-          const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestIdPrefix));
-          let blocksBehindLatest = 0;
-          if (currentBlock > 10) {
-            blocksBehindLatest = currentBlock - 10;
-          }
-          const logs = await relay.call(
-            RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
-            [
-              {
-                fromBlock: numberTo0x(blocksBehindLatest),
-                toBlock: 'latest',
-                address: [contractAddress, contractAddress2],
-              },
-            ],
-            requestIdPrefix,
-          );
-          expect(logs.length).to.be.greaterThan(2);
-        });
-      }
+      it('should be able to return more than 2 logs with limit of 2 logs per request', async () => {
+        //for the purpose of the test, we are settings limit to 2, and fetching all.
+        //setting mirror node limit to 2 for this test only
+        ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
+
+        const logs = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
+          [
+            {
+              fromBlock: numberTo0x(previousBlock),
+              toBlock: numberTo0x(latestBlock),
+              address: [contractAddress, contractAddress2],
+            },
+          ],
+          requestIdPrefix,
+        );
+
+        expect(logs.length).to.eq(expectedAmountOfLogs);
+      });
 
       it('should return empty logs if address = ZeroAddress', async () => {
         const logs = await relay.call(
