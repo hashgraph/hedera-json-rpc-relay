@@ -30,8 +30,7 @@ However, challenges such as error handling for failed requests and user experien
 
 1. The `eth_sendRawTransaction` endpoint must:
 
-   - Return a transaction hash immediately after passing prechecks.
-   - Perform signature validation and hash computation synchronously.
+   - Perform hash computation based on the RLP-encoded representation of the transaction, and return the hash immediately after passing prechecks.
    - Allowing subsequent processing logic to occur asynchronously
 
 2. The client is responsible for tracking the transaction’s processing status (e.g., via `eth_getTransactionReceipt`).
@@ -44,7 +43,7 @@ However, challenges such as error handling for failed requests and user experien
 
 ### Prioritization (MoSCoW)
 
-- **Must Have**: Immediate hash return, signature validation, hash computation.
+- **Must Have**: Synchronously hash computation and immediate hash return.
 - **Should Have**: Error handling mechanisms for failed transactions.
 - **Could Have**: Enhanced get transaction receipt endpoints to provide more detailed processing status.
 - **Won’t Have**: Full processing before returning a transaction hash.
@@ -81,7 +80,7 @@ To ensure that only valid transactions are processed in the asynchronous pipelin
 
    - The transaction nonce must match the expected value for the sender’s account.
 
-7. **Receiver Existence**:
+7. **Receiver Existence**: (need implementation)
 
    - If the transaction is an HBAR crypto transfer:
      - The receiver account must exist in the Hedera network.
@@ -91,7 +90,7 @@ To ensure that only valid transactions are processed in the asynchronous pipelin
 
    - The sender account must exist in the Hedera network.
 
-9. **Signature Validation**:
+9. **Signature Validation**: (need implementation)
 
    - The transaction must be properly signed with a valid private key for the sender account.
 
@@ -137,7 +136,7 @@ These pre-checks ensure that invalid transactions are identified early in the pr
 ### Proposed Flow
 
 1. **Immediate Hash Return**:
-   - The server validates the signature, computes the hash, and returns it immediately after prechecks.
+   - The server computes the hash and returns it immediately after prechecks.
 2. **Asynchronous Processing**:
    - Background tasks handle broadcasting, HFS management, and consensus submission.
    - Errors during processing are still visible through logs.
