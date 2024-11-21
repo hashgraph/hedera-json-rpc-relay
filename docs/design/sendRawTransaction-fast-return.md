@@ -51,6 +51,67 @@ However, challenges such as error handling for failed requests and user experien
 
 ---
 
+## Pre-Check Requirements
+
+To ensure that only valid transactions are processed in the asynchronous pipeline, the system implements a set of pre-checks during the `eth_sendRawTransaction` flow. Transactions that fail these pre-checks are rejected immediately, and clients receive a descriptive error response. These pre-checks are critical to maintain system reliability and client trust in the fast-return mechanism.
+
+### List of Pre-Checks
+
+1. **Call Data Size**:
+
+   - The call data size must not exceed the 128KB maximum allowed by Hedera.
+
+2. **Chain ID**:
+
+   - The `chainId` in the transaction must match the Hedera network’s chain ID.
+
+3. **EVM Transaction Parsing**:
+
+   - The submitted transaction must be a valid EVM transaction and parsable by the system.
+
+4. **Gas Limit**:
+
+   - The gas limit must be within the acceptable range for the transaction type.
+
+5. **Gas Price**:
+
+   - The gas price must meet the network’s minimum gas price requirements.
+
+6. **Nonce Validation**:
+
+   - The transaction nonce must match the expected value for the sender’s account.
+
+7. **Receiver Existence**:
+
+   - If the transaction is an HBAR crypto transfer:
+     - The receiver account must exist in the Hedera network.
+     - The receiver account must have the `receiverSigRequired` flag enabled.
+
+8. **Sender Account Existence**:
+
+   - The sender account must exist in the Hedera network.
+
+9. **Signature Validation**:
+
+   - The transaction must be properly signed with a valid private key for the sender account.
+
+10. **Sufficient Funds**:
+
+    - The sender account must have enough balance to cover the intrinsic gas required for the transaction.
+
+11. **Value**:
+
+    - The transaction value must be valid and within acceptable bounds.
+
+12. **Transaction Type Validation**:
+    - The transaction type must be valid and supported by the Hedera network.
+
+### Purpose
+
+These pre-checks ensure that invalid transactions are identified early in the process, minimizing unnecessary computational overhead and improving system efficiency. With the fast-return mechanism, these checks are essential to prevent invalid transactions from entering the asynchronous processing pipeline.
+
+---
+
 ## Implementation in Ethereum
 
 ### Standard Flow
