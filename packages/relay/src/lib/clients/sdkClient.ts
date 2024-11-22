@@ -728,6 +728,13 @@ export class SDKClient {
         throw e;
       }
 
+      // Log the target node account ID, right now, it's populated only for MaxAttemptsOrTimeout error
+      if (e?.nodeAccountId) {
+        this.logger.info(
+          `${requestDetails.formattedRequestId} Transaction failed to execute against node with id: ${e.nodeAccountId}`
+        );
+      }
+
       const sdkClientError = new SDKClientError(e, e.message, transaction.transactionId?.toString());
 
       // WRONG_NONCE is one of the special errors where the SDK still returns a valid transactionResponse.

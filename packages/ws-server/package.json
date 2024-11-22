@@ -21,7 +21,7 @@
     "pino-pretty": "^7.6.1"
   },
   "devDependencies": {
-    "@hashgraph/sdk": "^2.50.0-beta.3",
+    "@hashgraph/sdk": "^2.53.0",
     "@koa/cors": "^5.0.0",
     "@types/chai": "^4.3.0",
     "@types/cors": "^2.8.12",
