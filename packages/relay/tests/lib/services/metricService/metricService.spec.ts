@@ -19,29 +19,30 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import pino from 'pino';
-import { expect } from 'chai';
-import * as sinon from 'sinon';
-import EventEmitter from 'events';
+import { AccountId, Client, Hbar, Long, Status, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { Utils } from '../../../../src/utils';
+import { expect } from 'chai';
+import EventEmitter from 'events';
+import pino from 'pino';
 import { register, Registry } from 'prom-client';
+import * as sinon from 'sinon';
+
+import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import constants from '../../../../src/lib/constants';
+import { EvmAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
+import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
+import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
+import MetricService from '../../../../src/lib/services/metricService/metricService';
+import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload, RequestDetails } from '../../../../src/lib/types';
+import { Utils } from '../../../../src/utils';
 import {
   calculateTxRecordChargeAmount,
   overrideEnvsInMochaDescribe,
   withOverriddenEnvsInMochaTest,
 } from '../../../helpers';
-import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
-import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
-import MetricService from '../../../../src/lib/services/metricService/metricService';
-import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import { AccountId, Client, Hbar, Long, Status, TransactionRecord, TransactionRecordQuery } from '@hashgraph/sdk';
-import { IExecuteQueryEventPayload, IExecuteTransactionEventPayload, RequestDetails } from '../../../../src/lib/types';
-import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
-import { IPAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 
 const registry = new Registry();
 const logger = pino();
@@ -145,11 +146,11 @@ describe('Metric Service', function () {
 
     const cacheService = new CacheService(logger, registry);
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+    const evmAddressHbarSpendingPlanRepository = new EvmAddressHbarSpendingPlanRepository(cacheService, logger);
     const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
     hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepository,
-      ethAddressHbarSpendingPlanRepository,
+      evmAddressHbarSpendingPlanRepository,
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,

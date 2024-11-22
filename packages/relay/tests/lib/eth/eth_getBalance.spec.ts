@@ -19,12 +19,14 @@
  */
 
 import { expect, use } from 'chai';
-import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-import { EthImpl } from '../../../src/lib/eth';
-import { buildCryptoTransferTransaction, overrideEnvsInMochaDescribe } from '../../helpers';
-import { SDKClient } from '../../../src/lib/clients';
+import sinon from 'sinon';
+
 import { numberTo0x } from '../../../dist/formatters';
+import { SDKClient } from '../../../src/lib/clients';
+import { EthImpl } from '../../../src/lib/eth';
+import { RequestDetails } from '../../../src/lib/types';
+import { buildCryptoTransferTransaction, overrideEnvsInMochaDescribe } from '../../helpers';
 import {
   BLOCK_TIMESTAMP,
   BLOCK_ZERO,
@@ -42,7 +44,6 @@ import {
   TINYBAR_TO_WEIBAR_COEF_BIGINT,
 } from './eth-config';
 import { balancesByAccountIdByTimestampURL, generateEthTestEnv } from './eth-helpers';
-import { RequestDetails } from '../../../src/lib/types';
 
 use(chaiAsPromised);
 
@@ -51,7 +52,7 @@ let getSdkClientStub: sinon.SinonStub;
 
 describe('@ethGetBalance using MirrorNode', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  const { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getBalanceTest', ipAddress: '0.0.0.0' });
 
@@ -673,7 +674,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
     });
 
     it('blockNumber is not in the latest 15 minutes, mirror node balance for address not found 404 status', async () => {
-      // random eth address
+      // random evm address
       const notFoundEvmAddress = '0x1234567890123456789012345678901234567890';
       restMock
         .onGet(balancesByAccountIdByTimestampURL(notFoundEvmAddress, '1651550386.060890949'))
@@ -684,7 +685,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
     });
 
     it('blockNumber is in the latest 15 minutes, mirror node balance for address not found 404 status', async () => {
-      // random eth address
+      // random evm address
       const notFoundEvmAddress = '0x1234567890123456789012345678901234567890';
       const blockTimestamp = '1651560900';
       const recentBlockWithinLastfifteen = {

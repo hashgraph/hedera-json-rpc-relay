@@ -18,28 +18,29 @@
  *
  */
 
-import sinon from 'sinon';
-import pino, { Logger } from 'pino';
+import { Hbar } from '@hashgraph/sdk';
 import chai, { expect } from 'chai';
-import { randomBytes, uuidV4 } from 'ethers';
 import chaiAsPromised from 'chai-as-promised';
-import constants from '../../../../src/lib/constants';
+import { randomBytes, uuidV4 } from 'ethers';
+import { Long } from 'long';
+import pino, { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
-import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
-import { SubscriptionTier } from '../../../../src/lib/db/types/hbarLimiter/subscriptionTier';
+import sinon from 'sinon';
+
+import constants from '../../../../src/lib/constants';
 import { HbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/hbarSpendingPlan';
+import { EvmAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import {
-  EthAddressHbarSpendingPlanNotFoundError,
+  EvmAddressHbarSpendingPlanNotFoundError,
   HbarSpendingPlanNotActiveError,
   HbarSpendingPlanNotFoundError,
   IPAddressHbarSpendingPlanNotFoundError,
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
+import { SubscriptionTier } from '../../../../src/lib/db/types/hbarLimiter/subscriptionTier';
+import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
 import { RequestDetails } from '../../../../src/lib/types';
-import { Hbar } from '@hashgraph/sdk';
-import { Long } from 'long';
 
 chai.use(chaiAsPromised);
 
@@ -52,7 +53,7 @@ describe('HBAR Rate Limit Service', function () {
   const mode = constants.EXECUTION_MODE.TRANSACTION;
   const methodName = 'testMethod';
   const txConstructorName = 'testConstructorName';
-  const mockEthAddress = '0x123';
+  const mockEvmAddress = '0x123';
   const mockIpAddress = 'x.x.x';
   const mockEstimatedTxFee = 300;
   const mockPlanId = uuidV4(randomBytes(16));
@@ -62,18 +63,18 @@ describe('HBAR Rate Limit Service', function () {
 
   let hbarLimitService: HbarLimitService;
   let hbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<HbarSpendingPlanRepository>;
-  let ethAddressHbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<EthAddressHbarSpendingPlanRepository>;
+  let evmAddressHbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<EvmAddressHbarSpendingPlanRepository>;
   let ipAddressHbarSpendingPlanRepositoryStub: sinon.SinonStubbedInstance<IPAddressHbarSpendingPlanRepository>;
   let loggerSpy: sinon.SinonSpiedInstance<Logger>;
 
   beforeEach(function () {
     loggerSpy = sinon.spy(logger);
     hbarSpendingPlanRepositoryStub = sinon.createStubInstance(HbarSpendingPlanRepository);
-    ethAddressHbarSpendingPlanRepositoryStub = sinon.createStubInstance(EthAddressHbarSpendingPlanRepository);
+    evmAddressHbarSpendingPlanRepositoryStub = sinon.createStubInstance(EvmAddressHbarSpendingPlanRepository);
     ipAddressHbarSpendingPlanRepositoryStub = sinon.createStubInstance(IPAddressHbarSpendingPlanRepository);
     hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepositoryStub,
-      ethAddressHbarSpendingPlanRepositoryStub,
+      evmAddressHbarSpendingPlanRepositoryStub,
       ipAddressHbarSpendingPlanRepositoryStub,
       logger,
       register,
@@ -128,7 +129,7 @@ describe('HBAR Rate Limit Service', function () {
       it('should return tomorrow at midnight', function () {
         const hbarLimitService = new HbarLimitService(
           hbarSpendingPlanRepositoryStub,
-          ethAddressHbarSpendingPlanRepositoryStub,
+          evmAddressHbarSpendingPlanRepositoryStub,
           ipAddressHbarSpendingPlanRepositoryStub,
           logger,
           register,
@@ -175,7 +176,7 @@ describe('HBAR Rate Limit Service', function () {
   });
 
   describe('shouldLimit', function () {
-    describe('based on ethAddress', async function () {
+    describe('based on evmAddress', async function () {
       it('should return true if the total budget is exceeded', async function () {
         // @ts-ignore
         hbarLimitService.remainingBudget = Hbar.fromTinybars(0);
@@ -183,7 +184,7 @@ describe('HBAR Rate Limit Service', function () {
           mode,
           methodName,
           txConstructorName,
-          mockEthAddress,
+          mockEvmAddress,
           requestDetails,
         );
         expect(result).to.be.true;
@@ -196,40 +197,40 @@ describe('HBAR Rate Limit Service', function () {
           mode,
           methodName,
           txConstructorName,
-          mockEthAddress,
+          mockEvmAddress,
           requestDetails,
           mockEstimatedTxFee,
         );
         expect(result).to.be.true;
       });
 
-      it('should create a basic spending plan if none exists for the ethAddress', async function () {
+      it('should create a basic spending plan if none exists for the evmAddress', async function () {
         const newSpendingPlan = createSpendingPlan(mockPlanId);
-        const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
+        const error = new EvmAddressHbarSpendingPlanNotFoundError(mockEvmAddress);
+        evmAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
         hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
-        ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
+        evmAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
         const result = await hbarLimitService.shouldLimit(
           mode,
           methodName,
           txConstructorName,
-          mockEthAddress,
+          mockEvmAddress,
           requestDetails,
         );
 
         expect(result).to.be.false;
         expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
-        expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
+        expect(evmAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
         expect(
           loggerSpy.warn.calledWithMatch(
-            sinon.match.instanceOf(EthAddressHbarSpendingPlanNotFoundError),
-            `Failed to get spending plan for eth address '${mockEthAddress}'`,
+            sinon.match.instanceOf(EvmAddressHbarSpendingPlanNotFoundError),
+            `Failed to get spending plan for evm address '${mockEvmAddress}'`,
           ),
         ).to.be.true;
       });
 
-      it('should return false if ethAddress and ipAddress is empty string', async function () {
+      it('should return false if evmAddress and ipAddress is empty string', async function () {
         const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: '' });
         const result = await hbarLimitService.shouldLimit(mode, methodName, txConstructorName, '', requestDetails);
         expect(result).to.be.false;
@@ -237,8 +238,8 @@ describe('HBAR Rate Limit Service', function () {
 
       it('should return true if amountSpent is exactly at the limit', async function () {
         const spendingPlan = createSpendingPlan(mockPlanId, HbarLimitService.TIER_LIMITS[SubscriptionTier.BASIC]);
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-          ethAddress: mockEthAddress,
+        evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+          evmAddress: mockEvmAddress,
           planId: mockPlanId,
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
@@ -247,7 +248,7 @@ describe('HBAR Rate Limit Service', function () {
           mode,
           methodName,
           txConstructorName,
-          mockEthAddress,
+          mockEvmAddress,
           requestDetails,
         );
 
@@ -259,8 +260,8 @@ describe('HBAR Rate Limit Service', function () {
           mockPlanId,
           HbarLimitService.TIER_LIMITS[SubscriptionTier.BASIC].toTinybars().sub(1),
         );
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-          ethAddress: mockEthAddress,
+        evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+          evmAddress: mockEvmAddress,
           planId: mockPlanId,
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
@@ -269,7 +270,7 @@ describe('HBAR Rate Limit Service', function () {
           mode,
           methodName,
           txConstructorName,
-          mockEthAddress,
+          mockEvmAddress,
           requestDetails,
         );
 
@@ -281,8 +282,8 @@ describe('HBAR Rate Limit Service', function () {
           mockPlanId,
           HbarLimitService.TIER_LIMITS[SubscriptionTier.BASIC].toTinybars().add(1),
         );
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-          ethAddress: mockEthAddress,
+        evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+          evmAddress: mockEvmAddress,
           planId: mockPlanId,
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
@@ -291,7 +292,7 @@ describe('HBAR Rate Limit Service', function () {
           mode,
           methodName,
           txConstructorName,
-          mockEthAddress,
+          mockEvmAddress,
           requestDetails,
         );
 
@@ -303,8 +304,8 @@ describe('HBAR Rate Limit Service', function () {
           mockPlanId,
           HbarLimitService.TIER_LIMITS[SubscriptionTier.BASIC].toTinybars().sub(mockEstimatedTxFee).add(1),
         );
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-          ethAddress: mockEthAddress,
+        evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+          evmAddress: mockEvmAddress,
           planId: mockPlanId,
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
@@ -313,7 +314,7 @@ describe('HBAR Rate Limit Service', function () {
           mode,
           methodName,
           txConstructorName,
-          mockEthAddress,
+          mockEvmAddress,
           requestDetails,
           mockEstimatedTxFee,
         );
@@ -326,8 +327,8 @@ describe('HBAR Rate Limit Service', function () {
           mockPlanId,
           HbarLimitService.TIER_LIMITS[SubscriptionTier.BASIC].toTinybars().sub(mockEstimatedTxFee).sub(1),
         );
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-          ethAddress: mockEthAddress,
+        evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+          evmAddress: mockEvmAddress,
           planId: mockPlanId,
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
@@ -336,7 +337,7 @@ describe('HBAR Rate Limit Service', function () {
           mode,
           methodName,
           txConstructorName,
-          mockEthAddress,
+          mockEvmAddress,
           requestDetails,
         );
 
@@ -348,8 +349,8 @@ describe('HBAR Rate Limit Service', function () {
           mockPlanId,
           HbarLimitService.TIER_LIMITS[SubscriptionTier.BASIC].toTinybars().sub(mockEstimatedTxFee),
         );
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-          ethAddress: mockEthAddress,
+        evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+          evmAddress: mockEvmAddress,
           planId: mockPlanId,
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
@@ -358,7 +359,7 @@ describe('HBAR Rate Limit Service', function () {
           mode,
           methodName,
           txConstructorName,
-          mockEthAddress,
+          mockEvmAddress,
           requestDetails,
         );
 
@@ -498,7 +499,7 @@ describe('HBAR Rate Limit Service', function () {
     describe('disable the rate limiter', function () {
       const hbarLimitServiceDisabled = new HbarLimitService(
         hbarSpendingPlanRepositoryStub,
-        ethAddressHbarSpendingPlanRepositoryStub,
+        evmAddressHbarSpendingPlanRepositoryStub,
         ipAddressHbarSpendingPlanRepositoryStub,
         logger,
         register,
@@ -511,8 +512,8 @@ describe('HBAR Rate Limit Service', function () {
           mockPlanId,
           HbarLimitService.TIER_LIMITS[SubscriptionTier.BASIC].toTinybars().sub(mockEstimatedTxFee).add(1),
         );
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-          ethAddress: mockEthAddress,
+        evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+          evmAddress: mockEvmAddress,
           planId: mockPlanId,
         });
         hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
@@ -521,7 +522,7 @@ describe('HBAR Rate Limit Service', function () {
           mode,
           methodName,
           txConstructorName,
-          mockEthAddress,
+          mockEvmAddress,
           requestDetails,
           mockEstimatedTxFee,
         );
@@ -531,35 +532,35 @@ describe('HBAR Rate Limit Service', function () {
       });
 
       it('should return undefined if the rate limiter is disabled and addExpense is called', async function () {
-        expect(await hbarLimitServiceDisabled.addExpense(100, mockEthAddress, requestDetails)).to.be.undefined;
+        expect(await hbarLimitServiceDisabled.addExpense(100, mockEvmAddress, requestDetails)).to.be.undefined;
       });
     });
   });
 
   describe('getSpendingPlan', function () {
-    it(`should return null if neither ethAddress nor ipAddress is provided`, async function () {
+    it(`should return null if neither evmAddress nor ipAddress is provided`, async function () {
       const ipAddresses = [''];
-      const ethAddresses = [''];
-      const testCases = ethAddresses.flatMap((ethAddress) =>
-        ipAddresses.map((ipAddress) => ({ ethAddress, ipAddress })),
+      const evmAddresses = [''];
+      const testCases = evmAddresses.flatMap((evmAddress) =>
+        ipAddresses.map((ipAddress) => ({ evmAddress, ipAddress })),
       );
-      for (const { ethAddress, ipAddress } of testCases) {
+      for (const { evmAddress, ipAddress } of testCases) {
         // @ts-ignore
         const requestDetails = new RequestDetails({ requestId: 'hbarLimterTest', ipAddress: ipAddress });
-        const result = await hbarLimitService['getSpendingPlan'](ethAddress, requestDetails);
+        const result = await hbarLimitService['getSpendingPlan'](evmAddress, requestDetails);
         expect(result).to.be.null;
       }
     });
 
-    it('should return spending plan for ethAddress if ethAddress is provided', async function () {
+    it('should return spending plan for evmAddress if evmAddress is provided', async function () {
       const spendingPlan = createSpendingPlan(mockPlanId);
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
+      evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        evmAddress: mockEvmAddress,
         planId: mockPlanId,
       });
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-      const result = await hbarLimitService['getSpendingPlan'](mockEthAddress, requestDetails);
+      const result = await hbarLimitService['getSpendingPlan'](mockEvmAddress, requestDetails);
 
       expect(result).to.deep.equal(spendingPlan);
     });
@@ -577,11 +578,11 @@ describe('HBAR Rate Limit Service', function () {
       expect(result).to.deep.equal(spendingPlan);
     });
 
-    it('should return null if no spending plan is found for ethAddress', async function () {
-      const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
+    it('should return null if no spending plan is found for evmAddress', async function () {
+      const error = new EvmAddressHbarSpendingPlanNotFoundError(mockEvmAddress);
+      evmAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
 
-      const result = await hbarLimitService['getSpendingPlan'](mockEthAddress, requestDetails);
+      const result = await hbarLimitService['getSpendingPlan'](mockEvmAddress, requestDetails);
 
       expect(result).to.be.null;
     });
@@ -596,94 +597,94 @@ describe('HBAR Rate Limit Service', function () {
     });
   });
 
-  describe('getSpendingPlanByEthAddress', function () {
-    const testGetSpendingPlanByEthAddressError = async (error: Error, errorClass: any) => {
-      const result = hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress, requestDetails);
+  describe('getSpendingPlanByEvmAddress', function () {
+    const testGetSpendingPlanByEvmAddressError = async (error: Error, errorClass: any) => {
+      const result = hbarLimitService['getSpendingPlanByEvmAddress'](mockEvmAddress, requestDetails);
       await expect(result).to.be.eventually.rejectedWith(errorClass, error.message);
     };
 
-    it('should handle error when getSpendingPlanByEthAddress throws an EthAddressHbarSpendingPlanNotFoundError', async function () {
-      const error = new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress);
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
-      await testGetSpendingPlanByEthAddressError(error, EthAddressHbarSpendingPlanNotFoundError);
+    it('should handle error when getSpendingPlanByEvmAddress throws an EvmAddressHbarSpendingPlanNotFoundError', async function () {
+      const error = new EvmAddressHbarSpendingPlanNotFoundError(mockEvmAddress);
+      evmAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(error);
+      await testGetSpendingPlanByEvmAddressError(error, EvmAddressHbarSpendingPlanNotFoundError);
     });
 
-    it('should handle error when getSpendingPlanByEthAddress throws an HbarSpendingPlanNotFoundError', async function () {
+    it('should handle error when getSpendingPlanByEvmAddress throws an HbarSpendingPlanNotFoundError', async function () {
       const error = new HbarSpendingPlanNotFoundError(mockPlanId);
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
+      evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        evmAddress: mockEvmAddress,
         planId: mockPlanId,
       });
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.rejects(error);
-      await testGetSpendingPlanByEthAddressError(error, HbarSpendingPlanNotFoundError);
+      await testGetSpendingPlanByEvmAddressError(error, HbarSpendingPlanNotFoundError);
     });
 
-    it('should handle error when getSpendingPlanByEthAddress throws an HbarSpendingPlanNotActiveError', async function () {
+    it('should handle error when getSpendingPlanByEvmAddress throws an HbarSpendingPlanNotActiveError', async function () {
       const error = new HbarSpendingPlanNotActiveError(mockPlanId);
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
+      evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        evmAddress: mockEvmAddress,
         planId: mockPlanId,
       });
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.rejects(error);
-      await testGetSpendingPlanByEthAddressError(error, HbarSpendingPlanNotActiveError);
+      await testGetSpendingPlanByEvmAddressError(error, HbarSpendingPlanNotActiveError);
     });
 
-    it('should return the spending plan for the given ethAddress', async function () {
+    it('should return the spending plan for the given evmAddress', async function () {
       const spendingPlan = createSpendingPlan(mockPlanId);
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
+      evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        evmAddress: mockEvmAddress,
         planId: mockPlanId,
       });
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(spendingPlan);
 
-      const result = await hbarLimitService['getSpendingPlanByEthAddress'](mockEthAddress, requestDetails);
+      const result = await hbarLimitService['getSpendingPlanByEvmAddress'](mockEvmAddress, requestDetails);
 
       expect(result).to.deep.equal(spendingPlan);
     });
   });
 
   describe('createBasicSpendingPlan', function () {
-    const testCreateBasicSpendingPlan = async (ethAddress: string, ipAddress?: string) => {
+    const testCreateBasicSpendingPlan = async (evmAddress: string, ipAddress?: string) => {
       const requestDetails = new RequestDetails({ requestId: 'hbarLimitServiceTest', ipAddress: ipAddress ?? '' });
       const newSpendingPlan = createSpendingPlan(mockPlanId);
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
-      ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
+      evmAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
-      const promise = hbarLimitService['createBasicSpendingPlan'](ethAddress, requestDetails);
+      const promise = hbarLimitService['createBasicSpendingPlan'](evmAddress, requestDetails);
 
-      if (ethAddress) {
+      if (evmAddress) {
         await expect(promise).eventually.to.deep.equal(newSpendingPlan);
         expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
         expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.false;
-        expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
+        expect(evmAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
       } else {
-        await expect(promise).to.be.rejectedWith('Cannot create a spending plan without an associated eth address');
+        await expect(promise).to.be.rejectedWith('Cannot create a spending plan without an associated evm address');
         expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.false;
         expect(ipAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.false;
-        expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.false;
+        expect(evmAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.false;
       }
     };
 
-    it('should create a basic spending plan for the given ethAddress', async function () {
-      await testCreateBasicSpendingPlan(mockEthAddress);
+    it('should create a basic spending plan for the given evmAddress', async function () {
+      await testCreateBasicSpendingPlan(mockEvmAddress);
     });
 
-    it('should create a basic spending plan and link it only to the given ethAddress, if also an ipAddress is available', async function () {
-      await testCreateBasicSpendingPlan(mockEthAddress, '127.0.0.1');
+    it('should create a basic spending plan and link it only to the given evmAddress, if also an ipAddress is available', async function () {
+      await testCreateBasicSpendingPlan(mockEvmAddress, '127.0.0.1');
     });
 
-    it('should throw an error if no ethAddress is provided', async function () {
+    it('should throw an error if no evmAddress is provided', async function () {
       await testCreateBasicSpendingPlan('');
     });
   });
 
   describe('addExpense', function () {
-    const testAddExpense = async (ethAddress: string, ipAddress: string, expense: number = 100) => {
+    const testAddExpense = async (evmAddress: string, ipAddress: string, expense: number = 100) => {
       const otherPlanOfTheSameTier = createSpendingPlan(uuidV4(randomBytes(16)), 200);
       const existingSpendingPlan = createSpendingPlan(mockPlanId, 0);
-      if (ethAddress) {
-        ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-          ethAddress,
+      if (evmAddress) {
+        evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+          evmAddress,
           planId: mockPlanId,
         });
       } else if (ipAddress) {
@@ -717,7 +718,7 @@ describe('HBAR Rate Limit Service', function () {
         'updateAverageAmountSpentPerSubscriptionTier' as any,
       );
 
-      await hbarLimitService.addExpense(expense, ethAddress, requestDetails);
+      await hbarLimitService.addExpense(expense, evmAddress, requestDetails);
 
       expect(hbarSpendingPlanRepositoryStub.addToAmountSpent.calledOnceWith(mockPlanId, expense)).to.be.true;
       expect(hbarLimitService['remainingBudget'].toTinybars().toNumber()).to.eq(
@@ -735,38 +736,38 @@ describe('HBAR Rate Limit Service', function () {
     it('should create a basic spending plan if none exists', async function () {
       const newSpendingPlan = createSpendingPlan(mockPlanId);
       hbarSpendingPlanRepositoryStub.create.resolves(newSpendingPlan);
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(
-        new EthAddressHbarSpendingPlanNotFoundError(mockEthAddress),
+      evmAddressHbarSpendingPlanRepositoryStub.findByAddress.rejects(
+        new EvmAddressHbarSpendingPlanNotFoundError(mockEvmAddress),
       );
-      ethAddressHbarSpendingPlanRepositoryStub.save.resolves();
+      evmAddressHbarSpendingPlanRepositoryStub.save.resolves();
 
-      await hbarLimitService.addExpense(100, mockEthAddress, requestDetails);
+      await hbarLimitService.addExpense(100, mockEvmAddress, requestDetails);
 
       expect(hbarSpendingPlanRepositoryStub.create.calledOnce).to.be.true;
-      expect(ethAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
+      expect(evmAddressHbarSpendingPlanRepositoryStub.save.calledOnce).to.be.true;
     });
 
-    it('should add the expense to the spending plan and update the remaining budget when both ethAddress and ipAddress are provided', async function () {
-      await testAddExpense(mockEthAddress, '127.0.0.1');
+    it('should add the expense to the spending plan and update the remaining budget when both evmAddress and ipAddress are provided', async function () {
+      await testAddExpense(mockEvmAddress, '127.0.0.1');
     });
 
-    it('should add the expense to the spending plan and update the remaining budget when ethAddress is provided but ipAddress is not', async function () {
-      await testAddExpense(mockEthAddress, '');
+    it('should add the expense to the spending plan and update the remaining budget when evmAddress is provided but ipAddress is not', async function () {
+      await testAddExpense(mockEvmAddress, '');
     });
 
-    it('should add the expense to the spending plan and update the remaining budget when ipAddress is provided but ethAddress is not', async function () {
+    it('should add the expense to the spending plan and update the remaining budget when ipAddress is provided but evmAddress is not', async function () {
       await testAddExpense('', '127.0.0.1');
     });
 
     it('should handle errors when adding expense fails', async function () {
-      ethAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
-        ethAddress: mockEthAddress,
+      evmAddressHbarSpendingPlanRepositoryStub.findByAddress.resolves({
+        evmAddress: mockEvmAddress,
         planId: mockPlanId,
       });
       hbarSpendingPlanRepositoryStub.findByIdWithDetails.resolves(createSpendingPlan(mockPlanId));
       hbarSpendingPlanRepositoryStub.addToAmountSpent.rejects(new Error('Failed to add expense'));
 
-      await expect(hbarLimitService.addExpense(100, mockEthAddress, requestDetails)).to.be.eventually.rejectedWith(
+      await expect(hbarLimitService.addExpense(100, mockEvmAddress, requestDetails)).to.be.eventually.rejectedWith(
         'Failed to add expense',
       );
     });

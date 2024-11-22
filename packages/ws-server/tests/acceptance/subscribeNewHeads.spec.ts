@@ -19,23 +19,24 @@
  */
 
 // external resources
-import WebSocket from 'ws';
-import { ethers } from 'ethers';
-import chai, { expect } from 'chai';
-import { solidity } from 'ethereum-waffle';
-import { predefined } from '@hashgraph/json-rpc-relay/dist';
-import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
-import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { WsTestHelper } from '../helper';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
 import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
+import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import chai, { expect } from 'chai';
+import { solidity } from 'ethereum-waffle';
+import { ethers } from 'ethers';
+import WebSocket from 'ws';
+
+import { WsTestHelper } from '../helper';
 
 chai.use(solidity);
 
 const WS_RELAY_URL = `${ConfigService.get('WS_RELAY_URL')}`;
-const ethAddressRegex = /^0x[a-fA-F0-9]*$/;
+const evmAddressRegex = /^0x[a-fA-F0-9]*$/;
 
 function verifyResponse(response: any, done: Mocha.Done, webSocket: any, includeTransactions: boolean) {
   if (response?.params?.result?.transactions?.length > 0) {
@@ -85,7 +86,7 @@ function verifyResponse(response: any, done: Mocha.Done, webSocket: any, include
       } else {
         expect(response.params.result).to.have.property('transactions');
         expect(response.params.result.transactions).to.have.lengthOf(1);
-        expect(response.params.result.transactions[0]).to.match(ethAddressRegex);
+        expect(response.params.result.transactions[0]).to.match(evmAddressRegex);
       }
       done();
     } catch (error) {

@@ -18,17 +18,18 @@
  *
  */
 
+import { Hbar } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
-import { IHbarLimitService } from './IHbarLimitService';
-import { SubscriptionTier } from '../../db/types/hbarLimiter/subscriptionTier';
-import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendingPlan';
-import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
-import { IPAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { RequestDetails } from '../../types';
+
 import constants from '../../constants';
-import { Hbar } from '@hashgraph/sdk';
+import { EvmAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
+import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { IDetailedHbarSpendingPlan } from '../../db/types/hbarLimiter/hbarSpendingPlan';
+import { SubscriptionTier } from '../../db/types/hbarLimiter/subscriptionTier';
+import { RequestDetails } from '../../types';
+import { IHbarLimitService } from './IHbarLimitService';
 
 export class HbarLimitService implements IHbarLimitService {
   static readonly TIER_LIMITS: Record<SubscriptionTier, Hbar> = {
@@ -86,7 +87,7 @@ export class HbarLimitService implements IHbarLimitService {
 
   constructor(
     private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository,
-    private readonly ethAddressHbarSpendingPlanRepository: EthAddressHbarSpendingPlanRepository,
+    private readonly evmAddressHbarSpendingPlanRepository: EvmAddressHbarSpendingPlanRepository,
     private readonly ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
     private readonly logger: Logger,
     private readonly register: Registry,
@@ -181,12 +182,12 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Checks if the given eth address or ip address should be limited.
+   * Checks if the given evm address or ip address should be limited.
    *
    * @param {string} mode - The mode of the transaction or request.
    * @param {string} methodName - The name of the method being invoked.
    * @param {string} txConstructorName - The name of the transaction constructor associated with the transaction.
-   * @param {string} ethAddress - The eth address to check.
+   * @param {string} evmAddress - The evm address to check.
    * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @param {number} [estimatedTxFee] - The total estimated transaction fee, default to 0.
    * @returns {Promise<boolean>} - A promise that resolves with a boolean indicating if the address should be limited.
@@ -195,7 +196,7 @@ export class HbarLimitService implements IHbarLimitService {
     mode: string,
     methodName: string,
     txConstructorName: string,
-    ethAddress: string,
+    evmAddress: string,
     requestDetails: RequestDetails,
     estimatedTxFee: number = 0,
   ): Promise<boolean> {
@@ -208,20 +209,20 @@ export class HbarLimitService implements IHbarLimitService {
       return true;
     }
 
-    if (!ethAddress && !ipAddress) {
+    if (!evmAddress && !ipAddress) {
       this.logger.warn(
-        `${requestDetails.formattedRequestId} No eth address or ip address provided, cannot check if address should be limited.`,
+        `${requestDetails.formattedRequestId} No evm address or ip address provided, cannot check if address should be limited.`,
       );
       return false;
     }
-    const user = `(ethAddress=${ethAddress})`;
+    const user = `(evmAddress=${evmAddress})`;
     if (this.logger.isLevelEnabled('trace')) {
       this.logger.trace(`${requestDetails.formattedRequestId} Checking if ${user} should be limited...`);
     }
-    let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
+    let spendingPlan = await this.getSpendingPlan(evmAddress, requestDetails);
     if (!spendingPlan) {
-      // Create a basic spending plan if none exists for the eth address or ip address
-      spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestDetails);
+      // Create a basic spending plan if none exists for the evm address or ip address
+      spendingPlan = await this.createBasicSpendingPlan(evmAddress, requestDetails);
     }
 
     const spendingLimit = HbarLimitService.TIER_LIMITS[spendingPlan.subscriptionTier].toTinybars();
@@ -252,11 +253,11 @@ export class HbarLimitService implements IHbarLimitService {
   /**
    * Add expense to the remaining budget and update the spending plan if applicable.
    * @param {number} cost - The cost of the expense.
-   * @param {string} ethAddress - The Ethereum address to add the expense to.
+   * @param {string} evmAddress - The Ethereum address to add the expense to.
    * @param {RequestDetails} requestDetails The request details for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the expense has been added.
    */
-  async addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails): Promise<void> {
+  async addExpense(cost: number, evmAddress: string, requestDetails: RequestDetails): Promise<void> {
     if (!this.isEnabled()) {
       return;
     }
@@ -266,21 +267,21 @@ export class HbarLimitService implements IHbarLimitService {
     this.hbarLimitRemainingGauge.set(newRemainingBudget.toNumber());
 
     const ipAddress = requestDetails.ipAddress;
-    if (!ethAddress && !ipAddress) {
+    if (!evmAddress && !ipAddress) {
       if (this.logger.isLevelEnabled('trace')) {
-        this.logger.trace('Cannot add expense to a spending plan without an eth address or ip address');
+        this.logger.trace('Cannot add expense to a spending plan without an evm address or ip address');
       }
       return;
     }
 
-    let spendingPlan = await this.getSpendingPlan(ethAddress, requestDetails);
+    let spendingPlan = await this.getSpendingPlan(evmAddress, requestDetails);
     if (!spendingPlan) {
-      if (ethAddress) {
-        // Create a basic spending plan if none exists for the eth address
-        spendingPlan = await this.createBasicSpendingPlan(ethAddress, requestDetails);
+      if (evmAddress) {
+        // Create a basic spending plan if none exists for the evm address
+        spendingPlan = await this.createBasicSpendingPlan(evmAddress, requestDetails);
       } else {
         this.logger.warn(
-          `${requestDetails.formattedRequestId} Cannot add expense to a spending plan without an eth address or ip address`,
+          `${requestDetails.formattedRequestId} Cannot add expense to a spending plan without an evm address or ip address`,
         );
         return;
       }
@@ -431,24 +432,24 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Gets the spending plan for the given eth address or ip address.
-   * @param {string} ethAddress - The eth address to get the spending plan for.
+   * Gets the spending plan for the given evm address or ip address.
+   * @param {string} evmAddress - The evm address to get the spending plan for.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan | null>} - A promise that resolves with the spending plan or null if none exists.
    * @private
    */
   private async getSpendingPlan(
-    ethAddress: string,
+    evmAddress: string,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan | null> {
     const ipAddress = requestDetails.ipAddress;
-    if (ethAddress) {
+    if (evmAddress) {
       try {
-        return await this.getSpendingPlanByEthAddress(ethAddress, requestDetails);
+        return await this.getSpendingPlanByEvmAddress(evmAddress, requestDetails);
       } catch (error) {
         this.logger.warn(
           error,
-          `${requestDetails.formattedRequestId} Failed to get spending plan for eth address '${ethAddress}'`,
+          `${requestDetails.formattedRequestId} Failed to get spending plan for evm address '${evmAddress}'`,
         );
       }
     }
@@ -464,21 +465,21 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Gets the spending plan for the given eth address.
-   * @param {string} ethAddress - The eth address to get the spending plan for.
+   * Gets the spending plan for the given evm address.
+   * @param {string} evmAddress - The evm address to get the spending plan for.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the spending plan.
    * @private
    */
-  private async getSpendingPlanByEthAddress(
-    ethAddress: string,
+  private async getSpendingPlanByEvmAddress(
+    evmAddress: string,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan> {
-    const ethAddressHbarSpendingPlan = await this.ethAddressHbarSpendingPlanRepository.findByAddress(
-      ethAddress,
+    const evmAddressHbarSpendingPlan = await this.evmAddressHbarSpendingPlanRepository.findByAddress(
+      evmAddress,
       requestDetails,
     );
-    return this.hbarSpendingPlanRepository.findByIdWithDetails(ethAddressHbarSpendingPlan.planId, requestDetails);
+    return this.hbarSpendingPlanRepository.findByIdWithDetails(evmAddressHbarSpendingPlan.planId, requestDetails);
   }
 
   /**
@@ -497,19 +498,19 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
-   * Creates a basic spending plan for the given eth address.
-   * @param {string} ethAddress - The eth address to create the spending plan for.
+   * Creates a basic spending plan for the given evm address.
+   * @param {string} evmAddress - The evm address to create the spending plan for.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
-   * @throws {Error} - If neither eth address nor IP address is provided.
+   * @throws {Error} - If neither evm address nor IP address is provided.
    * @private
    */
   private async createBasicSpendingPlan(
-    ethAddress: string,
+    evmAddress: string,
     requestDetails: RequestDetails,
   ): Promise<IDetailedHbarSpendingPlan> {
-    if (!ethAddress) {
-      throw new Error('Cannot create a spending plan without an associated eth address');
+    if (!evmAddress) {
+      throw new Error('Cannot create a spending plan without an associated evm address');
     }
 
     const spendingPlan = await this.hbarSpendingPlanRepository.create(
@@ -520,11 +521,11 @@ export class HbarLimitService implements IHbarLimitService {
 
     if (this.logger.isLevelEnabled('trace')) {
       this.logger.trace(
-        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to eth address ${ethAddress}`,
+        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to evm address ${evmAddress}`,
       );
     }
-    await this.ethAddressHbarSpendingPlanRepository.save(
-      { ethAddress, planId: spendingPlan.id },
+    await this.evmAddressHbarSpendingPlanRepository.save(
+      { evmAddress, planId: spendingPlan.id },
       requestDetails,
       this.limitDuration,
     );

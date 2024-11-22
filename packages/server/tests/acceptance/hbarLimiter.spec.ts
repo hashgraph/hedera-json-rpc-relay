@@ -18,41 +18,40 @@
  *
  */
 
-import fs from 'fs';
-import { expect } from 'chai';
-import { resolve } from 'path';
-import { Logger } from 'pino';
-import findConfig from 'find-config';
-import { Registry } from 'prom-client';
-import dotenv, { config } from 'dotenv';
-import { BaseContract, ethers } from 'ethers';
-import { predefined } from '@hashgraph/json-rpc-relay';
-
-// Local resources
-import { Utils } from '../helpers/utils';
-import Assertions from '../helpers/assertions';
-import testConstants from '../helpers/constants';
-import RelayClient from '../clients/relayClient';
-import MirrorClient from '../clients/mirrorClient';
-import MetricsClient from '../clients/metricsClient';
-import { AliasAccount } from '../types/AliasAccount';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
-import { SpendingPlanConfig } from '@hashgraph/json-rpc-relay/src/lib/types/spendingPlanConfig';
-import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hbarLimitService';
-import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
-import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
-import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
-import { IDetailedHbarSpendingPlan } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/hbarSpendingPlan';
+import { predefined } from '@hashgraph/json-rpc-relay';
+import { EvmAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '@hashgraph/json-rpc-relay/dist/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { IDetailedHbarSpendingPlan } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/hbarSpendingPlan';
+import { SubscriptionTier } from '@hashgraph/json-rpc-relay/dist/lib/db/types/hbarLimiter/subscriptionTier';
+import { CacheService } from '@hashgraph/json-rpc-relay/dist/lib/services/cacheService/cacheService';
+import { HbarLimitService } from '@hashgraph/json-rpc-relay/dist/lib/services/hbarLimitService';
+import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { SpendingPlanConfig } from '@hashgraph/json-rpc-relay/src/lib/types/spendingPlanConfig';
+import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
+import { expect } from 'chai';
+import dotenv, { config } from 'dotenv';
+import { BaseContract, ethers } from 'ethers';
+import findConfig from 'find-config';
+import fs from 'fs';
+import { resolve } from 'path';
+import { Logger } from 'pino';
+import { Registry } from 'prom-client';
 
-// Contracts used in tests
-import parentContractJson from '../contracts/Parent.json';
+import MetricsClient from '../clients/metricsClient';
+import MirrorClient from '../clients/mirrorClient';
+import RelayClient from '../clients/relayClient';
 import EstimateGasContract from '../contracts/EstimateGasContract.json';
 import largeContractJson from '../contracts/hbarLimiterContracts/largeSizeContract.json';
 import mediumSizeContract from '../contracts/hbarLimiterContracts/mediumSizeContract.json';
+// Contracts used in tests
+import parentContractJson from '../contracts/Parent.json';
+import Assertions from '../helpers/assertions';
+import testConstants from '../helpers/constants';
+// Local resources
+import { Utils } from '../helpers/utils';
+import { AliasAccount } from '../types/AliasAccount';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 const DOT_ENV = dotenv.parse(fs.readFileSync(resolve(__dirname, '../localAcceptance.env')));
@@ -84,7 +83,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
   const maxExtendedSpendingLimit = HbarLimitService.TIER_LIMITS.EXTENDED.toTinybars().toNumber();
   const maxPrivilegedSpendingLimit = HbarLimitService.TIER_LIMITS.PRIVILEGED.toTinybars().toNumber();
 
-  const ethAddressSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+  const evmAddressSpendingPlanRepository = new EvmAddressHbarSpendingPlanRepository(cacheService, logger);
   const ipSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
   const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(
     cacheService,
@@ -409,7 +408,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           subscriptionTier: SubscriptionTier,
           accountCounts: number = 1,
         ) => {
-          let aliasAccounts: AliasAccount[] = [];
+          const aliasAccounts: AliasAccount[] = [];
           const hbarSpendingPlan = await hbarSpendingPlanRepository.create(subscriptionTier, requestDetails, mockTTL);
 
           for (let i = 0; i < accountCounts; i++) {
@@ -421,14 +420,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             );
             global.accounts.push(aliasAccount);
 
-            await ethAddressSpendingPlanRepository.save(
-              { ethAddress: aliasAccount.address, planId: hbarSpendingPlan.id },
+            await evmAddressSpendingPlanRepository.save(
+              { evmAddress: aliasAccount.address, planId: hbarSpendingPlan.id },
               requestDetails,
               mockTTL,
             );
 
-            const plan = await ethAddressSpendingPlanRepository.findByAddress(aliasAccount.address, requestDetails);
-            expect(plan.ethAddress).to.eq(aliasAccount.address);
+            const plan = await evmAddressSpendingPlanRepository.findByAddress(aliasAccount.address, requestDetails);
+            expect(plan.evmAddress).to.eq(aliasAccount.address);
             expect(plan.planId).to.eq(hbarSpendingPlan.id);
             const spendingPlan = await hbarSpendingPlanRepository.findByIdWithDetails(plan.planId, requestDetails);
             expect(spendingPlan.active).to.be.true;
@@ -449,7 +448,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             );
             for (const plan of basicPlans) {
               await hbarSpendingPlanRepository.delete(plan.id, requestDetails);
-              await ethAddressSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
+              await evmAddressSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
               await ipSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
             }
           });
@@ -466,7 +465,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               );
             }
 
-            expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
+            expect(evmAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
             const gasPrice = await relay.gasPrice(requestId);
             const transaction = {
               ...defaultLondonTransactionData,
@@ -483,7 +482,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             // awaiting for HBAR limiter to finish updating expenses in the background
             await Utils.wait(6000);
 
-            const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+            const ethSpendingPlan = await evmAddressSpendingPlanRepository.findByAddress(
               accounts[2].address,
               requestDetails,
             );
@@ -536,7 +535,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             await expect(relay.call(testConstants.ETH_ENDPOINTS.ETH_SEND_RAW_TRANSACTION, [signedTxThird], requestId))
               .to.be.fulfilled;
 
-            const ethSpendingPlanThird = await ethAddressSpendingPlanRepository.findByAddress(
+            const ethSpendingPlanThird = await evmAddressSpendingPlanRepository.findByAddress(
               accounts[1].address,
               requestDetails,
             );
@@ -551,7 +550,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
 
             //Unlinking the ipAdress, since ipAddress when running tests in CI and locally is the same
-            expect(ethAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
+            expect(evmAddressSpendingPlanRepository.findByAddress(accounts[2].address, requestDetails)).to.be.rejected;
             try {
               for (deploymentCounts = 0; deploymentCounts < 50; deploymentCounts++) {
                 const tx = await deployContract(largeContractJson, accounts[2].wallet);
@@ -560,7 +559,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                 expectedTxCost ||= await getExpectedCostOfLastLargeTx(largeContractJson.bytecode);
 
                 if (!hbarSpendingPlan) {
-                  const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+                  const ethSpendingPlan = await evmAddressSpendingPlanRepository.findByAddress(
                     accounts[2].wallet.address,
                     requestDetails,
                   );
@@ -580,7 +579,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
               expect(deploymentCounts).to.eq(expectedAmountOfDeployments);
 
               if (!hbarSpendingPlan) {
-                const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+                const ethSpendingPlan = await evmAddressSpendingPlanRepository.findByAddress(
                   accounts[2].wallet.address,
                   requestDetails,
                 );
@@ -714,14 +713,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                   expect(hbarSpendingPlan.id).to.eq(expectedPlan.id);
                   expect(hbarSpendingPlan.subscriptionTier).to.eq(expectedPlan.subscriptionTier);
 
-                  if (expectedPlan.ethAddresses) {
-                    expectedPlan.ethAddresses.forEach(async (evmAddress) => {
-                      const associatedPlanByEVMAddress = await ethAddressSpendingPlanRepository.findByAddress(
+                  if (expectedPlan.evmAddresses) {
+                    expectedPlan.evmAddresses.forEach(async (evmAddress) => {
+                      const associatedPlanByEVMAddress = await evmAddressSpendingPlanRepository.findByAddress(
                         evmAddress,
                         requestDetails,
                       );
                       expect(associatedPlanByEVMAddress.planId).to.eq(expectedPlan.id);
-                      expect(associatedPlanByEVMAddress.ethAddress).to.eq(evmAddress);
+                      expect(associatedPlanByEVMAddress.evmAddress).to.eq(evmAddress);
                     });
                   }
 

@@ -19,21 +19,22 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import pino from 'pino';
+import { Client, Hbar } from '@hashgraph/sdk';
 import { expect } from 'chai';
 import EventEmitter from 'events';
-import { Client, Hbar } from '@hashgraph/sdk';
-import constants from '../../src/lib/constants';
+import pino from 'pino';
 import { register, Registry } from 'prom-client';
+
 import { SDKClient } from '../../src/lib/clients';
-import { RequestDetails } from '../../src/lib/types';
-import HAPIService from '../../src/lib/services/hapiService/hapiService';
-import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
-import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../helpers';
+import constants from '../../src/lib/constants';
+import { EvmAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import HAPIService from '../../src/lib/services/hapiService/hapiService';
+import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
+import { RequestDetails } from '../../src/lib/types';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../helpers';
 
 const registry = new Registry();
 const logger = pino();
@@ -55,11 +56,11 @@ describe('HAPI Service', async function () {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+    const evmAddressHbarSpendingPlanRepository = new EvmAddressHbarSpendingPlanRepository(cacheService, logger);
     const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
     hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepository,
-      ethAddressHbarSpendingPlanRepository,
+      evmAddressHbarSpendingPlanRepository,
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,

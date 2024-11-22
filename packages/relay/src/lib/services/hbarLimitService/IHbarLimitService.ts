@@ -26,10 +26,10 @@ export interface IHbarLimitService {
     mode: string,
     methodName: string,
     txConstructorName: string,
-    ethAddress: string,
+    evmAddress: string,
     requestDetails: RequestDetails,
     estimatedTxFee?: number,
   ): Promise<boolean>;
-  addExpense(cost: number, ethAddress: string, requestDetails: RequestDetails, ipAddress?: string): Promise<void>;
+  addExpense(cost: number, evmAddress: string, requestDetails: RequestDetails, ipAddress?: string): Promise<void>;
   isEnabled(): boolean;
 }

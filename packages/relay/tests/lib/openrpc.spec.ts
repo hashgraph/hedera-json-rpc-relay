@@ -19,33 +19,33 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import Ajv from 'ajv';
-import pino from 'pino';
-import Long from 'long';
-import axios from 'axios';
-import sinon from 'sinon';
-import { expect } from 'chai';
-import EventEmitter from 'events';
 import { AccountInfo, Hbar } from '@hashgraph/sdk';
+import { parseOpenRPCDocument, validateOpenRPCDocument } from '@open-rpc/schema-utils-js';
+import Ajv from 'ajv';
+import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { BigNumber } from 'bignumber.js';
-import { EthImpl } from '../../src/lib/eth';
-import constants from '../../src/lib/constants';
-import { RelayImpl } from '../../src/lib/relay';
+import { expect } from 'chai';
+import EventEmitter from 'events';
+import Long from 'long';
+import pino from 'pino';
 import { register, Registry } from 'prom-client';
-import { NOT_FOUND_RES } from './eth/eth-config';
+import sinon from 'sinon';
+
+import openRpcSchema from '../../../../docs/openrpc.json';
 import { numberTo0x } from '../../src/formatters';
 import { SDKClient } from '../../src/lib/clients';
-import { RequestDetails } from '../../src/lib/types';
-import openRpcSchema from '../../../../docs/openrpc.json';
 import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
-import ClientService from '../../src/lib/services/hapiService/hapiService';
-import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { parseOpenRPCDocument, validateOpenRPCDocument } from '@open-rpc/schema-utils-js';
+import constants from '../../src/lib/constants';
+import { EvmAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { EthImpl } from '../../src/lib/eth';
+import { RelayImpl } from '../../src/lib/relay';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import ClientService from '../../src/lib/services/hapiService/hapiService';
+import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
+import { RequestDetails } from '../../src/lib/types';
 import {
   blockHash,
   blockNumber,
@@ -75,6 +75,7 @@ import {
   overrideEnvsInMochaDescribe,
   signedTransactionHash,
 } from '../helpers';
+import { NOT_FOUND_RES } from './eth/eth-config';
 
 const logger = pino();
 const registry = new Registry();
@@ -132,11 +133,11 @@ describe('Open RPC Specification', function () {
     const eventEmitter = new EventEmitter();
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+    const evmAddressHbarSpendingPlanRepository = new EvmAddressHbarSpendingPlanRepository(cacheService, logger);
     const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
     const hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepository,
-      ethAddressHbarSpendingPlanRepository,
+      evmAddressHbarSpendingPlanRepository,
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,

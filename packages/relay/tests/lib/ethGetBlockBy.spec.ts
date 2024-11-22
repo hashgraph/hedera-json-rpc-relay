@@ -19,26 +19,27 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { Hbar } from '@hashgraph/sdk';
 import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { register, Registry } from 'prom-client';
-import { EthImpl } from '../../src/lib/eth';
-import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
-import pino from 'pino';
 import { EventEmitter } from 'events';
-import { Hbar } from '@hashgraph/sdk';
+import pino from 'pino';
+import { register, Registry } from 'prom-client';
+
+import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
+import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import constants from '../../src/lib/constants';
+import { EvmAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
+import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { EthImpl } from '../../src/lib/eth';
 import { Log, Transaction } from '../../src/lib/model';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
-import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { defaultDetailedContractResults, overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../helpers';
 import { RequestDetails } from '../../src/lib/types';
-import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
-import { nanOrNumberTo0x, nullableNumberTo0x, numberTo0x, toHash32 } from '../../../../packages/relay/src/formatters';
-import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { defaultDetailedContractResults, overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../helpers';
 
 use(chaiAsPromised);
 
@@ -142,11 +143,11 @@ describe('eth_getBlockBy', async function () {
     const eventEmitter = new EventEmitter();
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+    const evmAddressHbarSpendingPlanRepository = new EvmAddressHbarSpendingPlanRepository(cacheService, logger);
     const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
     const hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepository,
-      ethAddressHbarSpendingPlanRepository,
+      evmAddressHbarSpendingPlanRepository,
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,

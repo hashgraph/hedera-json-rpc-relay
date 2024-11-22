@@ -19,21 +19,22 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
-import pino from 'pino';
+import { Hbar } from '@hashgraph/sdk';
 import MockAdapter from 'axios-mock-adapter';
-import { register, Registry } from 'prom-client';
-import constants from '../../../src/lib/constants';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
-import { EthImpl } from '../../../src/lib/eth';
 import EventEmitter from 'events';
-import { EthAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import pino from 'pino';
+import { register, Registry } from 'prom-client';
+
+import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
+import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
+import constants from '../../../src/lib/constants';
+import { EvmAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
-import { Hbar } from '@hashgraph/sdk';
+import { EthImpl } from '../../../src/lib/eth';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
 
 export function contractResultsByNumberByIndexURL(number: number, index: number): string {
   return `contracts/results?block.number=${number}&transaction.index=${index}&limit=100&order=asc`;
@@ -71,11 +72,11 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
   const eventEmitter = new EventEmitter();
 
   const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
-  const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+  const evmAddressHbarSpendingPlanRepository = new EvmAddressHbarSpendingPlanRepository(cacheService, logger);
   const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
   const hbarLimitService = new HbarLimitService(
     hbarSpendingPlanRepository,
-    ethAddressHbarSpendingPlanRepository,
+    evmAddressHbarSpendingPlanRepository,
     ipAddressHbarSpendingPlanRepository,
     logger,
     register,
