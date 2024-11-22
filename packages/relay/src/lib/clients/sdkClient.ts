@@ -818,6 +818,12 @@ export class SDKClient {
         `${requestDetails.formattedRequestId} Successfully execute all ${transactionResponses.length} ${txConstructorName} transactions: callerName=${callerName}, status=${Status.Success}(${Status.Success._code})`,
       );
     } catch (e: any) {
+      // Log the target node account ID, right now, it's populated only for MaxAttemptsOrTimeout error
+      if (e?.nodeAccountId) {
+        this.logger.info(
+          `${requestDetails.formattedRequestId} Transaction failed to execute against node with id: ${e.nodeAccountId}`
+        );
+      }
       const sdkClientError = new SDKClientError(e, e.message);
 
       this.logger.warn(
