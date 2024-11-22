@@ -44,9 +44,7 @@ jobs:
     timeout-minutes: 50
     permissions:
       contents: read
-      actions: read
       checks: write
-      # issues: read
     env:
       OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
     steps:
