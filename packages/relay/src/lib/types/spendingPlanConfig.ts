@@ -38,11 +38,11 @@ export interface SpendingPlanConfig {
   name: string;
 
   /**
-   * ETH addresses associated with the spending plan.
+   * EVM addresses associated with the spending plan.
    * @type {string[]}
    * @optional
    */
-  ethAddresses?: string[];
+  evmAddresses?: string[];
 
   /**
    * IP addresses associated with the spending plan.
@@ -70,7 +70,7 @@ export function isValidSpendingPlanConfig(plan: any): plan is SpendingPlanConfig
     typeof plan.name === 'string' &&
     typeof plan.subscriptionTier === 'string' &&
     Object.values(SubscriptionTier).includes(plan.subscriptionTier) &&
-    ((Array.isArray(plan.ethAddresses) && plan.ethAddresses.length > 0) ||
+    ((Array.isArray(plan.evmAddresses) && plan.evmAddresses.length > 0) ||
       (Array.isArray(plan.ipAddresses) && plan.ipAddresses.length > 0))
   );
 }

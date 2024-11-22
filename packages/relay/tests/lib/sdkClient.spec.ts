@@ -51,7 +51,7 @@ import * as sinon from 'sinon';
 import { formatTransactionId } from '../../src/formatters';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
-import { EthAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { EvmAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
@@ -120,11 +120,11 @@ describe('SdkClient', async function () {
 
     cacheService = new CacheService(logger, registry);
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(cacheService, logger);
+    const evmAddressHbarSpendingPlanRepository = new EvmAddressHbarSpendingPlanRepository(cacheService, logger);
     const ipAddressHbarSpendingPlanRepository = new IPAddressHbarSpendingPlanRepository(cacheService, logger);
     hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepository,
-      ethAddressHbarSpendingPlanRepository,
+      evmAddressHbarSpendingPlanRepository,
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,

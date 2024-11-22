@@ -20,25 +20,26 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import sinon from 'sinon';
-import { EthAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
-import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import pino from 'pino';
-import { IEthAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/ethAddressHbarSpendingPlan';
-import { EthAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { randomBytes, uuidV4 } from 'ethers';
+import pino from 'pino';
 import { Registry } from 'prom-client';
-import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
+import sinon from 'sinon';
+
 import { RequestDetails } from '../../../../dist/lib/types';
-import { EthAddressHbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/ethAddressHbarSpendingPlan';
+import { EvmAddressHbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/evmAddressHbarSpendingPlan';
+import { EvmAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
+import { EvmAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
+import { IEvmAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/evmAddressHbarSpendingPlan';
+import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
-describe('EthAddressHbarSpendingPlanRepository', function () {
+describe('EvmAddressHbarSpendingPlanRepository', function () {
   const logger = pino();
   const registry = new Registry();
   const requestDetails = new RequestDetails({
-    requestId: 'ethAddressHbarSpendingPlanRepositoryTest',
+    requestId: 'evmAddressHbarSpendingPlanRepositoryTest',
     ipAddress: '0.0.0.0',
   });
   const ttl = 86_400_000; // 1 day
@@ -46,14 +47,14 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
   const tests = (isSharedCacheEnabled: boolean) => {
     let cacheService: CacheService;
     let cacheServiceSpy: sinon.SinonSpiedInstance<CacheService>;
-    let repository: EthAddressHbarSpendingPlanRepository;
+    let repository: EvmAddressHbarSpendingPlanRepository;
 
     before(async () => {
       cacheService = new CacheService(logger.child({ name: 'CacheService' }), registry);
       cacheServiceSpy = sinon.spy(cacheService);
-      repository = new EthAddressHbarSpendingPlanRepository(
+      repository = new EvmAddressHbarSpendingPlanRepository(
         cacheService,
-        logger.child({ name: 'EthAddressHbarSpendingPlanRepository' }),
+        logger.child({ name: 'EvmAddressHbarSpendingPlanRepository' }),
       );
     });
 
@@ -73,34 +74,34 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
 
     describe('existsByAddress', () => {
       it('returns true if address plan exists', async () => {
-        const ethAddress = '0x123';
-        const addressPlan = new EthAddressHbarSpendingPlan({ ethAddress, planId: uuidV4(randomBytes(16)) });
+        const evmAddress = '0x123';
+        const addressPlan = new EvmAddressHbarSpendingPlan({ evmAddress, planId: uuidV4(randomBytes(16)) });
         await cacheService.set(
-          `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+          `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           addressPlan,
           'test',
           requestDetails,
         );
 
-        await expect(repository.existsByAddress(ethAddress, requestDetails)).to.eventually.be.true;
+        await expect(repository.existsByAddress(evmAddress, requestDetails)).to.eventually.be.true;
       });
 
       it('returns false if address plan does not exist', async () => {
-        const ethAddress = '0xnonexistent';
-        await expect(repository.existsByAddress(ethAddress, requestDetails)).to.eventually.be.false;
+        const evmAddress = '0xnonexistent';
+        await expect(repository.existsByAddress(evmAddress, requestDetails)).to.eventually.be.false;
       });
     });
 
     describe('findAllByPlanId', () => {
       it('retrieves all address plans by plan ID', async () => {
         const planId = uuidV4(randomBytes(16));
-        const ethAddressPlans = [
-          new EthAddressHbarSpendingPlan({ ethAddress: '0x123', planId }),
-          new EthAddressHbarSpendingPlan({ ethAddress: '0x456', planId }),
+        const evmAddressPlans = [
+          new EvmAddressHbarSpendingPlan({ evmAddress: '0x123', planId }),
+          new EvmAddressHbarSpendingPlan({ evmAddress: '0x456', planId }),
         ];
-        for (const plan of ethAddressPlans) {
+        for (const plan of evmAddressPlans) {
           await cacheService.set(
-            `${EthAddressHbarSpendingPlanRepository.collectionKey}:${plan.ethAddress}`,
+            `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${plan.evmAddress}`,
             plan,
             'test',
             requestDetails,
@@ -108,7 +109,7 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
         }
 
         const result = await repository.findAllByPlanId(planId, 'findAllByPlanId', requestDetails);
-        expect(result).to.have.deep.members(ethAddressPlans);
+        expect(result).to.have.deep.members(evmAddressPlans);
       });
 
       it('returns an empty array if no address plans are found for the plan ID', async () => {
@@ -121,11 +122,11 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
     describe('deleteAllByPlanId', () => {
       it('deletes all address plans by plan ID', async () => {
         const planId = uuidV4(randomBytes(16));
-        const ethAddresses = ['0x123', '0x456', '0x789'];
-        for (const ethAddress of ethAddresses) {
-          const addressPlan = new EthAddressHbarSpendingPlan({ ethAddress, planId });
+        const evmAddresses = ['0x123', '0x456', '0x789'];
+        for (const evmAddress of evmAddresses) {
+          const addressPlan = new EvmAddressHbarSpendingPlan({ evmAddress, planId });
           await cacheService.set(
-            `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+            `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
             addressPlan,
             'test',
             requestDetails,
@@ -134,10 +135,10 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
 
         await repository.deleteAllByPlanId(planId, 'deleteAllByPlanId', requestDetails);
 
-        for (const ethAddress of ethAddresses) {
+        for (const evmAddress of evmAddresses) {
           await expect(
             cacheService.getAsync(
-              `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+              `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
               'test',
               requestDetails,
             ),
@@ -153,43 +154,43 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
 
     describe('findByAddress', () => {
       it('retrieves an address plan by address', async () => {
-        const ethAddress = '0x123';
-        const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
+        const evmAddress = '0x123';
+        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: uuidV4(randomBytes(16)) };
         await cacheService.set(
-          `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+          `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           addressPlan,
           'test',
           requestDetails,
         );
 
-        const result = await repository.findByAddress(ethAddress, requestDetails);
+        const result = await repository.findByAddress(evmAddress, requestDetails);
         expect(result).to.deep.equal(addressPlan);
       });
 
       it('throws an error if address plan is not found', async () => {
-        const ethAddress = '0xnonexistent';
-        await expect(repository.findByAddress(ethAddress, requestDetails)).to.be.eventually.rejectedWith(
-          EthAddressHbarSpendingPlanNotFoundError,
-          `EthAddressHbarSpendingPlan with address ${ethAddress} not found`,
+        const evmAddress = '0xnonexistent';
+        await expect(repository.findByAddress(evmAddress, requestDetails)).to.be.eventually.rejectedWith(
+          EvmAddressHbarSpendingPlanNotFoundError,
+          `EvmAddressHbarSpendingPlan with address ${evmAddress} not found`,
         );
       });
     });
 
     describe('save', () => {
       it('saves an address plan successfully', async () => {
-        const ethAddress = '0x123';
-        const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
+        const evmAddress = '0x123';
+        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: uuidV4(randomBytes(16)) };
 
         await repository.save(addressPlan, requestDetails, ttl);
-        const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
-          `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+        const result = await cacheService.getAsync<IEvmAddressHbarSpendingPlan>(
+          `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           'test',
           requestDetails,
         );
         expect(result).to.deep.equal(addressPlan);
         sinon.assert.calledWith(
           cacheServiceSpy.set,
-          `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+          `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           addressPlan,
           'save',
           requestDetails,
@@ -198,27 +199,27 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
       });
 
       it('overwrites an existing address plan', async () => {
-        const ethAddress = '0x123';
-        const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
+        const evmAddress = '0x123';
+        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: uuidV4(randomBytes(16)) };
         await cacheService.set(
-          `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+          `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           addressPlan,
           'test',
           requestDetails,
         );
 
         const newPlanId = uuidV4(randomBytes(16));
-        const newAddressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: newPlanId };
+        const newAddressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: newPlanId };
         await repository.save(newAddressPlan, requestDetails, ttl);
-        const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
-          `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+        const result = await cacheService.getAsync<IEvmAddressHbarSpendingPlan>(
+          `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           'test',
           requestDetails,
         );
         expect(result).to.deep.equal(newAddressPlan);
         sinon.assert.calledWith(
           cacheServiceSpy.set,
-          `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+          `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           newAddressPlan,
           'save',
           requestDetails,
@@ -229,18 +230,18 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
 
     describe('delete', () => {
       it('deletes an address plan successfully', async () => {
-        const ethAddress = '0x123';
-        const addressPlan: IEthAddressHbarSpendingPlan = { ethAddress, planId: uuidV4(randomBytes(16)) };
+        const evmAddress = '0x123';
+        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: uuidV4(randomBytes(16)) };
         await cacheService.set(
-          `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+          `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           addressPlan,
           'test',
           requestDetails,
         );
 
-        await repository.delete(ethAddress, requestDetails);
-        const result = await cacheService.getAsync<IEthAddressHbarSpendingPlan>(
-          `${EthAddressHbarSpendingPlanRepository.collectionKey}:${ethAddress}`,
+        await repository.delete(evmAddress, requestDetails);
+        const result = await cacheService.getAsync<IEvmAddressHbarSpendingPlan>(
+          `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           'test',
           requestDetails,
         );
@@ -248,8 +249,8 @@ describe('EthAddressHbarSpendingPlanRepository', function () {
       });
 
       it('does not throw an error if address plan to delete does not exist', async () => {
-        const ethAddress = '0xnonexistent';
-        await expect(repository.delete(ethAddress, requestDetails)).to.be.fulfilled;
+        const evmAddress = '0xnonexistent';
+        await expect(repository.delete(evmAddress, requestDetails)).to.be.fulfilled;
       });
     });
   };

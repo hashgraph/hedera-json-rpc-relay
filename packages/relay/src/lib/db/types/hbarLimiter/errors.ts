@@ -32,10 +32,10 @@ export class HbarSpendingPlanNotActiveError extends Error {
   }
 }
 
-export class EthAddressHbarSpendingPlanNotFoundError extends Error {
-  constructor(ethAddress: string) {
-    super(`EthAddressHbarSpendingPlan with address ${ethAddress} not found`);
-    this.name = 'EthAddressHbarSpendingPlanNotFoundError';
+export class EvmAddressHbarSpendingPlanNotFoundError extends Error {
+  constructor(evmAddress: string) {
+    super(`EvmAddressHbarSpendingPlan with address ${evmAddress} not found`);
+    this.name = 'EvmAddressHbarSpendingPlanNotFoundError';
   }
 }
 

@@ -18,30 +18,31 @@
  *
  */
 
-import { Logger } from 'pino';
-import { NetImpl } from './net';
-import { EthImpl } from './eth';
-import { Utils } from '../utils';
-import { Poller } from './poller';
-import { Web3Impl } from './web3';
-import EventEmitter from 'events';
-import constants from './constants';
-import { Client, Hbar } from '@hashgraph/sdk';
-import { RequestDetails } from './types';
-import { prepend0x } from '../formatters';
-import { MirrorNodeClient } from './clients';
-import { Gauge, Registry } from 'prom-client';
-import { Eth, Net, Relay, Subs, Web3 } from '../index';
-import HAPIService from './services/hapiService/hapiService';
-import { HbarLimitService } from './services/hbarLimitService';
-import { SubscriptionController } from './subscriptionController';
-import MetricService from './services/metricService/metricService';
-import { CacheService } from './services/cacheService/cacheService';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { Client, Hbar } from '@hashgraph/sdk';
+import EventEmitter from 'events';
+import { Logger } from 'pino';
+import { Gauge, Registry } from 'prom-client';
+
+import { prepend0x } from '../formatters';
+import { Eth, Net, Relay, Subs, Web3 } from '../index';
+import { Utils } from '../utils';
+import { MirrorNodeClient } from './clients';
 import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigService';
+import constants from './constants';
+import { EvmAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { EthAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ethAddressHbarSpendingPlanRepository';
+import { EthImpl } from './eth';
+import { NetImpl } from './net';
+import { Poller } from './poller';
+import { CacheService } from './services/cacheService/cacheService';
+import HAPIService from './services/hapiService/hapiService';
+import { HbarLimitService } from './services/hbarLimitService';
+import MetricService from './services/metricService/metricService';
+import { SubscriptionController } from './subscriptionController';
+import { RequestDetails } from './types';
+import { Web3Impl } from './web3';
 
 export class RelayImpl implements Relay {
   /**
@@ -145,7 +146,7 @@ export class RelayImpl implements Relay {
       this.cacheService,
       logger.child({ name: 'hbar-spending-plan-repository' }),
     );
-    const ethAddressHbarSpendingPlanRepository = new EthAddressHbarSpendingPlanRepository(
+    const evmAddressHbarSpendingPlanRepository = new EvmAddressHbarSpendingPlanRepository(
       this.cacheService,
       logger.child({ name: 'evm-address-spending-plan-repository' }),
     );
@@ -155,7 +156,7 @@ export class RelayImpl implements Relay {
     );
     const hbarLimitService = new HbarLimitService(
       hbarSpendingPlanRepository,
-      ethAddressHbarSpendingPlanRepository,
+      evmAddressHbarSpendingPlanRepository,
       ipAddressHbarSpendingPlanRepository,
       logger.child({ name: 'hbar-rate-limit' }),
       register,
@@ -201,7 +202,7 @@ export class RelayImpl implements Relay {
     this.hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
       logger.child({ name: 'hbar-spending-plan-config-service' }),
       hbarSpendingPlanRepository,
-      ethAddressHbarSpendingPlanRepository,
+      evmAddressHbarSpendingPlanRepository,
       ipAddressHbarSpendingPlanRepository,
     );
 
