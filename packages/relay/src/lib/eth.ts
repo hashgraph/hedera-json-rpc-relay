@@ -1657,7 +1657,7 @@ export class EthImpl implements Eth {
    * @returns {Promise<string | JsonRpcError>} A promise that resolves to the transaction hash if successful, or a JsonRpcError if an error occurs.
    * @throws {JsonRpcError} If there's an error during transaction processing.
    */
-  async sendRawTransactionTxProcessor(
+  async sendRawTransactionProcessor(
     transactionBuffer: Buffer,
     parsedTx: EthersTransaction,
     networkGasPriceInWeiBars: number,
@@ -1805,7 +1805,7 @@ export class EthImpl implements Eth {
      */
     const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING') as boolean;
     if (useAsyncTxProcessing) {
-      this.sendRawTransactionTxProcessor(transactionBuffer, parsedTx, networkGasPriceInWeiBars, requestDetails);
+      this.sendRawTransactionProcessor(transactionBuffer, parsedTx, networkGasPriceInWeiBars, requestDetails);
       return Utils.computeTransactionHash(transactionBuffer);
     }
 
@@ -1813,7 +1813,7 @@ export class EthImpl implements Eth {
      * Note: If the USE_ASYNC_TX_PROCESSING feature flag is disabled,
      * wait for all transaction processing logic to complete before returning the transaction hash.
      */
-    return await this.sendRawTransactionTxProcessor(
+    return await this.sendRawTransactionProcessor(
       transactionBuffer,
       parsedTx,
       networkGasPriceInWeiBars,
