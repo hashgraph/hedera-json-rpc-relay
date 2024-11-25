@@ -728,14 +728,7 @@ export class SDKClient {
         throw e;
       }
 
-      // Log the target node account ID, right now, it's populated only for MaxAttemptsOrTimeout error
-      if (e?.nodeAccountId) {
-        this.logger.info(
-          `${requestDetails.formattedRequestId} Transaction failed to execute against node with id: ${e.nodeAccountId}`
-        );
-      }
-
-      const sdkClientError = new SDKClientError(e, e.message, transaction.transactionId?.toString());
+      const sdkClientError = new SDKClientError(e, e.message, transaction.transactionId?.toString(), e.nodeAccountId);
 
       // WRONG_NONCE is one of the special errors where the SDK still returns a valid transactionResponse.
       // Throw the WRONG_NONCE error, as additional handling logic is expected in a higher layer.
@@ -818,13 +811,7 @@ export class SDKClient {
         `${requestDetails.formattedRequestId} Successfully execute all ${transactionResponses.length} ${txConstructorName} transactions: callerName=${callerName}, status=${Status.Success}(${Status.Success._code})`,
       );
     } catch (e: any) {
-      // Log the target node account ID, right now, it's populated only for MaxAttemptsOrTimeout error
-      if (e?.nodeAccountId) {
-        this.logger.info(
-          `${requestDetails.formattedRequestId} Transaction failed to execute against node with id: ${e.nodeAccountId}`
-        );
-      }
-      const sdkClientError = new SDKClientError(e, e.message);
+      const sdkClientError = new SDKClientError(e, e.message, undefined, e.nodeAccountId);
 
       this.logger.warn(
         `${requestDetails.formattedRequestId} Fail to executeAll for ${txConstructorName} transaction: transactionId=${transaction.transactionId}, callerName=${callerName}, transactionType=${txConstructorName}, status=${sdkClientError.status}(${sdkClientError.status._code})`,

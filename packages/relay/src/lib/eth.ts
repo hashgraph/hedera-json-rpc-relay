@@ -1698,6 +1698,11 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       if (e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded())) {
         submittedTransactionId = e.transactionId || '';
+
+        // Log the target node account ID, right now, it's populated only for MaxAttemptsOrTimeout error
+        this.logger.info(
+          `${requestDetails.formattedRequestId} Transaction failed to execute against node with id: ${e.nodeAccountId}`
+        );
       }
 
       sendRawTransactionError = e;
