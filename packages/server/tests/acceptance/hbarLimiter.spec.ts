@@ -710,7 +710,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                 }
 
                 // should make sure accounts in the same plan also share the same amountSpent which should also be hbar rate limited
-                const ethSpendingPlan = await ethAddressSpendingPlanRepository.findByAddress(
+                const ethSpendingPlan = await evmAddressSpendingPlanRepository.findByAddress(
                   aliasAccounts[1].address,
                   requestDetails,
                 );
