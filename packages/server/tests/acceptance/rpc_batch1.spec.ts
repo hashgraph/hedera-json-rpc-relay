@@ -19,33 +19,30 @@
  */
 
 // External resources
-import { expect } from 'chai';
-import { ethers } from 'ethers';
-import { AliasAccount } from '../types/AliasAccount';
-import { Utils } from '../helpers/utils';
-import { FileInfo, FileInfoQuery, Hbar, TransferTransaction } from '@hashgraph/sdk';
-
-// Assertions from local resources
-import Assertions from '../helpers/assertions';
-
-// Local resources from contracts directory
-import parentContractJson from '../contracts/Parent.json';
-import logsContractJson from '../contracts/Logs.json';
-import basicContract from '../../tests/contracts/Basic.json';
-
-// Errors and constants from local resources
-import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
-import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import RelayCalls from '../../tests/helpers/constants';
-
 // Other imports
 import { numberTo0x, prepend0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+// Errors and constants from local resources
+import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { FileInfo, FileInfoQuery, Hbar, TransferTransaction } from '@hashgraph/sdk';
+import { expect } from 'chai';
+import { ethers } from 'ethers';
+
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import basicContract from '../../tests/contracts/Basic.json';
+import RelayCalls from '../../tests/helpers/constants';
+import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
 import ServicesClient from '../clients/servicesClient';
-import MirrorClient from '../clients/mirrorClient';
+import logsContractJson from '../contracts/Logs.json';
+// Local resources from contracts directory
+import parentContractJson from '../contracts/Parent.json';
+// Assertions from local resources
+import Assertions from '../helpers/assertions';
+import { Utils } from '../helpers/utils';
+import { AliasAccount } from '../types/AliasAccount';
 
 const Address = RelayCalls;
 
@@ -81,6 +78,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   );
   const gasPriceDeviation = parseFloat((ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2') as string);
   const sendRawTransaction = relay.sendRawTransaction;
+  const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING') as boolean;
 
   /**
    * resolves long zero addresses to EVM addresses by querying mirror node
@@ -126,6 +124,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         parentContractJson.bytecode,
         accounts[0].wallet,
       );
+
       parentContractAddress = parentContract.target as string;
       if (global.logger.isLevelEnabled('trace')) {
         global.logger.trace(
@@ -133,13 +132,15 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
       }
 
-      await accounts[0].wallet.sendTransaction({
+      const response = await accounts[0].wallet.sendTransaction({
         to: parentContractAddress,
         value: ethers.parseEther('1'),
       });
+      await relay.pollForValidTransactionReceipt(response.hash);
 
       // @ts-ignore
       const createChildTx: ethers.ContractTransactionResponse = await parentContract.createChild(1);
+      await relay.pollForValidTransactionReceipt(createChildTx.hash);
 
       if (global.logger.isLevelEnabled('trace')) {
         global.logger.trace(
@@ -154,7 +155,13 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
     });
 
     describe('eth_getLogs', () => {
-      let log0Block, log4Block, contractAddress: string, contractAddress2: string, latestBlock, previousBlock;
+      let log0Block,
+        log4Block,
+        contractAddress: string,
+        contractAddress2: string,
+        latestBlock,
+        previousBlock,
+        expectedAmountOfLogs;
 
       before(async () => {
         const logsContract = await Utils.deployContract(
@@ -185,6 +192,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // @ts-ignore
         await (await logsContract2.connect(accounts[1].wallet).log4(1, 1, 1, 1)).wait();
 
+        expectedAmountOfLogs = 6;
         latestBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestIdPrefix));
       });
 
@@ -439,25 +447,20 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         //for the purpose of the test, we are settings limit to 2, and fetching all.
         //setting mirror node limit to 2 for this test only
         ConfigServiceTestHelper.dynamicOverride('MIRROR_NODE_LIMIT_PARAM', '2');
-        // calculate blocks behind latest, so we can fetch logs from the past.
-        // if current block is less than 10, we will fetch logs from the beginning otherwise we will fetch logs from 10 blocks behind latest
-        const currentBlock = Number(await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_BLOCK_NUMBER, [], requestIdPrefix));
-        let blocksBehindLatest = 0;
-        if (currentBlock > 10) {
-          blocksBehindLatest = currentBlock - 10;
-        }
+
         const logs = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
           [
             {
-              fromBlock: numberTo0x(blocksBehindLatest),
-              toBlock: 'latest',
+              fromBlock: numberTo0x(previousBlock),
+              toBlock: numberTo0x(latestBlock),
               address: [contractAddress, contractAddress2],
             },
           ],
           requestIdPrefix,
         );
-        expect(logs.length).to.be.greaterThan(2);
+
+        expect(logs.length).to.eq(expectedAmountOfLogs);
       });
 
       it('should return empty logs if address = ZeroAddress', async () => {
@@ -1107,12 +1110,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         };
         const signedTx = await accounts[1].wallet.signTransaction(transaction);
         const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-
-        const transactionResult = await relay.call(
-          RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_BY_HASH,
-          [transactionHash],
-          requestIdPrefix,
-        );
+        const transactionResult = await relay.pollForValidTransactionReceipt(transactionHash);
 
         const result = Object.prototype.hasOwnProperty.call(transactionResult, 'chainId');
         expect(result).to.be.false;
@@ -1398,22 +1396,27 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         );
       });
 
-      it('should execute "eth_sendRawTransaction" and deploy a contract with more than max transaction fee', async function () {
-        const gasPrice = await relay.gasPrice(requestId);
-        const transaction = {
-          type: 2,
-          chainId: Number(CHAIN_ID),
-          nonce: await relay.getAccountNonce(accounts[2].address, requestId),
-          maxPriorityFeePerGas: gasPrice,
-          maxFeePerGas: gasPrice,
-          gasLimit: Constants.MAX_GAS_PER_SEC,
-          data: '0x' + '00'.repeat(60000),
-        };
-        const signedTx = await accounts[2].wallet.signTransaction(transaction);
-        const error = predefined.INTERNAL_ERROR();
+      if (!useAsyncTxProcessing) {
+        it('should execute "eth_sendRawTransaction" and deploy a contract with more than max transaction fee', async function () {
+          const gasPrice = await relay.gasPrice(requestId);
+          const transaction = {
+            type: 2,
+            chainId: Number(CHAIN_ID),
+            nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+            maxPriorityFeePerGas: gasPrice,
+            maxFeePerGas: gasPrice,
+            gasLimit: Constants.MAX_GAS_PER_SEC,
+            data: '0x' + '00'.repeat(60000),
+          };
+          const signedTx = await accounts[2].wallet.signTransaction(transaction);
+          const error = predefined.INTERNAL_ERROR();
 
-        await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [signedTx, requestDetails]);
-      });
+          await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [
+            signedTx,
+            requestDetails,
+          ]);
+        });
+      }
 
       describe('Prechecks', async function () {
         it('should fail "eth_sendRawTransaction" for transaction with incorrect chain_id', async function () {
@@ -1544,21 +1547,26 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestDetails]);
         });
 
-        it('@release fail "eth_getTransactionReceipt" on precheck with wrong nonce error when sending a tx with a higher nonce', async function () {
-          const nonce = await relay.getAccountNonce(accounts[2].address, requestId);
+        if (!useAsyncTxProcessing) {
+          it('@release fail "eth_getTransactionReceipt" on precheck with wrong nonce error when sending a tx with a higher nonce', async function () {
+            const nonce = await relay.getAccountNonce(accounts[2].address, requestId);
 
-          const transaction = {
-            ...default155TransactionData,
-            to: parentContractAddress,
-            nonce: nonce + 100,
-            gasPrice: await relay.gasPrice(requestId),
-          };
+            const transaction = {
+              ...default155TransactionData,
+              to: parentContractAddress,
+              nonce: nonce + 100,
+              gasPrice: await relay.gasPrice(requestId),
+            };
 
-          const signedTx = await accounts[2].wallet.signTransaction(transaction);
-          const error = predefined.NONCE_TOO_HIGH(nonce + 100, nonce);
+            const signedTx = await accounts[2].wallet.signTransaction(transaction);
+            const error = predefined.NONCE_TOO_HIGH(nonce + 100, nonce);
 
-          await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestDetails]);
-        });
+            await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [
+              signedTx,
+              requestDetails,
+            ]);
+          });
+        }
 
         it('@release fail "eth_getTransactionReceipt" on submitting with wrong nonce error when sending a tx with the same nonce twice', async function () {
           const nonce = await relay.getAccountNonce(accounts[2].address, requestId);
@@ -1570,28 +1578,13 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             maxFeePerGas: await relay.gasPrice(requestId),
           };
 
-          const signedTx1 = await accounts[2].wallet.signTransaction(transaction1);
+          const signedTx = await accounts[2].wallet.signTransaction(transaction1);
 
-          await Promise.all([
-            Promise.allSettled([
-              relay.sendRawTransaction(signedTx1, requestId),
-              relay.sendRawTransaction(signedTx1, requestId),
-            ]).then((values) => {
-              const fulfilled = values.find((obj) => obj.status === 'fulfilled');
-              const rejected = values.find((obj) => obj.status === 'rejected');
+          const res = await relay.sendRawTransaction(signedTx, requestId);
+          await relay.pollForValidTransactionReceipt(res);
 
-              expect(fulfilled).to.exist;
-              expect(fulfilled).to.have.property('value');
-              expect(rejected).to.exist;
-              expect(rejected).to.have.property('reason');
-
-              Assertions.jsonRpcError(
-                // @ts-ignore
-                rejected?.reason?.info?.error,
-                predefined.NONCE_TOO_LOW(nonce, nonce + 1),
-              );
-            }),
-          ]);
+          const error = predefined.NONCE_TOO_LOW(nonce, nonce + 1);
+          await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestDetails]);
         });
       });
 

@@ -19,35 +19,33 @@
  */
 
 // External resources
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
+import { ContractId, Hbar, HbarUnit } from '@hashgraph/sdk';
 import { expect } from 'chai';
 import { ethers } from 'ethers';
-import { AliasAccount } from '../types/AliasAccount';
-import { Utils } from '../helpers/utils';
-import { predefined } from '@hashgraph/json-rpc-relay/dist';
-import { EthImpl } from '@hashgraph/json-rpc-relay/dist/lib/eth';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
-import { ContractId, Hbar, HbarUnit } from '@hashgraph/sdk';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-
-// Assertions from local resources
-import Assertions from '../helpers/assertions';
-
-// Contracts from local resources
-import parentContractJson from '../contracts/Parent.json';
-import basicContractJson from '../contracts/Basic.json';
-import storageContractJson from '../contracts/Storage.json';
-import TokenCreateJson from '../contracts/TokenCreateContract.json';
-import ERC20MockJson from '../contracts/ERC20Mock.json';
+import { Logger } from 'pino';
 
 // Helper functions/constants from local resources
 import RelayCalls from '../../tests/helpers/constants';
 import Helper from '../../tests/helpers/constants';
 import Address from '../../tests/helpers/constants';
 import constants from '../../tests/helpers/constants';
+import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
 import ServicesClient from '../clients/servicesClient';
-import MirrorClient from '../clients/mirrorClient';
-import { Logger } from 'pino';
+import basicContractJson from '../contracts/Basic.json';
+import ERC20MockJson from '../contracts/ERC20Mock.json';
+// Contracts from local resources
+import parentContractJson from '../contracts/Parent.json';
+import storageContractJson from '../contracts/Storage.json';
+import TokenCreateJson from '../contracts/TokenCreateContract.json';
+// Assertions from local resources
+import Assertions from '../helpers/assertions';
+import { Utils } from '../helpers/utils';
+import { AliasAccount } from '../types/AliasAccount';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
@@ -142,13 +140,15 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     const parentContractId = ContractId.fromString(mirrorNodeContractRes.contract_id);
     parentContractLongZeroAddress = `0x${parentContractId.toSolidityAddress()}`;
 
-    await accounts[0].wallet.sendTransaction({
+    const response = await accounts[0].wallet.sendTransaction({
       to: parentContractAddress,
       value: ethers.parseEther('1'),
     });
+    await relay.pollForValidTransactionReceipt(response.hash);
 
     // @ts-ignore
     createChildTx = await parentContract.createChild(1);
+    await relay.pollForValidTransactionReceipt(createChildTx.hash);
 
     if (global.logger.isLevelEnabled('trace')) {
       global.logger.trace(
@@ -461,10 +461,12 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       getBalanceContractAddress = getBalanceContract.target as string;
 
-      await accounts[0].wallet.sendTransaction({
+      const response = await accounts[0].wallet.sendTransaction({
         to: getBalanceContractAddress,
         value: ethers.parseEther('1'),
       });
+
+      await relay.pollForValidTransactionReceipt(response.hash);
     });
 
     it('@release should execute "eth_getBalance" for newly created account with 1 HBAR', async function () {
@@ -754,7 +756,10 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         value: BigInt('30000000000000000000'),
         ...Helper.GAS.LIMIT_5_000_000,
       });
-      const { tokenAddress } = (await tx.wait()).logs.filter(
+      const receipt = await tx.wait();
+      await relay.pollForValidTransactionReceipt(receipt.hash);
+
+      const { tokenAddress } = receipt.logs.filter(
         (e) => e.fragment.name === RelayCalls.HTS_CONTRACT_EVENTS.CreatedToken,
       )[0].args;
 
@@ -871,10 +876,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       };
 
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
-      await relay.sendRawTransaction(signedTx, requestId);
-
-      // wait for the transaction to propogate to mirror node
-      await new Promise((r) => setTimeout(r, 4000));
+      const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+      await relay.pollForValidTransactionReceipt(transactionHash);
 
       const storageVal = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_STORAGE_AT,
@@ -909,11 +912,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
-      const txReceipt = await relay.call(
-        RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
-        [transactionHash],
-        requestId,
-      );
+      const txReceipt = await relay.pollForValidTransactionReceipt(transactionHash);
       const blockNumber = txReceipt.blockNumber;
 
       // wait for the transaction to propogate to mirror node
@@ -965,7 +964,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       };
 
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
-      await relay.sendRawTransaction(signedTx, requestId);
+      const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+      await relay.pollForValidTransactionReceipt(transactionHash);
 
       // wait for the transaction to propogate to mirror node
       await new Promise((r) => setTimeout(r, 4000));
@@ -997,14 +997,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+      const txReceipt = await relay.pollForValidTransactionReceipt(transactionHash);
 
-      const transactionReceipt = await relay.call(
-        RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
-        [transactionHash],
-        requestId,
-      );
-
-      const blockNumber = transactionReceipt.blockNumber;
+      const blockNumber = txReceipt.blockNumber;
       const transaction1 = {
         ...transaction,
         nonce: await relay.getAccountNonce(accounts[1].address),
@@ -1012,8 +1007,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       };
 
       const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
-      await relay.sendRawTransaction(signedTx1, requestId);
-      await new Promise((r) => setTimeout(r, 2000));
+      const transactionHash1 = await relay.sendRawTransaction(signedTx1, requestId);
+      await relay.pollForValidTransactionReceipt(transactionHash1);
 
       //Get previous state change with specific block number
       const storageVal = await relay.call(
@@ -1043,14 +1038,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
 
       const signedTx = await accounts[1].wallet.signTransaction(transaction);
       const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+      const txReceipt = await relay.pollForValidTransactionReceipt(transactionHash);
 
-      const transactionReceipt = await relay.call(
-        RelayCalls.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT,
-        [transactionHash],
-        requestId,
-      );
-
-      const blockHash = transactionReceipt.blockHash;
+      const blockHash = txReceipt.blockHash;
 
       const transaction1 = {
         ...transaction,
@@ -1059,8 +1049,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       };
 
       const signedTx1 = await accounts[1].wallet.signTransaction(transaction1);
-      await relay.sendRawTransaction(signedTx1, requestId);
-      await new Promise((r) => setTimeout(r, 2000));
+      const transactionHash1 = await relay.sendRawTransaction(signedTx1, requestId);
+      await relay.pollForValidTransactionReceipt(transactionHash1);
 
       //Get previous state change with specific block number
       const storageVal = await relay.call(
