@@ -42,9 +42,9 @@ jobs:
   acceptance-workflow:
     runs-on: smart-contracts-linux-large
     timeout-minutes: 50
-    permissions:
-      contents: read
-      checks: write
+    permissions: write-all
+    #   contents: read
+    #   checks: write
     env:
       OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
     steps:
