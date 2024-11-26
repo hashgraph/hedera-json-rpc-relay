@@ -17,6 +17,8 @@ jobs:
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: api_batch1
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   api_batch_2:
     name: API Batch 2
