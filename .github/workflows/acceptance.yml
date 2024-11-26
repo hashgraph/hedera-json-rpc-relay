@@ -20,145 +20,176 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # api_batch_2:
-  #   name: API Batch 2
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: api_batch2
+  api_batch_2:
+    name: API Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api_batch2
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      
 
-  # api_batch_3:
-  #   name: API Batch 3
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: api_batch3
+  api_batch_3:
+    name: API Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: api_batch3
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # erc20:
-  #   name: ERC20
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: erc20
+  erc20:
+    name: ERC20
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: erc20
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # ratelimiter:
-  #   name: Rate Limiter
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: ratelimiter
-  #     test_ws_server: true
+  ratelimiter:
+    name: Rate Limiter
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ratelimiter
+      test_ws_server: true
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # hbarlimiter_batch_1:
-  #   name: HBar Limiter Batch 1
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: hbarlimiter_batch1
+  hbarlimiter_batch_1:
+    name: HBar Limiter Batch 1
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: hbarlimiter_batch1
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # hbarlimiter_batch_2:
-  #   name: HBar Limiter Batch 2
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: hbarlimiter_batch2
+  hbarlimiter_batch_2:
+    name: HBar Limiter Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: hbarlimiter_batch2
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # hbarlimiter_batch_3:
-  #   name: HBar Limiter Batch 3
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: hbarlimiter_batch3
+  hbarlimiter_batch_3:
+    name: HBar Limiter Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: hbarlimiter_batch3
 
-  # tokencreate:
-  #   name: Token Create
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: tokencreate
+  tokencreate:
+    name: Token Create
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: tokencreate
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # tokenmanagement:
-  #   name: Token Management
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: tokenmanagement
+  tokenmanagement:
+    name: Token Management
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: tokenmanagement
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # htsprecompilev1:
-  #   name: Precompile
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: htsprecompilev1
+  htsprecompilev1:
+    name: Precompile
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: htsprecompilev1
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # precompilecalls:
-  #   name: Precompile Calls
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: precompile-calls
+  precompilecalls:
+    name: Precompile Calls
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: precompile-calls
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # websocket-batch-1:
-  #   name: Websocket Batch 1
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: ws_batch1
-  #     test_ws_server: true
+  websocket-batch-1:
+    name: Websocket Batch 1
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch1
+      test_ws_server: true
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # websocket-batch-2:
-  #   name: Websocket Batch 2
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: ws_batch2
-  #     test_ws_server: true
+  websocket-batch-2:
+    name: Websocket Batch 2
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch2
+      test_ws_server: true
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # websocket-batch-3:
-  #   name: Websocket Batch 3
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: ws_batch3
-  #     test_ws_server: true
+  websocket-batch-3:
+    name: Websocket Batch 3
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: ws_batch3
+      test_ws_server: true
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # cacheservice:
-  #   name: Cache Service
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: cache-service
+  cacheservice:
+    name: Cache Service
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: cache-service
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # server-config:
-  #   name: Server Config
-  #   uses: ./.github/workflows/acceptance-workflow.yml
-  #   with:
-  #     testfilter: serverconfig
+  server-config:
+    name: Server Config
+    uses: ./.github/workflows/acceptance-workflow.yml
+    with:
+      testfilter: serverconfig
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # publish_results:
-  #   name: Publish Results
-  #   if: ${{ !cancelled() }}
-  #   needs:
-  #     - api_batch_1
-  #     - api_batch_2
-  #     - api_batch_3
-  #     - erc20
-  #     - ratelimiter
-  #     - hbarlimiter_batch_1
-  #     - hbarlimiter_batch_2
-  #     - hbarlimiter_batch_3
-  #     - tokencreate
-  #     - tokenmanagement
-  #     - htsprecompilev1
-  #     - precompilecalls
-  #     - websocket-batch-1
-  #     - websocket-batch-2
-  #     - websocket-batch-3
-  #     - cacheservice
+  publish_results:
+    name: Publish Results
+    if: ${{ !cancelled() }}
+    needs:
+      - api_batch_1
+      - api_batch_2
+      - api_batch_3
+      - erc20
+      - ratelimiter
+      - hbarlimiter_batch_1
+      - hbarlimiter_batch_2
+      - hbarlimiter_batch_3
+      - tokencreate
+      - tokenmanagement
+      - htsprecompilev1
+      - precompilecalls
+      - websocket-batch-1
+      - websocket-batch-2
+      - websocket-batch-3
+      - cacheservice
 
-  #   runs-on: smart-contracts-linux-medium
-  #   steps:
-  #     - name: Harden Runner
-  #       uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
-  #       with:
-  #         egress-policy: audit
+    runs-on: smart-contracts-linux-medium
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
 
-  #     - name: Download Test Reports
-  #       uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
-  #       with:
-  #         pattern: Test Results (*)
-  #         merge-multiple: true
+      - name: Download Test Reports
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        with:
+          pattern: Test Results (*)
+          merge-multiple: true
 
-  #     - name: Publish Test Report
-  #       uses: step-security/publish-unit-test-result-action@4519d7c9f71dd765f8bbb98626268780f23bab28 # v2.17.0
-  #       with:
-  #         # check_name: Acceptance Tests
-  #         check_name: '' # Set to empty to disable check run
-  #         json_thousands_separator: ','
-  #         files: 'test-*.xml'
-  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish Test Report
+        uses: step-security/publish-unit-test-result-action@4519d7c9f71dd765f8bbb98626268780f23bab28 # v2.17.0
+        with:
+          # check_name: Acceptance Tests
+          check_name: '' # Set to empty to disable check run
+          json_thousands_separator: ','
+          files: 'test-*.xml'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
