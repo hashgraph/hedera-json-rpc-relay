@@ -75,6 +75,8 @@ jobs:
     uses: ./.github/workflows/acceptance-workflow.yml
     with:
       testfilter: hbarlimiter_batch3
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   tokencreate:
     name: Token Create
