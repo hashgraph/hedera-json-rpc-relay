@@ -69,12 +69,29 @@ export enum CallType {
   CALL = 'CALL',
 }
 
-const CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE =
+const CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V1 =
+  'createNonFungibleToken((string,string,address,string,bool,uint32,bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)))';
+const CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V2 =
+  'createNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)))';
+const CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V3 =
   'createNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))';
+const CREATE_NON_FUNGIBLE_WITH_CUSTOM_FEES_TOKEN_FUNCTION_SIGNATURE_V1 =
+  'createNonFungibleTokenWithCustomFees((string,string,address,string,bool,uint32,bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),(uint32,address,bool,bool,address)[],(uint32,uint32,uint32,address,bool,address)[])';
+const CREATE_NON_FUNGIBLE_WITH_CUSTOM_FEES_TOKEN_FUNCTION_SIGNATURE_V2 =
+  'createNonFungibleTokenWithCustomFees((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),(uint32,address,bool,bool,address)[],(uint32,uint32,uint32,address,bool,address)[])';
+const CREATE_NON_FUNGIBLE_WITH_CUSTOM_FEES_TOKEN_FUNCTION_SIGNATURE_V3 =
+  'createNonFungibleTokenWithCustomFees((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),(int64,address,bool,bool,address)[],(int64,int64,int64,address,bool,address)[])';
+
 const CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V1 =
-  'createFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),uint64,uint32)';
+  'createFungibleToken((string,string,address,string,bool,int64,bool,(uint,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),uint64,uint32)';
 const CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V2 =
+  'createFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),uint64,uint32)';
+const CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V3 =
   'createFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32)';
+const CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_FUNCTION_SIGNATURE_V2 =
+  'createFungibleTokenWithCustomFees((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),uint64,uint32,(uint32,address,bool,bool,address)[],(uint32,uint32,uint32,uint32,bool,address)[])';
+const CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_FUNCTION_SIGNATURE_V3 =
+  'createFungibleTokenWithCustomFees((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[])';
 
 export default {
   HBAR_TO_TINYBAR_COEF: 100_000_000,
@@ -220,7 +237,15 @@ export default {
   HTS_CREATE_FUNCTIONS_SIGNATURE: [
     CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V1,
     CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V2,
-    CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE,
+    CREATE_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V3,
+    CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_FUNCTION_SIGNATURE_V2,
+    CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES_FUNCTION_SIGNATURE_V3,
+    CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V1,
+    CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V2,
+    CREATE_NON_FUNGIBLE_TOKEN_FUNCTION_SIGNATURE_V3,
+    CREATE_NON_FUNGIBLE_WITH_CUSTOM_FEES_TOKEN_FUNCTION_SIGNATURE_V1,
+    CREATE_NON_FUNGIBLE_WITH_CUSTOM_FEES_TOKEN_FUNCTION_SIGNATURE_V2,
+    CREATE_NON_FUNGIBLE_WITH_CUSTOM_FEES_TOKEN_FUNCTION_SIGNATURE_V3,
   ],
 
   // The fee is calculated via the fee calculator: https://docs.hedera.com/hedera/networks/mainnet/fees
