@@ -18,10 +18,13 @@
  *
  */
 
+import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
+import { ITransactionReceipt } from '@hashgraph/json-rpc-relay/src/lib/types';
 import { BlockTag, ethers } from 'ethers';
 import { Logger } from 'pino';
+
 import Assertions from '../helpers/assertions';
-import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
+import constants from '../helpers/constants';
 import { Utils } from '../helpers/utils';
 
 export default class RelayClient {
@@ -30,7 +33,7 @@ export default class RelayClient {
 
   constructor(relayUrl: string, logger: Logger) {
     this.logger = logger;
-    let fr: ethers.FetchRequest = new ethers.FetchRequest(relayUrl);
+    const fr: ethers.FetchRequest = new ethers.FetchRequest(relayUrl);
     this.provider = new ethers.JsonRpcProvider(fr);
   }
 
@@ -174,5 +177,19 @@ export default class RelayClient {
    */
   async gasPrice(requestId?: string): Promise<number> {
     return Number(await this.call('eth_gasPrice', [], requestId));
+  }
+
+  /**
+   * Polls for a valid transaction receipt by repeatedly checking until one is found.
+   *
+   * @param {string} txHash - The transaction hash to get the receipt for
+   * @returns {Promise<ITransactionReceipt>} A promise that resolves to the transaction receipt
+   */
+  async pollForValidTransactionReceipt(txHash: string): Promise<ITransactionReceipt> {
+    const receipt = await this.provider.send(constants.ETH_ENDPOINTS.ETH_GET_TRANSACTION_RECEIPT, [txHash]);
+    if (receipt) return receipt;
+
+    await Utils.wait(1000);
+    return this.pollForValidTransactionReceipt(txHash);
   }
 }

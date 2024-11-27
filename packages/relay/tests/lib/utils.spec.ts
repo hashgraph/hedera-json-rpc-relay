@@ -18,12 +18,14 @@
  *
  */
 
-import { expect } from 'chai';
-import { Utils } from '../../src/utils';
-import constants from '../../src/lib/constants';
-import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '../helpers';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { expect } from 'chai';
+import createHash from 'keccak';
+
 import { ASCIIToHex, prepend0x } from '../../src/formatters';
+import constants from '../../src/lib/constants';
+import { Utils } from '../../src/utils';
+import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '../helpers';
 
 describe('Utils', () => {
   describe('addPercentageBufferToGasPrice', () => {
@@ -42,7 +44,7 @@ describe('Utils', () => {
       maximumFractionDigits: 2,
     });
 
-    for (let i in TEST_CASES) {
+    for (const i in TEST_CASES) {
       describe(`${TEST_CASES[i].testName}, ${gasFormat.format(TEST_CASES[i].input)} gas`, () => {
         overrideEnvsInMochaDescribe({ GAS_PRICE_PERCENTAGE_BUFFER: TEST_CASES[i].buffer });
 
@@ -90,6 +92,34 @@ describe('Utils', () => {
             error_message: prepend0x(ASCIIToHex(status)),
           }),
         ).to.be.true;
+      });
+    });
+  });
+
+  describe('computeTransactionHash', () => {
+    const testCases = [
+      { description: 'handle empty buffer', input: '' },
+      { description: 'handle buffer with special characters', input: '!@#$%^&*()' },
+      {
+        description: 'compute correct keccak256 hash and prepend 0x',
+        input:
+          '0x02f881820128048459682f0086014fa0186f00901714801554cbe52dd95512bedddf68e09405fba803be258049a27b820088bab1cad205887185174876e80080c080a0cab3f53602000c9989be5787d0db637512acdd2ad187ce15ba83d10d9eae2571a07802515717a5a1c7d6fa7616183eb78307b4657d7462dbb9e9deca820dd28f62',
+      },
+    ];
+
+    testCases.forEach(({ description, input }) => {
+      it(`should ${description}`, () => {
+        const testBuffer = Buffer.from(input);
+        const expectedHash = '0x' + createHash('keccak256').update(testBuffer).digest('hex');
+
+        const result = Utils.computeTransactionHash(testBuffer);
+
+        expect(result).to.equal(expectedHash);
+        expect(result.substring(0, 2)).to.equal('0x');
+        // Keccak-256 produces a 32 byte (256 bit) hash
+        // Each byte is represented by 2 hex characters
+        // Plus 2 characters for '0x' prefix
+        expect(result.length).to.equal(66);
       });
     });
   });

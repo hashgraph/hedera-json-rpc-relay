@@ -18,11 +18,13 @@
  *
  */
 
-import { PrivateKey } from '@hashgraph/sdk';
-import constants from './lib/constants';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { PrivateKey } from '@hashgraph/sdk';
 import crypto from 'crypto';
-import { hexToASCII, strip0x } from './formatters';
+import createHash from 'keccak';
+
+import { hexToASCII, prepend0x, strip0x } from './formatters';
+import constants from './lib/constants';
 
 export class Utils {
   public static readonly IP_ADDRESS_REGEX = /\b((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}\b/g;
@@ -124,5 +126,14 @@ export class Utils {
       statuses.includes(contractResult.result) ||
       statuses.includes(hexToASCII(strip0x(contractResult.error_message ?? '')))
     );
+  }
+
+  /**
+   * Computes the Keccak-256 hash of a transaction buffer and prepends '0x'
+   * @param {Buffer} transactionBuffer - The raw transaction buffer to hash
+   * @returns {string} The computed transaction hash with '0x' prefix
+   */
+  public static computeTransactionHash(transactionBuffer: Buffer): string {
+    return prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
   }
 }
