@@ -2316,11 +2316,6 @@ export class EthImpl implements Eth {
       );
       return receipt;
     } else {
-      if (
-        receiptResponse.function_parameters.substring(2, constants.FUNCTION_SELECTOR_CHAR_LENGTH).includes('0x0fb65bf3')
-      ) {
-        console.log('WE ARE HEREEE');
-      }
       const effectiveGas = await this.getCurrentGasPriceForBlock(receiptResponse.block_hash, requestDetails);
       // support stricter go-eth client which requires the transaction hash property on logs
       const logs = receiptResponse.logs.map((log) => {
