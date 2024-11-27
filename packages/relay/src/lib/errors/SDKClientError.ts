@@ -22,10 +22,11 @@ import { Status } from '@hashgraph/sdk';
 
 export class SDKClientError extends Error {
   public status: Status = Status.Unknown;
+  public nodeAccountId: string | undefined;
   private validNetworkError: boolean = false;
   private failedTransactionId: string | undefined;
 
-  constructor(e: any, message?: string, transactionId?: string) {
+  constructor(e: any, message?: string, transactionId?: string, nodeId?: string | undefined) {
     super(e?.status?._code ? e.message : message);
 
     if (e?.status?._code) {
@@ -33,6 +34,7 @@ export class SDKClientError extends Error {
       this.status = e.status;
     }
     this.failedTransactionId = transactionId || '';
+    this.nodeAccountId = nodeId;
     Object.setPrototypeOf(this, SDKClientError.prototype);
   }
 
