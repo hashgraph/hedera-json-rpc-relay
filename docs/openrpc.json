@@ -943,16 +943,8 @@
       "result": {
         "name": "The current client version.",
         "schema": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "relay\\/[0-9]+\\.[0-9]+\\.[0-9]+-SNAPSHOT"
-            },
-            {
-              "type": "string",
-              "pattern": "relay/[0-9]\\.[0-9]\\.[0-9]"
-            }
-          ]
+          "type": "string",
+          "pattern": "relay/[0-9]\\.[0-9]\\.[0-9]"
         }
       }
     },
@@ -1886,7 +1878,7 @@
         "oneOf": [
           {
             "title": "Any Topic Match",
-            "type": "null" 
+            "type": "null"
           },
           {
             "title": "Single Topic Match",
