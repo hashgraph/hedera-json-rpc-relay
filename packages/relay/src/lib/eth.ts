@@ -1593,6 +1593,13 @@ export class EthImpl implements Eth {
     }
 
     if (e instanceof SDKClientError) {
+      if (e.nodeAccountId) {
+        // Log the target node account ID, right now, it's populated only for MaxAttemptsOrTimeout error
+        this.logger.info(
+          `${requestDetails.formattedRequestId} Transaction failed to execute against node with id: ${e.nodeAccountId}`,
+        );
+      }
+
       this.hapiService.decrementErrorCounter(e.statusCode);
       if (e.status.toString() === constants.TRANSACTION_RESULT_STATUS.WRONG_NONCE) {
         const mirrorNodeGetContractResultRetries = this.mirrorNodeClient.getMirrorNodeRequestRetryCount();
@@ -1698,11 +1705,6 @@ export class EthImpl implements Eth {
     } catch (e: any) {
       if (e instanceof SDKClientError && (e.isConnectionDropped() || e.isTimeoutExceeded())) {
         submittedTransactionId = e.transactionId || '';
-
-        // Log the target node account ID, right now, it's populated only for MaxAttemptsOrTimeout error
-        this.logger.info(
-          `${requestDetails.formattedRequestId} Transaction failed to execute against node with id: ${e.nodeAccountId}`
-        );
       }
 
       sendRawTransactionError = e;

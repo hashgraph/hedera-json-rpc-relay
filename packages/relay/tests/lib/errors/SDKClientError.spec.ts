@@ -18,8 +18,9 @@
  *
  */
 
-import { expect } from 'chai';
 import { Status } from '@hashgraph/sdk';
+import { expect } from 'chai';
+
 import { SDKClientError } from '../../../src/lib/errors/SDKClientError'; // Update the path to point to the SDKClientError file
 
 describe('SDKClientError', () => {
@@ -114,5 +115,11 @@ describe('SDKClientError', () => {
     const error = new SDKClientError({ status: invalidStatus, message: 'Invalid status code' });
     expect(error.statusCode).to.equal(invalidStatus._code);
     expect(error.isValidNetworkError()).to.be.true;
+  });
+
+  it('should be able to get nodeAccountId', () => {
+    const nodeId = '0.0.3';
+    const error = new SDKClientError({}, undefined, undefined, nodeId);
+    expect(error.nodeAccountId).to.equal(nodeId);
   });
 });
