@@ -944,7 +944,7 @@
         "name": "The current client version.",
         "schema": {
           "type": "string",
-          "pattern": "relay/[0-9]\\.[0-9]\\.[0-9]"
+          "pattern": "relay/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9-]+)?$"
         }
       }
     },
