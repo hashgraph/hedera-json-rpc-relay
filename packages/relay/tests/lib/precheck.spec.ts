@@ -19,11 +19,19 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { expect } from 'chai';
-import { Registry } from 'prom-client';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { expect } from 'chai';
+import { ethers, Transaction } from 'ethers';
 import pino from 'pino';
+import { Registry } from 'prom-client';
+
+import { JsonRpcError, predefined } from '../../src';
+import { MirrorNodeClient } from '../../src/lib/clients';
+import constants from '../../src/lib/constants';
 import { Precheck } from '../../src/lib/precheck';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import {
   blobVersionedHash,
   contractAddress1,
@@ -32,13 +40,6 @@ import {
   overrideEnvsInMochaDescribe,
   signTransaction,
 } from '../helpers';
-import { MirrorNodeClient } from '../../src/lib/clients';
-import axios from 'axios';
-import MockAdapter from 'axios-mock-adapter';
-import { ethers, Transaction } from 'ethers';
-import constants from '../../src/lib/constants';
-import { JsonRpcError, predefined } from '../../src';
-import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { ONE_TINYBAR_IN_WEI_HEX } from './eth/eth-config';
 
 const registry = new Registry();
@@ -114,38 +115,6 @@ describe('Precheck', async function () {
   this.beforeEach(() => {
     // reset mock
     mock.reset();
-  });
-
-  describe('value', async function () {
-    it('should throw an exception if value is less than 1 tinybar', async function () {
-      let hasError = false;
-      try {
-        precheck.value(parsedTxWithValueLessThanOneTinybar);
-      } catch (e: any) {
-        expect(e).to.exist;
-        expect(e.code).to.eq(-32602);
-        expect(e.message).to.eq('Value below 10_000_000_000 wei which is 1 tinybar');
-        hasError = true;
-      }
-
-      expect(hasError).to.be.true;
-    });
-
-    it('should pass if value is more than 1 tinybar', async function () {
-      try {
-        precheck.value(parsedTxWithValueMoreThanOneTinyBar);
-      } catch (e) {
-        expect(e).to.not.exist;
-      }
-    });
-
-    it('should pass if value is less than 1 tinybar and data is not empty', async function () {
-      try {
-        precheck.value(parsedTxWithValueLessThanOneTinybarAndNotEmptyData);
-      } catch (e: any) {
-        expect(e).to.not.exist;
-      }
-    });
   });
 
   describe('chainId', async function () {

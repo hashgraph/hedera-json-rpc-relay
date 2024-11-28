@@ -657,11 +657,11 @@ export class EthImpl implements Eth {
 
     if (isSimpleTransfer) {
       // Handle Simple Transaction and Hollow Account creation
-      const isNonZeroValue = Number(transaction.value) > 0;
-      if (!isNonZeroValue) {
+      const isZeroOrHigher = Number(transaction.value) >= 0;
+      if (!isZeroOrHigher) {
         return predefined.INVALID_PARAMETER(
           0,
-          `Invalid 'value' field in transaction param. Value must be greater than 0`,
+          `Invalid 'value' field in transaction param. Value must be greater than or equal to 0`,
         );
       }
       // when account exists return default base gas

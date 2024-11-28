@@ -19,18 +19,19 @@
  */
 
 import { expect, use } from 'chai';
-import { v4 as uuid } from 'uuid';
-import { AbiCoder, keccak256 } from 'ethers';
 import chaiAsPromised from 'chai-as-promised';
-import { EthImpl } from '../../../src/lib/eth';
-import { Eth, JsonRpcError } from '../../../src';
-import { generateEthTestEnv } from './eth-helpers';
-import constants from '../../../src/lib/constants';
-import { Precheck } from '../../../src/lib/precheck';
-import { SDKClient } from '../../../src/lib/clients';
-import { numberTo0x } from '../../../src/formatters';
+import { AbiCoder, keccak256 } from 'ethers';
 import { createStubInstance, SinonStub, SinonStubbedInstance, stub } from 'sinon';
+import { v4 as uuid } from 'uuid';
+
+import { Eth, JsonRpcError } from '../../../src';
+import { numberTo0x } from '../../../src/formatters';
+import { SDKClient } from '../../../src/lib/clients';
+import constants from '../../../src/lib/constants';
+import { EthImpl } from '../../../src/lib/eth';
+import { Precheck } from '../../../src/lib/precheck';
 import { IContractCallRequest, IContractCallResponse, RequestDetails } from '../../../src/lib/types';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../helpers';
 import {
   ACCOUNT_ADDRESS_1,
   DEFAULT_NETWORK_FEES,
@@ -38,7 +39,7 @@ import {
   ONE_TINYBAR_IN_WEI_HEX,
   RECEIVER_ADDRESS,
 } from './eth-config';
-import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../helpers';
+import { generateEthTestEnv } from './eth-helpers';
 
 use(chaiAsPromised);
 
@@ -270,7 +271,8 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       value: 0, //in tinybars
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
-    const result = await ethImpl.estimateGas(
+    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, { address: RECEIVER_ADDRESS });
+    const gas = await ethImpl.estimateGas(
       {
         to: RECEIVER_ADDRESS,
         value: 0,
@@ -279,11 +281,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       requestDetails,
     );
 
-    expect(result).to.exist;
-    expect((result as JsonRpcError).code).to.equal(-32602);
-    expect((result as JsonRpcError).message).to.equal(
-      `Invalid parameter 0: Invalid 'value' field in transaction param. Value must be greater than 0`,
-    );
+    expect(gas).to.equal(EthImpl.gasTxBaseCost);
   });
 
   it('should eth_estimateGas for contract create with input field and absent data field', async () => {
@@ -306,13 +304,14 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   it('should eth_estimateGas transfer with invalid value', async function () {
     const callData: IContractCallRequest = {
       to: RECEIVER_ADDRESS,
-      value: null, //in tinybars
+      value: -100_000_000_000, //in tinybars
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
+    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, { address: RECEIVER_ADDRESS });
     const result = await ethImpl.estimateGas(
       {
         to: RECEIVER_ADDRESS,
-        value: null,
+        value: -100_000_000_000,
       },
       null,
       requestDetails,
@@ -321,7 +320,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     expect(result).to.exist;
     expect((result as JsonRpcError).code).to.equal(-32602);
     expect((result as JsonRpcError).message).to.equal(
-      `Invalid parameter 0: Invalid 'value' field in transaction param. Value must be greater than 0`,
+      `Invalid parameter 0: Invalid 'value' field in transaction param. Value must be greater than or equal to 0`,
     );
   });
 
