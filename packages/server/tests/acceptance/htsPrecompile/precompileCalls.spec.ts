@@ -19,30 +19,29 @@
  */
 
 // external resources
-import { solidity } from 'ethereum-waffle';
-import chai, { expect } from 'chai';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { ContractId } from '@hashgraph/sdk';
+import chai, { expect } from 'chai';
+import { solidity } from 'ethereum-waffle';
+import { ethers } from 'ethers';
+
+import MirrorClient from '../../clients/mirrorClient';
+import RelayClient from '../../clients/relayClient';
+import ServicesClient from '../../clients/servicesClient';
+import HederaTokenServiceImplJson from '../../contracts/HederaTokenServiceImpl.json';
+import IHederaTokenServiceJson from '../../contracts/IHederaTokenService.json';
+import IERC20Json from '../../contracts/openzeppelin/IERC20.json';
+import IERC20MetadataJson from '../../contracts/openzeppelin/IERC20Metadata.json';
+import IERC721Json from '../../contracts/openzeppelin/IERC721.json';
+import IERC721EnumerableJson from '../../contracts/openzeppelin/IERC721Enumerable.json';
+import IERC721MetadataJson from '../../contracts/openzeppelin/IERC721Metadata.json';
+import TokenManagementContractJson from '../../contracts/TokenManagementContract.json';
 //Constants are imported with different definitions for better readability in the code.
 import Constants from '../../helpers/constants';
 import RelayCall from '../../helpers/constants';
-
-import { AliasAccount } from '../../types/AliasAccount';
-import { ethers } from 'ethers';
-import IERC20MetadataJson from '../../contracts/openzeppelin/IERC20Metadata.json';
-import IERC20Json from '../../contracts/openzeppelin/IERC20.json';
-import IERC721MetadataJson from '../../contracts/openzeppelin/IERC721Metadata.json';
-import IERC721EnumerableJson from '../../contracts/openzeppelin/IERC721Enumerable.json';
-import IERC721Json from '../../contracts/openzeppelin/IERC721.json';
-import IHederaTokenServiceJson from '../../contracts/IHederaTokenService.json';
-import HederaTokenServiceImplJson from '../../contracts/HederaTokenServiceImpl.json';
-import TokenManagementContractJson from '../../contracts/TokenManagementContract.json';
-
-import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { Utils } from '../../helpers/utils';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
-import ServicesClient from '../../clients/servicesClient';
-import MirrorClient from '../../clients/mirrorClient';
-import RelayClient from '../../clients/relayClient';
+import { AliasAccount } from '../../types/AliasAccount';
 
 chai.use(solidity);
 describe('@precompile-calls Tests for eth_call with HTS', async function () {
@@ -77,14 +76,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
   const accounts: AliasAccount[] = [];
   let requestId;
 
-  let IERC20Metadata,
-    IERC20,
-    IERC721Metadata,
-    IERC721Enumerable,
-    IERC721,
-    IHederaTokenService,
-    TokenManager,
-    TokenManagementSigner;
+  let IERC20Metadata, IERC20, IERC721Metadata, IERC721Enumerable, IERC721, TokenManager, TokenManagementSigner;
   let nftSerial,
     tokenAddress,
     nftAddress,
@@ -100,12 +92,13 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     tokenAddressFractionalFees,
     tokenAddressAllFees,
     nftAddressRoyaltyFees,
-    tokenAddresses,
-    nftAddresses;
+    createTokenCost;
 
   before(async () => {
     requestId = Utils.generateRequestId();
 
+    const hbarToWeibar = 100_000_000;
+    createTokenCost = 35 * Constants.TINYBAR_TO_WEIBAR_COEF * hbarToWeibar;
     // create accounts
     const initialAccount: AliasAccount = global.accounts[0];
     const contractDeployer = await Utils.createAliasAccount(mirrorNode, initialAccount, requestId);
@@ -212,7 +205,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     const mintResult1 = await servicesNode.mintNFT({ ...mintArgs, tokenId: nftTokenId1 });
 
     // associate tokens, grant KYC
-    for (let account of [accounts[1], accounts[2]]) {
+    for (const account of [accounts[1], accounts[2]]) {
       await servicesNode.associateHTSToken(
         account.accountId,
         htsResult1.receipt.tokenId,
@@ -540,7 +533,6 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
         'token with a fractional fee',
         'token with all custom fees',
       ];
-      const nftTests = ['nft with no custom fees', 'nft with a royalty fee'];
     });
 
     //TODO After adding the additional expects after getTokenKeyPublic in tokenManagementContract, the whole describe can be deleted. -> https://github.com/hashgraph/hedera-json-rpc-relay/issues/1131
@@ -617,8 +609,8 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     });
   });
 
-  describe('Create HTS token via Hedera Token service', async () => {
-    it('createFungibleToken', async () => {
+  describe('Create HTS token via direct call to Hedera Token service', async () => {
+    it('calls createFungibleToken', async () => {
       const myImmutableFungibleToken = {
         name: 'myImmutableFungibleToken',
         symbol: 'MIFT',
@@ -636,10 +628,143 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
       };
       const contract = new ethers.Contract(HTS_SYTEM_CONTRACT_ADDRESS, IHederaTokenServiceJson.abi, accounts[0].wallet);
       const tx = await contract.createFungibleToken(myImmutableFungibleToken, 100, 18, {
-        value: BigInt('35000000000000000000'),
+        value: BigInt(createTokenCost),
         gasLimit: 10_000_000,
       });
       const receipt = await tx.wait();
+
+      expect(receipt.address).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+    });
+
+    it('calls createFungibleToken with custom fees', async () => {
+      const myImmutableFungibleToken = {
+        name: 'myImmutableFungibleToken',
+        symbol: 'MIFT',
+        treasury: accounts[0].wallet.address, // The key for this address must sign the transaction or be the caller
+        memo: 'This is an immutable fungible token created via the HTS system contract',
+        tokenSupplyType: true, // true for finite, false for infinite
+        maxSupply: 1000000,
+        freezeDefault: false, // true to freeze by default, false to not freeze by default
+        tokenKeys: [], // No keys. The token is immutable
+        expiry: {
+          second: 0,
+          autoRenewAccount: accounts[0].wallet.address,
+          autoRenewPeriod: 8000000,
+        },
+      };
+
+      const fixedFee = [
+        {
+          amount: 10,
+          tokenId: ethers.ZeroAddress,
+          useHbarsForPayment: true,
+          useCurrentTokenForPayment: false,
+          feeCollector: accounts[0].wallet.address,
+        },
+      ];
+      const fractionalFee = [];
+      const contract = new ethers.Contract(HTS_SYTEM_CONTRACT_ADDRESS, IHederaTokenServiceJson.abi, accounts[0].wallet);
+      const tx = await contract.createFungibleTokenWithCustomFees(
+        myImmutableFungibleToken,
+        100,
+        18,
+        fixedFee,
+        fractionalFee,
+        {
+          value: BigInt(createTokenCost),
+          gasLimit: 10_000_000,
+        },
+      );
+      const receipt = await tx.wait();
+
+      expect(receipt.address).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+    });
+
+    it('calls createNonFungibleToken', async () => {
+      const compressedPublicKey = accounts[0].wallet.signingKey.compressedPublicKey.replace('0x', '');
+      const supplyKey = {
+        inheritAccountKey: false,
+        contractId: ethers.ZeroAddress,
+        ed25519: '0x',
+        ECDSA_secp256k1: Buffer.from(compressedPublicKey, 'hex'),
+        delegatableContractId: ethers.ZeroAddress,
+      };
+      const myNFT = {
+        name: NFT_NAME,
+        symbol: NFT_SYMBOL,
+        treasury: accounts[0].wallet.address,
+        memo: 'NFT memo',
+        tokenSupplyType: true, // true for finite, false for infinite
+        maxSupply: 1000000,
+        freezeDefault: false, // true to freeze by default, false to not freeze by default
+        tokenKeys: [[16, supplyKey]], // No keys. The token is immutable
+        expiry: {
+          second: 0,
+          autoRenewAccount: accounts[0].wallet.address,
+          autoRenewPeriod: 8000000,
+        },
+      };
+
+      const contract = new ethers.Contract(HTS_SYTEM_CONTRACT_ADDRESS, IHederaTokenServiceJson.abi, accounts[0].wallet);
+      const tx = await contract.createNonFungibleToken(myNFT, {
+        value: BigInt(createTokenCost),
+        gasLimit: 10_000_000,
+      });
+      const receipt = await tx.wait();
+
+      expect(receipt.address).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+    });
+
+    it('calls createNonFungibleToken with fees', async () => {
+      const compressedPublicKey = accounts[0].wallet.signingKey.compressedPublicKey.replace('0x', '');
+      const supplyKey = {
+        inheritAccountKey: false,
+        contractId: ethers.ZeroAddress,
+        ed25519: '0x',
+        ECDSA_secp256k1: Buffer.from(compressedPublicKey, 'hex'),
+        delegatableContractId: ethers.ZeroAddress,
+      };
+      const myNFT = {
+        name: NFT_NAME,
+        symbol: NFT_SYMBOL,
+        treasury: accounts[0].wallet.address,
+        memo: 'NFT memo',
+        tokenSupplyType: true, // true for finite, false for infinite
+        maxSupply: 1000000,
+        freezeDefault: false, // true to freeze by default, false to not freeze by default
+        tokenKeys: [[16, supplyKey]], // No keys. The token is immutable
+        expiry: {
+          second: 0,
+          autoRenewAccount: accounts[0].wallet.address,
+          autoRenewPeriod: 8000000,
+        },
+      };
+      const fixedFee = [
+        {
+          amount: 10,
+          tokenId: ethers.ZeroAddress,
+          useHbarsForPayment: true,
+          useCurrentTokenForPayment: false,
+          feeCollector: accounts[0].wallet.address,
+        },
+      ];
+      const royaltyFee = [
+        {
+          numerator: 10,
+          denominator: 100,
+          amount: 10 * 100000000,
+          tokenId: ethers.ZeroAddress,
+          useHbarsForPayment: true,
+          feeCollector: accounts[1].wallet.address,
+        },
+      ];
+      const contract = new ethers.Contract(HTS_SYTEM_CONTRACT_ADDRESS, IHederaTokenServiceJson.abi, accounts[0].wallet);
+      const tx = await contract.createNonFungibleTokenWithCustomFees(myNFT, fixedFee, royaltyFee, {
+        value: BigInt(createTokenCost),
+        gasLimit: 10_000_000,
+      });
+      const receipt = await tx.wait();
+
       expect(receipt.address).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
     });
   });
