@@ -151,12 +151,18 @@ describe('Precheck', async function () {
       }
     });
 
-    it('should pass if value is less than 1 tinybar, above 0, and data is not empty', async function () {
+    it('should throw an exception if value is less than 1 tinybar, above 0, and data is not empty', async function () {
+      let hasError = false;
+
       try {
         precheck.value(parsedTxWithValueLessThanOneTinybarAndNotEmptyData);
       } catch (e: any) {
-        expect(e).to.not.exist;
+        expect(e).to.exist;
+        expect(e.code).to.eq(-32602);
+        expect(e.message).to.eq("Value can't be negative or between 1 wei and 10_000_000_000 wei which is 1 tinybar");
+        hasError = true;
       }
+      expect(hasError).to.be.true;
     });
 
     it('should throw an exception if value is negative', async function () {

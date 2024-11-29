@@ -62,10 +62,7 @@ export class Precheck {
    * @param {Transaction} tx - The transaction.
    */
   value(tx: Transaction): void {
-    if (
-      tx.data === EthImpl.emptyHex &&
-      ((tx.value > 0 && tx.value < constants.TINYBAR_TO_WEIBAR_COEF) || tx.value < 0)
-    ) {
+    if ((tx.value > 0 && tx.value < constants.TINYBAR_TO_WEIBAR_COEF) || tx.value < 0) {
       throw predefined.VALUE_TOO_LOW;
     }
   }
