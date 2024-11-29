@@ -72,6 +72,9 @@ describe('Precheck', async function () {
   const parsedTxWithValueLessThanOneTinybarAndNotEmptyData = ethers.Transaction.from(
     txWithValueLessThanOneTinybarAndNotEmptyData,
   );
+  const txWithZeroValue =
+    '0xf86380843b9aca00825208940000000000000000000000000000000000000000808025a04e557f2008ff383df9a21919860939f60f4c27b9c845b89021ae2a79be4f6790a002f86d6dcefd2ffec72bf4d427091e7375acb6707e49d99893173cbc03515fd6';
+  const parsedTxWithZeroValue = ethers.Transaction.from(txWithZeroValue);
 
   const defaultGasPrice = 720_000_000_000;
   const defaultGasLimit = 1_000_000;
@@ -115,6 +118,78 @@ describe('Precheck', async function () {
   this.beforeEach(() => {
     // reset mock
     mock.reset();
+  });
+
+  describe('value', async function () {
+    it('should throw an exception if value is less than 1 tinybar but above 0', async function () {
+      let hasError = false;
+      try {
+        precheck.value(parsedTxWithValueLessThanOneTinybar);
+      } catch (e: any) {
+        expect(e).to.exist;
+        expect(e.code).to.eq(-32602);
+        expect(e.message).to.eq("Value can't be negative or between 1 wei and 10_000_000_000 wei which is 1 tinybar");
+        hasError = true;
+      }
+
+      expect(hasError).to.be.true;
+    });
+
+    it('should pass if value is 0', async function () {
+      try {
+        precheck.value(parsedTxWithZeroValue);
+      } catch (e) {
+        expect(e).to.not.exist;
+      }
+    });
+
+    it('should pass if value is more than 1 tinybar', async function () {
+      try {
+        precheck.value(parsedTxWithValueMoreThanOneTinyBar);
+      } catch (e) {
+        expect(e).to.not.exist;
+      }
+    });
+
+    it('should pass if value is less than 1 tinybar, above 0, and data is not empty', async function () {
+      try {
+        precheck.value(parsedTxWithValueLessThanOneTinybarAndNotEmptyData);
+      } catch (e: any) {
+        expect(e).to.not.exist;
+      }
+    });
+
+    it('should throw an exception if value is negative', async function () {
+      let hasError = false;
+      const txWithNegativeValue = parsedTxWithValueLessThanOneTinybar.clone();
+      txWithNegativeValue.value = -1;
+      try {
+        precheck.value(txWithNegativeValue);
+      } catch (e: any) {
+        expect(e).to.exist;
+        expect(e.code).to.eq(-32602);
+        expect(e.message).to.eq("Value can't be negative or between 1 wei and 10_000_000_000 wei which is 1 tinybar");
+        hasError = true;
+      }
+
+      expect(hasError).to.be.true;
+    });
+
+    it('should throw an exception if value is negative and more than one tinybar', async function () {
+      let hasError = false;
+      const txWithNegativeValue = parsedTxWithValueLessThanOneTinybar.clone();
+      txWithNegativeValue.value = -100_000_000;
+      try {
+        precheck.value(txWithNegativeValue);
+      } catch (e: any) {
+        expect(e).to.exist;
+        expect(e.code).to.eq(-32602);
+        expect(e.message).to.eq("Value can't be negative or between 1 wei and 10_000_000_000 wei which is 1 tinybar");
+        hasError = true;
+      }
+
+      expect(hasError).to.be.true;
+    });
   });
 
   describe('chainId', async function () {

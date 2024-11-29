@@ -58,6 +58,19 @@ export class Precheck {
   }
 
   /**
+   * Checks if the value of the transaction is valid.
+   * @param {Transaction} tx - The transaction.
+   */
+  value(tx: Transaction): void {
+    if (
+      tx.data === EthImpl.emptyHex &&
+      ((tx.value > 0 && tx.value < constants.TINYBAR_TO_WEIBAR_COEF) || tx.value < 0)
+    ) {
+      throw predefined.VALUE_TOO_LOW;
+    }
+  }
+
+  /**
    * Sends a raw transaction after performing various prechecks.
    * @param {ethers.Transaction} parsedTx - The parsed transaction.
    * @param {number} networkGasPriceInWeiBars - The predefined gas price of the network in weibar.
@@ -73,6 +86,7 @@ export class Precheck {
     const mirrorAccountInfo = await this.verifyAccount(parsedTx, requestDetails);
     this.nonce(parsedTx, mirrorAccountInfo.ethereum_nonce, requestDetails);
     this.chainId(parsedTx, requestDetails);
+    this.value(parsedTx);
     this.gasPrice(parsedTx, networkGasPriceInWeiBars, requestDetails);
     this.balance(parsedTx, mirrorAccountInfo, requestDetails);
   }
