@@ -57,7 +57,9 @@
         "name": "Accounts",
         "description": "Always returns an empty array",
         "schema": {
-          "$ref": "#/components/schemas/addresses"
+          "title": "empty array",
+          "type": "array",
+          "pattern": "^\\[\\s*\\]$"
         }
       }
     },
@@ -577,8 +579,9 @@
       "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png)",
       "params": [],
       "result": {
-        "name": "Always returns null. There are no uncles in Hedera.",
+        "name": "eth_getUncleByBlockHashAndIndex result",
         "schema": {
+          "description": "Always returns null. There are no uncles in Hedera.",
           "$ref": "#/components/schemas/null"
         }
       }
@@ -589,8 +592,9 @@
       "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png)",
       "params": [],
       "result": {
-        "name": "Always returns null. There are no uncles in Hedera.",
+        "name": "eth_getUncleByBlockNumberAndIndex result",
         "schema": {
+          "description": "Always returns null. There are no uncles in Hedera.",
           "$ref": "#/components/schemas/null"
         }
       }
@@ -601,8 +605,9 @@
       "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png)",
       "params": [],
       "result": {
-        "name": "Always returns '0x0'. There are no uncles in Hedera.",
+        "name": "eth_getUncleCountByBlockHash result",
         "schema": {
+          "description": "Always returns '0x0'. There are no uncles in Hedera.",
           "title": "hex encoded unsigned integer",
           "type": "string",
           "pattern": "0x0"
@@ -615,8 +620,9 @@
       "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png)",
       "params": [],
       "result": {
-        "name": "Always returns '0x0'. There are no uncles in Hedera.",
+        "name": "eth_getUncleCountByBlockNumber result",
         "schema": {
+          "description": "Always returns '0x0'. There are no uncles in Hedera.",
           "title": "hex encoded unsigned integer",
           "type": "string",
           "pattern": "0x0"
@@ -651,8 +657,9 @@
       "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png) ![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/ws_label.png)",
       "params": [],
       "result": {
-        "name": "Always returns '0x0'. Hedera doesn't have a concept of tipping nodes to promote any behavior",
+        "name": "eth_maxPriorityFeePerGas result",
         "schema": {
+          "description": "Always returns '0x0'. Hedera doesn't have a concept of tipping nodes to promote any behavior",
           "title": "hex encoded unsigned integer",
           "type": "string",
           "pattern": "0x0"
@@ -937,7 +944,7 @@
         "name": "The current client version.",
         "schema": {
           "type": "string",
-          "pattern": "relay/[0-9]\\.[0-9]\\.[0-9]"
+          "pattern": "relay/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9-]+)?$"
         }
       }
     },
@@ -988,7 +995,8 @@
       "result": {
         "name": "subscription_id",
         "schema": {
-          "type": "string"
+          "type": "string",
+          "$ref": "#/components/schemas/hash32"
         },
         "description": "The hex encoded subscription ID used to identify and manage the subscription."
       }
@@ -1013,120 +1021,6 @@
           "type": "boolean"
         },
         "description": "True if the subscription was successfully cancelled, otherwise false."
-      }
-    },
-    {
-      "name": "eth_newFilter",
-      "summary": "Creates a filter object for notifying when the state changes (logs).",
-      "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png) ![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/ws_label.png)",
-      "params": [
-        {
-          "name": "filter_options",
-          "required": true,
-          "schema": {
-            "type": "object",
-            "properties": {
-              "fromBlock": {
-                "$ref": "#/components/schemas/BlockNumberOrTag"
-              },
-              "toBlock": {
-                "$ref": "#/components/schemas/BlockNumberOrTag"
-              },
-              "address": {
-                "type": ["string", "array"],
-                "items": {
-                  "type": "string"
-                }
-              },
-              "topics": {
-                "type": ["array"],
-                "items": {
-                  "type": ["string", "null"]
-                }
-              }
-            }
-          },
-          "description": "Filter options to specify the exact event(s) logs to get."
-        }
-      ],
-      "result": {
-        "name": "filter_id",
-        "schema": {
-          "type": "string"
-        },
-        "description": "The ID of the newly created filter."
-      }
-    },
-    {
-      "name": "eth_uninstallFilter",
-      "summary": "Uninstalls a filter with given ID. Should always be called when watch is no longer needed.",
-      "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png)",
-      "params": [
-        {
-          "name": "filter_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          },
-          "description": "The ID of the filter to uninstall."
-        }
-      ],
-      "result": {
-        "name": "uninstalled",
-        "schema": {
-          "type": "boolean"
-        },
-        "description": "True if the filter was successfully uninstalled, otherwise false."
-      }
-    },
-    {
-      "name": "eth_getFilterChanges",
-      "summary": "Polling method for a filter, which returns an array of logs which occurred since last poll.",
-      "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png)",
-      "params": [
-        {
-          "name": "filter_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          },
-          "description": "The ID of the filter to check for changes."
-        }
-      ],
-      "result": {
-        "name": "logs",
-        "schema": {
-          "type": "array",
-          "items": {
-            "$ref": "#/components/schemas/Log"
-          }
-        },
-        "description": "Array of log objects since last poll."
-      }
-    },
-    {
-      "name": "eth_getFilterLogs",
-      "summary": "Returns an array of all logs matching filter with given ID.",
-      "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png)",
-      "params": [
-        {
-          "name": "filter_id",
-          "required": true,
-          "schema": {
-            "type": "string"
-          },
-          "description": "The ID of the filter to retrieve all matching logs."
-        }
-      ],
-      "result": {
-        "name": "logs",
-        "schema": {
-          "type": "array",
-          "items": {
-            "$ref": "#/components/schemas/Log"
-          }
-        },
-        "description": "Array of log objects that match the filter."
       }
     },
     {
