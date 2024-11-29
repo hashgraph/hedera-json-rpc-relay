@@ -25,7 +25,6 @@ import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';
 import constants from './constants';
 import { JsonRpcError, predefined } from './errors/JsonRpcError';
-import { EthImpl } from './eth';
 import { RequestDetails } from './types';
 
 /**
