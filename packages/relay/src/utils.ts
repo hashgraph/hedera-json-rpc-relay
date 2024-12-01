@@ -18,14 +18,14 @@
  *
  */
 
-import { PrivateKey } from '@hashgraph/sdk';
-import { keccak256, toUtf8Bytes } from 'ethers';
-import constants from './lib/constants';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { PrivateKey } from '@hashgraph/sdk';
 import crypto from 'crypto';
+import { keccak256, toUtf8Bytes } from 'ethers';
 import createHash from 'keccak';
 
 import { hexToASCII, prepend0x, strip0x } from './formatters';
+import constants from './lib/constants';
 
 export class Utils {
   public static readonly IP_ADDRESS_REGEX = /\b((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}\b/g;
@@ -129,7 +129,6 @@ export class Utils {
     );
   }
 
-<<<<<<< HEAD
   /**
    * Computes the Keccak-256 hash of a transaction buffer and prepends '0x'
    * @param {Buffer} transactionBuffer - The raw transaction buffer to hash
@@ -137,10 +136,20 @@ export class Utils {
    */
   public static computeTransactionHash(transactionBuffer: Buffer): string {
     return prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
-=======
+  }
+
+  /**
+   * Calculates the function selector from a given function signature.
+   *
+   * This method takes a function signature as a string, converts it to UTF-8 bytes,
+   * generates a Keccak-256 hash, and returns the first 4 bytes (8 characters) of the hash
+   * prefixed with '0x'.
+   *
+   * @param {string} functionSignature - The function signature to calculate the selector from.
+   * @returns {string} The calculated function selector as a string prefixed with '0x'.
+   */
   public static calculateFunctionSelector(functionSignature: string): string {
     const hash = keccak256(toUtf8Bytes(functionSignature));
     return hash.substring(0, 10); // First 4 bytes (8 characters) + '0x' prefix
->>>>>>> df0ec361 (Simplify and improve redadbility of code)
   }
 }
