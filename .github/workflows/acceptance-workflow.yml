@@ -34,6 +34,10 @@ on:
       operator_key:
         description: 'The ED25519, ECDSA, or DER encoded private key of the operator'
         required: false
+      CODECOV_TOKEN:
+        description: 'Codecov upload token'
+        required: true
+
 
 env:
   OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
