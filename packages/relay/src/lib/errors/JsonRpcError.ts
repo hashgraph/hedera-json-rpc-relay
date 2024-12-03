@@ -162,7 +162,7 @@ export const predefined = {
   }),
   VALUE_TOO_LOW: new JsonRpcError({
     code: -32602,
-    message: "Value can't be negative or between 1 wei and 10_000_000_000 wei which is 1 tinybar",
+    message: "Value can't be non-zero and less than 10_000_000_000 wei which is 1 tinybar",
   }),
   INVALID_CONTRACT_ADDRESS: (address) => {
     let message = `Invalid Contract Address: ${address}.`;
