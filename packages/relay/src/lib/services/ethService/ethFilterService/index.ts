@@ -18,17 +18,18 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { Logger } from 'pino';
+
+import { generateRandomHex } from '../../../../formatters';
 import { MirrorNodeClient } from '../../../clients';
 import constants from '../../../constants';
-import { IFilterService } from './IFilterService';
-import { CommonService } from '../ethCommonService';
-import { generateRandomHex } from '../../../../formatters';
 import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
 import { Log } from '../../../model';
-import { CacheService } from '../../cacheService/cacheService';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '../../../types';
+import { CacheService } from '../../cacheService/cacheService';
+import { CommonService } from '../ethCommonService';
+import { IFilterService } from './IFilterService';
 
 /**
  * Create a new Filter Service implementation.
@@ -208,7 +209,7 @@ export class FilterService implements IFilterService {
       throw predefined.FILTER_NOT_FOUND;
     }
 
-    return await this.common.getLogs(
+    const logs = await this.common.getLogs(
       null,
       filter?.params.fromBlock,
       filter?.params.toBlock,
@@ -216,6 +217,21 @@ export class FilterService implements IFilterService {
       filter?.params.topics,
       requestDetails,
     );
+
+    // update filter to refresh TTL
+    await this.cacheService.set(
+      cacheKey,
+      {
+        type: filter.type,
+        params: filter.params,
+        lastQueried: filter.lastQueried,
+      },
+      this.ethGetFilterChanges,
+      requestDetails,
+      constants.FILTER.TTL,
+    );
+
+    return logs;
   }
 
   public async getFilterChanges(filterId: string, requestDetails: RequestDetails): Promise<string[] | Log[]> {
