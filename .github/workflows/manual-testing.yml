@@ -187,7 +187,9 @@ jobs:
       - tokenmanagement
       - htsprecompilev1
       - precompilecalls
-      - websocket
+      - websocket-batch-1
+      - websocket-batch-2
+      - websocket-batch-3
       - cacheservice
 
     runs-on: smart-contracts-linux-medium
