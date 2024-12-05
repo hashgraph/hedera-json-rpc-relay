@@ -20,7 +20,6 @@
 
 import { ethers, Transaction } from 'ethers';
 import { Logger } from 'pino';
-
 import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';
 import constants from './constants';
@@ -85,6 +84,9 @@ export class Precheck {
     this.value(parsedTx);
     this.gasPrice(parsedTx, networkGasPriceInWeiBars, requestDetails);
     this.balance(parsedTx, mirrorAccountInfo, requestDetails);
+    if (parsedTx.to) {
+      await this.receiverAccount(parsedTx, requestDetails);
+    }
   }
 
   /**
@@ -374,6 +376,19 @@ export class Precheck {
         );
       }
       throw predefined.UNSUPPORTED_TRANSACTION_TYPE;
+    }
+  }
+
+  /**
+   * Checks if the receiver account exists.
+   * @param {Transaction} tx - The transaction.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   */
+  async receiverAccount(tx: Transaction, requestDetails: RequestDetails) {
+    const verifyAccount = await this.mirrorNodeClient.getAccount(tx.to!, requestDetails);
+
+    if (verifyAccount !== null && verifyAccount.receiver_sig_required === true) {
+      throw predefined.INTERNAL_ERROR("Receiver's signature is required.");
     }
   }
 }
