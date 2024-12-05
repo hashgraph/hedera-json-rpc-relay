@@ -128,7 +128,7 @@ describe('Precheck', async function () {
       } catch (e: any) {
         expect(e).to.exist;
         expect(e.code).to.eq(-32602);
-        expect(e.message).to.eq("Value can't be negative or between 1 wei and 10_000_000_000 wei which is 1 tinybar");
+        expect(e.message).to.eq("Value can't be non-zero and less than 10_000_000_000 wei which is 1 tinybar");
         hasError = true;
       }
 
@@ -159,7 +159,7 @@ describe('Precheck', async function () {
       } catch (e: any) {
         expect(e).to.exist;
         expect(e.code).to.eq(-32602);
-        expect(e.message).to.eq("Value can't be negative or between 1 wei and 10_000_000_000 wei which is 1 tinybar");
+        expect(e.message).to.eq("Value can't be non-zero and less than 10_000_000_000 wei which is 1 tinybar");
         hasError = true;
       }
       expect(hasError).to.be.true;
@@ -174,7 +174,7 @@ describe('Precheck', async function () {
       } catch (e: any) {
         expect(e).to.exist;
         expect(e.code).to.eq(-32602);
-        expect(e.message).to.eq("Value can't be negative or between 1 wei and 10_000_000_000 wei which is 1 tinybar");
+        expect(e.message).to.eq("Value can't be non-zero and less than 10_000_000_000 wei which is 1 tinybar");
         hasError = true;
       }
 
@@ -190,7 +190,7 @@ describe('Precheck', async function () {
       } catch (e: any) {
         expect(e).to.exist;
         expect(e.code).to.eq(-32602);
-        expect(e.message).to.eq("Value can't be negative or between 1 wei and 10_000_000_000 wei which is 1 tinybar");
+        expect(e.message).to.eq("Value can't be non-zero and less than 10_000_000_000 wei which is 1 tinybar");
         hasError = true;
       }
 
