@@ -2331,14 +2331,8 @@ export class EthImpl implements Eth {
           transactionIndex: nullableNumberTo0x(receiptResponse.transaction_index),
         });
       });
-      const functionSelectors = constants.HTS_CREATE_FUNCTIONS_SIGNATURE.map((signature) =>
-        Utils.calculateFunctionSelector(signature),
-      );
-      const isCreationViaSystemContract = functionSelectors.includes(
-        receiptResponse.function_parameters.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH),
-      );
-      const tokenAddress = receiptResponse.call_result.substring(90);
-      const contractAddress = isCreationViaSystemContract ? prepend0x(tokenAddress) : receiptResponse.address;
+
+      const contractAddress = this.getContractAddressFromReceipt(receiptResponse);
       const receipt: ITransactionReceipt = {
         blockHash: toHash32(receiptResponse.block_hash),
         blockNumber: numberTo0x(receiptResponse.block_number),
@@ -2376,6 +2370,28 @@ export class EthImpl implements Eth {
       );
       return receipt;
     }
+  }
+
+  /**
+   * This method retrieves the contract address from the receipt response.
+   * If the contract creation is via a system contract, it handles the system contract creation.
+   * If not, it returns the address from the receipt response.
+   *
+   * @param {any} receiptResponse - The receipt response object.
+   * @returns {string} The contract address.
+   */
+  private getContractAddressFromReceipt(receiptResponse: any): string {
+    const isCreationViaSystemContract = constants.HTS_CREATE_FUNCTIONS_SELECTORS.includes(
+      receiptResponse.function_parameters.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH),
+    );
+
+    if (!isCreationViaSystemContract) {
+      return receiptResponse.address;
+    }
+
+    // Handle system contract creation
+    const tokenAddress = receiptResponse.call_result.substring(90);
+    return prepend0x(tokenAddress);
   }
 
   private async getCurrentGasPriceForBlock(blockHash: string, requestDetails: RequestDetails): Promise<string> {
