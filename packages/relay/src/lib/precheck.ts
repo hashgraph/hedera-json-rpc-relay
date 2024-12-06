@@ -18,13 +18,13 @@
  *
  */
 
-import { JsonRpcError, predefined } from './errors/JsonRpcError';
-import { MirrorNodeClient } from './clients';
-import { EthImpl } from './eth';
-import { Logger } from 'pino';
-import constants from './constants';
 import { ethers, Transaction } from 'ethers';
+import { Logger } from 'pino';
+
 import { prepend0x } from '../formatters';
+import { MirrorNodeClient } from './clients';
+import constants from './constants';
+import { JsonRpcError, predefined } from './errors/JsonRpcError';
 import { RequestDetails } from './types';
 
 /**
@@ -61,7 +61,7 @@ export class Precheck {
    * @param {Transaction} tx - The transaction.
    */
   value(tx: Transaction): void {
-    if (tx.data === EthImpl.emptyHex && tx.value < constants.TINYBAR_TO_WEIBAR_COEF) {
+    if ((tx.value > 0 && tx.value < constants.TINYBAR_TO_WEIBAR_COEF) || tx.value < 0) {
       throw predefined.VALUE_TOO_LOW;
     }
   }
