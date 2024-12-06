@@ -76,7 +76,14 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
   const accounts: AliasAccount[] = [];
   let requestId;
 
-  let IERC20Metadata, IERC20, IERC721Metadata, IERC721Enumerable, IERC721, TokenManager, TokenManagementSigner;
+  let IERC20Metadata,
+    IERC20,
+    IERC721Metadata,
+    IERC721Enumerable,
+    IERC721,
+    TokenManager,
+    TokenManagementSigner,
+    IHederaTokenService;
   let nftSerial,
     tokenAddress,
     nftAddress,
@@ -92,6 +99,8 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     tokenAddressFractionalFees,
     tokenAddressAllFees,
     nftAddressRoyaltyFees,
+    tokenAddresses,
+    nftAddresses,
     createTokenCost;
 
   before(async () => {
@@ -665,6 +674,14 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
       ];
     });
 
+    async function getTokenInfoFromMirrorNode(transactionHash: string) {
+      setTimeout(() => {
+        console.log('waiting for mirror node...');
+      }, 1000);
+      const tokenInfo = await mirrorNode.get(`contracts/results/${transactionHash}`);
+      return tokenInfo;
+    }
+
     it('calls createFungibleToken', async () => {
       const contract = new ethers.Contract(HTS_SYTEM_CONTRACT_ADDRESS, IHederaTokenServiceJson.abi, accounts[0].wallet);
       const tx = await contract.createFungibleToken(myImmutableFungibleToken, 100, 18, {
@@ -673,7 +690,11 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
       });
       const receipt = await tx.wait();
 
-      expect(receipt.address).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+      const tokenInfo = await getTokenInfoFromMirrorNode(receipt.hash);
+      const tokenAddress = receipt.contractAddress.toLowerCase();
+
+      expect(tokenAddress).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+      expect(tokenAddress).to.equal(`0x${tokenInfo.call_result.substring(90).toLowerCase()}`);
     });
 
     it('calls createFungibleToken with custom fees', async () => {
@@ -692,7 +713,11 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
       );
       const receipt = await tx.wait();
 
-      expect(receipt.address).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+      const tokenInfo = await getTokenInfoFromMirrorNode(receipt.hash);
+      const tokenAddress = receipt.contractAddress.toLowerCase();
+
+      expect(tokenAddress).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+      expect(tokenAddress).to.equal(`0x${tokenInfo.call_result.substring(90).toLowerCase()}`);
     });
 
     it('calls createNonFungibleToken', async () => {
@@ -703,19 +728,14 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
       });
       const receipt = await tx.wait();
 
-      expect(receipt.address).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+      const tokenInfo = await getTokenInfoFromMirrorNode(receipt.hash);
+      const tokenAddress = receipt.contractAddress.toLowerCase();
+
+      expect(tokenAddress).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+      expect(tokenAddress).to.equal(`0x${tokenInfo.call_result.substring(90).toLowerCase()}`);
     });
 
     it('calls createNonFungibleToken with fees', async () => {
-      const fixedFee = [
-        {
-          amount: 10,
-          tokenId: ethers.ZeroAddress,
-          useHbarsForPayment: true,
-          useCurrentTokenForPayment: false,
-          feeCollector: accounts[0].wallet.address,
-        },
-      ];
       const royaltyFee = [
         {
           numerator: 10,
@@ -733,7 +753,11 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
       });
       const receipt = await tx.wait();
 
-      expect(receipt.address).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+      const tokenInfo = await getTokenInfoFromMirrorNode(receipt.hash);
+      const tokenAddress = receipt.contractAddress.toLowerCase();
+
+      expect(tokenAddress).to.not.equal(HTS_SYTEM_CONTRACT_ADDRESS);
+      expect(tokenAddress).to.equal(`0x${tokenInfo.call_result.substring(90).toLowerCase()}`);
     });
   });
 
