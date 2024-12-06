@@ -21,7 +21,6 @@
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { PrivateKey } from '@hashgraph/sdk';
 import crypto from 'crypto';
-import { keccak256, toUtf8Bytes } from 'ethers';
 import createHash from 'keccak';
 
 import { hexToASCII, prepend0x, strip0x } from './formatters';
