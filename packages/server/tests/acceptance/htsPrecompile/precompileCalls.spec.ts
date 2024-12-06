@@ -85,7 +85,6 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     adminAccountLongZero,
     account1LongZero,
     account2LongZero;
-  myNFT, myImmutableFungibleToken;
 
   let tokenAddressFixedHbarFees,
     tokenAddressFixedTokenFees,
