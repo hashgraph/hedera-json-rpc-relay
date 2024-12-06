@@ -137,19 +137,4 @@ export class Utils {
   public static computeTransactionHash(transactionBuffer: Buffer): string {
     return prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
   }
-
-  /**
-   * Calculates the function selector from a given function signature.
-   *
-   * This method takes a function signature as a string, converts it to UTF-8 bytes,
-   * generates a Keccak-256 hash, and returns the first 4 bytes (8 characters) of the hash
-   * prefixed with '0x'.
-   *
-   * @param {string} functionSignature - The function signature to calculate the selector from.
-   * @returns {string} The calculated function selector as a string prefixed with '0x'.
-   */
-  public static calculateFunctionSelector(functionSignature: string): string {
-    const hash = keccak256(toUtf8Bytes(functionSignature));
-    return hash.substring(0, 10); // First 4 bytes (8 characters) + '0x' prefix
-  }
 }

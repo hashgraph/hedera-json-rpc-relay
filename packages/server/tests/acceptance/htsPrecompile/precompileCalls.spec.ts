@@ -85,6 +85,7 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     adminAccountLongZero,
     account1LongZero,
     account2LongZero;
+  myNFT, myImmutableFungibleToken;
 
   let tokenAddressFixedHbarFees,
     tokenAddressFixedTokenFees,
@@ -610,8 +611,35 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
   });
 
   describe('Create HTS token via direct call to Hedera Token service', async () => {
-    it('calls createFungibleToken', async () => {
-      const myImmutableFungibleToken = {
+    let myNFT, myImmutableFungibleToken, fixedFee;
+
+    before(async () => {
+      const compressedPublicKey = accounts[0].wallet.signingKey.compressedPublicKey.replace('0x', '');
+      const supplyKey = {
+        inheritAccountKey: false,
+        contractId: ethers.ZeroAddress,
+        ed25519: '0x',
+        ECDSA_secp256k1: Buffer.from(compressedPublicKey, 'hex'),
+        delegatableContractId: ethers.ZeroAddress,
+      };
+
+      myNFT = {
+        name: NFT_NAME,
+        symbol: NFT_SYMBOL,
+        treasury: accounts[0].wallet.address,
+        memo: 'NFT memo',
+        tokenSupplyType: true, // true for finite, false for infinite
+        maxSupply: 1000000,
+        freezeDefault: false, // true to freeze by default, false to not freeze by default
+        tokenKeys: [[16, supplyKey]], // No keys. The token is immutable
+        expiry: {
+          second: 0,
+          autoRenewAccount: accounts[0].wallet.address,
+          autoRenewPeriod: 8000000,
+        },
+      };
+
+      myImmutableFungibleToken = {
         name: 'myImmutableFungibleToken',
         symbol: 'MIFT',
         treasury: accounts[0].wallet.address, // The key for this address must sign the transaction or be the caller
@@ -626,6 +654,19 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
           autoRenewPeriod: 8000000,
         },
       };
+
+      fixedFee = [
+        {
+          amount: 10,
+          tokenId: ethers.ZeroAddress,
+          useHbarsForPayment: true,
+          useCurrentTokenForPayment: false,
+          feeCollector: accounts[0].wallet.address,
+        },
+      ];
+    });
+
+    it('calls createFungibleToken', async () => {
       const contract = new ethers.Contract(HTS_SYTEM_CONTRACT_ADDRESS, IHederaTokenServiceJson.abi, accounts[0].wallet);
       const tx = await contract.createFungibleToken(myImmutableFungibleToken, 100, 18, {
         value: BigInt(createTokenCost),
@@ -637,31 +678,6 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     });
 
     it('calls createFungibleToken with custom fees', async () => {
-      const myImmutableFungibleToken = {
-        name: 'myImmutableFungibleToken',
-        symbol: 'MIFT',
-        treasury: accounts[0].wallet.address, // The key for this address must sign the transaction or be the caller
-        memo: 'This is an immutable fungible token created via the HTS system contract',
-        tokenSupplyType: true, // true for finite, false for infinite
-        maxSupply: 1000000,
-        freezeDefault: false, // true to freeze by default, false to not freeze by default
-        tokenKeys: [], // No keys. The token is immutable
-        expiry: {
-          second: 0,
-          autoRenewAccount: accounts[0].wallet.address,
-          autoRenewPeriod: 8000000,
-        },
-      };
-
-      const fixedFee = [
-        {
-          amount: 10,
-          tokenId: ethers.ZeroAddress,
-          useHbarsForPayment: true,
-          useCurrentTokenForPayment: false,
-          feeCollector: accounts[0].wallet.address,
-        },
-      ];
       const fractionalFee = [];
       const contract = new ethers.Contract(HTS_SYTEM_CONTRACT_ADDRESS, IHederaTokenServiceJson.abi, accounts[0].wallet);
       const tx = await contract.createFungibleTokenWithCustomFees(
@@ -681,30 +697,6 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     });
 
     it('calls createNonFungibleToken', async () => {
-      const compressedPublicKey = accounts[0].wallet.signingKey.compressedPublicKey.replace('0x', '');
-      const supplyKey = {
-        inheritAccountKey: false,
-        contractId: ethers.ZeroAddress,
-        ed25519: '0x',
-        ECDSA_secp256k1: Buffer.from(compressedPublicKey, 'hex'),
-        delegatableContractId: ethers.ZeroAddress,
-      };
-      const myNFT = {
-        name: NFT_NAME,
-        symbol: NFT_SYMBOL,
-        treasury: accounts[0].wallet.address,
-        memo: 'NFT memo',
-        tokenSupplyType: true, // true for finite, false for infinite
-        maxSupply: 1000000,
-        freezeDefault: false, // true to freeze by default, false to not freeze by default
-        tokenKeys: [[16, supplyKey]], // No keys. The token is immutable
-        expiry: {
-          second: 0,
-          autoRenewAccount: accounts[0].wallet.address,
-          autoRenewPeriod: 8000000,
-        },
-      };
-
       const contract = new ethers.Contract(HTS_SYTEM_CONTRACT_ADDRESS, IHederaTokenServiceJson.abi, accounts[0].wallet);
       const tx = await contract.createNonFungibleToken(myNFT, {
         value: BigInt(createTokenCost),
@@ -716,29 +708,6 @@ describe('@precompile-calls Tests for eth_call with HTS', async function () {
     });
 
     it('calls createNonFungibleToken with fees', async () => {
-      const compressedPublicKey = accounts[0].wallet.signingKey.compressedPublicKey.replace('0x', '');
-      const supplyKey = {
-        inheritAccountKey: false,
-        contractId: ethers.ZeroAddress,
-        ed25519: '0x',
-        ECDSA_secp256k1: Buffer.from(compressedPublicKey, 'hex'),
-        delegatableContractId: ethers.ZeroAddress,
-      };
-      const myNFT = {
-        name: NFT_NAME,
-        symbol: NFT_SYMBOL,
-        treasury: accounts[0].wallet.address,
-        memo: 'NFT memo',
-        tokenSupplyType: true, // true for finite, false for infinite
-        maxSupply: 1000000,
-        freezeDefault: false, // true to freeze by default, false to not freeze by default
-        tokenKeys: [[16, supplyKey]], // No keys. The token is immutable
-        expiry: {
-          second: 0,
-          autoRenewAccount: accounts[0].wallet.address,
-          autoRenewPeriod: 8000000,
-        },
-      };
       const fixedFee = [
         {
           amount: 10,
