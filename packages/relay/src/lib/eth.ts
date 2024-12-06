@@ -2332,6 +2332,7 @@ export class EthImpl implements Eth {
         });
       });
 
+      const contractAddress = this.getContractAddressFromReceipt(receiptResponse);
       const receipt: ITransactionReceipt = {
         blockHash: toHash32(receiptResponse.block_hash),
         blockNumber: numberTo0x(receiptResponse.block_number),
@@ -2339,7 +2340,7 @@ export class EthImpl implements Eth {
         to: await this.resolveEvmAddress(receiptResponse.to, requestDetails),
         cumulativeGasUsed: numberTo0x(receiptResponse.block_gas_used),
         gasUsed: nanOrNumberTo0x(receiptResponse.gas_used),
-        contractAddress: receiptResponse.address,
+        contractAddress: contractAddress,
         logs: logs,
         logsBloom: receiptResponse.bloom === EthImpl.emptyHex ? EthImpl.emptyBloom : receiptResponse.bloom,
         transactionHash: toHash32(receiptResponse.hash),
@@ -2369,6 +2370,29 @@ export class EthImpl implements Eth {
       );
       return receipt;
     }
+  }
+
+  /**
+   * This method retrieves the contract address from the receipt response.
+   * If the contract creation is via a system contract, it handles the system contract creation.
+   * If not, it returns the address from the receipt response.
+   *
+   * @param {any} receiptResponse - The receipt response object.
+   * @returns {string} The contract address.
+   */
+  private getContractAddressFromReceipt(receiptResponse: any): string {
+    const isCreationViaSystemContract = constants.HTS_CREATE_FUNCTIONS_SELECTORS.includes(
+      receiptResponse.function_parameters.substring(0, constants.FUNCTION_SELECTOR_CHAR_LENGTH),
+    );
+
+    if (!isCreationViaSystemContract) {
+      return receiptResponse.address;
+    }
+
+    // Handle system contract creation
+    // reason for substring from the 90th character is described in the design doc in this repo: docs/design/hts_address_tx_receipt.md
+    const tokenAddress = receiptResponse.call_result.substring(90);
+    return prepend0x(tokenAddress);
   }
 
   private async getCurrentGasPriceForBlock(blockHash: string, requestDetails: RequestDetails): Promise<string> {
