@@ -60,6 +60,7 @@ describe('Metric Service', function () {
   const mockedTxFee = 36900000;
   const operatorAccountId = `0.0.1022`;
   const mockedCallerName = 'caller_name';
+  const mockedExecutionMode = 'exection_mode';
   const mockedConstructorName = 'constructor_name';
   const mockedInteractingEntity = 'interacting_entity';
   const mockedTransactionId = '0.0.1022@1681130064.409933500';
@@ -102,57 +103,19 @@ describe('Metric Service', function () {
     ],
   } as unknown as TransactionRecord;
 
-  const verifyConsensusNodeClientHistogramGasFee = async () => {
-    // @ts-ignore
-    const gasMetricObject = (await metricService['consensusNodeClientHistogramGasFee'].get()).values.find(
-      (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
-    )!;
-
-    expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
-    expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
-    expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
-    expect(gasMetricObject.value).to.eq(
-      mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
-    );
-  };
-
-  const verifyConsensusNodeClientHistogramCost = async (executionMode: string, expectedTxRecordFee: number = 0) => {
-    const metricObjects = await metricService['consensusNodeClientHistogramCost'].get();
-
-    if (expectedTxRecordFee) {
-      const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
-        return (
-          metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
-        );
-      });
-      expect(txRecordFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
-      expect(txRecordFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
-      expect(txRecordFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
-      expect(txRecordFeeMetricObject?.value).to.eq(expectedTxRecordFee);
-    }
-
-    const transactionFeeMetricObject = metricObjects.values.find((metric) => {
-      return metric.labels.mode === executionMode && metric.metricName === metricHistogramCostSumTitle;
-    });
-    expect(transactionFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
-    expect(transactionFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
-    expect(transactionFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
-    expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
-  };
-
   overrideEnvsInMochaDescribe({ OPERATOR_KEY_FORMAT: 'DER' });
 
   before(() => {
     // consensus node client
-    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')! as string;
+    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
     client = client.setOperator(
-      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')! as string),
-      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')! as string),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')!),
+      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')!),
     );
 
     // mirror node client
@@ -165,7 +128,7 @@ describe('Metric Service', function () {
       timeout: 20 * 1000,
     });
     mirrorNodeClient = new MirrorNodeClient(
-      (ConfigService.get('MIRROR_NODE_URL') as string) || '',
+      ConfigService.get('MIRROR_NODE_URL') || '',
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -190,6 +153,7 @@ describe('Metric Service', function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       duration,
     );
 
@@ -220,35 +184,30 @@ describe('Metric Service', function () {
       originalCallerAddress: mockedOriginalCallerAddress,
     };
 
-    const verifyMetrics = async (originalBudget: Hbar, expectedTxRecordFee: number) => {
-      // validate hbarLimitService
-      // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
-      const updatedBudget = await hbarLimitService['getRemainingBudget'](requestDetails);
-      expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(
-        mockedTxFee + expectedTxRecordFee,
-      );
-
-      await verifyConsensusNodeClientHistogramCost(constants.EXECUTION_MODE.TRANSACTION, expectedTxRecordFee);
-      await verifyConsensusNodeClientHistogramGasFee();
-    };
-
     withOverriddenEnvsInMochaTest({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: false }, () => {
       it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
         mock
           .onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`)
           .reply(200, mockedMirrorNodeTransactionRecord);
 
-        const originalBudget = await hbarLimitService['getRemainingBudget'](requestDetails);
+        const originalBudget = hbarLimitService['remainingBudget'];
 
         // capture metrics
         await metricService.captureTransactionMetrics(mockedExecuteTransactionEventPayload);
 
         // validate hbarLimitService
-        const updatedBudget = await hbarLimitService['getRemainingBudget'](requestDetails);
+        const updatedBudget = hbarLimitService['remainingBudget'];
         expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(mockedTxFee);
 
         // validate cost metrics
-        await verifyConsensusNodeClientHistogramCost(constants.EXECUTION_MODE.TRANSACTION);
+        const costMetricObject = (await metricService['consensusNodeClientHistogramCost'].get()).values.find(
+          (metric) => metric.metricName === metricHistogramCostSumTitle,
+        );
+        expect(costMetricObject).to.not.be.undefined;
+        expect(costMetricObject!.metricName).to.eq(metricHistogramCostSumTitle);
+        expect(costMetricObject!.labels.caller).to.eq(mockedCallerName);
+        expect(costMetricObject!.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(costMetricObject!.value).to.eq(mockedTxFee);
       });
     });
 
@@ -261,12 +220,55 @@ describe('Metric Service', function () {
           .stub(TransactionRecordQuery.prototype, 'execute')
           .resolves(mockedConsensusNodeTransactionRecord);
 
-        const originalBudget = await hbarLimitService['getRemainingBudget'](requestDetails);
+        const originalBudget = hbarLimitService['remainingBudget'];
 
         await metricService.captureTransactionMetrics(mockedExecuteTransactionEventPayload);
-
         expect(transactionRecordStub.called).to.be.true;
-        await verifyMetrics(originalBudget, expectedTxRecordFee);
+
+        // validate hbarLimitService
+        // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
+        const updatedBudget = hbarLimitService['remainingBudget'];
+        expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(
+          mockedTxFee + expectedTxRecordFee,
+        );
+
+        // validate cost metric
+        // @ts-ignore
+        const metricObjects = await metricService['consensusNodeClientHistogramCost'].get();
+        const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
+          return (
+            metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
+          );
+        });
+        const transactionFeeMetricObject = metricObjects.values.find((metric) => {
+          return (
+            metric.labels.mode === constants.EXECUTION_MODE.TRANSACTION &&
+            metric.metricName === metricHistogramCostSumTitle
+          );
+        });
+
+        expect(txRecordFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+        expect(txRecordFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+        expect(txRecordFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(txRecordFeeMetricObject?.value).to.eq(expectedTxRecordFee);
+
+        expect(transactionFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+        expect(transactionFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+        expect(transactionFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
+
+        // validate gas metric
+        // @ts-ignore
+        const gasMetricObject = (await metricService['consensusNodeClientHistogramGasFee'].get()).values.find(
+          (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
+        )!;
+
+        expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
+        expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
+        expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(gasMetricObject.value).to.eq(
+          mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
+        );
       });
     });
 
@@ -279,7 +281,7 @@ describe('Metric Service', function () {
           .stub(TransactionRecordQuery.prototype, 'execute')
           .resolves(mockedConsensusNodeTransactionRecord);
 
-        const originalBudget = await hbarLimitService['getRemainingBudget'](requestDetails);
+        const originalBudget = hbarLimitService['remainingBudget'];
 
         // emitting an EXECUTE_TRANSACTION event to kick off capturing metrics process asynchronously
         eventEmitter.emit(constants.EVENTS.EXECUTE_TRANSACTION, mockedExecuteTransactionEventPayload);
@@ -288,7 +290,52 @@ describe('Metric Service', function () {
         await new Promise((r) => setTimeout(r, 100));
 
         expect(transactionRecordStub.called).to.be.true;
-        await verifyMetrics(originalBudget, expectedTxRecordFee);
+
+        // validate hbarLimitService
+        // note: since the query is made to consensus node, the total charged amount = txFee + txRecordFee
+        const updatedBudget = hbarLimitService['remainingBudget'];
+
+        expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(
+          mockedTxFee + expectedTxRecordFee,
+        );
+
+        // validate cost metric
+        // @ts-ignore
+        const metricObjects = await metricService['consensusNodeClientHistogramCost'].get();
+        const txRecordFeeMetricObject = metricObjects.values.find((metric) => {
+          return (
+            metric.labels.mode === constants.EXECUTION_MODE.RECORD && metric.metricName === metricHistogramCostSumTitle
+          );
+        });
+        const transactionFeeMetricObject = metricObjects.values.find((metric) => {
+          return (
+            metric.labels.mode === constants.EXECUTION_MODE.TRANSACTION &&
+            metric.metricName === metricHistogramCostSumTitle
+          );
+        });
+
+        expect(txRecordFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+        expect(txRecordFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+        expect(txRecordFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(txRecordFeeMetricObject?.value).to.eq(expectedTxRecordFee);
+
+        expect(transactionFeeMetricObject?.metricName).to.eq(metricHistogramCostSumTitle);
+        expect(transactionFeeMetricObject?.labels.caller).to.eq(mockedCallerName);
+        expect(transactionFeeMetricObject?.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(transactionFeeMetricObject?.value).to.eq(mockedTxFee);
+
+        // validate gas metric
+        // @ts-ignore
+        const gasMetricObject = (await metricService['consensusNodeClientHistogramGasFee'].get()).values.find(
+          (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
+        )!;
+
+        expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
+        expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
+        expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+        expect(gasMetricObject.value).to.eq(
+          mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
+        );
       });
     });
   });
@@ -296,7 +343,7 @@ describe('Metric Service', function () {
   describe('addExpenseAndCaptureMetrics', () => {
     const mockedGasUsed = mockedConsensusNodeTransactionRecord.contractFunctionResult!.gasUsed.toNumber();
     const mockedExecuteQueryEventPayload: IExecuteQueryEventPayload = {
-      executionMode: constants.EXECUTION_MODE.QUERY,
+      executionMode: mockedExecutionMode,
       transactionId: mockedTransactionId,
       txConstructorName: mockedConstructorName,
       callerName: mockedCallerName,
@@ -307,26 +354,44 @@ describe('Metric Service', function () {
       requestDetails,
       originalCallerAddress: mockedOriginalCallerAddress,
     };
-
-    const verifyMetrics = async (originalBudget: Hbar) => {
-      const updatedBudget = await hbarLimitService['getRemainingBudget'](requestDetails);
-      expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(mockedTxFee);
-
-      await verifyConsensusNodeClientHistogramCost(constants.EXECUTION_MODE.QUERY);
-      await verifyConsensusNodeClientHistogramGasFee();
-    };
-
     it('should execute addExpenseAndCaptureMetrics() to capture metrics in HBAR limiter and metric registry', async () => {
-      const originalBudget = await hbarLimitService['getRemainingBudget'](requestDetails);
+      const originalBudget = hbarLimitService['remainingBudget'];
 
       // capture metrics
       await metricService.addExpenseAndCaptureMetrics(mockedExecuteQueryEventPayload);
 
-      await verifyMetrics(originalBudget);
+      // validate hbarLimitService
+      const updatedBudget = hbarLimitService['remainingBudget'];
+
+      expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(mockedTxFee);
+
+      // validate cost metrics
+      // @ts-ignore
+      const costMetricObject = (await metricService['consensusNodeClientHistogramCost'].get()).values.find(
+        (metric) => metric.metricName === metricHistogramCostSumTitle,
+      )!;
+
+      expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
+      expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
+      expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(costMetricObject.value).to.eq(mockedTxFee);
+
+      // validate gas metric
+      // @ts-ignore
+      const gasMetricObject = (await metricService['consensusNodeClientHistogramGasFee'].get()).values.find(
+        (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
+      )!;
+
+      expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
+      expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
+      expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(gasMetricObject.value).to.eq(
+        mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
+      );
     });
 
     it('should listen to EXECUTE_QUERY event and kick off addExpenseAndCaptureMetrics()', async () => {
-      const originalBudget = await hbarLimitService['getRemainingBudget'](requestDetails);
+      const originalBudget = hbarLimitService['remainingBudget'];
 
       // emitting an EXECUTE_QUERY event to kick off capturing metrics process
       eventEmitter.emit(constants.EVENTS.EXECUTE_QUERY, mockedExecuteQueryEventPayload);
@@ -334,7 +399,32 @@ describe('Metric Service', function () {
       // small wait for hbar rate limiter to settle
       await new Promise((r) => setTimeout(r, 100));
 
-      await verifyMetrics(originalBudget);
+      // validate hbarLimitService
+      const updatedBudget = hbarLimitService['remainingBudget'];
+      expect(originalBudget.toTinybars().toNumber() - updatedBudget.toTinybars().toNumber()).to.eq(mockedTxFee);
+
+      // validate cost metrics
+      // @ts-ignore
+      const costMetricObject = (await metricService['consensusNodeClientHistogramCost'].get()).values.find(
+        (metric) => metric.metricName === metricHistogramCostSumTitle,
+      )!;
+      expect(costMetricObject.metricName).to.eq(metricHistogramCostSumTitle);
+      expect(costMetricObject.labels.caller).to.eq(mockedCallerName);
+      expect(costMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(costMetricObject.value).to.eq(mockedTxFee);
+
+      // validate gas metric
+      // @ts-ignore
+      const gasMetricObject = (await metricService['consensusNodeClientHistogramGasFee'].get()).values.find(
+        (metric) => metric.metricName === metricHistogramGasFeeSumTitle,
+      )!;
+
+      expect(gasMetricObject.metricName).to.eq(metricHistogramGasFeeSumTitle);
+      expect(gasMetricObject.labels.caller).to.eq(mockedCallerName);
+      expect(gasMetricObject.labels.interactingEntity).to.eq(mockedInteractingEntity);
+      expect(gasMetricObject.value).to.eq(
+        mockedConsensusNodeTransactionRecord.contractFunctionResult?.gasUsed.toNumber(),
+      );
     });
   });
 });

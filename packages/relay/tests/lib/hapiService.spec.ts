@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { Client } from '@hashgraph/sdk';
+import { AccountId, Client } from '@hashgraph/sdk';
 import { expect } from 'chai';
 import EventEmitter from 'events';
 import pino from 'pino';
@@ -63,6 +63,7 @@ describe('HAPI Service', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       duration,
     );
   });
@@ -175,7 +176,7 @@ describe('HAPI Service', async function () {
         const costAmount = 10000;
         hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
 
-        const hbarLimiterBudgetBefore = await hbarLimitService['getRemainingBudget'](requestDetails);
+        const hbarLimiterBudgetBefore = hbarLimitService['remainingBudget'];
         const oldClientInstance = hapiService.getMainClientInstance();
         const oldSDKInstance = hapiService.getSDKClient();
 
@@ -184,7 +185,7 @@ describe('HAPI Service', async function () {
 
         const newSDKInstance = hapiService.getSDKClient();
         const newClientInstance = hapiService.getMainClientInstance();
-        const hbarLimiterBudgetAfter = await hbarLimitService['getRemainingBudget'](requestDetails);
+        const hbarLimiterBudgetAfter = hbarLimitService['remainingBudget'];
 
         expect(hbarLimiterBudgetBefore.toTinybars().toNumber()).to.be.greaterThan(
           hbarLimiterBudgetAfter.toTinybars().toNumber(),

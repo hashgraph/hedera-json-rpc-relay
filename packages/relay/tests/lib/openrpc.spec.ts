@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { AccountInfo } from '@hashgraph/sdk';
+import { AccountId, AccountInfo } from '@hashgraph/sdk';
 import { parseOpenRPCDocument, validateOpenRPCDocument } from '@open-rpc/schema-utils-js';
 import Ajv from 'ajv';
 import axios from 'axios';
@@ -33,15 +33,15 @@ import { register, Registry } from 'prom-client';
 import sinon from 'sinon';
 
 import openRpcSchema from '../../../../docs/openrpc.json';
-import { RelayImpl } from '../../src';
 import { numberTo0x } from '../../src/formatters';
 import { SDKClient } from '../../src/lib/clients';
-import { MirrorNodeClient } from '../../src/lib/clients';
+import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
 import constants from '../../src/lib/constants';
 import { EvmAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthImpl } from '../../src/lib/eth';
+import { RelayImpl } from '../../src/lib/relay';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
@@ -75,7 +75,7 @@ import {
   overrideEnvsInMochaDescribe,
   signedTransactionHash,
 } from '../helpers';
-import { CONTRACT_RESULT_MOCK, NOT_FOUND_RES } from './eth/eth-config';
+import { NOT_FOUND_RES } from './eth/eth-config';
 
 const logger = pino();
 const registry = new Registry();
@@ -140,6 +140,7 @@ describe('Open RPC Specification', function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       duration,
     );
 
@@ -227,7 +228,6 @@ describe('Open RPC Specification', function () {
     mock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
     mock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
     mock.onGet(`accounts/${defaultContractResults.results[1].to}?transactions=false`).reply(200);
-    mock.onGet(`accounts/${CONTRACT_RESULT_MOCK.from}?transactions=false`).reply(200, CONTRACT_RESULT_MOCK);
     mock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, NOT_FOUND_RES);
     mock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, NOT_FOUND_RES);
     mock.onGet(`contracts/${defaultContractResults.results[0].to}`).reply(200);

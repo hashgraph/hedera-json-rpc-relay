@@ -19,6 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { AccountId } from '@hashgraph/sdk';
 import MockAdapter from 'axios-mock-adapter';
 import EventEmitter from 'events';
 import pino from 'pino';
@@ -78,6 +79,7 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
     ipAddressHbarSpendingPlanRepository,
     logger,
     register,
+    AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
     duration,
   );
 
