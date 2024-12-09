@@ -140,7 +140,6 @@ describe('Metric Service', function () {
     mock = new MockAdapter(instance);
 
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL;
 
     eventEmitter = new EventEmitter();
 
@@ -154,7 +153,7 @@ describe('Metric Service', function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      Hbar.fromTinybars(total),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       duration,
     );
 

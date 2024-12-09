@@ -36,6 +36,7 @@ export class HbarLimitService implements IHbarLimitService {
     BASIC: Hbar.fromTinybars(constants.HBAR_RATE_LIMIT_BASIC),
     EXTENDED: Hbar.fromTinybars(constants.HBAR_RATE_LIMIT_EXTENDED),
     PRIVILEGED: Hbar.fromTinybars(constants.HBAR_RATE_LIMIT_PRIVILEGED),
+    OPERATOR: Hbar.fromTinybars(constants.HBAR_RATE_LIMIT_TOTAL),
   };
 
   /**
@@ -74,16 +75,23 @@ export class HbarLimitService implements IHbarLimitService {
   private readonly averageSpendingPlanAmountSpentGauge: Record<SubscriptionTier, Gauge>;
 
   /**
-   * The remaining budget for the rate limiter.
-   * @private
-   */
-  private remainingBudget: Hbar;
-
-  /**
    * The reset timestamp for the rate limiter.
    * @private
    */
   private reset: Date;
+
+  private async getRemainingBudget(requestDetails: RequestDetails): Promise<Hbar> {
+    const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
+    try {
+      const operatorPlan = await this.getOperatorSpendingPlan(requestDetails);
+      return Hbar.fromTinybars(totalBudget.toTinybars().sub(operatorPlan.amountSpent));
+    } catch (error) {
+      this.logger.error(error);
+      // If we get to here, then something went wrong with the operator spending plan.
+      // In this case, we should just return the total budget, so that the rate limiter does not block all requests.
+      return totalBudget;
+    }
+  }
 
   constructor(
     private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository,
@@ -91,11 +99,10 @@ export class HbarLimitService implements IHbarLimitService {
     private readonly ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
     private readonly logger: Logger,
     private readonly register: Registry,
-    private readonly totalBudget: Hbar,
+    private readonly operatorAddress: string,
     private readonly limitDuration: number,
   ) {
     this.reset = this.getResetTimestamp();
-    this.remainingBudget = this.totalBudget;
 
     if (this.totalBudget.toTinybars().lte(0)) {
       this.isHBarRateLimiterEnabled = false;
@@ -118,7 +125,7 @@ export class HbarLimitService implements IHbarLimitService {
       help: 'Relay Hbar rate limit remaining budget',
       registers: [register],
     });
-    this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
+    this.hbarLimitRemainingGauge.set(HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR].toTinybars().toNumber());
 
     this.uniqueSpendingPlansCounter = Object.values(SubscriptionTier).reduce(
       (acc, tier) => {
@@ -149,7 +156,13 @@ export class HbarLimitService implements IHbarLimitService {
     );
 
     logger.info(
-      `HBAR Limiter successfully configured: totalBudget=${totalBudget}, maxLimitForBasicTier=${HbarLimitService.TIER_LIMITS.BASIC}, maxLimitForExtendedTier=${HbarLimitService.TIER_LIMITS.EXTENDED}, maxLimitForprivilegedTier=${HbarLimitService.TIER_LIMITS.PRIVILEGED}, limitDuration=${limitDuration}, resetTimeStamp=${this.reset}.`,
+      `HBAR Limiter successfully configured: totalBudget=${
+        HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR]
+      }, maxLimitForBasicTier=${HbarLimitService.TIER_LIMITS.BASIC}, maxLimitForExtendedTier=${
+        HbarLimitService.TIER_LIMITS.EXTENDED
+      }, maxLimitForprivilegedTier=${
+        HbarLimitService.TIER_LIMITS.PRIVILEGED
+      }, limitDuration=${limitDuration}, resetTimeStamp=${this.reset}.`,
     );
   }
 
@@ -171,12 +184,14 @@ export class HbarLimitService implements IHbarLimitService {
       this.logger.trace(`${requestDetails.formattedRequestId} Resetting HBAR rate limiter...`);
     }
     await this.hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
-    this.resetBudget();
+    this.hbarLimitRemainingGauge.set(HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR].toTinybars().toNumber());
     this.resetTemporaryMetrics();
     this.reset = this.getResetTimestamp();
     if (this.logger.isLevelEnabled('trace')) {
       this.logger.trace(
-        `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${this.remainingBudget}, newResetTimestamp=${this.reset}`,
+        `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${await this.getRemainingBudget(
+          requestDetails,
+        )}, newResetTimestamp=${this.reset}`,
       );
     }
   }
@@ -222,7 +237,7 @@ export class HbarLimitService implements IHbarLimitService {
     let spendingPlan = await this.getSpendingPlan(evmAddress, requestDetails);
     if (!spendingPlan) {
       // Create a basic spending plan if none exists for the evm address or ip address
-      spendingPlan = await this.createBasicSpendingPlan(evmAddress, requestDetails);
+      spendingPlan = await this.createSpendingPlanForAddress(evmAddress, requestDetails);
     }
 
     const spendingLimit = HbarLimitService.TIER_LIMITS[spendingPlan.subscriptionTier].toTinybars();
@@ -262,9 +277,11 @@ export class HbarLimitService implements IHbarLimitService {
       return;
     }
 
-    const newRemainingBudget = this.remainingBudget.toTinybars().sub(cost);
-    this.remainingBudget = Hbar.fromTinybars(newRemainingBudget);
-    this.hbarLimitRemainingGauge.set(newRemainingBudget.toNumber());
+    const operatorPlan = await this.getOperatorSpendingPlan(requestDetails);
+    await this.hbarSpendingPlanRepository.addToAmountSpent(operatorPlan.id, cost, requestDetails, this.limitDuration);
+
+    const remainingBudget = await this.getRemainingBudget(requestDetails);
+    this.hbarLimitRemainingGauge.set(remainingBudget.toTinybars().toNumber());
 
     const ipAddress = requestDetails.ipAddress;
     if (!evmAddress && !ipAddress) {
@@ -278,7 +295,7 @@ export class HbarLimitService implements IHbarLimitService {
     if (!spendingPlan) {
       if (evmAddress) {
         // Create a basic spending plan if none exists for the evm address
-        spendingPlan = await this.createBasicSpendingPlan(evmAddress, requestDetails);
+        spendingPlan = await this.createSpendingPlanForAddress(evmAddress, requestDetails);
       } else {
         this.logger.warn(
           `${requestDetails.formattedRequestId} Cannot add expense to a spending plan without an evm address or ip address`,
@@ -309,7 +326,7 @@ export class HbarLimitService implements IHbarLimitService {
 
     if (this.logger.isLevelEnabled('trace')) {
       this.logger.trace(
-        `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost} tℏ, remainingBudget=${this.remainingBudget}`,
+        `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost} tℏ, remainingBudget=${remainingBudget}`,
       );
     }
   }
@@ -334,26 +351,27 @@ export class HbarLimitService implements IHbarLimitService {
     if (this.shouldResetLimiter()) {
       await this.resetLimiter(requestDetails);
     }
+    const remainingBudget = await this.getRemainingBudget(requestDetails);
     // note: estimatedTxFee is only applicable in a few cases (currently, only for file transactions).
     //      In most situations, estimatedTxFee is set to 0 (i.e., not considered).
     //      In such cases, it should still be false if remainingBudget === 0.
-    if (this.remainingBudget.toTinybars().lte(0) || this.remainingBudget.toTinybars().sub(estimatedTxFee).lt(0)) {
+    if (remainingBudget.toTinybars().lte(0) || remainingBudget.toTinybars().sub(estimatedTxFee).lt(0)) {
       this.hbarLimitCounter.labels(mode, methodName).inc(1);
       this.logger.warn(
-        `${requestDetails.formattedRequestId} Total HBAR rate limit reached: remainingBudget=${
-          this.remainingBudget
-        }, totalBudget=${
-          this.totalBudget
+        `${
+          requestDetails.formattedRequestId
+        } Total HBAR rate limit reached: remainingBudget=${remainingBudget}, totalBudget=${
+          HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR]
         }, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
       );
       return true;
     } else {
       if (this.logger.isLevelEnabled('trace')) {
         this.logger.trace(
-          `${requestDetails.formattedRequestId} Total HBAR rate limit NOT reached: remainingBudget=${
-            this.remainingBudget
-          }, totalBudget=${
-            this.totalBudget
+          `${
+            requestDetails.formattedRequestId
+          } Total HBAR rate limit NOT reached: remainingBudget=${remainingBudget}, totalBudget=${
+            HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR]
           }, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
         );
       }
@@ -387,15 +405,6 @@ export class HbarLimitService implements IHbarLimitService {
    */
   private shouldResetLimiter(): boolean {
     return Date.now() >= this.reset.getTime();
-  }
-
-  /**
-   * Resets the remaining budget to the total budget.
-   * @private
-   */
-  private resetBudget(): void {
-    this.remainingBudget = this.totalBudget;
-    this.hbarLimitRemainingGauge.set(this.remainingBudget.toTinybars().toNumber());
   }
 
   /**
@@ -501,20 +510,22 @@ export class HbarLimitService implements IHbarLimitService {
    * Creates a basic spending plan for the given evm address.
    * @param {string} evmAddress - The evm address to create the spending plan for.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @param {SubscriptionTier} [subscriptionTier] - The subscription tier for the spending plan. (default = BASIC)
    * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the created spending plan.
    * @throws {Error} - If neither evm address nor IP address is provided.
    * @private
    */
-  private async createBasicSpendingPlan(
+  private async createSpendingPlanForAddress(
     evmAddress: string,
     requestDetails: RequestDetails,
+    subscriptionTier: SubscriptionTier = SubscriptionTier.BASIC,
   ): Promise<IDetailedHbarSpendingPlan> {
     if (!evmAddress) {
       throw new Error('Cannot create a spending plan without an associated evm address');
     }
 
     const spendingPlan = await this.hbarSpendingPlanRepository.create(
-      SubscriptionTier.BASIC,
+      subscriptionTier,
       requestDetails,
       this.limitDuration,
     );
@@ -531,5 +542,24 @@ export class HbarLimitService implements IHbarLimitService {
     );
 
     return spendingPlan;
+  }
+
+  /**
+   * Gets the operator spending plan. If the plan does not exist, it will be created.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @returns {Promise<IDetailedHbarSpendingPlan>} - A promise that resolves with the operator spending plan.
+   * @private
+   */
+  private async getOperatorSpendingPlan(requestDetails: RequestDetails): Promise<IDetailedHbarSpendingPlan> {
+    let operatorPlan = await this.getSpendingPlan(this.operatorAddress, requestDetails);
+    if (!operatorPlan) {
+      this.logger.trace(`${requestDetails.formattedRequestId} Creating operator spending plan...`);
+      operatorPlan = await this.createSpendingPlanForAddress(
+        this.operatorAddress,
+        requestDetails,
+        SubscriptionTier.OPERATOR,
+      );
+    }
+    return operatorPlan;
   }
 }

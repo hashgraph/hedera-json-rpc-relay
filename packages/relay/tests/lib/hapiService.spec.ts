@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { Client, Hbar } from '@hashgraph/sdk';
+import { AccountId, Client } from '@hashgraph/sdk';
 import { expect } from 'chai';
 import EventEmitter from 'events';
 import pino from 'pino';
@@ -50,7 +50,6 @@ describe('HAPI Service', async function () {
   const requestDetails = new RequestDetails({ requestId: 'hapiService.spec.ts', ipAddress: '0.0.0.0' });
 
   this.beforeAll(() => {
-    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     eventEmitter = new EventEmitter();
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
@@ -64,7 +63,7 @@ describe('HAPI Service', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      Hbar.fromTinybars(total),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       duration,
     );
   });
