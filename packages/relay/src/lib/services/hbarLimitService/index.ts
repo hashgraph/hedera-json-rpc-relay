@@ -179,14 +179,13 @@ export class HbarLimitService implements IHbarLimitService {
       this.logger.trace(`${requestDetails.formattedRequestId} Resetting HBAR rate limiter...`);
     }
     await this.hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
-    this.hbarLimitRemainingGauge.set(HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR].toTinybars().toNumber());
+    const remainingBudget = await this.getRemainingBudget(requestDetails);
+    this.hbarLimitRemainingGauge.set(remainingBudget.toTinybars().toNumber());
     this.resetTemporaryMetrics();
     this.reset = this.getResetTimestamp();
     if (this.logger.isLevelEnabled('trace')) {
       this.logger.trace(
-        `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${await this.getRemainingBudget(
-          requestDetails,
-        )}, newResetTimestamp=${this.reset}`,
+        `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${remainingBudget}, newResetTimestamp=${this.reset}`,
       );
     }
   }
