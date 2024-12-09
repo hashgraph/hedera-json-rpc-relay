@@ -103,8 +103,9 @@ export class HbarLimitService implements IHbarLimitService {
     private readonly limitDuration: number,
   ) {
     this.reset = this.getResetTimestamp();
+    const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
 
-    if (this.totalBudget.toTinybars().lte(0)) {
+    if (totalBudget.toTinybars().lte(0)) {
       this.isHBarRateLimiterEnabled = false;
     }
 
@@ -125,7 +126,7 @@ export class HbarLimitService implements IHbarLimitService {
       help: 'Relay Hbar rate limit remaining budget',
       registers: [register],
     });
-    this.hbarLimitRemainingGauge.set(HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR].toTinybars().toNumber());
+    this.hbarLimitRemainingGauge.set(totalBudget.toTinybars().toNumber());
 
     this.uniqueSpendingPlansCounter = Object.values(SubscriptionTier).reduce(
       (acc, tier) => {
@@ -156,13 +157,7 @@ export class HbarLimitService implements IHbarLimitService {
     );
 
     logger.info(
-      `HBAR Limiter successfully configured: totalBudget=${
-        HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR]
-      }, maxLimitForBasicTier=${HbarLimitService.TIER_LIMITS.BASIC}, maxLimitForExtendedTier=${
-        HbarLimitService.TIER_LIMITS.EXTENDED
-      }, maxLimitForprivilegedTier=${
-        HbarLimitService.TIER_LIMITS.PRIVILEGED
-      }, limitDuration=${limitDuration}, resetTimeStamp=${this.reset}.`,
+      `HBAR Limiter successfully configured: totalBudget=${totalBudget}, maxLimitForBasicTier=${HbarLimitService.TIER_LIMITS.BASIC}, maxLimitForExtendedTier=${HbarLimitService.TIER_LIMITS.EXTENDED}, maxLimitForprivilegedTier=${HbarLimitService.TIER_LIMITS.PRIVILEGED}, limitDuration=${limitDuration}, resetTimeStamp=${this.reset}.`,
     );
   }
 
