@@ -345,6 +345,7 @@ export class HbarLimitService implements IHbarLimitService {
     if (this.shouldResetLimiter()) {
       await this.resetLimiter(requestDetails);
     }
+    const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
     const remainingBudget = await this.getRemainingBudget(requestDetails);
     // note: estimatedTxFee is only applicable in a few cases (currently, only for file transactions).
     //      In most situations, estimatedTxFee is set to 0 (i.e., not considered).
@@ -354,9 +355,7 @@ export class HbarLimitService implements IHbarLimitService {
       this.logger.warn(
         `${
           requestDetails.formattedRequestId
-        } Total HBAR rate limit reached: remainingBudget=${remainingBudget}, totalBudget=${
-          HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR]
-        }, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
+        } Total HBAR rate limit reached: remainingBudget=${remainingBudget}, totalBudget=${totalBudget}, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
       );
       return true;
     } else {
@@ -364,9 +363,7 @@ export class HbarLimitService implements IHbarLimitService {
         this.logger.trace(
           `${
             requestDetails.formattedRequestId
-          } Total HBAR rate limit NOT reached: remainingBudget=${remainingBudget}, totalBudget=${
-            HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR]
-          }, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
+          } Total HBAR rate limit NOT reached: remainingBudget=${remainingBudget}, totalBudget=${totalBudget}, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
         );
       }
       return false;
