@@ -18,7 +18,8 @@
  *
  */
 
-import { Hbar } from '@hashgraph/sdk';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { AccountId, Hbar } from '@hashgraph/sdk';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { randomBytes, uuidV4 } from 'ethers';
@@ -47,7 +48,6 @@ chai.use(chaiAsPromised);
 describe('HBAR Rate Limit Service', function () {
   const logger = pino();
   const register = new Registry();
-  const totalBudget = Hbar.fromTinybars(constants.HBAR_RATE_LIMIT_TOTAL);
   const totalBudgetInTinybars = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
   const limitDuration = constants.HBAR_RATE_LIMIT_DURATION;
   const mode = constants.EXECUTION_MODE.TRANSACTION;
@@ -78,7 +78,7 @@ describe('HBAR Rate Limit Service', function () {
       ipAddressHbarSpendingPlanRepositoryStub,
       logger,
       register,
-      totalBudget,
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       limitDuration,
     );
   });
@@ -133,7 +133,7 @@ describe('HBAR Rate Limit Service', function () {
           ipAddressHbarSpendingPlanRepositoryStub,
           logger,
           register,
-          totalBudget,
+          AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
           limitDuration,
         );
         const tomorrow = new Date(Date.now() + limitDuration);

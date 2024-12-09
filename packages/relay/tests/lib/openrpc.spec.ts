@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { AccountInfo, Hbar } from '@hashgraph/sdk';
+import { AccountId, AccountInfo } from '@hashgraph/sdk';
 import { parseOpenRPCDocument, validateOpenRPCDocument } from '@open-rpc/schema-utils-js';
 import Ajv from 'ajv';
 import axios from 'axios';
@@ -129,7 +129,6 @@ describe('Open RPC Specification', function () {
       instance,
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     const eventEmitter = new EventEmitter();
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
@@ -141,7 +140,7 @@ describe('Open RPC Specification', function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      Hbar.fromTinybars(total),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       duration,
     );
 
