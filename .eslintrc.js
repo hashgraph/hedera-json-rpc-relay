@@ -30,7 +30,7 @@ module.exports = {
     ],
     "plugins": [
         "simple-import-sort",
-        "header"
+        "header",
     ],
     "overrides": [
         {
@@ -72,7 +72,7 @@ module.exports = {
             " *",
             " * Hedera JSON RPC Relay",
             " *",
-            {"pattern": "^\\s\\*\\sCopyright \\(C\\) 20(1[8-9]|[2-9]\\d)(?:-20(1[8-9]|[2-9]\\d))? Hedera Hashgraph, LLC$", "template": " Copyright 2019"},
+            {"pattern": "^\\s\\*\\sCopyright \\(C\\) 20(1[8-9]|[2-9]\\d)(?:-20(1[8-9]|[2-9]\\d))? Hedera Hashgraph, LLC$", "template": ` * Copyright (C) ${new Date().getFullYear()} Hedera Hashgraph, LLC`},
             " *",
             " * Licensed under the Apache License, Version 2.0 (the \"License\");",
             " * you may not use this file except in compliance with the License.",
