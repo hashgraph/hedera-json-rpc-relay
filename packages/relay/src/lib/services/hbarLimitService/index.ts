@@ -98,12 +98,12 @@ export class HbarLimitService implements IHbarLimitService {
   ) {
     this.reset = this.getResetTimestamp();
 
-    if (ConfigService.get('OPERATOR_ID_MAIN')) {
-      this.operatorAddress = AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress();
-    } else if (ConfigService.get('OPERATOR_KEY_MAIN')) {
-      this.operatorAddress = Utils.createPrivateKeyBasedOnFormat(
-        ConfigService.get('OPERATOR_KEY_MAIN') as string,
-      ).publicKey.toEvmAddress();
+    const operatorId = ConfigService.get('OPERATOR_ID_MAIN');
+    const operatorKey = ConfigService.get('OPERATOR_KEY_MAIN');
+    if (operatorId) {
+      this.operatorAddress = AccountId.fromString(operatorId as string).toSolidityAddress();
+    } else if (operatorKey) {
+      this.operatorAddress = Utils.createPrivateKeyBasedOnFormat(operatorKey as string).publicKey.toEvmAddress();
     }
 
     const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
