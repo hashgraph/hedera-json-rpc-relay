@@ -86,20 +86,7 @@ export class HbarLimitService implements IHbarLimitService {
    * The operator address for the rate limiter.
    * @private
    */
-  private operatorAddress: string;
-
-  private async getRemainingBudget(requestDetails: RequestDetails): Promise<Hbar> {
-    const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
-    try {
-      const operatorPlan = await this.getOperatorSpendingPlan(requestDetails);
-      return Hbar.fromTinybars(totalBudget.toTinybars().sub(operatorPlan.amountSpent));
-    } catch (error) {
-      this.logger.error(error);
-      // If we get to here, then something went wrong with the operator spending plan.
-      // In this case, we should just return the total budget, so that the rate limiter does not block all requests.
-      return totalBudget;
-    }
-  }
+  private operatorAddress?: string;
 
   constructor(
     private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository,
@@ -565,15 +552,34 @@ export class HbarLimitService implements IHbarLimitService {
    * @private
    */
   private async getOperatorSpendingPlan(requestDetails: RequestDetails): Promise<IDetailedHbarSpendingPlan> {
-    let operatorPlan = await this.getSpendingPlan(this.operatorAddress, requestDetails);
+    let operatorPlan = await this.getSpendingPlan(this.operatorAddress!, requestDetails);
     if (!operatorPlan) {
       this.logger.trace(`${requestDetails.formattedRequestId} Creating operator spending plan...`);
       operatorPlan = await this.createSpendingPlanForAddress(
-        this.operatorAddress,
+        this.operatorAddress!,
         requestDetails,
         SubscriptionTier.OPERATOR,
       );
     }
     return operatorPlan;
+  }
+
+  /**
+   * Gets the remaining budget of the rate limiter. This is the total budget minus the amount spent by the operator.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   * @returns {Promise<Hbar>} - A promise that resolves with the remaining budget.
+   * @private
+   */
+  private async getRemainingBudget(requestDetails: RequestDetails): Promise<Hbar> {
+    const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
+    try {
+      const operatorPlan = await this.getOperatorSpendingPlan(requestDetails);
+      return Hbar.fromTinybars(totalBudget.toTinybars().sub(operatorPlan.amountSpent));
+    } catch (error) {
+      this.logger.error(error);
+      // If we get to here, then something went wrong with the operator spending plan.
+      // In this case, we should just return the total budget, so that the rate limiter does not block all requests.
+      return totalBudget;
+    }
   }
 }
