@@ -808,31 +808,28 @@ describe('HBAR Rate Limit Service', function () {
         <any>'updateAverageAmountSpentPerSubscriptionTier',
       );
 
+      const addExpensePromise = hbarLimitService.addExpense(
+        expense,
+        evmAddress,
+        new RequestDetails({
+          ...requestDetails,
+          ipAddress,
+        }),
+      );
+
       if (evmAddress) {
-        await hbarLimitService.addExpense(
-          expense,
-          evmAddress,
-          new RequestDetails({
-            ...requestDetails,
-            ipAddress,
-          }),
-        );
+        await expect(addExpensePromise).to.eventually.be.fulfilled;
         expect(hbarSpendingPlanRepositorySpy.addToAmountSpent.calledTwice).to.be.true; // once for operator and once for evm address
         await Promise.all(updateAverageAmountSpentPerSubscriptionTierSpy.returnValues);
         const expectedAverageUsage = Math.round((otherPlanOfTheSameTier.amountSpent + expense) / 2);
         sinon.assert.calledOnceWithExactly(setAverageSpendingPlanAmountSpentGaugeSpy, expectedAverageUsage);
         sinon.assert.calledOnceWithExactly(incUniqueSpendingPlansCounterSpy, 1);
       } else {
-        await expect(
-          hbarLimitService.addExpense(
-            expense,
-            evmAddress,
-            new RequestDetails({
-              ...requestDetails,
-              ipAddress,
-            }),
-          ),
-        ).to.eventually.be.rejectedWith('Cannot create a spending plan without an associated evm address');
+        await expect(addExpensePromise).to.eventually.be.fulfilled;
+        sinon.assert.calledWith(
+          loggerSpy.warn,
+          `${requestDetails.formattedRequestId} Cannot add expense to a spending plan without an evm address`,
+        );
         expect(hbarSpendingPlanRepositorySpy.addToAmountSpent.calledOnce).to.be.true; // only once for the operator
       }
       expect(hbarSpendingPlanRepositorySpy.addToAmountSpent.calledWith(sinon.match.string, expense)).to.be.true;

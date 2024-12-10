@@ -299,7 +299,15 @@ export class HbarLimitService implements IHbarLimitService {
 
     let spendingPlan = await this.getSpendingPlan(evmAddress, requestDetails);
     if (!spendingPlan) {
-      spendingPlan = await this.createSpendingPlanForAddress(evmAddress, requestDetails);
+      if (evmAddress) {
+        // Create a basic spending plan if none exists for the evm address
+        spendingPlan = await this.createSpendingPlanForAddress(evmAddress, requestDetails);
+      } else {
+        this.logger.warn(
+          `${requestDetails.formattedRequestId} Cannot add expense to a spending plan without an evm address`,
+        );
+        return;
+      }
     }
 
     if (this.logger.isLevelEnabled('trace')) {
