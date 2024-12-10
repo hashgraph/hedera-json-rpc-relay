@@ -159,7 +159,9 @@ describe('HBAR Rate Limit Service', function () {
       hbarLimitService.remainingBudget = Hbar.fromTinybars(1000);
       const setSpy = sinon.spy(hbarLimitService['hbarLimitRemainingGauge'], 'set');
       await hbarLimitService.resetLimiter(requestDetails);
-      expect(hbarLimitService['remainingBudget'].toTinybars().toNumber()).to.eq(totalBudgetInTinybars);
+      expect(await hbarLimitService['getRemainingBudget'](requestDetails).toTinybars().toNumber()).to.eq(
+        totalBudgetInTinybars,
+      );
       expect(setSpy.calledOnceWith(totalBudgetInTinybars)).to.be.true;
     });
 
@@ -717,7 +719,7 @@ describe('HBAR Rate Limit Service', function () {
       await hbarLimitService.addExpense(expense, evmAddress, requestDetails);
 
       expect(hbarSpendingPlanRepositoryStub.addToAmountSpent.calledOnceWith(mockPlanId, expense)).to.be.true;
-      expect(hbarLimitService['remainingBudget'].toTinybars().toNumber()).to.eq(
+      expect(await hbarLimitService['getRemainingBudget'](requestDetails).toTinybars().toNumber()).to.eq(
         hbarLimitService['totalBudget'].toTinybars().sub(expense).toNumber(),
       );
       expect((await hbarLimitService['hbarLimitRemainingGauge'].get()).values[0].value).to.equal(

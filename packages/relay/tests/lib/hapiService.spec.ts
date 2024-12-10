@@ -175,7 +175,7 @@ describe('HAPI Service', async function () {
         const costAmount = 10000;
         hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
 
-        const hbarLimiterBudgetBefore = hbarLimitService['remainingBudget'];
+        const hbarLimiterBudgetBefore = await hbarLimitService['getRemainingBudget'](requestDetails);
         const oldClientInstance = hapiService.getMainClientInstance();
         const oldSDKInstance = hapiService.getSDKClient();
 
@@ -184,7 +184,7 @@ describe('HAPI Service', async function () {
 
         const newSDKInstance = hapiService.getSDKClient();
         const newClientInstance = hapiService.getMainClientInstance();
-        const hbarLimiterBudgetAfter = hbarLimitService['remainingBudget'];
+        const hbarLimiterBudgetAfter = await hbarLimitService['getRemainingBudget'](requestDetails);
 
         expect(hbarLimiterBudgetBefore.toTinybars().toNumber()).to.be.greaterThan(
           hbarLimiterBudgetAfter.toTinybars().toNumber(),
