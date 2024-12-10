@@ -240,7 +240,7 @@ export class HbarLimitService implements IHbarLimitService {
     }
     let spendingPlan = await this.getSpendingPlan(evmAddress, requestDetails);
     if (!spendingPlan) {
-      // Create a basic spending plan if none exists for the evm address or ip address
+      // Create a basic spending plan if none exists for the evm address
       spendingPlan = await this.createSpendingPlanForAddress(evmAddress, requestDetails);
     }
 
@@ -283,6 +283,8 @@ export class HbarLimitService implements IHbarLimitService {
 
     const operatorPlan = await this.getOperatorSpendingPlan(requestDetails);
     await this.hbarSpendingPlanRepository.addToAmountSpent(operatorPlan.id, cost, requestDetails, this.limitDuration);
+    // Done asynchronously in the background
+    this.updateAverageAmountSpentPerSubscriptionTier(operatorPlan.subscriptionTier, requestDetails).then();
 
     const remainingBudget = await this.getRemainingBudget(requestDetails);
     this.hbarLimitRemainingGauge.set(remainingBudget.toTinybars().toNumber());
@@ -297,15 +299,7 @@ export class HbarLimitService implements IHbarLimitService {
 
     let spendingPlan = await this.getSpendingPlan(evmAddress, requestDetails);
     if (!spendingPlan) {
-      if (evmAddress) {
-        // Create a basic spending plan if none exists for the evm address
-        spendingPlan = await this.createSpendingPlanForAddress(evmAddress, requestDetails);
-      } else {
-        this.logger.warn(
-          `${requestDetails.formattedRequestId} Cannot add expense to a spending plan without an evm address or ip address`,
-        );
-        return;
-      }
+      spendingPlan = await this.createSpendingPlanForAddress(evmAddress, requestDetails);
     }
 
     if (this.logger.isLevelEnabled('trace')) {
@@ -458,7 +452,6 @@ export class HbarLimitService implements IHbarLimitService {
         return await this.getSpendingPlanByEvmAddress(evmAddress, requestDetails);
       } catch (error) {
         this.logger.warn(
-          error,
           `${requestDetails.formattedRequestId} Failed to get spending plan for evm address '${evmAddress}'`,
         );
       }
@@ -468,9 +461,10 @@ export class HbarLimitService implements IHbarLimitService {
       try {
         return await this.getSpendingPlanByIPAddress(requestDetails);
       } catch (error) {
-        this.logger.warn(error, `${requestDetails.formattedRequestId} Failed to get spending plan`);
+        this.logger.warn(`${requestDetails.formattedRequestId} Failed to get spending plan for ip address`);
       }
     }
+
     return null;
   }
 
