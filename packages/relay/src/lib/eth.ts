@@ -2390,8 +2390,8 @@ export class EthImpl implements Eth {
     }
 
     // Handle system contract creation
-    // reason for substring from the 90th character is described in the design doc in this repo: docs/design/hts_address_tx_receipt.md
-    const tokenAddress = receiptResponse.call_result.substring(90);
+    // reason for substring is described in the design doc in this repo: docs/design/hts_address_tx_receipt.md
+    const tokenAddress = receiptResponse.call_result.substring(receiptResponse.call_result.length - 40);
     return prepend0x(tokenAddress);
   }
 
