@@ -248,6 +248,21 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           )),
         );
         global.accounts.push(...accounts);
+
+        // Note: Reset all operator spending plans before running the tests
+        const operatorPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
+          [SubscriptionTier.OPERATOR],
+          requestDetails,
+        );
+        for (const plan of operatorPlans) {
+          await cacheService.delete(`${HbarSpendingPlanRepository.collectionKey}:${plan.id}`, 'before', requestDetails);
+          await cacheService.delete(
+            `${HbarSpendingPlanRepository.collectionKey}:${plan.id}:amountSpent`,
+            'before',
+            requestDetails,
+          );
+          await evmAddressSpendingPlanRepository.deleteAllByPlanId(plan.id, 'before', requestDetails);
+        }
       });
 
       afterEach(async () => {
