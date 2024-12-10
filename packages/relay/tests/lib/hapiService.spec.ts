@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { AccountId, Client } from '@hashgraph/sdk';
+import { Client } from '@hashgraph/sdk';
 import { expect } from 'chai';
 import EventEmitter from 'events';
 import pino from 'pino';
@@ -63,7 +63,6 @@ describe('HAPI Service', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       duration,
     );
   });

@@ -114,7 +114,6 @@ describe('SdkClient', async function () {
       Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     eventEmitter = new EventEmitter();
 
     cacheService = new CacheService(logger, registry);
@@ -127,7 +126,6 @@ describe('SdkClient', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      Hbar.fromTinybars(total),
       duration,
     );
 

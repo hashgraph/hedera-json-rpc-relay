@@ -153,7 +153,6 @@ describe('Metric Service', function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       duration,
     );
 
