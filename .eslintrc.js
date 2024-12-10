@@ -68,11 +68,11 @@ module.exports = {
         "simple-import-sort/imports": "error",
         "simple-import-sort/exports": "off",
         "header/header": [2, "block", [
-            " -",
+            "-",
             " *",
             " * Hedera JSON RPC Relay",
             " *",
-            " * Copyright (C) \\d{4}(-\\d{4})? Hedera Hashgraph, LLC",
+            {"pattern": "^\\s\\*\\sCopyright \\(C\\) 20(1[8-9]|[2-9]\\d)(?:-20(1[8-9]|[2-9]\\d))? Hedera Hashgraph, LLC$", "template": " Copyright 2019"},
             " *",
             " * Licensed under the Apache License, Version 2.0 (the \"License\");",
             " * you may not use this file except in compliance with the License.",
@@ -86,7 +86,6 @@ module.exports = {
             " * See the License for the specific language governing permissions and",
             " * limitations under the License.",
             " *",
-            " "
         ]]
     },
 };
