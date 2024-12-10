@@ -18,10 +18,12 @@
  *
  */
 
-import { Hbar } from '@hashgraph/sdk';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { AccountId, Hbar } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 
+import { Utils } from '../../../utils';
 import constants from '../../constants';
 import { EvmAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/hbarSpendingPlanRepository';
@@ -80,6 +82,12 @@ export class HbarLimitService implements IHbarLimitService {
    */
   private reset: Date;
 
+  /**
+   * The operator address for the rate limiter.
+   * @private
+   */
+  private operatorAddress: string;
+
   private async getRemainingBudget(requestDetails: RequestDetails): Promise<Hbar> {
     const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
     try {
@@ -99,12 +107,19 @@ export class HbarLimitService implements IHbarLimitService {
     private readonly ipAddressHbarSpendingPlanRepository: IPAddressHbarSpendingPlanRepository,
     private readonly logger: Logger,
     private readonly register: Registry,
-    private readonly operatorAddress: string,
     private readonly limitDuration: number,
   ) {
     this.reset = this.getResetTimestamp();
-    const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
 
+    if (ConfigService.get('OPERATOR_ID_MAIN')) {
+      this.operatorAddress = AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress();
+    } else if (ConfigService.get('OPERATOR_KEY_MAIN')) {
+      this.operatorAddress = Utils.createPrivateKeyBasedOnFormat(
+        ConfigService.get('OPERATOR_KEY_MAIN') as string,
+      ).publicKey.toEvmAddress();
+    }
+
+    const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
     if (totalBudget.toTinybars().lte(0)) {
       this.isHBarRateLimiterEnabled = false;
     }
@@ -167,6 +182,14 @@ export class HbarLimitService implements IHbarLimitService {
    */
   isEnabled(): boolean {
     return this.isHBarRateLimiterEnabled;
+  }
+
+  /**
+   * Sets the operator address for the rate limiter. Used for tracking operator expenses.
+   * @param {string} operatorAddress - The EVM address of the operator.
+   */
+  setOperatorAddress(operatorAddress: string) {
+    this.operatorAddress = operatorAddress;
   }
 
   /**

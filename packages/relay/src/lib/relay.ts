@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { AccountId, Client } from '@hashgraph/sdk';
+import { Client } from '@hashgraph/sdk';
 import EventEmitter from 'events';
 import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
@@ -160,13 +160,13 @@ export class RelayImpl implements Relay {
       ipAddressHbarSpendingPlanRepository,
       logger.child({ name: 'hbar-rate-limit' }),
       register,
-      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       duration,
     );
 
     const hapiService = new HAPIService(logger, register, this.cacheService, this.eventEmitter, hbarLimitService);
 
     this.clientMain = hapiService.getMainClientInstance();
+    hbarLimitService.setOperatorAddress(this.clientMain.operatorAccountId!.toSolidityAddress());
 
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain);
