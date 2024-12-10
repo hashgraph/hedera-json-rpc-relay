@@ -166,7 +166,9 @@ export class RelayImpl implements Relay {
     const hapiService = new HAPIService(logger, register, this.cacheService, this.eventEmitter, hbarLimitService);
 
     this.clientMain = hapiService.getMainClientInstance();
-    hbarLimitService.setOperatorAddress(this.clientMain.operatorAccountId!.toSolidityAddress());
+    if (this.clientMain.operatorAccountId) {
+      hbarLimitService.setOperatorAddress(this.clientMain.operatorAccountId.toSolidityAddress());
+    }
 
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain);
