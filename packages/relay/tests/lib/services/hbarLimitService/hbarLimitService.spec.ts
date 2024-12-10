@@ -18,8 +18,7 @@
  *
  */
 
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { AccountId, Hbar } from '@hashgraph/sdk';
+import { Hbar } from '@hashgraph/sdk';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { randomBytes, uuidV4 } from 'ethers';
@@ -78,7 +77,6 @@ describe('HBAR Rate Limit Service', function () {
       ipAddressHbarSpendingPlanRepositoryStub,
       logger,
       register,
-      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
       limitDuration,
     );
   });
@@ -133,7 +131,6 @@ describe('HBAR Rate Limit Service', function () {
           ipAddressHbarSpendingPlanRepositoryStub,
           logger,
           register,
-          AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
           limitDuration,
         );
         const tomorrow = new Date(Date.now() + limitDuration);
@@ -503,7 +500,6 @@ describe('HBAR Rate Limit Service', function () {
         ipAddressHbarSpendingPlanRepositoryStub,
         logger,
         register,
-        Hbar.fromTinybars(0),
         limitDuration,
       );
 
