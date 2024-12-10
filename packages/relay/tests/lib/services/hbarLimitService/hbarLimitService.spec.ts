@@ -104,14 +104,10 @@ describe('HBAR Rate Limit Service', function () {
     sinon.restore();
   });
 
-  function createSpendingPlan(
-    id: string,
-    amountSpent: number | Long | Hbar = 0,
-    subscriptionTier = SubscriptionTier.BASIC,
-  ) {
+  function createSpendingPlan(id: string, amountSpent: number | Long | Hbar = 0) {
     return new HbarSpendingPlan({
       id,
-      subscriptionTier,
+      subscriptionTier: SubscriptionTier.BASIC,
       createdAt: new Date(),
       active: true,
       spendingHistory: [],
