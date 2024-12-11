@@ -1,0 +1,180 @@
+/*-
+ *
+ * Hedera JSON RPC Relay - Hardhat Example
+ *
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+require('dotenv').config();
+require("@nomicfoundation/hardhat-toolbox");
+
+module.exports = {
+  solidity: {
+    compilers: [
+      {
+        version: '0.8.22',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+    ],
+  },
+  defaultNetwork: 'hedera_testnet',
+  networks: {
+    hedera_testnet: {
+      url: 'https://testnet.hashio.io/api',
+      accounts: [process.env.HEDERA_PK],
+      chainId: 296,
+    },
+    bsc_testnet: {
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+      chainId: 97,
+      gasPrice: 20000000000,
+      accounts: [process.env.BSC_PK]
+    },
+  }
+};
+
+const getEndpointAddress = (network) => {
+  let ENDPOINT_V2;
+
+  if (network === 'hedera_testnet') {
+    ENDPOINT_V2 = '0xbD672D1562Dd32C23B563C989d8140122483631d';
+  } else if (network === 'bsc_testnet') {
+    ENDPOINT_V2 = '0x6EDCE65403992e310A62460808c4b910D972f10f';
+  }
+
+  return ENDPOINT_V2;
+}
+
+task('deploy-erc20', "Deploy ERC20 token")
+  .setAction(async (taskArgs, hre) => {
+    const contractFactory = await ethers.getContractFactory('ERC20Mock');
+    const contract = await contractFactory.deploy();
+    await contract.deployTransaction.wait();
+
+    console.log(`(${hre.network.name}) ERC20 deployed to: ` + contract.address);
+  });
+
+task('deploy-erc721', "Deploy ERC721 token")
+  .setAction(async (taskArgs, hre) => {
+    const contractFactory = await ethers.getContractFactory('ERC721Mock');
+    const contract = await contractFactory.deploy();
+    await contract.deployTransaction.wait();
+
+    console.log(`(${hre.network.name}) ERC721 deployed to: ` + contract.address);
+  });
+
+task("deploy-oapp", "Deploy OApp contract")
+  .setAction(async (taskArgs, hre) => {
+    const ethers = hre.ethers;
+    const signers = await ethers.getSigners();
+    const ENDPOINT_V2 = getEndpointAddress(hre.network.name);
+
+    const contractFactory = await ethers.getContractFactory('ExampleOApp');
+    const contract = await contractFactory.deploy(ENDPOINT_V2, signers[0].address);
+    await contract.deployTransaction.wait();
+
+    console.log(`(${hre.network.name}) ExampleOApp deployed to: ` + contract.address);
+  });
+
+task("deploy-oft", "Deploy OFT contract")
+  .setAction(async (taskArgs, hre) => {
+    const ethers = hre.ethers;
+    const signers = await ethers.getSigners();
+    const ENDPOINT_V2 = getEndpointAddress(hre.network.name)
+
+    const contractFactory = await ethers.getContractFactory('ExampleOFT');
+    const contract = await contractFactory.deploy('T_NAME', 'T_SYMBOL', ENDPOINT_V2, signers[0].address);
+    await contract.deployTransaction.wait();
+
+    console.log(`(${hre.network.name}) ExampleOFT deployed to: ` + contract.address);
+  });
+
+task("deploy-oft-adapter", "Deploy OFT adapter contract")
+  .addParam('token', 'Token address')
+  .setAction(async (taskArgs, hre) => {
+    const ethers = hre.ethers;
+    const signers = await ethers.getSigners();
+    const ENDPOINT_V2 = getEndpointAddress(hre.network.name)
+
+    const contractFactory = await ethers.getContractFactory('ExampleOFTAdapter');
+    const contract = await contractFactory.deploy(taskArgs.token, ENDPOINT_V2, signers[0].address);
+    await contract.deployTransaction.wait();
+
+    console.log(`(${hre.network.name}) ExampleOFTAdapter for token ${taskArgs.token} deployed to: ` + contract.address);
+  });
+
+task("deploy-onft", "Deploy OFT contract")
+  .setAction(async (taskArgs, hre) => {
+    const ethers = hre.ethers;
+    const signers = await ethers.getSigners();
+    const ENDPOINT_V2 = getEndpointAddress(hre.network.name);
+
+    let tokenId;
+    if (hre.network.name === 'hedera_testnet') {
+      tokenId = 1;
+    } else if (hre.network.name === 'bsc_testnet') {
+      tokenId = 2;
+    }
+
+    const contractFactory = await ethers.getContractFactory('ExampleONFT');
+    const contract = await contractFactory.deploy('T_NAME', 'T_SYMBOL', ENDPOINT_V2, signers[0].address, tokenId);
+    await contract.deployTransaction.wait();
+
+    console.log(`(${hre.network.name}) ExampleONFT deployed to: ` + contract.address);
+  });
+
+task("deploy-onft-adapter", "Deploy OFT contract")
+  .addParam('token', 'Token address')
+  .setAction(async (taskArgs, hre) => {
+    const ethers = hre.ethers;
+    const signers = await ethers.getSigners();
+    const ENDPOINT_V2 = getEndpointAddress(hre.network.name)
+
+    const contractFactory = await ethers.getContractFactory('ExampleONFTAdapter');
+    const contract = await contractFactory.deploy(taskArgs.token, ENDPOINT_V2, signers[0].address);
+    await contract.deployTransaction.wait();
+
+    console.log(`(${hre.network.name}) ExampleONFTAdapter deployed to: ` + contract.address);
+  });
+
+task("set-peer", "Set peer")
+  .addParam('source', 'Source contract address')
+  .addParam('target', 'Target contract address')
+  .setAction(async (taskArgs, hre) => {
+    const ethers = hre.ethers;
+
+    let EID;
+    if (hre.network.name === 'hedera_testnet') {
+      EID = 40102;
+    } else if (hre.network.name === 'bsc_testnet') {
+      EID = 40285;
+    }
+
+    const contract = await ethers.getContractAt('ExampleOApp', taskArgs.source);
+    const tx = await contract.setPeer(EID, '0x' + taskArgs.target.substring(2, 42).padStart(64, 0));
+    const receipt = await tx.wait();
+
+    if (!receipt.status) {
+      process.exit('Execution of setPeer failed. Tx hash: ' + tx.hash);
+    }
+
+    console.log(`(${hre.network.name}) Peer for network with EID ${EID} was successfully set`);
+  });
