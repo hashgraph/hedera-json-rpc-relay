@@ -26,7 +26,14 @@ import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 // Errors and constants from local resources
 import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
-import { FileInfo, FileInfoQuery, Hbar, TransferTransaction } from '@hashgraph/sdk';
+import {
+  AccountCreateTransaction,
+  FileInfo,
+  FileInfoQuery,
+  Hbar,
+  PrivateKey,
+  TransferTransaction,
+} from '@hashgraph/sdk';
 import { expect } from 'chai';
 import { ethers } from 'ethers';
 
@@ -1585,6 +1592,46 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
           const error = predefined.NONCE_TOO_LOW(nonce, nonce + 1);
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestDetails]);
+        });
+
+        it('should fail "eth_sendRawTransaction" if receiver\'s account has receiver_sig_required enabled', async function () {
+          const newPrivateKey = PrivateKey.generateED25519();
+          const newAccount = await new AccountCreateTransaction()
+            .setKey(newPrivateKey.publicKey)
+            .setInitialBalance(100)
+            .setReceiverSignatureRequired(true)
+            .freezeWith(servicesNode.client)
+            .sign(newPrivateKey);
+
+          const transaction = await newAccount.execute(servicesNode.client);
+          const receipt = await transaction.getReceipt(servicesNode.client);
+
+          if (!receipt.accountId) {
+            throw new Error('Failed to create new account - accountId is null');
+          }
+
+          const toAddress = Utils.idToEvmAddress(receipt.accountId.toString());
+          const tx = {
+            nonce: await accounts[0].wallet.getNonce(),
+            chainId: CHAIN_ID,
+            to: toAddress,
+            from: accounts[0].address,
+            value: '0x2E90EDD000',
+            gasLimit: defaultGasLimit,
+            accessList: [],
+            maxPriorityFeePerGas: defaultGasPrice,
+            maxFeePerGas: defaultGasPrice,
+          };
+
+          const signedTx = await accounts[0].wallet.signTransaction(tx);
+          await new Promise((r) => setTimeout(r, 3000));
+
+          const error = predefined.RECEIVER_SIGNATURE_REQUIRED;
+
+          await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [
+            signedTx,
+            requestDetails,
+          ]);
         });
       });
 

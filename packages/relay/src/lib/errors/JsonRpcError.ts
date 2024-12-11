@@ -238,6 +238,10 @@ export const predefined = {
     code: -39013,
     message: 'Invalid block range',
   }),
+  RECEIVER_SIGNATURE_REQUIRED: new JsonRpcError({
+    code: -32000,
+    message: "Receiver's signature is required.",
+  }),
   FILTER_NOT_FOUND: new JsonRpcError({
     code: -32001,
     message: 'Filter not found',
