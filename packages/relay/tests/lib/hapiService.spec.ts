@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { Client, Hbar } from '@hashgraph/sdk';
+import { Client } from '@hashgraph/sdk';
 import { expect } from 'chai';
 import EventEmitter from 'events';
 import pino from 'pino';
@@ -50,7 +50,6 @@ describe('HAPI Service', async function () {
   const requestDetails = new RequestDetails({ requestId: 'hapiService.spec.ts', ipAddress: '0.0.0.0' });
 
   this.beforeAll(() => {
-    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     eventEmitter = new EventEmitter();
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
@@ -64,7 +63,6 @@ describe('HAPI Service', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      Hbar.fromTinybars(total),
       duration,
     );
   });
@@ -177,7 +175,7 @@ describe('HAPI Service', async function () {
         const costAmount = 10000;
         hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
 
-        const hbarLimiterBudgetBefore = hbarLimitService['remainingBudget'];
+        const hbarLimiterBudgetBefore = await hbarLimitService['getRemainingBudget'](requestDetails);
         const oldClientInstance = hapiService.getMainClientInstance();
         const oldSDKInstance = hapiService.getSDKClient();
 
@@ -186,7 +184,7 @@ describe('HAPI Service', async function () {
 
         const newSDKInstance = hapiService.getSDKClient();
         const newClientInstance = hapiService.getMainClientInstance();
-        const hbarLimiterBudgetAfter = hbarLimitService['remainingBudget'];
+        const hbarLimiterBudgetAfter = await hbarLimitService['getRemainingBudget'](requestDetails);
 
         expect(hbarLimiterBudgetBefore.toTinybars().toNumber()).to.be.greaterThan(
           hbarLimiterBudgetAfter.toTinybars().toNumber(),

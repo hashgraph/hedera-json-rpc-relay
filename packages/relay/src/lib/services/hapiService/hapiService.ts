@@ -18,19 +18,20 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import dotenv from 'dotenv';
-import { Logger } from 'pino';
 import EventEmitter from 'events';
 import findConfig from 'find-config';
-import constants from '../../constants';
-import { Utils } from './../../../utils';
-import { Counter, Registry } from 'prom-client';
-import { SDKClient } from '../../clients/sdkClient';
-import { HbarLimitService } from '../hbarLimitService';
-import { CacheService } from '../cacheService/cacheService';
-import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
 import fs from 'fs';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { Logger } from 'pino';
+import { Counter, Registry } from 'prom-client';
+
+import { Utils } from '../../../utils';
+import { SDKClient } from '../../clients';
+import constants from '../../constants';
+import { CacheService } from '../cacheService/cacheService';
+import { HbarLimitService } from '../hbarLimitService';
 
 export default class HAPIService {
   /**
@@ -289,6 +290,9 @@ export default class HAPIService {
     this.clientMain = this.initClient(this.logger, this.hederaNetwork);
     this.client = this.initSDKClient(this.logger);
     this.resetCounters();
+    if (this.clientMain.operatorAccountId) {
+      this.hbarLimitService.setOperatorAddress(this.clientMain.operatorAccountId.toSolidityAddress());
+    }
   }
 
   /**
