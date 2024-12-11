@@ -84,9 +84,7 @@ export class Precheck {
     this.value(parsedTx);
     this.gasPrice(parsedTx, networkGasPriceInWeiBars, requestDetails);
     this.balance(parsedTx, mirrorAccountInfo, requestDetails);
-    if (parsedTx.to) {
-      await this.receiverAccount(parsedTx, requestDetails);
-    }
+    await this.receiverAccount(parsedTx, requestDetails);
   }
 
   /**
@@ -380,15 +378,18 @@ export class Precheck {
   }
 
   /**
-   * Checks if the receiver account exists.
+   * Checks if the receiver account exists and has receiver_sig_required set to true.
    * @param {Transaction} tx - The transaction.
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    */
   async receiverAccount(tx: Transaction, requestDetails: RequestDetails) {
-    const verifyAccount = await this.mirrorNodeClient.getAccount(tx.to!, requestDetails);
+    if (tx.to) {
+      const verifyAccount = await this.mirrorNodeClient.getAccount(tx.to!, requestDetails);
 
-    if (verifyAccount !== null && verifyAccount.receiver_sig_required === true) {
-      throw predefined.INTERNAL_ERROR("Receiver's signature is required.");
+      // When `receiver_sig_required` is set to true, the receiver's account must sign all incoming transactions.
+      if (verifyAccount !== null && verifyAccount.receiver_sig_required === true) {
+        throw predefined.RECEIVER_SIGNATURE_REQUIRED;
+      }
     }
   }
 }
