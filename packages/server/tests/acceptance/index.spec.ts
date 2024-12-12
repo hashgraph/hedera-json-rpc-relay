@@ -18,42 +18,37 @@
  *
  */
 // External resources
-import chai from 'chai';
-import dotenv from 'dotenv';
-import path from 'path';
-import pino from 'pino';
-import chaiAsPromised from 'chai-as-promised';
-import { GCProfiler } from 'v8';
-
-// Other external resources
-import fs from 'fs';
-
-// Clients
-import ServicesClient from '../clients/servicesClient';
-import MirrorClient from '../clients/mirrorClient';
-import RelayClient from '../clients/relayClient';
-import MetricsClient from '../clients/metricsClient';
-
-// Server related
-import app from '../../dist/server';
-import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
-
-// Hashgraph SDK
-import { AccountId, Hbar } from '@hashgraph/sdk';
-
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 // Constants
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
+// Hashgraph SDK
+import { AccountId, Hbar } from '@hashgraph/sdk';
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+// Other external resources
+import fs from 'fs';
+import { Server } from 'http';
+import path from 'path';
+import pino from 'pino';
+import { GCProfiler } from 'v8';
 
+import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+// Server related
+import app from '../../dist/server';
+import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
+import MetricsClient from '../clients/metricsClient';
+import MirrorClient from '../clients/mirrorClient';
+import RelayClient from '../clients/relayClient';
+// Clients
+import ServicesClient from '../clients/servicesClient';
 // Utils and types
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
-import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { Server } from 'http';
 
 chai.use(chaiAsPromised);
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
-const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
+
+ConfigServiceTestHelper.appendEnvsFromPath(path.resolve(__dirname, '../../../../.env'));
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -68,10 +63,10 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const NETWORK = ConfigService.get('HEDERA_NETWORK') || DOT_ENV.HEDERA_NETWORK || '';
-const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN') || DOT_ENV.OPERATOR_KEY_MAIN || '';
-const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN') || DOT_ENV.OPERATOR_ID_MAIN || '';
-const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL') || DOT_ENV.MIRROR_NODE_URL || '';
+const NETWORK = ConfigService.get('HEDERA_NETWORK') as string;
+const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN') as string;
+const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN') as string;
+const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL') as string;
 const LOCAL_RELAY_URL = 'http://localhost:7546';
 const RELAY_URL = ConfigService.get('E2E_RELAY_HOST') || LOCAL_RELAY_URL;
 const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
