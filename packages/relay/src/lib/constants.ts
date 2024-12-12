@@ -156,17 +156,17 @@ export default {
   },
 
   // @ts-ignore
-  HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION') || '86400000'), // 1 day
+  HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION')),
   // @ts-ignore
   // The logical OR operator || returns the first truthy value and 0 is falsy.
   // The nullish coalescing operator ?? falls back to the default value when the left-hand operand is null or undefined, not when it's 0 or any other falsy value.
-  HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR') ?? '800000000000'), // 8000 HBARs
+  HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR')),
   // @ts-ignore
-  HBAR_RATE_LIMIT_BASIC: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_BASIC') || '1120000000'), // 11.2 HBARs
+  HBAR_RATE_LIMIT_BASIC: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_BASIC')),
   // @ts-ignore
-  HBAR_RATE_LIMIT_EXTENDED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_EXTENDED') || '3200000000'), // 32 HBARs
+  HBAR_RATE_LIMIT_EXTENDED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_EXTENDED')),
   // @ts-ignore
-  HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_PRIVILEGED') || '8000000000'), // 80 HBARs
+  HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_PRIVILEGED')),
   // @ts-ignore
   GAS_PRICE_TINY_BAR_BUFFER: parseInt(ConfigService.get('GAS_PRICE_TINY_BAR_BUFFER') || '10000000000'),
   WEB_SOCKET_PORT: ConfigService.get('WEB_SOCKET_PORT') || 8546,

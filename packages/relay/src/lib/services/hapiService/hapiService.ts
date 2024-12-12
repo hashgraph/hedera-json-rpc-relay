@@ -194,18 +194,10 @@ export default class HAPIService {
     eventEmitter: EventEmitter,
     hbarLimitService: HbarLimitService,
   ) {
-    dotenv.config({ path: findConfig('.env') || '' });
-    if (fs.existsSync(findConfig('.env') || '')) {
-      this.config = dotenv.parse(fs.readFileSync(findConfig('.env') || ''));
-    } else {
-      this.config = {};
-    }
-
     this.logger = logger;
-
     this.hbarLimitService = hbarLimitService;
     this.eventEmitter = eventEmitter;
-    this.hederaNetwork = (ConfigService.get('HEDERA_NETWORK') || this.config.HEDERA_NETWORK || '{}').toLowerCase();
+    this.hederaNetwork = ((ConfigService.get('HEDERA_NETWORK') as string) || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
     this.cacheService = cacheService;
@@ -324,10 +316,9 @@ export default class HAPIService {
    * Configure Client
    * @param {Logger} logger
    * @param {string} hederaNetwork
-   * @param {string | null} type
    * @returns Client
    */
-  private initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
+  private initClient(logger: Logger, hederaNetwork: string): Client {
     let client: Client, privateKey: PrivateKey;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
@@ -335,31 +326,13 @@ export default class HAPIService {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
 
-    if (type === 'eth_sendRawTransaction') {
-      if (
-        ConfigService.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION') &&
-        ConfigService.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION')
-      ) {
-        // @ts-ignore
-        privateKey = Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION'));
-        client = client.setOperator(
-          // @ts-ignore
-          AccountId.fromString(ConfigService.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION')),
-          privateKey,
-        );
-      } else {
-        logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
-      }
+    const operatorId = ConfigService.get('OPERATOR_ID_MAIN') as string;
+    const operatorKey = ConfigService.get('OPERATOR_KEY_MAIN') as string;
+    if (operatorId && operatorKey) {
+      privateKey = Utils.createPrivateKeyBasedOnFormat(operatorKey);
+      client = client.setOperator(AccountId.fromString(operatorId.trim()), privateKey);
     } else {
-      const operatorId: string = ConfigService.get('OPERATOR_ID_MAIN') || this.config.OPERATOR_ID_MAIN || '';
-      const operatorKey: string = ConfigService.get('OPERATOR_KEY_MAIN') || this.config.OPERATOR_KEY_MAIN || '';
-
-      if (operatorId && operatorKey) {
-        privateKey = Utils.createPrivateKeyBasedOnFormat(operatorKey);
-        client = client.setOperator(AccountId.fromString(operatorId.trim()), privateKey);
-      } else {
-        logger.warn(`Invalid 'OPERATOR' env variables provided`);
-      }
+      logger.warn(`Invalid 'OPERATOR' env variables provided`);
     }
 
     // @ts-ignore
