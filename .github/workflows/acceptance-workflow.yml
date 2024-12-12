@@ -38,10 +38,6 @@ on:
         description: 'Codecov upload token'
         required: true
 
-
-env:
-  OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
-
 jobs:
   acceptance-workflow:
     runs-on: smart-contracts-linux-large
@@ -49,9 +45,12 @@ jobs:
     permissions:
       contents: read
       checks: write
-    env:
-      OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
     steps:
+      - name: Set env variables
+        run: |
+          if [[ -n ${{ inputs.operator_id }} ]]; then
+            echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
+          fi
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
