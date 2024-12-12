@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
+    "@emotion/styled": "^11.13.5",
     "@hashgraph/sdk": "^2.53.0",
     "@mui/material": "^5.16.7",
     "ethers": "^6.13.4",
