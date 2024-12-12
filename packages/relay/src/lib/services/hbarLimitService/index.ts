@@ -86,7 +86,7 @@ export class HbarLimitService implements IHbarLimitService {
    * The operator address for the rate limiter.
    * @private
    */
-  private operatorAddress: string;
+  private readonly operatorAddress: string;
 
   constructor(
     private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository,
@@ -164,14 +164,6 @@ export class HbarLimitService implements IHbarLimitService {
    */
   isEnabled(): boolean {
     return this.isHBarRateLimiterEnabled;
-  }
-
-  /**
-   * Sets the operator address for the rate limiter. Used for tracking operator expenses.
-   * @param {string} operatorAddress - The EVM address of the operator.
-   */
-  setOperatorAddress(operatorAddress: string) {
-    this.operatorAddress = operatorAddress;
   }
 
   /**
