@@ -282,9 +282,6 @@ export default class HAPIService {
     this.clientMain = this.initClient(this.logger, this.hederaNetwork);
     this.client = this.initSDKClient(this.logger);
     this.resetCounters();
-    if (this.clientMain.operatorAccountId) {
-      this.hbarLimitService.setOperatorAddress(this.clientMain.operatorAccountId.toSolidityAddress());
-    }
   }
 
   /**
