@@ -20,6 +20,7 @@
 
 import { ethers, Transaction } from 'ethers';
 import { Logger } from 'pino';
+
 import { prepend0x } from '../formatters';
 import { MirrorNodeClient } from './clients';
 import constants from './constants';
@@ -384,7 +385,7 @@ export class Precheck {
    */
   async receiverAccount(tx: Transaction, requestDetails: RequestDetails) {
     if (tx.to) {
-      const verifyAccount = await this.mirrorNodeClient.getAccount(tx.to!, requestDetails);
+      const verifyAccount = await this.mirrorNodeClient.getAccount(tx.to, requestDetails);
 
       // When `receiver_sig_required` is set to true, the receiver's account must sign all incoming transactions.
       if (verifyAccount !== null && verifyAccount.receiver_sig_required === true) {
