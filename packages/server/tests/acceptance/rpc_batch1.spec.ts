@@ -1622,7 +1622,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           const signedTx = await accounts[0].wallet.signTransaction(tx);
           await new Promise((r) => setTimeout(r, 3000));
 
-          const error = predefined.RECEIVER_SIGNATURE_REQUIRED;
+          const error = predefined.RECEIVER_SIGNATURE_ENABLED;
 
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [
             signedTx,

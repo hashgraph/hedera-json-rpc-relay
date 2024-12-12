@@ -389,7 +389,7 @@ export class Precheck {
 
       // When `receiver_sig_required` is set to true, the receiver's account must sign all incoming transactions.
       if (verifyAccount !== null && verifyAccount.receiver_sig_required === true) {
-        throw predefined.RECEIVER_SIGNATURE_REQUIRED;
+        throw predefined.RECEIVER_SIGNATURE_ENABLED;
       }
     }
   }

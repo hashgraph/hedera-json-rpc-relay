@@ -686,7 +686,7 @@ describe('Precheck', async function () {
       } catch (e: any) {
         expect(e).to.exist;
         expect(e.code).to.eq(-32000);
-        expect(e).to.eql(predefined.RECEIVER_SIGNATURE_REQUIRED);
+        expect(e).to.eql(predefined.RECEIVER_SIGNATURE_ENABLED);
       }
     });
 
