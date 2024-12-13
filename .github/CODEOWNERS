@@ -7,15 +7,15 @@
 #########################
 ##### Hedera Relay ######
 #########################
-/packages/relay/                                @AlfredoG87 @lukelee-sl @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
-/packages/server/                               @AlfredoG87 @Nana-EC @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
-/packages/ws-server/                            @AlfredoG87 @georgi-l95 @Ivo-Yankov @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
+/packages/relay/                                @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
+/packages/server/                               @Nana-EC @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
+/packages/ws-server/                            @georgi-l95 @Ivo-Yankov @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
 
 ###############################
 ##### Tools and Examples ######
 ###############################
 /dapp-example/                                  @georgi-l95 @Ivo-Yankov @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
-/k6/                                            @AlfredoG87 @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
+/k6/                                            @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
 /tools/                                         @georgi-l95 @Ivo-Yankov @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
 
 ########################
@@ -26,15 +26,15 @@
 
 # Protection Rules for Github Configuration Files and Actions Workflows
 /.github/                                       @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/release-engineering @hashgraph/release-engineering-managers
-/.github/workflows/                             @AlfredoG87 @Nana-EC @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/release-engineering @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
+/.github/workflows/                             @Nana-EC @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/release-engineering @hashgraph/release-engineering-managers @hashgraph/hedera-smart-contracts
 
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
 /CODEOWNERS                                     @hashgraph/release-engineering-managers
 
 # Protect the repository root files
-/README.md                                      @AlfredoG87 @Nana-EC @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/hedera-smart-contracts
+/README.md                                      @Nana-EC @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/hedera-smart-contracts
 **/LICENSE                                      @hashgraph/release-engineering-managers
 
 # Git Ignore definitions
-**/.gitignore                                   @AlfredoG87 @Nana-EC @hashgraph/release-engineering @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/hedera-smart-contracts
-**/.gitignore.*                                 @AlfredoG87 @Nana-EC @hashgraph/release-engineering @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/hedera-smart-contracts
+**/.gitignore                                   @Nana-EC @hashgraph/release-engineering @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/hedera-smart-contracts
+**/.gitignore.*                                 @Nana-EC @hashgraph/release-engineering @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/hedera-smart-contracts
