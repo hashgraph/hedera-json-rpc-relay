@@ -240,7 +240,7 @@ export const predefined = {
   }),
   RECEIVER_SIGNATURE_ENABLED: new JsonRpcError({
     code: -32000,
-    message: "Receiver's signature is enabled.",
+    message: "Operation is not supported when receiver's signature is enabled.",
   }),
   FILTER_NOT_FOUND: new JsonRpcError({
     code: -32001,
