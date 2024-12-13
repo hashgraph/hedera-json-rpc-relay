@@ -1611,6 +1611,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           }
 
           const toAddress = Utils.idToEvmAddress(receipt.accountId.toString());
+          const verifyAccount = await mirrorNode.get(`/accounts/${toAddress}`, requestId);
+
+          expect(verifyAccount.receiver_sig_required).to.be.true;
+
           const tx = {
             ...defaultLegacyTransactionData,
             chainId: Number(CHAIN_ID),
@@ -1620,7 +1624,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           };
 
           const signedTx = await accounts[0].wallet.signTransaction(tx);
-          await new Promise((r) => setTimeout(r, 3000));
 
           const error = predefined.RECEIVER_SIGNATURE_ENABLED;
 
@@ -1647,6 +1650,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           }
 
           const toAddress = Utils.idToEvmAddress(receipt.accountId.toString());
+          const verifyAccount = await mirrorNode.get(`/accounts/${toAddress}`, requestId);
+
+          expect(verifyAccount.receiver_sig_required).to.be.false;
+
           const tx = {
             ...defaultLegacyTransactionData,
             chainId: Number(CHAIN_ID),
