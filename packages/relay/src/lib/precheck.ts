@@ -388,7 +388,7 @@ export class Precheck {
       const verifyAccount = await this.mirrorNodeClient.getAccount(tx.to, requestDetails);
 
       // When `receiver_sig_required` is set to true, the receiver's account must sign all incoming transactions.
-      if (verifyAccount !== null && verifyAccount.receiver_sig_required === true) {
+      if (verifyAccount && verifyAccount.receiver_sig_required) {
         throw predefined.RECEIVER_SIGNATURE_ENABLED;
       }
     }

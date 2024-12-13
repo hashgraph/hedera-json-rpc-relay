@@ -131,7 +131,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     const RECEIVER_ACCOUNT_RES = {
       account: ACCOUNT_ADDRESS_1,
       balance: {
-        balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
+        balance: Hbar.from(1, HbarUnit.Hbar).to(HbarUnit.Tinybar),
       },
       receiver_sig_required: false,
     };
