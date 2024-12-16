@@ -23,6 +23,7 @@ import { AccountId, Hbar } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 
+import { prepend0x } from '../../../formatters';
 import { Utils } from '../../../utils';
 import constants from '../../constants';
 import { EvmAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
