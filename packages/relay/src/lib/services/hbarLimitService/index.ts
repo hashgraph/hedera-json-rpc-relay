@@ -23,6 +23,7 @@ import { AccountId, Hbar } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 
+import { prepend0x } from '../../../formatters';
 import { Utils } from '../../../utils';
 import constants from '../../constants';
 import { EvmAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
@@ -101,9 +102,9 @@ export class HbarLimitService implements IHbarLimitService {
     const operatorId = ConfigService.get('OPERATOR_ID_MAIN');
     const operatorKey = ConfigService.get('OPERATOR_KEY_MAIN');
     if (operatorId) {
-      this.operatorAddress = AccountId.fromString(operatorId as string).toSolidityAddress();
+      this.setOperatorAddress(AccountId.fromString(operatorId as string).toSolidityAddress());
     } else if (operatorKey) {
-      this.operatorAddress = Utils.createPrivateKeyBasedOnFormat(operatorKey as string).publicKey.toEvmAddress();
+      this.setOperatorAddress(Utils.createPrivateKeyBasedOnFormat(operatorKey as string).publicKey.toEvmAddress());
     }
 
     const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
@@ -176,7 +177,7 @@ export class HbarLimitService implements IHbarLimitService {
    * @param {string} operatorAddress - The EVM address of the operator.
    */
   setOperatorAddress(operatorAddress: string) {
-    this.operatorAddress = operatorAddress;
+    this.operatorAddress = prepend0x(operatorAddress);
   }
 
   /**
