@@ -95,16 +95,34 @@ task("deploy-oapp", "Deploy OApp contract")
   });
 
 task("deploy-oft", "Deploy OFT contract")
+  .addParam('mint', 'Initial mint')
+  .addParam('decimals', 'Decimals')
   .setAction(async (taskArgs, hre) => {
     const ethers = hre.ethers;
     const signers = await ethers.getSigners();
     const ENDPOINT_V2 = getEndpointAddress(hre.network.name)
 
     const contractFactory = await ethers.getContractFactory('ExampleOFT');
-    const contract = await contractFactory.deploy('T_NAME', 'T_SYMBOL', ENDPOINT_V2, signers[0].address);
+    const contract = await contractFactory.deploy('T_NAME', 'T_SYMBOL', ENDPOINT_V2, signers[0].address, taskArgs.mint, taskArgs.decimals);
     await contract.deployTransaction.wait();
 
     console.log(`(${hre.network.name}) ExampleOFT deployed to: ` + contract.address);
+  });
+
+task("deploy-oft-hts", "Deploy OFT HTS contract")
+  .setAction(async (taskArgs, hre) => {
+    const ethers = hre.ethers;
+    const signers = await ethers.getSigners();
+    const ENDPOINT_V2 = getEndpointAddress(hre.network.name)
+
+    const contractFactory = await ethers.getContractFactory('ExampleOFTHTS');
+    const contract = await contractFactory.deploy('T_NAME', 'T_SYMBOL', ENDPOINT_V2, signers[0].address, {
+      gasLimit: 10_000_000,
+      value: '30000000000000000000' // 30 hbars
+    });
+    await contract.deployTransaction.wait();
+
+    console.log(`(${hre.network.name}) ExampleOFTHTS deployed to: ` + contract.address);
   });
 
 task("deploy-oft-adapter", "Deploy OFT adapter contract")
