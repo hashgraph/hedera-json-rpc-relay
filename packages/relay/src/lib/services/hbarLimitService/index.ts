@@ -23,6 +23,7 @@ import { AccountId, Hbar } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 
+import { prepend0x } from '../../../formatters';
 import { Utils } from '../../../utils';
 import constants from '../../constants';
 import { EvmAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
@@ -86,7 +87,7 @@ export class HbarLimitService implements IHbarLimitService {
    * The operator address for the rate limiter.
    * @private
    */
-  private readonly operatorAddress: string;
+  private operatorAddress?: string;
 
   constructor(
     private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository,
@@ -98,8 +99,13 @@ export class HbarLimitService implements IHbarLimitService {
   ) {
     this.reset = this.getResetTimestamp();
 
-    const operatorId = ConfigService.get('OPERATOR_ID_MAIN') as string;
-    this.operatorAddress = AccountId.fromString(operatorId).toSolidityAddress();
+    const operatorId = ConfigService.get('OPERATOR_ID_MAIN');
+    const operatorKey = ConfigService.get('OPERATOR_KEY_MAIN');
+    if (operatorId) {
+      this.setOperatorAddress(AccountId.fromString(operatorId as string).toSolidityAddress());
+    } else if (operatorKey) {
+      this.setOperatorAddress(Utils.createPrivateKeyBasedOnFormat(operatorKey as string).publicKey.toEvmAddress());
+    }
 
     const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
     if (totalBudget.toTinybars().lte(0)) {
@@ -164,6 +170,14 @@ export class HbarLimitService implements IHbarLimitService {
    */
   isEnabled(): boolean {
     return this.isHBarRateLimiterEnabled;
+  }
+
+  /**
+   * Sets the operator address for the rate limiter. Used for tracking operator expenses.
+   * @param {string} operatorAddress - The EVM address of the operator.
+   */
+  setOperatorAddress(operatorAddress: string) {
+    this.operatorAddress = prepend0x(operatorAddress);
   }
 
   /**
