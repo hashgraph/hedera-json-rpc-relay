@@ -18,7 +18,7 @@
  *
  */
 
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { zeroAddress } from '@ethereumjs/util';
 import { AccountId, Hbar } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
@@ -99,8 +99,12 @@ export class HbarLimitService implements IHbarLimitService {
   ) {
     this.reset = this.getResetTimestamp();
 
-    const operatorId = ConfigService.get('OPERATOR_ID_MAIN') as string;
-    this.operatorAddress = AccountId.fromString(operatorId).toSolidityAddress();
+    const operator = Utils.getOperator(logger);
+    if (operator) {
+      this.operatorAddress = prepend0x(AccountId.fromString(operator.accountId.toString()).toSolidityAddress());
+    } else {
+      this.operatorAddress = zeroAddress();
+    }
 
     const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
     if (totalBudget.toTinybars().lte(0)) {
@@ -542,11 +546,11 @@ export class HbarLimitService implements IHbarLimitService {
    * @private
    */
   private async getOperatorSpendingPlan(requestDetails: RequestDetails): Promise<IDetailedHbarSpendingPlan> {
-    let operatorPlan = await this.getSpendingPlan(this.operatorAddress!, requestDetails);
+    let operatorPlan = await this.getSpendingPlan(this.operatorAddress, requestDetails);
     if (!operatorPlan) {
       this.logger.trace(`${requestDetails.formattedRequestId} Creating operator spending plan...`);
       operatorPlan = await this.createSpendingPlanForAddress(
-        this.operatorAddress!,
+        this.operatorAddress,
         requestDetails,
         SubscriptionTier.OPERATOR,
       );

@@ -19,9 +19,11 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { PrivateKey } from '@hashgraph/sdk';
+import { AccountId, PrivateKey } from '@hashgraph/sdk';
+import { Operator } from '@hashgraph/sdk/lib/client/Client';
 import crypto from 'crypto';
 import createHash from 'keccak';
+import { Logger } from 'pino';
 
 import { hexToASCII, prepend0x, strip0x } from './formatters';
 import constants from './lib/constants';
@@ -135,5 +137,34 @@ export class Utils {
    */
   public static computeTransactionHash(transactionBuffer: Buffer): string {
     return prepend0x(createHash('keccak256').update(transactionBuffer).digest('hex'));
+  }
+
+  /**
+   * Gets operator credentials based on the provided type.
+   * @param {Logger} logger - The logger instance
+   * @param {string | null} type - The type of operator (e.g. 'eth_sendRawTransaction')
+   * @returns {Operator | null} The operator credentials or null if not found
+   */
+  public static getOperator(logger: Logger, type: string | null = null): Operator | null {
+    let operatorId: string;
+    let operatorKey: string;
+
+    if (type === 'eth_sendRawTransaction') {
+      operatorId = ConfigService.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION') as string;
+      operatorKey = ConfigService.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION') as string;
+    } else {
+      operatorId = ConfigService.get('OPERATOR_ID_MAIN') as string;
+      operatorKey = ConfigService.get('OPERATOR_KEY_MAIN') as string;
+    }
+
+    if (!operatorId || !operatorKey) {
+      logger.warn(`Invalid operatorId or operatorKey for ${type ?? 'main'} client.`);
+      return null;
+    }
+
+    return {
+      privateKey: Utils.createPrivateKeyBasedOnFormat(operatorKey),
+      accountId: AccountId.fromString(operatorId.trim()),
+    };
   }
 }
