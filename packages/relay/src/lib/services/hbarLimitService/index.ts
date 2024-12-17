@@ -1,8 +1,8 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,14 +169,6 @@ export class HbarLimitService implements IHbarLimitService {
    */
   isEnabled(): boolean {
     return this.isHBarRateLimiterEnabled;
-  }
-
-  /**
-   * Sets the operator address for the rate limiter. Used for tracking operator expenses.
-   * @param {string} operatorAddress - The EVM address of the operator.
-   */
-  setOperatorAddress(operatorAddress: string) {
-    this.operatorAddress = prepend0x(operatorAddress);
   }
 
   /**
