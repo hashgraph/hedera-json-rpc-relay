@@ -654,4 +654,50 @@ describe('Precheck', async function () {
       expect(error.code).to.equal(predefined.UNSUPPORTED_TRANSACTION_TYPE.code);
     });
   });
+
+  describe('receiverAccount', async function () {
+    let parsedTx: Transaction;
+    let mirrorAccountTo: any;
+    const defaultNonce: number = 4;
+    const toAddress = ethers.Wallet.createRandom().address;
+
+    before(async () => {
+      const wallet = ethers.Wallet.createRandom();
+      const signed = await wallet.signTransaction({
+        ...defaultTx,
+        from: wallet.address,
+        to: toAddress,
+        nonce: defaultNonce,
+      });
+
+      parsedTx = ethers.Transaction.from(signed);
+    });
+
+    it('should fail with signature required error', async function () {
+      mirrorAccountTo = {
+        receiver_sig_required: true,
+      };
+
+      mock.onGet(`accounts/${parsedTx.to}${transactionsPostFix}`).reply(200, mirrorAccountTo);
+
+      try {
+        await precheck.receiverAccount(parsedTx, requestDetails);
+        expectedError();
+      } catch (e: any) {
+        expect(e).to.exist;
+        expect(e.code).to.eq(-32000);
+        expect(e).to.eql(predefined.RECEIVER_SIGNATURE_ENABLED);
+      }
+    });
+
+    it('should accept check if signature required is set to false', async function () {
+      mirrorAccountTo = {
+        receiver_sig_required: false,
+      };
+
+      mock.onGet(`accounts/${parsedTx.to}${transactionsPostFix}`).reply(200, mirrorAccountTo);
+
+      expect(async () => await precheck.receiverAccount(parsedTx, requestDetails)).not.to.throw;
+    });
+  });
 });

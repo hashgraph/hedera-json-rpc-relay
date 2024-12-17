@@ -99,6 +99,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     let clock: any;
     const accountAddress = '0x9eaee9E66efdb91bfDcF516b034e001cc535EB57';
     const accountEndpoint = `accounts/${accountAddress}${NO_TRANSACTIONS}`;
+    const receiverAccountEndpoint = `accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`;
     const gasPrice = '0xad78ebc5ac620000';
     const transactionIdServicesFormat = '0.0.902@1684375868.230217103';
     const transactionId = '0.0.902-1684375868-230217103';
@@ -127,6 +128,13 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
         balance: Hbar.from(100_000_000_000, HbarUnit.Hbar).to(HbarUnit.Tinybar),
       },
     };
+    const RECEIVER_ACCOUNT_RES = {
+      account: ACCOUNT_ADDRESS_1,
+      balance: {
+        balance: Hbar.from(1, HbarUnit.Hbar).to(HbarUnit.Tinybar),
+      },
+      receiver_sig_required: false,
+    };
     const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING') as boolean;
 
     beforeEach(() => {
@@ -135,6 +143,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sdkClientStub = sinon.createStubInstance(SDKClient);
       sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
       restMock.onGet(accountEndpoint).reply(200, ACCOUNT_RES);
+      restMock.onGet(receiverAccountEndpoint).reply(200, RECEIVER_ACCOUNT_RES);
       restMock.onGet(networkExchangeRateEndpoint).reply(200, mockedExchangeRate);
     });
 

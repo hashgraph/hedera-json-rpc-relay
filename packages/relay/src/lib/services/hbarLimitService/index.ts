@@ -172,6 +172,14 @@ export class HbarLimitService implements IHbarLimitService {
   }
 
   /**
+   * Sets the operator address for the rate limiter. Used for tracking operator expenses.
+   * @param {string} operatorAddress - The EVM address of the operator.
+   */
+  setOperatorAddress(operatorAddress: string) {
+    this.operatorAddress = prepend0x(operatorAddress);
+  }
+
+  /**
    * Resets the {@link HbarSpendingPlan#amountSpent} field for all existing plans.
    * @param {RequestDetails} requestDetails - The request details used for logging and tracking.
    * @returns {Promise<void>} - A promise that resolves when the operation is complete.

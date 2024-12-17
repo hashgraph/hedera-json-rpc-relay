@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
-    "@hashgraph/sdk": "^2.52.0",
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
+    "@hashgraph/sdk": "^2.53.0",
     "@mui/material": "^5.16.7",
     "ethers": "^6.13.4",
     "react": "^18.3.1",
