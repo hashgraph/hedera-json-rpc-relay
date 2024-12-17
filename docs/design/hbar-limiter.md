@@ -99,44 +99,63 @@ An `HbarSpendingPlan` is a record that tracks the total amount of HBars spent by
 - **active**: A flag indicating whether the spending plan is currently active.
 - **spendingHistory**: A list of spending records, each containing the amount spent and the timestamp.
 
-### General Users (BASIC tier):
+### Relay Operator (OPERATOR tier):
 
-**NOTE:** Each general user will have a unique spending plan, linked both to their ETH and IP addresses. Each new user will be automatically assigned a BASIC spending plan when they send their first transaction and this plan will remain linked to them for any subsequent requests.
+The relay operator will have a total budget for the HBARs that can be spent in a given time window (this is the total limit for all users). 
+The operator will have a separate spending plan, linked to the operator's EVM address, which will track the total amount spent by the operator.
+The operator's spending plan will be used to check if the total amount spent exceeds the budget and to pause all spending if necessary.
+If at some point, the operator's total spending exceeds the budget, all subsequent requests from any user will be blocked until the next reset.
+
+```mermaid
+flowchart TD
+    A[User] -->|sends transaction| B[JSON-RPC Relay]
+    B --> C{Estimate fees to be paid by the relay operator}
+    C --> |total budget would get exceeded| I[Limit request]
+    C --> |there is enough remaining budget to cover fees| J[Execute transaction]
+    J --> K[Capture all fees charged during the execution]
+    K --> L[Update the amount spent of the operator's spending plan]
+```
+
+### Tiered Spending Limits:
+
+Apart from the total limit which is imposed by the operator's spending plan, there will be separate spending plans for different tiers of users (BASIC, EXTENDED, and PRIVILEGED).
+
+Thus, the HBAR limiter will have the following responsibilities:
+- **Create and manage spending plans for different tiers of users.**
+- **Link users to their respective spending plans based on their addresses.**
+- **On every transaction**:
+  - **Check if a user's spending plan has enough balance to cover the fees of a transaction.**
+  - **Check if the operator's total spending exceeds the budget.**
+  - **If the user's spending plan does not have enough balance or if the operator's total spending exceeds the budget, limit the request.**
+  - **Otherwise, execute the transaction and capture all fees charged both into the operator's and the individual user's spending plan.**
 
 ```mermaid
 flowchart TD
     A[User] -->|sends transaction| B[JSON-RPC Relay]
     B --> C[Estimate fees which will be paid by the relay operator]
-    C --> D{HBAR Limiter}
-    D -->|new user, i.e., who is not linked to a spending plan| E[Create a new BASIC spending plan]
-    E --> F[Link user's ETH & IP addresses to plan]
-    D -->|existing user, i.e., who is linked to a spending plan| G[Retrieve spending plan linked to user]
-    F --> H{Plan has enough balance to cover fees}
-    G --> H
-    H --> |no| I[Limit request]
-    H --> |yes| J[Execute transaction]
-    J --> K[Capture all fees the operator has been charged during execution]
-    K --> L[Update the spending plan's remaining balance]
+    C --> D{Retrieve the operator's spending plan}
+    D --> |operator has enough remaining budget| F{Proceed with the transaction}
+    D --> |operator would exceed the budget| I[Limit the request]
+    F -->|new user, i.e., who is not linked to a spending plan| G[Create a new BASIC spending plan]
+    G --> H[Link user's ETH & IP addresses to plan]
+    F -->|existing user, i.e., who is linked to a spending plan| I2[Retrieve spending plan linked to user]
+    I2 --> J{Plan has enough balance to cover fees}
+    H --> J
+    J --> |no| I[Limit the request]
+    J --> |yes| K[Execute transaction]
+    K --> L[Capture all fees the operator has been charged during execution]
+    L --> M[Update the amount spent of the operator's spending plan and the user's spending plan]
 ```
+
+### General Users (BASIC tier):
+
+**NOTE:** Each general user will have a unique spending plan, linked both to their ETH and IP addresses. Each new user will be automatically assigned a BASIC spending plan when they send their first transaction and this plan will remain linked to them for any subsequent requests.
 
 ### Supported Projects (EXTENDED tier) and Trusted Partners (PRIVILEGED tier):
 
 **NOTE:** There will be one spending plan per project/partner with a total spending limit, shared amongst a group of users (IP and EVM addresses) linked to that plan. This means that they will share a common total spending limit for the project/partner.
 
-All users associated with a project/partner will be pre-configured in the relay as shown in the 
-
-```mermaid
-flowchart TD
-    A[User] -->|sends transaction| B[JSON-RPC Relay]
-    B --> C[Estimate fees which will be paid by the relay operator]
-    C --> D{HBAR Limiter}
-    D --> E[Retrieve spending plan linked to user's ETH and/or IP address]
-    E --> F{Plan has enough balance to cover fees}
-    F --> |no| G[Limit request]
-    F --> |yes| H[Execute transaction]
-    H --> I[Capture all fees the operator has been charged during execution]
-    I --> J[Update the spending plan's remaining balance]
-```
+All users associated with a project/partner will be pre-configured in the relay as shown in the
 
 ### Class Diagram
 
@@ -256,6 +275,7 @@ classDiagram
     SubscriptionTier : BASIC
     SubscriptionTier : EXTENDED
     SubscriptionTier : PRIVILEGED
+    SubscriptionTier : OPERATOR
 
     HbarSpendingPlan --> SubscriptionTier : could be one of the types
     HbarSpendingPlan --> HbarSpendingRecord : stores history of
@@ -455,8 +475,9 @@ The total budget and the limit duration are defined as environment variables:
   - On initialization of `HbarLimitService`, a reset timestamp is calculated by adding the `HBAR_RATE_LIMIT_DURATION` to the current timestamp.
   - The total budget and spending limits are reset when the current timestamp exceeds the reset timestamp.
 - `HBAR_RATE_LIMIT_TINYBAR`: The ceiling on the total amount (in tℏ) that can be spent in the limit duration. 
+  - This is the spending limit (tℏ) for the operator (tier 0).
   - This is the largest bucket from which others pull from.
-  - If the total amount spent exceeds this limit, all spending is paused until the next reset.
+  - If the operator's spending exceeds this limit, **all spending is paused until the next reset**.
 
 Example configuration for a total budget and limit duration:
 ```dotenv
