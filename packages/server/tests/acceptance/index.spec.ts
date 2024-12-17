@@ -17,9 +17,14 @@
  * limitations under the License.
  *
  */
-// External resources
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+
+// Important! Load env variables before importing anything else
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+
 // Constants
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
 // Hashgraph SDK
@@ -29,11 +34,9 @@ import chaiAsPromised from 'chai-as-promised';
 // Other external resources
 import fs from 'fs';
 import { Server } from 'http';
-import path from 'path';
 import pino from 'pino';
 import { GCProfiler } from 'v8';
 
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 // Server related
 import app from '../../dist/server';
 import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
@@ -47,8 +50,6 @@ import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
 
 chai.use(chaiAsPromised);
-
-ConfigServiceTestHelper.appendEnvsFromPath(path.resolve(__dirname, '../../../../.env'));
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',

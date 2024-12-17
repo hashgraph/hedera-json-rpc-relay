@@ -19,11 +19,8 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
-import dotenv from 'dotenv';
+import { Client } from '@hashgraph/sdk';
 import EventEmitter from 'events';
-import findConfig from 'find-config';
-import fs from 'fs';
 import { Logger } from 'pino';
 import { Counter, Registry } from 'prom-client';
 
@@ -313,23 +310,20 @@ export default class HAPIService {
    * Configure Client
    * @param {Logger} logger
    * @param {string} hederaNetwork
+   * @param {string | null} type
    * @returns Client
    */
-  private initClient(logger: Logger, hederaNetwork: string): Client {
-    let client: Client, privateKey: PrivateKey;
+  private initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
+    let client: Client;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
 
-    const operatorId = ConfigService.get('OPERATOR_ID_MAIN') as string;
-    const operatorKey = ConfigService.get('OPERATOR_KEY_MAIN') as string;
-    if (operatorId && operatorKey) {
-      privateKey = Utils.createPrivateKeyBasedOnFormat(operatorKey);
-      client = client.setOperator(AccountId.fromString(operatorId.trim()), privateKey);
-    } else {
-      logger.warn(`Invalid 'OPERATOR' env variables provided`);
+    const operator = Utils.getOperator(logger, type);
+    if (operator) {
+      client.setOperator(operator.accountId, operator.privateKey);
     }
 
     // @ts-ignore

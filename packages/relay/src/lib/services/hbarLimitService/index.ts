@@ -18,7 +18,7 @@
  *
  */
 
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { zeroAddress } from '@ethereumjs/util';
 import { AccountId, Hbar } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
@@ -87,7 +87,7 @@ export class HbarLimitService implements IHbarLimitService {
    * The operator address for the rate limiter.
    * @private
    */
-  private operatorAddress?: string;
+  private readonly operatorAddress: string;
 
   constructor(
     private readonly hbarSpendingPlanRepository: HbarSpendingPlanRepository,
@@ -99,12 +99,11 @@ export class HbarLimitService implements IHbarLimitService {
   ) {
     this.reset = this.getResetTimestamp();
 
-    const operatorId = ConfigService.get('OPERATOR_ID_MAIN');
-    const operatorKey = ConfigService.get('OPERATOR_KEY_MAIN');
-    if (operatorId) {
-      this.setOperatorAddress(AccountId.fromString(operatorId as string).toSolidityAddress());
-    } else if (operatorKey) {
-      this.setOperatorAddress(Utils.createPrivateKeyBasedOnFormat(operatorKey as string).publicKey.toEvmAddress());
+    const operator = Utils.getOperator(logger);
+    if (operator) {
+      this.operatorAddress = prepend0x(AccountId.fromString(operator.accountId.toString()).toSolidityAddress());
+    } else {
+      this.operatorAddress = zeroAddress();
     }
 
     const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
@@ -170,14 +169,6 @@ export class HbarLimitService implements IHbarLimitService {
    */
   isEnabled(): boolean {
     return this.isHBarRateLimiterEnabled;
-  }
-
-  /**
-   * Sets the operator address for the rate limiter. Used for tracking operator expenses.
-   * @param {string} operatorAddress - The EVM address of the operator.
-   */
-  setOperatorAddress(operatorAddress: string) {
-    this.operatorAddress = prepend0x(operatorAddress);
   }
 
   /**
@@ -555,11 +546,11 @@ export class HbarLimitService implements IHbarLimitService {
    * @private
    */
   private async getOperatorSpendingPlan(requestDetails: RequestDetails): Promise<IDetailedHbarSpendingPlan> {
-    let operatorPlan = await this.getSpendingPlan(this.operatorAddress!, requestDetails);
+    let operatorPlan = await this.getSpendingPlan(this.operatorAddress, requestDetails);
     if (!operatorPlan) {
       this.logger.trace(`${requestDetails.formattedRequestId} Creating operator spending plan...`);
       operatorPlan = await this.createSpendingPlanForAddress(
-        this.operatorAddress!,
+        this.operatorAddress,
         requestDetails,
         SubscriptionTier.OPERATOR,
       );
