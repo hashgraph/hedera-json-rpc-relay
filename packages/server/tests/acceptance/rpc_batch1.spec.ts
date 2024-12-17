@@ -26,7 +26,14 @@ import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 // Errors and constants from local resources
 import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
-import { FileInfo, FileInfoQuery, Hbar, TransferTransaction } from '@hashgraph/sdk';
+import {
+  AccountCreateTransaction,
+  FileInfo,
+  FileInfoQuery,
+  Hbar,
+  PrivateKey,
+  TransferTransaction,
+} from '@hashgraph/sdk';
 import { expect } from 'chai';
 import { ethers } from 'ethers';
 
@@ -1585,6 +1592,90 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
           const error = predefined.NONCE_TOO_LOW(nonce, nonce + 1);
           await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestDetails]);
+        });
+
+        it('should fail "eth_sendRawTransaction" if receiver\'s account has receiver_sig_required enabled', async function () {
+          const newPrivateKey = PrivateKey.generateED25519();
+          const newAccount = await new AccountCreateTransaction()
+            .setKey(newPrivateKey.publicKey)
+            .setInitialBalance(100)
+            .setReceiverSignatureRequired(true)
+            .freezeWith(servicesNode.client)
+            .sign(newPrivateKey);
+
+          const transaction = await newAccount.execute(servicesNode.client);
+          const receipt = await transaction.getReceipt(servicesNode.client);
+
+          if (!receipt.accountId) {
+            throw new Error('Failed to create new account - accountId is null');
+          }
+
+          const toAddress = Utils.idToEvmAddress(receipt.accountId.toString());
+          const verifyAccount = await mirrorNode.get(`/accounts/${toAddress}`, requestId);
+
+          if (verifyAccount && !verifyAccount.account) {
+            verifyAccount == (await mirrorNode.get(`/accounts/${toAddress}`, requestId));
+          }
+
+          expect(verifyAccount.receiver_sig_required).to.be.true;
+
+          const tx = {
+            ...defaultLegacyTransactionData,
+            chainId: Number(CHAIN_ID),
+            nonce: await accounts[0].wallet.getNonce(),
+            to: toAddress,
+            from: accounts[0].address,
+          };
+
+          const signedTx = await accounts[0].wallet.signTransaction(tx);
+
+          const error = predefined.RECEIVER_SIGNATURE_ENABLED;
+
+          await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [
+            signedTx,
+            requestDetails,
+          ]);
+        });
+
+        it('should execute "eth_sendRawTransaction" if receiver\'s account has receiver_sig_required disabled', async function () {
+          const newPrivateKey = PrivateKey.generateED25519();
+          const newAccount = await new AccountCreateTransaction()
+            .setKey(newPrivateKey.publicKey)
+            .setInitialBalance(100)
+            .setReceiverSignatureRequired(false)
+            .freezeWith(servicesNode.client)
+            .sign(newPrivateKey);
+
+          const transaction = await newAccount.execute(servicesNode.client);
+          const receipt = await transaction.getReceipt(servicesNode.client);
+
+          if (!receipt.accountId) {
+            throw new Error('Failed to create new account - accountId is null');
+          }
+
+          const toAddress = Utils.idToEvmAddress(receipt.accountId.toString());
+          const verifyAccount = await mirrorNode.get(`/accounts/${toAddress}`, requestId);
+
+          if (verifyAccount && !verifyAccount.account) {
+            verifyAccount == (await mirrorNode.get(`/accounts/${toAddress}`, requestId));
+          }
+
+          expect(verifyAccount.receiver_sig_required).to.be.false;
+
+          const tx = {
+            ...defaultLegacyTransactionData,
+            chainId: Number(CHAIN_ID),
+            nonce: await accounts[0].wallet.getNonce(),
+            to: toAddress,
+            from: accounts[0].address,
+          };
+
+          const signedTx = await accounts[0].wallet.signTransaction(tx);
+          const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+          const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
+
+          expect(info).to.exist;
+          expect(info.result).to.equal('SUCCESS');
         });
       });
 

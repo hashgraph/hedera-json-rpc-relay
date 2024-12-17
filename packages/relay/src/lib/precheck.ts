@@ -85,6 +85,7 @@ export class Precheck {
     this.value(parsedTx);
     this.gasPrice(parsedTx, networkGasPriceInWeiBars, requestDetails);
     this.balance(parsedTx, mirrorAccountInfo, requestDetails);
+    await this.receiverAccount(parsedTx, requestDetails);
   }
 
   /**
@@ -374,6 +375,22 @@ export class Precheck {
         );
       }
       throw predefined.UNSUPPORTED_TRANSACTION_TYPE;
+    }
+  }
+
+  /**
+   * Checks if the receiver account exists and has receiver_sig_required set to true.
+   * @param {Transaction} tx - The transaction.
+   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   */
+  async receiverAccount(tx: Transaction, requestDetails: RequestDetails) {
+    if (tx.to) {
+      const verifyAccount = await this.mirrorNodeClient.getAccount(tx.to, requestDetails);
+
+      // When `receiver_sig_required` is set to true, the receiver's account must sign all incoming transactions.
+      if (verifyAccount && verifyAccount.receiver_sig_required) {
+        throw predefined.RECEIVER_SIGNATURE_ENABLED;
+      }
     }
   }
 }
