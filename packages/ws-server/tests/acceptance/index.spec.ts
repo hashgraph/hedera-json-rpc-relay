@@ -27,7 +27,6 @@ import { Server } from 'node:http';
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { setServerTimeout } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/utils';
 import app from '@hashgraph/json-rpc-server/dist/server';
 import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
@@ -44,33 +43,31 @@ import pino from 'pino';
 
 chai.use(chaiAsPromised);
 
-const testLogger = pino({
-  name: 'hedera-json-rpc-relay',
-  level: ConfigService.get('LOG_LEVEL') || 'trace',
-  transport: {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: true,
-    },
-  },
-});
-const logger = testLogger.child({ name: 'rpc-acceptance-test' });
-
-const NETWORK = ConfigService.get('HEDERA_NETWORK') as string;
-const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN') as string;
-const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN') as string;
-const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL') as string;
-const LOCAL_RELAY_URL = 'http://localhost:7546';
-const RELAY_URL = ConfigService.get('E2E_RELAY_HOST') || LOCAL_RELAY_URL;
-const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
-let startOperatorBalance: Hbar;
-global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
-
 describe('RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
-  const requestDetails = new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' });
+  const testLogger = pino({
+    name: 'hedera-json-rpc-relay',
+    level: (ConfigService.get('LOG_LEVEL') as string) || 'trace',
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: true,
+      },
+    },
+  });
+  const logger = testLogger.child({ name: 'rpc-acceptance-test' });
+
+  const NETWORK = ConfigService.get('HEDERA_NETWORK') as string;
+  const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN') as string;
+  const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN') as string;
+  const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL') as string;
+  const LOCAL_RELAY_URL = 'http://localhost:7546';
+  const RELAY_URL = ConfigService.get('E2E_RELAY_HOST') || LOCAL_RELAY_URL;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
+
+  global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
   global.servicesNode = new ServicesClient(
     NETWORK,
     OPERATOR_ID,
@@ -80,6 +77,8 @@ describe('RPC Server Acceptance Tests', function () {
   global.mirrorNode = new MirrorClient(MIRROR_NODE_URL, logger.child({ name: `mirror-node-test-client` }));
   global.relay = new RelayClient(RELAY_URL, logger.child({ name: `relay-test-client` }));
   global.logger = logger;
+
+  let startOperatorBalance: Hbar;
 
   before(async () => {
     // configuration details
@@ -104,7 +103,7 @@ describe('RPC Server Acceptance Tests', function () {
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
-    await global.mirrorNode.get(`/accounts/${initialAccount.address}`, requestDetails);
+    await global.mirrorNode.get(`/accounts/${initialAccount.address}`, Utils.generateRequestId());
   });
 
   after(async function () {
