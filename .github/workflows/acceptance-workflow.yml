@@ -48,7 +48,7 @@ jobs:
     steps:
       - name: Set env variables
         run: |
-          if [[ -n ${{ inputs.operator_id }} ]]; then
+          if [ -n "${{ inputs.operator_id }}" ]; then
             echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
           fi
       - name: Harden Runner

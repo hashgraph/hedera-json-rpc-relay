@@ -17,6 +17,12 @@
  * limitations under the License.
  *
  */
+
+// Important! Load env variables before importing anything else
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+
 import { Server } from 'node:http';
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
@@ -34,14 +40,9 @@ import { AccountId, Hbar } from '@hashgraph/sdk';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import fs from 'fs';
-import path from 'path';
 import pino from 'pino';
 
-import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
-
 chai.use(chaiAsPromised);
-
-ConfigServiceTestHelper.appendEnvsFromPath(path.resolve(__dirname, '../../../../.env'));
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
