@@ -28,6 +28,7 @@ import pino, { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 import sinon from 'sinon';
 
+import { prepend0x } from '../../../../src/formatters';
 import constants from '../../../../src/lib/constants';
 import { HbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/hbarSpendingPlan';
 import { EvmAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
@@ -38,6 +39,7 @@ import {
   HbarSpendingPlanNotActiveError,
   HbarSpendingPlanNotFoundError,
 } from '../../../../src/lib/db/types/hbarLimiter/errors';
+import { IDetailedHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/hbarSpendingPlan';
 import { SubscriptionTier } from '../../../../src/lib/db/types/hbarLimiter/subscriptionTier';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
@@ -58,7 +60,9 @@ describe('HBAR Rate Limit Service', function () {
   const mockEstimatedTxFee = 300;
   const mockPlanId = uuidV4(randomBytes(16));
   const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
-  const operatorAddress = AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress();
+  const operatorAddress = prepend0x(
+    AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
+  );
 
   const requestDetails = new RequestDetails({ requestId: 'hbarLimitServiceTest', ipAddress: mockIpAddress });
 
@@ -145,9 +149,9 @@ describe('HBAR Rate Limit Service', function () {
 
       it('should return tomorrow at midnight', function () {
         const hbarLimitService = new HbarLimitService(
-          hbarSpendingPlanRepositorySpy,
-          evmAddressHbarSpendingPlanRepositorySpy,
-          ipAddressHbarSpendingPlanRepositorySpy,
+          hbarSpendingPlanRepository,
+          evmAddressHbarSpendingPlanRepository,
+          ipAddressHbarSpendingPlanRepository,
           logger,
           register,
           limitDuration,
@@ -817,9 +821,13 @@ describe('HBAR Rate Limit Service', function () {
         }),
       );
 
+      let operatorPlan: IDetailedHbarSpendingPlan;
       if (evmAddress) {
         await expect(addExpensePromise).to.eventually.be.fulfilled;
-        expect(hbarSpendingPlanRepositorySpy.addToAmountSpent.calledTwice).to.be.true; // once for operator and once for evm address
+        sinon.assert.calledTwice(hbarSpendingPlanRepositorySpy.addToAmountSpent); // once for operator and once for evm address
+        operatorPlan = await hbarLimitService['getOperatorSpendingPlan'](requestDetails);
+        sinon.assert.calledWith(hbarSpendingPlanRepositorySpy.addToAmountSpent.firstCall, operatorPlan.id, expense);
+        sinon.assert.calledWith(hbarSpendingPlanRepositorySpy.addToAmountSpent.secondCall, sinon.match.string, expense);
         await Promise.all(updateAverageAmountSpentPerSubscriptionTierSpy.returnValues);
         const expectedAverageUsage = Math.round((otherPlanOfTheSameTier.amountSpent + expense) / 2);
         sinon.assert.calledOnceWithExactly(setAverageSpendingPlanAmountSpentGaugeSpy, expectedAverageUsage);
@@ -830,15 +838,18 @@ describe('HBAR Rate Limit Service', function () {
           loggerSpy.warn,
           `${requestDetails.formattedRequestId} Cannot add expense to a spending plan without an evm address`,
         );
-        expect(hbarSpendingPlanRepositorySpy.addToAmountSpent.calledOnce).to.be.true; // only once for the operator
+        sinon.assert.calledOnce(hbarSpendingPlanRepositorySpy.addToAmountSpent); // only once for the operator
+        operatorPlan = await hbarLimitService['getOperatorSpendingPlan'](requestDetails);
+        sinon.assert.calledWith(hbarSpendingPlanRepositorySpy.addToAmountSpent.firstCall, operatorPlan.id, expense);
       }
-      expect(hbarSpendingPlanRepositorySpy.addToAmountSpent.calledWith(sinon.match.string, expense)).to.be.true;
+      sinon.assert.calledWith(hbarSpendingPlanRepositorySpy.addToAmountSpent, sinon.match.string, expense);
       expect((await hbarLimitService['getRemainingBudget'](requestDetails)).toTinybars().toNumber()).to.eq(
         totalBudgetInTinybars - expense,
       );
       expect((await hbarLimitService['hbarLimitRemainingGauge'].get()).values[0].value).to.equal(
         totalBudgetInTinybars - expense,
       );
+      expect(operatorPlan.amountSpent).to.eq(expense);
     };
 
     it('should create a basic spending plan if none exists', async function () {

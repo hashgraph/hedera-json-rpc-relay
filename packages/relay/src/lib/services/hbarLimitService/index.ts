@@ -23,6 +23,7 @@ import { AccountId, Hbar } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 
+import { prepend0x } from '../../../formatters';
 import { Utils } from '../../../utils';
 import constants from '../../constants';
 import { EvmAddressHbarSpendingPlanRepository } from '../../db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
@@ -99,7 +100,7 @@ export class HbarLimitService implements IHbarLimitService {
     this.reset = this.getResetTimestamp();
 
     const operatorId = ConfigService.get('OPERATOR_ID_MAIN') as string;
-    this.operatorAddress = AccountId.fromString(operatorId).toSolidityAddress();
+    this.operatorAddress = prepend0x(AccountId.fromString(operatorId).toSolidityAddress());
 
     const totalBudget = HbarLimitService.TIER_LIMITS[SubscriptionTier.OPERATOR];
     if (totalBudget.toTinybars().lte(0)) {
