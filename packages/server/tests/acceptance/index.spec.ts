@@ -51,33 +51,32 @@ import { AliasAccount } from '../types/AliasAccount';
 
 chai.use(chaiAsPromised);
 
-const testLogger = pino({
-  name: 'hedera-json-rpc-relay',
-  level: ConfigService.get('LOG_LEVEL') || 'trace',
-  transport: {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: true,
-    },
-  },
-});
-const logger = testLogger.child({ name: 'rpc-acceptance-test' });
-
-const NETWORK = ConfigService.get('HEDERA_NETWORK') as string;
-const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN') as string;
-const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN') as string;
-const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL') as string;
-const LOCAL_RELAY_URL = 'http://localhost:7546';
-const RELAY_URL = ConfigService.get('E2E_RELAY_HOST') || LOCAL_RELAY_URL;
-const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
-const INITIAL_BALANCE = ConfigService.get('INITIAL_BALANCE') || '5000000000';
-let startOperatorBalance: Hbar;
-global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
-
 describe('RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
+  const testLogger = pino({
+    name: 'hedera-json-rpc-relay',
+    level: (ConfigService.get('LOG_LEVEL') as string) || 'trace',
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: true,
+      },
+    },
+  });
+  const logger = testLogger.child({ name: 'rpc-acceptance-test' });
+
+  const NETWORK = ConfigService.get('HEDERA_NETWORK') as string;
+  const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN') as string;
+  const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN') as string;
+  const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL') as string;
+  const LOCAL_RELAY_URL = 'http://localhost:7546';
+  const RELAY_URL = ConfigService.get('E2E_RELAY_HOST') || LOCAL_RELAY_URL;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
+  const INITIAL_BALANCE = ConfigService.get('INITIAL_BALANCE') || '5000000000';
+
+  global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
   global.servicesNode = new ServicesClient(
     NETWORK,
     OPERATOR_ID,
@@ -103,6 +102,8 @@ describe('RPC Server Acceptance Tests', function () {
   if (ConfigService.get('MEMWATCH_ENABLED')) {
     Utils.captureMemoryLeaks(new GCProfiler());
   }
+
+  let startOperatorBalance: Hbar;
 
   before(async () => {
     // configuration details
