@@ -52,7 +52,7 @@ docker run
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 
-Or you can use the already pushed image (natanasow/whbar-hardhat-example:1.4):
+Or you can use the already pushed image (natanasow/whbar-hardhat-example:1.5):
 - envs:
   - NETWORK='testnet' # available networks (mainnet, testnet, previewnet)
   - ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000' # 32 bytes ECDSA private key
@@ -61,7 +61,7 @@ docker run
     -it
     -e NETWORK='testnet'
     -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
-    natanasow/whbar-hardhat-example:1.4
+    natanasow/whbar-hardhat-example:1.5
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 
