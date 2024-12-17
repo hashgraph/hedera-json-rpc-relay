@@ -64,3 +64,10 @@ docker run
     natanasow/whbar-hardhat-example:1.4
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
+
+#### Verification
+
+You can use `verification_file.json` from the root directory to verify your contract in Hashscan. The process is pretty
+simple, just upload the `verification_file.json` and click "Verify".
+
+![Verification](https://i.ibb.co/Syjxw3B/verification.jpg)
