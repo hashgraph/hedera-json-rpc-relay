@@ -283,43 +283,31 @@ export class GlobalConfig {
       envName: 'HBAR_RATE_LIMIT_BASIC',
       type: 'number',
       required: false,
-      defaultValue: null,
+      defaultValue: 1_120_000_000, // 11.2 hbar
     },
     HBAR_RATE_LIMIT_EXTENDED: {
       envName: 'HBAR_RATE_LIMIT_EXTENDED',
       type: 'number',
       required: false,
-      defaultValue: null,
+      defaultValue: 3_200_000_000, // 32 hbar
     },
     HBAR_RATE_LIMIT_PRIVILEGED: {
       envName: 'HBAR_RATE_LIMIT_PRIVILEGED',
       type: 'number',
       required: false,
-      defaultValue: null,
+      defaultValue: 8_000_000_000, // 80 hbar
     },
     HBAR_RATE_LIMIT_DURATION: {
       envName: 'HBAR_RATE_LIMIT_DURATION',
       type: 'number',
       required: false,
-      defaultValue: null,
-    },
-    HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: {
-      envName: 'HBAR_RATE_LIMIT_PREEMPTIVE_CHECK',
-      type: 'boolean',
-      required: false,
-      defaultValue: null,
+      defaultValue: 86_400_000, // 24 hours
     },
     HBAR_RATE_LIMIT_TINYBAR: {
       envName: 'HBAR_RATE_LIMIT_TINYBAR',
       type: 'number',
       required: false,
-      defaultValue: null,
-    },
-    HBAR_RATE_LIMIT_WHITELIST: {
-      envName: 'HBAR_RATE_LIMIT_WHITELIST',
-      type: 'array',
-      required: false,
-      defaultValue: null,
+      defaultValue: 800_000_000_000, // 8000 hbar
     },
     HEDERA_NETWORK: {
       envName: 'HEDERA_NETWORK',

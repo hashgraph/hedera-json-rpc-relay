@@ -251,7 +251,18 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       });
 
       afterEach(async () => {
+        const operatorPlans = await hbarSpendingPlanRepository.findAllActiveBySubscriptionTier(
+          [SubscriptionTier.OPERATOR],
+          requestDetails,
+        );
+        expect(operatorPlans.length).to.be.eq(1); // sanity check
+
         await hbarSpendingPlanRepository.resetAmountSpentOfAllPlans(requestDetails);
+
+        // we don't want to reset the operator account's spending, so we have to add the amount spent back
+        for (const plan of operatorPlans) {
+          await hbarSpendingPlanRepository.addToAmountSpent(plan.id, plan.amountSpent, requestDetails, mockTTL);
+        }
 
         // Note: Since the total HBAR budget is shared across the entire Relay instance by multiple test cases,
         //       and expense updates occur asynchronously, the wait below ensures that the HBAR amount has sufficient time

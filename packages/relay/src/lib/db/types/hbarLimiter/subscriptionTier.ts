@@ -33,4 +33,9 @@ export enum SubscriptionTier {
    * Trusted Partners
    */
   PRIVILEGED = 'PRIVILEGED',
+
+  /**
+   * Relay Operators
+   */
+  OPERATOR = 'OPERATOR',
 }

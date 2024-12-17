@@ -19,7 +19,6 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { Hbar } from '@hashgraph/sdk';
 import MockAdapter from 'axios-mock-adapter';
 import EventEmitter from 'events';
 import pino from 'pino';
@@ -68,7 +67,6 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
   const web3Mock = new MockAdapter(mirrorNodeInstance.getMirrorNodeWeb3Instance(), { onNoMatch: 'throwException' });
 
   const duration = constants.HBAR_RATE_LIMIT_DURATION;
-  const total = constants.HBAR_RATE_LIMIT_TOTAL;
   const eventEmitter = new EventEmitter();
 
   const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
@@ -80,7 +78,6 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
     ipAddressHbarSpendingPlanRepository,
     logger,
     register,
-    Hbar.fromTinybars(total),
     duration,
   );
 

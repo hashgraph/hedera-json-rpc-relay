@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { AccountInfo, Hbar } from '@hashgraph/sdk';
+import { AccountInfo } from '@hashgraph/sdk';
 import { parseOpenRPCDocument, validateOpenRPCDocument } from '@open-rpc/schema-utils-js';
 import Ajv from 'ajv';
 import axios from 'axios';
@@ -33,15 +33,15 @@ import { register, Registry } from 'prom-client';
 import sinon from 'sinon';
 
 import openRpcSchema from '../../../../docs/openrpc.json';
+import { RelayImpl } from '../../src';
 import { numberTo0x } from '../../src/formatters';
 import { SDKClient } from '../../src/lib/clients';
-import { MirrorNodeClient } from '../../src/lib/clients/mirrorNodeClient';
+import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
 import { EvmAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
 import { EthImpl } from '../../src/lib/eth';
-import { RelayImpl } from '../../src/lib/relay';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import ClientService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
@@ -129,7 +129,6 @@ describe('Open RPC Specification', function () {
       instance,
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     const eventEmitter = new EventEmitter();
 
     const hbarSpendingPlanRepository = new HbarSpendingPlanRepository(cacheService, logger);
@@ -141,7 +140,6 @@ describe('Open RPC Specification', function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      Hbar.fromTinybars(total),
       duration,
     );
 

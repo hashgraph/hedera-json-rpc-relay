@@ -43,7 +43,6 @@ import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import EventEmitter from 'events';
 import Long from 'long';
-import { Context } from 'mocha';
 import pino from 'pino';
 import { register, Registry } from 'prom-client';
 import * as sinon from 'sinon';
@@ -115,7 +114,6 @@ describe('SdkClient', async function () {
       Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL;
     eventEmitter = new EventEmitter();
 
     cacheService = new CacheService(logger, registry);
@@ -128,7 +126,6 @@ describe('SdkClient', async function () {
       ipAddressHbarSpendingPlanRepository,
       logger,
       register,
-      Hbar.fromTinybars(total),
       duration,
     );
 
@@ -2245,8 +2242,6 @@ describe('SdkClient', async function () {
 
     let hbarLimitServiceMock: sinon.SinonMock;
     let sdkClientMock: sinon.SinonMock;
-
-    overrideEnvsInMochaDescribe({ HBAR_RATE_LIMIT_PREEMPTIVE_CHECK: true });
 
     beforeEach(() => {
       hbarLimitServiceMock = sinon.mock(hbarLimitService);
