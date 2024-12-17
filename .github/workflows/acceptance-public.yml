@@ -20,6 +20,9 @@ on:
           - testnet
           - previewnet
 
+secrets:
+  operator_key: ${{ inputs.operator_key }}
+
 jobs:
   release-tests:
     name: Release Tests
@@ -29,8 +32,9 @@ jobs:
       envfile: ${{ inputs.network }}Acceptance.env
       operator_id: ${{ inputs.operator_id }}
       maxAttempts: 1
+    env:
+      OPERATOR_KEY_MAIN: ${{ secrets.operator_key }}
     secrets:
-      operator_key: ${{ inputs.operator_key }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   publish_results:
