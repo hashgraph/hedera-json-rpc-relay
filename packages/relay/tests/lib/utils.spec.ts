@@ -128,9 +128,6 @@ describe('Utils', () => {
   });
 
   describe('getOperator', () => {
-    const logger = pino();
-    const loggerSpy = sinon.spy(logger);
-
     const accountId = '0.0.1234';
     const privateKeys = [
       { keyFormat: 'HEX_ECDSA', keyValue: PrivateKey.generateECDSA().toStringRaw() },
@@ -138,10 +135,6 @@ describe('Utils', () => {
       { keyFormat: 'HEX_ED25519', keyValue: PrivateKey.generateED25519().toStringRaw() },
       { keyFormat: 'DER', keyValue: PrivateKey.generateED25519().toStringDer() },
     ];
-
-    beforeEach(() => {
-      loggerSpy.warn.resetHistory();
-    });
 
     privateKeys.forEach(({ keyFormat, keyValue }) => {
       withOverriddenEnvsInMochaTest(
@@ -152,6 +145,7 @@ describe('Utils', () => {
         },
         () => {
           it(`should return operator credentials for "eth_sendRawTransaction" client type`, () => {
+            const logger = pino();
             const operator = Utils.getOperator(logger, 'eth_sendRawTransaction');
 
             expect(operator).to.not.be.null;
@@ -171,6 +165,7 @@ describe('Utils', () => {
         },
         () => {
           it(`should return operator credentials for main client type`, () => {
+            const logger = pino();
             const operator = Utils.getOperator(logger);
 
             expect(operator).to.not.be.null;
@@ -188,11 +183,14 @@ describe('Utils', () => {
       },
       () => {
         it('should return null and log a warning if operatorKey is missing', () => {
+          const logger = pino();
+          const warnSpy = sinon.spy(logger, 'warn');
+
           const operator = Utils.getOperator(logger);
 
           expect(operator).to.be.null;
-          expect(loggerSpy.warn.calledOnce).to.be.true;
-          expect(loggerSpy.warn.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
+          expect(warnSpy.calledOnce).to.be.true;
+          expect(warnSpy.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
         });
       },
     );
@@ -204,11 +202,14 @@ describe('Utils', () => {
       },
       () => {
         it('should return null and log a warning if operatorId is missing', () => {
+          const logger = pino();
+          const warnSpy = sinon.spy(logger, 'warn');
+
           const operator = Utils.getOperator(logger);
 
           expect(operator).to.be.null;
-          expect(loggerSpy.warn.calledOnce).to.be.true;
-          expect(loggerSpy.warn.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
+          expect(warnSpy.calledOnce).to.be.true;
+          expect(warnSpy.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
         });
       },
     );
