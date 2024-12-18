@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -34,13 +34,16 @@ contract ExampleOFTHTS is Ownable, KeyHelper, ExpiryHelper, HederaTokenService, 
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(0, address(this), 8000000);
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
-            _name, _symbol, address(this), "memo", true, 1000, false, keys, expiry
+            _name, _symbol, address(this), "memo", true, 5000, false, keys, expiry
         );
 
         (int responseCode, address tokenAddress) = HederaTokenService.createFungibleToken(
             token, 1000, int32(int256(uint256(8)))
         );
         require(responseCode == HederaResponseCodes.SUCCESS, "Failed to create HTS token");
+
+        int256 transferResponse = HederaTokenService.transferToken(tokenAddress, address(this), msg.sender, 1000);
+        require(transferResponse == HederaResponseCodes.SUCCESS, "HTS: Transfer failed");
 
         htsTokenAddress = tokenAddress;
 
@@ -64,11 +67,8 @@ contract ExampleOFTHTS is Ownable, KeyHelper, ExpiryHelper, HederaTokenService, 
     ) internal virtual override returns (uint256 amountSentLD, uint256 amountReceivedLD) {
         (amountSentLD, amountReceivedLD) = _debitView(_amountLD, _minAmountLD, _dstEid);
 
-        address spender = _msgSender();
-        if (_from != spender) {
-            int256 response = HederaTokenService.approve(htsTokenAddress, spender, amountSentLD);
-            require(response == HederaResponseCodes.SUCCESS, "HTS: Approve failed");
-        }
+        int256 transferResponse = HederaTokenService.transferToken(htsTokenAddress, _from, address(this), int64(uint64(_amountLD)));
+        require(transferResponse == HederaResponseCodes.SUCCESS, "HTS: Transfer failed");
 
         (int256 response,) = HederaTokenService.burnToken(htsTokenAddress, int64(uint64(amountSentLD)), new int64[](0));
         require(response == HederaResponseCodes.SUCCESS, "HTS: Burn failed");

@@ -29,6 +29,17 @@ const receiverAddress = '0xF51c7a9407217911d74e91642dbC58F18E51Deac';
 const amount = '100';
 
 describe('OFTHTSTests', function() {
+  it('@hedera @approve oft hts contract', async() => {
+    const oftHts = await ethers.getContractAt('ExampleOFTHTS', process.env.OFT_HTS_HEDERA_CONTRACT);
+    const tokenAddress = await oftHts.htsTokenAddress();
+
+    const contract = await ethers.getContractAt('ERC20', tokenAddress);
+    const txApprove = await contract.approve(process.env.OFT_HTS_HEDERA_CONTRACT, amount)
+    const receipt = await txApprove.wait();
+
+    expect(receipt.status).to.equal(1);
+  });
+
   it('@hedera @send to bsc', async () => {
     const signers = await ethers.getSigners();
 
@@ -92,7 +103,9 @@ describe('OFTHTSTests', function() {
     const contract = await ethers.getContractAt('ERC20', tokenAddress);
     const receiverBalance = await contract.balanceOf(receiverAddress);
 
+    console.log(`(${hre.network.name}) oft contract balance: ${await contract.balanceOf(process.env.OFT_HTS_HEDERA_CONTRACT)}`);
     console.log(`(${hre.network.name}) signer balance: ${await contract.balanceOf(signers[0].address)}`);
+    console.log(`(${hre.network.name}) total supply: ${await contract.totalSupply()}`);
     console.log(`(${hre.network.name}) receiver balance: ${receiverBalance}`);
 
     expect(receiverBalance).to.equal(amount);
@@ -104,7 +117,9 @@ describe('OFTHTSTests', function() {
     const contract = await ethers.getContractAt('ERC20', process.env.OFT_HTS_BSC_CONTRACT);
     const receiverBalance = await contract.balanceOf(receiverAddress);
 
+    console.log(`(${hre.network.name}) oft contract balance: ${await contract.balanceOf(process.env.OFT_HTS_BSC_CONTRACT)}`);
     console.log(`(${hre.network.name}) signer balance: ${await contract.balanceOf(signers[0].address)}`);
+    console.log(`(${hre.network.name}) total supply: ${await contract.totalSupply()}`);
     console.log(`(${hre.network.name}) receiver balance: ${receiverBalance}`);
 
     expect(receiverBalance).to.equal(amount);

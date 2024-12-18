@@ -116,6 +116,8 @@ npx hardhat set-peer --source <bsc_oft_address> --target <hedera_oft_address> --
 
 fill the .env
 
+npx hardhat test --grep "OFTHTSTests @hedera @approve" --network hedera_testnet
+
 npx hardhat test --grep "OFTHTSTests @hedera @send" --network hedera_testnet
 npx hardhat test --grep "OFTHTSTests @bsc @send" --network bsc_testnet
 
