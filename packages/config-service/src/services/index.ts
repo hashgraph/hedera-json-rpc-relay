@@ -21,6 +21,7 @@
 import dotenv from 'dotenv';
 import findConfig from 'find-config';
 import pino from 'pino';
+
 import { LoggerService } from './loggerService';
 import { ValidationService } from './validationService';
 
@@ -61,12 +62,11 @@ export class ConfigService {
   private constructor() {
     const configPath = findConfig(ConfigService.envFileName);
 
-    if (!configPath) {
+    if (configPath) {
+      dotenv.config({ path: configPath });
+    } else {
       logger.warn('No .env file is found. The relay cannot operate without valid .env.');
     }
-
-    // @ts-ignore
-    dotenv.config({ path: configPath });
 
     // validate mandatory fields
     ValidationService.startUp(process.env);

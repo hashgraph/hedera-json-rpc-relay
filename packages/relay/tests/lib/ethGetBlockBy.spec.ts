@@ -42,7 +42,7 @@ import { defaultDetailedContractResults, overrideEnvsInMochaDescribe, useInMemor
 
 use(chaiAsPromised);
 
-const logger = pino();
+const logger = pino({ level: 'silent' });
 const registry = new Registry();
 
 let restMock: MockAdapter;

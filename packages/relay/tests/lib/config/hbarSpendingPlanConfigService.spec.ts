@@ -1,8 +1,8 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,14 +53,7 @@ chai.use(chaiAsPromised);
 describe('HbarSpendingPlanConfigService', function () {
   const logger = pino({
     name: 'hbar-spending-plan-config-service',
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
-        translateTime: true,
-        ignore: 'pid,hostname',
-      },
-    },
+    level: 'silent',
   });
   const registry = new Registry();
   const neverExpireTtl = -1;

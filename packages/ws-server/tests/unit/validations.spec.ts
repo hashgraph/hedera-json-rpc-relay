@@ -18,14 +18,15 @@
  *
  */
 
-import pino from 'pino';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { expect } from 'chai';
+import pino from 'pino';
+
 import { WS_CONSTANTS } from '../../src/utils/constants';
 import { validateJsonRpcRequest, verifySupportedMethod } from '../../src/utils/utils';
 import { WsTestHelper } from '../helper';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
-const logger = pino();
+const logger = pino({ level: 'silent' });
 
 describe('validations unit test', async function () {
   const FAKE_REQUEST_ID = '3';

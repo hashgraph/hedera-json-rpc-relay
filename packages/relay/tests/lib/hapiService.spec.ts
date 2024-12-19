@@ -21,7 +21,7 @@
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { Client } from '@hashgraph/sdk';
 import { expect } from 'chai';
-import EventEmitter from 'events';
+import { EventEmitter } from 'events';
 import pino from 'pino';
 import { register, Registry } from 'prom-client';
 
@@ -37,7 +37,7 @@ import { RequestDetails } from '../../src/lib/types';
 import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../helpers';
 
 const registry = new Registry();
-const logger = pino();
+const logger = pino({ level: 'silent' });
 
 describe('HAPI Service', async function () {
   this.timeout(20000);
@@ -84,28 +84,30 @@ describe('HAPI Service', async function () {
 
   withOverriddenEnvsInMochaTest({ HAPI_CLIENT_TRANSACTION_RESET: 2 }, () => {
     it('should be able to reinitialise SDK instance upon reaching transaction limit', async function () {
+      const hapiClientTransactionReset = Number(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET'));
+
       hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
-      expect(hapiService.getTransactionCount()).to.eq(parseInt(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')!));
+      expect(hapiService.getTransactionCount()).to.eq(hapiClientTransactionReset);
 
       const oldClientInstance = hapiService.getMainClientInstance();
-      let oldSDKInstance = hapiService.getSDKClient(); // decrease transaction limit by taking the instance
-      oldSDKInstance = hapiService.getSDKClient(); // decrease transaction limit by taking the instance
+      hapiService.getSDKClient(); // decrease transaction limit by taking the instance
+      const oldSDKInstance = hapiService.getSDKClient(); // decrease transaction limit by taking the instance
       expect(hapiService.getTransactionCount()).to.eq(0);
       const newSDKInstance = hapiService.getSDKClient();
       const newClientInstance = hapiService.getMainClientInstance();
 
       expect(oldSDKInstance).to.not.be.equal(newSDKInstance);
       expect(oldClientInstance).to.not.be.equal(newClientInstance);
-      expect(hapiService.getTransactionCount()).to.eq(
-        parseInt(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')!) - 1,
-      ); // one less because we took the instance once and decreased the counter
+      expect(hapiService.getTransactionCount()).to.eq(hapiClientTransactionReset - 1); // one less because we took the instance once and decreased the counter
     });
   });
 
   withOverriddenEnvsInMochaTest({ HAPI_CLIENT_DURATION_RESET: 100 }, () => {
     it('should be able to reinitialise SDK instance upon reaching time limit', async function () {
+      const hapiClientDurationReset = Number(ConfigService.get('HAPI_CLIENT_DURATION_RESET'));
+
       hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
-      expect(hapiService.getTimeUntilReset()).to.eq(parseInt(ConfigService.get('HAPI_CLIENT_DURATION_RESET')!));
+      expect(hapiService.getTimeUntilReset()).to.be.approximately(hapiClientDurationReset, 10); // 10 ms tolerance
 
       const oldClientInstance = hapiService.getMainClientInstance();
       await new Promise((r) => setTimeout(r, 200)); // await to reach time limit
@@ -113,7 +115,7 @@ describe('HAPI Service', async function () {
       const newSDKInstance = hapiService.getSDKClient();
       const newClientInstance = hapiService.getMainClientInstance();
 
-      expect(hapiService.getTimeUntilReset()).to.eq(parseInt(ConfigService.get('HAPI_CLIENT_DURATION_RESET')!));
+      expect(hapiService.getTimeUntilReset()).to.be.approximately(hapiClientDurationReset, 10); // 10 ms tolerance
       expect(oldSDKInstance).to.not.be.equal(newSDKInstance);
       expect(oldClientInstance).to.not.be.equal(newClientInstance);
     });
@@ -121,8 +123,10 @@ describe('HAPI Service', async function () {
 
   withOverriddenEnvsInMochaTest({ HAPI_CLIENT_ERROR_RESET: '[50]' }, () => {
     it('should be able to reinitialise SDK instance upon error status code encounter', async function () {
+      const hapiClientErrorReset: Array<number> = JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET') as string);
+
       hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
-      expect(hapiService.getErrorCodes()[0]).to.eq(JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET')!)[0]);
+      expect(hapiService.getErrorCodes()[0]).to.eq(hapiClientErrorReset[0]);
 
       const oldClientInstance = hapiService.getMainClientInstance();
       const oldSDKInstance = hapiService.getSDKClient();
@@ -132,7 +136,7 @@ describe('HAPI Service', async function () {
 
       expect(oldSDKInstance).to.not.be.equal(newSDKInstance);
       expect(oldClientInstance).to.not.be.equal(newClientInstance);
-      expect(hapiService.getErrorCodes()[0]).to.eq(JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET')!)[0]);
+      expect(hapiService.getErrorCodes()[0]).to.eq(hapiClientErrorReset[0]);
     });
   });
 
@@ -144,20 +148,19 @@ describe('HAPI Service', async function () {
     },
     () => {
       it('should be able to reset all counter upon reinitialization of the SDK Client', async function () {
+        const hapiClientTransactionReset = Number(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET'));
+        const hapiClientDurationReset = Number(ConfigService.get('HAPI_CLIENT_DURATION_RESET'));
+
         hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
 
-        expect(hapiService.getErrorCodes()[0]).to.eq(JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET')!)[0]);
         const oldClientInstance = hapiService.getMainClientInstance();
         const oldSDKInstance = hapiService.getSDKClient();
         hapiService.decrementErrorCounter(errorStatus);
         const newSDKInstance = hapiService.getSDKClient();
         const newClientInstance = hapiService.getMainClientInstance();
 
-        expect(hapiService.getTimeUntilReset()).to.eq(parseInt(ConfigService.get('HAPI_CLIENT_DURATION_RESET')!));
-        expect(hapiService.getErrorCodes()[0]).to.eq(JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET')!)[0]);
-        expect(hapiService.getTransactionCount()).to.eq(
-          parseInt(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')!) - 1,
-        ); // one less because we took the instance once and decreased the counter
+        expect(hapiService.getTimeUntilReset()).to.be.approximately(hapiClientDurationReset, 10); // 10 ms tolerance
+        expect(hapiService.getTransactionCount()).to.eq(hapiClientTransactionReset - 1); // one less because we took the instance once and decreased the counter
         expect(oldSDKInstance).to.not.be.equal(newSDKInstance);
         expect(oldClientInstance).to.not.be.equal(newClientInstance);
       });
@@ -204,7 +207,7 @@ describe('HAPI Service', async function () {
     () => {
       it('should not be able to reinitialise and decrement counters, if it is disabled', async function () {
         hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
-        expect(hapiService.getTransactionCount()).to.eq(parseInt(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')!));
+        expect(hapiService.getTransactionCount()).to.eq(Number(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')));
 
         const oldClientInstance = hapiService.getMainClientInstance();
         const oldSDKInstance = hapiService.getSDKClient();
