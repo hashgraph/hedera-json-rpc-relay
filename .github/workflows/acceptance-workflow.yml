@@ -31,6 +31,9 @@ on:
         type: number
         default: 3
     secrets:
+      operator_key:
+        description: 'The ED25519, ECDSA, or DER encoded private key of the operator'
+        required: false
       CODECOV_TOKEN:
         description: 'Codecov upload token'
         required: true
@@ -47,6 +50,9 @@ jobs:
         run: |
           if [ -n "${{ inputs.operator_id }}" ]; then
             echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
+          fi
+          if [ -n "${{ secrets.operator_key }}" ]; then
+            echo "OPERATOR_KEY_MAIN=${{ secrets.operator_key }}" >> $GITHUB_ENV
           fi
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
