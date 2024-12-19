@@ -19,30 +19,31 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import MockAdapter from 'axios-mock-adapter';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import MockAdapter from 'axios-mock-adapter';
-import { Registry } from 'prom-client';
-import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
-import { TracerType } from '../../../../src/lib/constants';
-import { DebugService } from '../../../../src/lib/services/debugService';
-import { getQueryParams, withOverriddenEnvsInMochaTest } from '../../../helpers';
-import RelayAssertions from '../../../assertions';
+import { Registry } from 'prom-client';
+
 import { predefined } from '../../../../src';
-import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import { CommonService } from '../../../../src/lib/services/ethService';
-import { IOpcodesResponse } from '../../../../src/lib/clients/models/IOpcodesResponse';
 import { strip0x } from '../../../../src/formatters';
+import { MirrorNodeClient } from '../../../../src/lib/clients';
+import { IOpcodesResponse } from '../../../../src/lib/clients/models/IOpcodesResponse';
+import { TracerType } from '../../../../src/lib/constants';
+import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
+import { DebugService } from '../../../../src/lib/services/debugService';
+import { CommonService } from '../../../../src/lib/services/ethService';
 import { RequestDetails } from '../../../../src/lib/types';
+import RelayAssertions from '../../../assertions';
+import { getQueryParams, withOverriddenEnvsInMochaTest } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
-const logger = pino();
+const logger = pino({ level: 'silent' });
 const registry = new Registry();
 
-let restMock: MockAdapter;
-let web3Mock: MockAdapter;
+let restMock: typeof MockAdapter;
+let web3Mock: typeof MockAdapter;
 let mirrorNodeInstance: MirrorNodeClient;
 let debugService: DebugService;
 let cacheService: CacheService;

@@ -45,11 +45,11 @@ import {
 } from '../../../helpers';
 
 const registry = new Registry();
-const logger = pino();
+const logger = pino({ level: 'silent' });
 
 describe('Metric Service', function () {
   let client: Client;
-  let mock: MockAdapter;
+  let mock: typeof MockAdapter;
   let instance: AxiosInstance;
   let eventEmitter: EventEmitter;
   let metricService: MetricService;
