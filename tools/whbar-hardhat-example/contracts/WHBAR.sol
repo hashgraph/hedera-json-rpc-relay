@@ -4,7 +4,7 @@ pragma solidity ^0.8.22;
 contract WHBAR {
     string public name = "Wrapped HBAR";
     string public symbol = "WHBAR";
-    uint8 public decimals = 18;
+    uint8 public decimals = 8;
 
     event Approval(address indexed src, address indexed guy, uint wad);
     event Transfer(address indexed src, address indexed dst, uint wad);

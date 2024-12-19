@@ -31,7 +31,7 @@ describe('WHBAR', function() {
   });
 
   it('should get decimals', async function() {
-    expect(await contract.decimals()).to.equal(18);
+    expect(await contract.decimals()).to.equal(8);
   });
 
   it('should get totalSupply', async function() {

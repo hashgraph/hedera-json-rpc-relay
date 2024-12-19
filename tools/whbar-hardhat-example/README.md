@@ -5,7 +5,7 @@ The WHBAR contract for Wrapped HBAR to help transactions that use native token p
 ##### Properties:
 - name - ```string``` "Wrapped HBAR"
 - symbol - ```string``` "WHBAR"decimals
-- decimals - ```uint8``` 18 # denominated in weibars
+- decimals - ```uint8``` 8
 - balanceOf - ``` mapping(address => uint256) balanceOf```
 - allowance - ```mapping(address => mapping(address => uint256)) allowance```
 
@@ -52,7 +52,7 @@ docker run
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 
-Or you can use the already pushed image (natanasow/whbar-hardhat-example:1.5):
+Or you can use the already pushed image (natanasow/whbar-hardhat-example:1.6):
 - envs:
   - NETWORK='testnet' # available networks (mainnet, testnet, previewnet)
   - ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000' # 32 bytes ECDSA private key
@@ -61,7 +61,7 @@ docker run
     -it
     -e NETWORK='testnet'
     -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
-    natanasow/whbar-hardhat-example:1.5
+    natanasow/whbar-hardhat-example:1.6
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 
