@@ -19,11 +19,12 @@
  */
 
 import { expect } from 'chai';
-import sinon from 'sinon';
-import { Registry } from 'prom-client';
 import pino, { Logger } from 'pino';
-import RateLimit from '../../src/rateLimit';
+import { Registry } from 'prom-client';
+import sinon from 'sinon';
+
 import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../../relay/tests/helpers';
+import RateLimit from '../../src/rateLimit';
 
 describe('RateLimit', () => {
   let logger: Logger;
@@ -32,7 +33,7 @@ describe('RateLimit', () => {
   const duration = 1000;
 
   before(() => {
-    logger = pino();
+    logger = pino({ level: 'silent' });
     registry = new Registry();
   });
 

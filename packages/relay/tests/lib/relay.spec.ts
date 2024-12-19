@@ -1,8 +1,8 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,16 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import fs from 'fs';
 import pino from 'pino';
-import sinon from 'sinon';
 import { Registry } from 'prom-client';
+import sinon from 'sinon';
+
 import { RelayImpl } from '../../src';
 import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../helpers';
 
 chai.use(chaiAsPromised);
 
 describe('RelayImpl', () => {
-  const logger = pino();
+  const logger = pino({ level: 'silent' });
   const register = new Registry();
   let relay: RelayImpl;
 

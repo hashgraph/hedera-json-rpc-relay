@@ -128,6 +128,7 @@ describe('Utils', () => {
   });
 
   describe('getOperator', () => {
+    const logger = pino({ level: 'silent' });
     const accountId = '0.0.1234';
     const privateKeys = [
       { keyFormat: 'HEX_ECDSA', keyValue: PrivateKey.generateECDSA().toStringRaw() },
@@ -145,7 +146,6 @@ describe('Utils', () => {
         },
         () => {
           it(`should return operator credentials for "eth_sendRawTransaction" client type`, () => {
-            const logger = pino();
             const operator = Utils.getOperator(logger, 'eth_sendRawTransaction');
 
             expect(operator).to.not.be.null;
@@ -165,7 +165,6 @@ describe('Utils', () => {
         },
         () => {
           it(`should return operator credentials for main client type`, () => {
-            const logger = pino();
             const operator = Utils.getOperator(logger);
 
             expect(operator).to.not.be.null;
@@ -183,7 +182,6 @@ describe('Utils', () => {
       },
       () => {
         it('should return null and log a warning if operatorKey is missing', () => {
-          const logger = pino();
           const warnSpy = sinon.spy(logger, 'warn');
 
           const operator = Utils.getOperator(logger);
@@ -191,6 +189,7 @@ describe('Utils', () => {
           expect(operator).to.be.null;
           expect(warnSpy.calledOnce).to.be.true;
           expect(warnSpy.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
+          warnSpy.restore();
         });
       },
     );
@@ -202,7 +201,6 @@ describe('Utils', () => {
       },
       () => {
         it('should return null and log a warning if operatorId is missing', () => {
-          const logger = pino();
           const warnSpy = sinon.spy(logger, 'warn');
 
           const operator = Utils.getOperator(logger);
@@ -210,6 +208,7 @@ describe('Utils', () => {
           expect(operator).to.be.null;
           expect(warnSpy.calledOnce).to.be.true;
           expect(warnSpy.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
+          warnSpy.restore();
         });
       },
     );

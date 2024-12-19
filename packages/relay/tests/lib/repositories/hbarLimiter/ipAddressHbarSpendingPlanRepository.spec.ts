@@ -1,8 +1,8 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,23 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import sinon from 'sinon';
-import { IPAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
-import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import pino from 'pino';
-import { IIPAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/ipAddressHbarSpendingPlan';
-import { IPAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { randomBytes, uuidV4 } from 'ethers';
+import pino from 'pino';
 import { Registry } from 'prom-client';
-import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
-import { RequestDetails } from '../../../../src/lib/types';
+import sinon from 'sinon';
+
 import { IPAddressHbarSpendingPlan } from '../../../../src/lib/db/entities/hbarLimiter/ipAddressHbarSpendingPlan';
+import { IPAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { IPAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
+import { IIPAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/ipAddressHbarSpendingPlan';
+import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
+import { RequestDetails } from '../../../../src/lib/types';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
 describe('IPAddressHbarSpendingPlanRepository', function () {
-  const logger = pino();
+  const logger = pino({ level: 'silent' });
   const registry = new Registry();
   const requestDetails = new RequestDetails({
     requestId: 'ipAddressHbarSpendingPlanRepositoryTest',

@@ -50,7 +50,7 @@ import { withOverriddenEnvsInMochaTest } from '../../../helpers';
 chai.use(chaiAsPromised);
 
 describe('HBAR Rate Limit Service', function () {
-  const logger = pino({ level: 'trace' });
+  const logger = pino({ level: 'silent' });
   const register = new Registry();
   const totalBudgetInTinybars = constants.HBAR_RATE_LIMIT_TOTAL.toNumber();
   const limitDuration = constants.HBAR_RATE_LIMIT_DURATION;
@@ -63,7 +63,7 @@ describe('HBAR Rate Limit Service', function () {
   const mockPlanId = uuidV4(randomBytes(16));
   const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
 
-  const requestDetails = new RequestDetails({ requestId: 'hbarLimitServiceTest', ipAddress: mockIpAddress });
+  const requestDetails = new RequestDetails({ requestId: '', ipAddress: mockIpAddress });
 
   let cacheService: CacheService;
   let hbarLimitService: HbarLimitService;
@@ -934,8 +934,8 @@ describe('HBAR Rate Limit Service', function () {
             ),
           ).to.be.eventually.fulfilled;
           sinon.assert.calledWith(
-            loggerSpy.trace,
-            'Cannot add expense to a spending plan without an evm address or ip address',
+            loggerSpy.warn,
+            `${requestDetails.formattedRequestId} Cannot add expense to a spending plan without an evm address`,
           );
         });
       });

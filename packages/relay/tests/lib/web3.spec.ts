@@ -20,12 +20,13 @@
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { expect } from 'chai';
-import { Registry } from 'prom-client';
 import pino from 'pino';
+import { Registry } from 'prom-client';
+
 import { RelayImpl } from '../../src';
 import { withOverriddenEnvsInMochaTest } from '../helpers';
 
-const logger = pino();
+const logger = pino({ level: 'silent' });
 const Relay = new RelayImpl(logger, new Registry());
 
 describe('Web3', function () {

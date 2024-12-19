@@ -18,22 +18,23 @@
  *
  */
 
-import { pino } from 'pino';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { RedisCache } from '../../../src/lib/clients';
+import { pino } from 'pino';
 import { Registry } from 'prom-client';
-import { useInMemoryRedisServer } from '../../helpers';
-import { RequestDetails } from '../../../dist/lib/types';
-import sinon from 'sinon';
 import { RedisClientType } from 'redis';
+import sinon from 'sinon';
+
+import { RequestDetails } from '../../../dist/lib/types';
+import { RedisCache } from '../../../src/lib/clients';
+import { useInMemoryRedisServer } from '../../helpers';
 
 chai.use(chaiAsPromised);
 
 describe('RedisCache Test Suite', async function () {
   this.timeout(10000);
 
-  const logger = pino();
+  const logger = pino({ level: 'silent' });
   const registry = new Registry();
   const callingMethod = 'RedisCacheTest';
   const requestDetails = new RequestDetails({ requestId: 'localLRUCacheTest', ipAddress: '0.0.0.0' });

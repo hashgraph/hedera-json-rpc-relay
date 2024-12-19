@@ -281,14 +281,6 @@ export class HbarLimitService implements IHbarLimitService {
     const remainingBudget = await this.getRemainingBudget(requestDetails);
     this.hbarLimitRemainingGauge.set(remainingBudget.toTinybars().toNumber());
 
-    const ipAddress = requestDetails.ipAddress;
-    if (!evmAddress && !ipAddress) {
-      if (this.logger.isLevelEnabled('trace')) {
-        this.logger.trace('Cannot add expense to a spending plan without an evm address or ip address');
-      }
-      return;
-    }
-
     let spendingPlan = await this.getSpendingPlan(evmAddress, requestDetails);
     if (!spendingPlan) {
       if (evmAddress) {
