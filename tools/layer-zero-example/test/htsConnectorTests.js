@@ -28,13 +28,13 @@ const BSC_EID = 40102;
 const receiverAddress = '0xF51c7a9407217911d74e91642dbC58F18E51Deac';
 const amount = '100';
 
-describe('OFTHTSTests', function() {
+describe('HTSConnectorTests', function() {
   it('@hedera @approve oft hts contract', async() => {
-    const oftHts = await ethers.getContractAt('ExampleOFTHTS', process.env.OFT_HTS_HEDERA_CONTRACT);
+    const oftHts = await ethers.getContractAt('ExampleHTSConnector', process.env.HTS_CONNECTOR_HEDERA_CONTRACT);
     const tokenAddress = await oftHts.htsTokenAddress();
 
     const contract = await ethers.getContractAt('ERC20', tokenAddress);
-    const txApprove = await contract.approve(process.env.OFT_HTS_HEDERA_CONTRACT, amount)
+    const txApprove = await contract.approve(process.env.HTS_CONNECTOR_HEDERA_CONTRACT, amount)
     const receipt = await txApprove.wait();
 
     expect(receipt.status).to.equal(1);
@@ -53,7 +53,7 @@ describe('OFTHTSTests', function() {
       oftCmd: ethers.utils.arrayify('0x')
     };
 
-    const contract = await ethers.getContractAt('ExampleOFTHTS', process.env.OFT_HTS_HEDERA_CONTRACT);
+    const contract = await ethers.getContractAt('ExampleHTSConnector', process.env.HTS_CONNECTOR_HEDERA_CONTRACT);
     const tx = await contract.send(sendParam, { nativeFee: '500000000', lzTokenFee: 0 }, signers[0].address, {
       gasLimit: 10_000_000,
       value: '5000000000000000000'
@@ -80,7 +80,7 @@ describe('OFTHTSTests', function() {
       oftCmd: ethers.utils.arrayify('0x')
     };
 
-    const contract = await ethers.getContractAt('ExampleOFT', process.env.OFT_HTS_BSC_CONTRACT);
+    const contract = await ethers.getContractAt('ExampleOFT', process.env.HTS_CONNECTOR_BSC_CONTRACT);
     const tx = await contract.send(sendParam, { nativeFee: '1000000000000000', lzTokenFee: 0 }, signers[0].address, {
       gasLimit: 1_000_000,
       value: '1000000000000000'
@@ -97,13 +97,13 @@ describe('OFTHTSTests', function() {
   it('@hedera @test balance', async () => {
     const signers = await ethers.getSigners();
 
-    const oftHts = await ethers.getContractAt('ExampleOFTHTS', process.env.OFT_HTS_HEDERA_CONTRACT);
+    const oftHts = await ethers.getContractAt('ExampleHTSConnector', process.env.HTS_CONNECTOR_HEDERA_CONTRACT);
     const tokenAddress = await oftHts.htsTokenAddress();
 
     const contract = await ethers.getContractAt('ERC20', tokenAddress);
     const receiverBalance = await contract.balanceOf(receiverAddress);
 
-    console.log(`(${hre.network.name}) oft contract balance: ${await contract.balanceOf(process.env.OFT_HTS_HEDERA_CONTRACT)}`);
+    console.log(`(${hre.network.name}) oft contract balance: ${await contract.balanceOf(process.env.HTS_CONNECTOR_HEDERA_CONTRACT)}`);
     console.log(`(${hre.network.name}) signer balance: ${await contract.balanceOf(signers[0].address)}`);
     console.log(`(${hre.network.name}) total supply: ${await contract.totalSupply()}`);
     console.log(`(${hre.network.name}) receiver balance: ${receiverBalance}`);
@@ -114,10 +114,10 @@ describe('OFTHTSTests', function() {
   it('@bsc @test balance', async () => {
     const signers = await ethers.getSigners();
 
-    const contract = await ethers.getContractAt('ERC20', process.env.OFT_HTS_BSC_CONTRACT);
+    const contract = await ethers.getContractAt('ERC20', process.env.HTS_CONNECTOR_BSC_CONTRACT);
     const receiverBalance = await contract.balanceOf(receiverAddress);
 
-    console.log(`(${hre.network.name}) oft contract balance: ${await contract.balanceOf(process.env.OFT_HTS_BSC_CONTRACT)}`);
+    console.log(`(${hre.network.name}) oft contract balance: ${await contract.balanceOf(process.env.HTS_CONNECTOR_BSC_CONTRACT)}`);
     console.log(`(${hre.network.name}) signer balance: ${await contract.balanceOf(signers[0].address)}`);
     console.log(`(${hre.network.name}) total supply: ${await contract.totalSupply()}`);
     console.log(`(${hre.network.name}) receiver balance: ${receiverBalance}`);

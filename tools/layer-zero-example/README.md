@@ -106,9 +106,9 @@ wait a couple minutes, the LZ progress can be tracked on https://testnet.layerze
 npx hardhat test --grep "ONFTAdapterTests @hedera @test" --network hedera_testnet
 npx hardhat test --grep "ONFTAdapterTests @bsc @test" --network bsc_testnet
 
-### OFT HTS
+### HTS Connector
 
-npx hardhat deploy-oft-hts --network hedera_testnet
+npx hardhat deploy-hts-connector --network hedera_testnet
 npx hardhat deploy-oft --decimals 8 --mint 1000 --network bsc_testnet
 
 npx hardhat set-peer --source <hedera_oft_address> --target <bsc_oft_address> --network hedera_testnet
@@ -116,12 +116,12 @@ npx hardhat set-peer --source <bsc_oft_address> --target <hedera_oft_address> --
 
 fill the .env
 
-npx hardhat test --grep "OFTHTSTests @hedera @approve" --network hedera_testnet
+npx hardhat test --grep "HTSConnectorTests @hedera @approve" --network hedera_testnet
 
-npx hardhat test --grep "OFTHTSTests @hedera @send" --network hedera_testnet
-npx hardhat test --grep "OFTHTSTests @bsc @send" --network bsc_testnet
+npx hardhat test --grep "HTSConnectorTests @hedera @send" --network hedera_testnet
+npx hardhat test --grep "HTSConnectorTests @bsc @send" --network bsc_testnet
 
 wait a couple minutes, the LZ progress can be tracked on https://testnet.layerzeroscan.com/tx/<tx_hash>
 
-npx hardhat test --grep "OFTHTSTests @hedera @test" --network hedera_testnet
-npx hardhat test --grep "OFTHTSTests @bsc @test" --network bsc_testnet
+npx hardhat test --grep "HTSConnectorTests @hedera @test" --network hedera_testnet
+npx hardhat test --grep "HTSConnectorTests @bsc @test" --network bsc_testnet

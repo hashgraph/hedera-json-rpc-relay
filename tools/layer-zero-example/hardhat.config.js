@@ -109,20 +109,20 @@ task("deploy-oft", "Deploy OFT contract")
     console.log(`(${hre.network.name}) ExampleOFT deployed to: ` + contract.address);
   });
 
-task("deploy-oft-hts", "Deploy OFT HTS contract")
+task("deploy-hts-connector", "Deploy HTS connector contract")
   .setAction(async (taskArgs, hre) => {
     const ethers = hre.ethers;
     const signers = await ethers.getSigners();
     const ENDPOINT_V2 = getEndpointAddress(hre.network.name)
 
-    const contractFactory = await ethers.getContractFactory('ExampleOFTHTS');
+    const contractFactory = await ethers.getContractFactory('ExampleHTSConnector');
     const contract = await contractFactory.deploy('T_NAME', 'T_SYMBOL', ENDPOINT_V2, signers[0].address, {
       gasLimit: 10_000_000,
       value: '30000000000000000000' // 30 hbars
     });
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleOFTHTS deployed to: ` + contract.address);
+    console.log(`(${hre.network.name}) ExampleHTSConnector deployed to: ` + contract.address);
   });
 
 task("deploy-oft-adapter", "Deploy OFT adapter contract")
