@@ -39,8 +39,8 @@ npx hardhat test --grep "OFTTests @bsc @test" --network bsc_testnet
 
 ### OFT Adapter
 
-npx hardhat deploy-erc20 --network hedera_testnet
-npx hardhat deploy-erc20 --network bsc_testnet
+npx hardhat deploy-erc20 --decimals 18 --mint 10000000000000000000 --network hedera_testnet
+npx hardhat deploy-erc20 --decimals 18 --mint 10000000000000000000 --network bsc_testnet
 
 npx hardhat deploy-oft-adapter --token <erc20_hedera_address> --network hedera_testnet
 npx hardhat deploy-oft-adapter --token <erc20_bsc_address> --network bsc_testnet
@@ -125,3 +125,27 @@ wait a couple minutes, the LZ progress can be tracked on https://testnet.layerze
 
 npx hardhat test --grep "HTSConnectorTests @hedera @test" --network hedera_testnet
 npx hardhat test --grep "HTSConnectorTests @bsc @test" --network bsc_testnet
+
+### HTS Adapter
+
+npx hardhat create-hts-token --network hedera_testnet
+npx hardhat deploy-erc20 --decimals 8 --mint 1000 --network bsc_testnet
+
+npx hardhat deploy-oft-adapter --token <erc20_hedera_address> --network hedera_testnet
+npx hardhat deploy-oft-adapter --token <erc20_bsc_address> --network bsc_testnet
+
+npx hardhat set-peer --source <hedera_oft_adapter_address> --target <bsc_oft_adapter_address> --network hedera_testnet
+npx hardhat set-peer --source <bsc_oft_adapter_address> --target <hedera_oft_adapter_address> --network bsc_testnet
+
+fill the .env
+
+npx hardhat test --grep "HTSAdapterTests @hedera @fund-and-approve" --network hedera_testnet
+npx hardhat test --grep "HTSAdapterTests @bsc @fund-and-approve" --network bsc_testnet
+
+npx hardhat test --grep "HTSAdapterTests @hedera @send" --network hedera_testnet
+npx hardhat test --grep "HTSAdapterTests @bsc @send" --network bsc_testnet
+
+wait a couple minutes, the LZ progress can be tracked on https://testnet.layerzeroscan.com/tx/<tx_hash>
+
+npx hardhat test --grep "HTSAdapterTests @hedera @test" --network hedera_testnet
+npx hardhat test --grep "HTSAdapterTests @bsc @test" --network bsc_testnet
