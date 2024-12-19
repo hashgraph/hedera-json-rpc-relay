@@ -63,6 +63,15 @@ const getEndpointAddress = (network) => {
   return ENDPOINT_V2;
 }
 
+task('deploy-whbar', "Deploy WHBAR")
+  .setAction(async (taskArgs, hre) => {
+    const contractFactory = await ethers.getContractFactory('WHBAR');
+    const contract = await contractFactory.deploy();
+    await contract.deployTransaction.wait();
+
+    console.log(`(${hre.network.name}) WHBAR to: ` + contract.address);
+  });
+
 task('deploy-erc20', "Deploy ERC20 token")
   .addParam('mint', 'Initial mint')
   .addParam('decimals', 'Decimals')

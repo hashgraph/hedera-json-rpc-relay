@@ -149,3 +149,27 @@ wait a couple minutes, the LZ progress can be tracked on https://testnet.layerze
 
 npx hardhat test --grep "HTSAdapterTests @hedera @test" --network hedera_testnet
 npx hardhat test --grep "HTSAdapterTests @bsc @test" --network bsc_testnet
+
+### WHBAR flow
+
+npx hardhat deploy-whbar --network hedera_testnet
+npx hardhat deploy-erc20 --decimals 8 --mint 100000000 --network bsc_testnet
+
+npx hardhat deploy-oft-adapter --token <whbar_hedera_address> --network hedera_testnet
+npx hardhat deploy-oft-adapter --token <erc20_bsc_address> --network bsc_testnet
+
+npx hardhat set-peer --source <hedera_oft_adapter_address> --target <bsc_oft_adapter_address> --network hedera_testnet
+npx hardhat set-peer --source <bsc_oft_adapter_address> --target <hedera_oft_adapter_address> --network bsc_testnet
+
+fill the .env
+
+npx hardhat test --grep "WHBARTests @hedera @deposit" --network hedera_testnet
+
+npx hardhat test --grep "WHBARTests @hedera @fund-and-approve" --network hedera_testnet
+npx hardhat test --grep "WHBARTests @bsc @fund-and-approve" --network bsc_testnet
+
+npx hardhat test --grep "WHBARTests @hedera @send" --network hedera_testnet
+npx hardhat test --grep "WHBARTests @bsc @send" --network bsc_testnet
+
+npx hardhat test --grep "WHBARTests @hedera @test" --network hedera_testnet
+npx hardhat test --grep "WHBARTests @bsc @test" --network bsc_testnet
