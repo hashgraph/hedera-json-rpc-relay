@@ -21,6 +21,7 @@
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
+import { BigNumber } from 'bignumber.js';
 import { expect } from 'chai';
 import { ethers } from 'ethers';
 import pino from 'pino';
@@ -29,24 +30,16 @@ import { Registry } from 'prom-client';
 import { MirrorNodeClientError, predefined } from '../../src';
 import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
-import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-import { getRequestId, mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from '../helpers';
-
-const registry = new Registry();
-import { BigNumber } from 'bignumber.js';
-
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
-
-const logger = pino();
-const noTransactions = '?transactions=false';
-const requestDetails = new RequestDetails({ requestId: getRequestId(), ipAddress: '0.0.0.0' });
+import { mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from '../helpers';
 
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
 
   const registry = new Registry();
-  const logger = pino();
+  const logger = pino({ level: 'silent' });
   const noTransactions = '?transactions=false';
   const requestDetails = new RequestDetails({ requestId: 'mirrorNodeClientTest', ipAddress: '0.0.0.0' });
 

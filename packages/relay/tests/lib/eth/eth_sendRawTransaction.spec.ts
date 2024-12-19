@@ -187,7 +187,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sinon.stub(txResponseMock, 'getReceipt').onFirstCall().resolves({ fileId: FILE_ID });
       txResponseMock.transactionId = TransactionId.fromString(transactionIdServicesFormat);
 
-      sdkClientStub.logger = pino();
+      sdkClientStub.logger = pino({ level: 'silent' });
       sdkClientStub.deleteFile.resolves();
 
       restMock.onGet(contractResultEndpoint).reply(200, { hash: expectedTxHash });

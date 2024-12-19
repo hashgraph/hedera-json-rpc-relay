@@ -1,8 +1,8 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../he
 chai.use(chaiAsPromised);
 
 describe('EvmAddressHbarSpendingPlanRepository', function () {
-  const logger = pino();
+  const logger = pino({ level: 'silent' });
   const registry = new Registry();
   const requestDetails = new RequestDetails({
     requestId: 'evmAddressHbarSpendingPlanRepositoryTest',
