@@ -18,19 +18,20 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import * as _ from 'lodash';
+import { Logger } from 'pino';
+
+import { nullableNumberTo0x, numberTo0x, parseNumericEnvVar, toHash32 } from '../../../../formatters';
+import { MirrorNodeClient } from '../../../clients';
 import constants from '../../../constants';
 import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
-import { ICommonService } from './ICommonService';
-import { Logger } from 'pino';
-import { MirrorNodeClient } from '../../../clients';
-import { nullableNumberTo0x, numberTo0x, parseNumericEnvVar, toHash32 } from '../../../../formatters';
-import { SDKClientError } from '../../../errors/SDKClientError';
 import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
+import { SDKClientError } from '../../../errors/SDKClientError';
 import { Log } from '../../../model';
-import * as _ from 'lodash';
-import { CacheService } from '../../cacheService/cacheService';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '../../../types';
+import { CacheService } from '../../cacheService/cacheService';
+import { ICommonService } from './ICommonService';
 
 /**
  * Create a new Common Service implementation.
@@ -334,7 +335,7 @@ export class CommonService implements ICommonService {
         new Log({
           address: log.address,
           blockHash: toHash32(log.block_hash),
-          blockNumber: numberTo0x(log.block_number),
+          blockNumber: nullableNumberTo0x(log.block_number),
           data: log.data,
           logIndex: nullableNumberTo0x(log.index),
           removed: false,

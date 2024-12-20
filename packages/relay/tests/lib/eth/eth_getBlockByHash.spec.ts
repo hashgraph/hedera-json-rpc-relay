@@ -19,20 +19,21 @@
  */
 
 import { expect, use } from 'chai';
-import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
 
+import { ASCIIToHex, numberTo0x, prepend0x } from '../../../dist/formatters';
 import { predefined } from '../../../src';
+import { SDKClient } from '../../../src/lib/clients';
 import { EthImpl } from '../../../src/lib/eth';
+import { RequestDetails } from '../../../src/lib/types';
+import RelayAssertions from '../../assertions';
 import {
   blockLogsBloom,
   defaultContractResults,
   defaultDetailedContractResults,
   overrideEnvsInMochaDescribe,
 } from '../../helpers';
-import { SDKClient } from '../../../src/lib/clients';
-import RelayAssertions from '../../assertions';
-import { ASCIIToHex, numberTo0x, prepend0x } from '../../../dist/formatters';
 import {
   ACCOUNT_WITHOUT_TRANSACTIONS,
   BLOCK_HASH,
@@ -54,13 +55,13 @@ import {
   DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
   DEFAULT_CONTRACT,
   DEFAULT_ETH_GET_BLOCK_BY_LOGS,
+  DEFAULT_LOGS,
   DEFAULT_NETWORK_FEES,
   LINKS_NEXT_RES,
   MOCK_ACCOUNT_WITHOUT_TRANSACTIONS,
   NO_SUCH_BLOCK_EXISTS_RES,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
-import { RequestDetails } from '../../../src/lib/types';
 
 use(chaiAsPromised);
 
@@ -70,7 +71,7 @@ let ethImplLowTransactionCount: EthImpl;
 
 describe('@ethGetBlockByHash using MirrorNode', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
+  const { restMock, hapiServiceInstance, ethImpl, cacheService, mirrorNodeInstance, logger, registry } =
     generateEthTestEnv(true);
   const results = defaultContractResults.results;
   const TOTAL_GAS_USED = numberTo0x(results[0].gas_used + results[1].gas_used);
@@ -363,6 +364,31 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
         },
         showDetails,
       );
+    });
+  });
+
+  it('eth_getBlockByHash should gracefully handle nulbale entities found in logs', async function () {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
+    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+
+    const nullEntitiedLogs = {
+      logs: [{ ...DEFAULT_LOGS.logs[0], block_number: null, transaction_index: null, logIndex: null }],
+    };
+
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, nullEntitiedLogs);
+
+    const result = await ethImpl.getBlockByHash(BLOCK_HASH, false, requestDetails);
+
+    RelayAssertions.assertBlock(result, {
+      hash: BLOCK_HASH_TRIMMED,
+      gasUsed: TOTAL_GAS_USED,
+      number: BLOCK_NUMBER_HEX,
+      parentHash: BLOCK_HASH_PREV_TRIMMED,
+      timestamp: BLOCK_TIMESTAMP_HEX,
+      transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
     });
   });
 });
