@@ -43,25 +43,29 @@ And deploy the whbar (local docker image tag):
 - envs:
   - NETWORK='testnet' # available networks (mainnet, testnet, previewnet)
   - ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000' # 32 bytes ECDSA private key
+  - INITIAL_BALANCE='1000' # denominated in HBARs
 ```
 docker run
     -it
     -e NETWORK='testnet'
     -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
+    -e INITIAL_BALANCE='1000'
     whbar-hardhat-example-1.0
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 
-Or you can use the already pushed image (natanasow/whbar-hardhat-example:1.6):
+Or you can use the already pushed image (natanasow/whbar-hardhat-example:2.0):
 - envs:
   - NETWORK='testnet' # available networks (mainnet, testnet, previewnet)
   - ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000' # 32 bytes ECDSA private key
+  - INITIAL_BALANCE='1000' # denominated in HBARs
 ```
 docker run
     -it
     -e NETWORK='testnet'
     -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
-    natanasow/whbar-hardhat-example:1.6
+    -e INITIAL_BALANCE='1000'
+    natanasow/whbar-hardhat-example:2.0
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 

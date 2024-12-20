@@ -1,5 +1,6 @@
 require('dotenv').config();
 require('@nomicfoundation/hardhat-toolbox');
+const fund = require('./fund');
 
 module.exports = {
   solidity: {
@@ -41,4 +42,6 @@ task('deploy-whbar', 'Deploy WHBAR')
     await contract.waitForDeployment();
 
     console.log(`(${hre.network.name}) WHBAR deployed to: ` + contract.target);
+
+    await fund(hre, Number(process.env.INITIAL_BALANCE), contract.target);
   });
