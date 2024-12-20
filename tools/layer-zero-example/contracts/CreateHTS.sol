@@ -5,9 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./hts/HederaTokenService.sol";
 import "./hts/IHederaTokenService.sol";
 import "./hts/KeyHelper.sol";
-import "./hts/ExpiryHelper.sol";
 
-contract CreateHTS is Ownable, KeyHelper, ExpiryHelper, HederaTokenService {
+contract CreateHTS is Ownable, KeyHelper, HederaTokenService {
     address public htsTokenAddress;
 
     constructor(string memory _name, string memory _symbol, address _delegate) payable Ownable(_delegate) {
@@ -32,10 +31,10 @@ contract CreateHTS is Ownable, KeyHelper, ExpiryHelper, HederaTokenService {
         (int responseCode, address tokenAddress) = HederaTokenService.createFungibleToken(
             token, 1000, int32(int256(uint256(8)))
         );
-        require(responseCode == HederaResponseCodes.SUCCESS, "Failed to create HTS token");
+        require(responseCode == HederaTokenService.SUCCESS_CODE, "Failed to create HTS token");
 
         int256 transferResponse = HederaTokenService.transferToken(tokenAddress, address(this), msg.sender, 1000);
-        require(transferResponse == HederaResponseCodes.SUCCESS, "HTS: Transfer failed");
+        require(transferResponse == HederaTokenService.SUCCESS_CODE, "HTS: Transfer failed");
 
         htsTokenAddress = tokenAddress;
     }

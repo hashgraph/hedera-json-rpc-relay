@@ -2,10 +2,13 @@
 pragma solidity >=0.5.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
-import "./HederaResponseCodes.sol";
 import "./IHederaTokenService.sol";
 
 abstract contract HederaTokenService {
+    // all response codes are defined here https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/system-contracts/HederaResponseCodes.sol
+    int32 constant UNKNOWN_CODE = 21;
+    int32 constant SUCCESS_CODE = 22;
+
     address constant precompileAddress = address(0x167);
     // 90 days in seconds
     int32 constant defaultAutoRenewPeriod = 7776000;
@@ -19,27 +22,6 @@ abstract contract HederaTokenService {
 
     /// Generic event
     event CallResponseEvent(bool, bytes);
-
-    /// Performs transfers among combinations of tokens and hbars
-    /// @param transferList the list of hbar transfers to do
-    /// @param tokenTransfers the list of transfers to do
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @custom:version 0.3.0 the signature of the previous version was cryptoTransfer(TokenTransferList[] memory tokenTransfers)
-    function cryptoTransfer(
-        IHederaTokenService.TransferList memory transferList,
-        IHederaTokenService.TokenTransferList[] memory tokenTransfers
-    ) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(
-                IHederaTokenService.cryptoTransfer.selector,
-                transferList,
-                tokenTransfers
-            )
-        );
-        responseCode = success
-            ? abi.decode(result, (int32))
-            : HederaResponseCodes.UNKNOWN;
-    }
 
     /// Mints an amount of the token to the defined treasury account
     /// @param token The token for which to mint tokens. If token does not exist, transaction results in
@@ -74,7 +56,7 @@ abstract contract HederaTokenService {
         );
         (responseCode, newTotalSupply, serialNumbers) = success
             ? abi.decode(result, (int32, int64, int64[]))
-            : (HederaResponseCodes.UNKNOWN, int64(0), new int64[](0));
+            : (HederaTokenService.UNKNOWN_CODE, int64(0), new int64[](0));
     }
 
     /// Burns an amount of the token from the defined treasury account
@@ -101,39 +83,7 @@ abstract contract HederaTokenService {
         );
         (responseCode, newTotalSupply) = success
             ? abi.decode(result, (int32, int64))
-            : (HederaResponseCodes.UNKNOWN, int64(0));
-    }
-
-    function associateToken(
-        address account,
-        address token
-    ) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(
-                IHederaTokenService.associateToken.selector,
-                account,
-                token
-            )
-        );
-        responseCode = success
-            ? abi.decode(result, (int32))
-            : HederaResponseCodes.UNKNOWN;
-    }
-
-    function dissociateToken(
-        address account,
-        address token
-    ) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(
-                IHederaTokenService.dissociateToken.selector,
-                account,
-                token
-            )
-        );
-        responseCode = success
-            ? abi.decode(result, (int32))
-            : HederaResponseCodes.UNKNOWN;
+            : (HederaTokenService.UNKNOWN_CODE, int64(0));
     }
 
     /// Creates a Fungible Token with the specified properties
@@ -165,84 +115,7 @@ abstract contract HederaTokenService {
 
         (responseCode, tokenAddress) = success
             ? abi.decode(result, (int32, address))
-            : (HederaResponseCodes.UNKNOWN, address(0));
-    }
-
-    /// Retrieves general token info for a given token
-    /// @param token The ID of the token as a solidity address
-    /// @dev This function reverts if the call is not successful
-    function getTokenInfo(
-        address token
-    )
-        internal
-        returns (
-            int responseCode,
-            IHederaTokenService.TokenInfo memory tokenInfo
-        )
-    {
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(
-                IHederaTokenService.getTokenInfo.selector,
-                token
-            )
-        );
-        IHederaTokenService.TokenInfo memory defaultTokenInfo;
-        (responseCode, tokenInfo) = success
-            ? abi.decode(result, (int32, IHederaTokenService.TokenInfo))
-            : (HederaResponseCodes.UNKNOWN, defaultTokenInfo);
-    }
-
-    /// Allows spender to withdraw from your account multiple times, up to the value amount. If this function is called
-    /// again it overwrites the current allowance with value.
-    /// Only Applicable to Fungible Tokens
-    /// @param token The hedera token address to approve
-    /// @param spender the account authorized to spend
-    /// @param amount the amount of tokens authorized to spend.
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function approve(
-        address token,
-        address spender,
-        uint256 amount
-    ) internal returns (int responseCode) {
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(
-                IHederaTokenService.approve.selector,
-                token,
-                spender,
-                amount
-            )
-        );
-        responseCode = success
-            ? abi.decode(result, (int32))
-            : HederaResponseCodes.UNKNOWN;
-    }
-
-    /// Transfers `amount` tokens from `from` to `to` using the
-    //  allowance mechanism. `amount` is then deducted from the caller's allowance.
-    /// Only applicable to fungible tokens
-    /// @param token The address of the fungible Hedera token to transfer
-    /// @param from The account address of the owner of the token, on the behalf of which to transfer `amount` tokens
-    /// @param to The account address of the receiver of the `amount` tokens
-    /// @param amount The amount of tokens to transfer from `from` to `to`
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function transferFrom(
-        address token,
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (int64 responseCode) {
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(
-                IHederaTokenService.transferFrom.selector,
-                token,
-                from,
-                to,
-                amount
-            )
-        );
-        responseCode = success
-            ? abi.decode(result, (int32))
-            : HederaResponseCodes.UNKNOWN;
+            : (HederaTokenService.UNKNOWN_CODE, address(0));
     }
 
     /// Transfers tokens where the calling account/contract is implicitly the first entry in the token transfer list,
@@ -269,6 +142,6 @@ abstract contract HederaTokenService {
         );
         responseCode = success
             ? abi.decode(result, (int32))
-            : HederaResponseCodes.UNKNOWN;
+            : HederaTokenService.UNKNOWN_CODE;
     }
 }

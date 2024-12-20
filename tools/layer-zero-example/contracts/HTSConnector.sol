@@ -5,21 +5,20 @@ import {OFTCore} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFTCore.sol";
 import "./hts/HederaTokenService.sol";
 import "./hts/IHederaTokenService.sol";
 import "./hts/KeyHelper.sol";
-import "./hts/ExpiryHelper.sol";
 
 /**
- * @title OFT Contract
- * @dev OFT is an ERC-20 token that extends the functionality of the OFTCore contract.
+ * @title HTS Connector
+ * @dev HTS Connector is a HTS token that extends the functionality of the OFTCore contract.
  */
-abstract contract HTSConnector is OFTCore, KeyHelper, ExpiryHelper, HederaTokenService {
+abstract contract HTSConnector is OFTCore, KeyHelper, HederaTokenService {
     address public htsTokenAddress;
 
-    event CreatedToken(address tokenAddress);
+    event TokenCreated(address tokenAddress);
 
     /**
-     * @dev Constructor for the OFT contract.
-     * @param _name The name of the OFT.
-     * @param _symbol The symbol of the OFT.
+     * @dev Constructor for the HTS Connector contract.
+     * @param _name The name of HTS token
+     * @param _symbol The symbol of HTS token
      * @param _lzEndpoint The LayerZero endpoint address.
      * @param _delegate The delegate capable of making OApp configurations inside of the endpoint.
      */
@@ -50,36 +49,31 @@ abstract contract HTSConnector is OFTCore, KeyHelper, ExpiryHelper, HederaTokenS
         (int responseCode, address tokenAddress) = HederaTokenService.createFungibleToken(
             token, 1000, int32(int256(uint256(8)))
         );
-        require(responseCode == HederaResponseCodes.SUCCESS, "Failed to create HTS token");
+        require(responseCode == HederaTokenService.SUCCESS_CODE, "Failed to create HTS token");
 
         int256 transferResponse = HederaTokenService.transferToken(tokenAddress, address(this), msg.sender, 1000);
-        require(transferResponse == HederaResponseCodes.SUCCESS, "HTS: Transfer failed");
+        require(transferResponse == HederaTokenService.SUCCESS_CODE, "HTS: Transfer failed");
 
         htsTokenAddress = tokenAddress;
 
-        emit CreatedToken(tokenAddress);
+        emit TokenCreated(tokenAddress);
     }
 
     /**
-     * @dev Retrieves the address of the underlying ERC20 implementation.
-     * @return The address of the OFT token.
-     *
-     * @dev In the case of OFT, address(this) and erc20 are the same contract.
+     * @dev Retrieves the address of the underlying HTS implementation.
+     * @return The address of the HTS token.
      */
     function token() public view returns (address) {
-        return address(this);
+        return htsTokenAddress;
     }
 
     /**
-     * @notice Indicates whether the OFT contract requires approval of the 'token()' to send.
+     * @notice Indicates whether the HTS Connector contract requires approval of the 'token()' to send.
      * @return requiresApproval Needs approval of the underlying token implementation.
-     *
-     * @dev In the case of OFT where the contract IS the token, approval is NOT required.
      */
     function approvalRequired() external pure virtual returns (bool) {
         return false;
     }
-
 
     /**
      * @dev Burns tokens from the sender's specified balance.
@@ -99,10 +93,10 @@ abstract contract HTSConnector is OFTCore, KeyHelper, ExpiryHelper, HederaTokenS
         (amountSentLD, amountReceivedLD) = _debitView(_amountLD, _minAmountLD, _dstEid);
 
         int256 transferResponse = HederaTokenService.transferToken(htsTokenAddress, _from, address(this), int64(uint64(_amountLD)));
-        require(transferResponse == HederaResponseCodes.SUCCESS, "HTS: Transfer failed");
+        require(transferResponse == HederaTokenService.SUCCESS_CODE, "HTS: Transfer failed");
 
         (int256 response,) = HederaTokenService.burnToken(htsTokenAddress, int64(uint64(amountSentLD)), new int64[](0));
-        require(response == HederaResponseCodes.SUCCESS, "HTS: Burn failed");
+        require(response == HederaTokenService.SUCCESS_CODE, "HTS: Burn failed");
     }
 
     /**
@@ -118,10 +112,10 @@ abstract contract HTSConnector is OFTCore, KeyHelper, ExpiryHelper, HederaTokenS
         uint32 /*_srcEid*/
     ) internal virtual override returns (uint256) {
         (int256 response, ,) = HederaTokenService.mintToken(htsTokenAddress, int64(uint64(_amountLD)), new bytes[](0));
-        require(response == HederaResponseCodes.SUCCESS, "HTS: Mint failed");
+        require(response == HederaTokenService.SUCCESS_CODE, "HTS: Mint failed");
 
         int256 transferResponse = HederaTokenService.transferToken(htsTokenAddress, address(this), _to, int64(uint64(_amountLD)));
-        require(transferResponse == HederaResponseCodes.SUCCESS, "HTS: Transfer failed");
+        require(transferResponse == HederaTokenService.SUCCESS_CODE, "HTS: Transfer failed");
 
         return _amountLD;
     }

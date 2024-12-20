@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./hts/HederaTokenService.sol";
 import "./hts/IHederaTokenService.sol";
 import "./hts/KeyHelper.sol";
-import "./hts/ExpiryHelper.sol";
 import "./HTSConnector.sol";
 
 contract ExampleHTSConnector is Ownable, HTSConnector {

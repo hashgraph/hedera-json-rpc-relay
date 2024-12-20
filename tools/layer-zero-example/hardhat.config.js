@@ -54,6 +54,8 @@ module.exports = {
 const getEndpointAddress = (network) => {
   let ENDPOINT_V2;
 
+  // we're using the official LZ endpoints
+  // a list of all endpoint addresses can be found here https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts
   if (network === 'hedera_testnet') {
     ENDPOINT_V2 = '0xbD672D1562Dd32C23B563C989d8140122483631d';
   } else if (network === 'bsc_testnet') {

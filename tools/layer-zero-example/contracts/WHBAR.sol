@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.22;
 
+// the contract is based on WETH9 with updated solidity versions and functions
 contract WHBAR {
     string public name = "Wrapped HBAR";
     string public symbol = "WHBAR";
