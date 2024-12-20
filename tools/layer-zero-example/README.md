@@ -192,23 +192,40 @@ npx hardhat test --grep "ONFTAdapterTests @bsc @test" --network bsc_testnet
 
 ### HTS Connector
 
+That's a variant of OFT but using HTS token. Due to several incompatibilities between ERC20 and HTS tokens, we're not able to use it out-of-the-box. All of them are described in the "HTS Adapter vs HTS Connector" section below.
+
+- Deploying OFT on an EVM chain and HTS Connector on the Hedera chain. The HTS Connector extends OFTCore and creates HTS token within its constructor. Also, overrides OFTCore _debit and _credit with related HTS mint and burn precompile calls
+```
 npx hardhat deploy-hts-connector --network hedera_testnet
 npx hardhat deploy-oft --decimals 8 --mint 1000 --network bsc_testnet
+```
 
+- In order to connect OFTs together, we need to set the peer of the target OFT, more info can be found here https://docs.layerzero.network/v2/developers/evm/getting-started#connecting-your-contracts
+```
 npx hardhat set-peer --source <hedera_oft_address> --target <bsc_oft_address> --network hedera_testnet
 npx hardhat set-peer --source <bsc_oft_address> --target <hedera_oft_address> --network bsc_testnet
+```
 
-fill the .env
+- Fill the .env
 
+- Approving HTS Connector to use some signer's tokens
+```
 npx hardhat test --grep "HTSConnectorTests @hedera @approve" --network hedera_testnet
+```
 
+- On these steps, we're sending tokens from an EVM chain to Hedera and receiving HTS tokens and vice versa
+```
 npx hardhat test --grep "HTSConnectorTests @hedera @send" --network hedera_testnet
 npx hardhat test --grep "HTSConnectorTests @bsc @send" --network bsc_testnet
+```
 
-Wait a couple of minutes, the LZ progress can be tracked on https://testnet.layerzeroscan.com/tx/<tx_hash>
+- Wait a couple of minutes, the LZ progress can be tracked on https://testnet.layerzeroscan.com/tx/<tx_hash>
 
+Finally we're checking whether the balances are expected on both source and destination chains
+```
 npx hardhat test --grep "HTSConnectorTests @hedera @test" --network hedera_testnet
 npx hardhat test --grep "HTSConnectorTests @bsc @test" --network bsc_testnet
+```
 
 ### HTS Adapter
 
@@ -257,3 +274,9 @@ npx hardhat test --grep "WHBARTests @bsc @send" --network bsc_testnet
 
 npx hardhat test --grep "WHBARTests @hedera @test" --network hedera_testnet
 npx hardhat test --grep "WHBARTests @bsc @test" --network bsc_testnet
+
+### Useful information:
+- The addresses of endpoints [here](https://github.com/hashgraph/hedera-json-rpc-relay/blob/1030-lz-setup/tools/layer-zero-example/hardhat.config.js#L60) are the official LZ endpoints. A entire list of LZ supported endpoints can be found on https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts.
+
+### HTS Adapter vs HTS Connector
+...
