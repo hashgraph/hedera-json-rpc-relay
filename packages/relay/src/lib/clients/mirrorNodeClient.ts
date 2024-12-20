@@ -1,8 +1,8 @@
-/* -
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -620,7 +620,10 @@ export class MirrorNodeClient {
       requestDetails,
     );
 
-    await this.cacheService.set(cachedLabel, block, MirrorNodeClient.GET_BLOCK_ENDPOINT, requestDetails);
+    if (block) {
+      await this.cacheService.set(cachedLabel, block, MirrorNodeClient.GET_BLOCK_ENDPOINT, requestDetails);
+    }
+
     return block;
   }
 
