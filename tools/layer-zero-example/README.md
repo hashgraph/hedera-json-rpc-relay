@@ -262,7 +262,8 @@ npx hardhat test --grep "HTSAdapterTests @bsc @fund-and-approve" --network bsc_t
 npx hardhat test --grep "HTSAdapterTests @hedera @send" --network hedera_testnet
 npx hardhat test --grep "HTSAdapterTests @bsc @send" --network bsc_testnet
 ```
-Wait a couple of minutes, the LZ progress can be tracked on https://testnet.layerzeroscan.com/tx/<tx_hash>
+
+- Wait a couple of minutes, the LZ progress can be tracked on `https://testnet.layerzeroscan.com/tx/<tx_hash>`
 
 - Finally we're checking whether the tokens are transferred successfully
 ```typescript
