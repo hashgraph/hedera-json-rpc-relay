@@ -27,6 +27,7 @@ import { ethers, Transaction } from 'ethers';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 
+import { ConfigName } from '../../../config-service/src/services/configName';
 import { JsonRpcError, predefined } from '../../src';
 import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
@@ -106,7 +107,7 @@ describe('Precheck', async function () {
 
     // @ts-ignore
     const mirrorNodeInstance = new MirrorNodeClient(
-      ConfigService.get('MIRROR_NODE_URL')!,
+      ConfigService.get(ConfigName.MIRROR_NODE_URL)! as string,
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),

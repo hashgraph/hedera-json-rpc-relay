@@ -1,8 +1,8 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import LogsContract from '../contracts/Logs.json';
 import CallerContract from '../contracts/Caller.json';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { parseOpenRPCDocument } from '@open-rpc/schema-utils-js';
+import { ConfigName } from '../../../config-service/src/services/configName';
 
 const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
 
@@ -68,7 +69,7 @@ addFormats(ajv);
 let execApisOpenRpcData;
 let relayOpenRpcData: any;
 
-const chainId = Number(ConfigService.get('CHAIN_ID') || 0x12a);
+const chainId = Number(ConfigService.get(ConfigName.CHAIN_ID) || 0x12a);
 
 let legacyTransaction = {
   chainId,

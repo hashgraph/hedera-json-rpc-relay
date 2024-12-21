@@ -26,6 +26,7 @@ import { Registry } from 'prom-client';
 import constants from '../../src/lib/constants';
 import { RelayImpl } from '../../src/lib/relay';
 import { withOverriddenEnvsInMochaTest } from '../helpers';
+import { ConfigName } from '../../../config-service/src/services/configName';
 
 const logger = pino({ level: 'silent' });
 let Relay;
@@ -41,8 +42,8 @@ describe('Net', async function () {
   });
 
   it('should execute "net_version"', function () {
-    const hederaNetwork: string = (ConfigService.get('HEDERA_NETWORK') || '{}').toLowerCase();
-    let expectedNetVersion = ConfigService.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
+    const hederaNetwork: string = ((ConfigService.get(ConfigName.HEDERA_NETWORK) as string) || '{}').toLowerCase();
+    let expectedNetVersion = ConfigService.get(ConfigName.CHAIN_ID) || constants.CHAIN_IDS[hederaNetwork] || '298';
     if (expectedNetVersion.startsWith('0x')) expectedNetVersion = parseInt(expectedNetVersion, 16).toString();
 
     const actualNetVersion = Relay.net().version();

@@ -39,6 +39,7 @@ import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
 import { RequestDetails } from '../../src/lib/types';
 import { defaultDetailedContractResults, overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../helpers';
+import { ConfigName } from '../../../config-service/src/services/configName';
 
 use(chaiAsPromised);
 
@@ -128,7 +129,7 @@ describe('eth_getBlockBy', async function () {
 
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      ConfigService.get('MIRROR_NODE_URL') ?? '',
+      (ConfigService.get(ConfigName.MIRROR_NODE_URL) as string) ?? '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

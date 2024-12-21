@@ -23,10 +23,12 @@ import dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
-import { Server } from 'node:http';
-
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { Server } from 'node:http';
+
+import { ConfigName } from '@hashgraph/json-rpc-config-service/src/services/configName';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { setServerTimeout } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/utils';
 import app from '@hashgraph/json-rpc-server/dist/server';
 import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
@@ -83,12 +85,12 @@ describe('RPC Server Acceptance Tests', function () {
   before(async () => {
     // configuration details
     logger.info('Acceptance Tests Configurations successfully loaded');
-    logger.info(`LOCAL_NODE: ${ConfigService.get('LOCAL_NODE')}`);
-    logger.info(`CHAIN_ID: ${ConfigService.get('CHAIN_ID')}`);
+    logger.info(`LOCAL_NODE: ${ConfigService.get(ConfigName.LOCAL_NODE)}`);
+    logger.info(`CHAIN_ID: ${ConfigService.get(ConfigName.CHAIN_ID)}`);
     logger.info(`HEDERA_NETWORK: ${NETWORK}`);
     logger.info(`OPERATOR_ID_MAIN: ${OPERATOR_ID}`);
     logger.info(`MIRROR_NODE_URL: ${MIRROR_NODE_URL}`);
-    logger.info(`E2E_RELAY_HOST: ${ConfigService.get('E2E_RELAY_HOST')}`);
+    logger.info(`E2E_RELAY_HOST: ${ConfigService.get(ConfigName.E2E_RELAY_HOST)}`);
 
     if (global.relayIsLocal) {
       runLocalRelay();
@@ -148,7 +150,7 @@ describe('RPC Server Acceptance Tests', function () {
     }
 
     const socketServer: Server = global.socketServer;
-    if (ConfigService.get('TEST_WS_SERVER') && socketServer !== undefined) {
+    if (ConfigService.get(ConfigName.TEST_WS_SERVER) && socketServer !== undefined) {
       socketServer.close();
     }
   });
@@ -179,7 +181,7 @@ describe('RPC Server Acceptance Tests', function () {
     global.relayServer = relayServer;
     setServerTimeout(relayServer);
 
-    if (ConfigService.get('TEST_WS_SERVER')) {
+    if (ConfigService.get(ConfigName.TEST_WS_SERVER)) {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
       global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
     }

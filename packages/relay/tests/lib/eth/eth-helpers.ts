@@ -24,6 +24,7 @@ import EventEmitter from 'events';
 import pino from 'pino';
 import { register, Registry } from 'prom-client';
 
+import { ConfigName } from '../../../../config-service/src/services/configName';
 import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import constants from '../../../src/lib/constants';
@@ -55,7 +56,7 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
   const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
   // @ts-ignore
   const mirrorNodeInstance = new MirrorNodeClient(
-    ConfigService.get('MIRROR_NODE_URL') || '',
+    ConfigService.get(ConfigName.MIRROR_NODE_URL) as string || '',
     logger.child({ name: `mirror-node` }),
     registry,
     cacheService,

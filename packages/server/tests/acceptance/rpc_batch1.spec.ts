@@ -38,6 +38,7 @@ import {
 import { expect } from 'chai';
 import { ethers } from 'ethers';
 
+import { ConfigName } from '../../../config-service/src/services/configName';
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import basicContract from '../../tests/contracts/Basic.json';
 import RelayCalls from '../../tests/helpers/constants';
@@ -73,7 +74,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let account2Address: string;
   let expectedGasPrice: string;
 
-  const CHAIN_ID = (ConfigService.get('CHAIN_ID') as string) || '0x12a';
+  const CHAIN_ID = (ConfigService.get(ConfigName.CHAIN_ID) as string) || '0x12a';
   const requestId = 'rpc_batch1Test';
   const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
   const requestDetails = JSON.stringify(new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' }));
@@ -84,9 +85,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   const TEN_HBAR = Utils.add0xPrefix(
     (BigInt(new Hbar(10).toTinybars().toString()) * BigInt(Constants.TINYBAR_TO_WEIBAR_COEF)).toString(16),
   );
-  const gasPriceDeviation = parseFloat((ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2') as string);
+  const gasPriceDeviation = parseFloat((ConfigService.get(ConfigName.TEST_GAS_PRICE_DEVIATION) ?? '0.2') as string);
   const sendRawTransaction = relay.sendRawTransaction;
-  const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING') as boolean;
+  const useAsyncTxProcessing = ConfigService.get(ConfigName.USE_ASYNC_TX_PROCESSING) as boolean;
 
   /**
    * resolves long zero addresses to EVM addresses by querying mirror node

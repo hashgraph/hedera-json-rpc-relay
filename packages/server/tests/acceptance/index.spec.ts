@@ -23,8 +23,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
-// Constants
+// External resources
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { ConfigName } from '@hashgraph/json-rpc-config-service/src/services/configName';
+// Constants
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
 // Hashgraph SDK
@@ -99,7 +101,7 @@ describe('RPC Server Acceptance Tests', function () {
   };
 
   // leak detection middleware
-  if (ConfigService.get('MEMWATCH_ENABLED')) {
+  if (ConfigService.get(ConfigName.MEMWATCH_ENABLED)) {
     Utils.captureMemoryLeaks(new GCProfiler());
   }
 
@@ -108,12 +110,12 @@ describe('RPC Server Acceptance Tests', function () {
   before(async () => {
     // configuration details
     logger.info('Acceptance Tests Configurations successfully loaded');
-    logger.info(`LOCAL_NODE: ${ConfigService.get('LOCAL_NODE')}`);
-    logger.info(`CHAIN_ID: ${ConfigService.get('CHAIN_ID')}`);
+    logger.info(`LOCAL_NODE: ${ConfigService.get(ConfigName.LOCAL_NODE)}`);
+    logger.info(`CHAIN_ID: ${ConfigService.get(ConfigName.CHAIN_ID)}`);
     logger.info(`HEDERA_NETWORK: ${NETWORK}`);
     logger.info(`OPERATOR_ID_MAIN: ${OPERATOR_ID}`);
     logger.info(`MIRROR_NODE_URL: ${MIRROR_NODE_URL}`);
-    logger.info(`E2E_RELAY_HOST: ${ConfigService.get('E2E_RELAY_HOST')}`);
+    logger.info(`E2E_RELAY_HOST: ${ConfigService.get(ConfigName.E2E_RELAY_HOST)}`);
 
     if (global.relayIsLocal) {
       runLocalRelay();
@@ -125,7 +127,7 @@ describe('RPC Server Acceptance Tests', function () {
       RELAY_URL,
       CHAIN_ID,
       Utils.generateRequestId(),
-      Number(ConfigService.get('TEST_INITIAL_ACCOUNT_STARTING_BALANCE') || 2000),
+      Number(ConfigService.get(ConfigName.TEST_INITIAL_ACCOUNT_STARTING_BALANCE) || 2000),
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);
@@ -196,7 +198,7 @@ describe('RPC Server Acceptance Tests', function () {
       relayServer.close();
     }
 
-    if (ConfigService.get('TEST_WS_SERVER') && global.socketServer !== undefined) {
+    if (ConfigService.get(ConfigName.TEST_WS_SERVER) && global.socketServer !== undefined) {
       global.socketServer.close();
     }
   }
@@ -210,7 +212,7 @@ describe('RPC Server Acceptance Tests', function () {
     global.relayServer = relayServer;
     setServerTimeout(relayServer);
 
-    if (ConfigService.get('TEST_WS_SERVER')) {
+    if (ConfigService.get(ConfigName.TEST_WS_SERVER)) {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
       global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
     }

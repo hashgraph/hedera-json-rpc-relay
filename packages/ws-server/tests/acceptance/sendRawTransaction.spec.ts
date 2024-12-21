@@ -19,23 +19,25 @@
  */
 
 // external resources
-import { expect } from 'chai';
-import { ethers, WebSocketProvider } from 'ethers';
-import { WsTestConstant, WsTestHelper } from '../helper';
-import { predefined } from '@hashgraph/json-rpc-relay/dist';
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
-import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
 import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { expect } from 'chai';
+import { ethers, WebSocketProvider } from 'ethers';
+
+import { ConfigName } from '../../../config-service/src/services/configName';
+import { WsTestConstant, WsTestHelper } from '../helper';
 
 describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
   const METHOD_NAME = 'eth_sendRawTransaction';
-  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
+  const CHAIN_ID = ConfigService.get(ConfigName.CHAIN_ID) || '0x12a';
   const INVALID_PARAMS = [
     [],
     [''],

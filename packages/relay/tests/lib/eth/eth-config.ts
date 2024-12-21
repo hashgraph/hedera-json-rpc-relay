@@ -19,6 +19,10 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+
+import { ConfigName } from '../../../../config-service/src/services/configName';
+import { nanOrNumberTo0x,numberTo0x } from '../../../dist/formatters';
+import constants from '../../../src/lib/constants';
 import {
   defaultDetailedContractResultByHash,
   defaultEvmAddress,
@@ -29,8 +33,6 @@ import {
   mockData,
   toHex,
 } from '../../helpers';
-import { numberTo0x, nanOrNumberTo0x } from '../../../dist/formatters';
-import constants from '../../../src/lib/constants';
 
 export const BLOCK_TRANSACTION_COUNT = 77;
 export const GAS_USED_1 = 200000;
@@ -119,7 +121,7 @@ export const CONTRACT_RESULT_MOCK = {
 };
 
 export const CONTRACT_CALL_DATA = '0xef641f44';
-export const ETH_FEE_HISTORY_VALUE = ConfigService.get('ETH_FEE_HISTORY_FIXED') ?? true;
+export const ETH_FEE_HISTORY_VALUE = ConfigService.get(ConfigName.ETH_FEE_HISTORY_FIXED) ?? true;
 export const BLOCK_HASH_PREV_TRIMMED = '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298';
 export const BLOCK_NUMBER_HEX = `0x${BLOCK_NUMBER.toString(16)}`;
 export const MAX_GAS_LIMIT = 250000;
