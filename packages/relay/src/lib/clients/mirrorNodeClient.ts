@@ -776,11 +776,9 @@ export class MirrorNodeClient {
     for (const contractObject of contractObjects) {
       if (
         contractObject &&
-        !(
-          contractObject.transaction_index &&
-          contractObject.block_number &&
-          contractObject.block_hash != EthImpl.emptyHex
-        )
+        (contractObject.transaction_index == null ||
+          contractObject.block_number == null ||
+          contractObject.block_hash == EthImpl.emptyHex)
       ) {
         if (this.logger.isLevelEnabled('debug')) {
           this.logger.debug(
