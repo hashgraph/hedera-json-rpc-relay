@@ -18,23 +18,30 @@
  *
  */
 
+import { fail } from 'assert';
+import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
-import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 import { Logger } from 'pino';
+import { Registry } from 'prom-client';
+import sinon from 'sinon';
+
+import { ASCIIToHex, hashNumber, numberTo0x, prepend0x } from '../../../dist/formatters';
 import { predefined } from '../../../src';
+import { MirrorNodeClient, SDKClient } from '../../../src/lib/clients';
+import constants from '../../../src/lib/constants';
 import { EthImpl } from '../../../src/lib/eth';
+import { Block, Transaction } from '../../../src/lib/model';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { RequestDetails } from '../../../src/lib/types';
+import RelayAssertions from '../../assertions';
 import {
   blockLogsBloom,
   defaultContractResults,
   defaultDetailedContractResults,
   overrideEnvsInMochaDescribe,
 } from '../../helpers';
-import { Block, Transaction } from '../../../src/lib/model';
-import { MirrorNodeClient, SDKClient } from '../../../src/lib/clients';
-import RelayAssertions from '../../assertions';
-import constants from '../../../src/lib/constants';
-import { ASCIIToHex, hashNumber, numberTo0x, prepend0x } from '../../../dist/formatters';
 import {
   BLOCK_HASH,
   BLOCK_HASH_PREV_TRIMMED,
@@ -63,6 +70,7 @@ import {
   DEFAULT_BLOCKS_RES,
   DEFAULT_CONTRACT_RES_REVERT,
   DEFAULT_ETH_GET_BLOCK_BY_LOGS,
+  DEFAULT_LOGS,
   DEFAULT_NETWORK_FEES,
   GAS_USED_1,
   GAS_USED_2,
@@ -76,12 +84,6 @@ import {
   NOT_FOUND_RES,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
-import { fail } from 'assert';
-import { RequestDetails } from '../../../src/lib/types';
-import MockAdapter from 'axios-mock-adapter';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
-import { Registry } from 'prom-client';
 
 use(chaiAsPromised);
 
@@ -607,6 +609,31 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
           showDetails,
         );
       });
+    });
+  });
+
+  it('eth_getBlockByNumber should gracefully handle nulbale entities found in logs', async function () {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
+    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+
+    const nullEntitiedLogs = {
+      logs: [{ ...DEFAULT_LOGS.logs[0], block_number: null, transaction_index: null, logIndex: null }],
+    };
+
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, nullEntitiedLogs);
+
+    const result = await ethImpl.getBlockByNumber(BLOCK_HASH, false, requestDetails);
+
+    RelayAssertions.assertBlock(result, {
+      hash: BLOCK_HASH_TRIMMED,
+      gasUsed: TOTAL_GAS_USED,
+      number: BLOCK_NUMBER_HEX,
+      parentHash: BLOCK_HASH_PREV_TRIMMED,
+      timestamp: BLOCK_TIMESTAMP_HEX,
+      transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
+      receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
     });
   });
 });

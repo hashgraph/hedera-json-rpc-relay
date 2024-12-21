@@ -1,8 +1,8 @@
-/* -
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -620,7 +620,10 @@ export class MirrorNodeClient {
       requestDetails,
     );
 
-    await this.cacheService.set(cachedLabel, block, MirrorNodeClient.GET_BLOCK_ENDPOINT, requestDetails);
+    if (block) {
+      await this.cacheService.set(cachedLabel, block, MirrorNodeClient.GET_BLOCK_ENDPOINT, requestDetails);
+    }
+
     return block;
   }
 
@@ -754,20 +757,39 @@ export class MirrorNodeClient {
    * In some very rare cases the /contracts/results api is called before all the data is saved in
    * the mirror node DB and `transaction_index` or `block_number` is returned as `undefined` or `block_hash` as `0x`.
    * A single re-fetch is sufficient to resolve this problem.
-   * @param {string} transactionIdOrHash - The transaction ID or hash
-   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   *
+   * @param {Function} getContractResultFunc - The function used to fetch the contract result.
+   *                                           It should accept parameters as a spread of arguments.
+   * @param {any[]} params - The parameters to be passed to `getContractResultFunc`.
+   *                         These are used to fetch the contract result.
+   * @returns {Promise<any>} - The resolved contract result, either fetched on the first attempt or after a retry.
    */
-  public async getContractResultWithRetry(transactionIdOrHash: string, requestDetails: RequestDetails) {
-    const contractResult = await this.getContractResult(transactionIdOrHash, requestDetails);
-    if (
-      contractResult &&
-      !(
-        contractResult.transaction_index &&
-        contractResult.block_number &&
-        contractResult.block_hash != EthImpl.emptyHex
-      )
-    ) {
-      return this.getContractResult(transactionIdOrHash, requestDetails);
+  public async getContractResultWithRetry(
+    getContractResultFunc: (...param: any) => any,
+    params: any[],
+    requestDetails: RequestDetails,
+  ): Promise<any> {
+    const shortDelay = 250;
+    const contractResult = await getContractResultFunc.call(this, ...params);
+    const contractObjects = Array.isArray(contractResult) ? contractResult : [contractResult];
+
+    for (const contractObject of contractObjects) {
+      if (
+        contractObject &&
+        (contractObject.transaction_index == null ||
+          contractObject.block_number == null ||
+          contractObject.block_hash == EthImpl.emptyHex)
+      ) {
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(
+            `${requestDetails.formattedRequestId} Contract result contains undefined transaction_index, block_number, or block_hash set to 0x. Retrying after a delay of ${shortDelay} ms.`,
+          );
+        }
+
+        // Backoff before repeating request
+        await new Promise((r) => setTimeout(r, shortDelay));
+        return getContractResultFunc.call(this, ...params);
+      }
     }
     return contractResult;
   }
@@ -870,14 +892,25 @@ export class MirrorNodeClient {
     return this.getQueryParams(queryParamObject);
   }
 
-  public async getContractResultsLogs(
+  /**
+   * In some very rare cases the /contracts/results/logs api is called before all the data is saved in
+   * the mirror node DB and `transaction_index`, `block_number`, or `index` is returned as `undefined`.
+   * A single re-fetch is sufficient to resolve this problem.
+   *
+   * @param {RequestDetails} requestDetails - Details used for logging and tracking the request.
+   * @param {IContractLogsResultsParams} [contractLogsResultsParams] - Parameters for querying contract logs results.
+   * @param {ILimitOrderParams} [limitOrderParams] - Parameters for limit and order when fetching the logs.
+   * @returns {Promise<any[]>} - A promise resolving to the paginated contract logs results.
+   */
+  public async getContractResultsLogsWithRetry(
     requestDetails: RequestDetails,
     contractLogsResultsParams?: IContractLogsResultsParams,
     limitOrderParams?: ILimitOrderParams,
-  ) {
+  ): Promise<any[]> {
+    const shortDelay = 250;
     const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
 
-    return this.getPaginatedResults(
+    const logResults = await this.getPaginatedResults(
       `${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`,
       MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
       MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
@@ -886,6 +919,31 @@ export class MirrorNodeClient {
       1,
       MirrorNodeClient.mirrorNodeContractResultsLogsPageMax,
     );
+
+    for (const log of logResults) {
+      if (log && (log.transaction_index == null || log.block_number == null || log.index == null)) {
+        console.log(logResults);
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(
+            `${requestDetails.formattedRequestId} Contract result log contains undefined transaction_index, block_number, or index. Retrying after a delay of ${shortDelay} ms.`,
+          );
+        }
+
+        // Backoff before repeating request
+        await new Promise((r) => setTimeout(r, shortDelay));
+        return this.getPaginatedResults(
+          `${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`,
+          MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
+          MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
+          requestDetails,
+          [],
+          1,
+          MirrorNodeClient.mirrorNodeContractResultsLogsPageMax,
+        );
+      }
+    }
+
+    return logResults;
   }
 
   public async getContractResultsLogsByAddress(
