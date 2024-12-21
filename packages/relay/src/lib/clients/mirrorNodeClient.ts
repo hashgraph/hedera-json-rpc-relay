@@ -757,20 +757,41 @@ export class MirrorNodeClient {
    * In some very rare cases the /contracts/results api is called before all the data is saved in
    * the mirror node DB and `transaction_index` or `block_number` is returned as `undefined` or `block_hash` as `0x`.
    * A single re-fetch is sufficient to resolve this problem.
-   * @param {string} transactionIdOrHash - The transaction ID or hash
-   * @param {RequestDetails} requestDetails - The request details for logging and tracking.
+   *
+   * @param {Function} getContractResultFunc - The function used to fetch the contract result.
+   *                                           It should accept parameters as a spread of arguments.
+   * @param {any[]} params - The parameters to be passed to `getContractResultFunc`.
+   *                         These are used to fetch the contract result.
+   * @returns {Promise<any>} - The resolved contract result, either fetched on the first attempt or after a retry.
    */
-  public async getContractResultWithRetry(transactionIdOrHash: string, requestDetails: RequestDetails) {
-    const contractResult = await this.getContractResult(transactionIdOrHash, requestDetails);
-    if (
-      contractResult &&
-      !(
-        contractResult.transaction_index &&
-        contractResult.block_number &&
-        contractResult.block_hash != EthImpl.emptyHex
-      )
-    ) {
-      return this.getContractResult(transactionIdOrHash, requestDetails);
+  public async getContractResultWithRetry(
+    getContractResultFunc: (...param: any) => any,
+    params: any[],
+    requestDetails: RequestDetails,
+  ): Promise<any> {
+    const shortDelay = 250;
+    const contractResult = await getContractResultFunc.call(this, ...params);
+    const contractObjects = Array.isArray(contractResult) ? contractResult : [contractResult];
+
+    for (const contractObject of contractObjects) {
+      if (
+        contractObject &&
+        !(
+          contractObject.transaction_index &&
+          contractObject.block_number &&
+          contractObject.block_hash != EthImpl.emptyHex
+        )
+      ) {
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(
+            `${requestDetails.formattedRequestId} Contract result contains undefined transaction_index, block_number, or block_hash set to 0x. Retrying after a delay of ${shortDelay} ms.`,
+          );
+        }
+
+        // Backoff before repeating request
+        await new Promise((r) => setTimeout(r, shortDelay));
+        return getContractResultFunc.call(this, ...params);
+      }
     }
     return contractResult;
   }
