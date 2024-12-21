@@ -1,8 +1,8 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import { SubscriptionTier } from '../../../../src/lib/db/types/hbarLimiter/subsc
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
 import { RequestDetails } from '../../../../src/lib/types';
+import { ConfigName } from '@hashgraph/json-rpc-config-service/src/services/configName';
 
 chai.use(chaiAsPromised);
 
@@ -61,7 +62,7 @@ describe('HBAR Rate Limit Service', function () {
   const mockPlanId = uuidV4(randomBytes(16));
   const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
   const operatorAddress = prepend0x(
-    AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
+    AccountId.fromString(ConfigService.get(ConfigName.OPERATOR_ID_MAIN) as string).toSolidityAddress(),
   );
 
   const requestDetails = new RequestDetails({ requestId: 'hbarLimitServiceTest', ipAddress: mockIpAddress });

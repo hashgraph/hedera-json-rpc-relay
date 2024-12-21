@@ -24,6 +24,7 @@ import crypto from 'crypto';
 import { ConfigService } from '../../../src/services';
 import { LoggerService } from '../../../src/services/loggerService';
 import { GlobalConfig } from '../../../dist/services/globalConfig';
+import { ConfigName } from '../../../src/services/configName';
 
 chai.use(chaiAsPromised);
 
@@ -47,8 +48,8 @@ describe('LoggerService tests', async function () {
   });
 
   it('should be able to return plain information', async () => {
-    const envName = GlobalConfig.ENTRIES.CHAIN_ID.envName;
-    const res = ConfigService.get(envName);
+    const envName = ConfigName.CHAIN_ID;
+    const res = ConfigService.get(envName) as string;
 
     expect(LoggerService.maskUpEnv(envName, res)).to.equal(`${envName} = ${res}`);
   });

@@ -20,9 +20,11 @@
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { expect, use } from 'chai';
-import { Registry } from 'prom-client';
-import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
+import pino from 'pino';
+import { Registry } from 'prom-client';
+
+import { ConfigName } from '../../../../config-service/src/services/configName';
 import { RelayImpl } from '../../../src';
 import { RequestDetails } from '../../../src/lib/types';
 
@@ -42,7 +44,7 @@ describe('@ethCommon', async function () {
     it('should execute "eth_chainId"', async function () {
       const chainId = Relay.eth().chainId(requestDetails);
 
-      expect(chainId).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(chainId).to.be.equal('0x' + Number(ConfigService.get(ConfigName.CHAIN_ID)).toString(16));
     });
 
     it('should execute "eth_accounts"', async function () {

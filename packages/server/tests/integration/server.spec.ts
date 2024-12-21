@@ -21,17 +21,16 @@
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 ConfigServiceTestHelper.appendEnvsFromPath(__dirname + '/test.env');
+import { predefined, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import Axios, { AxiosInstance } from 'axios';
 import { expect } from 'chai';
-import sinon from 'sinon';
 import { Server } from 'http';
+import Koa from 'koa';
+import sinon from 'sinon';
 import { GCProfiler } from 'v8';
-import Assertions from '../helpers/assertions';
-import { TracerType, Validator } from '../../src/validator';
-import RelayCalls from '../../tests/helpers/constants';
-import * as Constants from '../../src/validator/constants';
-import { Utils } from '../helpers/utils';
-import { predefined, RelayImpl } from '@hashgraph/json-rpc-relay';
+
+import { ConfigName } from '../../../config-service/src/services/configName';
 import {
   contractAddress1,
   contractAddress2,
@@ -40,8 +39,11 @@ import {
   overrideEnvsInMochaDescribe,
   withOverriddenEnvsInMochaTest,
 } from '../../../relay/tests/helpers';
-import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
-import Koa from 'koa';
+import { TracerType, Validator } from '../../src/validator';
+import * as Constants from '../../src/validator/constants';
+import RelayCalls from '../../tests/helpers/constants';
+import Assertions from '../helpers/assertions';
+import { Utils } from '../helpers/utils';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 
@@ -54,11 +56,11 @@ describe('RPC Server', function () {
   before(function () {
     populatePreconfiguredSpendingPlansSpy = sinon.spy(RelayImpl.prototype, <any>'populatePreconfiguredSpendingPlans');
     app = require('../../src/server').default;
-    testServer = app.listen(ConfigService.get('E2E_SERVER_PORT'));
+    testServer = app.listen(ConfigService.get(ConfigName.E2E_SERVER_PORT));
     testClient = BaseTest.createTestClient();
 
     // leak detection middleware
-    if (ConfigService.get('MEMWATCH_ENABLED')) {
+    if (ConfigService.get(ConfigName.MEMWATCH_ENABLED)) {
       Utils.captureMemoryLeaks(new GCProfiler());
     }
   });
@@ -118,7 +120,7 @@ describe('RPC Server', function () {
     });
 
     BaseTest.defaultResponseChecks(res);
-    expect(res.data.result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+    expect(res.data.result).to.be.equal('0x' + Number(ConfigService.get(ConfigName.CHAIN_ID)).toString(16));
   });
 
   it('validates enforcement of request id', async function () {
@@ -138,7 +140,7 @@ describe('RPC Server', function () {
   withOverriddenEnvsInMochaTest({ REQUEST_ID_IS_OPTIONAL: true }, async function () {
     xit('supports optionality of request id when configured', async function () {
       const app2 = require('../../src/server').default;
-      const port = `1${ConfigService.get('E2E_SERVER_PORT')}`;
+      const port = `1${ConfigService.get(ConfigName.E2E_SERVER_PORT)}`;
       const testServer2 = app2.listen(port);
 
       try {
@@ -157,7 +159,7 @@ describe('RPC Server', function () {
         expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
         expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
         expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
-        expect(response.data.result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+        expect(response.data.result).to.be.equal('0x' + Number(ConfigService.get(ConfigName.CHAIN_ID)).toString(16));
       } catch (error: any) {
         expect(true, `Unexpected error: ${error.message}`).to.eq(false);
       } finally {
@@ -188,7 +190,7 @@ describe('RPC Server', function () {
     });
 
     BaseTest.defaultResponseChecks(res);
-    expect(res.data.result).to.be.equal('relay/' + ConfigService.get('npm_package_version'));
+    expect(res.data.result).to.be.equal('relay/' + ConfigService.get(ConfigName.npm_package_version));
   });
 
   it('should execute "eth_getTransactionByHash with missing transaction"', async function () {
@@ -541,7 +543,7 @@ describe('RPC Server', function () {
       // verify response for each request
       for (let i = 0; i < response.data.length; i++) {
         expect(response.data[i].id).to.be.equal((i + 2).toString());
-        expect(response.data[i].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+        expect(response.data[i].result).to.be.equal('0x' + Number(ConfigService.get(ConfigName.CHAIN_ID)).toString(16));
       }
     });
 
@@ -558,14 +560,14 @@ describe('RPC Server', function () {
 
       // verify response for each result
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get(ConfigName.CHAIN_ID)).toString(16));
       // verify eth_accounts result
       expect(response.data[1].id).to.be.equal('3');
       expect(response.data[1].result).to.be.an('Array');
       expect(response.data[1].result.length).to.be.equal(0);
       // verify eth_chainId result
       expect(response.data[2].id).to.be.equal('4');
-      expect(response.data[2].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[2].result).to.be.equal('0x' + Number(ConfigService.get(ConfigName.CHAIN_ID)).toString(16));
     });
 
     it('should execute "eth_chainId" and "eth_accounts" in batch request with invalid request id', async function () {
@@ -576,7 +578,7 @@ describe('RPC Server', function () {
 
       // verify response for each result
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get(ConfigName.CHAIN_ID)).toString(16));
       // verify eth_accounts result
       expect(response.data[1].id).to.be.equal(null);
       expect(response.data[1].error).to.be.an('Object');
@@ -596,7 +598,7 @@ describe('RPC Server', function () {
 
       // verify eth_chainId result on position 0
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get(ConfigName.CHAIN_ID)).toString(16));
       // verify method not found error on position 1
       expect(response.data[1].id).to.be.equal('3');
       expect(response.data[1].error).to.be.an('Object');
@@ -604,7 +606,7 @@ describe('RPC Server', function () {
       expect(response.data[1].error.message).to.be.equal('Method non_existent_method not found');
       // verify eth_chainId result on position 2
       expect(response.data[2].id).to.be.equal('4');
-      expect(response.data[2].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[2].result).to.be.equal('0x' + Number(ConfigService.get(ConfigName.CHAIN_ID)).toString(16));
     });
 
     it('should execute "eth_chainId" and method not found and params error in batch request', async function () {
@@ -624,7 +626,7 @@ describe('RPC Server', function () {
 
       // verify eth_chainId result on position 0
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get(ConfigName.CHAIN_ID)).toString(16));
       // verify method not found error on position 1
       expect(response.data[1].id).to.be.equal('3');
       expect(response.data[1].error).to.be.an('Object');
@@ -2701,7 +2703,7 @@ describe('RPC Server', function () {
 });
 
 class BaseTest {
-  static createTestClient(port = ConfigService.get('E2E_SERVER_PORT')) {
+  static createTestClient(port = ConfigService.get(ConfigName.E2E_SERVER_PORT)) {
     return Axios.create({
       baseURL: 'http://localhost:' + port,
       responseType: 'json' as const,

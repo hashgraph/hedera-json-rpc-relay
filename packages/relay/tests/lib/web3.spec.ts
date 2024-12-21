@@ -20,8 +20,10 @@
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { expect } from 'chai';
-import { Registry } from 'prom-client';
 import pino from 'pino';
+import { Registry } from 'prom-client';
+
+import { ConfigName } from '../../../config-service/src/services/configName';
 import { RelayImpl } from '../../src';
 import { withOverriddenEnvsInMochaTest } from '../helpers';
 
@@ -32,7 +34,7 @@ describe('Web3', function () {
   withOverriddenEnvsInMochaTest({ npm_package_version: '1.0.0' }, () => {
     it('should return "relay/1.0.0"', async function () {
       const clientVersion = Relay.web3().clientVersion();
-      expect(clientVersion).to.be.equal('relay/' + ConfigService.get('npm_package_version'));
+      expect(clientVersion).to.be.equal('relay/' + ConfigService.get(ConfigName.npm_package_version));
     });
   });
 

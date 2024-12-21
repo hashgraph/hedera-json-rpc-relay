@@ -18,6 +18,8 @@
  *
  */
 
+import { ConfigName } from './configName';
+
 export interface ConfigProperty {
   envName: string;
   type: string;
@@ -26,7 +28,7 @@ export interface ConfigProperty {
 }
 
 export class GlobalConfig {
-  public static readonly ENTRIES: Record<string, ConfigProperty> = {
+  public static readonly ENTRIES: Record<ConfigName, ConfigProperty> = {
     BATCH_REQUESTS_ENABLED: {
       envName: 'BATCH_REQUESTS_ENABLED',
       type: 'boolean',

@@ -19,12 +19,14 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { EthImpl } from '../../src/lib/eth';
 import { expect } from 'chai';
 import pino from 'pino';
-import { Poller } from '../../src/lib/poller';
-import sinon from 'sinon';
 import { Registry } from 'prom-client';
+import sinon from 'sinon';
+
+import { ConfigName } from '../../../config-service/src/services/configName';
+import { EthImpl } from '../../src/lib/eth';
+import { Poller } from '../../src/lib/poller';
 
 const logger = pino({ level: 'trace' });
 
@@ -187,7 +189,9 @@ describe('Polling', async function () {
         ),
       ).to.equal(true);
       expect(
-        loggerSpy.calledWith(`Poller: Starting polling with interval=${ConfigService.get('WS_POLLING_INTERVAL')}`),
+        loggerSpy.calledWith(
+          `Poller: Starting polling with interval=${ConfigService.get(ConfigName.WS_POLLING_INTERVAL)}`,
+        ),
       ).to.equal(true);
     });
 

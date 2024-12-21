@@ -28,6 +28,7 @@ import pino from 'pino';
 import { register, Registry } from 'prom-client';
 import * as sinon from 'sinon';
 
+import { ConfigName } from '../../../../../config-service/src/services/configName';
 import { MirrorNodeClient, SDKClient } from '../../../../src/lib/clients';
 import constants from '../../../../src/lib/constants';
 import { EvmAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
@@ -144,15 +145,15 @@ describe('Metric Service', function () {
 
   before(() => {
     // consensus node client
-    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')! as string;
+    const hederaNetwork = ConfigService.get(ConfigName.HEDERA_NETWORK)! as string;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
     client = client.setOperator(
-      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')! as string),
-      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')! as string),
+      AccountId.fromString(ConfigService.get(ConfigName.OPERATOR_ID_MAIN)! as string),
+      Utils.createPrivateKeyBasedOnFormat(ConfigService.get(ConfigName.OPERATOR_KEY_MAIN)! as string),
     );
 
     // mirror node client
@@ -165,7 +166,7 @@ describe('Metric Service', function () {
       timeout: 20 * 1000,
     });
     mirrorNodeClient = new MirrorNodeClient(
-      (ConfigService.get('MIRROR_NODE_URL') as string) || '',
+      (ConfigService.get(ConfigName.MIRROR_NODE_URL) as string) || '',
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),

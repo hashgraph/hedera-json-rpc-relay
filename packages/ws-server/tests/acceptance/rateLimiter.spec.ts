@@ -19,17 +19,19 @@
  */
 
 // external resources
-import { expect } from 'chai';
-import { WsTestHelper } from '../helper';
-import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcError';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { expect } from 'chai';
+
+import { ConfigName } from '../../../config-service/src/services/configName';
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
+import { WsTestHelper } from '../helper';
 
 describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
-  const rateLimitTier2 = Number(ConfigService.get('TIER_2_RATE_LIMIT') || relayConstants.DEFAULT_RATE_LIMIT.TIER_2);
-  const limitDuration = Number(ConfigService.get('LIMIT_DURATION')) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
+  const rateLimitTier2 = Number(ConfigService.get(ConfigName.TIER_2_RATE_LIMIT) || relayConstants.DEFAULT_RATE_LIMIT.TIER_2);
+  const limitDuration = Number(ConfigService.get(ConfigName.LIMIT_DURATION)) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
   const batchRequests = [
     {

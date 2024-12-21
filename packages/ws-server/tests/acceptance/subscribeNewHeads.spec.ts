@@ -31,11 +31,12 @@ import { solidity } from 'ethereum-waffle';
 import { ethers } from 'ethers';
 import WebSocket from 'ws';
 
+import { ConfigName } from '../../../config-service/src/services/configName';
 import { WsTestHelper } from '../helper';
 
 chai.use(solidity);
 
-const WS_RELAY_URL = `${ConfigService.get('WS_RELAY_URL')}`;
+const WS_RELAY_URL = `${ConfigService.get(ConfigName.WS_RELAY_URL)}`;
 const evmAddressRegex = /^0x[a-fA-F0-9]*$/;
 
 function verifyResponse(response: any, done: Mocha.Done, webSocket: any, includeTransactions: boolean) {
@@ -99,7 +100,7 @@ function verifyResponse(response: any, done: Mocha.Done, webSocket: any, include
 describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const accounts: AliasAccount[] = [];
-  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0;
+  const CHAIN_ID = ConfigService.get(ConfigName.CHAIN_ID) || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let mirrorNodeServer, requestId, rpcServer, wsServer;
@@ -196,7 +197,7 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
 
     WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: undefined }, () => {
       it('@release should subscribe to newHeads and receive a valid JSON RPC response', async (done) => {
-        expect(ConfigService.get('WS_NEW_HEADS_ENABLED')).to.be.undefined;
+        expect(ConfigService.get(ConfigName.WS_NEW_HEADS_ENABLED)).to.be.undefined;
 
         const webSocket = new WebSocket(WS_RELAY_URL);
         const subscriptionId = 1;

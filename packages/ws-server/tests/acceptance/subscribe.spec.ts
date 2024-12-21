@@ -19,24 +19,26 @@
  */
 
 // external resources
-import WebSocket from 'ws';
-import { ethers } from 'ethers';
-import chai, { expect } from 'chai';
-import { WsTestHelper } from '../helper';
-import { solidity } from 'ethereum-waffle';
-import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
-import Constants from '@hashgraph/json-rpc-server/tests/helpers/constants';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { predefined, WebSocketError } from '@hashgraph/json-rpc-relay/dist';
+import LogContractJson from '@hashgraph/json-rpc-server/tests/contracts/Logs.json';
+import IERC20Json from '@hashgraph/json-rpc-server/tests/contracts/openzeppelin/IERC20.json';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
-import LogContractJson from '@hashgraph/json-rpc-server/tests/contracts/Logs.json';
+import Constants from '@hashgraph/json-rpc-server/tests/helpers/constants';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-import IERC20Json from '@hashgraph/json-rpc-server/tests/contracts/openzeppelin/IERC20.json';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import chai, { expect } from 'chai';
+import { solidity } from 'ethereum-waffle';
+import { ethers } from 'ethers';
+import WebSocket from 'ws';
+
+import { ConfigName } from '../../../config-service/src/services/configName';
+import { WsTestHelper } from '../helper';
 
 chai.use(solidity);
 
-const WS_RELAY_URL = `${ConfigService.get('WS_RELAY_URL')}`;
+const WS_RELAY_URL = `${ConfigService.get(ConfigName.WS_RELAY_URL)}`;
 
 const establishConnection = async () => {
   const provider = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -73,7 +75,7 @@ const createLogs = async (contract: ethers.Contract, requestId) => {
 
 describe('@web-socket-batch-3 eth_subscribe', async function () {
   this.timeout(240 * 1000); // 240 seconds
-  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0;
+  const CHAIN_ID = ConfigService.get(ConfigName.CHAIN_ID) || 0;
   let server;
   // @ts-ignore
   const { servicesNode, relay, mirrorNode } = global;
@@ -435,12 +437,12 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
       // We already have one connection
       expect(server._connections).to.equal(1);
 
-      for (let i = 1; i < parseInt(ConfigService.get('WS_CONNECTION_LIMIT')); i++) {
+      for (let i = 1; i < parseInt(ConfigService.get(ConfigName.WS_CONNECTION_LIMIT) as string); i++) {
         providers.push(await establishConnection());
       }
 
       // Server is at max connections
-      expect(server._connections).to.equal(parseInt(ConfigService.get('WS_CONNECTION_LIMIT')));
+      expect(server._connections).to.equal(parseInt(ConfigService.get(ConfigName.WS_CONNECTION_LIMIT) as string));
     });
 
     afterEach(async () => {
@@ -499,7 +501,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
         expect(message.toString('utf8')).to.equal(WebSocketError.TTL_EXPIRED.message);
       });
 
-      await new Promise((resolve) => setTimeout(resolve, parseInt(ConfigService.get('WS_MAX_INACTIVITY_TTL')) + 1000));
+      await new Promise((resolve) => setTimeout(resolve, parseInt(ConfigService.get(ConfigName.WS_MAX_INACTIVITY_TTL) as string) + 1000));
 
       expect(closeEventHandled2).to.eq(true);
       expect(closeEventHandled3).to.eq(true);
@@ -896,7 +898,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
         // Creates the maximum allowed connections
         // @ts-ignore
-        for (let i = 1; i < parseInt(ConfigService.get('WS_CONNECTION_LIMIT_PER_IP')); i++) {
+        for (let i = 1; i < parseInt(ConfigService.get(ConfigName.WS_CONNECTION_LIMIT_PER_IP)); i++) {
           // @ts-ignore
           providers.push(await new ethers.WebSocketProvider(WS_RELAY_URL));
         }
@@ -906,7 +908,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
         // Repeat the following several times to make sure the internal counters are consistently correct
         for (let i = 0; i < 3; i++) {
           // @ts-ignore
-          expect(server._connections).to.equal(parseInt(ConfigService.get('WS_CONNECTION_LIMIT_PER_IP')));
+          expect(server._connections).to.equal(parseInt(ConfigService.get(ConfigName.WS_CONNECTION_LIMIT_PER_IP)));
 
           // The next connection should be closed by the server
           const provider = await new ethers.WebSocketProvider(WS_RELAY_URL);
@@ -921,7 +923,7 @@ describe('@web-socket-batch-3 eth_subscribe', async function () {
 
           await new Promise((resolve) => setTimeout(resolve, 1000));
           // @ts-ignore
-          expect(server._connections).to.equal(parseInt(ConfigService.get('WS_CONNECTION_LIMIT_PER_IP')));
+          expect(server._connections).to.equal(parseInt(ConfigService.get(ConfigName.WS_CONNECTION_LIMIT_PER_IP)));
           expect(closeEventHandled).to.eq(true);
 
           await new Promise((resolve) => setTimeout(resolve, 1000));
