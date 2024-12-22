@@ -18,18 +18,19 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import type { Logger } from 'pino';
-import type { MirrorNodeClient } from '../../clients';
-import type { IDebugService } from './IDebugService';
-import type { CommonService } from '../ethService';
+
 import { decodeErrorMessage, mapKeysAndValues, numberTo0x, strip0x } from '../../../formatters';
+import type { MirrorNodeClient } from '../../clients';
+import { IOpcode } from '../../clients/models/IOpcode';
+import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
 import constants, { CallType, TracerType } from '../../constants';
 import { predefined } from '../../errors/JsonRpcError';
 import { EthImpl } from '../../eth';
-import { IOpcodesResponse } from '../../clients/models/IOpcodesResponse';
-import { IOpcode } from '../../clients/models/IOpcode';
 import { ICallTracerConfig, IOpcodeLoggerConfig, ITracerConfig, RequestDetails } from '../../types';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import type { CommonService } from '../ethService';
+import type { IDebugService } from './IDebugService';
 
 /**
  * Represents a DebugService for tracing and debugging transactions and debugging
@@ -300,7 +301,11 @@ export class DebugService implements IDebugService {
     try {
       const [actionsResponse, transactionsResponse] = await Promise.all([
         this.mirrorNodeClient.getContractsResultsActions(transactionHash, requestDetails),
-        this.mirrorNodeClient.getContractResultWithRetry(transactionHash, requestDetails),
+        this.mirrorNodeClient.getContractResultWithRetry(
+          this.mirrorNodeClient.getContractResult.name,
+          [transactionHash, requestDetails],
+          requestDetails,
+        ),
       ]);
       if (!actionsResponse || !transactionsResponse) {
         throw predefined.RESOURCE_NOT_FOUND(`Failed to retrieve contract results for transaction ${transactionHash}`);
