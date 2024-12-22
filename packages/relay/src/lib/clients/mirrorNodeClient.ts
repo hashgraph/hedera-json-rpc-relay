@@ -770,24 +770,26 @@ export class MirrorNodeClient {
   ): Promise<any> {
     const shortDelay = 500;
     const contractResult = await this[methodName](...args);
-    const contractObjects = Array.isArray(contractResult) ? contractResult : [contractResult];
 
-    for (const contractObject of contractObjects) {
-      if (
-        contractObject &&
-        (contractObject.transaction_index == null ||
-          contractObject.block_number == null ||
-          contractObject.block_hash == EthImpl.emptyHex)
-      ) {
-        if (this.logger.isLevelEnabled('debug')) {
-          this.logger.debug(
-            `${requestDetails.formattedRequestId} Contract result contains undefined transaction_index, block_number, or block_hash set to 0x: transaction_hash:${contractObject.hash}, transaction_index:${contractObject.transaction_index}, block_number=${contractObject.block_number}, block_hash=${contractObject.block_hash}. Retrying after a delay of ${shortDelay} ms `,
-          );
+    if (contractResult) {
+      const contractObjects = Array.isArray(contractResult) ? contractResult : [contractResult];
+      for (const contractObject of contractObjects) {
+        if (
+          contractObject &&
+          (contractObject.transaction_index == null ||
+            contractObject.block_number == null ||
+            contractObject.block_hash == EthImpl.emptyHex)
+        ) {
+          if (this.logger.isLevelEnabled('debug')) {
+            this.logger.debug(
+              `${requestDetails.formattedRequestId} Contract result contains undefined transaction_index, block_number, or block_hash is an empty hex (0x): transaction_hash:${contractObject.hash}, transaction_index:${contractObject.transaction_index}, block_number=${contractObject.block_number}, block_hash=${contractObject.block_hash}. Retrying after a delay of ${shortDelay} ms `,
+            );
+          }
+
+          // Backoff before repeating request
+          await new Promise((r) => setTimeout(r, shortDelay));
+          return await this[methodName](...args);
         }
-
-        // Backoff before repeating request
-        await new Promise((r) => setTimeout(r, shortDelay));
-        return await this[methodName](...args);
       }
     }
 

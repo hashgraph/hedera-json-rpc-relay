@@ -1922,13 +1922,17 @@ export class EthImpl implements Eth {
     transactionIndex: string,
     requestDetails: RequestDetails,
   ): Promise<Transaction | null> {
-    const contractResults = await this.mirrorNodeClient.getContractResults(
+    const contractResults = await this.mirrorNodeClient.getContractResultWithRetry(
+      this.mirrorNodeClient.getContractResults.name,
+      [
+        requestDetails,
+        {
+          [blockParam.title]: blockParam.value,
+          transactionIndex: Number(transactionIndex),
+        },
+        undefined,
+      ],
       requestDetails,
-      {
-        [blockParam.title]: blockParam.value,
-        transactionIndex: Number(transactionIndex),
-      },
-      undefined,
     );
 
     if (!contractResults[0]) return null;
@@ -2540,10 +2544,11 @@ export class EthImpl implements Eth {
     if (blockResponse == null) return null;
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
-    const contractResults = await this.mirrorNodeClient.getContractResults(
+
+    const contractResults = await this.mirrorNodeClient.getContractResultWithRetry(
+      this.mirrorNodeClient.getContractResults.name,
+      [requestDetails, { timestamp: timestampRangeParams }, undefined],
       requestDetails,
-      { timestamp: timestampRangeParams },
-      undefined,
     );
     const gasUsed = blockResponse.gas_used;
     const params = { timestamp: timestampRangeParams };
