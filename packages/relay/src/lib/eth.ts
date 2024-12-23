@@ -1,4 +1,4 @@
-/* -
+/*-
  *
  * Hedera JSON RPC Relay
  *
@@ -1922,13 +1922,17 @@ export class EthImpl implements Eth {
     transactionIndex: string,
     requestDetails: RequestDetails,
   ): Promise<Transaction | null> {
-    const contractResults = await this.mirrorNodeClient.getContractResults(
+    const contractResults = await this.mirrorNodeClient.getContractResultWithRetry(
+      this.mirrorNodeClient.getContractResults.name,
+      [
+        requestDetails,
+        {
+          [blockParam.title]: blockParam.value,
+          transactionIndex: Number(transactionIndex),
+        },
+        undefined,
+      ],
       requestDetails,
-      {
-        [blockParam.title]: blockParam.value,
-        transactionIndex: Number(transactionIndex),
-      },
-      undefined,
     );
 
     if (!contractResults[0]) return null;
@@ -2201,7 +2205,11 @@ export class EthImpl implements Eth {
       this.logger.trace(`${requestIdPrefix} getTransactionByHash(hash=${hash})`, hash);
     }
 
-    const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestDetails);
+    const contractResult = await this.mirrorNodeClient.getContractResultWithRetry(
+      this.mirrorNodeClient.getContractResult.name,
+      [hash, requestDetails],
+      requestDetails,
+    );
     if (contractResult === null || contractResult.hash === undefined) {
       // handle synthetic transactions
       const syntheticLogs = await this.common.getLogsWithParams(
@@ -2265,7 +2273,12 @@ export class EthImpl implements Eth {
       return cachedResponse;
     }
 
-    const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(hash, requestDetails);
+    const receiptResponse = await this.mirrorNodeClient.getContractResultWithRetry(
+      this.mirrorNodeClient.getContractResult.name,
+      [hash, requestDetails],
+      requestDetails,
+    );
+
     if (receiptResponse === null || receiptResponse.hash === undefined) {
       // handle synthetic transactions
       const syntheticLogs = await this.common.getLogsWithParams(
@@ -2531,10 +2544,11 @@ export class EthImpl implements Eth {
     if (blockResponse == null) return null;
     const timestampRange = blockResponse.timestamp;
     const timestampRangeParams = [`gte:${timestampRange.from}`, `lte:${timestampRange.to}`];
-    const contractResults = await this.mirrorNodeClient.getContractResults(
+
+    const contractResults = await this.mirrorNodeClient.getContractResultWithRetry(
+      this.mirrorNodeClient.getContractResults.name,
+      [requestDetails, { timestamp: timestampRangeParams }, undefined],
       requestDetails,
-      { timestamp: timestampRangeParams },
-      undefined,
     );
     const gasUsed = blockResponse.gas_used;
     const params = { timestamp: timestampRangeParams };

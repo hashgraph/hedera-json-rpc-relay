@@ -724,6 +724,11 @@ export class SDKClient {
       );
       return transactionResponse;
     } catch (e: any) {
+      this.logger.warn(
+        e,
+        `${requestDetails.formattedRequestId} Transaction failed while executing transaction via the SDK: transactionId=${transaction.transactionId}, callerName=${callerName}, txConstructorName=${txConstructorName}`,
+      );
+
       if (e instanceof JsonRpcError) {
         throw e;
       }

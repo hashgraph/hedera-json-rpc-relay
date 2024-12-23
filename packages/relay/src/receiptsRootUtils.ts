@@ -21,8 +21,9 @@
 import { RLP } from '@ethereumjs/rlp';
 import { Trie } from '@ethereumjs/trie';
 import { bytesToInt, concatBytes, hexToBytes, intToBytes, intToHex } from '@ethereumjs/util';
-import { EthImpl } from './lib/eth';
+
 import { prepend0x } from './formatters';
+import { EthImpl } from './lib/eth';
 import { Log } from './lib/model';
 import { LogsBloomUtils } from './logsBloomUtils';
 
@@ -93,16 +94,29 @@ export class ReceiptsRootUtils {
   public static buildReceiptRootHashes(txHashes: string[], contractResults: any[], logs: Log[]): IReceiptRootHash[] {
     const receipts: IReceiptRootHash[] = [];
 
-    for (let i in txHashes) {
+    for (const i in txHashes) {
       const txHash: string = txHashes[i];
       const logsPerTx: Log[] = logs.filter((log) => log.transactionHash == txHash);
       const crPerTx: any[] = contractResults.filter((cr) => cr.hash == txHash);
+
+      // Determine the transaction index for the current transaction hash:
+      // - Prefer the `transaction_index` from the contract results (`crPerTx`) if available.
+      // - Fallback to the `transactionIndex` from logs (`logsPerTx`) if no valid `transaction_index` is found in `crPerTx`.
+      // - If neither source provides a valid value, `transactionIndex` remains `null`.
+      let transactionIndex: any = null;
+      if (crPerTx.length && crPerTx[0].transaction_index != null) {
+        transactionIndex = intToHex(crPerTx[0].transaction_index);
+      } else if (logsPerTx.length) {
+        transactionIndex = logsPerTx[0].transactionIndex;
+      }
+
       receipts.push({
-        transactionIndex: crPerTx.length ? intToHex(crPerTx[0].transaction_index) : logsPerTx[0].transactionIndex,
+        transactionIndex,
         type: crPerTx.length && crPerTx[0].type ? intToHex(crPerTx[0].type) : null,
         root: crPerTx.length ? crPerTx[0].root : EthImpl.zeroHex32Byte,
         status: crPerTx.length ? crPerTx[0].status : EthImpl.oneHex,
-        cumulativeGasUsed: crPerTx.length ? intToHex(crPerTx[0].block_gas_used) : EthImpl.zeroHex,
+        cumulativeGasUsed:
+          crPerTx.length && crPerTx[0].block_gas_used ? intToHex(crPerTx[0].block_gas_used) : EthImpl.zeroHex,
         logsBloom: crPerTx.length
           ? crPerTx[0].bloom
           : LogsBloomUtils.buildLogsBloom(logs[0].address, logsPerTx[0].topics),

@@ -1672,6 +1672,8 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
           const signedTx = await accounts[0].wallet.signTransaction(tx);
           const transactionHash = await relay.sendRawTransaction(signedTx, requestId);
+          await relay.pollForValidTransactionReceipt(transactionHash);
+
           const info = await mirrorNode.get(`/contracts/results/${transactionHash}`, requestId);
 
           expect(info).to.exist;
