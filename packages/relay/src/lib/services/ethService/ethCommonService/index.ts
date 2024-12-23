@@ -28,6 +28,7 @@ import constants from '../../../constants';
 import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
 import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
 import { SDKClientError } from '../../../errors/SDKClientError';
+import { EthImpl } from '../../../eth';
 import { Log } from '../../../model';
 import { RequestDetails } from '../../../types';
 import { CacheService } from '../../cacheService/cacheService';
@@ -176,6 +177,20 @@ export class CommonService implements ICommonService {
     returnLatest?: boolean,
   ): Promise<any> {
     if (!returnLatest && this.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestDetails.formattedRequestId} Detected a contradiction between blockNumberOrTagOrHash and returnLatest. The request does not target the latest block, yet blockNumberOrTagOrHash representing latest or pending: returnLatest=${returnLatest}, blockNumberOrTagOrHash=${blockNumberOrTagOrHash}`,
+        );
+      }
+      return null;
+    }
+
+    if (blockNumberOrTagOrHash === EthImpl.emptyHex) {
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestDetails.formattedRequestId} Invalid input detected in getHistoricalBlockResponse(): blockNumberOrTagOrHash=${blockNumberOrTagOrHash}.`,
+        );
+      }
       return null;
     }
 
