@@ -795,7 +795,7 @@ describe('MirrorNodeClient', async function () {
   it('`getContractResultsLogs` ', async () => {
     mock.onGet(`contracts/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
 
-    const results = await mirrorNodeInstance.getContractResultsLogs(requestDetails);
+    const results = await mirrorNodeInstance.getContractResultsLogsWithRetry(requestDetails);
     expect(results).to.exist;
     expect(results.length).to.gt(0);
     const firstResult = results[0];

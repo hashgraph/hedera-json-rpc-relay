@@ -322,7 +322,7 @@ export class CommonService implements ICommonService {
     if (address) {
       logResults = await this.getLogsByAddress(address, params, requestDetails);
     } else {
-      logResults = await this.mirrorNodeClient.getContractResultsLogs(requestDetails, params);
+      logResults = await this.mirrorNodeClient.getContractResultsLogsWithRetry(requestDetails, params);
     }
 
     if (!logResults) {

@@ -894,14 +894,25 @@ export class MirrorNodeClient {
     return this.getQueryParams(queryParamObject);
   }
 
-  public async getContractResultsLogs(
+  /**
+   * In some very rare cases the /contracts/results/logs api is called before all the data is saved in
+   * the mirror node DB and `transaction_index`, `block_number`, `index` is returned as `undefined`, or block_hash is an empty hex (0x).
+   * A single re-fetch is sufficient to resolve this problem.
+   *
+   * @param {RequestDetails} requestDetails - Details used for logging and tracking the request.
+   * @param {IContractLogsResultsParams} [contractLogsResultsParams] - Parameters for querying contract logs results.
+   * @param {ILimitOrderParams} [limitOrderParams] - Parameters for limit and order when fetching the logs.
+   * @returns {Promise<any[]>} - A promise resolving to the paginated contract logs results.
+   */
+  public async getContractResultsLogsWithRetry(
     requestDetails: RequestDetails,
     contractLogsResultsParams?: IContractLogsResultsParams,
     limitOrderParams?: ILimitOrderParams,
-  ) {
+  ): Promise<any[]> {
+    const shortDelay = 500;
     const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
 
-    return this.getPaginatedResults(
+    const logResults = await this.getPaginatedResults(
       `${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`,
       MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
       MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
@@ -910,6 +921,38 @@ export class MirrorNodeClient {
       1,
       MirrorNodeClient.mirrorNodeContractResultsLogsPageMax,
     );
+
+    if (logResults) {
+      for (const log of logResults) {
+        if (
+          log &&
+          (log.transaction_index == null ||
+            log.block_number == null ||
+            log.index == null ||
+            log.block_hash === EthImpl.emptyHex)
+        ) {
+          if (this.logger.isLevelEnabled('debug')) {
+            this.logger.debug(
+              `${requestDetails.formattedRequestId} Contract result log contains undefined transaction_index, block_number, index, or block_hash is an empty hex (0x): transaction_hash:${log.transaction_hash}, transaction_index:${log.transaction_index}, block_number=${log.block_number}, log_index=${log.index}, block_hash=${log.block_hash}. Retrying after a delay of ${shortDelay} ms.`,
+            );
+          }
+
+          // Backoff before repeating request
+          await new Promise((r) => setTimeout(r, shortDelay));
+          return await this.getPaginatedResults(
+            `${MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT}${queryParams}`,
+            MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_ENDPOINT,
+            MirrorNodeClient.CONTRACT_RESULT_LOGS_PROPERTY,
+            requestDetails,
+            [],
+            1,
+            MirrorNodeClient.mirrorNodeContractResultsLogsPageMax,
+          );
+        }
+      }
+    }
+
+    return logResults;
   }
 
   public async getContractResultsLogsByAddress(
