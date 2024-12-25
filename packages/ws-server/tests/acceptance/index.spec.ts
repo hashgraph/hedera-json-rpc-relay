@@ -42,6 +42,7 @@ import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import fs from 'fs';
 import pino from 'pino';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 
@@ -85,12 +86,12 @@ describe('RPC Server Acceptance Tests', function () {
   before(async () => {
     // configuration details
     logger.info('Acceptance Tests Configurations successfully loaded');
-    logger.info(`LOCAL_NODE: ${ConfigService.get(ConfigName.LOCAL_NODE)}`);
-    logger.info(`CHAIN_ID: ${ConfigService.get(ConfigName.CHAIN_ID)}`);
+    logger.info(`LOCAL_NODE: ${ConfigService.get('LOCAL_NODE' as ConfigKey)}`);
+    logger.info(`CHAIN_ID: ${ConfigService.get('CHAIN_ID' as ConfigKey)}`);
     logger.info(`HEDERA_NETWORK: ${NETWORK}`);
     logger.info(`OPERATOR_ID_MAIN: ${OPERATOR_ID}`);
     logger.info(`MIRROR_NODE_URL: ${MIRROR_NODE_URL}`);
-    logger.info(`E2E_RELAY_HOST: ${ConfigService.get(ConfigName.E2E_RELAY_HOST)}`);
+    logger.info(`E2E_RELAY_HOST: ${ConfigService.get('E2E_RELAY_HOST' as ConfigKey)}`);
 
     if (global.relayIsLocal) {
       runLocalRelay();
@@ -150,7 +151,7 @@ describe('RPC Server Acceptance Tests', function () {
     }
 
     const socketServer: Server = global.socketServer;
-    if (ConfigService.get(ConfigName.TEST_WS_SERVER) && socketServer !== undefined) {
+    if (ConfigService.get('TEST_WS_SERVER' as ConfigKey) && socketServer !== undefined) {
       socketServer.close();
     }
   });
@@ -181,7 +182,7 @@ describe('RPC Server Acceptance Tests', function () {
     global.relayServer = relayServer;
     setServerTimeout(relayServer);
 
-    if (ConfigService.get(ConfigName.TEST_WS_SERVER)) {
+    if (ConfigService.get('TEST_WS_SERVER' as ConfigKey)) {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
       global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
     }

@@ -22,11 +22,7 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { BigNumber } from 'bignumber.js';
-import { expect } from 'chai';
-import { ethers } from 'ethers';
-import pino from 'pino';
-import { Registry } from 'prom-client';
-import { ConfigName } from '../../../config-service/src/services/configName';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 import { MirrorNodeClientError, predefined } from '../../src';
 import { MirrorNodeClient } from '../../src/lib/clients';
@@ -59,7 +55,7 @@ describe('MirrorNodeClient', async function () {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
       // @ts-ignore
-      ConfigService.get(ConfigName.MIRROR_NODE_URL) || '',
+      ConfigService.get('MIRROR_NODE_URL' as ConfigKey) || '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -136,7 +132,7 @@ describe('MirrorNodeClient', async function () {
 
   it('`restUrl` is exposed and correct', async () => {
     // @ts-ignore
-    const domain = (ConfigService.get(ConfigName.MIRROR_NODE_URL) || '').replace(/^https?:\/\//, '');
+    const domain = (ConfigService.get('MIRROR_NODE_URL' as ConfigKey) || '').replace(/^https?:\/\//, '');
     const prodMirrorNodeInstance = new MirrorNodeClient(
       domain,
       logger.child({ name: `mirror-node` }),
@@ -163,14 +159,14 @@ describe('MirrorNodeClient', async function () {
   withOverriddenEnvsInMochaTest({ MIRROR_NODE_URL_HEADER_X_API_KEY: 'abc123iAManAPIkey' }, () => {
     it('Can provide custom x-api-key header', async () => {
       const mirrorNodeInstanceOverridden = new MirrorNodeClient(
-        (ConfigService.get(ConfigName.MIRROR_NODE_URL) as string) || '',
+        ConfigService.get('MIRROR_NODE_URL' as ConfigKey) || '',
         logger.child({ name: `mirror-node` }),
         registry,
         cacheService,
       );
       const axiosHeaders = mirrorNodeInstanceOverridden.getMirrorNodeRestInstance().defaults.headers.common;
       expect(axiosHeaders).has.property('x-api-key');
-      expect(axiosHeaders['x-api-key']).to.eq(ConfigService.get(ConfigName.MIRROR_NODE_URL_HEADER_X_API_KEY));
+      expect(axiosHeaders['x-api-key']).to.eq(ConfigService.get('MIRROR_NODE_URL_HEADER_X_API_KEY' as ConfigKey));
     });
   });
 

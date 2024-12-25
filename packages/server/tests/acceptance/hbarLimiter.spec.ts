@@ -31,7 +31,7 @@ import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/ty
 import { SpendingPlanConfig } from '@hashgraph/json-rpc-relay/src/lib/types/spendingPlanConfig';
 import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { expect } from 'chai';
-import dotenv, { config } from 'dotenv';
+import { config } from 'dotenv';
 import { BaseContract, ethers } from 'ethers';
 import findConfig from 'find-config';
 import fs from 'fs';
@@ -39,7 +39,6 @@ import { resolve } from 'path';
 import { Logger } from 'pino';
 import { Registry } from 'prom-client';
 
-import { ConfigName } from '../../../config-service/src/services/configName';
 import MetricsClient from '../clients/metricsClient';
 import MirrorClient from '../clients/mirrorClient';
 import RelayClient from '../clients/relayClient';
@@ -53,6 +52,7 @@ import testConstants from '../helpers/constants';
 // Local resources
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 
@@ -128,7 +128,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       return contract;
     };
     const transactionReecordCostTolerance = Number(
-      ConfigService.get(ConfigName.TEST_TRANSACTION_RECORD_COST_TOLERANCE) || 0.02,
+      ConfigService.get('TEST_TRANSACTION_RECORD_COST_TOLERANCE' as ConfigKey) || 0.02,
     );
 
     const verifyRemainingLimit = (expectedCost: number, remainingHbarsBefore: number, remainingHbarsAfter: number) => {
@@ -222,7 +222,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       const accounts: AliasAccount[] = [];
       const defaultLondonTransactionData = {
         value: Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10))), // 1 tinybar
-        chainId: Number(ConfigService.get(ConfigName.CHAIN_ID) || 0),
+        chainId: Number(ConfigService.get('CHAIN_ID' as ConfigKey) || 0),
         maxPriorityFeePerGas: Assertions.defaultGasPrice,
         maxFeePerGas: Assertions.defaultGasPrice,
         gasLimit: 3_000_000,
@@ -233,7 +233,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
         logger.info(
           `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get(
-            ConfigName.HBAR_RATE_LIMIT_TINYBAR,
+            'HBAR_RATE_LIMIT_TINYBAR' as ConfigKey,
           )}`,
         );
 
@@ -741,7 +741,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           };
 
           describe('given a valid JSON file with pre-configured spending plans', async () => {
-            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get(ConfigName.HBAR_SPENDING_PLANS_CONFIG) as string;
+            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG' as ConfigKey);
             const configPath = findConfig(SPENDING_PLANS_CONFIG_FILE);
 
             if (configPath) {
@@ -901,7 +901,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                 return { ...aliasAccount, hbarSpendingPlan: accountAliasPlan.hbarSpendingPlan };
               });
 
-            const totalHbarBudget = ConfigService.get(ConfigName.HBAR_RATE_LIMIT_TINYBAR) as number;
+            const totalHbarBudget = ConfigService.get('HBAR_RATE_LIMIT_TINYBAR' as ConfigKey);
 
             let totalHbarSpent =
               totalHbarBudget - Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
@@ -958,14 +958,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       before(async function () {
         logger.info(
           `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get(
-            ConfigName.HBAR_RATE_LIMIT_TINYBAR,
+            'HBAR_RATE_LIMIT_TINYBAR' as ConfigKey,
           )}`,
         );
       });
 
       it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts, and not throw an error', async function () {
         // confirm that HBAR_RATE_LIMIT_TINYBAR is set to zero
-        expect(ConfigService.get(ConfigName.HBAR_RATE_LIMIT_TINYBAR)).to.eq(0);
+        expect(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR' as ConfigKey)).to.eq(0);
         // This should set the remaining HBAR limit to zero
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsBefore).to.eq(0);

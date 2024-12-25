@@ -19,7 +19,6 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigName } from '@hashgraph/json-rpc-config-service/src/services/configName';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import pino from 'pino';
@@ -41,6 +40,7 @@ import {
   toHex,
   withOverriddenEnvsInMochaTest,
 } from '../../../helpers';
+import { ConfigKey } from '../../../../../config-service/src/services/globalConfig';
 
 const logger = pino({ level: 'silent' });
 const registry = new Registry();
@@ -84,7 +84,7 @@ describe('Filter API Test Suite', async function () {
   this.beforeAll(() => {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
-      ConfigService.get(ConfigName.MIRROR_NODE_URL) as string,
+      ConfigService.get('MIRROR_NODE_URL' as ConfigKey),
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

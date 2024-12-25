@@ -27,7 +27,6 @@ import { ethers, Transaction } from 'ethers';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 
-import { ConfigName } from '../../../config-service/src/services/configName';
 import { JsonRpcError, predefined } from '../../src';
 import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
@@ -45,6 +44,7 @@ import { ONE_TINYBAR_IN_WEI_HEX } from './eth/eth-config';
 
 const registry = new Registry();
 import { RequestDetails } from '../../src/lib/types';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const logger = pino({ level: 'silent' });
 const limitOrderPostFix = '?order=desc&limit=1';
@@ -107,7 +107,7 @@ describe('Precheck', async function () {
 
     // @ts-ignore
     const mirrorNodeInstance = new MirrorNodeClient(
-      ConfigService.get(ConfigName.MIRROR_NODE_URL)! as string,
+      ConfigService.get('MIRROR_NODE_URL' as ConfigKey)!,
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),

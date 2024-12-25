@@ -27,7 +27,6 @@ import pino, { Logger } from 'pino';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';
 
-import { ConfigName } from '../../../../config-service/src/services/configName';
 import { HbarSpendingPlanConfigService } from '../../../src/lib/config/hbarSpendingPlanConfigService';
 import { EvmAddressHbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from '../../../src/lib/db/repositories/hbarLimiter/hbarSpendingPlanRepository';
@@ -48,6 +47,7 @@ import {
   verifyResult,
   withOverriddenEnvsInMochaTest,
 } from '../../helpers';
+import { ConfigKey } from '../../../../config-service/src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 
@@ -106,7 +106,7 @@ describe('HbarSpendingPlanConfigService', function () {
     });
 
     after(async function () {
-      if (ConfigService.get(ConfigName.REDIS_ENABLED)) {
+      if (ConfigService.get('REDIS_ENABLED' as ConfigKey)) {
         await cacheService.disconnectRedisClient();
       }
     });
@@ -386,7 +386,7 @@ describe('HbarSpendingPlanConfigService', function () {
         it('should not delete pre-configured spending plans after default cache TTL expires', async function () {
           await hbarSpendingPlanConfigService.populatePreconfiguredSpendingPlans();
 
-          await new Promise((resolve) => setTimeout(resolve, Number(ConfigService.get(ConfigName.CACHE_TTL))));
+          await new Promise((resolve) => setTimeout(resolve, Number(ConfigService.get('CACHE_TTL' as ConfigKey))));
 
           await verifySpendingPlans(spendingPlansConfig);
         });

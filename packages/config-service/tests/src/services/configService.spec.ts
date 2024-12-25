@@ -21,7 +21,7 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { ConfigService } from '../../../src/services';
-import { ConfigName } from '../../../src/services/configName';
+import { ConfigKey } from '../../../src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 
@@ -50,13 +50,13 @@ describe('ConfigService tests', async function () {
   });
 
   it('should be able to get existing env var', async () => {
-    const res = ConfigService.get(ConfigName.CHAIN_ID);
+    const res = ConfigService.get('CHAIN_ID' as ConfigKey);
 
     expect(res).to.equal('0x12a');
   });
 
   it('should return undefined for non-existing variable', async () => {
-    const res = ConfigService.get('NON_EXISTING_VAR');
+    const res = ConfigService.get('NON_EXISTING_VAR' as ConfigKey);
 
     expect(res).to.equal(undefined);
   });

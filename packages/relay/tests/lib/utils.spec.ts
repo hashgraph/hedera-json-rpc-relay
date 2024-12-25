@@ -25,7 +25,7 @@ import createHash from 'keccak';
 import pino from 'pino';
 import sinon from 'sinon';
 
-import { ConfigName } from '../../../config-service/src/services/configName';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 import { ASCIIToHex, prepend0x } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { Utils } from '../../src/utils';
@@ -62,7 +62,7 @@ describe('Utils', () => {
   describe('estimateFileTransactionsFee', () => {
     const callDataSize = 6000;
     const mockedExchangeRateInCents: number = 12;
-    const fileChunkSize = Number(ConfigService.get(ConfigName.FILE_APPEND_CHUNK_SIZE)) || 5120;
+    const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE' as ConfigKey)) || 5120;
     it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
       const result = Utils.estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
       const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
@@ -85,7 +85,7 @@ describe('Utils', () => {
     });
 
     // @ts-ignore
-    JSON.parse(ConfigService.get(ConfigName.HEDERA_SPECIFIC_REVERT_STATUSES)).forEach((status) => {
+    JSON.parse(ConfigService.get('HEDERA_SPECIFIC_REVERT_STATUSES' as ConfigKey)).forEach((status) => {
       it(`should exclude transaction with result ${status}`, () => {
         expect(Utils.isRevertedDueToHederaSpecificValidation({ result: status, error_message: null })).to.be.true;
       });

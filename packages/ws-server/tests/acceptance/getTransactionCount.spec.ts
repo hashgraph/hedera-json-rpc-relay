@@ -29,12 +29,12 @@ import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccoun
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 
-import { ConfigName } from '../../../config-service/src/services/configName';
 import { WsTestConstant, WsTestHelper } from '../helper';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 describe('@release @web-socket-batch-2 eth_getTransactionCount', async function () {
   const METHOD_NAME = 'eth_getTransactionCount';
-  const CHAIN_ID = ConfigService.get(ConfigName.CHAIN_ID) || '0x12a';
+  const CHAIN_ID = ConfigService.get('CHAIN_ID' as ConfigKey) || '0x12a';
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   // @ts-ignore

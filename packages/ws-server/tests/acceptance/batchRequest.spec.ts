@@ -24,8 +24,8 @@ import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 
-import { ConfigName } from '../../../config-service/src/services/configName';
 import { WsTestConstant, WsTestHelper } from '../helper';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 describe('@web-socket-batch-request Batch Requests', async function () {
   const METHOD_NAME = 'batch_request';
@@ -105,7 +105,7 @@ describe('@web-socket-batch-request Batch Requests', async function () {
 
         const expectedError = predefined.BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED(
           batchRequests.length,
-          Number(ConfigService.get(ConfigName.WS_BATCH_REQUESTS_MAX_SIZE)),
+          Number(ConfigService.get('WS_BATCH_REQUESTS_MAX_SIZE' as ConfigKey)),
         );
         delete expectedError.data;
 

@@ -47,7 +47,6 @@ import pino from 'pino';
 import { register, Registry } from 'prom-client';
 import * as sinon from 'sinon';
 
-import { ConfigName } from '../../../config-service/src/services/configName';
 import { formatTransactionId } from '../../src/formatters';
 import { MirrorNodeClient, SDKClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
@@ -66,6 +65,7 @@ import {
   random20BytesAddress,
   withOverriddenEnvsInMochaTest,
 } from '../helpers';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const registry = new Registry();
 const logger = pino({ level: 'silent' });
@@ -103,7 +103,7 @@ describe('SdkClient', async function () {
   overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true });
 
   before(() => {
-    const hederaNetwork = ConfigService.get(ConfigName.HEDERA_NETWORK)! as string;
+    const hederaNetwork = ConfigService.get('HEDERA_NETWORK' as ConfigKey)! as string;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
@@ -111,8 +111,8 @@ describe('SdkClient', async function () {
     }
 
     client = client.setOperator(
-      AccountId.fromString(ConfigService.get(ConfigName.OPERATOR_ID_MAIN)! as string),
-      Utils.createPrivateKeyBasedOnFormat(ConfigService.get(ConfigName.OPERATOR_KEY_MAIN)! as string),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN' as ConfigKey)! as string),
+      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN' as ConfigKey)! as string),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     eventEmitter = new EventEmitter();
@@ -149,7 +149,7 @@ describe('SdkClient', async function () {
 
     // mirror node client
     mirrorNodeClient = new MirrorNodeClient(
-      (ConfigService.get(ConfigName.MIRROR_NODE_URL) as string) || '',
+      (ConfigService.get('MIRROR_NODE_URL' as ConfigKey)) || '',
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -285,7 +285,7 @@ describe('SdkClient', async function () {
     };
 
     this.beforeEach(() => {
-      if (ConfigService.get(ConfigName.OPERATOR_KEY_FORMAT) !== 'BAD_FORMAT') {
+      if (ConfigService.get('OPERATOR_KEY_FORMAT' as ConfigKey) !== 'BAD_FORMAT' as ConfigKey) {
         hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
       }
     });
@@ -336,8 +336,8 @@ describe('SdkClient', async function () {
   });
 
   describe('HBAR Limiter', async () => {
-    const FILE_APPEND_CHUNK_SIZE = Number(ConfigService.get(ConfigName.FILE_APPEND_CHUNK_SIZE)) || 5120;
-    const MAX_CHUNKS = Number(ConfigService.get(ConfigName.FILE_APPEND_MAX_CHUNKS)) || 20;
+    const FILE_APPEND_CHUNK_SIZE = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE' as ConfigKey)) || 5120;
+    const MAX_CHUNKS = Number(ConfigService.get('FILE_APPEND_MAX_CHUNKS' as ConfigKey)) || 20;
     const transactionBuffer = new Uint8Array([
       2, 249, 250, 182, 130, 1, 42, 7, 1, 133, 209, 56, 92, 123, 240, 131, 228, 225, 192, 148, 61, 176, 51, 137, 34,
       205, 229, 74, 102, 224, 197, 133, 1, 18, 73, 145, 93, 50, 210, 37, 134, 9, 24, 78, 114, 160, 0, 185, 250, 68, 130,
@@ -2145,7 +2145,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileCreateFee / 10 ** 8) : fileCreateFee;
           transfers = [
             {
-              accountId: ConfigService.get(ConfigName.OPERATOR_ID_MAIN),
+              accountId: ConfigService.get('OPERATOR_ID_MAIN' as ConfigKey),
               amount: Hbar.fromTinybars(-1 * fileCreateFee),
               is_approval: false,
             },
@@ -2155,7 +2155,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileAppendFee / 10 ** 8) : fileAppendFee;
           transfers = [
             {
-              accountId: ConfigService.get(ConfigName.OPERATOR_ID_MAIN),
+              accountId: ConfigService.get('OPERATOR_ID_MAIN' as ConfigKey),
               amount: Hbar.fromTinybars(-1 * fileAppendFee),
               is_approval: false,
             },
@@ -2165,7 +2165,7 @@ describe('SdkClient', async function () {
           transactionFee = toHbar ? new Hbar(fileDeleteFee / 10 ** 8) : fileDeleteFee;
           transfers = [
             {
-              accountId: ConfigService.get(ConfigName.OPERATOR_ID_MAIN),
+              accountId: ConfigService.get('OPERATOR_ID_MAIN' as ConfigKey),
               amount: Hbar.fromTinybars(-1 * fileDeleteFee),
               is_approval: false,
             },
@@ -2180,12 +2180,12 @@ describe('SdkClient', async function () {
               is_approval: false,
             },
             {
-              accountId: ConfigService.get(ConfigName.OPERATOR_ID_MAIN),
+              accountId: ConfigService.get('OPERATOR_ID_MAIN' as ConfigKey),
               amount: Hbar.fromTinybars(-1 * defaultTransactionFee),
               is_approval: false,
             },
             {
-              accountId: ConfigService.get(ConfigName.OPERATOR_ID_MAIN),
+              accountId: ConfigService.get('OPERATOR_ID_MAIN' as ConfigKey),
               amount: Hbar.fromTinybars(defaultTransactionFee),
               is_approval: false,
             },
@@ -2651,7 +2651,7 @@ describe('SdkClient', async function () {
                   is_approval: false,
                 },
                 {
-                  account: ConfigService.get(ConfigName.OPERATOR_ID_MAIN),
+                  account: ConfigService.get('OPERATOR_ID_MAIN' as ConfigKey),
                   amount: -1 * defaultTransactionFee,
                   is_approval: false,
                 },
@@ -2744,7 +2744,7 @@ describe('SdkClient', async function () {
     });
 
     it('Should execute getTransferAmountSumForAccount() to calculate transactionFee by only transfers that are paid by the specify accountId', () => {
-      const accountId = (ConfigService.get(ConfigName.OPERATOR_ID_MAIN) as string) || '';
+      const accountId = (ConfigService.get('OPERATOR_ID_MAIN' as ConfigKey) as string) || '';
       const mockedTxRecord = getMockedTransactionRecord(EthereumTransaction.name, true);
 
       const transactionFee = sdkClient.getTransferAmountSumForAccount(mockedTxRecord, accountId);

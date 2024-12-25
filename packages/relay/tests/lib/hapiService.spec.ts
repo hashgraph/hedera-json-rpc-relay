@@ -25,7 +25,6 @@ import { EventEmitter } from 'events';
 import pino from 'pino';
 import { register, Registry } from 'prom-client';
 
-import { ConfigName } from '../../../config-service/src/services/configName';
 import { SDKClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
 import { EvmAddressHbarSpendingPlanRepository } from '../../src/lib/db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
@@ -36,6 +35,7 @@ import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
 import { RequestDetails } from '../../src/lib/types';
 import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../helpers';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const registry = new Registry();
 const logger = pino({ level: 'silent' });
