@@ -24,7 +24,6 @@ import EventEmitter from 'events';
 import pino from 'pino';
 import { register, Registry } from 'prom-client';
 
-import { ConfigName } from '../../../../config-service/src/services/configName';
 import { ConfigServiceTestHelper } from '../../../../config-service/tests/configServiceTestHelper';
 import { MirrorNodeClient } from '../../../src/lib/clients/mirrorNodeClient';
 import constants from '../../../src/lib/constants';
@@ -35,6 +34,7 @@ import { EthImpl } from '../../../src/lib/eth';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../../src/lib/services/hbarLimitService';
+import { ConfigKey } from '../../../../config-service/src/services/globalConfig';
 
 export function contractResultsByNumberByIndexURL(number: number, index: number): string {
   return `contracts/results?block.number=${number}&transaction.index=${index}&limit=100&order=asc`;
@@ -56,7 +56,7 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
   const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
   // @ts-ignore
   const mirrorNodeInstance = new MirrorNodeClient(
-    ConfigService.get(ConfigName.MIRROR_NODE_URL) as string || '',
+    ConfigService.get('MIRROR_NODE_URL' as ConfigKey) || '',
     logger.child({ name: `mirror-node` }),
     registry,
     cacheService,

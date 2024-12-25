@@ -25,13 +25,13 @@ import { IPRateLimitExceeded } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
 import { expect } from 'chai';
 
-import { ConfigName } from '../../../config-service/src/services/configName';
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 import { WsTestHelper } from '../helper';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
-  const rateLimitTier2 = Number(ConfigService.get(ConfigName.TIER_2_RATE_LIMIT) || relayConstants.DEFAULT_RATE_LIMIT.TIER_2);
-  const limitDuration = Number(ConfigService.get(ConfigName.LIMIT_DURATION)) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
+  const rateLimitTier2 = Number(ConfigService.get('TIER_2_RATE_LIMIT' as ConfigKey) || relayConstants.DEFAULT_RATE_LIMIT.TIER_2);
+  const limitDuration = Number(ConfigService.get('LIMIT_DURATION' as ConfigKey)) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
   const batchRequests = [
     {

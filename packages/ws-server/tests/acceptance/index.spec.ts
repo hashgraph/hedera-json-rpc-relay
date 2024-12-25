@@ -20,7 +20,6 @@
 import { Server } from 'node:http';
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigName } from '@hashgraph/json-rpc-config-service/src/services/configName';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { setServerTimeout } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/utils';
@@ -38,6 +37,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import pino from 'pino';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 
@@ -46,7 +46,7 @@ const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../.
 
 const testLogger = pino({
   name: 'hedera-json-rpc-relay',
-  level: ConfigService.get(ConfigName.LOG_LEVEL) || 'trace',
+  level: ConfigService.get('LOG_LEVEL' as ConfigKey) || 'trace',
   transport: {
     target: 'pino-pretty',
     options: {
@@ -57,13 +57,13 @@ const testLogger = pino({
 });
 const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-const NETWORK = ConfigService.get(ConfigName.HEDERA_NETWORK) || DOT_ENV.HEDERA_NETWORK || '';
-const OPERATOR_KEY = ConfigService.get(ConfigName.OPERATOR_KEY_MAIN) || DOT_ENV.OPERATOR_KEY_MAIN || '';
-const OPERATOR_ID = ConfigService.get(ConfigName.OPERATOR_ID_MAIN) || DOT_ENV.OPERATOR_ID_MAIN || '';
-const MIRROR_NODE_URL = ConfigService.get(ConfigName.MIRROR_NODE_URL) || DOT_ENV.MIRROR_NODE_URL || '';
+const NETWORK = ConfigService.get('HEDERA_NETWORK' as ConfigKey) || DOT_ENV.HEDERA_NETWORK || '';
+const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN' as ConfigKey) || DOT_ENV.OPERATOR_KEY_MAIN || '';
+const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN' as ConfigKey) || DOT_ENV.OPERATOR_ID_MAIN || '';
+const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL' as ConfigKey) || DOT_ENV.MIRROR_NODE_URL || '';
 const LOCAL_RELAY_URL = 'http://localhost:7546';
-const RELAY_URL = ConfigService.get(ConfigName.E2E_RELAY_HOST) || LOCAL_RELAY_URL;
-const CHAIN_ID = ConfigService.get(ConfigName.CHAIN_ID) || '0x12a';
+const RELAY_URL = ConfigService.get('E2E_RELAY_HOST' as ConfigKey) || LOCAL_RELAY_URL;
+const CHAIN_ID = ConfigService.get('CHAIN_ID' as ConfigKey) || '0x12a';
 let startOperatorBalance: Hbar;
 global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 
@@ -84,12 +84,12 @@ describe('RPC Server Acceptance Tests', function () {
   before(async () => {
     // configuration details
     logger.info('Acceptance Tests Configurations successfully loaded');
-    logger.info(`LOCAL_NODE: ${ConfigService.get(ConfigName.LOCAL_NODE)}`);
-    logger.info(`CHAIN_ID: ${ConfigService.get(ConfigName.CHAIN_ID)}`);
+    logger.info(`LOCAL_NODE: ${ConfigService.get('LOCAL_NODE' as ConfigKey)}`);
+    logger.info(`CHAIN_ID: ${ConfigService.get('CHAIN_ID' as ConfigKey)}`);
     logger.info(`HEDERA_NETWORK: ${NETWORK}`);
     logger.info(`OPERATOR_ID_MAIN: ${OPERATOR_ID}`);
     logger.info(`MIRROR_NODE_URL: ${MIRROR_NODE_URL}`);
-    logger.info(`E2E_RELAY_HOST: ${ConfigService.get(ConfigName.E2E_RELAY_HOST)}`);
+    logger.info(`E2E_RELAY_HOST: ${ConfigService.get('E2E_RELAY_HOST' as ConfigKey)}`);
 
     if (global.relayIsLocal) {
       runLocalRelay();
@@ -149,7 +149,7 @@ describe('RPC Server Acceptance Tests', function () {
     }
 
     const socketServer: Server = global.socketServer;
-    if (ConfigService.get(ConfigName.TEST_WS_SERVER) && socketServer !== undefined) {
+    if (ConfigService.get('TEST_WS_SERVER' as ConfigKey) && socketServer !== undefined) {
       socketServer.close();
     }
   });
@@ -180,7 +180,7 @@ describe('RPC Server Acceptance Tests', function () {
     global.relayServer = relayServer;
     setServerTimeout(relayServer);
 
-    if (ConfigService.get(ConfigName.TEST_WS_SERVER)) {
+    if (ConfigService.get('TEST_WS_SERVER' as ConfigKey)) {
       logger.info(`Start ws-server on port ${constants.WEB_SOCKET_PORT}`);
       global.socketServer = wsApp.listen({ port: constants.WEB_SOCKET_PORT });
     }

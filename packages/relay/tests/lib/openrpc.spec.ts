@@ -33,7 +33,6 @@ import { register, Registry } from 'prom-client';
 import sinon from 'sinon';
 
 import openRpcSchema from '../../../../docs/openrpc.json';
-import { ConfigName } from '../../../config-service/src/services/configName';
 import { RelayImpl } from '../../src';
 import { numberTo0x } from '../../src/formatters';
 import { SDKClient } from '../../src/lib/clients';
@@ -77,6 +76,7 @@ import {
   signedTransactionHash,
 } from '../helpers';
 import { CONTRACT_RESULT_MOCK, NOT_FOUND_RES } from './eth/eth-config';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
@@ -122,7 +122,7 @@ describe('Open RPC Specification', function () {
     const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      (ConfigService.get(ConfigName.MIRROR_NODE_URL) as string) || '',
+      (ConfigService.get('MIRROR_NODE_URL' as ConfigKey)) || '',
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

@@ -24,9 +24,9 @@ import pino from 'pino';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';
 
-import { ConfigName } from '../../../config-service/src/services/configName';
 import { EthImpl } from '../../src/lib/eth';
 import { Poller } from '../../src/lib/poller';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const logger = pino({ level: 'trace' });
 
@@ -190,7 +190,7 @@ describe('Polling', async function () {
       ).to.equal(true);
       expect(
         loggerSpy.calledWith(
-          `Poller: Starting polling with interval=${ConfigService.get(ConfigName.WS_POLLING_INTERVAL)}`,
+          `Poller: Starting polling with interval=${ConfigService.get('WS_POLLING_INTERVAL' as ConfigKey)}`,
         ),
       ).to.equal(true);
     });

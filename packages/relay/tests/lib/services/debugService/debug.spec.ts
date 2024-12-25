@@ -25,7 +25,6 @@ import chaiAsPromised from 'chai-as-promised';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 
-import { ConfigName } from '../../../../../config-service/src/services/configName';
 import { predefined } from '../../../../src';
 import { strip0x } from '../../../../src/formatters';
 import { MirrorNodeClient } from '../../../../src/lib/clients';
@@ -37,6 +36,7 @@ import { CommonService } from '../../../../src/lib/services/ethService';
 import { RequestDetails } from '../../../../src/lib/types';
 import RelayAssertions from '../../../assertions';
 import { getQueryParams, withOverriddenEnvsInMochaTest } from '../../../helpers';
+import { ConfigKey } from '../../../../../config-service/src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 
@@ -268,7 +268,7 @@ describe('Debug API Test Suite', async function () {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     // @ts-ignore
     mirrorNodeInstance = new MirrorNodeClient(
-      ConfigService.get(ConfigName.MIRROR_NODE_URL)! as string,
+      ConfigService.get('MIRROR_NODE_URL' as ConfigKey)!,
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

@@ -32,7 +32,7 @@ import LogsContract from '../contracts/Logs.json';
 import CallerContract from '../contracts/Caller.json';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { parseOpenRPCDocument } from '@open-rpc/schema-utils-js';
-import { ConfigName } from '../../../config-service/src/services/configName';
+import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
 
@@ -69,7 +69,7 @@ addFormats(ajv);
 let execApisOpenRpcData;
 let relayOpenRpcData: any;
 
-const chainId = Number(ConfigService.get(ConfigName.CHAIN_ID) || 0x12a);
+const chainId = Number(ConfigService.get('CHAIN_ID' as ConfigKey) || 0x12a);
 
 let legacyTransaction = {
   chainId,

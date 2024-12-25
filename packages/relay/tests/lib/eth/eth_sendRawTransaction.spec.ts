@@ -37,7 +37,6 @@ import pino from 'pino';
 import { Counter } from 'prom-client';
 import sinon, { useFakeTimers } from 'sinon';
 
-import { ConfigName } from '../../../../config-service/src/services/configName';
 import { Eth, JsonRpcError, predefined } from '../../../src';
 import { formatTransactionIdWithoutQueryParams } from '../../../src/formatters';
 import { SDKClient } from '../../../src/lib/clients';
@@ -58,6 +57,7 @@ import {
 } from '../../helpers';
 import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
+import { ConfigKey } from '../../../../config-service/src/services/globalConfig';
 
 use(chaiAsPromised);
 
@@ -116,7 +116,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       },
     };
     const transaction = {
-      chainId: Number(ConfigService.get(ConfigName.CHAIN_ID) || 0x12a),
+      chainId: Number(ConfigService.get('CHAIN_ID' as ConfigKey) || 0x12a),
       to: ACCOUNT_ADDRESS_1,
       from: accountAddress,
       value,
@@ -136,7 +136,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       },
       receiver_sig_required: false,
     };
-    const useAsyncTxProcessing = ConfigService.get(ConfigName.USE_ASYNC_TX_PROCESSING) as boolean;
+    const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING' as ConfigKey);
 
     beforeEach(() => {
       clock = useFakeTimers();
