@@ -35,7 +35,7 @@ import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 describe('@web-socket-batch-2 eth_getTransactionByHash', async function () {
   const METHOD_NAME = 'eth_getTransactionByHash';
-  const CHAIN_ID = ConfigService.get('CHAIN_ID' as ConfigKey) || '0x12a';
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
   const INVALID_PARAMS = [
     [],
     [''],

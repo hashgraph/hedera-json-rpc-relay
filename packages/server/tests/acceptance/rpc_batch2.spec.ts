@@ -80,7 +80,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   let createChildTx: ethers.ContractTransactionResponse;
   let accounts0StartBalance: bigint;
 
-  const CHAIN_ID = ConfigService.get('CHAIN_ID' as ConfigKey) || 0;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
   const ONE_WEIBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 18)));
 
@@ -442,7 +442,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('@release should call eth_gasPrice', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestId);
       expect(res).to.exist;
-      if (ConfigService.get('LOCAL_NODE' as ConfigKey)) {
+      if (ConfigService.get('LOCAL_NODE')) {
         expect(res).be.equal(expectedGasPrice);
       } else {
         expect(Number(res)).to.be.gt(0);
@@ -1077,7 +1077,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   });
 
   // Only run the following tests against a local node since they only work with the genesis account
-  if (ConfigService.get('LOCAL_NODE' as ConfigKey)) {
+  if (ConfigService.get('LOCAL_NODE')) {
     describe('Gas Price related RPC endpoints', () => {
       let lastBlockBeforeUpdate;
       let lastBlockAfterUpdate;

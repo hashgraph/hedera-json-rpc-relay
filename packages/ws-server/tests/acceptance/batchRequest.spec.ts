@@ -105,7 +105,7 @@ describe('@web-socket-batch-request Batch Requests', async function () {
 
         const expectedError = predefined.BATCH_REQUESTS_AMOUNT_MAX_EXCEEDED(
           batchRequests.length,
-          Number(ConfigService.get('WS_BATCH_REQUESTS_MAX_SIZE' as ConfigKey)),
+          Number(ConfigService.get('WS_BATCH_REQUESTS_MAX_SIZE')),
         );
         delete expectedError.data;
 

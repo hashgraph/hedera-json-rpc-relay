@@ -38,9 +38,9 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   let requestId: string;
 
   const TIER_2_RATE_LIMIT =
-    (ConfigService.get('TIER_2_RATE_LIMIT' as ConfigKey)) || relayConstants.DEFAULT_RATE_LIMIT.TIER_2;
+    (ConfigService.get('TIER_2_RATE_LIMIT')) || relayConstants.DEFAULT_RATE_LIMIT.TIER_2;
   const LIMIT_DURATION =
-    (ConfigService.get('LIMIT_DURATION' as ConfigKey)) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
+    (ConfigService.get('LIMIT_DURATION')) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
 
   describe('RPC Rate Limiter Acceptance Tests', () => {
     const sendMultipleRequests = async (method: string, params: any[], threshold: number) => {

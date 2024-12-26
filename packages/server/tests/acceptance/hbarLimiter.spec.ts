@@ -222,7 +222,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       const accounts: AliasAccount[] = [];
       const defaultLondonTransactionData = {
         value: Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10))), // 1 tinybar
-        chainId: Number(ConfigService.get('CHAIN_ID' as ConfigKey) || 0),
+        chainId: Number(ConfigService.get('CHAIN_ID') || 0),
         maxPriorityFeePerGas: Assertions.defaultGasPrice,
         maxFeePerGas: Assertions.defaultGasPrice,
         gasLimit: 3_000_000,
@@ -233,7 +233,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
         logger.info(`${requestDetails.formattedRequestId} Creating accounts`);
         logger.info(
           `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get(
-            'HBAR_RATE_LIMIT_TINYBAR' as ConfigKey,
+            'HBAR_RATE_LIMIT_TINYBAR',
           )}`,
         );
 
@@ -741,7 +741,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           };
 
           describe('given a valid JSON file with pre-configured spending plans', async () => {
-            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG' as ConfigKey);
+            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG');
             const configPath = findConfig(SPENDING_PLANS_CONFIG_FILE);
 
             if (configPath) {
@@ -901,7 +901,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                 return { ...aliasAccount, hbarSpendingPlan: accountAliasPlan.hbarSpendingPlan };
               });
 
-            const totalHbarBudget = ConfigService.get('HBAR_RATE_LIMIT_TINYBAR' as ConfigKey);
+            const totalHbarBudget = ConfigService.get('HBAR_RATE_LIMIT_TINYBAR');
 
             let totalHbarSpent =
               totalHbarBudget - Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
@@ -958,14 +958,14 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       before(async function () {
         logger.info(
           `${requestDetails.formattedRequestId} HBAR_RATE_LIMIT_TINYBAR: ${ConfigService.get(
-            'HBAR_RATE_LIMIT_TINYBAR' as ConfigKey,
+            'HBAR_RATE_LIMIT_TINYBAR',
           )}`,
         );
       });
 
       it('should eventually exhaust the hbar limit for a BASIC user after multiple deployments of large contracts, and not throw an error', async function () {
         // confirm that HBAR_RATE_LIMIT_TINYBAR is set to zero
-        expect(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR' as ConfigKey)).to.eq(0);
+        expect(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR')).to.eq(0);
         // This should set the remaining HBAR limit to zero
         const remainingHbarsBefore = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
         expect(remainingHbarsBefore).to.eq(0);

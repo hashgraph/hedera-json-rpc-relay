@@ -24,6 +24,7 @@ import pino from 'pino';
 
 import { LoggerService } from './loggerService';
 import { ValidationService } from './validationService';
+import { ConfigKey } from './globalConfig';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -97,7 +98,7 @@ export class ConfigService {
    * @param name string
    * @returns string | undefined
    */
-  public static get(name: string): string | number | boolean | null | undefined {
+  public static get(name: ConfigKey): string | number | boolean | null | undefined {
     return this.getInstance().envs[name];
   }
 }

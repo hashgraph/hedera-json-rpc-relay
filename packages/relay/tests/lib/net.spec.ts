@@ -42,7 +42,7 @@ describe('Net', async function () {
   });
 
   it('should execute "net_version"', function () {
-    const hederaNetwork: string = ((ConfigService.get('HEDERA_NETWORK') as ConfigKey) || '{}').toLowerCase();
+    const hederaNetwork: string = ((ConfigService.get('HEDERA_NETWORK')) || '{}').toLowerCase();
     let expectedNetVersion = ConfigService.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
     if (expectedNetVersion.startsWith('0x')) expectedNetVersion = parseInt(expectedNetVersion, 16).toString();
 
