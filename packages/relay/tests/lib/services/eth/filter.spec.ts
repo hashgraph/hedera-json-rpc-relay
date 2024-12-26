@@ -84,7 +84,7 @@ describe('Filter API Test Suite', async function () {
   this.beforeAll(() => {
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
-      ConfigService.get('MIRROR_NODE_URL' as ConfigKey),
+      ConfigService.get('MIRROR_NODE_URL'),
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,

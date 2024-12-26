@@ -121,7 +121,7 @@ export const CONTRACT_RESULT_MOCK = {
 };
 
 export const CONTRACT_CALL_DATA = '0xef641f44';
-export const ETH_FEE_HISTORY_VALUE = ConfigService.get('ETH_FEE_HISTORY_FIXED' as ConfigKey) ?? true;
+export const ETH_FEE_HISTORY_VALUE = ConfigService.get('ETH_FEE_HISTORY_FIXED') ?? true;
 export const BLOCK_HASH_PREV_TRIMMED = '0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298';
 export const BLOCK_NUMBER_HEX = `0x${BLOCK_NUMBER.toString(16)}`;
 export const MAX_GAS_LIMIT = 250000;

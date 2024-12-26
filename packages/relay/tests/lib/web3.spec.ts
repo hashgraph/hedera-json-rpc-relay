@@ -34,7 +34,7 @@ describe('Web3', function () {
   withOverriddenEnvsInMochaTest({ npm_package_version: '1.0.0' }, () => {
     it('should return "relay/1.0.0"', async function () {
       const clientVersion = Relay.web3().clientVersion();
-      expect(clientVersion).to.be.equal('relay/' + ConfigService.get('npm_package_version' as ConfigKey));
+      expect(clientVersion).to.be.equal('relay/' + ConfigService.get('npm_package_version'));
     });
   });
 

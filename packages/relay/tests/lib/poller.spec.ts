@@ -190,7 +190,7 @@ describe('Polling', async function () {
       ).to.equal(true);
       expect(
         loggerSpy.calledWith(
-          `Poller: Starting polling with interval=${ConfigService.get('WS_POLLING_INTERVAL' as ConfigKey)}`,
+          `Poller: Starting polling with interval=${ConfigService.get('WS_POLLING_INTERVAL')}`,
         ),
       ).to.equal(true);
     });

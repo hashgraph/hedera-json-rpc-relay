@@ -75,7 +75,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   let mirrorPrimaryAccount: ethers.Wallet;
   let mirrorSecondaryAccount: ethers.Wallet;
 
-  const CHAIN_ID = ConfigService.get('CHAIN_ID' as ConfigKey) || 0x12a;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0x12a;
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let reverterContract: ethers.Contract;
@@ -548,7 +548,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
           });
 
           // value is processed only when eth_call goes through the mirror node
-          if (!ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE' as ConfigKey)) {
+          if (!ConfigService.get('ETH_CALL_DEFAULT_TO_CONSENSUS_NODE')) {
             it('010 Should call msgValue', async function () {
               const callData = {
                 ...defaultCallData,
@@ -612,7 +612,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       };
 
       // Since we want the http status code, we need to perform the call using a client http request instead of using the relay instance directly
-      const testClientPort = ConfigService.get('E2E_SERVER_PORT' as ConfigKey) || '7546';
+      const testClientPort = ConfigService.get('E2E_SERVER_PORT') || '7546';
       const testClient = Axios.create({
         baseURL: 'http://localhost:' + testClientPort,
         responseType: 'json' as const,
@@ -798,7 +798,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       let initialEthCallSelectorsAlwaysToConsensus: any, hrc719Contract: ethers.Contract;
 
       before(async () => {
-        initialEthCallSelectorsAlwaysToConsensus = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS' as ConfigKey);
+        initialEthCallSelectorsAlwaysToConsensus = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS');
 
         hrc719Contract = await Utils.deployContract(
           HRC719ContractJson.abi,
@@ -815,7 +815,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       });
 
       it('should NOT allow eth_call to process IHRC719.isAssociated() method', async () => {
-        const selectorsList = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS' as ConfigKey);
+        const selectorsList = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS');
         expect(selectorsList).to.be.undefined;
 
         // If the selector for `isAssociated` is not included in `ETH_CALL_CONSENSUS_SELECTORS`, the request will fail with a `CALL_EXCEPTION` error code.

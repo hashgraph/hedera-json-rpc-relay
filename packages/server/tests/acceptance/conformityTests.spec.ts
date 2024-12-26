@@ -69,7 +69,7 @@ addFormats(ajv);
 let execApisOpenRpcData;
 let relayOpenRpcData: any;
 
-const chainId = Number(ConfigService.get('CHAIN_ID' as ConfigKey) || 0x12a);
+const chainId = Number(ConfigService.get('CHAIN_ID') || 0x12a);
 
 let legacyTransaction = {
   chainId,

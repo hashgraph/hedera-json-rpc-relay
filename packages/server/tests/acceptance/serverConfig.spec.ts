@@ -26,9 +26,9 @@ import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 describe('@server-config Server Configuration Options Coverage', function () {
   describe('Koa Server Timeout', () => {
     it('should timeout a request after the specified time', async () => {
-      const requestTimeoutMs: number = parseInt(ConfigService.get('SERVER_REQUEST_TIMEOUT_MS' as ConfigKey) || '3000');
+      const requestTimeoutMs: number = parseInt(ConfigService.get('SERVER_REQUEST_TIMEOUT_MS') || '3000');
       const host = ConfigService.get('SERVER_HOST') || 'localhost';
-      const port = parseInt(ConfigService.get('SERVER_PORT' as ConfigKey) || '7546');
+      const port = parseInt(ConfigService.get('SERVER_PORT') || '7546');
       const method = 'eth_blockNumber';
       const params: any[] = [];
 
