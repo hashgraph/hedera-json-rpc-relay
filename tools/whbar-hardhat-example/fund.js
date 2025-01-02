@@ -1,6 +1,6 @@
 const SDK = require('@hashgraph/sdk');
 
-module.exports = async function fund(hre, initialHbarBalance, contractAddress) {
+const fundECDSA = async function(hre, initialHbarBalance, contractAddress) {
   if (!initialHbarBalance) {
     console.log('(${hre.network.name}) There is no initial funding.');
     return;
@@ -37,6 +37,25 @@ module.exports = async function fund(hre, initialHbarBalance, contractAddress) {
   console.log(`(${hre.network.name}) WHBAR contract ${contractAddress} was successfully funded with ${initialHbarBalance} hbars.`);
 };
 
+const fundED25519 = async function(hre, initialHbarBalance, contractId) {
+  const networkName = hre.network.name.split('_')[1];
+  const client = SDK.Client[`for${capitalizeFirstLetter(networkName)}`]();
+
+  client.setOperator(SDK.AccountId.fromString(process.env.ED25519_ACCOUNT_ID), SDK.PrivateKey.fromStringED25519(process.env.ED25519_HEX_PRIVATE_KEY));
+
+  const fundTx = new SDK.TransferTransaction()
+    .addHbarTransfer(process.env.ED25519_ACCOUNT_ID, new SDK.Hbar(initialHbarBalance).negated())
+    .addHbarTransfer(contractId, new SDK.Hbar(initialHbarBalance));
+  const fundTxResponse = await fundTx.execute(client);
+  const fundReceipt = await fundTxResponse.getReceipt(client);
+
+  if (fundReceipt.status._code !== 22) {
+    throw new Error(`Funding transaction with id ${fundTxResponse.transactionId.toString()} failed.`);
+  }
+
+  console.log(`(${hre.network.name}) WHBAR contract ${contractId} was successfully funded with ${initialHbarBalance} hbars.`);
+};
+
 const capitalizeFirstLetter = (str) => {
   return String(str).charAt(0).toUpperCase() + String(str).slice(1);
 };
@@ -48,3 +67,5 @@ const fetchMirrorNodeAccount = async (mirrorNodeUrl, address) => {
     throw new Error(`Unable to fetch address ${address} from mirror node.`);
   }
 };
+
+module.exports = { fundECDSA, fundED25519, capitalizeFirstLetter, fetchMirrorNodeAccount };

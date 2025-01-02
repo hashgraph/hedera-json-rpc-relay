@@ -1,6 +1,7 @@
 require('dotenv').config();
 require('@nomicfoundation/hardhat-toolbox');
-const fund = require('./fund');
+const SDK = require('@hashgraph/sdk');
+const { fundECDSA, fundED25519, capitalizeFirstLetter } = require('./fund');
 
 module.exports = {
   solidity: {
@@ -43,5 +44,27 @@ task('deploy-whbar', 'Deploy WHBAR')
 
     console.log(`(${hre.network.name}) WHBAR deployed to: ` + contract.target);
 
-    await fund(hre, Number(process.env.INITIAL_BALANCE), contract.target);
+    await fundECDSA(hre, Number(process.env.INITIAL_BALANCE), contract.target);
+  });
+
+task('deploy-whbar-using-ed25519-signer-key', 'Deploy WHBAR using ED25519 signer key')
+  .setAction(async (taskArgs, hre) => {
+    const networkName = hre.network.name.split('_')[1];
+    const client = SDK.Client[`for${capitalizeFirstLetter(networkName)}`]();
+
+    client.setOperator(process.env.ED25519_ACCOUNT_ID, SDK.PrivateKey.fromStringED25519(process.env.ED25519_HEX_PRIVATE_KEY));
+
+    const { bytecode } = await hre.artifacts.readArtifact('WHBAR');
+
+    const contractCreateTx = new SDK.ContractCreateFlow()
+      .setBytecode(bytecode)
+      .setGas(250_000);
+
+    const contractCreateTxResponse = contractCreateTx.execute(client);
+    const contractCreateReceipt = (await contractCreateTxResponse).getReceipt(client);
+    const { contractId } = await contractCreateReceipt;
+
+    console.log(`(${hre.network.name}) deployed WHBAR has id ${contractId}`);
+
+    await fundED25519(hre, Number(process.env.INITIAL_BALANCE), contractId.toString());
   });

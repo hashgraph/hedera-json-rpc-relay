@@ -35,7 +35,7 @@ npx hardhat deploy-whbar
 
 #### Build a docker image and deploy the WHBAR within it
 Build the docker image (optionaly you can push it to registry):
-```
+```bash
 docker build . --tag whbar-hardhat-example-1.0
 ```
 
@@ -43,8 +43,12 @@ And deploy the whbar (local docker image tag):
 - envs:
   - NETWORK='testnet' # available networks (mainnet, testnet, previewnet)
   - ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000' # 32 bytes ECDSA private key
+  - ED25519_ACCOUNT_ID=0.0.0 # Account ID of ED25519 in format <realm>.<shard>.<num>
+  - ED25519_HEX_PRIVATE_KEY=0x0000000000000000000000000000000000000000000000000000000000000000 # 32 bytes ED25519 private key
   - INITIAL_BALANCE='1000' # denominated in HBARs
-```
+
+**If you're using ECDSA pk:**
+```bash
 docker run
     -it
     -e NETWORK='testnet'
@@ -54,19 +58,39 @@ docker run
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 
-Or you can use the already pushed image (natanasow/whbar-hardhat-example:2.0):
-- envs:
-  - NETWORK='testnet' # available networks (mainnet, testnet, previewnet)
-  - ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000' # 32 bytes ECDSA private key
-  - INITIAL_BALANCE='1000' # denominated in HBARs
-```
+Or you can use the already pushed image (natanasow/whbar-hardhat-example:2.2):
+```bash
 docker run
     -it
     -e NETWORK='testnet'
     -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
     -e INITIAL_BALANCE='1000'
-    natanasow/whbar-hardhat-example:2.0
+    natanasow/whbar-hardhat-example:2.2
     /bin/sh -c 'npx hardhat deploy-whbar'
+```
+
+**Or if you're using ED25519 pk:**
+```bash
+docker run
+    -it
+    -e NETWORK='testnet'
+    -e ED25519_ACCOUNT_ID='0.0.<num>'
+    -e ED25519_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
+    -e INITIAL_BALANCE='1000'
+    whbar-hardhat-example-1.0
+    /bin/sh -c 'npx hardhat deploy-whbar-using-ed25519-signer-key'
+```
+
+Or you can use the already pushed image (natanasow/whbar-hardhat-example:2.2):
+```bash
+docker run
+    -it
+    -e NETWORK='testnet'
+    -e ED25519_ACCOUNT_ID='0.0.<num>'
+    -e ED25519_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
+    -e INITIAL_BALANCE='1000'
+    natanasow/whbar-hardhat-example:2.2
+    /bin/sh -c 'npx hardhat deploy-whbar-using-ed25519-signer-key'
 ```
 
 #### Verification
