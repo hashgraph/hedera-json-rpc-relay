@@ -34,10 +34,12 @@ describe('ONFTAdapterTests', function() {
     const contract = await ethers.getContractAt('ERC721Mock', process.env.ERC721_HEDERA_CONTRACT);
     const txSigner = await contract.mint(signers[0].address, 1);
     const receiptSigner = await txSigner.wait();
+    console.log(`(${hre.network.name}) successfully sent to Hedera via tx: ${txSigner.hash}`);
     expect(!!receiptSigner.status).to.be.true;
 
     const txAdapter = await contract.mint(process.env.ONFT_ADAPTER_HEDERA_CONTRACT, 2);
     const receiptAdapter = await txAdapter.wait();
+    console.log(`(${hre.network.name}) successfully sent to Hedera via tx: ${txAdapter.hash}`);
     expect(!!receiptAdapter.status).to.be.true;
   });
 
@@ -47,10 +49,12 @@ describe('ONFTAdapterTests', function() {
     const contract = await ethers.getContractAt('ERC721Mock', process.env.ERC721_BSC_CONTRACT);
     const txAdapter = await contract.mint(process.env.ONFT_ADAPTER_BSC_CONTRACT, 1);
     const receiptAdapter = await txAdapter.wait();
+    console.log(`(${hre.network.name}) successfully sent to BSC via tx: ${txAdapter.hash}`);
     expect(!!receiptAdapter.status).to.be.true;
 
     const txSigner = await contract.mint(signers[0].address, 2);
     const receiptSigner = await txSigner.wait();
+    console.log(`(${hre.network.name}) successfully sent to BSC via tx: ${txSigner.hash}`);
     expect(!!receiptSigner.status).to.be.true;
   });
 
@@ -58,6 +62,7 @@ describe('ONFTAdapterTests', function() {
     const contract = await ethers.getContractAt('ERC721Mock', process.env.ERC721_HEDERA_CONTRACT);
     const approveTx = await contract.approve(process.env.ONFT_ADAPTER_HEDERA_CONTRACT, 1);
     const receipt = await approveTx.wait();
+    console.log(`(${hre.network.name}) successfully sent to Hedera via tx: ${approveTx.hash}`);
     expect(!!receipt.status).to.be.true;
   });
 
@@ -65,6 +70,7 @@ describe('ONFTAdapterTests', function() {
     const contract = await ethers.getContractAt('ERC721Mock', process.env.ERC721_BSC_CONTRACT);
     const approveTx = await contract.approve(process.env.ONFT_ADAPTER_BSC_CONTRACT, 2);
     const receipt = await approveTx.wait();
+    console.log(`(${hre.network.name}) successfully sent to BSC via tx: ${approveTx.hash}`);
     expect(!!receipt.status).to.be.true;
   });
 
@@ -91,7 +97,7 @@ describe('ONFTAdapterTests', function() {
       process.exit(`Execution failed. Tx hash: ${tx.hash}`);
     }
 
-    console.log(`(${hre.network.name}) successfully sent to Bsc via tx: ${tx.hash}`);
+    console.log(`(${hre.network.name}) successfully sent to BSC via tx: ${tx.hash}`);
   });
 
   it('@bsc @send to hedera', async () => {

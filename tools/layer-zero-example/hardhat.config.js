@@ -19,7 +19,7 @@
  */
 
 require('dotenv').config();
-require("@nomicfoundation/hardhat-toolbox");
+require('@nomicfoundation/hardhat-toolbox');
 
 module.exports = {
   solidity: {
@@ -29,25 +29,25 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
-          },
-        },
-      },
-    ],
+            runs: 200
+          }
+        }
+      }
+    ]
   },
   defaultNetwork: 'hedera_testnet',
   networks: {
     hedera_testnet: {
       url: 'https://testnet.hashio.io/api',
       accounts: [process.env.HEDERA_PK],
-      chainId: 296,
+      chainId: 296
     },
     bsc_testnet: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
       chainId: 97,
       gasPrice: 20000000000,
       accounts: [process.env.BSC_PK]
-    },
+    }
   }
 };
 
@@ -63,18 +63,18 @@ const getEndpointAddress = (network) => {
   }
 
   return ENDPOINT_V2;
-}
+};
 
-task('deploy-whbar', "Deploy WHBAR")
+task('deploy-whbar', 'Deploy WHBAR')
   .setAction(async (taskArgs, hre) => {
     const contractFactory = await ethers.getContractFactory('WHBAR');
     const contract = await contractFactory.deploy();
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) WHBAR to: ` + contract.address);
+    console.log(`(${hre.network.name}) WHBAR to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
   });
 
-task('deploy-erc20', "Deploy ERC20 token")
+task('deploy-erc20', 'Deploy ERC20 token')
   .addParam('mint', 'Initial mint')
   .addParam('decimals', 'Decimals')
   .setAction(async (taskArgs, hre) => {
@@ -82,19 +82,19 @@ task('deploy-erc20', "Deploy ERC20 token")
     const contract = await contractFactory.deploy(taskArgs.mint, taskArgs.decimals);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ERC20 deployed to: ` + contract.address);
+    console.log(`(${hre.network.name}) ERC20 deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
   });
 
-task('deploy-erc721', "Deploy ERC721 token")
+task('deploy-erc721', 'Deploy ERC721 token')
   .setAction(async (taskArgs, hre) => {
     const contractFactory = await ethers.getContractFactory('ERC721Mock');
     const contract = await contractFactory.deploy();
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ERC721 deployed to: ` + contract.address);
+    console.log(`(${hre.network.name}) ERC721 deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
   });
 
-task("deploy-oapp", "Deploy OApp contract")
+task('deploy-oapp', 'Deploy OApp contract')
   .setAction(async (taskArgs, hre) => {
     const ethers = hre.ethers;
     const signers = await ethers.getSigners();
@@ -104,10 +104,10 @@ task("deploy-oapp", "Deploy OApp contract")
     const contract = await contractFactory.deploy(ENDPOINT_V2, signers[0].address);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleOApp deployed to: ` + contract.address);
+    console.log(`(${hre.network.name}) ExampleOApp deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
   });
 
-task("deploy-oft", "Deploy OFT contract")
+task('deploy-oft', 'Deploy OFT contract')
   .addParam('mint', 'Initial mint')
   .addParam('decimals', 'Decimals')
   .setAction(async (taskArgs, hre) => {
@@ -119,10 +119,10 @@ task("deploy-oft", "Deploy OFT contract")
     const contract = await contractFactory.deploy('T_NAME', 'T_SYMBOL', ENDPOINT_V2, signers[0].address, taskArgs.mint, taskArgs.decimals);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleOFT deployed to: ` + contract.address);
+    console.log(`(${hre.network.name}) ExampleOFT deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
   });
 
-task("deploy-hts-connector", "Deploy HTS connector contract")
+task('deploy-hts-connector', 'Deploy HTS connector contract')
   .setAction(async (taskArgs, hre) => {
     const ethers = hre.ethers;
     const signers = await ethers.getSigners();
@@ -135,10 +135,10 @@ task("deploy-hts-connector", "Deploy HTS connector contract")
     });
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleHTSConnector deployed to: ` + contract.address);
+    console.log(`(${hre.network.name}) ExampleHTSConnector deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
   });
 
-task("create-hts-token", "Create a HTS token")
+task('create-hts-token', 'Create a HTS token')
   .setAction(async (taskArgs, hre) => {
     const ethers = hre.ethers;
     const signers = await ethers.getSigners();
@@ -150,10 +150,10 @@ task("create-hts-token", "Create a HTS token")
     });
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) Token address: ` + await contract.htsTokenAddress());
+    console.log(`(${hre.network.name}) Token address ${await contract.htsTokenAddress()}, txHash ${contract.deployTransaction.hash}`);
   });
 
-task("deploy-oft-adapter", "Deploy OFT adapter contract")
+task('deploy-oft-adapter', 'Deploy OFT adapter contract')
   .addParam('token', 'Token address')
   .setAction(async (taskArgs, hre) => {
     const ethers = hre.ethers;
@@ -164,10 +164,10 @@ task("deploy-oft-adapter", "Deploy OFT adapter contract")
     const contract = await contractFactory.deploy(taskArgs.token, ENDPOINT_V2, signers[0].address);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleOFTAdapter for token ${taskArgs.token} deployed to: ` + contract.address);
+    console.log(`(${hre.network.name}) ExampleOFTAdapter for token ${taskArgs.token} deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
   });
 
-task("deploy-onft", "Deploy OFT contract")
+task('deploy-onft', 'Deploy OFT contract')
   .setAction(async (taskArgs, hre) => {
     const ethers = hre.ethers;
     const signers = await ethers.getSigners();
@@ -184,10 +184,10 @@ task("deploy-onft", "Deploy OFT contract")
     const contract = await contractFactory.deploy('T_NAME', 'T_SYMBOL', ENDPOINT_V2, signers[0].address, tokenId);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleONFT deployed to: ` + contract.address);
+    console.log(`(${hre.network.name}) ExampleONFT deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
   });
 
-task("deploy-onft-adapter", "Deploy OFT contract")
+task('deploy-onft-adapter', 'Deploy OFT contract')
   .addParam('token', 'Token address')
   .setAction(async (taskArgs, hre) => {
     const ethers = hre.ethers;
@@ -198,10 +198,10 @@ task("deploy-onft-adapter", "Deploy OFT contract")
     const contract = await contractFactory.deploy(taskArgs.token, ENDPOINT_V2, signers[0].address);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleONFTAdapter deployed to: ` + contract.address);
+    console.log(`(${hre.network.name}) ExampleONFTAdapter deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
   });
 
-task("set-peer", "Set peer")
+task('set-peer', 'Set peer')
   .addParam('source', 'Source contract address')
   .addParam('target', 'Target contract address')
   .setAction(async (taskArgs, hre) => {
@@ -222,5 +222,5 @@ task("set-peer", "Set peer")
       process.exit('Execution of setPeer failed. Tx hash: ' + tx.hash);
     }
 
-    console.log(`(${hre.network.name}) Peer for network with EID ${EID} was successfully set`);
+    console.log(`(${hre.network.name}) Peer for network with EID ${EID} was successfully set, txHash ${tx.hash}`);
   });

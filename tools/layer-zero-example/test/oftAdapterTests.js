@@ -33,6 +33,7 @@ describe('OFTAdapterTests', function() {
     const contractERC20 = await ethers.getContractAt('ERC20Mock', process.env.ERC20_HEDERA_CONTRACT);
     const transferTx = await contractERC20.transfer(process.env.OFT_ADAPTER_HEDERA_CONTRACT, amount);
     const receipt = await transferTx.wait();
+    console.log(`(${hre.network.name}) successfully sent to Hedera via tx: ${transferTx.hash}`);
     expect(!!receipt.status).to.be.true;
   });
 
@@ -40,6 +41,7 @@ describe('OFTAdapterTests', function() {
     const contractERC20 = await ethers.getContractAt('ERC20Mock', process.env.ERC20_BSC_CONTRACT);
     const transferTx = await contractERC20.transfer(process.env.OFT_ADAPTER_BSC_CONTRACT, amount);
     const receipt = await transferTx.wait();
+    console.log(`(${hre.network.name}) successfully sent to BSC via tx: ${transferTx.hash}`);
     expect(!!receipt.status).to.be.true;
   });
 
@@ -47,6 +49,7 @@ describe('OFTAdapterTests', function() {
     const contractERC20 = await ethers.getContractAt('ERC20Mock', process.env.ERC20_HEDERA_CONTRACT);
     const approveTx = await contractERC20.approve(process.env.OFT_ADAPTER_HEDERA_CONTRACT, amount);
     const receipt = await approveTx.wait();
+    console.log(`(${hre.network.name}) successfully sent to Hedera via tx: ${approveTx.hash}`);
     expect(!!receipt.status).to.be.true;
   });
 
@@ -54,6 +57,7 @@ describe('OFTAdapterTests', function() {
     const contractERC20 = await ethers.getContractAt('ERC20Mock', process.env.ERC20_BSC_CONTRACT);
     const approveTx = await contractERC20.approve(process.env.OFT_ADAPTER_BSC_CONTRACT, amount);
     const receipt = await approveTx.wait();
+    console.log(`(${hre.network.name}) successfully sent to BSC via tx: ${approveTx.hash}`);
     expect(!!receipt.status).to.be.true;
   });
 
@@ -81,7 +85,7 @@ describe('OFTAdapterTests', function() {
       process.exit(`Execution failed. Tx hash: ${tx.hash}`);
     }
 
-    console.log(`(${hre.network.name}) successfully sent to Bsc via tx: ${tx.hash}`);
+    console.log(`(${hre.network.name}) successfully sent to BSC via tx: ${tx.hash}`);
   });
 
   it('@bsc @send to hedera', async () => {

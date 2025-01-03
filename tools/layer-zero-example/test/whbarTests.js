@@ -28,7 +28,7 @@ const BSC_EID = 40102;
 const receiverAddress = '0xF51c7a9407217911d74e91642dbC58F18E51Deac';
 const amount = '50000000';
 
-describe.only('WHBARTests', function() {
+describe('WHBARTests', function() {
   it('@hedera @deposit 1 hbar', async () => {
     const signers = await ethers.getSigners();
     const contract = await ethers.getContractAt('WHBAR', process.env.WHBAR_HEDERA_CONTRACT);
@@ -37,6 +37,7 @@ describe.only('WHBARTests', function() {
       value: '1000000000000000000' // 1 hbar
     });
     await tx.wait();
+    console.log(`(${hre.network.name}) successfully sent to Hedera via tx: ${tx.hash}`);
 
     expect(await contract.balanceOf(signers[0].address)).to.equal(100_000_000);
   });
@@ -45,6 +46,7 @@ describe.only('WHBARTests', function() {
     const contractERC20 = await ethers.getContractAt('ERC20Mock', process.env.WHBAR_HEDERA_CONTRACT);
     const transferTx = await contractERC20.transfer(process.env.WHBAR_HEDERA_ADAPTER_CONTRACT, amount);
     const receipt = await transferTx.wait();
+    console.log(`(${hre.network.name}) successfully sent to Hedera via tx: ${transferTx.hash}`);
     expect(!!receipt.status).to.be.true;
   });
 
@@ -52,6 +54,7 @@ describe.only('WHBARTests', function() {
     const contractERC20 = await ethers.getContractAt('ERC20Mock', process.env.WHBAR_BSC_CONTRACT);
     const transferTx = await contractERC20.transfer(process.env.WHBAR_BSC_ADAPTER_CONTRACT, amount);
     const receipt = await transferTx.wait();
+    console.log(`(${hre.network.name}) successfully sent to BSC via tx: ${transferTx.hash}`);
     expect(!!receipt.status).to.be.true;
   });
 
@@ -59,6 +62,7 @@ describe.only('WHBARTests', function() {
     const contractERC20 = await ethers.getContractAt('ERC20Mock', process.env.WHBAR_HEDERA_CONTRACT);
     const approveTx = await contractERC20.approve(process.env.WHBAR_HEDERA_ADAPTER_CONTRACT, amount);
     const receipt = await approveTx.wait();
+    console.log(`(${hre.network.name}) successfully sent to Hedera via tx: ${approveTx.hash}`);
     expect(!!receipt.status).to.be.true;
   });
 
@@ -66,6 +70,7 @@ describe.only('WHBARTests', function() {
     const contractERC20 = await ethers.getContractAt('ERC20Mock', process.env.WHBAR_BSC_CONTRACT);
     const approveTx = await contractERC20.approve(process.env.WHBAR_BSC_ADAPTER_CONTRACT, amount);
     const receipt = await approveTx.wait();
+    console.log(`(${hre.network.name}) successfully sent to BSC via tx: ${approveTx.hash}`);
     expect(!!receipt.status).to.be.true;
   });
 
@@ -93,7 +98,7 @@ describe.only('WHBARTests', function() {
       process.exit(`Execution failed. Tx hash: ${tx.hash}`);
     }
 
-    console.log(`(${hre.network.name}) successfully sent to Bsc via tx: ${tx.hash}`);
+    console.log(`(${hre.network.name}) successfully sent to BSC via tx: ${tx.hash}`);
   });
 
   it('@bsc @send to hedera', async () => {

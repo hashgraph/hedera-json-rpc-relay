@@ -28,14 +28,8 @@ abstract contract HTSConnector is OFTCore, KeyHelper, HederaTokenService {
         address _lzEndpoint,
         address _delegate
     ) payable OFTCore(8, _lzEndpoint, _delegate) {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
         keys[0] = getSingleKey(
-            KeyType.ADMIN,
-            KeyType.PAUSE,
-            KeyValueType.INHERIT_ACCOUNT_KEY,
-            bytes("")
-        );
-        keys[1] = getSingleKey(
             KeyType.SUPPLY,
             KeyValueType.INHERIT_ACCOUNT_KEY,
             bytes("")

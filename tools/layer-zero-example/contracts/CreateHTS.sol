@@ -10,14 +10,8 @@ contract CreateHTS is Ownable, KeyHelper, HederaTokenService {
     address public htsTokenAddress;
 
     constructor(string memory _name, string memory _symbol, address _delegate) payable Ownable(_delegate) {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
         keys[0] = getSingleKey(
-            KeyType.ADMIN,
-            KeyType.PAUSE,
-            KeyValueType.INHERIT_ACCOUNT_KEY,
-            bytes("")
-        );
-        keys[1] = getSingleKey(
             KeyType.SUPPLY,
             KeyValueType.INHERIT_ACCOUNT_KEY,
             bytes("")

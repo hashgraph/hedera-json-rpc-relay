@@ -48,26 +48,6 @@ abstract contract KeyHelper {
         );
     }
 
-    function getSingleKey(
-        KeyType firstType,
-        KeyType secondType,
-        KeyValueType keyValueType,
-        bytes memory key
-    ) internal view returns (IHederaTokenService.TokenKey memory tokenKey) {
-        tokenKey = IHederaTokenService.TokenKey(
-            getDuplexKeyType(firstType, secondType),
-            getKeyValueType(keyValueType, key)
-        );
-    }
-
-    function getDuplexKeyType(
-        KeyType firstType,
-        KeyType secondType
-    ) internal pure returns (uint256 keyType) {
-        keyType = keyType.setBit(uint8(firstType));
-        keyType = keyType.setBit(uint8(secondType));
-    }
-
     function getKeyType(KeyType keyType) internal view returns (uint256) {
         return keyTypes[keyType];
     }

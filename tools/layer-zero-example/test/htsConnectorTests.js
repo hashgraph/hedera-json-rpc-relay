@@ -34,8 +34,9 @@ describe('HTSConnectorTests', function() {
     const tokenAddress = await oftHts.htsTokenAddress();
 
     const contract = await ethers.getContractAt('ERC20', tokenAddress);
-    const txApprove = await contract.approve(process.env.HTS_CONNECTOR_HEDERA_CONTRACT, amount)
+    const txApprove = await contract.approve(process.env.HTS_CONNECTOR_HEDERA_CONTRACT, amount);
     const receipt = await txApprove.wait();
+    console.log(`(${hre.network.name}) successfully sent to Hedera via tx: ${txApprove.hash}`);
 
     expect(receipt.status).to.equal(1);
   });
