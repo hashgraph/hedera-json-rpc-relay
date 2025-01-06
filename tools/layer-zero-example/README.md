@@ -273,16 +273,21 @@ npx hardhat test --grep "HTSAdapterTests @bsc @test" --network bsc_testnet
 
 ### WHBAR flow
 
+Wrap and transfer HBARs across different chains.
+
+- Deploying WHBAR and ERC20
 ```typescript
 npx hardhat deploy-whbar --network hedera_testnet
 npx hardhat deploy-erc20 --decimals 8 --mint 100000000 --network bsc_testnet
 ```
 
+- Deploying an OFT Adapters which will be used as a lockbox of WHBAR and ERC20 deployed the step above
 ```typescript
 npx hardhat deploy-oft-adapter --token <whbar_hedera_address> --network hedera_testnet
 npx hardhat deploy-oft-adapter --token <erc20_bsc_address> --network bsc_testnet
 ```
 
+- In order to connect OFT Adapters together, we need to set the peer of the target OFT Adapter, more info can be found here https://docs.layerzero.network/v2/developers/evm/getting-started#connecting-your-contracts
 ```typescript
 npx hardhat set-peer --source <hedera_oft_adapter_address> --target <bsc_oft_adapter_address> --network hedera_testnet
 npx hardhat set-peer --source <bsc_oft_adapter_address> --target <hedera_oft_adapter_address> --network bsc_testnet
@@ -290,20 +295,24 @@ npx hardhat set-peer --source <bsc_oft_adapter_address> --target <hedera_oft_ada
 
 - Fill the .env
 
+- Depositing some HBARs and wrapping them into WHBAR
 ```typescript
 npx hardhat test --grep "WHBARTests @hedera @deposit" --network hedera_testnet
 ```
 
+- Here we're funding the Adapter on both chains with some liquidity and after that we're approving it to spend the signer's token
 ```typescript
 npx hardhat test --grep "WHBARTests @hedera @fund-and-approve" --network hedera_testnet
 npx hardhat test --grep "WHBARTests @bsc @fund-and-approve" --network bsc_testnet
 ```
 
+- On these steps, we're sending already existing WHBARs that are used by OFT Adapter between different chains
 ```typescript
 npx hardhat test --grep "WHBARTests @hedera @send" --network hedera_testnet
 npx hardhat test --grep "WHBARTests @bsc @send" --network bsc_testnet
 ```
 
+- Finally we're checking whether the tokens are transferred successfully
 ```typescript
 npx hardhat test --grep "WHBARTests @hedera @test" --network hedera_testnet
 npx hardhat test --grep "WHBARTests @bsc @test" --network bsc_testnet
@@ -313,4 +322,7 @@ npx hardhat test --grep "WHBARTests @bsc @test" --network bsc_testnet
 - The addresses of endpoints [here](https://github.com/hashgraph/hedera-json-rpc-relay/blob/1030-lz-setup/tools/layer-zero-example/hardhat.config.js#L60) are the official LZ endpoints. A entire list of LZ supported endpoints can be found on https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts.
 
 ### HTS Adapter vs HTS Connector
-...
+- You could use a HTS Adapter when you already have an existing HTS token on the fly.
+- You could use a HTS Connector when you want to create a new token.
+- You could use a HTS Connector with the existing HTS token but you have to add the HTS Connector contract as the Supply Key of the HTS token in order to execute the needed burnToken/mintToken precompile calls.
+- The main reason of using a HTS Connector instead of HTS Adapter is to avoid liquidity logic.
