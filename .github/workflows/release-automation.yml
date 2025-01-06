@@ -73,7 +73,7 @@ jobs:
 
             # create a PR to bump main branch to the next snapshot version
             echo "CREATE_PR=true" >> $GITHUB_ENV
-            echo "PR_TITLE=Bump versions for v$NEXT_VERSION_SNAPSHOT" >> $GITHUB_ENV
+            echo "PR_TITLE=chore(release): Bump versions for v$NEXT_VERSION_SNAPSHOT" >> $GITHUB_ENV
           else
             git checkout ${RELEASE_BRANCH}
           fi
@@ -110,7 +110,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842 # v5.0.1
         with:
           commit_author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          commit_message: Bump versions for ${{ env.RELEASE_TAG }}
+          commit_message: 'chore(release): Bump versions for ${{ env.RELEASE_TAG }}'
           commit_options: '--no-verify --signoff'
           commit_user_name: ${{ steps.gpg_importer.outputs.name }}
           commit_user_email: ${{ steps.gpg_importer.outputs.email }}
@@ -136,7 +136,7 @@ jobs:
     env:
       NEXT_VERSION_SNAPSHOT: ${{ needs.branch_bump_tag.outputs.next_version_snapshot }}
       RELEASE_BRANCH: ${{ needs.branch_bump_tag.outputs.release_branch }}
-
+      PR_TITLE: ${{ needs.branch_bump_tag.outputs.pr_title }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -183,12 +183,19 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6.0.5
         with:
-          body: ''
+          body: |
+            **Description**:
+            Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}
+            Automated snapshot version bump for the next development cycle.
+
+            **Related issue(s)**:
           branch: create-pull-request/${{ env.NEXT_VERSION_SNAPSHOT }}
-          commit-message: Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}
+          commit-message: ${{ env.PR_TITLE }}
           committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           delete-branch: true
           signoff: true
-          title: ${{ needs.branch_bump_tag.outputs.pr_title }}
+          title: ${{ env.PR_TITLE }}
+          labels: 'process'
+          assignees: 'swirlds-automation'
           token: ${{ secrets.GH_ACCESS_TOKEN }}
