@@ -612,28 +612,34 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
     });
   });
 
-  it('eth_getBlockByNumber should gracefully handle nulbale entities found in logs', async function () {
+  it('eth_getBlockByNumber should throw an error if nulbale entities found in logs', async function () {
     // mirror node request mocks
     restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
     restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
     restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
 
-    const nullEntitiedLogs = {
-      logs: [{ ...DEFAULT_LOGS.logs[0], block_number: null, transaction_index: null, logIndex: null }],
-    };
+    const nullEntitiedLogs = [
+      {
+        logs: [{ ...DEFAULT_LOGS.logs[0], block_number: null }],
+      },
+      {
+        logs: [{ ...DEFAULT_LOGS.logs[0], index: null }],
+      },
+      {
+        logs: [{ ...DEFAULT_LOGS.logs[0], block_hash: '0x' }],
+      },
+    ];
 
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, nullEntitiedLogs);
+    for (const logEntry of nullEntitiedLogs) {
+      try {
+        restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, logEntry);
 
-    const result = await ethImpl.getBlockByNumber(BLOCK_HASH, false, requestDetails);
-
-    RelayAssertions.assertBlock(result, {
-      hash: BLOCK_HASH_TRIMMED,
-      gasUsed: TOTAL_GAS_USED,
-      number: BLOCK_NUMBER_HEX,
-      parentHash: BLOCK_HASH_PREV_TRIMMED,
-      timestamp: BLOCK_TIMESTAMP_HEX,
-      transactions: [CONTRACT_HASH_1, CONTRACT_HASH_2],
-      receiptsRoot: DEFAULT_BLOCK_RECEIPTS_ROOT_HASH,
-    });
+        await ethImpl.getBlockByNumber(BLOCK_HASH, false, requestDetails);
+        expect.fail('should have thrown an error');
+      } catch (error) {
+        expect(error).to.exist;
+        expect(error.message).to.include('The log entry from the remote Mirror Node server is missing required fields');
+      }
+    }
   });
 });

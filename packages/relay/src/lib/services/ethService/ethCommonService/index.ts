@@ -346,13 +346,28 @@ export class CommonService implements ICommonService {
 
     const logs: Log[] = [];
     for (const log of logResults) {
+      if (log.block_number == null || log.index == null || log.block_hash === EthImpl.emptyHex) {
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(
+            `${
+              requestDetails.formattedRequestId
+            } Log entry is missing required fields: block_number, index, or block_hash is an empty hex (0x). log=${JSON.stringify(
+              log,
+            )}`,
+          );
+        }
+        throw predefined.INTERNAL_ERROR(
+          `The log entry from the remote Mirror Node server is missing required fields. `,
+        );
+      }
+
       logs.push(
         new Log({
           address: log.address,
           blockHash: toHash32(log.block_hash),
-          blockNumber: nullableNumberTo0x(log.block_number),
+          blockNumber: numberTo0x(log.block_number),
           data: log.data,
-          logIndex: nullableNumberTo0x(log.index),
+          logIndex: numberTo0x(log.index),
           removed: false,
           topics: log.topics,
           transactionHash: toHash32(log.transaction_hash),
