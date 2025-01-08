@@ -56,7 +56,6 @@ import Assertions from '../helpers/assertions';
 import RelayCalls from '../helpers/constants';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 chai.use(chaiExclude);
 

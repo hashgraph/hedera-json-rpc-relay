@@ -42,7 +42,6 @@ import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import fs from 'fs';
 import pino from 'pino';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 

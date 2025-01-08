@@ -35,7 +35,6 @@ import HAPIService from '../../src/lib/services/hapiService/hapiService';
 import { HbarLimitService } from '../../src/lib/services/hbarLimitService';
 import { RequestDetails } from '../../src/lib/types';
 import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../helpers';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const registry = new Registry();
 const logger = pino({ level: 'silent' });

@@ -25,7 +25,6 @@ import createHash from 'keccak';
 import pino from 'pino';
 import sinon from 'sinon';
 
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 import { ASCIIToHex, prepend0x } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { Utils } from '../../src/utils';

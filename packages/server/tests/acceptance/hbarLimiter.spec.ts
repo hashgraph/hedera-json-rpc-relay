@@ -52,7 +52,6 @@ import testConstants from '../helpers/constants';
 // Local resources
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 config({ path: resolve(__dirname, '../localAcceptance.env') });
 

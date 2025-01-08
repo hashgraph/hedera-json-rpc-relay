@@ -51,7 +51,6 @@ import parentContractJson from '../contracts/Parent.json';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const Address = RelayCalls;
 

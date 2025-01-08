@@ -43,7 +43,6 @@ import {
   overrideEnvsInMochaDescribe,
   withOverriddenEnvsInMochaTest,
 } from '../../../helpers';
-import { ConfigKey } from '../../../../../config-service/src/services/globalConfig';
 
 const registry = new Registry();
 const logger = pino({ level: 'silent' });

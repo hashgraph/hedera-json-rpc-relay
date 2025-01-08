@@ -43,7 +43,6 @@ import * as Constants from '../../src/validator/constants';
 import RelayCalls from '../../tests/helpers/constants';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 

@@ -49,7 +49,6 @@ import ServicesClient from '../clients/servicesClient';
 // Utils and types
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 

@@ -22,7 +22,6 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { BigNumber } from 'bignumber.js';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 import { MirrorNodeClientError, predefined } from '../../src';
 import { MirrorNodeClient } from '../../src/lib/clients';

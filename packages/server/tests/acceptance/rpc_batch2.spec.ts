@@ -46,7 +46,6 @@ import TokenCreateJson from '../contracts/TokenCreateContract.json';
 import Assertions from '../helpers/assertions';
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds

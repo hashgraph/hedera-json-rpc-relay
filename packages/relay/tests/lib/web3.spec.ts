@@ -23,7 +23,6 @@ import { expect } from 'chai';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 import { RelayImpl } from '../../src';
 import { withOverriddenEnvsInMochaTest } from '../helpers';
 

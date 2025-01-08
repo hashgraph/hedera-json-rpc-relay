@@ -44,7 +44,6 @@ import { ONE_TINYBAR_IN_WEI_HEX } from './eth/eth-config';
 
 const registry = new Registry();
 import { RequestDetails } from '../../src/lib/types';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const logger = pino({ level: 'silent' });
 const limitOrderPostFix = '?order=desc&limit=1';

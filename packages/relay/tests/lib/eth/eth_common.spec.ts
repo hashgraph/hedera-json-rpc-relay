@@ -26,7 +26,6 @@ import { Registry } from 'prom-client';
 
 import { RelayImpl } from '../../../src';
 import { RequestDetails } from '../../../src/lib/types';
-import { ConfigKey } from '../../../../config-service/src/services/globalConfig';
 
 use(chaiAsPromised);
 

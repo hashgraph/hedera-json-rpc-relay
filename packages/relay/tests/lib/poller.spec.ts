@@ -26,7 +26,6 @@ import sinon from 'sinon';
 
 import { EthImpl } from '../../src/lib/eth';
 import { Poller } from '../../src/lib/poller';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const logger = pino({ level: 'trace' });
 
