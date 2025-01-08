@@ -7,7 +7,7 @@ This document outlines the design for implementing new package for REST API endp
 The endpoints will support:
 *  ERC20 token transfers 
 *  ERC721 NFT transfers
-* ERC1155 multi-token transfers (TBD)
+*  ERC1155 multi-token transfers (TBD)
 *  Tokens owned by an address (TBD)
 
 ## Problem Statement
@@ -41,8 +41,6 @@ Introduce a new package `rest-api` with the following REST endpoints:
 The package will be a standalone package with no relay dependencies, its own mirror node client implementation and its own cache service conncting to redis.
 This allows for a more modular and scalable solution, with the ability to easily add more endpoints in the future.
 
-
-https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2&address=0x4e83362442b8d1bec281594cea3050c8eb01311c&page=1&offset=100&startblock=0&endblock=27025780&sort=asc&apikey=MW96VKBCE6WV6TXWK87E4Q12K6BQ5AG9PS
 ### Package Structure
 ```
  packages/
@@ -113,6 +111,7 @@ Main controller handling HTTP requests:
 - Handles response formatting
 - Manages error responses
 - Implements rate limiting (TBD)
+
 #### 2. TokenService
 Core business logic service responsible for handling token-related operations:
 - Processes requests by fetching and filtering logs from the Mirror Node based on the provided parameters.
@@ -291,7 +290,7 @@ https://docs.etherscan.io/api-endpoints/accounts#get-a-list-of-erc721-token-tran
 
 ### Dependencies
 
-* ERC registry - As explained in the _Flow_ section, the TokenService will need to fetch the ERC registry to get the token standard (ERC20/721/ 1155) contracts and filter the response by only those matching the standard, wanted in the request. E.g if the request is for ERC20, the TokenService will need to fetch the ERC registry to get the ERC20 contracts and filter the response from the MN by only those matching the standard.
+* ERC registry - As explained in the _Flow_ section, the TokenService will need to fetch the ERC registry to get the token standard (ERC20/721/ 1155) contracts and filter the response by only those matching the standard, wanted in the request. E.g if the request is for ERC20, the TokenService will need to fetch the ERC registry to get the ERC20 contracts and filter the response from the MN by only those matching the standard. Initially, the registry will be used as a static file from the smart contracts repo, but in the future it will be imported as package and used like that.
 
 
 ##  `getTokensOwnedByAddress`
