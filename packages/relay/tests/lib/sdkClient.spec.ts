@@ -67,7 +67,7 @@ import {
 } from '../helpers';
 
 const registry = new Registry();
-const logger = pino();
+const logger = pino({ level: 'silent' });
 
 describe('SdkClient', async function () {
   this.timeout(20000);

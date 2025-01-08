@@ -19,32 +19,27 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { expect } from 'chai';
-import { Registry } from 'prom-client';
-import { MirrorNodeClient } from '../../src/lib/clients';
-import constants from '../../src/lib/constants';
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { getRequestId, mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from '../helpers';
-import pino from 'pino';
-import { ethers } from 'ethers';
-import { MirrorNodeClientError, predefined } from '../../src';
-import { CacheService } from '../../src/lib/services/cacheService/cacheService';
-
-const registry = new Registry();
-import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
-import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { BigNumber } from 'bignumber.js';
+import { expect } from 'chai';
+import { ethers } from 'ethers';
+import pino from 'pino';
+import { Registry } from 'prom-client';
 
-const logger = pino();
-const noTransactions = '?transactions=false';
-const requestDetails = new RequestDetails({ requestId: getRequestId(), ipAddress: '0.0.0.0' });
+import { MirrorNodeClientError, predefined } from '../../src';
+import { MirrorNodeClient } from '../../src/lib/clients';
+import constants from '../../src/lib/constants';
+import { SDKClientError } from '../../src/lib/errors/SDKClientError';
+import { CacheService } from '../../src/lib/services/cacheService/cacheService';
+import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
+import { mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from '../helpers';
 
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
 
   const registry = new Registry();
-  const logger = pino();
+  const logger = pino({ level: 'silent' });
   const noTransactions = '?transactions=false';
   const requestDetails = new RequestDetails({ requestId: 'mirrorNodeClientTest', ipAddress: '0.0.0.0' });
 
@@ -83,7 +78,7 @@ describe('MirrorNodeClient', async function () {
 
     for (const code of nullResponseCodes) {
       it(`returns null when ${code} is returned`, async () => {
-        let error = new Error('test error');
+        const error = new Error('test error');
         error['response'] = 'test error';
 
         const result = mirrorNodeInstance.handleError(
@@ -101,7 +96,7 @@ describe('MirrorNodeClient', async function () {
     for (const code of errorRepsonseCodes) {
       it(`throws an error when ${code} is returned`, async () => {
         try {
-          let error = new Error('test error');
+          const error = new Error('test error');
           error['response'] = 'test error';
           mirrorNodeInstance.handleError(
             error,
@@ -1558,7 +1553,7 @@ describe('MirrorNodeClient', async function () {
 
     it('should fetch contract for existing contract from cache on additional calls', async () => {
       mock.onGet(contractPath).reply(200, mockData.contract);
-      let id = await mirrorNodeInstance.getContractId(evmAddress, requestDetails);
+      const id = await mirrorNodeInstance.getContractId(evmAddress, requestDetails);
       expect(id).to.exist;
       expect(id).to.be.equal(mockData.contract.contract_id);
 

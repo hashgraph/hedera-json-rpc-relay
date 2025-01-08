@@ -134,9 +134,7 @@ export class RelayImpl implements Relay {
     const hederaNetwork: string = (ConfigService.get('HEDERA_NETWORK') || '{}').toLowerCase();
     const configuredChainId = ConfigService.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
     const chainId = prepend0x(Number(configuredChainId).toString(16));
-
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
-    const total = constants.HBAR_RATE_LIMIT_TOTAL;
 
     this.eventEmitter = new EventEmitter();
     const reservedKeys = HbarSpendingPlanConfigService.getPreconfiguredSpendingPlanKeys(logger);
@@ -166,9 +164,6 @@ export class RelayImpl implements Relay {
     const hapiService = new HAPIService(logger, register, this.cacheService, this.eventEmitter, hbarLimitService);
 
     this.clientMain = hapiService.getMainClientInstance();
-    if (this.clientMain.operatorAccountId) {
-      hbarLimitService.setOperatorAddress(this.clientMain.operatorAccountId.toSolidityAddress());
-    }
 
     this.web3Impl = new Web3Impl(this.clientMain);
     this.netImpl = new NetImpl(this.clientMain);

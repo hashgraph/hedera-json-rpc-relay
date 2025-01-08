@@ -19,13 +19,16 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { PrivateKey } from '@hashgraph/sdk';
 import { expect } from 'chai';
 import createHash from 'keccak';
+import pino from 'pino';
+import sinon from 'sinon';
 
 import { ASCIIToHex, prepend0x } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { Utils } from '../../src/utils';
-import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '../helpers';
+import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../helpers';
 
 describe('Utils', () => {
   describe('addPercentageBufferToGasPrice', () => {
@@ -122,5 +125,92 @@ describe('Utils', () => {
         expect(result.length).to.equal(66);
       });
     });
+  });
+
+  describe('getOperator', () => {
+    const logger = pino({ level: 'silent' });
+    const accountId = '0.0.1234';
+    const privateKeys = [
+      { keyFormat: 'HEX_ECDSA', keyValue: PrivateKey.generateECDSA().toStringRaw() },
+      { keyFormat: 'DER', keyValue: PrivateKey.generateECDSA().toStringDer() },
+      { keyFormat: 'HEX_ED25519', keyValue: PrivateKey.generateED25519().toStringRaw() },
+      { keyFormat: 'DER', keyValue: PrivateKey.generateED25519().toStringDer() },
+    ];
+
+    privateKeys.forEach(({ keyFormat, keyValue }) => {
+      withOverriddenEnvsInMochaTest(
+        {
+          OPERATOR_ID_ETH_SENDRAWTRANSACTION: accountId,
+          OPERATOR_KEY_ETH_SENDRAWTRANSACTION: keyValue,
+          OPERATOR_KEY_FORMAT: keyFormat,
+        },
+        () => {
+          it(`should return operator credentials for "eth_sendRawTransaction" client type`, () => {
+            const operator = Utils.getOperator(logger, 'eth_sendRawTransaction');
+
+            expect(operator).to.not.be.null;
+            expect(operator?.accountId.toString()).to.equal(accountId);
+            expect(operator?.privateKey).to.deep.equal(Utils.createPrivateKeyBasedOnFormat(keyValue));
+          });
+        },
+      );
+    });
+
+    privateKeys.forEach(({ keyFormat, keyValue }) => {
+      withOverriddenEnvsInMochaTest(
+        {
+          OPERATOR_ID_MAIN: accountId,
+          OPERATOR_KEY_MAIN: keyValue,
+          OPERATOR_KEY_FORMAT: keyFormat,
+        },
+        () => {
+          it(`should return operator credentials for main client type`, () => {
+            const operator = Utils.getOperator(logger);
+
+            expect(operator).to.not.be.null;
+            expect(operator?.accountId.toString()).to.equal(accountId);
+            expect(operator?.privateKey).to.deep.equal(Utils.createPrivateKeyBasedOnFormat(keyValue));
+          });
+        },
+      );
+    });
+
+    withOverriddenEnvsInMochaTest(
+      {
+        OPERATOR_ID_MAIN: accountId,
+        OPERATOR_KEY_MAIN: null,
+      },
+      () => {
+        it('should return null and log a warning if operatorKey is missing', () => {
+          const warnSpy = sinon.spy(logger, 'warn');
+
+          const operator = Utils.getOperator(logger);
+
+          expect(operator).to.be.null;
+          expect(warnSpy.calledOnce).to.be.true;
+          expect(warnSpy.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
+          warnSpy.restore();
+        });
+      },
+    );
+
+    withOverriddenEnvsInMochaTest(
+      {
+        OPERATOR_ID_MAIN: null,
+        OPERATOR_KEY_MAIN: privateKeys[0].keyValue,
+      },
+      () => {
+        it('should return null and log a warning if operatorId is missing', () => {
+          const warnSpy = sinon.spy(logger, 'warn');
+
+          const operator = Utils.getOperator(logger);
+
+          expect(operator).to.be.null;
+          expect(warnSpy.calledOnce).to.be.true;
+          expect(warnSpy.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
+          warnSpy.restore();
+        });
+      },
+    );
   });
 });

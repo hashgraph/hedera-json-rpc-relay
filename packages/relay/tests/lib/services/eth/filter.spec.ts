@@ -21,11 +21,17 @@
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
-import { Registry } from 'prom-client';
-import { MirrorNodeClient } from '../../../../src/lib/clients';
 import pino from 'pino';
+import { Registry } from 'prom-client';
+import { v4 as uuid } from 'uuid';
+
+import { predefined } from '../../../../src';
+import { MirrorNodeClient } from '../../../../src/lib/clients';
 import constants from '../../../../src/lib/constants';
+import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { CommonService, FilterService } from '../../../../src/lib/services/ethService';
+import { RequestDetails } from '../../../../src/lib/types';
+import RelayAssertions from '../../../assertions';
 import {
   defaultBlock,
   defaultEvmAddress,
@@ -34,13 +40,8 @@ import {
   toHex,
   withOverriddenEnvsInMochaTest,
 } from '../../../helpers';
-import RelayAssertions from '../../../assertions';
-import { predefined } from '../../../../src';
-import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
-import { RequestDetails } from '../../../../src/lib/types';
-import { v4 as uuid } from 'uuid';
 
-const logger = pino();
+const logger = pino({ level: 'silent' });
 const registry = new Registry();
 
 let restMock: MockAdapter;
