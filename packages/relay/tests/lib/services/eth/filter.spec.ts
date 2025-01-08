@@ -40,7 +40,6 @@ import {
   toHex,
   withOverriddenEnvsInMochaTest,
 } from '../../../helpers';
-import { ConfigKey } from '../../../../../config-service/src/services/globalConfig';
 
 const logger = pino();
 const registry = new Registry();

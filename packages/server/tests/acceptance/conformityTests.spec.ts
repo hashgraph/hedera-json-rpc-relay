@@ -32,7 +32,6 @@ import LogsContract from '../contracts/Logs.json';
 import CallerContract from '../contracts/Caller.json';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { parseOpenRPCDocument } from '@open-rpc/schema-utils-js';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const directoryPath = path.resolve(__dirname, '../../../../node_modules/execution-apis/tests');
 

@@ -44,7 +44,6 @@ import { SubscriptionTier } from '../../../../src/lib/db/types/hbarLimiter/subsc
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
 import { RequestDetails } from '../../../../src/lib/types';
-import { ConfigKey } from '../../../../../config-service/src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 

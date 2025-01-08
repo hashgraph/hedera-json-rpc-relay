@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,22 @@
  * limitations under the License.
  *
  */
+
+type TypeStrToType<Tstr extends string> = Tstr extends 'string'
+  ? string
+  : Tstr extends 'boolean'
+    ? boolean
+    : Tstr extends 'number'
+      ? number
+      : Tstr extends 'array'
+        ? unknown[]
+        : never;
+
+type GetTypeStrOfKey<K extends string> = K extends keyof typeof _CONFIG 
+  ? typeof _CONFIG[K]['type'] 
+  : never;
+
+export type TypeOfKey<K extends string> = TypeStrToType<GetTypeStrOfKey<K>>;
 
 export interface ConfigProperty {
   envName: string;
@@ -750,6 +766,40 @@ const _CONFIG = {
 } satisfies { [key: string]: ConfigProperty };
 
 export type ConfigKey = keyof typeof _CONFIG;
+
+export class ConfigService {
+  private static config: typeof _CONFIG = _CONFIG;
+
+  public static get<K extends ConfigKey>(name: K): TypeOfKey<K> | undefined {
+    const configItem = this.config[name];
+    if (!configItem) {
+      return undefined;
+    }
+
+    const value = process.env[configItem.envName];
+
+    if (value === undefined) {
+      return configItem.defaultValue as TypeOfKey<K>;
+    }
+
+    switch (configItem.type) {
+      case 'boolean':
+        return (value.toLowerCase() === 'true') as TypeOfKey<K>;
+      case 'number':
+        return Number(value) as TypeOfKey<K>;
+      case 'string':
+        return value as TypeOfKey<K>;
+      case 'array':
+        try {
+          return JSON.parse(value) as TypeOfKey<K>;
+        } catch {
+          return undefined;
+        }
+      default:
+        return undefined;
+    }
+  }
+}
 
 export class GlobalConfig {
   public static readonly ENTRIES: Record<ConfigKey, ConfigProperty> = _CONFIG;

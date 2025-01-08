@@ -76,7 +76,7 @@ import {
   signedTransactionHash,
 } from '../helpers';
 import { CONTRACT_RESULT_MOCK, NOT_FOUND_RES } from './eth/eth-config';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
+
 const logger = pino();
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);

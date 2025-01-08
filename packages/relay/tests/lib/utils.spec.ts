@@ -22,7 +22,6 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import { expect } from 'chai';
 import createHash from 'keccak';
 
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 import { ASCIIToHex, prepend0x } from '../../src/formatters';
 import constants from '../../src/lib/constants';
 import { Utils } from '../../src/utils';

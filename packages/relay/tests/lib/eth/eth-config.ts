@@ -32,7 +32,6 @@ import {
   mockData,
   toHex,
 } from '../../helpers';
-import { ConfigKey } from '../../../../config-service/src/services/globalConfig';
 
 export const BLOCK_TRANSACTION_COUNT = 77;
 export const GAS_USED_1 = 200000;

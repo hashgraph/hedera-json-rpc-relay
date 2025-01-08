@@ -31,7 +31,6 @@ import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
 
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 describe('@web-socket-batch-2 eth_getTransactionByHash', async function () {
   const METHOD_NAME = 'eth_getTransactionByHash';

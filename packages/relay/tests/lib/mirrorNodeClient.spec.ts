@@ -35,7 +35,6 @@ const registry = new Registry();
 import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { BigNumber } from 'bignumber.js';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const logger = pino();
 const noTransactions = '?transactions=false';

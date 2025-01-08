@@ -36,7 +36,6 @@ import { CommonService } from '../../../../src/lib/services/ethService';
 import { RequestDetails } from '../../../../src/lib/types';
 import RelayAssertions from '../../../assertions';
 import { getQueryParams, withOverriddenEnvsInMochaTest } from '../../../helpers';
-import { ConfigKey } from '../../../../../config-service/src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 

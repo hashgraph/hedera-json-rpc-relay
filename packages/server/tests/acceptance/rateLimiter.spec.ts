@@ -26,7 +26,6 @@ import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import testConstants from '../../tests/helpers/constants';
 import RelayClient from '../clients/relayClient';
 import Assertions from '../helpers/assertions';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds

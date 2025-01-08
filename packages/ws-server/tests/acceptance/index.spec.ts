@@ -37,7 +37,6 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import pino from 'pino';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 

@@ -25,7 +25,6 @@ import { Registry } from 'prom-client';
 import { RelayImpl } from '../../src/lib/relay';
 import constants from '../../src/lib/constants';
 import { withOverriddenEnvsInMochaTest } from '../helpers';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 const logger = pino();
 let Relay;

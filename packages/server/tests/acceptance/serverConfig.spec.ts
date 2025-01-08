@@ -21,7 +21,6 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import { expect } from 'chai';
 
 import { Utils } from '../helpers/utils';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 describe('@server-config Server Configuration Options Coverage', function () {
   describe('Koa Server Timeout', () => {

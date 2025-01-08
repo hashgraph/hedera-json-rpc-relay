@@ -47,7 +47,6 @@ import {
   verifyResult,
   withOverriddenEnvsInMochaTest,
 } from '../../helpers';
-import { ConfigKey } from '../../../../config-service/src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 

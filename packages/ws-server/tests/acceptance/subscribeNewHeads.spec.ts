@@ -32,7 +32,6 @@ import { ethers } from 'ethers';
 import WebSocket from 'ws';
 
 import { WsTestHelper } from '../helper';
-import { ConfigKey } from '../../../config-service/src/services/globalConfig';
 
 chai.use(solidity);
 

@@ -57,7 +57,6 @@ import {
 } from '../../helpers';
 import { ACCOUNT_ADDRESS_1, DEFAULT_NETWORK_FEES, MAX_GAS_LIMIT_HEX, NO_TRANSACTIONS } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
-import { ConfigKey } from '../../../../config-service/src/services/globalConfig';
 
 use(chaiAsPromised);
 
