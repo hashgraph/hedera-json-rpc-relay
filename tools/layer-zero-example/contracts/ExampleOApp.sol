@@ -41,13 +41,15 @@ contract ExampleOApp is OApp {
      * @param _origin A struct containing information about where the packet came from.
      * @param _guid A global unique identifier for tracking the packet.
      * @param payload Encoded message.
+     * @param address Executor address as specified by the OApp.
+     * @param calldata Any extra data or options to trigger on receipt.
      */
     function _lzReceive(
         Origin calldata _origin,
         bytes32 _guid,
         bytes calldata payload,
-        address, // Executor address as specified by the OApp.
-        bytes calldata  // Any extra data or options to trigger on receipt.
+        address,
+        bytes calldata
     ) internal override {
         // Decode the payload to get the message
         // In this case, type is string, but depends on your encoding!

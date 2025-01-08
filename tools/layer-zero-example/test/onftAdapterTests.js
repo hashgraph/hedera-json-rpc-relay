@@ -22,10 +22,9 @@ const hre = require('hardhat');
 const { ethers } = hre;
 const { Options, addressToBytes32 } = require('@layerzerolabs/lz-v2-utilities');
 const { expect } = require('chai');
+const CONSTANTS = require('./constants');
 
-const HEDERA_EID = 40285;
-const BSC_EID = 40102;
-const receiverAddress = '0xF51c7a9407217911d74e91642dbC58F18E51Deac';
+const { HEDERA_EID, BSC_EID, RECEIVER_ADDRESS } = CONSTANTS;
 
 describe('ONFTAdapterTests', function() {
   it('@hedera @mint', async () => {
@@ -79,7 +78,7 @@ describe('ONFTAdapterTests', function() {
 
     const sendParam = {
       dstEid: BSC_EID,
-      to: addressToBytes32(receiverAddress),
+      to: addressToBytes32(RECEIVER_ADDRESS),
       tokenId: 1,
       extraOptions: Options.newOptions().addExecutorLzReceiveOption(3000000, 0).toBytes(),
       composeMsg: ethers.utils.arrayify('0x'),
@@ -105,7 +104,7 @@ describe('ONFTAdapterTests', function() {
 
     const sendParam = {
       dstEid: HEDERA_EID,
-      to: addressToBytes32(receiverAddress),
+      to: addressToBytes32(RECEIVER_ADDRESS),
       tokenId: 2,
       extraOptions: Options.newOptions().addExecutorLzReceiveOption(3000000, 0).toBytes(),
       composeMsg: ethers.utils.arrayify('0x'),
@@ -129,12 +128,12 @@ describe('ONFTAdapterTests', function() {
   it('@hedera @test get owner', async () => {
     const contract = await ethers.getContractAt('ERC721Mock', process.env.ERC721_HEDERA_CONTRACT);
     const owner = await contract.ownerOf(2);
-    expect(owner).to.equal(receiverAddress);
+    expect(owner).to.equal(RECEIVER_ADDRESS);
   });
 
   it('@bsc @test get owner', async () => {
     const contract = await ethers.getContractAt('ERC721Mock', process.env.ERC721_BSC_CONTRACT);
     const owner = await contract.ownerOf(1);
-    expect(owner).to.equal(receiverAddress);
+    expect(owner).to.equal(RECEIVER_ADDRESS);
   });
 });
