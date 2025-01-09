@@ -18,23 +18,30 @@
  *
  */
 
+import { fail } from 'assert';
+import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
-import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
 import { Logger } from 'pino';
+import { Registry } from 'prom-client';
+import sinon from 'sinon';
+
+import { ASCIIToHex, hashNumber, numberTo0x, prepend0x } from '../../../dist/formatters';
 import { predefined } from '../../../src';
+import { MirrorNodeClient, SDKClient } from '../../../src/lib/clients';
+import constants from '../../../src/lib/constants';
 import { EthImpl } from '../../../src/lib/eth';
+import { Block, Transaction } from '../../../src/lib/model';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { RequestDetails } from '../../../src/lib/types';
+import RelayAssertions from '../../assertions';
 import {
   blockLogsBloom,
   defaultContractResults,
   defaultDetailedContractResults,
   overrideEnvsInMochaDescribe,
 } from '../../helpers';
-import { Block, Transaction } from '../../../src/lib/model';
-import { MirrorNodeClient, SDKClient } from '../../../src/lib/clients';
-import RelayAssertions from '../../assertions';
-import constants from '../../../src/lib/constants';
-import { ASCIIToHex, hashNumber, numberTo0x, prepend0x } from '../../../dist/formatters';
 import {
   BLOCK_HASH,
   BLOCK_HASH_PREV_TRIMMED,
@@ -63,6 +70,7 @@ import {
   DEFAULT_BLOCKS_RES,
   DEFAULT_CONTRACT_RES_REVERT,
   DEFAULT_ETH_GET_BLOCK_BY_LOGS,
+  DEFAULT_LOGS,
   DEFAULT_NETWORK_FEES,
   GAS_USED_1,
   GAS_USED_2,
@@ -76,12 +84,6 @@ import {
   NOT_FOUND_RES,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
-import { fail } from 'assert';
-import { RequestDetails } from '../../../src/lib/types';
-import MockAdapter from 'axios-mock-adapter';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
-import { Registry } from 'prom-client';
 
 use(chaiAsPromised);
 
@@ -608,5 +610,36 @@ describe('@ethGetBlockByNumber using MirrorNode', async function () {
         );
       });
     });
+  });
+
+  it('eth_getBlockByNumber should throw an error if nulbale entities found in logs', async function () {
+    // mirror node request mocks
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(CONTRACT_RESULTS_WITH_FILTER_URL).reply(200, defaultContractResults);
+    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+
+    const nullEntitiedLogs = [
+      {
+        logs: [{ ...DEFAULT_LOGS.logs[0], block_number: null }],
+      },
+      {
+        logs: [{ ...DEFAULT_LOGS.logs[0], index: null }],
+      },
+      {
+        logs: [{ ...DEFAULT_LOGS.logs[0], block_hash: '0x' }],
+      },
+    ];
+
+    for (const logEntry of nullEntitiedLogs) {
+      try {
+        restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, logEntry);
+
+        await ethImpl.getBlockByNumber(BLOCK_HASH, false, requestDetails);
+        expect.fail('should have thrown an error');
+      } catch (error) {
+        expect(error).to.exist;
+        expect(error.message).to.include('The log entry from the remote Mirror Node server is missing required fields');
+      }
+    }
   });
 });
