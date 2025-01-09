@@ -18,19 +18,21 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import * as _ from 'lodash';
+import { Logger } from 'pino';
+
+import { nullableNumberTo0x, numberTo0x, parseNumericEnvVar, toHash32 } from '../../../../formatters';
+import { MirrorNodeClient } from '../../../clients';
 import constants from '../../../constants';
 import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
-import { ICommonService } from './ICommonService';
-import { Logger } from 'pino';
-import { MirrorNodeClient } from '../../../clients';
-import { nullableNumberTo0x, numberTo0x, parseNumericEnvVar, toHash32 } from '../../../../formatters';
-import { SDKClientError } from '../../../errors/SDKClientError';
 import { MirrorNodeClientError } from '../../../errors/MirrorNodeClientError';
+import { SDKClientError } from '../../../errors/SDKClientError';
+import { EthImpl } from '../../../eth';
 import { Log } from '../../../model';
-import * as _ from 'lodash';
-import { CacheService } from '../../cacheService/cacheService';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '../../../types';
+import { CacheService } from '../../cacheService/cacheService';
+import { ICommonService } from './ICommonService';
 
 /**
  * Create a new Common Service implementation.
@@ -175,6 +177,20 @@ export class CommonService implements ICommonService {
     returnLatest?: boolean,
   ): Promise<any> {
     if (!returnLatest && this.blockTagIsLatestOrPending(blockNumberOrTagOrHash)) {
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestDetails.formattedRequestId} Detected a contradiction between blockNumberOrTagOrHash and returnLatest. The request does not target the latest block, yet blockNumberOrTagOrHash representing latest or pending: returnLatest=${returnLatest}, blockNumberOrTagOrHash=${blockNumberOrTagOrHash}`,
+        );
+      }
+      return null;
+    }
+
+    if (blockNumberOrTagOrHash === EthImpl.emptyHex) {
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
+          `${requestDetails.formattedRequestId} Invalid input detected in getHistoricalBlockResponse(): blockNumberOrTagOrHash=${blockNumberOrTagOrHash}.`,
+        );
+      }
       return null;
     }
 
@@ -321,7 +337,7 @@ export class CommonService implements ICommonService {
     if (address) {
       logResults = await this.getLogsByAddress(address, params, requestDetails);
     } else {
-      logResults = await this.mirrorNodeClient.getContractResultsLogs(requestDetails, params);
+      logResults = await this.mirrorNodeClient.getContractResultsLogsWithRetry(requestDetails, params);
     }
 
     if (!logResults) {
@@ -330,13 +346,28 @@ export class CommonService implements ICommonService {
 
     const logs: Log[] = [];
     for (const log of logResults) {
+      if (log.block_number == null || log.index == null || log.block_hash === EthImpl.emptyHex) {
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(
+            `${
+              requestDetails.formattedRequestId
+            } Log entry is missing required fields: block_number, index, or block_hash is an empty hex (0x). log=${JSON.stringify(
+              log,
+            )}`,
+          );
+        }
+        throw predefined.INTERNAL_ERROR(
+          `The log entry from the remote Mirror Node server is missing required fields. `,
+        );
+      }
+
       logs.push(
         new Log({
           address: log.address,
           blockHash: toHash32(log.block_hash),
           blockNumber: numberTo0x(log.block_number),
           data: log.data,
-          logIndex: nullableNumberTo0x(log.index),
+          logIndex: numberTo0x(log.index),
           removed: false,
           topics: log.topics,
           transactionHash: toHash32(log.transaction_hash),
