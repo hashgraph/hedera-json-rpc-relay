@@ -7,7 +7,7 @@ This document outlines the design for implementing new package for REST API endp
 The endpoints will support:
 *  ERC20 token transfers 
 *  ERC721 NFT transfers
-*  ERC1155 multi-token transfers (TBD)
+*  ERC1155 multi-token transfers
 *  Tokens owned by an address (TBD)
 
 ## Problem Statement
@@ -28,69 +28,127 @@ Currently MN doesn't support EVM centric queries, like token transfer 
 ## Non-Goals
 *  Support all Blockscout and Etherscan API endpoints
 *  Support other events except for Transfer events
+*  No API key for authorization
 
 ## Proposed Solution
 
-Introduce a new package `rest-api` with the following REST endpoints:
+Introduce a new package `rest-server` with the following REST endpoints:
 
-| Endpoint | Description 
+**Note: Add v1 to the endpoints (if not breaking partners)**
+
+| Endpoint | Description |
 |----------|-------------|
-| `GET /api/token/transfers?standard={standard}&address={address}&contractaddress={contractAddress}&startblock={blockNum}&endblock={blockNum}&page={page}&offset={offset}&sort={asc\|desc}` | Fetch token transfer events 
-| `GET /api/account/{address}/tokens?page={page}&offset={offset}` | Fetch tokens owned by an address
+| `GET /api?module=account&action=tokentx&address={address}&contractaddress={contractaddress}&startblock={startblock}&endblock={endblock}&page={page}&offset={offset}&sort={asc\|desc}` | Get ERC20 token transfer events |
+| `GET /api?module=account&action=tokennfttx&address={address}&contractaddress={contractaddress}&startblock={startblock}&endblock={endblock}&page={page}&offset={offset}&sort={asc\|desc}` | Get ERC721 (NFT) token transfer events |
+| `GET /api?module=account&action=token1155tx&address={address}&contractaddress={contractaddress}&startblock={startblock}&endblock={endblock}&page={page}&offset={offset}&sort={asc\|desc}` | Get ERC1155 token transfer events |
+| `GET /api/account/{address}/tokens?page={page}&offset={offset}` | Fetch tokens owned by an address |
 
 The package will be a standalone package with no relay dependencies, its own mirror node client implementation and its own cache service conncting to redis.
 This allows for a more modular and scalable solution, with the ability to easily add more endpoints in the future.
 
 ### Package Structure
 ```
- packages/
-   rest-api/
-     └── src/
-         ├── config/           # Configuration for REST API
-         │   ├── index.ts
-         │   └── mirrorNode.ts # Mirror Node configuration
-         ├── controllers/
-         │   ├── tokenController.ts
-         │   └── accountController.ts
-         ├── routes/
-         │   ├── tokenRoutes.ts
-         │   └── accountRoutes.ts
-         ├── types/
-         │   ├── index.ts
-         │   └── mirrorNode.ts # Mirror Node types
-         ├── services/
-         │   ├── cacheService/
-         │   │   └── index.ts
-         │   ├── tokenService/
-         │   │   ├── index.ts
-         │   │   └── interfaces.ts
-         │   ├── accountService/
-         │   │   ├── index.ts
-         │   │   └── interfaces.ts
-         │   └── mirrorNode/   # Mirror Node client implementation
-         │       ├── client.ts
-         │       ├── types.ts
-         │       └── utils.ts
-         ├── middleware/
-         │   ├── validation.ts
-         │   ├── errorHandler.ts
-         │   ├── rateLimiter.ts
-         │   └── cache.ts
-         ├── app.ts           # Express/Koa app setup
-         └── index.ts
-     ├── package.json
-     └── tsconfig.json
+packages/
+├── relay/                    # Core business logic package
+│   └── src/
+│       └── lib/
+│           ├── clients/
+│           │   └── mirrorNodeClient.ts
+│           └── services/
+│               ├── cacheService/
+│               │   └── cacheService.ts
+│               ├── tokenService/
+│               │   ├── index.ts
+│               │   └── interfaces.ts
+│               └── accountService/
+│                   ├── index.ts
+│                   └── interfaces.ts
+│
+└── rest-api/                 # REST API package
+    ├── src/
+    │   ├── config/          # Configuration
+    │   │   ├── index.ts
+    │   │   └── mirrorNode.ts
+    │   │
+    │   ├── controllers/     # Request handlers that will use the services from relay package
+    │   │   ├── tokenController.ts
+    │   │   └── accountController.ts
+    │   │
+    │   ├── routes/         # API route definitions
+    │   │   ├── tokenRoutes.ts
+    │   │   └── accountRoutes.ts
+    │   │
+    │   ├── types/          # Type definitions
+    │   │   └──index.ts
+    │   │
+    │   ├── middleware/     # HTTP middleware
+    │   │   ├── validation.ts
+    │   │   ├── errorHandler.ts
+    │   │   └── rateLimiter.ts
+    │   │
+    │   ├── app.ts         # Application setup
+    │   └── index.ts       # Entry point
+    │
+    ├── package.json
+    └── tsconfig.json
 ```
 
-### Endpoint `GET /api/token/transfers`
+### Token Transfer Endpoints
+
+Following Etherscan's API format, we will implement three separate endpoints for different token standards:
+
+1. **ERC20 Token Transfers**
+```
+GET /api
+   ?module=account
+   &action=tokentx
+   &address={address}
+   &contractaddress={contractaddress}
+   &startblock={startblock}
+   &endblock={endblock}
+   &page={page}
+   &offset={offset}
+   &sort={asc|desc}
+```
+
+2. **ERC721 Token Transfers (NFTs)**
+```
+GET /api
+   ?module=account
+   &action=tokennfttx
+   &address={address}
+   &contractaddress={contractaddress}
+   &startblock={startblock}
+   &endblock={endblock}
+   &page={page}
+   &offset={offset}
+   &sort={asc|desc}
+```
+
+3. **ERC1155 Token Transfers**
+```
+GET /api
+   ?module=account
+   &action=token1155tx
+   &address={address}
+   &contractaddress={contractaddress}
+   &startblock={startblock}
+   &endblock={endblock}
+   &page={page}
+   &offset={offset}
+   &sort={asc|desc}
+```
 
 #### Parameters
 
 | Parameter | Description | Required | Default |
 |-----------|-------------|----------|---------|
-| address | The address (sender or receiver) to filter transfers by | Yes? | - |
-| fromBlock | The starting block number | No | 0 |
-| toBlock | The ending block number | No | latest |
+| module | The API module (always "account") | Yes | - |
+| action | The endpoint action (tokentx/tokennfttx/token1155tx) | Yes | - |
+| address | The address (sender or receiver) to filter transfers by | Yes | - |
+| contractaddress | The token contract address to filter by | No | - |
+| startblock | The starting block number | No | 0 |
+| endblock | The ending block number | No | latest |
 | contractAddress | The address of the token contract to filter by | No | - |
 | standard | The token standard to filter by (ERC20/721/1155) | Yes | - |
 | page | The page number if pagination is enabled | No | 1 |
@@ -119,25 +177,46 @@ Core business logic service responsible for handling token-related operations:
 - Manages data transformation by converting the raw log data into the desired format.
 - Returns the response to the TokenController
 
-#### 3. MirrorNodeClient
-Custom client for Mirror Node interaction:
-- Fetches logs from the Mirror Node
-- Returns the logs to the TokenService
+#### 3. CacheService
 
-#### 4. CacheService
-Redis-based caching service:
+Redis-based caching service using the existing implementation in the relay package:
 - Caches frequent queries
 - Manages cache invalidation
 - Handles cache hits/misses
 - Provides consistent caching strategy
 
-### Flow
+For optimal performance and efficiency, only the following essential fields from the Mirror Node logs response will be cached:
+- `address`: The contract address
+- `contract_id`: The contract identifier
+- `data`: The log data
+- `index`: The log index
+- `topics`: The log topics
+- `blockNumber`: The block number
 
+This selective caching approach ensures minimal memory usage while maintaining all necessary information for the API responses.
+
+#### Cache TTL Strategy
+
+The Time To Live (TTL) for cached logs can be set based on the following rules:
+- Recent blocks (last 100 blocks): 5 minutes TTL
+- Older blocks: 1 hour TTL
+
+This tiered approach was chosen based on several key factors:
+
+**Recent Blocks (5 minutes TTL)**:
+- Matches high query frequency for recent transactions
+- Provides optimal memory usage by not over-caching recent data
+- Significantly reduces Mirror Node load during high-traffic periods
+
+**Older Blocks (1 hour TTL)**:
+- Optimizes resource usage by reducing recomputation of unchanged data
+- Users don't usually query older blocks, so the cache is not used as much
+
+### Flow
 1. Validate the block range provided in the request and take the timestamp range from the MN
 2. Get the logs from the MN for the given timestamp range and filter them by the address and contract address via the topic parameters
 3. Filter the results by verifying each contract address from the logs against the ERC registry to ensure it implements the requested token standard (ERC20/721/1155)
 4. Transform the logs to the format of the Etherscan API response
-
 
 #### Sequence Diagram
 ```mermaid
@@ -170,17 +249,42 @@ sequenceDiagram
 
 1. Get ERC20 transfers for an address:
 ```
-GET /api/token/transfers?address=0x123...&startblock=0&endblock=latest&standard=ERC20
+GET /api
+   ?module=account
+   &action=tokentx
+   &address=0x123...
+   &startblock=0
+   &endblock=latest
+   &page=1
+   &offset=100
+   &sort=desc
 ```
 
-2. Get ERC721 transfers for a specific contract:
+2. Get ERC721 (NFT) transfers for a specific contract:
 ```
-GET /api/token/transfers?contractaddress=0x456...&startblock=1000&endblock=2000&standard=ERC721
+GET /api
+   ?module=account
+   &action=tokennfttx
+   &address=0x123...
+   &contractaddress=0x456...
+   &startblock=1000
+   &endblock=2000
+   &page=1
+   &offset=100
 ```
 
-3. Get all token transfers with pagination:
+3. Get ERC1155 transfers with specific parameters:
 ```
-GET /api/token/transfers?address=0x123...&page=1&offset=100&sort=desc
+GET /api
+   ?module=account
+   &action=token1155tx
+   &address=0x123...
+   &contractaddress=0x789...
+   &startblock=5000
+   &endblock=latest
+   &page=2
+   &offset=50
+   &sort=asc
 ```
 
 #### Example Responses
@@ -204,6 +308,7 @@ https://docs.etherscan.io/api-endpoints/accounts#get-a-list-of-erc721-token-tran
       "from": "0x123...",
       "contractAddress": "0x456...",
       "to": "0x789...",
+      "tokenId": "1",
       "tokenName": "MyToken",
       "tokenSymbol": "MTK",
       "tokenDecimal": "18",
@@ -284,9 +389,12 @@ https://docs.etherscan.io/api-endpoints/accounts#get-a-list-of-erc721-token-tran
 3. **Performance Tests**
    - Test with large block ranges
    - Test with high-volume contracts
+   - Rate limiting
+   - Add k6 tests
 
 ### Future Improvements
 
+* Keep monitoring etherscan and blockscout for new endpoints and add them to the package
 
 ### Dependencies
 
