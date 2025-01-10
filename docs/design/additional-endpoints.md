@@ -93,6 +93,30 @@ packages/
     └── tsconfig.json
 ```
 
+### Configuration Parameters
+
+The `config` folder may contain the following configuration files:
+
+#### 1. `server.ts`
+Server-specific configurations:
+- `RATE_LIMIT`: Rate limiting configuration
+  - `MAX_REQUESTS`: Maximum requests
+- `PAGINATION`: Default pagination settings
+  - `DEFAULT_PAGE_SIZE`: Default number of items per page (100)
+  - `MAX_PAGE_SIZE`: Maximum allowed page size (10000)
+- `BLOCK_RANGE`: Block range limitations
+  - `MAX_BLOCK_RANGE`: Maximum allowed block range (10000)
+
+#### 2. `cache.ts`
+Cache service configurations:
+- `REDIS_URL`: Redis server URL
+- `REDIS_ENABLED`: Toggle Redis caching
+- `REDIS_RECONNECT_DELAY_MS`: Delay for reconnection attempts
+- `CACHE_TTL`: TTL configuration
+  - `RECENT_BLOCKS_TTL`: TTL for recent blocks (5 minutes)
+  - `OLD_BLOCKS_TTL`: TTL for older blocks (1 hour)
+  - `RECENT_BLOCKS_THRESHOLD`: Number of recent blocks (100)
+
 ### Token Transfer Endpoints
 
 Following Etherscan's API format, we will implement three separate endpoints for different token standards:
@@ -352,7 +376,7 @@ https://docs.etherscan.io/api-endpoints/accounts#get-a-list-of-erc721-token-tran
 
 ### Performance Considerations
 
-1. Possibly restrict the number of logs returned by the MN to a maximum of 10000
+1. Possibly restrict the number of logs returned by the MN to a maximum of 100 (as is the MN limit)
 2. Possibly restrict the block range to a maximum of 10000 blocks
 
 ### Security Considerations
