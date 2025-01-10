@@ -18,9 +18,17 @@
  *
  */
 
+import MockAdapter from 'axios-mock-adapter';
 import { expect, use } from 'chai';
-import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
+import { ethers } from 'ethers';
+import sinon from 'sinon';
+
+import { Eth } from '../../../src';
+import { SDKClient } from '../../../src/lib/clients';
+import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
+import HAPIService from '../../../src/lib/services/hapiService/hapiService';
+import { RequestDetails } from '../../../src/lib/types';
 import {
   defaultDetailedContractResults,
   defaultDetailedContractResults2,
@@ -35,7 +43,6 @@ import {
   overrideEnvsInMochaDescribe,
   withOverriddenEnvsInMochaTest,
 } from '../../helpers';
-import { SDKClient } from '../../../src/lib/clients';
 import {
   BLOCK_HASH,
   BLOCKS_LIMIT_ORDER_URL,
@@ -56,13 +63,7 @@ import {
   DEFAULT_NULL_LOG_TOPICS,
   NOT_FOUND_RES,
 } from './eth-config';
-import { ethers } from 'ethers';
 import { generateEthTestEnv } from './eth-helpers';
-import { RequestDetails } from '../../../src/lib/types';
-import MockAdapter from 'axios-mock-adapter';
-import HAPIService from '../../../src/lib/services/hapiService/hapiService';
-import { Eth } from '../../../src';
-import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 
 use(chaiAsPromised);
 
@@ -174,7 +175,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     expectLogData(result[3], filteredLogs.logs[3], defaultDetailedContractResults3);
   });
 
-  it('no filters but undefined transaction_index', async function () {
+  it('should throw an error if transaction_index is falsy', async function () {
     const filteredLogs = {
       logs: [
         { ...DEFAULT_LOGS.logs[0], transaction_index: undefined },
@@ -189,13 +190,13 @@ describe('@ethGetLogs using MirrorNode', async function () {
       restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
     });
 
-    const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
-    expect(result).to.exist;
-
-    expect(result.length).to.eq(4);
-    result.forEach((log, _index) => {
-      expect(log.transactionIndex).to.be.null;
-    });
+    try {
+      await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
+      expect.fail('should have thrown an error');
+    } catch (error) {
+      expect(error).to.exist;
+      expect(error.message).to.include('The log entry from the remote Mirror Node server is missing required fields.');
+    }
   });
 
   withOverriddenEnvsInMochaTest({ MIRROR_NODE_LIMIT_PARAM: '2' }, () => {

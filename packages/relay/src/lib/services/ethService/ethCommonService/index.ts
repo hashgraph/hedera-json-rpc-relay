@@ -346,7 +346,12 @@ export class CommonService implements ICommonService {
 
     const logs: Log[] = [];
     for (const log of logResults) {
-      if (log.block_number == null || log.index == null || log.block_hash === EthImpl.emptyHex) {
+      if (
+        log.transaction_index == null ||
+        log.block_number == null ||
+        log.index == null ||
+        log.block_hash === EthImpl.emptyHex
+      ) {
         if (this.logger.isLevelEnabled('debug')) {
           this.logger.debug(
             `${
@@ -371,7 +376,7 @@ export class CommonService implements ICommonService {
           removed: false,
           topics: log.topics,
           transactionHash: toHash32(log.transaction_hash),
-          transactionIndex: nullableNumberTo0x(log.transaction_index),
+          transactionIndex: numberTo0x(log.transaction_index),
         }),
       );
     }

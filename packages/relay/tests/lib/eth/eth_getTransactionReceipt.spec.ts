@@ -19,21 +19,22 @@
  */
 
 import { expect, use } from 'chai';
-import sinon, { createSandbox } from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
-import { EthImpl } from '../../../src/lib/eth';
+import sinon, { createSandbox } from 'sinon';
+
 import constants from '../../../src/lib/constants';
-import RelayAssertions from '../../assertions';
-import { DEFAULT_BLOCK, EMPTY_LOGS_RESPONSE } from './eth-config';
-import { defaultErrorMessageHex } from '../../helpers';
-import { generateEthTestEnv } from './eth-helpers';
+import { EthImpl } from '../../../src/lib/eth';
 import { RequestDetails } from '../../../src/lib/types';
+import RelayAssertions from '../../assertions';
+import { defaultErrorMessageHex } from '../../helpers';
+import { DEFAULT_BLOCK, EMPTY_LOGS_RESPONSE } from './eth-config';
+import { generateEthTestEnv } from './eth-helpers';
 
 use(chaiAsPromised);
 
 describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async function () {
   this.timeout(10000);
-  let { restMock, ethImpl, cacheService } = generateEthTestEnv();
+  const { restMock, ethImpl, cacheService } = generateEthTestEnv();
   let sandbox: sinon.SinonSandbox;
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getTransactionReceiptTest', ipAddress: '0.0.0.0' });
@@ -291,7 +292,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     expect(receipt.gasUsed).to.eq('0x0');
   });
 
-  it('handles missing transaction index', async function () {
+  it('should throw an error if transaction index is falsy', async function () {
     // fake unique hash so request dont re-use the cached value but the mock defined
     const uniqueTxHash = '0x17cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
@@ -306,12 +307,16 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
       evm_address: contractEvmAddress,
     });
     stubBlockAndFeesFunc(sandbox);
-    const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash, requestDetails);
 
-    expect(receipt).to.exist;
-
-    expect(receipt.logs[0].transactionIndex).to.eq(null);
-    expect(receipt.transactionIndex).to.eq(null);
+    try {
+      await ethImpl.getTransactionReceipt(uniqueTxHash, requestDetails);
+      expect.fail('should have thrown an error');
+    } catch (error) {
+      expect(error).to.exist;
+      expect(error.message).to.include(
+        'The contract result response from the remote Mirror Node server is missing required fields.',
+      );
+    }
   });
 
   it('valid receipt on cache match', async function () {
