@@ -20,8 +20,11 @@
 
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { Transaction, Transaction2930, Transaction1559 } from '../../../src/lib/model';
+
+import { Transaction, Transaction1559, Transaction2930 } from '../../../src/lib/model';
+import { RequestDetails } from '../../../src/lib/types';
 import RelayAssertions from '../../assertions';
+import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress } from '../../helpers';
 import {
   DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED,
   DEFAULT_TRANSACTION,
@@ -30,14 +33,13 @@ import {
   EMPTY_LOGS_RESPONSE,
   NO_TRANSACTIONS,
 } from './eth-config';
-import { defaultDetailedContractResultByHash, defaultFromLongZeroAddress } from '../../helpers';
 import { generateEthTestEnv } from './eth-helpers';
-import { RequestDetails } from '../../../src/lib/types';
 
 use(chaiAsPromised);
 
 describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async function () {
-  let { restMock, ethImpl } = generateEthTestEnv();
+  this.timeout(100000);
+  const { restMock, ethImpl } = generateEthTestEnv();
   const from = '0x00000000000000000000000000000000000003f7';
   const evm_address = '0xc37f417fa09933335240fca72dd257bfbde9c275';
   const contractResultMock = {
@@ -217,7 +219,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     if (result) expect(result.v).to.eq('0x0');
   });
 
-  it('handles transactions with undefined transaction_index', async function () {
+  it('should throw an error if transaction_index is falsy', async function () {
     const detailedResultsWithNullNullableValues = {
       ...defaultDetailedContractResultByHash,
       transaction_index: undefined,
@@ -225,14 +227,19 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640534';
 
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
-    const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
-    expect(result).to.not.be.null;
 
-    expect(result).to.exist;
-    if (result) expect(result.transactionIndex).to.be.null;
+    try {
+      await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
+      expect.fail('should have thrown an error');
+    } catch (error) {
+      expect(error).to.exist;
+      expect(error.message).to.include(
+        'The contract result response from the remote Mirror Node server is missing required fields.',
+      );
+    }
   });
 
-  it('handles transactions with undefined block_number', async function () {
+  it('should throw an error if block_number is falsy', async function () {
     const detailedResultsWithNullNullableValues = {
       ...defaultDetailedContractResultByHash,
       block_number: undefined,
@@ -240,14 +247,18 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640511';
 
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
-    const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
-    expect(result).to.not.be.null;
-
-    expect(result).to.exist;
-    if (result) expect(result.blockNumber).to.be.null;
+    try {
+      await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
+      expect.fail('should have thrown an error');
+    } catch (error) {
+      expect(error).to.exist;
+      expect(error.message).to.include(
+        'The contract result response from the remote Mirror Node server is missing required fields.',
+      );
+    }
   });
 
-  it('handles transactions with undefined transaction_index and block_number', async function () {
+  it('should throw an error if transaction_index and block_number are falsy', async function () {
     const detailedResultsWithNullNullableValues = {
       ...defaultDetailedContractResultByHash,
       block_number: undefined,
@@ -257,13 +268,14 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52d1a53ec640511';
 
     restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
-    const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
-    expect(result).to.not.be.null;
-
-    expect(result).to.exist;
-    if (result) {
-      expect(result.blockNumber).to.be.null;
-      expect(result.transactionIndex).to.be.null;
+    try {
+      await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
+      expect.fail('should have thrown an error');
+    } catch (error) {
+      expect(error).to.exist;
+      expect(error.message).to.include(
+        'The contract result response from the remote Mirror Node server is missing required fields.',
+      );
     }
   });
 

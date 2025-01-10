@@ -658,14 +658,18 @@ describe('MirrorNodeClient', async function () {
     expect(mock.history.get.length).to.eq(2);
   });
 
-  it('`getContractResultsWithRetry` by hash retries once because of missing transaction_index, block_number and block_hash equals 0x', async () => {
+  it('`getContractResultsWithRetry` should retry multiple times when records are immature and eventually return mature records', async () => {
     const hash = '0x2a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
-    mock.onGet(`contracts/results/${hash}`).replyOnce(200, {
-      ...detailedContractResult,
-      transaction_index: undefined,
-      block_number: undefined,
-      block_hash: '0x',
-    });
+    // Mock 3 sequential calls that return immature records - less than default polling counts (10)
+    [...Array(3)].reduce((mockChain) => {
+      return mockChain.onGet(`contracts/results/${hash}`).replyOnce(200, {
+        ...detailedContractResult,
+        transaction_index: null,
+        block_number: null,
+        block_hash: '0x',
+      });
+    }, mock);
+
     mock.onGet(`contracts/results/${hash}`).reply(200, detailedContractResult);
 
     const result = await mirrorNodeInstance.getContractResultWithRetry(
@@ -677,7 +681,32 @@ describe('MirrorNodeClient', async function () {
     expect(result.transaction_index).equal(detailedContractResult.transaction_index);
     expect(result.block_number).equal(detailedContractResult.block_number);
     expect(result.block_hash).equal(detailedContractResult.block_hash);
-    expect(mock.history.get.length).to.eq(2);
+    expect(mock.history.get.length).to.eq(4);
+  });
+
+  it('`getContractResultsWithRetry` should return immature records after exhausting maximum retry attempts', async () => {
+    const hash = '0x2a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
+    // Mock 11 sequential calls that return immature records - as default polling counts (10)
+    [...Array(11)].reduce((mockChain) => {
+      return mockChain.onGet(`contracts/results/${hash}`).replyOnce(200, {
+        ...detailedContractResult,
+        transaction_index: null,
+        block_number: null,
+        block_hash: '0x',
+      });
+    }, mock);
+
+    const result = await mirrorNodeInstance.getContractResultWithRetry(
+      mirrorNodeInstance.getContractResult.name,
+      [hash, requestDetails],
+      requestDetails,
+    );
+
+    expect(result).to.exist;
+    expect(result.transaction_index).equal(null);
+    expect(result.block_number).equal(null);
+    expect(result.block_hash).equal('0x');
+    expect(mock.history.get.length).to.eq(11);
   });
 
   it('`getContractResults` detailed', async () => {
@@ -783,25 +812,71 @@ describe('MirrorNodeClient', async function () {
   });
 
   const log = {
-    address: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-    bloom: '0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398',
-    contract_id: '0.1.2',
-    data: '0x00000000000000000000000000000000000000000000000000000000000000fa',
+    address: '0x0000000000000000000000000000000000163b59',
+    bloom:
+      '0x00000000000000100001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000100001000000000000000000000000020000000000000000000800000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000020000000000000000000000000000000000000000000000000100000000000000000',
+    contract_id: '0.0.1456985',
+    data: '0x0000000000000000000000000000000000000000000000000000000ba43b7400',
     index: 0,
-    topics: ['0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300'],
-    root_contract_id: '0.1.2',
-    timestamp: '1586567700.453054000',
+    topics: [
+      '0x831ac82b07fb396dafef0077cea6e002235d88e63f35cbd5df2c065107f1e74a',
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+      '0x00000000000000000000000000000000000000000000000000000000007ada90',
+    ],
+    block_hash: '0xd773ec74b26ace67ee3924879a6bd35f3c4653baaa19f6c9baec7fac1269c55e103287a2d07084778957d21704a92fd3',
+    block_number: 73884554,
+    root_contract_id: '0.0.3045981',
+    timestamp: '1736446204.610059000',
+    transaction_hash: '0x0494665a6d3aa32f51f79ad2c75053c9a51ae84927e4924e77773d834b85ec86',
+    transaction_index: 3,
   };
+
   it('`getContractResultsLogs` ', async () => {
-    mock.onGet(`contracts/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
+    mock.onGet(`contracts/results/logs?limit=100&order=asc`).replyOnce(200, { logs: [log] });
 
     const results = await mirrorNodeInstance.getContractResultsLogsWithRetry(requestDetails);
     expect(results).to.exist;
     expect(results.length).to.gt(0);
-    const firstResult = results[0];
-    expect(firstResult.address).equal(log.address);
-    expect(firstResult.contract_id).equal(log.contract_id);
-    expect(firstResult.index).equal(log.index);
+    const logObject = results[0];
+    expect(logObject).to.deep.eq(log);
+  });
+
+  it('`getContractResultsLogsWithRetry` should retry multiple times when records are immature and eventually return mature records', async () => {
+    // Mock 3 sequential calls that return immature records - less than default polling counts (10)
+    [...Array(3)].reduce((mockChain) => {
+      return mockChain.onGet(`contracts/results/logs?limit=100&order=asc`).replyOnce(200, {
+        logs: [{ ...log, transaction_index: null, block_number: null, index: null, block_hash: '0x' }],
+      });
+    }, mock);
+
+    mock.onGet(`contracts/results/logs?limit=100&order=asc`).reply(200, { logs: [log] });
+
+    const results = await mirrorNodeInstance.getContractResultsLogsWithRetry(requestDetails);
+
+    expect(results).to.exist;
+    expect(results.length).to.gt(0);
+    const logObject = results[0];
+    expect(logObject).to.deep.eq(log);
+    expect(mock.history.get.length).to.eq(4);
+  });
+
+  it('`getContractResultsLogsWithRetry` should return immature records after exhausting maximum retry attempts', async () => {
+    // Mock 11 sequential calls that return immature records - greater than default polling counts (10)
+    [...Array(11)].reduce((mockChain) => {
+      return mockChain.onGet(`contracts/results/logs?limit=100&order=asc`).replyOnce(200, {
+        logs: [{ ...log, transaction_index: null, block_number: null, index: null, block_hash: '0x' }],
+      });
+    }, mock);
+
+    const expectedLog = { ...log, transaction_index: null, block_number: null, index: null, block_hash: '0x' };
+
+    const results = await mirrorNodeInstance.getContractResultsLogsWithRetry(requestDetails);
+
+    expect(results).to.exist;
+    expect(results.length).to.gt(0);
+    const logObject = results[0];
+    expect(logObject).to.deep.eq(expectedLog);
+    expect(mock.history.get.length).to.eq(11);
   });
 
   it('`getContractResultsLogsByAddress` ', async () => {
