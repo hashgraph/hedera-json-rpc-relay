@@ -10,8 +10,13 @@ contract CreateHTS is Ownable, KeyHelper, HederaTokenService {
     address public htsTokenAddress;
 
     constructor(string memory _name, string memory _symbol, address _delegate) payable Ownable(_delegate) {
-        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
         keys[0] = getSingleKey(
+            KeyType.ADMIN,
+            KeyValueType.INHERIT_ACCOUNT_KEY,
+            bytes("")
+        );
+        keys[1] = getSingleKey(
             KeyType.SUPPLY,
             KeyValueType.INHERIT_ACCOUNT_KEY,
             bytes("")
@@ -31,5 +36,11 @@ contract CreateHTS is Ownable, KeyHelper, HederaTokenService {
         require(transferResponse == HederaTokenService.SUCCESS_CODE, "HTS: Transfer failed");
 
         htsTokenAddress = tokenAddress;
+    }
+
+    function updateTokenKeysPublic(IHederaTokenService.TokenKey[] memory keys) public returns (int64 responseCode) {
+        (responseCode) = HederaTokenService.updateTokenKeys(htsTokenAddress, keys);
+
+        require(responseCode == HederaTokenService.SUCCESS_CODE, "HTS: Update keys reverted");
     }
 }

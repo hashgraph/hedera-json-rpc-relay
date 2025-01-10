@@ -71,7 +71,7 @@ task('deploy-whbar', 'Deploy WHBAR')
     const contract = await contractFactory.deploy();
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) WHBAR to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
+    console.log(`(${hre.network.name}) WHBAR to ${contract.address} txHash ${contract.deployTransaction.hash}`);
   });
 
 task('deploy-erc20', 'Deploy ERC20 token')
@@ -82,7 +82,7 @@ task('deploy-erc20', 'Deploy ERC20 token')
     const contract = await contractFactory.deploy(taskArgs.mint, taskArgs.decimals);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ERC20 deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
+    console.log(`(${hre.network.name}) ERC20 deployed to ${contract.address} txHash ${contract.deployTransaction.hash}`);
   });
 
 task('deploy-erc721', 'Deploy ERC721 token')
@@ -91,7 +91,7 @@ task('deploy-erc721', 'Deploy ERC721 token')
     const contract = await contractFactory.deploy();
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ERC721 deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
+    console.log(`(${hre.network.name}) ERC721 deployed to ${contract.address} txHash ${contract.deployTransaction.hash}`);
   });
 
 task('deploy-oapp', 'Deploy OApp contract')
@@ -104,7 +104,7 @@ task('deploy-oapp', 'Deploy OApp contract')
     const contract = await contractFactory.deploy(ENDPOINT_V2, signers[0].address);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleOApp deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
+    console.log(`(${hre.network.name}) ExampleOApp deployed to ${contract.address} txHash ${contract.deployTransaction.hash}`);
   });
 
 task('deploy-oft', 'Deploy OFT contract')
@@ -119,7 +119,7 @@ task('deploy-oft', 'Deploy OFT contract')
     const contract = await contractFactory.deploy('T_NAME', 'T_SYMBOL', ENDPOINT_V2, signers[0].address, taskArgs.mint, taskArgs.decimals);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleOFT deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
+    console.log(`(${hre.network.name}) ExampleOFT deployed to ${contract.address} txHash ${contract.deployTransaction.hash}`);
   });
 
 task('deploy-hts-connector', 'Deploy HTS connector contract')
@@ -135,7 +135,23 @@ task('deploy-hts-connector', 'Deploy HTS connector contract')
     });
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleHTSConnector deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
+    console.log(`(${hre.network.name}) ExampleHTSConnector deployed to ${contract.address} txHash ${contract.deployTransaction.hash}`);
+  });
+
+task('deploy-hts-connector-existing-token', 'Deploy HTS connector for existing token contract')
+  .addParam('token', 'Already existing token address')
+  .setAction(async (taskArgs, hre) => {
+    const ethers = hre.ethers;
+    const signers = await ethers.getSigners();
+    const ENDPOINT_V2 = getEndpointAddress(hre.network.name);
+
+    const contractFactory = await ethers.getContractFactory('ExampleHTSConnectorExistingToken');
+    const contract = await contractFactory.deploy(taskArgs.token, ENDPOINT_V2, signers[0].address, {
+      gasLimit: 10_000_000,
+    });
+    await contract.deployTransaction.wait();
+
+    console.log(`(${hre.network.name}) ExampleHTSConnectorExistingToken deployed to ${contract.address} txHash ${contract.deployTransaction.hash}`);
   });
 
 task('create-hts-token', 'Create a HTS token')
@@ -150,7 +166,7 @@ task('create-hts-token', 'Create a HTS token')
     });
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) Token address ${await contract.htsTokenAddress()}, txHash ${contract.deployTransaction.hash}`);
+    console.log(`(${hre.network.name}) Token address ${await contract.htsTokenAddress()} contract address ${contract.address} txHash ${contract.deployTransaction.hash}`);
   });
 
 task('deploy-oft-adapter', 'Deploy OFT adapter contract')
@@ -164,7 +180,7 @@ task('deploy-oft-adapter', 'Deploy OFT adapter contract')
     const contract = await contractFactory.deploy(taskArgs.token, ENDPOINT_V2, signers[0].address);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleOFTAdapter for token ${taskArgs.token} deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
+    console.log(`(${hre.network.name}) ExampleOFTAdapter for token ${taskArgs.token} deployed to ${contract.address} txHash ${contract.deployTransaction.hash}`);
   });
 
 task('deploy-onft', 'Deploy OFT contract')
@@ -184,7 +200,7 @@ task('deploy-onft', 'Deploy OFT contract')
     const contract = await contractFactory.deploy('T_NAME', 'T_SYMBOL', ENDPOINT_V2, signers[0].address, tokenId);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleONFT deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
+    console.log(`(${hre.network.name}) ExampleONFT deployed to ${contract.address} txHash ${contract.deployTransaction.hash}`);
   });
 
 task('deploy-onft-adapter', 'Deploy OFT contract')
@@ -198,7 +214,7 @@ task('deploy-onft-adapter', 'Deploy OFT contract')
     const contract = await contractFactory.deploy(taskArgs.token, ENDPOINT_V2, signers[0].address);
     await contract.deployTransaction.wait();
 
-    console.log(`(${hre.network.name}) ExampleONFTAdapter deployed to ${contract.address}, txHash ${contract.deployTransaction.hash}`);
+    console.log(`(${hre.network.name}) ExampleONFTAdapter deployed to ${contract.address} txHash ${contract.deployTransaction.hash}`);
   });
 
 task('set-peer', 'Set peer')
