@@ -47,8 +47,8 @@ describe('LoggerService tests', async function () {
   });
 
   it('should be able to return plain information', async () => {
-    const envName = GlobalConfig.ENTRIES.CHAIN_ID.envName;
-    const res = ConfigService.get(envName);
+    const envName = 'CHAIN_ID';
+    const res = ConfigService.get(envName) as string | undefined;
 
     expect(LoggerService.maskUpEnv(envName, res)).to.equal(`${envName} = ${res}`);
   });

@@ -19,17 +19,18 @@
  */
 
 // external resources
-import { expect } from 'chai';
-import { ethers, WebSocketProvider } from 'ethers';
-import { WsTestConstant, WsTestHelper } from '../helper';
-import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
-import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
-import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { numberTo0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { ONE_TINYBAR_IN_WEI_HEX } from '@hashgraph/json-rpc-relay/tests/lib/eth/eth-config';
 import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
 import RelayClient from '@hashgraph/json-rpc-server/tests/clients/relayClient';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
+import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
+import { expect } from 'chai';
+import { ethers, WebSocketProvider } from 'ethers';
+
+import { WsTestConstant, WsTestHelper } from '../helper';
 
 describe('@web-socket-batch-2 eth_getTransactionByHash', async function () {
   const METHOD_NAME = 'eth_getTransactionByHash';

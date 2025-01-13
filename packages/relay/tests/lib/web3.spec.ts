@@ -20,8 +20,9 @@
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { expect } from 'chai';
-import { Registry } from 'prom-client';
 import pino from 'pino';
+import { Registry } from 'prom-client';
+
 import { RelayImpl } from '../../src';
 import { withOverriddenEnvsInMochaTest } from '../helpers';
 

@@ -19,20 +19,21 @@
  */
 
 // external resources
-import WebSocket from 'ws';
-import { ethers } from 'ethers';
-import chai, { expect } from 'chai';
-import { WsTestHelper } from '../helper';
-import { solidity } from 'ethereum-waffle';
-import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
-import Constants from '@hashgraph/json-rpc-server/tests/helpers/constants';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { predefined, WebSocketError } from '@hashgraph/json-rpc-relay/dist';
+import LogContractJson from '@hashgraph/json-rpc-server/tests/contracts/Logs.json';
+import IERC20Json from '@hashgraph/json-rpc-server/tests/contracts/openzeppelin/IERC20.json';
 import Assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
 import assertions from '@hashgraph/json-rpc-server/tests/helpers/assertions';
-import LogContractJson from '@hashgraph/json-rpc-server/tests/contracts/Logs.json';
+import Constants from '@hashgraph/json-rpc-server/tests/helpers/constants';
+import { Utils } from '@hashgraph/json-rpc-server/tests/helpers/utils';
 import { AliasAccount } from '@hashgraph/json-rpc-server/tests/types/AliasAccount';
-import IERC20Json from '@hashgraph/json-rpc-server/tests/contracts/openzeppelin/IERC20.json';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import chai, { expect } from 'chai';
+import { solidity } from 'ethereum-waffle';
+import { ethers } from 'ethers';
+import WebSocket from 'ws';
+
+import { WsTestHelper } from '../helper';
 
 chai.use(solidity);
 

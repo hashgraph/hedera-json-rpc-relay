@@ -1,4 +1,4 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
@@ -61,7 +61,7 @@ describe('HBAR Rate Limit Service', function () {
   const mockPlanId = uuidV4(randomBytes(16));
   const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
   const operatorAddress = prepend0x(
-    AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN') as string).toSolidityAddress(),
+    AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')).toSolidityAddress(),
   );
 
   const requestDetails = new RequestDetails({ requestId: 'hbarLimitServiceTest', ipAddress: mockIpAddress });

@@ -18,38 +18,33 @@
  *
  */
 // External resources
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+// Constants
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
+// Hashgraph SDK
+import { AccountId, Hbar } from '@hashgraph/sdk';
 import chai from 'chai';
-import dotenv from 'dotenv';
-import path from 'path';
-import pino from 'pino';
 import chaiAsPromised from 'chai-as-promised';
-import { GCProfiler } from 'v8';
-
+import dotenv from 'dotenv';
 // Other external resources
 import fs from 'fs';
-
-// Clients
-import ServicesClient from '../clients/servicesClient';
-import MirrorClient from '../clients/mirrorClient';
-import RelayClient from '../clients/relayClient';
-import MetricsClient from '../clients/metricsClient';
+import { Server } from 'http';
+import path from 'path';
+import pino from 'pino';
+import { GCProfiler } from 'v8';
 
 // Server related
 import app from '../../dist/server';
-import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
-
-// Hashgraph SDK
-import { AccountId, Hbar } from '@hashgraph/sdk';
-
-// Constants
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-
+import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
+import MetricsClient from '../clients/metricsClient';
+import MirrorClient from '../clients/mirrorClient';
+import RelayClient from '../clients/relayClient';
+// Clients
+import ServicesClient from '../clients/servicesClient';
 // Utils and types
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
-import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { Server } from 'http';
 
 chai.use(chaiAsPromised);
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });

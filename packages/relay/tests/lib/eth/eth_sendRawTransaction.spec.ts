@@ -135,7 +135,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       },
       receiver_sig_required: false,
     };
-    const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING') as boolean;
+    const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING');
 
     beforeEach(() => {
       clock = useFakeTimers();

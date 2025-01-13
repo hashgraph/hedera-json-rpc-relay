@@ -21,17 +21,15 @@
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 ConfigServiceTestHelper.appendEnvsFromPath(__dirname + '/test.env');
+import { predefined, RelayImpl } from '@hashgraph/json-rpc-relay';
+import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
 import Axios, { AxiosInstance } from 'axios';
 import { expect } from 'chai';
-import sinon from 'sinon';
 import { Server } from 'http';
+import Koa from 'koa';
+import sinon from 'sinon';
 import { GCProfiler } from 'v8';
-import Assertions from '../helpers/assertions';
-import { TracerType, Validator } from '../../src/validator';
-import RelayCalls from '../../tests/helpers/constants';
-import * as Constants from '../../src/validator/constants';
-import { Utils } from '../helpers/utils';
-import { predefined, RelayImpl } from '@hashgraph/json-rpc-relay';
+
 import {
   contractAddress1,
   contractAddress2,
@@ -40,8 +38,11 @@ import {
   overrideEnvsInMochaDescribe,
   withOverriddenEnvsInMochaTest,
 } from '../../../relay/tests/helpers';
-import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
-import Koa from 'koa';
+import { TracerType, Validator } from '../../src/validator';
+import * as Constants from '../../src/validator/constants';
+import RelayCalls from '../../tests/helpers/constants';
+import Assertions from '../helpers/assertions';
+import { Utils } from '../helpers/utils';
 
 const MISSING_PARAM_ERROR = 'Missing value for required parameter';
 

@@ -102,7 +102,7 @@ describe('SdkClient', async function () {
   overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true });
 
   before(() => {
-    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')!;
+    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')! as string;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
@@ -110,8 +110,8 @@ describe('SdkClient', async function () {
     }
 
     client = client.setOperator(
-      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')!),
-      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')!),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')! as string),
+      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')! as string),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     eventEmitter = new EventEmitter();
@@ -148,7 +148,7 @@ describe('SdkClient', async function () {
 
     // mirror node client
     mirrorNodeClient = new MirrorNodeClient(
-      ConfigService.get('MIRROR_NODE_URL') || '',
+      (ConfigService.get('MIRROR_NODE_URL')) || '',
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -2743,7 +2743,7 @@ describe('SdkClient', async function () {
     });
 
     it('Should execute getTransferAmountSumForAccount() to calculate transactionFee by only transfers that are paid by the specify accountId', () => {
-      const accountId = ConfigService.get('OPERATOR_ID_MAIN') || '';
+      const accountId = (ConfigService.get('OPERATOR_ID_MAIN')) || '';
       const mockedTxRecord = getMockedTransactionRecord(EthereumTransaction.name, true);
 
       const transactionFee = sdkClient.getTransferAmountSumForAccount(mockedTxRecord, accountId);

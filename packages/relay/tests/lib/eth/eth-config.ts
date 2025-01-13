@@ -19,6 +19,9 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+
+import { nanOrNumberTo0x,numberTo0x } from '../../../dist/formatters';
+import constants from '../../../src/lib/constants';
 import {
   defaultDetailedContractResultByHash,
   defaultEvmAddress,
@@ -29,8 +32,6 @@ import {
   mockData,
   toHex,
 } from '../../helpers';
-import { numberTo0x, nanOrNumberTo0x } from '../../../dist/formatters';
-import constants from '../../../src/lib/constants';
 
 export const BLOCK_TRANSACTION_COUNT = 77;
 export const GAS_USED_1 = 200000;

@@ -19,11 +19,12 @@
  */
 
 // external resources
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { predefined } from '@hashgraph/json-rpc-relay/dist';
 import { expect } from 'chai';
 import { ethers, WebSocketProvider } from 'ethers';
+
 import { WsTestConstant, WsTestHelper } from '../helper';
-import { predefined } from '@hashgraph/json-rpc-relay/dist';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 describe('@web-socket-batch-request Batch Requests', async function () {
   const METHOD_NAME = 'batch_request';

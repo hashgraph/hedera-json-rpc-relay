@@ -169,7 +169,7 @@ describe('MirrorNodeClient', async function () {
   withOverriddenEnvsInMochaTest({ MIRROR_NODE_URL_HEADER_X_API_KEY: 'abc123iAManAPIkey' }, () => {
     it('Can provide custom x-api-key header', async () => {
       const mirrorNodeInstanceOverridden = new MirrorNodeClient(
-        ConfigService.get('MIRROR_NODE_URL') || '',
+        (ConfigService.get('MIRROR_NODE_URL')) || '',
         logger.child({ name: `mirror-node` }),
         registry,
         cacheService,

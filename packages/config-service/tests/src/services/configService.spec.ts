@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { ConfigService } from '../../../src/services';
+import type { ConfigKey } from '../../../src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 
@@ -55,7 +56,7 @@ describe('ConfigService tests', async function () {
   });
 
   it('should return undefined for non-existing variable', async () => {
-    const res = ConfigService.get('NON_EXISTING_VAR');
+    const res = ConfigService.get('NON_EXISTING_VAR' as ConfigKey);
 
     expect(res).to.equal(undefined);
   });

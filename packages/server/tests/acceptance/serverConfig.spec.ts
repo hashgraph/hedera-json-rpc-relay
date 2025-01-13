@@ -17,9 +17,10 @@
  * limitations under the License.
  *
  */
-import { expect } from 'chai';
-import { Utils } from '../helpers/utils';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { expect } from 'chai';
+
+import { Utils } from '../helpers/utils';
 
 describe('@server-config Server Configuration Options Coverage', function () {
   describe('Koa Server Timeout', () => {

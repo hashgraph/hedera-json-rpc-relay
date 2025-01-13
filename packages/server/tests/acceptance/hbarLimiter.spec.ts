@@ -2,7 +2,7 @@
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,8 +73,8 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     metrics: MetricsClient;
     relayIsLocal: boolean;
   } = global;
-  const mockTTL = (ConfigService.get('HBAR_RATE_LIMIT_DURATION') as number) || 86400000; // 1 day
-  const operatorAccount = (ConfigService.get('OPERATOR_ID_MAIN') as string) || DOT_ENV.OPERATOR_ID_MAIN || '';
+  const mockTTL = (ConfigService.get('HBAR_RATE_LIMIT_DURATION')) || 86400000; // 1 day
+  const operatorAccount = (ConfigService.get('OPERATOR_ID_MAIN')) || DOT_ENV.OPERATOR_ID_MAIN || '';
   const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
@@ -127,7 +127,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       return contract;
     };
-    const transactionReecordCostTolerance = Number(ConfigService.get(`TEST_TRANSACTION_RECORD_COST_TOLERANCE`) || 0.02);
+    const transactionReecordCostTolerance = Number(ConfigService.get('TEST_TRANSACTION_RECORD_COST_TOLERANCE') || 0.02);
 
     const verifyRemainingLimit = (expectedCost: number, remainingHbarsBefore: number, remainingHbarsAfter: number) => {
       const delta = transactionReecordCostTolerance * expectedCost;
@@ -739,7 +739,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           };
 
           describe('given a valid JSON file with pre-configured spending plans', async () => {
-            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') as string;
+            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG');
             const configPath = findConfig(SPENDING_PLANS_CONFIG_FILE);
 
             if (configPath) {
@@ -899,7 +899,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                 return { ...aliasAccount, hbarSpendingPlan: accountAliasPlan.hbarSpendingPlan };
               });
 
-            const totalHbarBudget = ConfigService.get(`HBAR_RATE_LIMIT_TINYBAR`) as number;
+            const totalHbarBudget = ConfigService.get('HBAR_RATE_LIMIT_TINYBAR');
 
             let totalHbarSpent =
               totalHbarBudget - Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
