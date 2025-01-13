@@ -22,10 +22,9 @@ const hre = require('hardhat');
 const { ethers } = hre;
 const { Options, addressToBytes32 } = require('@layerzerolabs/lz-v2-utilities');
 const { expect } = require('chai');
+const CONSTANTS = require('./constants');
 
-const HEDERA_EID = 40285;
-const BSC_EID = 40102;
-const receiverAddress = '0xF51c7a9407217911d74e91642dbC58F18E51Deac';
+const { HEDERA_EID, BSC_EID, RECEIVER_ADDRESS } = CONSTANTS;
 const amount = '100000000000000000';
 
 describe('OFTAdapterTests', function() {
@@ -66,7 +65,7 @@ describe('OFTAdapterTests', function() {
 
     const sendParam = {
       dstEid: BSC_EID,
-      to: addressToBytes32(receiverAddress),
+      to: addressToBytes32(RECEIVER_ADDRESS),
       amountLD: amount,
       minAmountLD: amount,
       extraOptions: Options.newOptions().addExecutorLzReceiveOption(3000000, 0).toBytes(),
@@ -93,7 +92,7 @@ describe('OFTAdapterTests', function() {
 
     const sendParam = {
       dstEid: HEDERA_EID,
-      to: addressToBytes32(receiverAddress),
+      to: addressToBytes32(RECEIVER_ADDRESS),
       amountLD: amount,
       minAmountLD: amount,
       extraOptions: Options.newOptions().addExecutorLzReceiveOption(3000000, 0).toBytes(),
@@ -119,7 +118,7 @@ describe('OFTAdapterTests', function() {
     const signers = await ethers.getSigners();
 
     const contractERC20 = await ethers.getContractAt('ERC20Mock', process.env.ERC20_HEDERA_CONTRACT);
-    const receiverBalance = await contractERC20.balanceOf(receiverAddress);
+    const receiverBalance = await contractERC20.balanceOf(RECEIVER_ADDRESS);
 
     console.log(`(${hre.network.name}) signer balance: ${await contractERC20.balanceOf(signers[0].address)}`);
     console.log(`(${hre.network.name}) oft adapter balance: ${await contractERC20.balanceOf(process.env.OFT_ADAPTER_HEDERA_CONTRACT)}`);
@@ -132,7 +131,7 @@ describe('OFTAdapterTests', function() {
     const signers = await ethers.getSigners();
 
     const contractERC20 = await ethers.getContractAt('ERC20Mock', process.env.ERC20_BSC_CONTRACT);
-    const receiverBalance = await contractERC20.balanceOf(receiverAddress);
+    const receiverBalance = await contractERC20.balanceOf(RECEIVER_ADDRESS);
 
     console.log(`(${hre.network.name}) signer balance: ${await contractERC20.balanceOf(signers[0].address)}`);
     console.log(`(${hre.network.name}) oft adapter balance: ${await contractERC20.balanceOf(process.env.OFT_ADAPTER_BSC_CONTRACT)}`);

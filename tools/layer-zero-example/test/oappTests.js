@@ -22,9 +22,9 @@ const hre = require('hardhat');
 const { ethers } = hre;
 const { Options } = require('@layerzerolabs/lz-v2-utilities');
 const { expect } = require('chai');
+const CONSTANTS = require('./constants');
 
-const HEDERA_EID = 40285;
-const BSC_EID = 40102;
+const { HEDERA_EID, BSC_EID } = CONSTANTS;
 const DATA_FROM_HEDERA = 'dataFromHedera';
 const DATA_FROM_BSC = 'dataFromBsc';
 

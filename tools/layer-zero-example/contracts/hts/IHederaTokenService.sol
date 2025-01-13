@@ -158,4 +158,10 @@ interface IHederaTokenService {
         address recipient,
         int64 amount
     ) external returns (int64 responseCode);
+
+    /// Operation to update token keys
+    /// @param token The token address
+    /// @param keys The token keys
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function updateTokenKeys(address token, TokenKey[] memory keys) external returns (int64 responseCode);
 }

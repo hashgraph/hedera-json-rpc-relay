@@ -227,6 +227,58 @@ npx hardhat test --grep "HTSConnectorTests @hedera @test" --network hedera_testn
 npx hardhat test --grep "HTSConnectorTests @bsc @test" --network bsc_testnet
 ```
 
+### HTS Connector for existing HTS token
+
+That's a variant of OFT but using an already existing HTS token. Keep in mind that "supply key" of the token must contains the HTS Connector contract's address.
+
+- Create an HTS token
+```typescript
+npx hardhat create-hts-token --network hedera_testnet
+```
+
+- Deploying OFT on an EVM chain and HTS Connector on the Hedera chain. The HTS Connector for existing token extends OFTCore and receives the HTS tokens address as constructor parameter. Also, overrides OFTCore _debit and _credit with related HTS mint and burn precompile calls
+```
+npx hardhat deploy-hts-connector-existing-token --token <existing_hts_token_address> --network hedera_testnet
+npx hardhat deploy-oft --decimals 8 --mint 1000 --network bsc_testnet
+```
+
+- In order to connect OFTs together, we need to set the peer of the target OFT, more info can be found here https://docs.layerzero.network/v2/developers/evm/getting-started#connecting-your-contracts
+```typescript
+npx hardhat set-peer --source <hedera_oft_address> --target <bsc_oft_address> --network hedera_testnet
+npx hardhat set-peer --source <bsc_oft_address> --target <hedera_oft_address> --network bsc_testnet
+```
+
+- Fill the .env
+
+- Adding the HTSConnectorExistingToken contract's address as a supply key of the existing HTS token
+```typescript
+npx hardhat test --grep "HTSConnectorExistingToken @hedera @update-keys" --network hedera_testnet
+```
+
+- Funding the HTSConnectorExistingToken contract
+```typescript
+npx hardhat test --grep "HTSConnectorExistingToken @hedera @fund" --network hedera_testnet
+```
+
+- Approving HTS Connector to use some signer's tokens
+```typescript
+npx hardhat test --grep "HTSConnectorExistingToken @hedera @approve" --network hedera_testnet
+```
+
+- On these steps, we're sending tokens from an EVM chain to Hedera and receiving HTS tokens and vice versa
+```typescript
+npx hardhat test --grep "HTSConnectorExistingToken @hedera @send" --network hedera_testnet
+npx hardhat test --grep "HTSConnectorExistingToken @bsc @send" --network bsc_testnet
+```
+
+- Wait a couple of minutes, the LZ progress can be tracked on https://testnet.layerzeroscan.com/tx/<tx_hash>
+
+- Finally we're checking whether the balances are expected on both source and destination chains
+```typescript
+npx hardhat test --grep "HTSConnectorExistingToken @hedera @test" --network hedera_testnet
+npx hardhat test --grep "HTSConnectorExistingToken @bsc @test" --network bsc_testnet
+```
+
 ### HTS Adapter
 
 If your HTS token already exists on Hedera and you want to connect it to another chain, you can deploy the OFT Adapter contract to act as an intermediary lockbox for it.
