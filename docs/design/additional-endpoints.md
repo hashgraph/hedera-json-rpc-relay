@@ -23,12 +23,12 @@ Currently MN doesn't support EVM centric queries, like token transfer 
 *  Support ERC20, ERC721, and ERC1155 token standards
 *  Match Etherscan's response format for easy integration
 *  Maintain performance with large datasets
-*  Provide endpoints to fetch tokens owned by an address
+*  Provide endpoints to fetch tokens owned by an address (TBD)
 
 ## Non-Goals
 *  Support all Blockscout and Etherscan API endpoints
 *  Support other events except for Transfer events
-*  No API key for authorization
+*  Support API key for authorization
 
 ## Proposed Solution
 
@@ -38,13 +38,12 @@ Introduce a new package `rest-server` with the following REST endpoints:
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api?module=account&action=tokentx&address={address}&contractaddress={contractaddress}&startblock={startblock}&endblock={endblock}&page={page}&offset={offset}&sort={asc\|desc}` | Get ERC20 token transfer events |
-| `GET /api?module=account&action=tokennfttx&address={address}&contractaddress={contractaddress}&startblock={startblock}&endblock={endblock}&page={page}&offset={offset}&sort={asc\|desc}` | Get ERC721 (NFT) token transfer events |
-| `GET /api?module=account&action=token1155tx&address={address}&contractaddress={contractaddress}&startblock={startblock}&endblock={endblock}&page={page}&offset={offset}&sort={asc\|desc}` | Get ERC1155 token transfer events |
-| `GET /api/account/{address}/tokens?page={page}&offset={offset}` | Fetch tokens owned by an address |
+| `GET /api/v1/etherscan?module=account&action=tokentx&address={address}&contractaddress={contractaddress}&startblock={startblock}&endblock={endblock}&page={page}&offset={offset}&sort={asc\|desc}` | Get ERC20 token transfer events |
+| `GET /api/v1/etherscan?module=account&action=tokennfttx&address={address}&contractaddress={contractaddress}&startblock={startblock}&endblock={endblock}&page={page}&offset={offset}&sort={asc\|desc}` | Get ERC721 (NFT) token transfer events |
+| `GET /api/v1/etherscan?module=account&action=token1155tx&address={address}&contractaddress={contractaddress}&startblock={startblock}&endblock={endblock}&page={page}&offset={offset}&sort={asc\|desc}` | Get ERC1155 token transfer events |
+| `GET /api/v1/etherscan/account/{address}/tokens?page={page}&offset={offset}` | Fetch tokens owned by an address |
 
-The package will be a standalone package with no relay dependencies, its own mirror node client implementation and its own cache service conncting to redis.
-This allows for a more modular and scalable solution, with the ability to easily add more endpoints in the future.
+The package will be a standalone package, but will be using the existing relay package for service implementations.
 
 ### Package Structure
 ```
@@ -123,7 +122,7 @@ Following Etherscan's API format, we will implement three separate endpoints for
 
 1. **ERC20 Token Transfers**
 ```
-GET /api
+GET /api/v1/etherscan
    ?module=account
    &action=tokentx
    &address={address}
@@ -137,7 +136,7 @@ GET /api
 
 2. **ERC721 Token Transfers (NFTs)**
 ```
-GET /api
+GET /api/v1/etherscan
    ?module=account
    &action=tokennfttx
    &address={address}
@@ -151,7 +150,7 @@ GET /api
 
 3. **ERC1155 Token Transfers**
 ```
-GET /api
+GET /api/v1/etherscan
    ?module=account
    &action=token1155tx
    &address={address}
@@ -173,14 +172,12 @@ GET /api
 | contractaddress | The token contract address to filter by | No | - |
 | startblock | The starting block number | No | 0 |
 | endblock | The ending block number | No | latest |
-| contractAddress | The address of the token contract to filter by | No | - |
-| standard | The token standard to filter by (ERC20/721/1155) | Yes | - |
 | page | The page number if pagination is enabled | No | 1 |
 | offset | The number of transfers per page | No | 100 |
 | sort | The sort order (asc/desc) | No | desc |
 
 There are three possible cases:
-1. Only `contractAddress` is provided
+1. Only `contractaddress` is provided
 2. Only `address` is provided
 3. Both `address` and `contractAddress` are provided
 
@@ -245,7 +242,7 @@ This tiered approach was chosen based on several key factors:
 #### Sequence Diagram
 ```mermaid
 sequenceDiagram
-    Client->>REST API: GET /api/token/transfers
+    Client->>REST API: GET /api/v1/etherscan....
     REST API->>CacheService: Check cache
     alt Cache hit
         CacheService->>REST API: Return cached data
@@ -273,7 +270,7 @@ sequenceDiagram
 
 1. Get ERC20 transfers for an address:
 ```
-GET /api
+GET /api/v1/etherscan
    ?module=account
    &action=tokentx
    &address=0x123...
@@ -286,7 +283,7 @@ GET /api
 
 2. Get ERC721 (NFT) transfers for a specific contract:
 ```
-GET /api
+GET /api/v1/etherscan
    ?module=account
    &action=tokennfttx
    &address=0x123...
@@ -299,7 +296,7 @@ GET /api
 
 3. Get ERC1155 transfers with specific parameters:
 ```
-GET /api
+GET /api/v1/etherscan
    ?module=account
    &action=token1155tx
    &address=0x123...
