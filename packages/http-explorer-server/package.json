@@ -1,0 +1,35 @@
+{
+  "name": "@hashgraph/http-explorer-server",
+  "version": "0.1.0",
+  "description": "HTTP server exposing Etherscan-like REST APIs for Hedera network",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist/",
+    "start": "node dist/index.js",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix"
+  },
+  "dependencies": {
+    "@hashgraph/json-rpc-relay": "file:../relay",
+    "@koa/cors": "^4.0.0",
+    "koa": "^2.14.2",
+    "koa-bodyparser": "^4.4.1",
+    "koa-router": "^12.0.0",
+    "pino": "^8.15.0",
+    "pino-pretty": "^10.2.0",
+    "prom-client": "^14.2.0"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.13.8",
+    "@types/koa__cors": "^4.0.0",
+    "@types/koa-bodyparser": "^4.3.10",
+    "@types/koa-router": "^7.4.4",
+    "@types/node": "^20.5.7",
+    "@typescript-eslint/eslint-plugin": "^6.5.0",
+    "@typescript-eslint/parser": "^6.5.0",
+    "eslint": "^8.48.0",
+    "rimraf": "^5.0.1",
+    "typescript": "^5.2.2"
+  }
+} 
