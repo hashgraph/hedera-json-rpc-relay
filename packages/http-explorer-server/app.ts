@@ -18,4 +18,12 @@
  *
  */
 
-class TokenRoutes {}
+import Koa from 'koa';
+
+import { TokenRoutes } from './src/routes';
+
+const app = new Koa();
+
+app.use(TokenRoutes.routes());
+
+export default app;

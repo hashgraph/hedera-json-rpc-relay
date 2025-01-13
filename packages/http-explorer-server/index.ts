@@ -17,5 +17,10 @@
  * limitations under the License.
  *
  */
+import app from './app';
 
-class TokenRoutes {}
+function main() {
+  app.listen(3000);
+}
+
+main();

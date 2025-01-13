@@ -17,5 +17,4 @@
  * limitations under the License.
  *
  */
-
-class TokenRoutes {}
+export { TokenRoutes } from './tokenRoutes';
