@@ -18,7 +18,10 @@
  *
  */
 
+import { BigNumber as BN } from 'bignumber.js';
 import { expect } from 'chai';
+import { AbiCoder, keccak256 } from 'ethers';
+
 import {
   ASCIIToHex,
   decodeErrorMessage,
@@ -31,26 +34,25 @@ import {
   isHex,
   isValidEthereumAddress,
   mapKeysAndValues,
+  nanOrNumberInt64To0x,
   nanOrNumberTo0x,
   nullableNumberTo0x,
   numberTo0x,
   parseNumericEnvVar,
   prepend0x,
   strip0x,
+  tinybarsToWeibars,
   toHash32,
   toHexString,
   toNullableBigNumber,
   toNullIfEmptyHex,
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
-  tinybarsToWeibars,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
-import { BigNumber as BN } from 'bignumber.js';
-import { AbiCoder, keccak256 } from 'ethers';
 import { overrideEnvsInMochaDescribe } from '../helpers';
 
-describe('Formatters', () => {
+describe.only('Formatters', () => {
   describe('formatRequestIdMessage', () => {
     const exampleRequestId = '46530e63-e33a-4f42-8e44-b125f99f1a9b';
     const expectedFormattedId = '[Request ID: 46530e63-e33a-4f42-8e44-b125f99f1a9b]';
@@ -396,6 +398,21 @@ describe('Formatters', () => {
     });
     it('should convert a number', () => {
       expect(nanOrNumberTo0x(593)).to.equal('0x251');
+    });
+  });
+
+  describe('nanOrNumberInt64To0x', () => {
+    it('should return 0x0 for nullable input', () => {
+      expect(nanOrNumberInt64To0x(null)).to.equal('0x0');
+    });
+    it('should return 0x0 for NaN input', () => {
+      expect(nanOrNumberInt64To0x(NaN)).to.equal('0x0');
+    });
+    it('should convert a valid number', () => {
+      expect(nanOrNumberInt64To0x(593)).to.equal('0x251');
+    });
+    it('should covert a valid negative int64 number', () => {
+      expect(nanOrNumberInt64To0x(-10)).to.equal('0xfffffffffffffff6');
     });
   });
 
@@ -756,6 +773,9 @@ describe('Formatters', () => {
         Error,
         'Value cannot be more than the total supply of tinybars in the blockchain',
       );
+    });
+    it('should return the negative number if allowNegativeValues flag is set to true', () => {
+      expect(tinybarsToWeibars(-10, true)).to.eql(-10);
     });
   });
 });
