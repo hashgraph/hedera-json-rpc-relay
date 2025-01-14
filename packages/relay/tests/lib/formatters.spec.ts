@@ -52,7 +52,7 @@ import {
 import constants from '../../src/lib/constants';
 import { overrideEnvsInMochaDescribe } from '../helpers';
 
-describe.only('Formatters', () => {
+describe('Formatters', () => {
   describe('formatRequestIdMessage', () => {
     const exampleRequestId = '46530e63-e33a-4f42-8e44-b125f99f1a9b';
     const expectedFormattedId = '[Request ID: 46530e63-e33a-4f42-8e44-b125f99f1a9b]';
