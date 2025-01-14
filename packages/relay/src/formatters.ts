@@ -268,11 +268,11 @@ const nanOrNumberTo0x = (input: number | BigNumber | bigint | null): string => {
 
 const nanOrNumberInt64To0x = (input: number | BigNumber | bigint | null): string => {
   if (input && input < 0) {
-    // the hex of a negative number can be obtained from the binary value of that number positive value,
-    // the binary value needs to be negated and then, to add 1,
+    // the hex of a negative number can be obtained from the binary value of that number positive value
+    // the binary value needs to be negated and then to be incremented by 1
 
     // how the transformation works (using 16 bits)
-    // a 16 bits integer variables has values from -32768 to +32767, so:
+    // a 16 bits integer variables have values from -32768 to +32767, so:
     // 0      - 0x0000 - 0000 0000 0000 0000
     // 32767  - 0x7fff - 0111 1111 1111 1111
     // -32768 - 0x8000 - 1000 0000 0000 0000
