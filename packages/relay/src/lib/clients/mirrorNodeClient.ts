@@ -783,6 +783,8 @@ export class MirrorNodeClient {
     let contractResult = await this[methodName](...args);
 
     for (let i = 0; i < mirrorNodeRequestRetryCount; i++) {
+      const isLastAttempt = i === mirrorNodeRequestRetryCount - 1;
+
       if (contractResult) {
         const contractObjects = Array.isArray(contractResult) ? contractResult : [contractResult];
 
@@ -802,8 +804,13 @@ export class MirrorNodeClient {
                   requestDetails.formattedRequestId
                 } Contract result contains nullable transaction_index or block_number, or block_hash is an empty hex (0x): contract_result=${JSON.stringify(
                   contractObject,
-                )}. Retrying after a delay of ${mirrorNodeRetryDelay} ms `,
+                )}. ${!isLastAttempt ? `Retrying after a delay of ${mirrorNodeRetryDelay} ms.` : ``}`,
               );
+            }
+
+            // If immature records persist after the final polling attempt, throw the DEPENDENT_SERVICE_IMMATURE_RECORDS error.
+            if (isLastAttempt) {
+              throw predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS;
             }
 
             foundImmatureRecord = true;
@@ -965,6 +972,7 @@ export class MirrorNodeClient {
     );
 
     for (let i = 0; i < mirrorNodeRequestRetryCount; i++) {
+      const isLastAttempt = i === mirrorNodeRequestRetryCount - 1;
       if (logResults) {
         let foundImmatureRecord = false;
 
@@ -981,10 +989,15 @@ export class MirrorNodeClient {
               this.logger.debug(
                 `${
                   requestDetails.formattedRequestId
-                } Contract result log contains undefined transaction_index, block_number, index, or block_hash is an empty hex (0x): log=${JSON.stringify(
+                } Contract result log contains nullable transaction_index, block_number, index, or block_hash is an empty hex (0x): log=${JSON.stringify(
                   log,
-                )}. Retrying after a delay of ${mirrorNodeRetryDelay} ms.`,
+                )}. ${!isLastAttempt ? `Retrying after a delay of ${mirrorNodeRetryDelay} ms.` : ``}`,
               );
+            }
+
+            // If immature records persist after the final polling attempt, throw the DEPENDENT_SERVICE_IMMATURE_RECORDS error.
+            if (isLastAttempt) {
+              throw predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS;
             }
 
             foundImmatureRecord = true;
