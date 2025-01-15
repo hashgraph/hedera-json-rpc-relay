@@ -686,8 +686,8 @@ describe('MirrorNodeClient', async function () {
 
   it('`getContractResultsWithRetry` should return immature records after exhausting maximum retry attempts', async () => {
     const hash = '0x2a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393';
-    // Mock 11 sequential calls that return immature records - as default polling counts (10)
-    [...Array(11)].reduce((mockChain) => {
+    // Mock 10 sequential calls that return immature records - equals to the default polling counts (10) - should throw an error at the last polling attempt
+    [...Array(10)].reduce((mockChain) => {
       return mockChain.onGet(`contracts/results/${hash}`).replyOnce(200, {
         ...detailedContractResult,
         transaction_index: null,
@@ -696,17 +696,19 @@ describe('MirrorNodeClient', async function () {
       });
     }, mock);
 
-    const result = await mirrorNodeInstance.getContractResultWithRetry(
-      mirrorNodeInstance.getContractResult.name,
-      [hash, requestDetails],
-      requestDetails,
-    );
+    try {
+      await mirrorNodeInstance.getContractResultWithRetry(
+        mirrorNodeInstance.getContractResult.name,
+        [hash, requestDetails],
+        requestDetails,
+      );
+      expect.fail('should have thrown an error');
+    } catch (error) {
+      expect(error).to.exist;
+      expect(error).to.eq(predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS);
+    }
 
-    expect(result).to.exist;
-    expect(result.transaction_index).equal(null);
-    expect(result.block_number).equal(null);
-    expect(result.block_hash).equal('0x');
-    expect(mock.history.get.length).to.eq(11);
+    expect(mock.history.get.length).to.eq(10);
   });
 
   it('`getContractResults` detailed', async () => {
@@ -861,22 +863,20 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`getContractResultsLogsWithRetry` should return immature records after exhausting maximum retry attempts', async () => {
-    // Mock 11 sequential calls that return immature records - greater than default polling counts (10)
-    [...Array(11)].reduce((mockChain) => {
+    // Mock 10 sequential calls that return immature records - equals to the default polling counts (10) - should throw an error at the last polling attempt
+    [...Array(10)].reduce((mockChain) => {
       return mockChain.onGet(`contracts/results/logs?limit=100&order=asc`).replyOnce(200, {
         logs: [{ ...log, transaction_index: null, block_number: null, index: null, block_hash: '0x' }],
       });
     }, mock);
 
-    const expectedLog = { ...log, transaction_index: null, block_number: null, index: null, block_hash: '0x' };
-
-    const results = await mirrorNodeInstance.getContractResultsLogsWithRetry(requestDetails);
-
-    expect(results).to.exist;
-    expect(results.length).to.gt(0);
-    const logObject = results[0];
-    expect(logObject).to.deep.eq(expectedLog);
-    expect(mock.history.get.length).to.eq(11);
+    try {
+      await mirrorNodeInstance.getContractResultsLogsWithRetry(requestDetails);
+    } catch (error) {
+      expect(error).to.exist;
+      expect(error).to.eq(predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS);
+    }
+    expect(mock.history.get.length).to.eq(10);
   });
 
   it('`getContractResultsLogsByAddress` ', async () => {

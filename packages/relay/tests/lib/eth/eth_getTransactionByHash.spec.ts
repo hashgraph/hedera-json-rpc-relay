@@ -34,6 +34,7 @@ import {
   NO_TRANSACTIONS,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
+import { predefined } from '../../../src';
 
 use(chaiAsPromised);
 
@@ -233,9 +234,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
       expect.fail('should have thrown an error');
     } catch (error) {
       expect(error).to.exist;
-      expect(error.message).to.include(
-        'The contract result response from the remote Mirror Node server is missing required fields.',
-      );
+      expect(error).to.eq(predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS);
     }
   });
 
@@ -252,9 +251,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
       expect.fail('should have thrown an error');
     } catch (error) {
       expect(error).to.exist;
-      expect(error.message).to.include(
-        'The contract result response from the remote Mirror Node server is missing required fields.',
-      );
+      expect(error).to.eq(predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS);
     }
   });
 
@@ -273,9 +270,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
       expect.fail('should have thrown an error');
     } catch (error) {
       expect(error).to.exist;
-      expect(error.message).to.include(
-        'The contract result response from the remote Mirror Node server is missing required fields.',
-      );
+      expect(error).to.eq(predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS);
     }
   });
 
