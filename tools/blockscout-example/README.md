@@ -13,7 +13,7 @@
     BATCH_REQUESTS_ENABLED: "${BATCH_REQUESTS_ENABLED}"
     ```
 
-- adjust the port of **hedera-explorer**:
+- adjust the port of **hedera-explorer** in order to free up the default port on which blockscout is running:
     ```
     ports:
       - "9080:8080"
@@ -59,7 +59,8 @@
    - blockscout doc: https://docs.blockscout.com/devs/apis/rpc/account#get-the-native-token-balance-for-an-address
    - make sure to replace `instance_base_url` with `localhost`
    - when testing different moduls make sure to give the correct value for `module`
+   - choose an `accountAddress` from one of the accounts that the local node generates upon starting
    - curl request:
    ```bash
-   curl --location 'http://localhost/api?module=account&action=balance&address=0x05FbA803Be258049A27B820088bab1cAD2058871'
+   curl --location 'http://localhost/api?module=account&action=balance&address={accountAddress}'
    ```
