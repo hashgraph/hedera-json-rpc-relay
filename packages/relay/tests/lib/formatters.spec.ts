@@ -411,7 +411,7 @@ describe('Formatters', () => {
     it('should convert a valid number', () => {
       expect(nanOrNumberInt64To0x(593)).to.equal('0x251');
     });
-    it('should covert a valid negative int64 number', () => {
+    it('should convert a valid negative int64 number', () => {
       expect(nanOrNumberInt64To0x(-10)).to.equal('0xfffffffffffffff6');
     });
   });
