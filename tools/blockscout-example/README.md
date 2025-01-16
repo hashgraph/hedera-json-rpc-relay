@@ -1,4 +1,15 @@
-# Running the Relay with Blockscout
+# Blockscout
+
+BlockScout is an open-source blockchain explorer designed to provide users with a comprehensive interface for interacting with Ethereum-compatible networks, enhancing transparency and accessibility in blockchain ecosystems. It allows users to view and analyze blockchain data, including transactions, blocks, smart contracts, and token information, while providing real-time monitoring of transactions and block confirmations through a user-friendly interface and an API that enable both technical and non-technical users to easily interact with smart contracts and track various tokens and their transactions.
+
+- Documentation: https://docs.blockscout.com/
+- Repository: https://github.com/blockscout/blockscout/tree/master
+
+## Requirements
+Local node repository needed
+```bash
+git clone git@github.com:hiero-ledger/hiero-local-node.git
+```
 
 ## Step 1: Set Up the Relay with Localnode
 
@@ -7,7 +18,7 @@
    ```env
    BATCH_REQUESTS_ENABLED=true
    ```
-2. In the `docker-compose.yml` file:
+2. In the `docker-compose.yml` file in the local node:
 - add `BATCH_REQUESTS_ENABLED` to the envorment of the relay:
     ```
     BATCH_REQUESTS_ENABLED: "${BATCH_REQUESTS_ENABLED}"
@@ -58,7 +69,7 @@
 **curl example** for getting the balance of an address:
    - blockscout doc: https://docs.blockscout.com/devs/apis/rpc/account#get-the-native-token-balance-for-an-address
    - make sure to replace `instance_base_url` with `localhost`
-   - when testing different moduls make sure to give the correct value for `module`
+   - when testing different modules make sure to give the correct value for `module`
    - choose an `accountAddress` from one of the accounts that the local node generates upon starting
    - curl request:
    ```bash
