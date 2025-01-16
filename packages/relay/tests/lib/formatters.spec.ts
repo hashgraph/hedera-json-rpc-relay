@@ -752,28 +752,31 @@ describe('Formatters', () => {
   });
 
   describe('tinybarsToWeibars', () => {
-    it('should convert tinybars to weibars', () => {
-      expect(tinybarsToWeibars(10)).to.eql(100000000000);
-    });
+    for (const allowNegativeValues of [true, false]) {
+      it(`should convert tinybars to weibars allowNegativeValues = ${allowNegativeValues}`, () => {
+        expect(tinybarsToWeibars(10, allowNegativeValues)).to.eql(100000000000);
+      });
 
-    it('should return null if null is passed', () => {
-      expect(tinybarsToWeibars(null)).to.eql(null);
-    });
+      it(`should return null if null is passed allowNegativeValues = ${allowNegativeValues}`, () => {
+        expect(tinybarsToWeibars(null, allowNegativeValues)).to.eql(null);
+      });
 
-    it('should return 0 for 0 input', () => {
-      expect(tinybarsToWeibars(0)).to.eql(0);
-    });
+      it(`should return 0 for 0 input allowNegativeValues = ${allowNegativeValues}`, () => {
+        expect(tinybarsToWeibars(0, allowNegativeValues)).to.eql(0);
+      });
+
+      it(`should throw an error when value is larger than the total supply of tinybars allowNegativeValues = ${allowNegativeValues}`, () => {
+        expect(() => tinybarsToWeibars(constants.TOTAL_SUPPLY_TINYBARS * 10, allowNegativeValues)).to.throw(
+          Error,
+          'Value cannot be more than the total supply of tinybars in the blockchain',
+        );
+      });
+    }
 
     it('should throw an error when value is smaller than 0', () => {
-      expect(() => tinybarsToWeibars(-10)).to.throw(Error, 'Invalid value - cannot pass negative number');
+      expect(() => tinybarsToWeibars(-10, false)).to.throw(Error, 'Invalid value - cannot pass negative number');
     });
 
-    it('should throw an error when value is larger than the total supply of tinybars', () => {
-      expect(() => tinybarsToWeibars(constants.TOTAL_SUPPLY_TINYBARS * 10)).to.throw(
-        Error,
-        'Value cannot be more than the total supply of tinybars in the blockchain',
-      );
-    });
     it('should return the negative number if allowNegativeValues flag is set to true', () => {
       expect(tinybarsToWeibars(-10, true)).to.eql(-10);
     });

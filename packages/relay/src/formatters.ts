@@ -267,7 +267,8 @@ const nanOrNumberTo0x = (input: number | BigNumber | bigint | null): string => {
 };
 
 const nanOrNumberInt64To0x = (input: number | BigNumber | bigint | null): string => {
-  if (input && input < 0) {
+  // converting to string and then back to int is fixing a typescript warning
+  if (input && parseInt(input.toString()) < 0) {
     // the hex of a negative number can be obtained from the binary value of that number positive value
     // the binary value needs to be negated and then to be incremented by 1
 
@@ -281,11 +282,11 @@ const nanOrNumberInt64To0x = (input: number | BigNumber | bigint | null): string
     // converting int16 -10 will be done as following:
     // - make it positive = 10
     // - 16 bits binary value of 10 = 0000 0000 0000 1010
-    // - inverse the bytes = 1111 1111 1111 0101
+    // - inverse the bits = 1111 1111 1111 0101
     // - adding +1 = 1111 1111 1111 0110
     // - 1111 1111 1111 0110 bits = 0xfff6
 
-    // we're using 64 bits integer because that the type returned by the mirror node - int64
+    // we're using 64 bits integer because that's the type returned by the mirror node - int64
     const bits = 64;
     return numberTo0x((BigInt(input.toString()) + (BigInt(1) << BigInt(bits))) % (BigInt(1) << BigInt(bits)));
   }
