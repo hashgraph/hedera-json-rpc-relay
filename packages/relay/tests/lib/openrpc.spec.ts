@@ -75,7 +75,7 @@ import {
   overrideEnvsInMochaDescribe,
   signedTransactionHash,
 } from '../helpers';
-import { NOT_FOUND_RES } from './eth/eth-config';
+import { CONTRACT_RESULT_MOCK, NOT_FOUND_RES } from './eth/eth-config';
 
 const logger = pino({ level: 'silent' });
 const registry = new Registry();
@@ -227,6 +227,7 @@ describe('Open RPC Specification', function () {
     mock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
     mock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
     mock.onGet(`accounts/${defaultContractResults.results[1].to}?transactions=false`).reply(200);
+    mock.onGet(`accounts/${CONTRACT_RESULT_MOCK.from}?transactions=false`).reply(200, CONTRACT_RESULT_MOCK);
     mock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, NOT_FOUND_RES);
     mock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, NOT_FOUND_RES);
     mock.onGet(`contracts/${defaultContractResults.results[0].to}`).reply(200);
