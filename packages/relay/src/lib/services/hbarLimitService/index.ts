@@ -185,11 +185,9 @@ export class HbarLimitService implements IHbarLimitService {
     this.hbarLimitRemainingGauge.set(remainingBudget.toTinybars().toNumber());
     this.resetTemporaryMetrics();
     this.reset = this.getResetTimestamp();
-    if (this.logger.isLevelEnabled('trace')) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${remainingBudget}, newResetTimestamp=${this.reset}`,
-      );
-    }
+    this.logger.info(
+      `${requestDetails.formattedRequestId} HBAR Rate Limit reset: remainingBudget=${remainingBudget}, newResetTimestamp=${this.reset}`,
+    );
   }
 
   /**
@@ -236,27 +234,26 @@ export class HbarLimitService implements IHbarLimitService {
       spendingPlan = await this.createSpendingPlanForAddress(evmAddress, requestDetails);
     }
 
-    const spendingLimit = HbarLimitService.TIER_LIMITS[spendingPlan.subscriptionTier].toTinybars();
+    const spendingLimit = HbarLimitService.TIER_LIMITS[spendingPlan.subscriptionTier];
 
     // note: estimatedTxFee is only applicable in a few cases (currently, only for file transactions).
     //      In most situations, estimatedTxFee is set to 0 (i.e., not considered).
     //      In such cases, it should still be true if spendingPlan.amountSpent === spendingLimit.
     const exceedsLimit =
-      spendingLimit.lte(spendingPlan.amountSpent) || spendingLimit.lt(spendingPlan.amountSpent + estimatedTxFee);
+      spendingLimit.toTinybars().lte(spendingPlan.amountSpent) ||
+      spendingLimit.toTinybars().lt(spendingPlan.amountSpent + estimatedTxFee);
 
-    if (this.logger.isLevelEnabled('trace')) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} User ${
-          exceedsLimit ? 'has' : 'has NOT'
-        } exceeded HBAR rate limit threshold: user=${user}, amountSpent=${
-          spendingPlan.amountSpent
-        }, estimatedTxFee=${estimatedTxFee}, spendingLimit=${spendingLimit}, spandingPlanId=${
-          spendingPlan.id
-        }, subscriptionTier=${
-          spendingPlan.subscriptionTier
-        }, txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
-      );
-    }
+    this.logger.info(
+      `${requestDetails.formattedRequestId} User ${
+        exceedsLimit ? 'has' : 'has NOT'
+      } exceeded HBAR rate limit threshold: user=${user}, amountSpent=${Hbar.fromTinybars(
+        spendingPlan.amountSpent,
+      )}, estimatedTxFee=${Hbar.fromTinybars(estimatedTxFee)}, spendingLimit=${spendingLimit}, spandingPlanId=${
+        spendingPlan.id
+      }, subscriptionTier=${
+        spendingPlan.subscriptionTier
+      }, txConstructorName=${txConstructorName}, mode=${mode}, methodName=${methodName}`,
+    );
 
     return exceedsLimit;
   }
@@ -298,9 +295,11 @@ export class HbarLimitService implements IHbarLimitService {
       this.logger.trace(
         `${requestDetails.formattedRequestId} Spending plan expense update: planID=${
           spendingPlan.id
-        }, subscriptionTier=${spendingPlan.subscriptionTier}, cost=${cost}, originalAmountSpent=${
-          spendingPlan.amountSpent
-        }, updatedAmountSpent=${spendingPlan.amountSpent + cost}`,
+        }, subscriptionTier=${spendingPlan.subscriptionTier}, cost=${Hbar.fromTinybars(
+          cost,
+        )}, originalAmountSpent=${Hbar.fromTinybars(spendingPlan.amountSpent)}, updatedAmountSpent=${Hbar.fromTinybars(
+          spendingPlan.amountSpent + cost,
+        )}`,
       );
     }
 
@@ -314,11 +313,11 @@ export class HbarLimitService implements IHbarLimitService {
     // Done asynchronously in the background
     this.updateAverageAmountSpentPerSubscriptionTier(spendingPlan.subscriptionTier, requestDetails).then();
 
-    if (this.logger.isLevelEnabled('trace')) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${cost} tℏ, remainingBudget=${remainingBudget}`,
-      );
-    }
+    this.logger.info(
+      `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${Hbar.fromTinybars(
+        cost,
+      )}, remainingBudget=${remainingBudget}`,
+    );
   }
 
   /**
@@ -351,7 +350,9 @@ export class HbarLimitService implements IHbarLimitService {
       this.logger.warn(
         `${
           requestDetails.formattedRequestId
-        } Total HBAR rate limit reached: remainingBudget=${remainingBudget}, totalBudget=${totalBudget}, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
+        } Total HBAR rate limit reached: remainingBudget=${remainingBudget}, totalBudget=${totalBudget}, estimatedTxFee=${Hbar.fromTinybars(
+          estimatedTxFee,
+        )}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
       );
       return true;
     } else {
@@ -359,7 +360,9 @@ export class HbarLimitService implements IHbarLimitService {
         this.logger.trace(
           `${
             requestDetails.formattedRequestId
-          } Total HBAR rate limit NOT reached: remainingBudget=${remainingBudget}, totalBudget=${totalBudget}, estimatedTxFee=${estimatedTxFee}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
+          } Total HBAR rate limit NOT reached: remainingBudget=${remainingBudget}, totalBudget=${totalBudget}, estimatedTxFee=${Hbar.fromTinybars(
+            estimatedTxFee,
+          )}, resetTimestamp=${this.reset.getMilliseconds()}, txConstructorName=${txConstructorName} mode=${mode}, methodName=${methodName}`,
         );
       }
       return false;
