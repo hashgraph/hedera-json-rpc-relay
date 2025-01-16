@@ -74,7 +74,7 @@ npx hardhat deploy-erc20 --decimals 18 --mint 10000000000000000000 --network hed
 npx hardhat deploy-erc20 --decimals 18 --mint 10000000000000000000 --network bsc_testnet
 ```
 
-- Deploying an OFT Adapters which will be used as a lockbox of ERC20s deployed the step above
+- Deploying an OFT Adapters which will be used as a lockbox of ERC20s deployed the step above, you can use an already existing HTS token as well
 ```typescript
 npx hardhat deploy-oft-adapter --token <erc20_hedera_address> --network hedera_testnet
 npx hardhat deploy-oft-adapter --token <erc20_bsc_address> --network bsc_testnet
@@ -277,50 +277,6 @@ npx hardhat test --grep "HTSConnectorExistingToken @bsc @send" --network bsc_tes
 ```typescript
 npx hardhat test --grep "HTSConnectorExistingToken @hedera @test" --network hedera_testnet
 npx hardhat test --grep "HTSConnectorExistingToken @bsc @test" --network bsc_testnet
-```
-
-### HTS Adapter
-
-If your HTS token already exists on Hedera and you want to connect it to another chain, you can deploy the OFT Adapter contract to act as an intermediary lockbox for it.
-
-- Deploying ERC20 and HTS
-```typescript
-npx hardhat create-hts-token --network hedera_testnet
-npx hardhat deploy-erc20 --decimals 8 --mint 1000 --network bsc_testnet
-```
-
-- Deploying an OFT Adapters which will be used as lockboxes of ERC20 and HTS deployed the step above
-```typescript
-npx hardhat deploy-oft-adapter --token <hts_token_address> --network hedera_testnet
-npx hardhat deploy-oft-adapter --token <erc20_bsc_address> --network bsc_testnet
-```
-
-- In order to connect OFT Adapters together, we need to set the peer of the target OFT Adapter, more info can be found here https://docs.layerzero.network/v2/developers/evm/getting-started#connecting-your-contracts
-```typescript
-npx hardhat set-peer --source <hedera_oft_adapter_address> --target <bsc_oft_adapter_address> --network hedera_testnet
-npx hardhat set-peer --source <bsc_oft_adapter_address> --target <hedera_oft_adapter_address> --network bsc_testnet
-```
-
-- Fill the .env
-
-- Here we're funding the Adapter on both chains with some liquidity and after that we're approving it to spend the signer's token
-```typescript
-npx hardhat test --grep "HTSAdapterTests @hedera @fund-and-approve" --network hedera_testnet
-npx hardhat test --grep "HTSAdapterTests @bsc @fund-and-approve" --network bsc_testnet
-```
-
-- On these steps, we're sending already existing tokens that are used by OFT Adapter between different chains
-```typescript
-npx hardhat test --grep "HTSAdapterTests @hedera @send" --network hedera_testnet
-npx hardhat test --grep "HTSAdapterTests @bsc @send" --network bsc_testnet
-```
-
-- Wait a couple of minutes, the LZ progress can be tracked on `https://testnet.layerzeroscan.com/tx/<tx_hash>`
-
-- Finally we're checking whether the tokens are transferred successfully
-```typescript
-npx hardhat test --grep "HTSAdapterTests @hedera @test" --network hedera_testnet
-npx hardhat test --grep "HTSAdapterTests @bsc @test" --network bsc_testnet
 ```
 
 ### WHBAR flow
