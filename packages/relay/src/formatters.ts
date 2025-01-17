@@ -268,7 +268,7 @@ const nanOrNumberTo0x = (input: number | BigNumber | bigint | null): string => {
 
 const nanOrNumberInt64To0x = (input: number | BigNumber | bigint | null): string => {
   // converting to string and then back to int is fixing a typescript warning
-  if (input && parseInt(input.toString()) < 0) {
+  if (input && Number(input) < 0) {
     // the hex of a negative number can be obtained from the binary value of that number positive value
     // the binary value needs to be negated and then to be incremented by 1
 
