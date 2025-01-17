@@ -1637,7 +1637,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           ]);
         });
 
-        it('should execute "eth_sendRawTransaction" if receiver\'s account has receiver_sig_required disabled', async function () {
+        it(`should execute "eth_sendRawTransaction" if receiver's account has receiver_sig_required disabled`, async function () {
           const newPrivateKey = PrivateKey.generateED25519();
           const newAccount = await new AccountCreateTransaction()
             .setKey(newPrivateKey.publicKey)
@@ -1648,6 +1648,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
           const transaction = await newAccount.execute(servicesNode.client);
           const receipt = await transaction.getReceipt(servicesNode.client);
+          await Utils.wait(3000);
 
           if (!receipt.accountId) {
             throw new Error('Failed to create new account - accountId is null');
@@ -1655,7 +1656,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
           const toAddress = Utils.idToEvmAddress(receipt.accountId.toString());
           const verifyAccount = await mirrorNode.get(`/accounts/${toAddress}`, requestId);
-
           if (verifyAccount && !verifyAccount.account) {
             verifyAccount == (await mirrorNode.get(`/accounts/${toAddress}`, requestId));
           }
