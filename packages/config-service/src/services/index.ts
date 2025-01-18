@@ -22,9 +22,9 @@ import dotenv from 'dotenv';
 import findConfig from 'find-config';
 import pino from 'pino';
 
+import type { ConfigKey, TypeOfKey } from './globalConfig';
 import { LoggerService } from './loggerService';
 import { ValidationService } from './validationService';
-import type { ConfigKey } from './globalConfig';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -98,7 +98,7 @@ export class ConfigService {
    * @param name string
    * @returns string | undefined
    */
-  public static get(name: ConfigKey): string | number | boolean | null | undefined {
-    return this.getInstance().envs[name];
+  public static get<K extends ConfigKey>(name: K): TypeOfKey<K> | undefined {
+    return this.getInstance().envs[name] as TypeOfKey<K> | undefined;
   }
 }
