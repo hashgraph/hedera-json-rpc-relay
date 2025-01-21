@@ -102,7 +102,7 @@ describe('SdkClient', async function () {
   overrideEnvsInMochaDescribe({ GET_RECORD_DEFAULT_TO_CONSENSUS_NODE: true });
 
   before(() => {
-    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')! as string;
+    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
@@ -110,8 +110,8 @@ describe('SdkClient', async function () {
     }
 
     client = client.setOperator(
-      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')! as string),
-      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')! as string),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')!),
+      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')!),
     );
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
     eventEmitter = new EventEmitter();
