@@ -29,6 +29,7 @@ import RelayAssertions from '../../assertions';
 import { defaultErrorMessageHex } from '../../helpers';
 import { DEFAULT_BLOCK, EMPTY_LOGS_RESPONSE } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
+import { predefined } from '../../../src';
 
 use(chaiAsPromised);
 
@@ -313,9 +314,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
       expect.fail('should have thrown an error');
     } catch (error) {
       expect(error).to.exist;
-      expect(error.message).to.include(
-        'The contract result response from the remote Mirror Node server is missing required fields.',
-      );
+      expect(error).to.eq(predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS);
     }
   });
 

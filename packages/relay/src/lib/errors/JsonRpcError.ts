@@ -47,6 +47,10 @@ export const predefined = {
       data,
     });
   },
+  DEPENDENT_SERVICE_IMMATURE_RECORDS: new JsonRpcError({
+    code: -32015,
+    message: 'Dependent service returned immature records',
+  }),
   GAS_LIMIT_TOO_HIGH: (gasLimit, maxGas) =>
     new JsonRpcError({
       code: -32005,

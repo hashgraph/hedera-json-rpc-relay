@@ -393,7 +393,7 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
         expect.fail('should have thrown an error');
       } catch (error) {
         expect(error).to.exist;
-        expect(error.message).to.include('The log entry from the remote Mirror Node server is missing required fields');
+        expect(error).to.eq(predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS);
       }
     }
   });
