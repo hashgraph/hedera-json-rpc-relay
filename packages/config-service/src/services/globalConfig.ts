@@ -763,7 +763,7 @@ const _CONFIG = {
       required: false,
       defaultValue: null,
     },
-} satisfies { [key: string]: ConfigProperty };
+} as const satisfies { [key: string]: ConfigProperty };
 
 export type ConfigKey = keyof typeof _CONFIG;
 
