@@ -1937,8 +1937,6 @@ export class EthImpl implements Eth {
 
     if (!contractResults[0]) return null;
 
-    this.handleImmatureContractResultRecord(contractResults[0], requestDetails);
-
     const resolvedToAddress = await this.resolveEvmAddress(contractResults[0].to, requestDetails);
     const resolvedFromAddress = await this.resolveEvmAddress(contractResults[0].from, requestDetails, [
       constants.TYPE_ACCOUNT,
@@ -2233,8 +2231,6 @@ export class EthImpl implements Eth {
       return this.createTransactionFromLog(syntheticLogs[0]);
     }
 
-    this.handleImmatureContractResultRecord(contractResult, requestDetails);
-
     const fromAddress = await this.resolveEvmAddress(contractResult.from, requestDetails, [constants.TYPE_ACCOUNT]);
     const toAddress = await this.resolveEvmAddress(contractResult.to, requestDetails);
     contractResult.chain_id = contractResult.chain_id || this.chain;
@@ -2327,8 +2323,6 @@ export class EthImpl implements Eth {
       );
       return receipt;
     } else {
-      this.handleImmatureContractResultRecord(receiptResponse, requestDetails);
-
       const effectiveGas = await this.getCurrentGasPriceForBlock(receiptResponse.block_hash, requestDetails);
       // support stricter go-eth client which requires the transaction hash property on logs
       const logs = receiptResponse.logs.map((log) => {
@@ -2570,8 +2564,6 @@ export class EthImpl implements Eth {
     // prepare transactionArray
     let transactionArray: any[] = [];
     for (const contractResult of contractResults) {
-      this.handleImmatureContractResultRecord(contractResult, requestDetails);
-
       // there are several hedera-specific validations that occur right before entering the evm
       // if a transaction has reverted there, we should not include that tx in the block response
       if (Utils.isRevertedDueToHederaSpecificValidation(contractResult)) {
@@ -2840,33 +2832,5 @@ export class EthImpl implements Eth {
 
     const exchangeRateInCents = currentNetworkExchangeRate.cent_equivalent / currentNetworkExchangeRate.hbar_equivalent;
     return exchangeRateInCents;
-  }
-
-  /**
-   * Checks if a contract result record is immature by validating required fields.
-   * An immature record can be characterized by:
-   * - `transaction_index` being null/undefined
-   * - `block_number` being null/undefined
-   * - `block_hash` being '0x' (empty hex)
-   *
-   * @param {any} record - The contract result record to validate
-   * @param {RequestDetails} requestDetails - Details used for logging and tracking the request
-   * @throws {Error} If the record is missing required fields
-   */
-  private handleImmatureContractResultRecord(record: any, requestDetails: RequestDetails) {
-    if (record.transaction_index == null || record.block_number == null || record.block_hash === EthImpl.emptyHex) {
-      if (this.logger.isLevelEnabled('debug')) {
-        this.logger.debug(
-          `${
-            requestDetails.formattedRequestId
-          } Contract result is missing required fields: block_number, transaction_index, or block_hash is an empty hex (0x). contractResult=${JSON.stringify(
-            record,
-          )}`,
-        );
-      }
-      throw predefined.INTERNAL_ERROR(
-        `The contract result response from the remote Mirror Node server is missing required fields. `,
-      );
-    }
   }
 }
