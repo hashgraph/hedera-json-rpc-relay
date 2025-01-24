@@ -19,14 +19,15 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import pino from 'pino';
 import { expect } from 'chai';
+import pino from 'pino';
 import { Registry } from 'prom-client';
-import { RelayImpl } from '../../src/lib/relay';
+
 import constants from '../../src/lib/constants';
+import { RelayImpl } from '../../src/lib/relay';
 import { withOverriddenEnvsInMochaTest } from '../helpers';
 
-const logger = pino();
+const logger = pino({ level: 'silent' });
 let Relay;
 
 describe('Net', async function () {
