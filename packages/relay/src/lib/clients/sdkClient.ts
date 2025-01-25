@@ -36,6 +36,7 @@ import {
   FeeComponents,
   FeeSchedules,
   FileAppendTransaction,
+  Long,
   FileContentsQuery,
   FileCreateTransaction,
   FileDeleteTransaction,
