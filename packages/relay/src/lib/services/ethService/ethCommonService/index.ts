@@ -140,9 +140,13 @@ export class CommonService implements ICommonService {
     } else {
       fromBlockNum = parseInt(fromBlockResponse.number);
       const toBlockResponse = await this.getHistoricalBlockResponse(requestDetails, toBlock, true);
-      if (toBlockResponse != null) {
-        params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
-        toBlockNum = parseInt(toBlockResponse.number);
+      if (!toBlockResponse) {
+        return false;
+      }
+
+      params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
+      toBlockNum = parseInt(toBlockResponse.number);
+
       }
 
       if (fromBlockNum > toBlockNum) {
