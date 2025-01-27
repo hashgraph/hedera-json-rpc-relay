@@ -147,6 +147,15 @@ export class CommonService implements ICommonService {
       params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
       toBlockNum = parseInt(toBlockResponse.number);
 
+      // Add timestamp range validation (7 days = 604800 seconds)
+      const timestampDiff = toBlockResponse.timestamp.to - fromBlockResponse.timestamp.from;
+      if (timestampDiff > 604800) {
+        throw predefined.TIMESTAMP_RANGE_TOO_LARGE(
+          `0x${fromBlockNum.toString(16)}`,
+          fromBlockResponse.timestamp.from,
+          `0x${toBlockNum.toString(16)}`,
+          toBlockResponse.timestamp.to,
+        );
       }
 
       if (fromBlockNum > toBlockNum) {
