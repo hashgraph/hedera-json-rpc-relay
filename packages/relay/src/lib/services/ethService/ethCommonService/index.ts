@@ -140,6 +140,13 @@ export class CommonService implements ICommonService {
     } else {
       fromBlockNum = parseInt(fromBlockResponse.number);
       const toBlockResponse = await this.getHistoricalBlockResponse(requestDetails, toBlock, true);
+
+      /**
+       * If `toBlock` is not provided, the `lte` field cannot be set,
+       * resulting in a request to the Mirror Node that includes only the `gte` parameter.
+       * Such requests will be rejected, hence causing the whole request to fail.
+       * Return false to handle this gracefully and return an empty response to end client.
+       */
       if (!toBlockResponse) {
         return false;
       }
