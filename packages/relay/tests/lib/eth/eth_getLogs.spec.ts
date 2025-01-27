@@ -45,6 +45,8 @@ import {
 } from '../../helpers';
 import {
   BLOCK_HASH,
+  BLOCK_NUMBER_2,
+  BLOCK_NUMBER_3,
   BLOCKS_LIMIT_ORDER_URL,
   CONTRACT_ADDRESS_1,
   CONTRACT_ADDRESS_2,
@@ -430,7 +432,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     expect(result).to.be.empty;
   });
 
-  it('with non-existing toBlock filter', async function () {
+  it('should return empty response if toBlock is not existed', async function () {
     const filteredLogs = {
       logs: [DEFAULT_LOGS.logs[0]],
     };
@@ -446,7 +448,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null, requestDetails);
 
     expect(result).to.exist;
-    expectLogData1(result[0]);
+    expect(result).to.be.empty;
   });
 
   it('when fromBlock > toBlock', async function () {
@@ -607,5 +609,41 @@ describe('@ethGetLogs using MirrorNode', async function () {
     const result = await ethImpl.getLogs(null, '0x0', 'latest', ethers.ZeroAddress, DEFAULT_LOG_TOPICS, requestDetails);
     expect(result.length).to.eq(0);
     expect(result).to.deep.equal([]);
+  });
+
+  it('Should throw TIMESTAMP_RANGE_TOO_LARGE predefined error if timestamp range between fromBlock and toBlock exceed the maximum allowed duration of 7 days', async () => {
+    const mockedFromTimeStamp = 1651560389;
+    const mockedToTimeStamp = mockedFromTimeStamp + 604800 * 2 + 1; // 7 days (604800 seconds) and 1 second greater than mockedFromTimeStamp
+
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
+    restMock.onGet(`blocks/${BLOCK_NUMBER_2}`).reply(200, {
+      ...DEFAULT_BLOCK,
+      timestamp: { ...DEFAULT_BLOCK.timestamp, from: mockedFromTimeStamp.toString() },
+      number: BLOCK_NUMBER_2,
+    });
+
+    restMock.onGet(`blocks/${BLOCK_NUMBER_3}`).reply(200, {
+      ...DEFAULT_BLOCK,
+      timestamp: { ...DEFAULT_BLOCK.timestamp, to: mockedToTimeStamp.toString() },
+      number: BLOCK_NUMBER_3,
+    });
+
+    await expect(
+      ethImpl.getLogs(
+        null,
+        BLOCK_NUMBER_2.toString(16),
+        BLOCK_NUMBER_3.toString(16),
+        ethers.ZeroAddress,
+        DEFAULT_LOG_TOPICS,
+        requestDetails,
+      ),
+    ).to.be.rejectedWith(
+      predefined.TIMESTAMP_RANGE_TOO_LARGE(
+        `0x${BLOCK_NUMBER_2.toString(16)}`,
+        mockedFromTimeStamp,
+        `0x${BLOCK_NUMBER_3.toString(16)}`,
+        mockedToTimeStamp,
+      ).message,
+    );
   });
 });
