@@ -1211,6 +1211,25 @@ export class EthImpl implements Eth {
       ]);
       if (result) {
         if (result?.type === constants.TYPE_TOKEN) {
+          if (blockNumber && !this.common.blockTagIsLatestOrPending(blockNumber)) {
+            const blockNumberInt = parseInt(blockNumber, 16);
+            const blockInfo = await this.mirrorNodeClient.getBlock(blockNumberInt, requestDetails);
+
+            if (!blockInfo) {
+              throw predefined.UNKNOWN_BLOCK(`Block number ${blockNumber} does not exist`);
+            }
+
+            const tokenId = this.common.addressToTokenId(address);
+            const tokenInfo = await this.mirrorNodeClient.getTokenById(tokenId, requestDetails);
+
+            if (!tokenInfo) {
+              return EthImpl.emptyHex;
+            }
+
+            if (parseFloat(tokenInfo.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
+              return EthImpl.emptyHex;
+            }
+          }
           if (this.logger.isLevelEnabled('trace')) {
             this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
           }

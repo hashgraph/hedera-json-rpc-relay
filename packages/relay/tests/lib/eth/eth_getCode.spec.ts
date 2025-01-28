@@ -19,12 +19,15 @@
  */
 
 import { expect, use } from 'chai';
-import sinon from 'sinon';
 import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
 
-import { EthImpl } from '../../../src/lib/eth';
-import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
+import { JsonRpcError, predefined } from '../../../src';
 import { SDKClient } from '../../../src/lib/clients';
+import { SDKClientError } from '../../../src/lib/errors/SDKClientError';
+import { EthImpl } from '../../../src/lib/eth';
+import { RequestDetails } from '../../../src/lib/types';
+import { overrideEnvsInMochaDescribe } from '../../helpers';
 import {
   CONTRACT_ADDRESS_1,
   DEFAULT_CONTRACT,
@@ -36,9 +39,6 @@ import {
   NO_TRANSACTIONS,
 } from './eth-config';
 import { generateEthTestEnv } from './eth-helpers';
-import { JsonRpcError, predefined } from '../../../src';
-import { overrideEnvsInMochaDescribe } from '../../helpers';
-import { RequestDetails } from '../../../src/lib/types';
 
 use(chaiAsPromised);
 
@@ -47,9 +47,9 @@ let getSdkClientStub: sinon.SinonStub;
 
 describe('@ethGetCode using MirrorNode', async function () {
   this.timeout(10000);
-  let { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
-  let validBlockParam = [null, 'earliest', 'latest', 'pending', 'finalized', 'safe', '0x0', '0x369ABF'];
-  let invalidBlockParam = ['hedera', 'ethereum', '0xhbar', '0x369ABF369ABF369ABF369ABF'];
+  const { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
+  const validBlockParam = [null, 'earliest', 'latest', 'pending', 'finalized', 'safe', '0x0', '0x369ABF'];
+  const invalidBlockParam = ['hedera', 'ethereum', '0xhbar', '0x369ABF369ABF369ABF369ABF'];
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getCodeTest', ipAddress: '0.0.0.0' });
 
@@ -154,6 +154,70 @@ describe('@ethGetCode using MirrorNode', async function () {
           expect(error.message).to.eq(expectedError.message);
         }
       });
+    });
+
+    it('should return empty bytecode for HTS token before creation block', async () => {
+      const blockNumberBeforeCreation = '0x152a4aa'; // Example block number before creation
+      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, {
+        ...DEFAULT_HTS_TOKEN,
+        created_timestamp: '1632175205.855270000',
+      });
+      restMock.onGet(`blocks/${parseInt(blockNumberBeforeCreation, 16)}`).reply(200, {
+        timestamp: { to: '1632175203.847228000' },
+      });
+      const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, blockNumberBeforeCreation, requestDetails);
+      expect(res).to.equal(EthImpl.emptyHex);
+    });
+
+    it('should return redirect bytecode for HTS token after creation block', async () => {
+      const blockNumberAfterCreation = '0x152a4ab'; // Example block number after creation
+      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, {
+        ...DEFAULT_HTS_TOKEN,
+        created_timestamp: '1632175205.855270000',
+      });
+      restMock.onGet(`blocks/${parseInt(blockNumberAfterCreation, 16)}`).reply(200, {
+        timestamp: { to: '1632175206.000000000' },
+      });
+      const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, blockNumberAfterCreation, requestDetails);
+      const expectedRedirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${HTS_TOKEN_ADDRESS.slice(
+        2,
+      )}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`;
+      expect(res).to.equal(expectedRedirectBytecode);
+    });
+
+    it('should throw error for invalid block number', async () => {
+      const invalidBlockNumber = '0xinvalid';
+      try {
+        await ethImpl.getCode(HTS_TOKEN_ADDRESS, invalidBlockNumber, requestDetails);
+        expect(true).to.eq(false);
+      } catch (error: any) {
+        const expectedError = predefined.UNKNOWN_BLOCK(
+          `The value passed is not a valid blockHash/blockNumber/blockTag value: ${invalidBlockNumber}`,
+        );
+        expect(error).to.exist;
+        expect(error instanceof JsonRpcError);
+        expect(error.code).to.eq(expectedError.code);
+        expect(error.message).to.eq(expectedError.message);
+      }
+    });
+
+    it('should throw error when block does not exist', async () => {
+      const futureBlockNumber = '0x1000000';
+      restMock.onGet(`contracts/${HTS_TOKEN_ADDRESS}`).reply(404, null);
+      restMock.onGet(`accounts/${HTS_TOKEN_ADDRESS}?limit=100`).reply(404, null);
+      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, DEFAULT_HTS_TOKEN);
+      restMock.onGet(`blocks/${parseInt(futureBlockNumber, 16)}`).reply(404, null);
+
+      try {
+        await ethImpl.getCode(HTS_TOKEN_ADDRESS, futureBlockNumber, requestDetails);
+        expect(true).to.eq(false);
+      } catch (error: any) {
+        const expectedError = predefined.UNKNOWN_BLOCK(`Block number ${futureBlockNumber} does not exist`);
+        expect(error).to.exist;
+        expect(error instanceof JsonRpcError);
+        expect(error.code).to.eq(expectedError.code);
+        expect(error.message).to.eq(expectedError.message);
+      }
     });
   });
 });
