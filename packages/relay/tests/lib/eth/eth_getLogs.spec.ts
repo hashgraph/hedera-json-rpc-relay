@@ -464,10 +464,10 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
     restMock.onGet('blocks/16').reply(200, fromBlock);
     restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCK);
-    const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null, requestDetails);
 
-    expect(result).to.exist;
-    expect(result).to.be.empty;
+    await expect(ethImpl.getLogs(null, '0x10', '0x5', null, null, requestDetails)).to.be.rejectedWith(
+      predefined.INVALID_BLOCK_RANGE.message,
+    );
   });
 
   it('with only toBlock', async function () {

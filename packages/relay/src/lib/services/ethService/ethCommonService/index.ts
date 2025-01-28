@@ -173,7 +173,7 @@ export class CommonService implements ICommonService {
       }
 
       if (fromBlockNum > toBlockNum) {
-        return false;
+        throw predefined.INVALID_BLOCK_RANGE;
       }
 
       const blockRangeLimit = this.getLogsBlockRangeLimit();
