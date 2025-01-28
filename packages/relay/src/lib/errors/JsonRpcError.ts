@@ -135,7 +135,7 @@ export const predefined = {
     }),
   TIMESTAMP_RANGE_TOO_LARGE: (fromBlock: string, fromTimestamp: number, toBlock: string, toTimestamp: number) =>
     new JsonRpcError({
-      code: -32000,
+      code: -32004,
       message: `The provided fromBlock and toBlock contain timestamps that exceed the maximum allowed duration of 7 days (604800 seconds): fromBlock: ${fromBlock} (${fromTimestamp}), toBlock: ${toBlock} (${toTimestamp})`,
     }),
   REQUEST_BEYOND_HEAD_BLOCK: (requested: number, latest: number) =>
