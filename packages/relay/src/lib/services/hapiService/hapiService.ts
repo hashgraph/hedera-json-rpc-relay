@@ -19,11 +19,8 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { AccountId, Client, PrivateKey } from '@hashgraph/sdk';
-import dotenv from 'dotenv';
+import { Client } from '@hashgraph/sdk';
 import EventEmitter from 'events';
-import findConfig from 'find-config';
-import fs from 'fs';
 import { Logger } from 'pino';
 import { Counter, Registry } from 'prom-client';
 
@@ -194,18 +191,10 @@ export default class HAPIService {
     eventEmitter: EventEmitter,
     hbarLimitService: HbarLimitService,
   ) {
-    dotenv.config({ path: findConfig('.env') || '' });
-    if (fs.existsSync(findConfig('.env') || '')) {
-      this.config = dotenv.parse(fs.readFileSync(findConfig('.env') || ''));
-    } else {
-      this.config = {};
-    }
-
     this.logger = logger;
-
     this.hbarLimitService = hbarLimitService;
     this.eventEmitter = eventEmitter;
-    this.hederaNetwork = (ConfigService.get('HEDERA_NETWORK') || this.config.HEDERA_NETWORK || '{}').toLowerCase();
+    this.hederaNetwork = ((ConfigService.get('HEDERA_NETWORK') as string) || '{}').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
     this.cacheService = cacheService;
@@ -290,9 +279,6 @@ export default class HAPIService {
     this.clientMain = this.initClient(this.logger, this.hederaNetwork);
     this.client = this.initSDKClient(this.logger);
     this.resetCounters();
-    if (this.clientMain.operatorAccountId) {
-      this.hbarLimitService.setOperatorAddress(this.clientMain.operatorAccountId.toSolidityAddress());
-    }
   }
 
   /**
@@ -328,38 +314,16 @@ export default class HAPIService {
    * @returns Client
    */
   private initClient(logger: Logger, hederaNetwork: string, type: string | null = null): Client {
-    let client: Client, privateKey: PrivateKey;
+    let client: Client;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
 
-    if (type === 'eth_sendRawTransaction') {
-      if (
-        ConfigService.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION') &&
-        ConfigService.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION')
-      ) {
-        // @ts-ignore
-        privateKey = Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION'));
-        client = client.setOperator(
-          // @ts-ignore
-          AccountId.fromString(ConfigService.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION')),
-          privateKey,
-        );
-      } else {
-        logger.warn(`Invalid 'ETH_SENDRAWTRANSACTION' env variables provided`);
-      }
-    } else {
-      const operatorId: string = ConfigService.get('OPERATOR_ID_MAIN') || this.config.OPERATOR_ID_MAIN || '';
-      const operatorKey: string = ConfigService.get('OPERATOR_KEY_MAIN') || this.config.OPERATOR_KEY_MAIN || '';
-
-      if (operatorId && operatorKey) {
-        privateKey = Utils.createPrivateKeyBasedOnFormat(operatorKey);
-        client = client.setOperator(AccountId.fromString(operatorId.trim()), privateKey);
-      } else {
-        logger.warn(`Invalid 'OPERATOR' env variables provided`);
-      }
+    const operator = Utils.getOperator(logger, type);
+    if (operator) {
+      client.setOperator(operator.accountId, operator.privateKey);
     }
 
     // @ts-ignore

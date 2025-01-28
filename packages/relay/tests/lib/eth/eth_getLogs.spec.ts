@@ -24,7 +24,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { ethers } from 'ethers';
 import sinon from 'sinon';
 
-import { Eth } from '../../../src';
+import { Eth, predefined } from '../../../src';
 import { SDKClient } from '../../../src/lib/clients';
 import { CacheService } from '../../../src/lib/services/cacheService/cacheService';
 import HAPIService from '../../../src/lib/services/hapiService/hapiService';
@@ -195,7 +195,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       expect.fail('should have thrown an error');
     } catch (error) {
       expect(error).to.exist;
-      expect(error.message).to.include('The log entry from the remote Mirror Node server is missing required fields.');
+      expect(error).to.eq(predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS);
     }
   });
 

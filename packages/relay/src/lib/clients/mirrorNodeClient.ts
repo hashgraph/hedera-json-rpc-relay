@@ -392,7 +392,13 @@ export class MirrorNodeClient {
 
       const ms = Date.now() - start;
       if (this.logger.isLevelEnabled('debug')) {
-        this.logger.debug(`${requestDetails.formattedRequestId} [${method}] ${path} ${response.status} ${ms} ms`);
+        this.logger.debug(
+          `${
+            requestDetails.formattedRequestId
+          } Successfully received response from mirror node server: method=${method}, path=${path}, status=${
+            response.status
+          }, duration:${ms}ms, data:${JSON.stringify(response.data)}`,
+        );
       }
       this.mirrorResponseHistogram.labels(pathLabel, response.status?.toString()).observe(ms);
       return response.data;
@@ -451,7 +457,9 @@ export class MirrorNodeClient {
 
     if (error.response && acceptedErrorResponses?.includes(effectiveStatusCode)) {
       if (this.logger.isLevelEnabled('debug')) {
-        this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
+        this.logger.debug(
+          `${requestIdPrefix} An accepted error occurred while communicating with the mirror node server: method=${method}, path=${path}, status=${effectiveStatusCode}`,
+        );
       }
       return null;
     }
@@ -468,7 +476,7 @@ export class MirrorNodeClient {
     } else {
       this.logger.error(
         new Error(error.message),
-        `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`,
+        `${requestIdPrefix} Error encountered while communicating with the mirror node server: method=${method}, path=${path}, status=${effectiveStatusCode}`,
       );
     }
 
@@ -806,6 +814,8 @@ export class MirrorNodeClient {
     let contractResult = await this[methodName](...args);
 
     for (let i = 0; i < mirrorNodeRequestRetryCount; i++) {
+      const isLastAttempt = i === mirrorNodeRequestRetryCount - 1;
+
       if (contractResult) {
         const contractObjects = Array.isArray(contractResult) ? contractResult : [contractResult];
 
@@ -825,8 +835,13 @@ export class MirrorNodeClient {
                   requestDetails.formattedRequestId
                 } Contract result contains nullable transaction_index or block_number, or block_hash is an empty hex (0x): contract_result=${JSON.stringify(
                   contractObject,
-                )}. Retrying after a delay of ${mirrorNodeRetryDelay} ms `,
+                )}. ${!isLastAttempt ? `Retrying after a delay of ${mirrorNodeRetryDelay} ms.` : ``}`,
               );
+            }
+
+            // If immature records persist after the final polling attempt, throw the DEPENDENT_SERVICE_IMMATURE_RECORDS error.
+            if (isLastAttempt) {
+              throw predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS;
             }
 
             foundImmatureRecord = true;
@@ -988,6 +1003,7 @@ export class MirrorNodeClient {
     );
 
     for (let i = 0; i < mirrorNodeRequestRetryCount; i++) {
+      const isLastAttempt = i === mirrorNodeRequestRetryCount - 1;
       if (logResults) {
         let foundImmatureRecord = false;
 
@@ -1004,10 +1020,15 @@ export class MirrorNodeClient {
               this.logger.debug(
                 `${
                   requestDetails.formattedRequestId
-                } Contract result log contains undefined transaction_index, block_number, index, or block_hash is an empty hex (0x): log=${JSON.stringify(
+                } Contract result log contains nullable transaction_index, block_number, index, or block_hash is an empty hex (0x): log=${JSON.stringify(
                   log,
-                )}. Retrying after a delay of ${mirrorNodeRetryDelay} ms.`,
+                )}. ${!isLastAttempt ? `Retrying after a delay of ${mirrorNodeRetryDelay} ms.` : ``}`,
               );
+            }
+
+            // If immature records persist after the final polling attempt, throw the DEPENDENT_SERVICE_IMMATURE_RECORDS error.
+            if (isLastAttempt) {
+              throw predefined.DEPENDENT_SERVICE_IMMATURE_RECORDS;
             }
 
             foundImmatureRecord = true;
@@ -1046,6 +1067,7 @@ export class MirrorNodeClient {
     if (address === ethers.ZeroAddress) return [];
 
     const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
+
     const apiEndpoint = MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT.replace(
       MirrorNodeClient.ADDRESS_PLACEHOLDER,
       address,

@@ -20,6 +20,7 @@
 
 require('dotenv').config();
 require('@nomicfoundation/hardhat-toolbox');
+const CONSTANTS = require('./test/constants');
 
 module.exports = {
   solidity: {
@@ -225,9 +226,9 @@ task('set-peer', 'Set peer')
 
     let EID;
     if (hre.network.name === 'hedera_testnet') {
-      EID = 40102;
+      EID = CONSTANTS.BSC_EID;
     } else if (hre.network.name === 'bsc_testnet') {
-      EID = 40285;
+      EID = CONSTANTS.HEDERA_EID;
     }
 
     const contract = await ethers.getContractAt('ExampleOApp', taskArgs.source);

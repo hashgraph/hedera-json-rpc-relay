@@ -38,10 +38,6 @@ on:
         description: 'Codecov upload token'
         required: true
 
-
-env:
-  OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
-
 jobs:
   acceptance-workflow:
     runs-on: smart-contracts-linux-large
@@ -49,9 +45,12 @@ jobs:
     permissions:
       contents: read
       checks: write
-    env:
-      OPERATOR_ID_MAIN: ${{ inputs.operator_id }}
     steps:
+      - name: Set env variables
+        run: |
+          if [ -n "${{ inputs.operator_id }}" ]; then
+            echo "OPERATOR_ID_MAIN=${{ inputs.operator_id }}" >> $GITHUB_ENV
+          fi
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
@@ -97,26 +96,31 @@ jobs:
         with:
           max_attempts: ${{ inputs.maxAttempts }}
           timeout_minutes: 30
-          command: npm run acceptancetest:${{ inputs.testfilter }}
+          command: |
+            if [[ -n "$OPERATOR_KEY" ]] && [[ "$OPERATOR_KEY" != "" ]]; then
+              echo "Overriding OPERATOR_KEY_MAIN with the secret value"
+              export OPERATOR_KEY_MAIN="$OPERATOR_KEY"
+            fi
+            npm run acceptancetest:${{ inputs.testfilter }}
         env:
           TEST_WS_SERVER: ${{ inputs.test_ws_server }}
           SUBSCRIPTIONS_ENABLED: ${{ inputs.test_ws_server }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_PR_NUMBER: ${{ github.event.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          OPERATOR_KEY_MAIN: ${{ secrets.operator_key }}
+          OPERATOR_KEY: ${{ secrets.operator_key }}
 
       - name: Upload Heap Snapshots
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: Heap Snapshots
-          path: "**/*.heapsnapshot"
+          path: '**/*.heapsnapshot'
           if-no-files-found: ignore
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: Test Results (${{ inputs.testfilter }})
           path: test-*.xml

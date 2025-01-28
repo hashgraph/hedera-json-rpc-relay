@@ -18,27 +18,22 @@
  *
  */
 
-import { pino } from 'pino';
-import { Registry } from 'prom-client';
-import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import { pino } from 'pino';
+import { Registry } from 'prom-client';
 import * as sinon from 'sinon';
-import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
+
 import { RequestDetails } from '../../../../dist/lib/types';
-
-const logger = pino();
-const registry = new Registry();
-let cacheService: CacheService;
-
-const callingMethod = 'CacheServiceTest';
+import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
+import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
 
 describe('CacheService Test Suite', async function () {
   this.timeout(10000);
 
-  const logger = pino();
+  const logger = pino({ level: 'silent' });
   const registry = new Registry();
   const callingMethod = 'CacheServiceTest';
   const requestDetails = new RequestDetails({ requestId: 'cacheServiceTest', ipAddress: '0.0.0.0' });

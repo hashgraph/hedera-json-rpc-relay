@@ -77,7 +77,7 @@ import {
 } from '../helpers';
 import { CONTRACT_RESULT_MOCK, NOT_FOUND_RES } from './eth/eth-config';
 
-const logger = pino();
+const logger = pino({ level: 'silent' });
 const registry = new Registry();
 const Relay = new RelayImpl(logger, registry);
 

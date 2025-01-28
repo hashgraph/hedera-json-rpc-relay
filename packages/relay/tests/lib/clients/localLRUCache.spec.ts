@@ -20,19 +20,20 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { Registry } from 'prom-client';
 import pino from 'pino';
-import { LocalLRUCache } from '../../../src/lib/clients';
-import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../helpers';
-import { RequestDetails } from '../../../src/lib/types';
+import { Registry } from 'prom-client';
 import sinon from 'sinon';
+
+import { LocalLRUCache } from '../../../src/lib/clients';
+import { RequestDetails } from '../../../src/lib/types';
+import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../helpers';
 
 chai.use(chaiAsPromised);
 
 describe('LocalLRUCache Test Suite', async function () {
   this.timeout(10000);
 
-  const logger = pino();
+  const logger = pino({ level: 'silent' });
   const registry = new Registry();
   const callingMethod = 'localLRUCacheTest';
   const requestDetails = new RequestDetails({ requestId: 'localLRUCacheTest', ipAddress: '0.0.0.0' });

@@ -17,71 +17,66 @@
  * limitations under the License.
  *
  */
-// External resources
-import chai from 'chai';
+
+// Important! Load env variables before importing anything else
 import dotenv from 'dotenv';
 import path from 'path';
-import pino from 'pino';
-import chaiAsPromised from 'chai-as-promised';
-import { GCProfiler } from 'v8';
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
+// Constants
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
+// Hashgraph SDK
+import { AccountId, Hbar } from '@hashgraph/sdk';
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 // Other external resources
 import fs from 'fs';
-
-// Clients
-import ServicesClient from '../clients/servicesClient';
-import MirrorClient from '../clients/mirrorClient';
-import RelayClient from '../clients/relayClient';
-import MetricsClient from '../clients/metricsClient';
+import { Server } from 'http';
+import pino from 'pino';
+import { GCProfiler } from 'v8';
 
 // Server related
 import app from '../../dist/server';
-import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
-
-// Hashgraph SDK
-import { AccountId, Hbar } from '@hashgraph/sdk';
-
-// Constants
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
-
+import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
+import MetricsClient from '../clients/metricsClient';
+import MirrorClient from '../clients/mirrorClient';
+import RelayClient from '../clients/relayClient';
+// Clients
+import ServicesClient from '../clients/servicesClient';
 // Utils and types
 import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
-import { setServerTimeout } from '../../src/koaJsonRpc/lib/utils';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { Server } from 'http';
 
 chai.use(chaiAsPromised);
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
-const DOT_ENV = dotenv.parse(fs.readFileSync(path.resolve(__dirname, '../../../../.env')));
-
-const testLogger = pino({
-  name: 'hedera-json-rpc-relay',
-  level: ConfigService.get('LOG_LEVEL') || 'trace',
-  transport: {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: true,
-    },
-  },
-});
-const logger = testLogger.child({ name: 'rpc-acceptance-test' });
-
-const NETWORK = ConfigService.get('HEDERA_NETWORK') || DOT_ENV.HEDERA_NETWORK || '';
-const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN') || DOT_ENV.OPERATOR_KEY_MAIN || '';
-const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN') || DOT_ENV.OPERATOR_ID_MAIN || '';
-const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL') || DOT_ENV.MIRROR_NODE_URL || '';
-const LOCAL_RELAY_URL = 'http://localhost:7546';
-const RELAY_URL = ConfigService.get('E2E_RELAY_HOST') || LOCAL_RELAY_URL;
-const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
-const INITIAL_BALANCE = ConfigService.get('INITIAL_BALANCE') || '5000000000';
-let startOperatorBalance: Hbar;
-global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
 
 describe('RPC Server Acceptance Tests', function () {
   this.timeout(240 * 1000); // 240 seconds
 
+  const testLogger = pino({
+    name: 'hedera-json-rpc-relay',
+    level: (ConfigService.get('LOG_LEVEL') as string) || 'trace',
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: true,
+      },
+    },
+  });
+  const logger = testLogger.child({ name: 'rpc-acceptance-test' });
+
+  const NETWORK = ConfigService.get('HEDERA_NETWORK') as string;
+  const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN') as string;
+  const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN') as string;
+  const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL') as string;
+  const LOCAL_RELAY_URL = 'http://localhost:7546';
+  const RELAY_URL = ConfigService.get('E2E_RELAY_HOST') || LOCAL_RELAY_URL;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
+  const INITIAL_BALANCE = ConfigService.get('INITIAL_BALANCE') || '5000000000';
+
+  global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
   global.servicesNode = new ServicesClient(
     NETWORK,
     OPERATOR_ID,
@@ -107,6 +102,8 @@ describe('RPC Server Acceptance Tests', function () {
   if (ConfigService.get('MEMWATCH_ENABLED')) {
     Utils.captureMemoryLeaks(new GCProfiler());
   }
+
+  let startOperatorBalance: Hbar;
 
   before(async () => {
     // configuration details

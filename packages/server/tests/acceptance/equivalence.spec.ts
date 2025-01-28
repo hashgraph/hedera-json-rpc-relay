@@ -18,22 +18,23 @@
  *
  */
 
-import { assert, expect } from 'chai';
-import { Utils } from '../helpers/utils';
-import ServicesClient from '../clients/servicesClient';
+import { hexToASCII } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
+import { Precheck } from '@hashgraph/json-rpc-relay/dist/lib/precheck';
+import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import { ContractFunctionParameters } from '@hashgraph/sdk';
+import { assert, expect } from 'chai';
+import { ethers, toUtf8Bytes } from 'ethers';
+import pino from 'pino';
+
+import ServicesClient from '../clients/servicesClient';
+import EquivalenceContractJson from '../contracts/EquivalenceContract.json';
 import EstimatePrecompileContractJson from '../contracts/EstimatePrecompileContract.json';
 import Constants from '../helpers/constants';
-import EquivalenceContractJson from '../contracts/EquivalenceContract.json';
-import { ethers, toUtf8Bytes } from 'ethers';
-import { Precheck } from '@hashgraph/json-rpc-relay/dist/lib/precheck';
-import pino from 'pino';
-import { MirrorNodeClient } from '@hashgraph/json-rpc-relay/dist/lib/clients';
-import { hexToASCII } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { Utils } from '../helpers/utils';
 import { AliasAccount } from '../types/AliasAccount';
-import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
-const logger = pino();
+const logger = pino({ level: 'silent' });
 
 enum CallTypes {
   Call = 'Call',

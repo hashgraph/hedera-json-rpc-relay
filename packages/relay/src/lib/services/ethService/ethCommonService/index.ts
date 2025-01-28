@@ -22,7 +22,7 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import * as _ from 'lodash';
 import { Logger } from 'pino';
 
-import { nullableNumberTo0x, numberTo0x, parseNumericEnvVar, toHash32 } from '../../../../formatters';
+import { numberTo0x, parseNumericEnvVar, toHash32 } from '../../../../formatters';
 import { MirrorNodeClient } from '../../../clients';
 import constants from '../../../constants';
 import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
@@ -346,26 +346,6 @@ export class CommonService implements ICommonService {
 
     const logs: Log[] = [];
     for (const log of logResults) {
-      if (
-        log.transaction_index == null ||
-        log.block_number == null ||
-        log.index == null ||
-        log.block_hash === EthImpl.emptyHex
-      ) {
-        if (this.logger.isLevelEnabled('debug')) {
-          this.logger.debug(
-            `${
-              requestDetails.formattedRequestId
-            } Log entry is missing required fields: block_number, index, or block_hash is an empty hex (0x). log=${JSON.stringify(
-              log,
-            )}`,
-          );
-        }
-        throw predefined.INTERNAL_ERROR(
-          `The log entry from the remote Mirror Node server is missing required fields. `,
-        );
-      }
-
       logs.push(
         new Log({
           address: log.address,
