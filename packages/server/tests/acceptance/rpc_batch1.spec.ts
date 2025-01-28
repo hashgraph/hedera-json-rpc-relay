@@ -21,13 +21,14 @@
 // External resources
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 // Other imports
-import { numberTo0x, prepend0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { formatTransactionId, numberTo0x, prepend0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 // Errors and constants from local resources
 import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import {
   AccountCreateTransaction,
+  ContractFunctionParameters,
   FileInfo,
   FileInfoQuery,
   Hbar,
@@ -579,6 +580,36 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         // Remove synthetic transactions
         blockResult.transactions = blockResult.transactions.filter((transaction) => transaction.value !== '0x1234');
         Assertions.block(blockResult, mirrorBlock, mirrorTransactions, expectedGasPrice, false);
+      });
+
+      it('should execute "eth_getBlockByNumber", hydrated transactions = true for a block that contains a call with CONTRACT_NEGATIVE_VALUE status', async function() {
+        let transactionId;
+        let hasContractNegativeValueError = false;
+        try {
+          await servicesNode.executeContractCallWithAmount(
+            mirrorContractDetails.contract_id,
+            '',
+            new ContractFunctionParameters(),
+            500_000,
+            -100
+          );
+        } catch (e: any) {
+          // regarding the docs and HederaResponseCodes.sol the CONTRACT_NEGATIVE_VALUE code equals 96;
+          expect(e.status._code).to.equal(96);
+          hasContractNegativeValueError = true;
+          transactionId = e.transactionId;
+        }
+        expect(hasContractNegativeValueError).to.be.true;
+
+        const mirrorResult = await mirrorNode.get(`/contracts/results/${formatTransactionId(transactionId.toString())}`, requestId);
+        const txHash = mirrorResult.hash;
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          [numberTo0x(mirrorResult.block_number), true],
+          requestIdPrefix
+        );
+        expect(blockResult.transactions).to.not.be.empty;
+        expect(blockResult.transactions).to.contain(txHash);
       });
 
       it('should not cache "latest" block in "eth_getBlockByNumber" ', async function () {
