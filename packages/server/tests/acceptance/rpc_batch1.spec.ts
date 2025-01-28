@@ -582,7 +582,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         Assertions.block(blockResult, mirrorBlock, mirrorTransactions, expectedGasPrice, false);
       });
 
-      it('should execute "eth_getBlockByNumber", hydrated transactions = true for a block that contains a call with CONTRACT_NEGATIVE_VALUE status', async function() {
+      it('should execute "eth_getBlockByNumber", hydrated transactions = true for a block that contains a call with CONTRACT_NEGATIVE_VALUE status', async function () {
         let transactionId;
         let hasContractNegativeValueError = false;
         try {
@@ -591,7 +591,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             '',
             new ContractFunctionParameters(),
             500_000,
-            -100
+            -100,
           );
         } catch (e: any) {
           // regarding the docs and HederaResponseCodes.sol the CONTRACT_NEGATIVE_VALUE code equals 96;
@@ -601,15 +601,21 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         }
         expect(hasContractNegativeValueError).to.be.true;
 
-        const mirrorResult = await mirrorNode.get(`/contracts/results/${formatTransactionId(transactionId.toString())}`, requestId);
+        // waiting for at least one block time for data to be populated in the mirror node
+        // because on the step above we sent a sdk call
+        await new Promise((r) => setTimeout(r, 2100));
+        const mirrorResult = await mirrorNode.get(
+          `/contracts/results/${formatTransactionId(transactionId.toString())}`,
+          requestId,
+        );
         const txHash = mirrorResult.hash;
         const blockResult = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
           [numberTo0x(mirrorResult.block_number), true],
-          requestIdPrefix
+          requestIdPrefix,
         );
         expect(blockResult.transactions).to.not.be.empty;
-        expect(blockResult.transactions).to.contain(txHash);
+        expect(blockResult.transactions.map((tx) => tx.hash)).to.contain(txHash);
       });
 
       it('should not cache "latest" block in "eth_getBlockByNumber" ', async function () {
