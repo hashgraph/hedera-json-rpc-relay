@@ -960,7 +960,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           .addTokenTransfer(tokenId, servicesNode._thisAccountId(), -10)
           .addTokenTransfer(tokenId, accounts[2].accountId, 10)
           .setTransactionMemo('Relay test token transfer');
-        const resp = await transaction.execute(servicesNode.client);
+        const resp = await (await transaction.freezeWith(servicesNode.client)).execute(servicesNode.client);
         await resp.getRecord(servicesNode.client);
         await Utils.wait(1000);
         const logsRes = await mirrorNode.get(`/contracts/results/logs?limit=1`, requestId);
