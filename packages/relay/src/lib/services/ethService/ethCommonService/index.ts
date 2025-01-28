@@ -22,7 +22,7 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import * as _ from 'lodash';
 import { Logger } from 'pino';
 
-import { numberTo0x, parseNumericEnvVar, toHash32 } from '../../../../formatters';
+import { numberTo0x, parseNumericEnvVar, prepend0x, toHash32 } from '../../../../formatters';
 import { MirrorNodeClient } from '../../../clients';
 import constants from '../../../constants';
 import { JsonRpcError, predefined } from '../../../errors/JsonRpcError';
@@ -77,6 +77,9 @@ export class CommonService implements ICommonService {
     'ETH_BLOCK_NUMBER_CACHE_TTL_MS',
     'ETH_BLOCK_NUMBER_CACHE_TTL_MS_DEFAULT',
   );
+
+  // Maximum allowed timestamp range for mirror node requests' timestamp parameter is 7 days (604800 seconds)
+  private readonly maxTimestampParamRange = 604800; // 7 days
 
   private getLogsBlockRangeLimit() {
     return parseNumericEnvVar('ETH_GET_LOGS_BLOCK_RANGE_LIMIT', 'DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT');
@@ -154,13 +157,14 @@ export class CommonService implements ICommonService {
       params.timestamp.push(`lte:${toBlockResponse.timestamp.to}`);
       toBlockNum = parseInt(toBlockResponse.number);
 
-      // Add timestamp range validation (7 days = 604800 seconds)
+      // Validate timestamp range for Mirror Node requests (maximum: 7 days or 604,800 seconds) to prevent exceeding the limit,
+      // as requests with timestamp parameters beyond 7 days are rejected by the Mirror Node.
       const timestampDiff = toBlockResponse.timestamp.to - fromBlockResponse.timestamp.from;
-      if (timestampDiff > 604800) {
+      if (timestampDiff > this.maxTimestampParamRange) {
         throw predefined.TIMESTAMP_RANGE_TOO_LARGE(
-          `0x${fromBlockNum.toString(16)}`,
+          prepend0x(fromBlockNum.toString(16)),
           fromBlockResponse.timestamp.from,
-          `0x${toBlockNum.toString(16)}`,
+          prepend0x(toBlockNum.toString(16)),
           toBlockResponse.timestamp.to,
         );
       }
