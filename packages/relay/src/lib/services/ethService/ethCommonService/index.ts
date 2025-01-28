@@ -190,6 +190,53 @@ export class CommonService implements ICommonService {
     return true;
   }
 
+  public async validateBlockRange(fromBlock: string, toBlock: string, requestDetails: RequestDetails) {
+    let fromBlockNumber: any = null;
+    let toBlockNumber: any = null;
+
+    if (this.blockTagIsLatestOrPending(toBlock)) {
+      toBlock = CommonService.blockLatest;
+    } else {
+      toBlockNumber = Number(toBlock);
+
+      const latestBlockNumber: string = await this.getLatestBlockNumber(requestDetails);
+
+      // - When `fromBlock` is not explicitly provided, it defaults to `latest`.
+      // - Then if `toBlock` equals `latestBlockNumber`, it means both `toBlock` and `fromBlock` essentially refer to the latest block, so the `MISSING_FROM_BLOCK_PARAM` error is not necessary.
+      // - If `toBlock` is explicitly provided and does not equals to `latestBlockNumber`, it establishes a solid upper bound.
+      // - If `fromBlock` is missing, indicating the absence of a lower bound, throw the `MISSING_FROM_BLOCK_PARAM` error.
+      if (Number(toBlock) !== Number(latestBlockNumber) && !fromBlock) {
+        throw predefined.MISSING_FROM_BLOCK_PARAM;
+      }
+    }
+
+    if (this.blockTagIsLatestOrPending(fromBlock)) {
+      fromBlock = CommonService.blockLatest;
+    } else {
+      fromBlockNumber = Number(fromBlock);
+    }
+
+    // If either or both fromBlockNumber and toBlockNumber are not set, it means fromBlock and/or toBlock is set to latest, involve MN to retrieve their block number.
+    if (!fromBlockNumber || !toBlockNumber) {
+      const fromBlockResponse = await this.getHistoricalBlockResponse(requestDetails, fromBlock, true);
+      const toBlockResponse = await this.getHistoricalBlockResponse(requestDetails, toBlock, true);
+
+      if (fromBlockResponse) {
+        fromBlockNumber = parseInt(fromBlockResponse.number);
+      }
+
+      if (toBlockResponse) {
+        toBlockNumber = parseInt(toBlockResponse.number);
+      }
+    }
+
+    if (fromBlockNumber > toBlockNumber) {
+      throw predefined.INVALID_BLOCK_RANGE;
+    }
+
+    return true;
+  }
+
   /**
    * returns the block response
    * otherwise return undefined.
