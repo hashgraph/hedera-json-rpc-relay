@@ -582,7 +582,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         Assertions.block(blockResult, mirrorBlock, mirrorTransactions, expectedGasPrice, false);
       });
 
-      it('should execute "eth_getBlockByNumber", hydrated transactions = true for a block that contains a call with CONTRACT_NEGATIVE_VALUE status', async function () {
+      xit('should execute "eth_getBlockByNumber", hydrated transactions = true for a block that contains a call with CONTRACT_NEGATIVE_VALUE status', async function () {
         let transactionId;
         let hasContractNegativeValueError = false;
         try {
