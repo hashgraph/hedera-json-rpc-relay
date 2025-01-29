@@ -582,42 +582,6 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         Assertions.block(blockResult, mirrorBlock, mirrorTransactions, expectedGasPrice, false);
       });
 
-      xit('should execute "eth_getBlockByNumber", hydrated transactions = true for a block that contains a call with CONTRACT_NEGATIVE_VALUE status', async function () {
-        let transactionId;
-        let hasContractNegativeValueError = false;
-        try {
-          await servicesNode.executeContractCallWithAmount(
-            mirrorContractDetails.contract_id,
-            '',
-            new ContractFunctionParameters(),
-            500_000,
-            -100,
-          );
-        } catch (e: any) {
-          // regarding the docs and HederaResponseCodes.sol the CONTRACT_NEGATIVE_VALUE code equals 96;
-          expect(e.status._code).to.equal(96);
-          hasContractNegativeValueError = true;
-          transactionId = e.transactionId;
-        }
-        expect(hasContractNegativeValueError).to.be.true;
-
-        // waiting for at least one block time for data to be populated in the mirror node
-        // because on the step above we sent a sdk call
-        await new Promise((r) => setTimeout(r, 2100));
-        const mirrorResult = await mirrorNode.get(
-          `/contracts/results/${formatTransactionId(transactionId.toString())}`,
-          requestId,
-        );
-        const txHash = mirrorResult.hash;
-        const blockResult = await relay.call(
-          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
-          [numberTo0x(mirrorResult.block_number), true],
-          requestIdPrefix,
-        );
-        expect(blockResult.transactions).to.not.be.empty;
-        expect(blockResult.transactions.map((tx) => tx.hash)).to.contain(txHash);
-      });
-
       it('should not cache "latest" block in "eth_getBlockByNumber" ', async function () {
         const blockResult = await relay.call(
           RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
@@ -762,6 +726,43 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           // due to the mirror node block updating after it was retrieved and before the relay.call completes
           expect(blockNumber).to.be.oneOf([mirrorBlockNumber, mirrorBlockNumber + 1]);
         });
+      });
+
+      it('should execute "eth_getBlockByNumber", hydrated transactions = true for a block that contains a call with CONTRACT_NEGATIVE_VALUE status', async function () {
+        let transactionId;
+        let hasContractNegativeValueError = false;
+        try {
+          await servicesNode.executeContractCallWithAmount(
+            mirrorContractDetails.contract_id,
+            '',
+            new ContractFunctionParameters(),
+            500_000,
+            -100,
+            requestId,
+          );
+        } catch (e: any) {
+          // regarding the docs and HederaResponseCodes.sol the CONTRACT_NEGATIVE_VALUE code equals 96;
+          expect(e.status._code).to.equal(96);
+          hasContractNegativeValueError = true;
+          transactionId = e.transactionId;
+        }
+        expect(hasContractNegativeValueError).to.be.true;
+
+        // waiting for at least one block time for data to be populated in the mirror node
+        // because on the step above we sent a sdk call
+        await new Promise((r) => setTimeout(r, 2100));
+        const mirrorResult = await mirrorNode.get(
+          `/contracts/results/${formatTransactionId(transactionId.toString())}`,
+          requestId,
+        );
+        const txHash = mirrorResult.hash;
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          [numberTo0x(mirrorResult.block_number), true],
+          requestIdPrefix,
+        );
+        expect(blockResult.transactions).to.not.be.empty;
+        expect(blockResult.transactions.map((tx) => tx.hash)).to.contain(txHash);
       });
     });
 
