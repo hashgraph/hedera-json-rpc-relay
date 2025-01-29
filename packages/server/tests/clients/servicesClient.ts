@@ -168,7 +168,7 @@ export default class ServicesClient {
   async executeTransaction(transaction: Transaction, requestId?: string) {
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
     try {
-      const resp = await (await transaction.freezeWith(this.client)).execute(this.client);
+      const resp = await transaction.execute(this.client);
       this.logger.info(
         `${requestIdPrefix} Executed transaction of type ${
           transaction.constructor.name
