@@ -147,7 +147,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
 
   it('returns `null` for non-existent hash', async function () {
     const txHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
-    restMock.onGet(`contracts/results/${txHash}`).reply(404, {
+    restMock.onGet(`contracts/results/${txHash}`).reply(404, JSON.stringify({
       _status: {
         messages: [
           {
@@ -155,10 +155,10 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
           },
         ],
       },
-    });
+    }));
     restMock
       .onGet(`contracts/results/logs?transaction.hash=${txHash}&limit=100&order=asc`)
-      .reply(200, EMPTY_LOGS_RESPONSE);
+      .reply(200, JSON.stringify(EMPTY_LOGS_RESPONSE));
     const receipt = await ethImpl.getTransactionReceipt(txHash, requestDetails);
     expect(receipt).to.be.null;
   });
@@ -173,7 +173,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     restMock.onGet(`tokens/${defaultDetailedContractResultByHash.contract_id}`).reply(200);
     restMock.onGet(`tokens/${defaultDetailedContractResultByHash.contract_id}`).reply(200);
     // mirror node request mocks
-    restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+    restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, JSON.stringify(defaultDetailedContractResultByHash));
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
     stubBlockAndFeesFunc(sandbox);
     const receipt = await ethImpl.getTransactionReceipt(defaultTxHash, requestDetails);
@@ -187,7 +187,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
   });
 
   it('valid receipt on match should hit cache', async function () {
-    restMock.onGet(`contracts/results/${defaultTxHash}`).replyOnce(200, defaultDetailedContractResultByHash);
+    restMock.onGet(`contracts/results/${defaultTxHash}`).replyOnce(200, JSON.stringify(defaultDetailedContractResultByHash));
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).replyOnce(404);
     stubBlockAndFeesFunc(sandbox);
     for (let i = 0; i < 3; i++) {
@@ -204,10 +204,10 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
 
   it('valid receipt with evm address on match', async function () {
     // mirror node request mocks
-    restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
-    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(200, {
+    restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, JSON.stringify(defaultDetailedContractResultByHash));
+    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(200, JSON.stringify({
       evm_address: contractEvmAddress,
-    });
+    }));
     stubBlockAndFeesFunc(sandbox);
     const receipt = await ethImpl.getTransactionReceipt(defaultTxHash, requestDetails);
 
@@ -229,7 +229,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
 
     const uniqueTxHash = '0x07cdd7b820375d10d73af57a6a3e84353645fdb1305ea58ff52daa53ec640533';
 
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, contractResult);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify(contractResult));
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
     stubBlockAndFeesFunc(sandbox);
     const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash, requestDetails);
@@ -246,7 +246,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
       bloom: '0x',
     };
 
-    restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, receiptWith0xBloom);
+    restMock.onGet(`contracts/results/${defaultTxHash}`).reply(200, JSON.stringify(receiptWith0xBloom));
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
     stubBlockAndFeesFunc(sandbox);
     const receipt = await ethImpl.getTransactionReceipt(defaultTxHash, requestDetails);
@@ -266,7 +266,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     // fake unique hash so request dont re-use the cached value but the mock defined
     const uniqueTxHash = '0x04cad7b827375d10d73af57b6a3e843536457d31305ea58ff52dda53ec640533';
 
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, receiptWithErrorMessage);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify(receiptWithErrorMessage));
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
     stubBlockAndFeesFunc(sandbox);
     const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash, requestDetails);
@@ -283,7 +283,7 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
 
     // fake unique hash so request dont re-use the cached value but the mock defined
     const uniqueTxHash = '0x08cad7b827375d12d73af57b6a3e84353645fd31305ea59ff52dda53ec640533';
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, receiptWithNullGasUsed);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify(receiptWithNullGasUsed));
     restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(404);
     stubBlockAndFeesFunc(sandbox);
     const receipt = await ethImpl.getTransactionReceipt(uniqueTxHash, requestDetails);
@@ -298,15 +298,15 @@ describe('@ethGetTransactionReceipt eth_getTransactionReceipt tests', async func
     const uniqueTxHash = '0x17cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
     // mirror node request mocks
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify({
       ...defaultDetailedContractResultByHash,
       ...{
         transaction_index: undefined,
       },
-    });
-    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(200, {
+    }));
+    restMock.onGet(`contracts/${defaultDetailedContractResultByHash.created_contract_ids[0]}`).reply(200, JSON.stringify({
       evm_address: contractEvmAddress,
-    });
+    }));
     stubBlockAndFeesFunc(sandbox);
 
     try {

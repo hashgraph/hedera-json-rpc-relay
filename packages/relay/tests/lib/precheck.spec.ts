@@ -460,7 +460,7 @@ describe('Precheck', async function () {
       const signed = await signTransaction(tx);
       const parsedTx = ethers.Transaction.from(signed);
 
-      mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
+      mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, JSON.stringify(mirrorAccount));
 
       try {
         precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce, requestDetails);
@@ -478,7 +478,7 @@ describe('Precheck', async function () {
       const signed = await signTransaction(tx);
       const parsedTx = ethers.Transaction.from(signed);
 
-      mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, mirrorAccount);
+      mock.onGet(`accounts/${parsedTx.from}${limitOrderPostFix}`).reply(200, JSON.stringify(mirrorAccount));
 
       precheck.nonce(parsedTx, mirrorAccount.ethereum_nonce, requestDetails);
     });
@@ -500,7 +500,7 @@ describe('Precheck', async function () {
     });
 
     it(`should fail for missing account`, async function () {
-      mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(404, mockData.notFound);
+      mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(404, JSON.stringify(mockData.notFound));
       try {
         await precheck.verifyAccount(parsedTx, requestDetails);
         expectedError();
@@ -512,7 +512,7 @@ describe('Precheck', async function () {
     });
 
     it(`should not fail for matched account`, async function () {
-      mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(200, mirrorAccount);
+      mock.onGet(`accounts/${parsedTx.from}${transactionsPostFix}`).reply(200, JSON.stringify(mirrorAccount));
       const account = await precheck.verifyAccount(parsedTx, requestDetails);
 
       expect(account.ethereum_nonce).to.eq(defaultNonce);
@@ -678,7 +678,7 @@ describe('Precheck', async function () {
         receiver_sig_required: true,
       };
 
-      mock.onGet(`accounts/${parsedTx.to}${transactionsPostFix}`).reply(200, mirrorAccountTo);
+      mock.onGet(`accounts/${parsedTx.to}${transactionsPostFix}`).reply(200, JSON.stringify(mirrorAccountTo));
 
       try {
         await precheck.receiverAccount(parsedTx, requestDetails);
@@ -695,7 +695,7 @@ describe('Precheck', async function () {
         receiver_sig_required: false,
       };
 
-      mock.onGet(`accounts/${parsedTx.to}${transactionsPostFix}`).reply(200, mirrorAccountTo);
+      mock.onGet(`accounts/${parsedTx.to}${transactionsPostFix}`).reply(200, JSON.stringify(mirrorAccountTo));
 
       expect(async () => await precheck.receiverAccount(parsedTx, requestDetails)).not.to.throw;
     });

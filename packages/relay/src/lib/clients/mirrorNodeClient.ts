@@ -372,15 +372,7 @@ export class MirrorNodeClient {
             (data) => {
               // if the data is not valid, just return it to stick to the current behaviour
               if (data) {
-                try {
-                  // try to parse it, if the json is valid, numbers within it will be converted
-                  // this case will happen on almost every GET mirror node call
-                  return JSONBigInt.parse(data);
-                } catch (e) {
-                  // in some unit tests, the mocked returned json is not property formatted
-                  // so we have to preprocess it here with JSON.stringify()
-                  return JSONBigInt.parse(JSON.stringify(data));
-                }
+                return JSONBigInt.parse(data);
               }
 
               return data;

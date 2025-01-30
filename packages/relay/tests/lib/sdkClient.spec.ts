@@ -2660,7 +2660,7 @@ describe('SdkClient', async function () {
         };
         mock
           .onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`)
-          .reply(200, mockedMirrorNodeTransactionRecord);
+          .reply(200, JSON.stringify(mockedMirrorNodeTransactionRecord));
         const transactionResponse = getMockedTransactionResponse(EthereumTransaction.name);
         const transactionStub = sinon.stub(EthereumTransaction.prototype, 'execute').resolves(transactionResponse);
 
