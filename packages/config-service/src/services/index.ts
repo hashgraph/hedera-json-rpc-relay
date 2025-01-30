@@ -98,7 +98,7 @@ export class ConfigService {
    * @param name string
    * @returns string | undefined
    */
-  public static get<K extends ConfigKey>(name: K): GetTypeOfConfigKey<K> | undefined {
-    return this.getInstance().envs[name] as GetTypeOfConfigKey<K> | undefined;
+  public static get<K extends ConfigKey>(name: K): GetTypeOfConfigKey<K> {
+    return this.getInstance().envs[name] as GetTypeOfConfigKey<K>;
   }
 }

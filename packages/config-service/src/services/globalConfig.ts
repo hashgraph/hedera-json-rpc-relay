@@ -46,13 +46,30 @@ type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   ? any[]
   : never;
 
-// This type maps a configuration key K to its corresponding TypeScript type.
-// It first uses ExtractTypeStringFromKey to get the type string and then
-// converts that string to the actual TypeScript type using StringTypeToActualType.
+// Helper type that determines if a configuration value can be undefined
+// based on two conditions: it must be optional (required: false) AND
+// have no default value (defaultValue: null).
 // Example:
-// - GetTypeOfConfigKey<'CHAIN_ID'> would resolve to string.
-// - GetTypeOfConfigKey<'BATCH_REQUESTS_ENABLED'> would resolve to boolean.
-export type GetTypeOfConfigKey<K extends string> = StringTypeToActualType<ExtractTypeStringFromKey<K>>;
+// - For ‘CHAIN_ID’ or ‘OPERATOR_ID_MAIN’ (required: true, defaultValue: null) → false (cannot be undefined as it’s a required config)
+// - For ‘WEB_SOCKET_PORT’ (required: false, defaultValue: 8546) → false (cannot be undefined as it has a fallback default value)
+// - For ‘WS_CONNECTION_LIMIT_PER_IP’ (required: false, defaultValue: null) → true (can be undefined as it’s not a required config and has no default value)
+type CanBeUndefined<K extends string> = K extends keyof typeof _CONFIG
+  ? (typeof _CONFIG)[K]['required'] extends true
+    ? false
+    : (typeof _CONFIG)[K]['defaultValue'] extends null
+    ? true
+    : false
+  : never;
+
+// Type utility that maps configuration keys to their corresponding TypeScript types,
+// including undefined for values that can be undefined based on their configuration.
+// Example:
+// - For 'CHAIN_ID' (required: true, defaultValue: null) -> string
+// - For 'WEB_SOCKET_PORT' (required: false, defaultValue: 8546) -> number
+// - For 'WS_CONNECTION_LIMIT_PER_IP' (required: false, defaultValue: null) -> number | undefined
+export type GetTypeOfConfigKey<K extends string> = CanBeUndefined<K> extends true
+  ? StringTypeToActualType<ExtractTypeStringFromKey<K>> | undefined
+  : StringTypeToActualType<ExtractTypeStringFromKey<K>>;
 
 // Interface defining the structure of a configuration property.
 // Each property includes the environment variable name, its type,
