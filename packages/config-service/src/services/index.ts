@@ -22,7 +22,7 @@ import dotenv from 'dotenv';
 import findConfig from 'find-config';
 import pino from 'pino';
 
-import type { ConfigKey, TypeOfKey } from './globalConfig';
+import type { ConfigKey, GetTypeOfConfigKey } from './globalConfig';
 import { LoggerService } from './loggerService';
 import { ValidationService } from './validationService';
 
@@ -98,7 +98,7 @@ export class ConfigService {
    * @param name string
    * @returns string | undefined
    */
-  public static get<K extends ConfigKey>(name: K): TypeOfKey<K> | undefined {
-    return this.getInstance().envs[name] as TypeOfKey<K> | undefined;
+  public static get<K extends ConfigKey>(name: K): GetTypeOfConfigKey<K> | undefined {
+    return this.getInstance().envs[name] as GetTypeOfConfigKey<K> | undefined;
   }
 }
