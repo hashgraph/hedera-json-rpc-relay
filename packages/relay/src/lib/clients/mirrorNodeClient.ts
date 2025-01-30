@@ -362,10 +362,12 @@ export class MirrorNodeClient {
         if (pathLabel == MirrorNodeClient.GET_CONTRACTS_RESULTS_OPCODES) {
           response = await this.web3Client.get<T>(path, axiosRequestConfig);
         } else {
-          // JS supports up to 53 bits integers, once a number with more bits is converted to a js Number type, the initial value is already lost
-          // in order to fix that, we have to use a custom JSON parser that hooks up before
-          // the default axios JSON.parse conversion where the value will be rounded and lost
-          // JSONBigInt reads the string representation of received JSON and formats each number to BigNumber
+          // JavaScript supports integers only up to 53 bits. When a number exceeding this limit
+          // is converted to a JS Number type, precision is lost due to rounding.
+          // To prevent this, `transformResponse` is used to intercept
+          // and process the response before Axios’s default JSON.parse conversion.
+          // JSONBigInt reads the string representation from the received JSON
+          // and converts large numbers into BigNumber objects to maintain accuracy.
           axiosRequestConfig['transformResponse'] = [
             (data) => {
               // if the data is not valid, just return it to stick to the current behaviour

@@ -288,6 +288,12 @@ const nanOrNumberInt64To0x = (input: number | BigNumber | bigint | null): string
 
     // we're using 64 bits integer because that's the type returned by the mirror node - int64
     const bits = 64;
+    // this mathematical expression serves as a shortcut for performing the two’s complement conversion
+    // e.g. input = -10
+    // we have: (BigInt(1) << BigInt(bits)) = 1 << 64 = 2^64 = 18446744073709551616
+    // then: (BigInt(input.toString()) + (BigInt(1) << BigInt(bits))) = -10 + 2^64 = 18446744073709551606
+    // this effectively represents -10 in an unsigned 64-bit representation:18446744073709551606 = 0xFFFFFFFFFFFFFFF6
+    // finally, the modulo operation: % (1 << 64)
     return numberTo0x((BigInt(input.toString()) + (BigInt(1) << BigInt(bits))) % (BigInt(1) << BigInt(bits)));
   }
 
