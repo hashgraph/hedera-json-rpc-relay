@@ -18,6 +18,15 @@
  *
  */
 
+// This type extracts the type string associated with a specific key
+// in the _CONFIG object. It checks if the provided key K is a valid
+// key in _CONFIG. If it is, it retrieves the 'type' property of the
+// corresponding configuration object; otherwise, it resolves to 'never'.
+// Example:
+// - For key 'CHAIN_ID', it returns 'string' if defined in _CONFIG.
+// - For an invalid key 'INVALID_KEY', it returns never.
+type ExtractTypeStringFromKey<K extends string> = K extends keyof typeof _CONFIG ? (typeof _CONFIG)[K]['type'] : never;
+
 // Type mapping utility that converts string representations of types
 // (e.g., 'string', 'boolean', 'number', 'array') to their corresponding
 // TypeScript types. This allows for dynamic type resolution based on
@@ -34,17 +43,8 @@ type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   : Tstr extends 'number'
   ? number
   : Tstr extends 'array'
-  ? unknown[]
+  ? any[]
   : never;
-
-// This type extracts the type string associated with a specific key
-// in the _CONFIG object. It checks if the provided key K is a valid
-// key in _CONFIG. If it is, it retrieves the 'type' property of the
-// corresponding configuration object; otherwise, it resolves to 'never'.
-// Example:
-// - For key 'CHAIN_ID', it returns 'string' if defined in _CONFIG.
-// - For an invalid key 'INVALID_KEY', it returns never.
-type ExtractTypeStringFromKey<K extends string> = K extends keyof typeof _CONFIG ? (typeof _CONFIG)[K]['type'] : never;
 
 // This type maps a configuration key K to its corresponding TypeScript type.
 // It first uses ExtractTypeStringFromKey to get the type string and then
