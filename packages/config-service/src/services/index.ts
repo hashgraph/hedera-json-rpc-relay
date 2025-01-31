@@ -94,11 +94,20 @@ export class ConfigService {
   }
 
   /**
-   * Get an env var by name
-   * @param name string
-   * @returns string | undefined
+   * Gets the value of a configuration property by its key name.
+   * For CHAIN_ID, converts the value to hexadecimal format with '0x' prefix.
+   *
+   * @param name - The configuration key to look up
+   * @typeParam K - The specific ConfigKey type parameter
+   * @returns The value associated with the key, with type based on the key's configuration
    */
   public static get<K extends ConfigKey>(name: K): GetTypeOfConfigKey<K> {
-    return this.getInstance().envs[name] as GetTypeOfConfigKey<K>;
+    let value = this.getInstance().envs[name];
+
+    if (name === 'CHAIN_ID') {
+      value = `0x${Number(value).toString(16)}`;
+    }
+
+    return value as GetTypeOfConfigKey<K>;
   }
 }

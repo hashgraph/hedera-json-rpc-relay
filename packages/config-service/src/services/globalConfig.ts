@@ -23,7 +23,7 @@
 // key in _CONFIG. If it is, it retrieves the 'type' property of the
 // corresponding configuration object; otherwise, it resolves to 'never'.
 // Example:
-// - For key 'CHAIN_ID', it returns 'string' if defined in _CONFIG.
+// - For key '‘OPERATOR_ID_MAIN’', it returns 'string' if defined in _CONFIG.
 // - For an invalid key 'INVALID_KEY', it returns never.
 type ExtractTypeStringFromKey<K extends string> = K extends keyof typeof _CONFIG ? (typeof _CONFIG)[K]['type'] : never;
 
@@ -50,7 +50,7 @@ type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
 // based on two conditions: it must be optional (required: false) AND
 // have no default value (defaultValue: null).
 // Example:
-// - For ‘CHAIN_ID’ or ‘OPERATOR_ID_MAIN’ (required: true, defaultValue: null) → false (cannot be undefined as it’s a required config)
+// - For ‘OPERATOR_ID_MAIN’ (required: true, defaultValue: null) → false (cannot be undefined as it’s a required config)
 // - For ‘WEB_SOCKET_PORT’ (required: false, defaultValue: 8546) → false (cannot be undefined as it has a fallback default value)
 // - For GITHUB_PR_NUMBER (required: false, defaultValue: null) → true (can be undefined as it’s not a required config and has no default value)
 type CanBeUndefined<K extends string> = K extends keyof typeof _CONFIG
@@ -64,7 +64,7 @@ type CanBeUndefined<K extends string> = K extends keyof typeof _CONFIG
 // Type utility that maps configuration keys to their corresponding TypeScript types,
 // including undefined for values that can be undefined based on their configuration.
 // Example:
-// - For 'CHAIN_ID' (type: 'string', required: true, defaultValue: null) -> string
+// - For ‘OPERATOR_ID_MAIN’ (type: 'string', required: true, defaultValue: null) -> string
 // - For 'WEB_SOCKET_PORT' (type: 'number', required: false, defaultValue: 8546) -> number
 // - For 'GITHUB_PR_NUMBER' (type: 'string', required: false, defaultValue: null) -> string | undefined
 export type GetTypeOfConfigKey<K extends string> = CanBeUndefined<K> extends true
@@ -115,7 +115,7 @@ const _CONFIG = {
     envName: 'CHAIN_ID',
     type: 'string',
     required: true,
-    defaultValue: null,
+    defaultValue: '0x12a',
   },
   CLIENT_TRANSPORT_SECURITY: {
     envName: 'CLIENT_TRANSPORT_SECURITY',

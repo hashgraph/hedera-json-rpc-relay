@@ -119,7 +119,7 @@ describe('RPC Server', function () {
     });
 
     BaseTest.defaultResponseChecks(res);
-    expect(res.data.result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+    expect(res.data.result).to.be.equal(ConfigService.get('CHAIN_ID'));
   });
 
   it('validates enforcement of request id', async function () {
@@ -158,7 +158,7 @@ describe('RPC Server', function () {
         expect(response.data, "Default response: 'data' should have 'result' property").to.have.property('result');
         expect(response.data.id, "Default response: 'data.id' should equal '2'").to.be.equal('2');
         expect(response.data.jsonrpc, "Default response: 'data.jsonrpc' should equal '2.0'").to.be.equal('2.0');
-        expect(response.data.result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+        expect(response.data.result).to.be.equal(ConfigService.get('CHAIN_ID'));
       } catch (error: any) {
         expect(true, `Unexpected error: ${error.message}`).to.eq(false);
       } finally {
@@ -542,7 +542,7 @@ describe('RPC Server', function () {
       // verify response for each request
       for (let i = 0; i < response.data.length; i++) {
         expect(response.data[i].id).to.be.equal((i + 2).toString());
-        expect(response.data[i].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+        expect(response.data[i].result).to.be.equal(ConfigService.get('CHAIN_ID'));
       }
     });
 
@@ -559,14 +559,14 @@ describe('RPC Server', function () {
 
       // verify response for each result
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[0].result).to.be.equal(ConfigService.get('CHAIN_ID'));
       // verify eth_accounts result
       expect(response.data[1].id).to.be.equal('3');
       expect(response.data[1].result).to.be.an('Array');
       expect(response.data[1].result.length).to.be.equal(0);
       // verify eth_chainId result
       expect(response.data[2].id).to.be.equal('4');
-      expect(response.data[2].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[2].result).to.be.equal(ConfigService.get('CHAIN_ID'));
     });
 
     it('should execute "eth_chainId" and "eth_accounts" in batch request with invalid request id', async function () {
@@ -577,7 +577,7 @@ describe('RPC Server', function () {
 
       // verify response for each result
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[0].result).to.be.equal(ConfigService.get('CHAIN_ID'));
       // verify eth_accounts result
       expect(response.data[1].id).to.be.equal(null);
       expect(response.data[1].error).to.be.an('Object');
@@ -597,7 +597,7 @@ describe('RPC Server', function () {
 
       // verify eth_chainId result on position 0
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[0].result).to.be.equal(ConfigService.get('CHAIN_ID'));
       // verify method not found error on position 1
       expect(response.data[1].id).to.be.equal('3');
       expect(response.data[1].error).to.be.an('Object');
@@ -605,7 +605,7 @@ describe('RPC Server', function () {
       expect(response.data[1].error.message).to.be.equal('Method non_existent_method not found');
       // verify eth_chainId result on position 2
       expect(response.data[2].id).to.be.equal('4');
-      expect(response.data[2].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[2].result).to.be.equal(ConfigService.get('CHAIN_ID'));
     });
 
     it('should execute "eth_chainId" and method not found and params error in batch request', async function () {
@@ -625,7 +625,7 @@ describe('RPC Server', function () {
 
       // verify eth_chainId result on position 0
       expect(response.data[0].id).to.be.equal('2');
-      expect(response.data[0].result).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(response.data[0].result).to.be.equal(ConfigService.get('CHAIN_ID'));
       // verify method not found error on position 1
       expect(response.data[1].id).to.be.equal('3');
       expect(response.data[1].error).to.be.an('Object');

@@ -130,10 +130,7 @@ export class RelayImpl implements Relay {
   ) {
     logger.info('Configurations successfully loaded');
 
-    // @ts-ignore
-    const hederaNetwork: string = (ConfigService.get('HEDERA_NETWORK') || '{}').toLowerCase();
-    const configuredChainId = ConfigService.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
-    const chainId = prepend0x(Number(configuredChainId).toString(16));
+    const chainId = ConfigService.get('CHAIN_ID');
     const duration = constants.HBAR_RATE_LIMIT_DURATION;
 
     this.eventEmitter = new EventEmitter();

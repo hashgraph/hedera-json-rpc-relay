@@ -115,7 +115,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       },
     };
     const transaction = {
-      chainId: Number(ConfigService.get('CHAIN_ID') || 0x12a),
+      chainId: Number(ConfigService.get('CHAIN_ID')),
       to: ACCOUNT_ADDRESS_1,
       from: accountAddress,
       value,

@@ -23,7 +23,6 @@ import { expect } from 'chai';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 
-import constants from '../../src/lib/constants';
 import { RelayImpl } from '../../src/lib/relay';
 import { withOverriddenEnvsInMochaTest } from '../helpers';
 
@@ -41,9 +40,7 @@ describe('Net', async function () {
   });
 
   it('should execute "net_version"', function () {
-    const hederaNetwork: string = ConfigService.get('HEDERA_NETWORK').toLowerCase();
-    let expectedNetVersion = ConfigService.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
-    if (expectedNetVersion.startsWith('0x')) expectedNetVersion = parseInt(expectedNetVersion, 16).toString();
+    let expectedNetVersion = parseInt(ConfigService.get('CHAIN_ID'), 16).toString();
 
     const actualNetVersion = Relay.net().version();
     expect(actualNetVersion).to.eq(expectedNetVersion);

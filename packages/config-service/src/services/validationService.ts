@@ -41,8 +41,15 @@ export class ValidationService {
   }
 
   /**
-   * Transform string env variables to the proper formats (number/boolean/string)
-   * @param envs
+   * Transform string environment variables to their proper types based on GlobalConfig.ENTRIES.
+   * For each entry:
+   * - If the env var is missing but has a default value, use the default
+   * - For 'number' type, converts to Number
+   * - For 'boolean' type, converts 'true' string to true boolean
+   * - For 'string' and 'array' types, keeps as string
+   *
+   * @param envs - Dictionary of environment variables and their string values
+   * @returns Dictionary with environment variables cast to their proper types
    */
   static typeCasting(envs: NodeJS.Dict<string>): NodeJS.Dict<any> {
     const typeCastedEnvs: NodeJS.Dict<any> = {};

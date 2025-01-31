@@ -60,4 +60,30 @@ describe('ConfigService tests', async function () {
 
     expect(res).to.equal(undefined);
   });
+
+  it('Should always convert CHAIN_ID to a hexadecimal string, regardless of input value type.', async () => {
+    const originalEnv = process.env;
+
+    const testChainId = (input: string, expected: string) => {
+      process.env = { ...originalEnv, CHAIN_ID: input };
+      // Reset the ConfigService singleton instance to force a new initialization
+      // This is necessary because ConfigService caches the env values when first instantiated,
+      // so we need to clear that cache to test with our new CHAIN_ID value
+      // @ts-ignore - accessing private property for testing
+      delete ConfigService.instance;
+      expect(ConfigService.get('CHAIN_ID')).to.equal(expected);
+    };
+
+    try {
+      // Test cases
+      testChainId('298', '0x12a'); // decimal number
+      testChainId('0x12a', '0x12a'); // hexadecimal with prefix
+      testChainId('1000000', '0xf4240'); // larger number
+      testChainId('0xhedera', '0xNaN'); // invalid number
+    } finally {
+      process.env = originalEnv;
+      // @ts-ignore - accessing private property for testing
+      delete ConfigService.instance;
+    }
+  });
 });
