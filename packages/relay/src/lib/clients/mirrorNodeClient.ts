@@ -25,6 +25,7 @@ import { install as betterLookupInstall } from 'better-lookup';
 import { ethers } from 'ethers';
 import http from 'http';
 import https from 'https';
+import JSONBigInt from 'json-bigint';
 import { Logger } from 'pino';
 import { Histogram, Registry } from 'prom-client';
 
@@ -361,6 +362,30 @@ export class MirrorNodeClient {
         if (pathLabel == MirrorNodeClient.GET_CONTRACTS_RESULTS_OPCODES) {
           response = await this.web3Client.get<T>(path, axiosRequestConfig);
         } else {
+          // JavaScript supports integers only up to 53 bits. When a number exceeding this limit
+          // is converted to a JS Number type, precision is lost due to rounding.
+          // To prevent this, `transformResponse` is used to intercept
+          // and process the response before Axios’s default JSON.parse conversion.
+          // JSONBigInt reads the string representation from the received JSON
+          // and converts large numbers into BigNumber objects to maintain accuracy.
+          axiosRequestConfig['transformResponse'] = [
+            (data) => {
+              // if the data is not valid, just return it to stick to the current behaviour
+              if (data) {
+                try {
+                  // try to parse it, if the json is valid, numbers within it will be converted
+                  // this case will happen on almost every GET mirror node call
+                  return JSONBigInt.parse(data);
+                } catch (e) {
+                  // in some unit tests, the mocked returned json is not property formatted
+                  // so we have to preprocess it here with JSON.stringify()
+                  return JSONBigInt.parse(JSON.stringify(data));
+                }
+              }
+
+              return data;
+            },
+          ];
           response = await this.restClient.get<T>(path, axiosRequestConfig);
         }
       } else {

@@ -18,7 +18,10 @@
  *
  */
 
+import { BigNumber as BN } from 'bignumber.js';
 import { expect } from 'chai';
+import { AbiCoder, keccak256 } from 'ethers';
+
 import {
   ASCIIToHex,
   decodeErrorMessage,
@@ -31,23 +34,22 @@ import {
   isHex,
   isValidEthereumAddress,
   mapKeysAndValues,
+  nanOrNumberInt64To0x,
   nanOrNumberTo0x,
   nullableNumberTo0x,
   numberTo0x,
   parseNumericEnvVar,
   prepend0x,
   strip0x,
+  tinybarsToWeibars,
   toHash32,
   toHexString,
   toNullableBigNumber,
   toNullIfEmptyHex,
   trimPrecedingZeros,
   weibarHexToTinyBarInt,
-  tinybarsToWeibars,
 } from '../../src/formatters';
 import constants from '../../src/lib/constants';
-import { BigNumber as BN } from 'bignumber.js';
-import { AbiCoder, keccak256 } from 'ethers';
 import { overrideEnvsInMochaDescribe } from '../helpers';
 
 describe('Formatters', () => {
@@ -399,6 +401,48 @@ describe('Formatters', () => {
     });
   });
 
+  describe('nanOrNumberInt64To0x', () => {
+    it('should return 0x0 for nullable input', () => {
+      expect(nanOrNumberInt64To0x(null)).to.equal('0x0');
+    });
+    it('should return 0x0 for NaN input', () => {
+      expect(nanOrNumberInt64To0x(NaN)).to.equal('0x0');
+    });
+
+    for (const [testName, testValues] of Object.entries({
+      '2 digits': ['-10', '0xfffffffffffffff6'],
+      '6 digits': ['-851969', '0xfffffffffff2ffff'],
+      '19 digits -6917529027641081857': ['-6917529027641081857', '0x9fffffffffffffff'],
+      '19 digits -9223372036586340353': ['-9223372036586340353', '0x800000000fffffff'],
+    })) {
+      it(`should convert negative int64 number (${testName})`, () => {
+        expect(nanOrNumberInt64To0x(BigInt(testValues[0]))).to.equal(testValues[1]);
+      });
+    }
+
+    for (const [bits, testValues] of Object.entries({
+      10: ['593', '0x251'],
+      50: ['844424930131967', '0x2ffffffffffff'],
+      51: ['1970324836974591', '0x6ffffffffffff'],
+      52: ['3096224743817215', '0xaffffffffffff'],
+      53: ['9007199254740991', '0x1fffffffffffff'],
+      54: ['13510798882111487', '0x2fffffffffffff'],
+      55: ['31525197391593471', '0x6fffffffffffff'],
+      56: ['49539595901075455', '0xafffffffffffff'],
+      57: ['144115188075855871', '0x1ffffffffffffff'],
+      58: ['216172782113783807', '0x2ffffffffffffff'],
+      59: ['504403158265495551', '0x6ffffffffffffff'],
+      60: ['792633534417207295', '0xaffffffffffffff'],
+      61: ['2305843009213693951', '0x1fffffffffffffff'],
+      62: ['3458764513820540927', '0x2fffffffffffffff'],
+      63: ['8070450532247928831', '0x6fffffffffffffff'],
+    })) {
+      it(`should convert positive ${bits} bits number`, () => {
+        expect(nanOrNumberInt64To0x(BigInt(testValues[0]))).to.equal(testValues[1]);
+      });
+    }
+  });
+
   describe('toHash32', () => {
     it('should format more than 32 bytes hash to 32 bytes', () => {
       expect(
@@ -735,27 +779,33 @@ describe('Formatters', () => {
   });
 
   describe('tinybarsToWeibars', () => {
-    it('should convert tinybars to weibars', () => {
-      expect(tinybarsToWeibars(10)).to.eql(100000000000);
-    });
+    for (const allowNegativeValues of [true, false]) {
+      it(`should convert tinybars to weibars allowNegativeValues = ${allowNegativeValues}`, () => {
+        expect(tinybarsToWeibars(10, allowNegativeValues)).to.eql(100000000000);
+      });
 
-    it('should return null if null is passed', () => {
-      expect(tinybarsToWeibars(null)).to.eql(null);
-    });
+      it(`should return null if null is passed allowNegativeValues = ${allowNegativeValues}`, () => {
+        expect(tinybarsToWeibars(null, allowNegativeValues)).to.eql(null);
+      });
 
-    it('should return 0 for 0 input', () => {
-      expect(tinybarsToWeibars(0)).to.eql(0);
-    });
+      it(`should return 0 for 0 input allowNegativeValues = ${allowNegativeValues}`, () => {
+        expect(tinybarsToWeibars(0, allowNegativeValues)).to.eql(0);
+      });
+
+      it(`should throw an error when value is larger than the total supply of tinybars allowNegativeValues = ${allowNegativeValues}`, () => {
+        expect(() => tinybarsToWeibars(constants.TOTAL_SUPPLY_TINYBARS * 10, allowNegativeValues)).to.throw(
+          Error,
+          'Value cannot be more than the total supply of tinybars in the blockchain',
+        );
+      });
+    }
 
     it('should throw an error when value is smaller than 0', () => {
-      expect(() => tinybarsToWeibars(-10)).to.throw(Error, 'Invalid value - cannot pass negative number');
+      expect(() => tinybarsToWeibars(-10, false)).to.throw(Error, 'Invalid value - cannot pass negative number');
     });
 
-    it('should throw an error when value is larger than the total supply of tinybars', () => {
-      expect(() => tinybarsToWeibars(constants.TOTAL_SUPPLY_TINYBARS * 10)).to.throw(
-        Error,
-        'Value cannot be more than the total supply of tinybars in the blockchain',
-      );
+    it('should return the negative number if allowNegativeValues flag is set to true', () => {
+      expect(tinybarsToWeibars(-10, true)).to.eql(-10);
     });
   });
 });
