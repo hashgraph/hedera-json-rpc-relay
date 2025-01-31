@@ -164,7 +164,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, JSON.stringify(filteredLogs));
     filteredLogs.logs.forEach((log, index) => {
-      restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify({ ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` }));
+      restMock
+        .onGet(`contracts/${log.address}`)
+        .reply(200, JSON.stringify({ ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` }));
     });
 
     const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
@@ -189,7 +191,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
     restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, JSON.stringify(filteredLogs));
     filteredLogs.logs.forEach((log, index) => {
-      restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify({ ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` }));
+      restMock
+        .onGet(`contracts/${log.address}`)
+        .reply(200, JSON.stringify({ ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` }));
     });
 
     try {
@@ -237,7 +241,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
         .replyOnce(200, JSON.stringify(filteredLogsNext));
 
       unfilteredLogs.logs.forEach((log, index) => {
-        restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify({ ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` }));
+        restMock
+          .onGet(`contracts/${log.address}`)
+          .reply(200, JSON.stringify({ ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` }));
       });
 
       const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
@@ -461,9 +467,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
       },
     };
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-    restMock.onGet('blocks/16').reply(200, fromBlock);
-    restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCK);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+    restMock.onGet('blocks/16').reply(200, JSON.stringify(fromBlock));
+    restMock.onGet('blocks/5').reply(200, JSON.stringify(DEFAULT_BLOCK));
 
     await expect(ethImpl.getLogs(null, '0x10', '0x5', null, null, requestDetails)).to.be.rejectedWith(
       predefined.INVALID_BLOCK_RANGE.message,
@@ -616,17 +622,23 @@ describe('@ethGetLogs using MirrorNode', async function () {
     const mockedToTimeStamp = mockedFromTimeStamp + 604800 * 2 + 1; // 7 days (604800 seconds) and 1 second greater than mockedFromTimeStamp
 
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
-    restMock.onGet(`blocks/${BLOCK_NUMBER_2}`).reply(200, JSON.stringify({
-      ...DEFAULT_BLOCK,
-      timestamp: { ...DEFAULT_BLOCK.timestamp, from: mockedFromTimeStamp.toString() },
-      number: BLOCK_NUMBER_2,
-    }));
+    restMock.onGet(`blocks/${BLOCK_NUMBER_2}`).reply(
+      200,
+      JSON.stringify({
+        ...DEFAULT_BLOCK,
+        timestamp: { ...DEFAULT_BLOCK.timestamp, from: mockedFromTimeStamp.toString() },
+        number: BLOCK_NUMBER_2,
+      }),
+    );
 
-    restMock.onGet(`blocks/${BLOCK_NUMBER_3}`).reply(200, JSON.stringify({
-      ...DEFAULT_BLOCK,
-      timestamp: { ...DEFAULT_BLOCK.timestamp, to: mockedToTimeStamp.toString() },
-      number: BLOCK_NUMBER_3,
-    }));
+    restMock.onGet(`blocks/${BLOCK_NUMBER_3}`).reply(
+      200,
+      JSON.stringify({
+        ...DEFAULT_BLOCK,
+        timestamp: { ...DEFAULT_BLOCK.timestamp, to: mockedToTimeStamp.toString() },
+        number: BLOCK_NUMBER_3,
+      }),
+    );
 
     await expect(
       ethImpl.getLogs(
