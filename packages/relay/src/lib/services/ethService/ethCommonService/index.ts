@@ -389,9 +389,4 @@ export class CommonService implements ICommonService {
 
     return this.getLogsWithParams(address, params, requestDetails);
   }
-
-  public addressToTokenId(address: string): string {
-    const tokenNum = parseInt(address.slice(-8), 16);
-    return `0.0.${tokenNum}`;
-  }
 }

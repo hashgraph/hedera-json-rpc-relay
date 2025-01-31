@@ -187,18 +187,12 @@ describe('@ethGetCode using MirrorNode', async function () {
 
     it('should throw error for invalid block number', async () => {
       const invalidBlockNumber = '0xinvalid';
-      try {
-        await ethImpl.getCode(HTS_TOKEN_ADDRESS, invalidBlockNumber, requestDetails);
-        expect(true).to.eq(false);
-      } catch (error: any) {
-        const expectedError = predefined.UNKNOWN_BLOCK(
-          `The value passed is not a valid blockHash/blockNumber/blockTag value: ${invalidBlockNumber}`,
-        );
-        expect(error).to.exist;
-        expect(error instanceof JsonRpcError);
-        expect(error.code).to.eq(expectedError.code);
-        expect(error.message).to.eq(expectedError.message);
-      }
+
+      await expect(
+        ethImpl.getCode(HTS_TOKEN_ADDRESS, invalidBlockNumber, requestDetails),
+      ).to.eventually.be.rejectedWith(
+        `The value passed is not a valid blockHash/blockNumber/blockTag value: ${invalidBlockNumber}`,
+      );
     });
 
     it('should throw error when block does not exist', async () => {
@@ -208,16 +202,9 @@ describe('@ethGetCode using MirrorNode', async function () {
       restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, DEFAULT_HTS_TOKEN);
       restMock.onGet(`blocks/${parseInt(futureBlockNumber, 16)}`).reply(404, null);
 
-      try {
-        await ethImpl.getCode(HTS_TOKEN_ADDRESS, futureBlockNumber, requestDetails);
-        expect(true).to.eq(false);
-      } catch (error: any) {
-        const expectedError = predefined.UNKNOWN_BLOCK(`Block number ${futureBlockNumber} does not exist`);
-        expect(error).to.exist;
-        expect(error instanceof JsonRpcError);
-        expect(error.code).to.eq(expectedError.code);
-        expect(error.message).to.eq(expectedError.message);
-      }
+      await expect(ethImpl.getCode(HTS_TOKEN_ADDRESS, futureBlockNumber, requestDetails)).to.eventually.be.rejectedWith(
+        `Block number ${futureBlockNumber} does not exist`,
+      );
     });
   });
 });

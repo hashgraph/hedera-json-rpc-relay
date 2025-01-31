@@ -1219,7 +1219,7 @@ export class EthImpl implements Eth {
               throw predefined.UNKNOWN_BLOCK(`Block number ${blockNumber} does not exist`);
             }
 
-            const tokenId = this.common.addressToTokenId(address);
+            const tokenId = Utils.addressToTokenId(address);
             const tokenInfo = await this.mirrorNodeClient.getTokenById(tokenId, requestDetails);
 
             if (!tokenInfo) {

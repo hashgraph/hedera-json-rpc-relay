@@ -27,6 +27,7 @@ import sinon from 'sinon';
 
 import { ASCIIToHex, prepend0x } from '../../src/formatters';
 import constants from '../../src/lib/constants';
+import { predefined } from '../../src/lib/errors/JsonRpcError';
 import { Utils } from '../../src/utils';
 import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../helpers';
 
@@ -212,5 +213,38 @@ describe('Utils', () => {
         });
       },
     );
+  });
+
+  describe('addressToTokenId', () => {
+    it('should convert a valid EVM address to TokenId string', () => {
+      const address = '0x0000000000000000000000000000000000000409';
+      expect(Utils.addressToTokenId(address)).to.equal('0.0.1033');
+    });
+
+    it('should throw JsonRpcError for invalid EVM address', () => {
+      const invalidAddress = '0xinvalid';
+      expect(() => Utils.addressToTokenId(invalidAddress)).to.throw(
+        predefined.INVALID_PARAMETER(0, `Invalid address format: ${invalidAddress}`).message,
+      );
+    });
+
+    it('should throw JsonRpcError for non-hex address', () => {
+      const nonHexAddress = 'not-an-address';
+      expect(() => Utils.addressToTokenId(nonHexAddress)).to.throw(
+        predefined.INVALID_PARAMETER(0, `Invalid address format: ${nonHexAddress}`).message,
+      );
+    });
+
+    it('should throw JsonRpcError for address with invalid length', () => {
+      const shortAddress = '0x123';
+      expect(() => Utils.addressToTokenId(shortAddress)).to.throw(
+        predefined.INVALID_PARAMETER(0, `Invalid address format: ${shortAddress}`).message,
+      );
+    });
+
+    it('should convert zero address to TokenId string', () => {
+      const zeroAddress = '0x0000000000000000000000000000000000000000';
+      expect(Utils.addressToTokenId(zeroAddress)).to.equal('0.0.0');
+    });
   });
 });
