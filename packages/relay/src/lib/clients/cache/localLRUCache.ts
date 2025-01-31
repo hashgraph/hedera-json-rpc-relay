@@ -21,7 +21,6 @@
 import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
 import { ICacheClient } from './ICacheClient';
-import constants from '../../constants';
 import LRUCache, { LimitedByCount, LimitedByTTL } from 'lru-cache';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { RequestDetails } from '../../types';

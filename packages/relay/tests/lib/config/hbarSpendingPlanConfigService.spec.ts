@@ -77,8 +77,8 @@ describe('HbarSpendingPlanConfigService', function () {
 
     overrideEnvsInMochaDescribe({
       HBAR_SPENDING_PLANS_CONFIG: hbarSpendingPlansConfigEnv,
-      CACHE_TTL: '100',
-      CACHE_MAX: spendingPlansConfig.length.toString(),
+      CACHE_TTL: 100,
+      CACHE_MAX: spendingPlansConfig.length,
     });
 
     before(async function () {
