@@ -92,8 +92,8 @@ describe('ValidationService tests', async function () {
 
     it('should skip adding value if it is missing and there is no default value set', async () => {
       const castedEnvs = ValidationService.typeCasting({});
-      expect(castedEnvs).to.not.haveOwnProperty(GlobalConfig.ENTRIES.FILTER_TTL.envName);
-      expect(castedEnvs[GlobalConfig.ENTRIES.FILTER_TTL.envName]).to.be.undefined;
+      expect(castedEnvs).to.not.haveOwnProperty(GlobalConfig.ENTRIES.GH_ACCESS_TOKEN.envName);
+      expect(castedEnvs[GlobalConfig.ENTRIES.GH_ACCESS_TOKEN.envName]).to.be.undefined;
     });
 
     it('should to cast string type', async () => {
