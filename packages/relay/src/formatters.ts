@@ -18,11 +18,12 @@
  *
  */
 
-import crypto from 'crypto';
-import constants from './lib/constants';
-import { BigNumber as BN } from 'bignumber.js';
-import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { BigNumber as BN } from 'bignumber.js';
+import crypto from 'crypto';
+
+import constants from './lib/constants';
 import { Transaction, Transaction1559, Transaction2930 } from './lib/model';
 
 const EMPTY_HEX = '0x';
@@ -178,7 +179,7 @@ const formatContractResult = (cr: any) => {
     transactionIndex: nullableNumberTo0x(cr.transaction_index),
     type: cr.type === null ? '0x0' : nanOrNumberTo0x(cr.type),
     v: cr.v === null ? '0x0' : nanOrNumberTo0x(cr.v),
-    value: nanOrNumberTo0x(tinybarsToWeibars(cr.amount)),
+    value: nanOrNumberInt64To0x(tinybarsToWeibars(cr.amount, true)),
     // for legacy EIP155 with tx.chainId=0x0, mirror-node will return a '0x' (EMPTY_HEX) value for contract result's chain_id
     //   which is incompatibile with certain tools (i.e. foundry). By setting this field, chainId, to undefined, the end jsonrpc
     //   object will leave out this field, which is the proper behavior for other tools to be compatible with.
@@ -265,6 +266,40 @@ const nanOrNumberTo0x = (input: number | BigNumber | bigint | null): string => {
   return input == null || Number.isNaN(input) ? numberTo0x(0) : numberTo0x(input);
 };
 
+const nanOrNumberInt64To0x = (input: number | BigNumber | bigint | null): string => {
+  // converting to string and then back to int is fixing a typescript warning
+  if (input && Number(input) < 0) {
+    // the hex of a negative number can be obtained from the binary value of that number positive value
+    // the binary value needs to be negated and then to be incremented by 1
+
+    // how the transformation works (using 16 bits)
+    // a 16 bits integer variables have values from -32768 to +32767, so:
+    // 0      - 0x0000 - 0000 0000 0000 0000
+    // 32767  - 0x7fff - 0111 1111 1111 1111
+    // -32768 - 0x8000 - 1000 0000 0000 0000
+    // -1     - 0xffff - 1111 1111 1111 1111
+
+    // converting int16 -10 will be done as following:
+    // - make it positive = 10
+    // - 16 bits binary value of 10 = 0000 0000 0000 1010
+    // - inverse the bits = 1111 1111 1111 0101
+    // - adding +1 = 1111 1111 1111 0110
+    // - 1111 1111 1111 0110 bits = 0xfff6
+
+    // we're using 64 bits integer because that's the type returned by the mirror node - int64
+    const bits = 64;
+    // this mathematical expression serves as a shortcut for performing the two’s complement conversion
+    // e.g. input = -10
+    // we have: (BigInt(1) << BigInt(bits)) = 1 << 64 = 2^64 = 18446744073709551616
+    // then: (BigInt(input.toString()) + (BigInt(1) << BigInt(bits))) = -10 + 2^64 = 18446744073709551606
+    // this effectively represents -10 in an unsigned 64-bit representation:18446744073709551606 = 0xFFFFFFFFFFFFFFF6
+    // finally, the modulo operation: % (1 << 64)
+    return numberTo0x((BigInt(input.toString()) + (BigInt(1) << BigInt(bits))) % (BigInt(1) << BigInt(bits)));
+  }
+
+  return nanOrNumberTo0x(input);
+};
+
 const toHash32 = (value: string): string => {
   return value.substring(0, 66);
 };
@@ -303,8 +338,18 @@ const getFunctionSelector = (data?: string): string => {
   return data.replace(/^0x/, '').substring(0, 8);
 };
 
-const tinybarsToWeibars = (value: number | null) => {
-  if (value && value < 0) throw new Error('Invalid value - cannot pass negative number');
+const tinybarsToWeibars = (value: number | null, allowNegativeValues: boolean = false) => {
+  if (value && value < 0) {
+    // negative amount can be received only by CONTRACT_NEGATIVE_VALUE revert
+    // e.g. tx https://hashscan.io/mainnet/transaction/1735241436.856862230
+    // that's not a valid revert in the Ethereum world so we must NOT multiply
+    // the amount sent via CONTRACT_CALL SDK call by TINYBAR_TO_WEIBAR_COEF
+    // also, keep in mind that the mirror node returned amount is typed with int64
+    if (allowNegativeValues) return value;
+
+    throw new Error('Invalid value - cannot pass negative number');
+  }
+
   if (value && value > constants.TOTAL_SUPPLY_TINYBARS)
     throw new Error('Value cannot be more than the total supply of tinybars in the blockchain');
 
@@ -324,6 +369,7 @@ export {
   numberTo0x,
   nullableNumberTo0x,
   nanOrNumberTo0x,
+  nanOrNumberInt64To0x,
   toHash32,
   toNullableBigNumber,
   toNullIfEmptyHex,
