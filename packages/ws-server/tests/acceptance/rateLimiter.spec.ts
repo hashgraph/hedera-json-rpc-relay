@@ -29,8 +29,8 @@ import { ConfigServiceTestHelper } from '../../../config-service/tests/configSer
 import { WsTestHelper } from '../helper';
 
 describe('@web-socket-ratelimiter Rate Limit Tests', async function () {
-  const rateLimitTier2 = Number(ConfigService.get('TIER_2_RATE_LIMIT') || relayConstants.DEFAULT_RATE_LIMIT.TIER_2);
-  const limitDuration = Number(ConfigService.get('LIMIT_DURATION')) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
+  const rateLimitTier2 = ConfigService.get('TIER_2_RATE_LIMIT');
+  const limitDuration = ConfigService.get('LIMIT_DURATION');
 
   const batchRequests = [
     {

@@ -129,7 +129,7 @@ export class HbarSpendingPlanConfigService {
    * @private
    */
   private static loadSpendingPlansConfig(logger: Logger): SpendingPlanConfig[] {
-    const spendingPlanConfig = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') as string;
+    const spendingPlanConfig = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG');
 
     if (!spendingPlanConfig) {
       if (logger.isLevelEnabled('trace')) {

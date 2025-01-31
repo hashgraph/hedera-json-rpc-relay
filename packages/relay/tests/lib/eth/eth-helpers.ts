@@ -55,7 +55,7 @@ export function generateEthTestEnv(fixedFeeHistory = false) {
   const cacheService = new CacheService(logger.child({ name: `cache` }), registry);
   // @ts-ignore
   const mirrorNodeInstance = new MirrorNodeClient(
-    ConfigService.get('MIRROR_NODE_URL') || '',
+    ConfigService.get('MIRROR_NODE_URL'),
     logger.child({ name: `mirror-node` }),
     registry,
     cacheService,

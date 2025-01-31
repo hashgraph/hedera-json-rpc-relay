@@ -30,7 +30,6 @@ export class NetImpl implements Net {
   constructor(client: Client) {
     this.client = client;
 
-    // @ts-ignore
     const hederaNetwork: string = (ConfigService.get('HEDERA_NETWORK') || '{}').toLowerCase();
     this.chainId = ConfigService.get('CHAIN_ID') || constants.CHAIN_IDS[hederaNetwork] || '298';
     if (this.chainId.startsWith('0x')) this.chainId = parseInt(this.chainId, 16).toString();

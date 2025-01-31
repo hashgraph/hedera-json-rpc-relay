@@ -33,8 +33,7 @@ import cors from 'koa-cors';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
-  // @ts-ignore
-  level: ConfigService.get('LOG_LEVEL') || 'trace',
+  level: ConfigService.get('LOG_LEVEL'),
   transport: {
     target: 'pino-pretty',
     options: {
@@ -48,7 +47,7 @@ const logger = mainLogger.child({ name: 'rpc-server' });
 const register = new Registry();
 const relay: Relay = new RelayImpl(logger.child({ name: 'relay' }), register);
 const app = new KoaJsonRpc(logger.child({ name: 'koa-rpc' }), register, {
-  limit: ConfigService.get('INPUT_SIZE_LIMIT') ? ConfigService.get('INPUT_SIZE_LIMIT') + 'mb' : null,
+  limit: ConfigService.get('INPUT_SIZE_LIMIT') + 'mb',
 });
 
 collectDefaultMetrics({ register, prefix: 'rpc_relay_' });

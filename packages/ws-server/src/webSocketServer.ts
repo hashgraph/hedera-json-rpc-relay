@@ -37,8 +37,7 @@ import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
-  // @ts-ignore
-  level: ConfigService.get('LOG_LEVEL') || 'trace',
+  level: ConfigService.get('LOG_LEVEL'),
   transport: {
     target: 'pino-pretty',
     options: {
@@ -55,7 +54,7 @@ const mirrorNodeClient = relay.mirrorClient();
 const limiter = new ConnectionLimiter(logger, register);
 const wsMetricRegistry = new WsMetricRegistry(register);
 
-const pingInterval = Number(ConfigService.get('WS_PING_INTERVAL') || 100000);
+const pingInterval = ConfigService.get('WS_PING_INTERVAL');
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx: Koa.Context) => {

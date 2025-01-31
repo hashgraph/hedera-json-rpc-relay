@@ -99,7 +99,7 @@ function verifyResponse(response: any, done: Mocha.Done, webSocket: any, include
 describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
   this.timeout(240 * 1000); // 240 seconds
   const accounts: AliasAccount[] = [];
-  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID');
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let mirrorNodeServer, requestId, rpcServer, wsServer;

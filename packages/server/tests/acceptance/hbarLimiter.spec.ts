@@ -72,9 +72,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     metrics: MetricsClient;
     relayIsLocal: boolean;
   } = global;
-  const mockTTL = ConfigService.get('HBAR_RATE_LIMIT_DURATION') as number; // 1 day
-  const operatorAccount = ConfigService.get('OPERATOR_ID_MAIN') as string;
-  const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+  const mockTTL = ConfigService.get('HBAR_RATE_LIMIT_DURATION');
+  const operatorAccount = ConfigService.get('OPERATOR_ID_MAIN');
+  const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE'));
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
   const cacheService = new CacheService(logger.child({ name: 'cache-service' }), new Registry());
@@ -126,9 +126,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       return contract;
     };
-    const transactionReecordCostTolerance = Number(
-      ConfigService.get('TEST_TRANSACTION_RECORD_COST_TOLERANCE' as ConfigKey) || 0.02,
-    );
+    const transactionReecordCostTolerance = ConfigService.get('TEST_TRANSACTION_RECORD_COST_TOLERANCE');
 
     const verifyRemainingLimit = (expectedCost: number, remainingHbarsBefore: number, remainingHbarsAfter: number) => {
       const delta = transactionReecordCostTolerance * expectedCost;
@@ -221,7 +219,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       const accounts: AliasAccount[] = [];
       const defaultLondonTransactionData = {
         value: Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10))), // 1 tinybar
-        chainId: Number(ConfigService.get('CHAIN_ID') || 0),
+        chainId: Number(ConfigService.get('CHAIN_ID')),
         maxPriorityFeePerGas: Assertions.defaultGasPrice,
         maxFeePerGas: Assertions.defaultGasPrice,
         gasLimit: 3_000_000,

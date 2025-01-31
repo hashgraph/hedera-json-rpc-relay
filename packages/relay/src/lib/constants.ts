@@ -87,12 +87,7 @@ export default {
   HBAR_TO_TINYBAR_COEF: 100_000_000,
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
   TOTAL_SUPPLY_TINYBARS: 5_000_000_000_000_000_000,
-  // 131072 bytes are 128kbytes
-  SEND_RAW_TRANSACTION_SIZE_LIMIT: ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT')
-    ? // @ts-ignore
-      parseInt(ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT'))
-    : 131072,
-
+  SEND_RAW_TRANSACTION_SIZE_LIMIT: ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT'),
   CACHE_KEY,
   CACHE_TTL,
   CACHE_MAX: 1000,
@@ -155,24 +150,16 @@ export default {
     DURATION: 60000,
   },
 
-  // @ts-ignore
-  HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION')),
-  // @ts-ignore
-  // The logical OR operator || returns the first truthy value and 0 is falsy.
-  // The nullish coalescing operator ?? falls back to the default value when the left-hand operand is null or undefined, not when it's 0 or any other falsy value.
+  HBAR_RATE_LIMIT_DURATION: ConfigService.get('HBAR_RATE_LIMIT_DURATION'),
   HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR')),
-  // @ts-ignore
   HBAR_RATE_LIMIT_BASIC: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_BASIC')),
-  // @ts-ignore
   HBAR_RATE_LIMIT_EXTENDED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_EXTENDED')),
-  // @ts-ignore
   HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_PRIVILEGED')),
-  // @ts-ignore
-  GAS_PRICE_TINY_BAR_BUFFER: parseInt(ConfigService.get('GAS_PRICE_TINY_BAR_BUFFER') || '10000000000'),
-  WEB_SOCKET_PORT: ConfigService.get('WEB_SOCKET_PORT') || 8546,
-  WEB_SOCKET_HTTP_PORT: ConfigService.get('WEB_SOCKET_HTTP_PORT') || 8547,
+  GAS_PRICE_TINY_BAR_BUFFER: ConfigService.get('GAS_PRICE_TINY_BAR_BUFFER'),
+  WEB_SOCKET_PORT: ConfigService.get('WEB_SOCKET_PORT'),
+  WEB_SOCKET_HTTP_PORT: ConfigService.get('WEB_SOCKET_HTTP_PORT'),
 
-  RELAY_PORT: ConfigService.get('SERVER_PORT') || 7546,
+  RELAY_PORT: ConfigService.get('SERVER_PORT'),
   RELAY_HOST: ConfigService.get('SERVER_HOST') || 'localhost',
 
   FUNCTION_SELECTOR_CHAR_LENGTH: 10,
@@ -195,8 +182,7 @@ export default {
       LOG: 'log',
       PENDING_TRANSACTION: 'pendingTransaction',
     },
-    // @ts-ignore
-    TTL: parseInt(ConfigService.get('FILTER_TTL') || '300000'), // default is 5 minutes
+    TTL: ConfigService.get('FILTER_TTL'),
   },
 
   METHODS: {

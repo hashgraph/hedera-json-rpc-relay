@@ -34,7 +34,7 @@ export interface Subscriber {
   endTimer: () => void;
 }
 
-const CACHE_TTL = Number(ConfigService.get('WS_CACHE_TTL')) || 20000;
+const CACHE_TTL = ConfigService.get('WS_CACHE_TTL');
 
 export class SubscriptionController implements Subs {
   private poller: Poller;
@@ -101,7 +101,7 @@ export class SubscriptionController implements Subs {
       this.subscriptions[tag] = [];
     }
 
-    if (ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT') ?? true) {
+    if (ConfigService.get('WS_SAME_SUB_FOR_SAME_EVENT')) {
       // Check if the connection is already subscribed to this event
       const existingSub = this.subscriptions[tag].find((sub) => sub.connection.id === connection.id);
       if (existingSub) {

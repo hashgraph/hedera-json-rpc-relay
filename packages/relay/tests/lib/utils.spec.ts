@@ -61,7 +61,7 @@ describe('Utils', () => {
   describe('estimateFileTransactionsFee', () => {
     const callDataSize = 6000;
     const mockedExchangeRateInCents: number = 12;
-    const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+    const fileChunkSize = ConfigService.get('FILE_APPEND_CHUNK_SIZE');
     it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
       const result = Utils.estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
       const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
@@ -83,7 +83,6 @@ describe('Utils', () => {
       ).to.be.false;
     });
 
-    // @ts-ignore
     JSON.parse(ConfigService.get('HEDERA_SPECIFIC_REVERT_STATUSES')).forEach((status) => {
       it(`should exclude transaction with result ${status}`, () => {
         expect(Utils.isRevertedDueToHederaSpecificValidation({ result: status, error_message: null })).to.be.true;

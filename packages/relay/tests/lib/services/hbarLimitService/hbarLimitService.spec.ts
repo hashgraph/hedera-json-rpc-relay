@@ -189,10 +189,7 @@ describe('HBAR Rate Limit Service', function () {
   });
 
   describe('shouldLimit', function () {
-    const operatorEnvs = [
-      { OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') as string },
-      { OPERATOR_ID_MAIN: null },
-    ];
+    const operatorEnvs = [{ OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') }, { OPERATOR_ID_MAIN: null }];
 
     operatorEnvs.forEach((operatorEnv) => {
       const operatorAddress = operatorEnv.OPERATOR_ID_MAIN
@@ -880,10 +877,7 @@ describe('HBAR Rate Limit Service', function () {
       expect(operatorPlan.amountSpent).to.eq(expense);
     };
 
-    const operatorEnvs = [
-      { OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') as string },
-      { OPERATOR_ID_MAIN: null },
-    ];
+    const operatorEnvs = [{ OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') }, { OPERATOR_ID_MAIN: null }];
 
     operatorEnvs.forEach((operatorEnv) => {
       const operatorAddress = operatorEnv.OPERATOR_ID_MAIN
@@ -956,10 +950,7 @@ describe('HBAR Rate Limit Service', function () {
       ).to.eventually.equal(expected);
     };
 
-    const operatorEnvs = [
-      { OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') as string },
-      { OPERATOR_ID_MAIN: null },
-    ];
+    const operatorEnvs = [{ OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') }, { OPERATOR_ID_MAIN: null }];
 
     operatorEnvs.forEach((operatorEnv) => {
       withOverriddenEnvsInMochaTest(operatorEnv, () => {

@@ -49,7 +49,7 @@ export class ValidationService {
 
     Object.entries(GlobalConfig.ENTRIES).forEach(([entryName, entryInfo]) => {
       if (!envs.hasOwnProperty(entryName)) {
-        if (entryInfo.defaultValue) {
+        if (entryInfo.defaultValue != null) {
           typeCastedEnvs[entryName] = entryInfo.defaultValue;
         }
         return;

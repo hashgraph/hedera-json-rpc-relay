@@ -36,7 +36,7 @@ import { WsTestConstant, WsTestHelper } from '../helper';
 
 describe('@web-socket-batch-2 eth_sendRawTransaction', async function () {
   const METHOD_NAME = 'eth_sendRawTransaction';
-  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
+  const CHAIN_ID = ConfigService.get('CHAIN_ID');
   const INVALID_PARAMS = [
     [],
     [''],

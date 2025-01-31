@@ -169,13 +169,12 @@ export class RelayImpl implements Relay {
     this.netImpl = new NetImpl(this.clientMain);
 
     this.mirrorNodeClient = new MirrorNodeClient(
-      // @ts-ignore
-      ConfigService.get('MIRROR_NODE_URL') || '',
+      ConfigService.get('MIRROR_NODE_URL'),
       logger.child({ name: `mirror-node` }),
       register,
       this.cacheService,
       undefined,
-      ConfigService.get('MIRROR_NODE_URL_WEB3') || ConfigService.get('MIRROR_NODE_URL') || '',
+      ConfigService.get('MIRROR_NODE_URL_WEB3') || ConfigService.get('MIRROR_NODE_URL'),
     );
 
     this.metricService = new MetricService(

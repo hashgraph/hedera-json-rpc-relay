@@ -161,47 +161,29 @@ export class MirrorNodeClient {
 
   static readonly EVM_ADDRESS_REGEX: RegExp = /\/accounts\/([\d\.]+)/;
 
-  public static readonly mirrorNodeContractResultsPageMax = parseInt(
-    // @ts-ignore
-    ConfigService.get('MIRROR_NODE_CONTRACT_RESULTS_PG_MAX') || 25,
+  public static readonly mirrorNodeContractResultsPageMax = ConfigService.get('MIRROR_NODE_CONTRACT_RESULTS_PG_MAX');
+  public static readonly mirrorNodeContractResultsLogsPageMax = ConfigService.get(
+    'MIRROR_NODE_CONTRACT_RESULTS_LOGS_PG_MAX',
   );
-  public static readonly mirrorNodeContractResultsLogsPageMax =
-    // @ts-ignore
-    parseInt(ConfigService.get('MIRROR_NODE_CONTRACT_RESULTS_LOGS_PG_MAX') || 200);
 
   protected createAxiosClient(baseUrl: string): AxiosInstance {
     // defualt values for axios clients to mirror node
-    // @ts-ignore
-    const mirrorNodeTimeout = parseInt(ConfigService.get('MIRROR_NODE_TIMEOUT') || '10000');
-    // @ts-ignore
-    const mirrorNodeMaxRedirects = parseInt(ConfigService.get('MIRROR_NODE_MAX_REDIRECTS') || '5');
+    const mirrorNodeTimeout = ConfigService.get('MIRROR_NODE_TIMEOUT');
+    const mirrorNodeMaxRedirects = ConfigService.get('MIRROR_NODE_MAX_REDIRECTS');
     const mirrorNodeHttpKeepAlive = ConfigService.get('MIRROR_NODE_HTTP_KEEP_ALIVE');
-    // @ts-ignore
-    const mirrorNodeHttpKeepAliveMsecs = parseInt(ConfigService.get('MIRROR_NODE_HTTP_KEEP_ALIVE_MSECS') || '1000');
-    // @ts-ignore
-    const mirrorNodeHttpMaxSockets = parseInt(ConfigService.get('MIRROR_NODE_HTTP_MAX_SOCKETS') || '300');
-    // @ts-ignore
-    const mirrorNodeHttpMaxTotalSockets = parseInt(ConfigService.get('MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS') || '300');
-    // @ts-ignore
-    const mirrorNodeHttpSocketTimeout = parseInt(ConfigService.get('MIRROR_NODE_HTTP_SOCKET_TIMEOUT') || '60000');
+    const mirrorNodeHttpKeepAliveMsecs = ConfigService.get('MIRROR_NODE_HTTP_KEEP_ALIVE_MSECS');
+    const mirrorNodeHttpMaxSockets = ConfigService.get('MIRROR_NODE_HTTP_MAX_SOCKETS');
+    const mirrorNodeHttpMaxTotalSockets = ConfigService.get('MIRROR_NODE_HTTP_MAX_TOTAL_SOCKETS');
+    const mirrorNodeHttpSocketTimeout = ConfigService.get('MIRROR_NODE_HTTP_SOCKET_TIMEOUT');
     const isDevMode = ConfigService.get('DEV_MODE');
-    // @ts-ignore
-    const mirrorNodeRetries = parseInt(ConfigService.get('MIRROR_NODE_RETRIES') || '0'); // we are in the process of deprecating this feature
-    // @ts-ignore
-    const mirrorNodeRetriesDevMode = parseInt(ConfigService.get('MIRROR_NODE_RETRIES_DEVMODE') || '5');
+    const mirrorNodeRetries = ConfigService.get('MIRROR_NODE_RETRIES'); // we are in the process of deprecating this feature
+    const mirrorNodeRetriesDevMode = ConfigService.get('MIRROR_NODE_RETRIES_DEVMODE');
     const mirrorNodeRetryDelay = this.MIRROR_NODE_RETRY_DELAY;
-    // @ts-ignore
-    const mirrorNodeRetryDelayDevMode = parseInt(ConfigService.get('MIRROR_NODE_RETRY_DELAY_DEVMODE') || '200');
-    const mirrorNodeRetryErrorCodes = ConfigService.get('MIRROR_NODE_RETRY_CODES')
-      ? // @ts-ignore
-        JSON.parse(ConfigService.get('MIRROR_NODE_RETRY_CODES'))
-      : []; // we are in the process of deprecating this feature
-    // by default will be true, unless explicitly set to false.
-    // @ts-ignore
+    const mirrorNodeRetryDelayDevMode = ConfigService.get('MIRROR_NODE_RETRY_DELAY_DEVMODE');
+    const mirrorNodeRetryErrorCodes = JSON.parse(ConfigService.get('MIRROR_NODE_RETRY_CODES')); // we are in the process of deprecating this feature by default will be true, unless explicitly set to false.
     const useCacheableDnsLookup: boolean = ConfigService.get('MIRROR_NODE_AGENT_CACHEABLE_DNS');
 
     const httpAgent = new http.Agent({
-      // @ts-ignore
       keepAlive: mirrorNodeHttpKeepAlive,
       keepAliveMsecs: mirrorNodeHttpKeepAliveMsecs,
       maxSockets: mirrorNodeHttpMaxSockets,
@@ -258,6 +240,7 @@ export class MirrorNodeClient {
         return delay;
       },
       retryCondition: (error) => {
+        // @ts-ignore
         return !error?.response?.status || mirrorNodeRetryErrorCodes.includes(error?.response?.status);
       },
       shouldResetTimeout: true,
@@ -313,11 +296,11 @@ export class MirrorNodeClient {
     this.cacheService = cacheService;
 
     // set  up eth call  accepted error codes.
-    if (ConfigService.get('ETH_CALL_ACCEPTED_ERRORS')) {
+    const parsedAcceptedError = JSON.parse(ConfigService.get('ETH_CALL_ACCEPTED_ERRORS'));
+    if (parsedAcceptedError.length != 0) {
       MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.set(
         MirrorNodeClient.CONTRACT_CALL_ENDPOINT,
-        // @ts-ignore
-        JSON.parse(ConfigService.get('ETH_CALL_ACCEPTED_ERRORS')),
+        parsedAcceptedError,
       );
     }
   }
@@ -1334,8 +1317,7 @@ export class MirrorNodeClient {
       this.setQueryParam(queryParamObject, 'limit', limitOrderParams.limit);
       this.setQueryParam(queryParamObject, 'order', limitOrderParams.order);
     } else {
-      // @ts-ignore
-      this.setQueryParam(queryParamObject, 'limit', parseInt(ConfigService.get('MIRROR_NODE_LIMIT_PARAM') || '100'));
+      this.setQueryParam(queryParamObject, 'limit', ConfigService.get('MIRROR_NODE_LIMIT_PARAM'));
       this.setQueryParam(queryParamObject, 'order', constants.ORDER.ASC);
     }
   }

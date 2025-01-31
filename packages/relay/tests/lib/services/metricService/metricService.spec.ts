@@ -165,7 +165,7 @@ describe('Metric Service', function () {
       timeout: 20 * 1000,
     });
     mirrorNodeClient = new MirrorNodeClient(
-      (ConfigService.get('MIRROR_NODE_URL')) || '',
+      ConfigService.get('MIRROR_NODE_URL'),
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
