@@ -275,7 +275,7 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('validates fromBlock and toBlock', async function () {
-      // fromBlock is larger than toBlock
+      // reject if fromBlock is larger than toBlock
       await RelayAssertions.assertRejection(
         predefined.INVALID_BLOCK_RANGE,
         filterService.newFilter,
@@ -291,13 +291,13 @@ describe('Filter API Test Suite', async function () {
         ['latest', blockNumberHexes[1400], requestDetails],
       );
 
-      // block range is too large
+      // reject when no fromBlock is provided
       await RelayAssertions.assertRejection(
-        predefined.RANGE_TOO_LARGE(1000),
+        predefined.MISSING_FROM_BLOCK_PARAM,
         filterService.newFilter,
         true,
         filterService,
-        [blockNumberHexes[5], blockNumberHexes[2000], requestDetails],
+        [null, blockNumberHexes[1400], requestDetails],
       );
 
       // block range is valid

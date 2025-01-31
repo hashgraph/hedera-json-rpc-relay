@@ -318,6 +318,24 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         }
       });
 
+      it('should return empty logs if `toBlock` is not found', async () => {
+        const notExistedLog = latestBlock + 99;
+
+        const logs = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
+          [
+            {
+              fromBlock: log0Block.blockNumber,
+              toBlock: `0x${notExistedLog.toString(16)}`,
+              address: [contractAddress, contractAddress2],
+            },
+          ],
+          requestIdPrefix,
+        );
+
+        expect(logs.length).to.eq(0);
+      });
+
       it('should be able to use `address` param', async () => {
         //when we pass only address, it defaults to the latest block
         const logs = await relay.call(
