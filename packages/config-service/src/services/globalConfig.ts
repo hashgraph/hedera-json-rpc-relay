@@ -35,7 +35,7 @@ type ExtractTypeStringFromKey<K extends string> = K extends keyof typeof _CONFIG
 // - 'string' -> string
 // - 'boolean' -> boolean
 // - 'number' -> number
-// - 'array' -> unknown[]
+// - 'array' -> string --- The input of type `array` will be a stringified representation, allowing it to be parsed with JSON.parse during processing.
 type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   ? string
   : Tstr extends 'boolean'
@@ -43,7 +43,7 @@ type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   : Tstr extends 'number'
   ? number
   : Tstr extends 'array'
-  ? string // The input of type `array` will be a stringified representation, allowing it to be parsed with JSON.parse during processing.
+  ? string
   : never;
 
 // Helper type that determines if a configuration value can be undefined
@@ -52,7 +52,7 @@ type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
 // Example:
 // - For ‘CHAIN_ID’ or ‘OPERATOR_ID_MAIN’ (required: true, defaultValue: null) → false (cannot be undefined as it’s a required config)
 // - For ‘WEB_SOCKET_PORT’ (required: false, defaultValue: 8546) → false (cannot be undefined as it has a fallback default value)
-// - For ‘WS_CONNECTION_LIMIT_PER_IP’ (required: false, defaultValue: null) → true (can be undefined as it’s not a required config and has no default value)
+// - For GITHUB_PR_NUMBER (required: false, defaultValue: null) → true (can be undefined as it’s not a required config and has no default value)
 type CanBeUndefined<K extends string> = K extends keyof typeof _CONFIG
   ? (typeof _CONFIG)[K]['required'] extends true
     ? false
@@ -64,9 +64,9 @@ type CanBeUndefined<K extends string> = K extends keyof typeof _CONFIG
 // Type utility that maps configuration keys to their corresponding TypeScript types,
 // including undefined for values that can be undefined based on their configuration.
 // Example:
-// - For 'CHAIN_ID' (required: true, defaultValue: null) -> string
-// - For 'WEB_SOCKET_PORT' (required: false, defaultValue: 8546) -> number
-// - For 'WS_CONNECTION_LIMIT_PER_IP' (required: false, defaultValue: null) -> number | undefined
+// - For 'CHAIN_ID' (type: 'string', required: true, defaultValue: null) -> string
+// - For 'WEB_SOCKET_PORT' (type: 'number', required: false, defaultValue: 8546) -> number
+// - For 'GITHUB_PR_NUMBER' (type: 'string', required: false, defaultValue: null) -> string | undefined
 export type GetTypeOfConfigKey<K extends string> = CanBeUndefined<K> extends true
   ? StringTypeToActualType<ExtractTypeStringFromKey<K>> | undefined
   : StringTypeToActualType<ExtractTypeStringFromKey<K>>;
