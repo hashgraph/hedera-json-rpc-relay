@@ -19,6 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+
 import { ConfigServiceTestHelper } from '../../../config-service/tests/configServiceTestHelper';
 ConfigServiceTestHelper.appendEnvsFromPath(__dirname + '/test.env');
 import { predefined, RelayImpl } from '@hashgraph/json-rpc-relay';
@@ -669,13 +670,20 @@ describe('RPC Server', function () {
     });
 
     withOverriddenEnvsInMochaTest({ BATCH_REQUESTS_ENABLED: undefined }, async function () {
-      it('batch request be disabled by default', async function () {
-        try {
-          await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(3), getEthChainIdRequest(4)]);
-          Assertions.expectedError();
-        } catch (error: any) {
-          BaseTest.batchDisabledErrorCheck(error.response);
-        }
+      it('batch request should be enabled by default', async function () {
+        const response = await testClient.post('/', [getEthChainIdRequest(2), getEthAccountsRequest(null)]);
+
+        // verify response
+        BaseTest.baseDefaultResponseChecks(response);
+
+        // verify response for each result
+        expect(response.data[0].id).to.be.equal('2');
+        expect(response.data[0].result).to.be.equal(ConfigService.get('CHAIN_ID'));
+        // verify eth_accounts result
+        expect(response.data[1].id).to.be.equal(null);
+        expect(response.data[1].error).to.be.an('Object');
+        expect(response.data[1].error.code).to.be.equal(-32600);
+        expect(response.data[1].error.message).to.be.equal('Invalid Request');
       });
     });
   });
