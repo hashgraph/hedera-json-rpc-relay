@@ -68,7 +68,6 @@ describe('validations unit test', async function () {
     ];
 
     INVALID_REQUESTS.forEach((request) => {
-      console.log(request);
       // @ts-ignore
       expect(validateJsonRpcRequest(request, logger, requestDetails)).to.be.false;
     });
