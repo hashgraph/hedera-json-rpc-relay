@@ -180,15 +180,10 @@ describe('Utils', () => {
         OPERATOR_KEY_MAIN: null,
       },
       () => {
-        it('should return null and log a warning if operatorKey is missing', () => {
-          const warnSpy = sinon.spy(logger, 'warn');
-
-          const operator = Utils.getOperator(logger);
-
-          expect(operator).to.be.null;
-          expect(warnSpy.calledOnce).to.be.true;
-          expect(warnSpy.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
-          warnSpy.restore();
+        it('should throw error if OPERATOR_KEY_MAIN is missing', () => {
+          expect(() => Utils.getOperator(logger)).to.throw(
+            'Configuration error: OPERATOR_KEY_MAIN is a mandatory configuration for relay operation.',
+          );
         });
       },
     );
@@ -199,15 +194,10 @@ describe('Utils', () => {
         OPERATOR_KEY_MAIN: privateKeys[0].keyValue,
       },
       () => {
-        it('should return null and log a warning if operatorId is missing', () => {
-          const warnSpy = sinon.spy(logger, 'warn');
-
-          const operator = Utils.getOperator(logger);
-
-          expect(operator).to.be.null;
-          expect(warnSpy.calledOnce).to.be.true;
-          expect(warnSpy.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
-          warnSpy.restore();
+        it('should throw error if OPERATOR_ID_MAIN is missing', () => {
+          expect(() => Utils.getOperator(logger)).to.throw(
+            'Configuration error: OPERATOR_ID_MAIN is a mandatory configuration for relay operation.',
+          );
         });
       },
     );
