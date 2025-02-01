@@ -30,11 +30,11 @@ export class ValidationService {
     Object.entries(GlobalConfig.ENTRIES).forEach(([entryName, entryInfo]) => {
       if (entryInfo.required) {
         if (!envs.hasOwnProperty(entryName)) {
-          throw new Error(`${entryName} is a mandatory and the relay cannot operate without its value.`);
+          throw new Error(`Configuration error: ${entryName} is a mandatory configuration for relay operation.`);
         }
 
         if (entryInfo.type === 'number' && isNaN(Number(envs[entryName]))) {
-          throw new Error(`${entryName} must be a valid number.`);
+          throw new Error(`Configuration error: ${entryName} must be a valid number.`);
         }
       }
     });

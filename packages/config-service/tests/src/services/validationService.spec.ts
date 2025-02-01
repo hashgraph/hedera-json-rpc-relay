@@ -41,7 +41,7 @@ describe('ValidationService tests', async function () {
 
     it('should fail fast if mandatory env is not passed', async () => {
       expect(() => ValidationService.startUp({})).to.throw(
-        'CHAIN_ID is a mandatory and the relay cannot operate without its value.',
+        'Configuration error: CHAIN_ID is a mandatory configuration for relay operation.',
       );
     });
 
@@ -77,7 +77,7 @@ describe('ValidationService tests', async function () {
         ValidationService.startUp({
           ...mandatoryStartUpFields,
         }),
-      ).to.throw('npm_package_version is a mandatory and the relay cannot operate without its value.');
+      ).to.throw('Configuration error: npm_package_version is a mandatory configuration for relay operation.');
     });
   });
 

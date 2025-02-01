@@ -23,6 +23,7 @@ import findConfig from 'find-config';
 import pino from 'pino';
 
 import type { ConfigKey, GetTypeOfConfigKey } from './globalConfig';
+import { GlobalConfig } from './globalConfig';
 import { LoggerService } from './loggerService';
 import { ValidationService } from './validationService';
 
@@ -94,17 +95,32 @@ export class ConfigService {
   }
 
   /**
-   * Gets the value of a configuration property by its key name.
-   * For CHAIN_ID, converts the value to hexadecimal format with '0x' prefix.
+   * Retrieves the value of a specified configuration property using its key name.
    *
-   * @param name - The configuration key to look up
-   * @typeParam K - The specific ConfigKey type parameter
-   * @returns The value associated with the key, with type based on the key's configuration
+   * The method incorporates validation to ensure required configuration values are provided.
+   *
+   * **Note:** The validations in this method, in addition to the `ValidationService.startUp(process.env)` in the constructor, are crucial
+   * as this method is frequently invoked in testing environments where configuration values might be dynamically
+   * overridden. Additionally, since this method is the most exposed method across different packages, serving as the
+   * main gateway for accessing configurations, these validations help strengthen security and prevent undefined
+   * behavior in both production and testing scenarios.
+   *
+   * For the CHAIN_ID key, the value is converted to a hexadecimal format prefixed with '0x'.
+   *
+   * @param name - The configuration key to retrieve.
+   * @typeParam K - The specific type parameter representing the ConfigKey.
+   * @returns The value associated with the specified key, or the default value from its GlobalConfig entry, properly typed based on the key's configuration.
+   * @throws Error if a required configuration value is missing.
    */
   public static get<K extends ConfigKey>(name: K): GetTypeOfConfigKey<K> {
-    let value = this.getInstance().envs[name];
+    const configEntry = GlobalConfig.ENTRIES[name];
+    let value = this.getInstance().envs[name] == undefined ? configEntry?.defaultValue : this.getInstance().envs[name];
 
-    if (name === 'CHAIN_ID') {
+    if (value == undefined && configEntry?.required) {
+      throw new Error(`Configuration error: ${name} is a mandatory configuration for relay operation.`);
+    }
+
+    if (name === 'CHAIN_ID' && value !== undefined) {
       value = `0x${Number(value).toString(16)}`;
     }
 
