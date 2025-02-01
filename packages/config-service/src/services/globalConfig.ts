@@ -547,7 +547,7 @@ const _CONFIG = {
     envName: 'MULTI_SET',
     type: 'boolean',
     required: false,
-    defaultValue: true,
+    defaultValue: false,
   },
   // the actual env var in the node process is npm_package_version
   npm_package_version: {
