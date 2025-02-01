@@ -24,7 +24,6 @@ import { AccountId, Hbar } from '@hashgraph/sdk';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { randomBytes, uuidV4 } from 'ethers';
-import { Long } from 'long';
 import pino, { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 import sinon from 'sinon';
@@ -189,12 +188,13 @@ describe('HBAR Rate Limit Service', function () {
   });
 
   describe('shouldLimit', function () {
-    const operatorEnvs = [{ OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') }, { OPERATOR_ID_MAIN: null }];
+    const operatorEnvs = [
+      { OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') },
+      { OPERATOR_ID_MAIN: zeroAddress() },
+    ];
 
     operatorEnvs.forEach((operatorEnv) => {
-      const operatorAddress = operatorEnv.OPERATOR_ID_MAIN
-        ? prepend0x(AccountId.fromString(operatorEnv.OPERATOR_ID_MAIN).toSolidityAddress())
-        : zeroAddress();
+      const operatorAddress = prepend0x(AccountId.fromString(operatorEnv.OPERATOR_ID_MAIN).toSolidityAddress());
 
       withOverriddenEnvsInMochaTest(operatorEnv, () => {
         describe('based on evmAddress', async function () {
@@ -877,7 +877,10 @@ describe('HBAR Rate Limit Service', function () {
       expect(operatorPlan.amountSpent).to.eq(expense);
     };
 
-    const operatorEnvs = [{ OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') }, { OPERATOR_ID_MAIN: null }];
+    const operatorEnvs = [
+      { OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') },
+      { OPERATOR_ID_MAIN: zeroAddress() },
+    ];
 
     operatorEnvs.forEach((operatorEnv) => {
       const operatorAddress = operatorEnv.OPERATOR_ID_MAIN
@@ -950,7 +953,10 @@ describe('HBAR Rate Limit Service', function () {
       ).to.eventually.equal(expected);
     };
 
-    const operatorEnvs = [{ OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') }, { OPERATOR_ID_MAIN: null }];
+    const operatorEnvs = [
+      { OPERATOR_ID_MAIN: ConfigService.get('OPERATOR_ID_MAIN') },
+      { OPERATOR_ID_MAIN: zeroAddress() },
+    ];
 
     operatorEnvs.forEach((operatorEnv) => {
       withOverriddenEnvsInMochaTest(operatorEnv, () => {
