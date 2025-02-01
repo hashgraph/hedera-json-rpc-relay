@@ -143,6 +143,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
   });
 
   it('eth_feeHistory with max results', async function () {
+    overrideEnvsInMochaDescribe({ ETH_FEE_HISTORY_FIXED: false });
     const maxResultsCap = Number(constants.DEFAULT_FEE_HISTORY_MAX_RESULTS);
 
     restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [{ ...DEFAULT_BLOCK, number: 10 }] });
