@@ -30,16 +30,14 @@ const logger = pino({ level: 'silent' });
 let Relay;
 
 describe('Net', async function () {
-  this.beforeEach(() => {
-    Relay = new RelayImpl(logger, new Registry());
-  });
-
   it('should execute "net_listening"', function () {
+    Relay = new RelayImpl(logger, new Registry());
     const result = Relay.net().listening();
     expect(result).to.eq(false);
   });
 
   it('should execute "net_version"', function () {
+    Relay = new RelayImpl(logger, new Registry());
     let expectedNetVersion = parseInt(ConfigService.get('CHAIN_ID'), 16).toString();
 
     const actualNetVersion = Relay.net().version();
@@ -62,19 +60,11 @@ describe('Net', async function () {
     });
   });
 
-  withOverriddenEnvsInMochaTest({ HEDERA_NETWORK: undefined, CHAIN_ID: undefined }, () => {
-    it('should default chainId to 298 when no environment variables are set', () => {
-      Relay = new RelayImpl(logger, new Registry());
-      const actualNetVersion = Relay.net().version();
-      expect(actualNetVersion).to.equal('298');
-    });
-  });
-
-  withOverriddenEnvsInMochaTest({ HEDERA_NETWORK: '', CHAIN_ID: undefined }, () => {
-    it('should handle empty HEDERA_NETWORK and set chainId to default', () => {
-      Relay = new RelayImpl(logger, new Registry());
-      const actualNetVersion = Relay.net().version();
-      expect(actualNetVersion).to.equal('298');
+  withOverriddenEnvsInMochaTest({ HEDERA_NETWORK: undefined }, () => {
+    it('should throw error if required configuration is set to undefined', () => {
+      expect(() => new RelayImpl(logger, new Registry())).to.throw(
+        'Configuration error: HEDERA_NETWORK is a mandatory configuration for relay operation.',
+      );
     });
   });
 
