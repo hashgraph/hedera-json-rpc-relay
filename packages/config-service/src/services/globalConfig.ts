@@ -28,22 +28,19 @@
 type ExtractTypeStringFromKey<K extends string> = K extends keyof typeof _CONFIG ? (typeof _CONFIG)[K]['type'] : never;
 
 // Type mapping utility that converts string representations of types
-// (e.g., 'string', 'boolean', 'number', 'array') to their corresponding
+// (e.g., 'string', 'boolean', 'number') to their corresponding
 // TypeScript types. This allows for dynamic type resolution based on
 // configuration definitions.
 // Example:
 // - 'string' -> string
 // - 'boolean' -> boolean
 // - 'number' -> number
-// - 'array' -> string --- The input of type `array` will be a stringified representation, allowing it to be parsed with JSON.parse during processing.
 type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   ? string
   : Tstr extends 'boolean'
   ? boolean
   : Tstr extends 'number'
   ? number
-  : Tstr extends 'array'
-  ? string
   : never;
 
 // Helper type that determines if a configuration value can be undefined
@@ -71,13 +68,20 @@ export type GetTypeOfConfigKey<K extends string> = CanBeUndefined<K> extends tru
   ? StringTypeToActualType<ExtractTypeStringFromKey<K>> | undefined
   : StringTypeToActualType<ExtractTypeStringFromKey<K>>;
 
-// Interface defining the structure of a configuration property.
-// Each property includes the environment variable name, its type,
-// whether it is required, and its default value.
-// Example of a ConfigProperty:
+/**
+ * Interface defining the structure of a configuration property.
+ * Each property includes the environment variable name, its type,
+ * whether it is required, and its default value.
+ *
+ * @interface ConfigProperty
+ * @property {string} envName - The name of the environment variable.
+ * @property {'string' | 'number' | 'boolean'} type - The data type of the configuration property.
+ * @property {boolean} required - Indicates if the configuration property is required.
+ * @property {string | number | boolean | null} defaultValue - The default value for the configuration property, which can be a string, number, boolean, or null.
+ */
 export interface ConfigProperty {
   envName: string;
-  type: string;
+  type: 'string' | 'number' | 'boolean';
   required: boolean;
   defaultValue: string | number | boolean | null;
 }
@@ -185,7 +189,7 @@ const _CONFIG = {
   },
   ETH_CALL_ACCEPTED_ERRORS: {
     envName: 'ETH_CALL_ACCEPTED_ERRORS',
-    type: 'array',
+    type: 'string',
     required: false,
     defaultValue: '[]',
   },
@@ -197,7 +201,7 @@ const _CONFIG = {
   },
   ETH_CALL_CONSENSUS_SELECTORS: {
     envName: 'ETH_CALL_CONSENSUS_SELECTORS',
-    type: 'array',
+    type: 'string',
     required: false,
     defaultValue: '[]',
   },
@@ -329,7 +333,7 @@ const _CONFIG = {
   },
   HAPI_CLIENT_ERROR_RESET: {
     envName: 'HAPI_CLIENT_ERROR_RESET',
-    type: 'array',
+    type: 'string',
     required: false,
     defaultValue: '[21, 50]',
   },
@@ -497,7 +501,7 @@ const _CONFIG = {
   },
   MIRROR_NODE_RETRY_CODES: {
     envName: 'MIRROR_NODE_RETRY_CODES',
-    type: 'array',
+    type: 'string',
     required: false,
     defaultValue: '[]',
   },
@@ -533,7 +537,7 @@ const _CONFIG = {
   },
   MIRROR_NODE_URL_HEADER_X_API_KEY: {
     envName: 'MIRROR_NODE_URL_HEADER_X_API_KEY',
-    type: 'array',
+    type: 'string',
     required: false,
     defaultValue: null,
   },
