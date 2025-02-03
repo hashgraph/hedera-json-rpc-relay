@@ -194,9 +194,9 @@ describe('@web-socket-batch-3 eth_subscribe newHeads', async function () {
       });
     });
 
-    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: undefined }, () => {
+    WsTestHelper.withOverriddenEnvsInMochaTest({ WS_NEW_HEADS_ENABLED: false }, () => {
       it('@release should subscribe to newHeads and receive a valid JSON RPC response', async (done) => {
-        expect(ConfigService.get('WS_NEW_HEADS_ENABLED')).to.be.undefined;
+        expect(ConfigService.get('WS_NEW_HEADS_ENABLED')).to.be.false;
 
         const webSocket = new WebSocket(WS_RELAY_URL);
         const subscriptionId = 1;
