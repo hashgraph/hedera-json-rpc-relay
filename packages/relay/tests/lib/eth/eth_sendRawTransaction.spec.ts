@@ -181,7 +181,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sdkClientStub.hbarLimitService = hbarLimiterMock;
 
       const txResponseMock = sinon.createStubInstance(TransactionResponse);
-      sdkClientStub.executeTransaction.resolves(txResponseMock);
+      sinon.stub(SDKClient.prototype, 'executeTransaction').resolves(txResponseMock);
 
       txResponseMock.getReceipt.restore();
       sinon.stub(txResponseMock, 'getReceipt').onFirstCall().resolves({ fileId: FILE_ID });
