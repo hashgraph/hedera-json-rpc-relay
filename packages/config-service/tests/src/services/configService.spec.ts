@@ -20,8 +20,9 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+
 import { ConfigService } from '../../../src/services';
-import { GlobalConfig, type ConfigKey } from '../../../src/services/globalConfig';
+import { type ConfigKey, GlobalConfig } from '../../../src/services/globalConfig';
 
 chai.use(chaiAsPromised);
 
@@ -92,7 +93,6 @@ describe('ConfigService tests', async function () {
           expect(typeof result === 'boolean').to.be.true;
           break;
         case 'string':
-        case 'array':
           expect(typeof result === 'string').to.be.true;
           break;
       }

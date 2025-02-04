@@ -18,23 +18,24 @@
  *
  */
 
-// This type extracts the type string associated with a specific key
-// in the _CONFIG object. It checks if the provided key K is a valid
-// key in _CONFIG. If it is, it retrieves the 'type' property of the
-// corresponding configuration object; otherwise, it resolves to 'never'.
-// Example:
-// - For key '‘OPERATOR_ID_MAIN’', it returns 'string' if defined in _CONFIG.
-// - For an invalid key 'INVALID_KEY', it returns never.
+/**
+ * Extracts the type string associated with a specific key in the `_CONFIG` object.
+ * If the key `K` exists in `_CONFIG`, it retrieves the 'type' property; otherwise, it resolves to `never`.
+ *
+ * Example:
+ * - `'OPERATOR_ID_MAIN'` → `'string'` (if defined in `_CONFIG`)
+ * - `'INVALID_KEY'` → `never`
+ */
 type ExtractTypeStringFromKey<K extends string> = K extends keyof typeof _CONFIG ? (typeof _CONFIG)[K]['type'] : never;
 
-// Type mapping utility that converts string representations of types
-// (e.g., 'string', 'boolean', 'number') to their corresponding
-// TypeScript types. This allows for dynamic type resolution based on
-// configuration definitions.
-// Example:
-// - 'string' -> string
-// - 'boolean' -> boolean
-// - 'number' -> number
+/**
+ * Maps string representations of types (`'string'`, `'boolean'`, `'number'`) to their actual TypeScript types.
+ *
+ * Example:
+ * - `'string'` → string
+ * - `'boolean'` → boolean
+ * - `'number'` → number
+ */
 type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   ? string
   : Tstr extends 'boolean'
@@ -43,13 +44,16 @@ type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   ? number
   : never;
 
-// Helper type that determines if a configuration value can be undefined
-// based on two conditions: it must be optional (required: false) AND
-// have no default value (defaultValue: null).
-// Example:
-// - For ‘OPERATOR_ID_MAIN’ (required: true, defaultValue: null) → false (cannot be undefined as it’s a required config)
-// - For ‘WEB_SOCKET_PORT’ (required: false, defaultValue: 8546) → false (cannot be undefined as it has a fallback default value)
-// - For GITHUB_PR_NUMBER (required: false, defaultValue: null) → true (can be undefined as it’s not a required config and has no default value)
+/**
+ * Determines if a configuration value can be `undefined` based on two conditions:
+ * - It must be optional (`required: false`)
+ * - It must have no default value (`defaultValue: null`)
+ *
+ * Example:
+ * - `'OPERATOR_ID_MAIN'` (`required: true`, `defaultValue: null`) → `false`
+ * - `'WEB_SOCKET_PORT'` (`required: false`, `defaultValue: 8546`) → `false`
+ * - `'GITHUB_PR_NUMBER'` (`required: false`, `defaultValue: null`) → `true`
+ */
 type CanBeUndefined<K extends string> = K extends keyof typeof _CONFIG
   ? (typeof _CONFIG)[K]['required'] extends true
     ? false
@@ -58,38 +62,34 @@ type CanBeUndefined<K extends string> = K extends keyof typeof _CONFIG
     : false
   : never;
 
-// Type utility that maps configuration keys to their corresponding TypeScript types,
-// including undefined for values that can be undefined based on their configuration.
-// Example:
-// - For ‘OPERATOR_ID_MAIN’ (type: 'string', required: true, defaultValue: null) -> string
-// - For 'WEB_SOCKET_PORT' (type: 'number', required: false, defaultValue: 8546) -> number
-// - For 'GITHUB_PR_NUMBER' (type: 'string', required: false, defaultValue: null) -> string | undefined
+/**
+ * Maps configuration keys to their corresponding TypeScript types,
+ * including `undefined` when applicable based on the configuration.
+ *
+ * Example:
+ * - `'OPERATOR_ID_MAIN'` (`type: 'string'`, `required: true`, `defaultValue: null`) → `string`
+ * - `'WEB_SOCKET_PORT'` (`type: 'number'`, `required: false`, `defaultValue: 8546`) → `number`
+ * - `'GITHUB_PR_NUMBER'` (`type: 'string'`, `required: false`, `defaultValue: null`) → `string | undefined`
+ */
 export type GetTypeOfConfigKey<K extends string> = CanBeUndefined<K> extends true
   ? StringTypeToActualType<ExtractTypeStringFromKey<K>> | undefined
   : StringTypeToActualType<ExtractTypeStringFromKey<K>>;
 
 /**
  * Interface defining the structure of a configuration property.
- * Each property includes the environment variable name, its type,
- * whether it is required, and its default value.
- *
- * @interface ConfigProperty
- * @property {string} envName - The name of the environment variable.
- * @property {'string' | 'number' | 'boolean'} type - The data type of the configuration property.
- * @property {boolean} required - Indicates if the configuration property is required.
- * @property {string | number | boolean | null} defaultValue - The default value for the configuration property, which can be a string, number, boolean, or null.
  */
 export interface ConfigProperty {
-  envName: string;
-  type: 'string' | 'number' | 'boolean';
-  required: boolean;
-  defaultValue: string | number | boolean | null;
+  envName: string; // Environment variable name
+  type: 'string' | 'number' | 'boolean'; // Data type of the configuration property
+  required: boolean; // Whether the property is required
+  defaultValue: string | number | boolean | null; // Default value (if any)
 }
 
-// Configuration object defining various properties and their metadata.
-// Each property is an object that contains information about the environment variable,
-// its type, whether it is required, and its default value.
-// Example of a configuration entry:
+/**
+ * Configuration object defining various properties and their metadata.
+ * Each property is an object that contains information about the environment variable,
+ * its type, whether it is required, and its default value.
+ */
 const _CONFIG = {
   BATCH_REQUESTS_ENABLED: {
     envName: 'BATCH_REQUESTS_ENABLED',
