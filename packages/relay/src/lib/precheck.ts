@@ -18,6 +18,7 @@
  *
  */
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { ethers, Transaction } from 'ethers';
 import { Logger } from 'pino';
 
@@ -357,7 +358,7 @@ export class Precheck {
   checkSize(transaction: string): void {
     const transactionToBytes: Uint8Array = this.hexToBytes(transaction);
     const transactionSize: number = transactionToBytes.length;
-    const transactionSizeLimit: number = constants.SEND_RAW_TRANSACTION_SIZE_LIMIT;
+    const transactionSizeLimit: number = ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT');
 
     if (transactionSize > transactionSizeLimit) {
       throw predefined.TRANSACTION_SIZE_TOO_BIG(String(transactionSize), String(transactionSizeLimit));
