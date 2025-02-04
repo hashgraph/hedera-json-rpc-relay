@@ -183,7 +183,7 @@ export class EthImpl implements Eth {
     //The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
     max: ConfigService.get('CACHE_MAX'),
     // Max time to live in ms, for items before they are considered stale.
-    ttl: constants.CACHE_TTL.ONE_HOUR,
+    ttl: ConfigService.get('CACHE_TTL'),
   };
 
   /**
