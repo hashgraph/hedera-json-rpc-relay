@@ -63,7 +63,7 @@ use(chaiAsPromised);
 let sdkClient: SDKClient;
 let submitEthereumTransactionStub: sinon.SinonStub;
 
-describe.only('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
+describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
   this.timeout(10000);
   const {
     restMock,
