@@ -51,7 +51,7 @@ describe('@ethGasPrice Gas Price spec', async function () {
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
   });
 
   this.afterEach(() => {
@@ -72,7 +72,7 @@ describe('@ethGasPrice Gas Price spec', async function () {
       const modifiedNetworkFees = { ...DEFAULT_NETWORK_FEES };
       modifiedNetworkFees.fees[2].gas = DEFAULT_NETWORK_FEES.fees[2].gas * 100;
 
-      restMock.onGet(`network/fees`).reply(200, modifiedNetworkFees);
+      restMock.onGet(`network/fees`).reply(200, JSON.stringify(modifiedNetworkFees));
 
       const secondGasResult = await ethImpl.gasPrice(requestDetails);
 
@@ -84,7 +84,7 @@ describe('@ethGasPrice Gas Price spec', async function () {
       const partialNetworkFees = JSON.parse(JSON.stringify(DEFAULT_NETWORK_FEES));
       partialNetworkFees.fees.splice(2);
 
-      restMock.onGet(`network/fees`).reply(200, partialNetworkFees);
+      restMock.onGet(`network/fees`).reply(200, JSON.stringify(partialNetworkFees));
 
       await RelayAssertions.assertRejection(predefined.COULD_NOT_ESTIMATE_GAS_PRICE, ethImpl.gasPrice, true, ethImpl, [
         requestDetails,
@@ -134,7 +134,7 @@ describe('@ethGasPrice Gas Price spec', async function () {
 
     describe('eth_gasPrice not found', async function () {
       beforeEach(() => {
-        restMock.onGet(`network/fees`).reply(404, NOT_FOUND_RES);
+        restMock.onGet(`network/fees`).reply(404, JSON.stringify(NOT_FOUND_RES));
       });
 
       it('eth_gasPrice with mirror node return network fees found', async function () {

@@ -104,7 +104,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
   });
 
   afterEach(() => {
@@ -114,9 +114,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
   describe('timeout', async function () {
     beforeEach(() => {
       restMock.onGet(`blocks/${BLOCK_HASH}`).timeout();
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
       restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).timeout();
-      restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, filteredLogs);
+      restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, JSON.stringify(filteredLogs));
     });
 
     it('BLOCK_HASH filter timeouts and throws the expected error', async () => {
@@ -135,10 +135,10 @@ describe('@ethGetLogs using MirrorNode', async function () {
   });
 
   it('error when retrieving logs', async function () {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
     restMock
       .onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL)
-      .reply(400, { _status: { messages: [{ message: 'Mocked error' }] } });
+      .reply(400, JSON.stringify({ _status: { messages: [{ message: 'Mocked error' }] } }));
 
     let errorReceived = false;
     try {
@@ -161,10 +161,12 @@ describe('@ethGetLogs using MirrorNode', async function () {
         { ...DEFAULT_LOGS.logs[3], address: '0x0000000000000000000000000000000002131954' },
       ],
     };
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, filteredLogs);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, JSON.stringify(filteredLogs));
     filteredLogs.logs.forEach((log, index) => {
-      restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
+      restMock
+        .onGet(`contracts/${log.address}`)
+        .reply(200, JSON.stringify({ ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` }));
     });
 
     const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
@@ -186,10 +188,12 @@ describe('@ethGetLogs using MirrorNode', async function () {
         { ...DEFAULT_LOGS.logs[3], transaction_index: undefined },
       ],
     };
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, filteredLogs);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, JSON.stringify(filteredLogs));
     filteredLogs.logs.forEach((log, index) => {
-      restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
+      restMock
+        .onGet(`contracts/${log.address}`)
+        .reply(200, JSON.stringify({ ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` }));
     });
 
     try {
@@ -226,18 +230,20 @@ describe('@ethGetLogs using MirrorNode', async function () {
         links: { next: null },
       };
 
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
 
       restMock
         .onGet(
           `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=2&order=asc`,
         )
-        .replyOnce(200, filteredLogs)
+        .replyOnce(200, JSON.stringify(filteredLogs))
         .onGet('contracts/results/logs?limit=2&order=desc&timestamp=lte:1668432962.375200975&index=lt:0')
-        .replyOnce(200, filteredLogsNext);
+        .replyOnce(200, JSON.stringify(filteredLogsNext));
 
       unfilteredLogs.logs.forEach((log, index) => {
-        restMock.onGet(`contracts/${log.address}`).reply(200, { ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` });
+        restMock
+          .onGet(`contracts/${log.address}`)
+          .reply(200, JSON.stringify({ ...DEFAULT_CONTRACT, contract_id: `0.0.105${index}` }));
       });
 
       const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
@@ -261,11 +267,11 @@ describe('@ethGetLogs using MirrorNode', async function () {
       ],
     };
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, filteredLogs);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, JSON.stringify(filteredLogs));
     restMock
       .onGet(`contracts/${filteredLogs.logs[0].address}`)
-      .reply(200, { ...DEFAULT_CONTRACT, evm_address: defaultEvmAddress });
+      .reply(200, JSON.stringify({ ...DEFAULT_CONTRACT, evm_address: defaultEvmAddress }));
 
     const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
     expect(result).to.exist;
@@ -278,10 +284,10 @@ describe('@ethGetLogs using MirrorNode', async function () {
     const filteredLogs = {
       logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1], DEFAULT_LOGS.logs[2]],
     };
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).reply(200, filteredLogs);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
+    restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).reply(200, JSON.stringify(filteredLogs));
     for (const log of filteredLogs.logs) {
-      restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
+      restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
     }
 
     const result = await ethImpl.getLogs(null, 'latest', 'latest', CONTRACT_ADDRESS_1, null, requestDetails);
@@ -299,9 +305,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
       const filteredLogs = {
         logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1], DEFAULT_LOGS.logs[2]],
       };
-      restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).reply(200, filteredLogs);
+      restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).reply(200, JSON.stringify(filteredLogs));
       for (const log of filteredLogs.logs) {
-        restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
+        restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
       }
 
       const fromBlock = {
@@ -318,9 +324,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
         number: 1007,
       };
 
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [blockBeyondMaximumRange] });
-      restMock.onGet('blocks/1').reply(200, fromBlock);
-      restMock.onGet('blocks/1003').reply(200, toBlock);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [blockBeyondMaximumRange] }));
+      restMock.onGet('blocks/1').reply(200, JSON.stringify(fromBlock));
+      restMock.onGet('blocks/1003').reply(200, JSON.stringify(toBlock));
 
       const result = await ethImpl.getLogs(null, '0x1', '0x3eb', address, null, requestDetails);
 
@@ -340,17 +346,17 @@ describe('@ethGetLogs using MirrorNode', async function () {
     const filteredLogsAddress2 = {
       logs: DEFAULT_LOGS_3,
     };
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).reply(200, filteredLogsAddress1);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
+    restMock.onGet(CONTRACTS_LOGS_WITH_FILTER).reply(200, JSON.stringify(filteredLogsAddress1));
     restMock
       .onGet(
         `contracts/${CONTRACT_ADDRESS_2}/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${DEFAULT_BLOCK.timestamp.to}&limit=100&order=asc`,
       )
-      .reply(200, filteredLogsAddress2);
+      .reply(200, JSON.stringify(filteredLogsAddress2));
     for (const log of filteredLogsAddress1.logs) {
-      restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
+      restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
     }
-    restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+    restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
 
     const result = await ethImpl.getLogs(
       null,
@@ -375,10 +381,10 @@ describe('@ethGetLogs using MirrorNode', async function () {
       logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1]],
     };
 
-    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, filteredLogs);
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, JSON.stringify(DEFAULT_BLOCK));
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, JSON.stringify(filteredLogs));
     for (const log of filteredLogs.logs) {
-      restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
+      restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
     }
 
     const result = await ethImpl.getLogs(BLOCK_HASH, 'latest', 'latest', null, null, requestDetails);
@@ -401,16 +407,16 @@ describe('@ethGetLogs using MirrorNode', async function () {
       },
     };
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-    restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCK);
-    restMock.onGet('blocks/16').reply(200, toBlock);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+    restMock.onGet('blocks/5').reply(200, JSON.stringify(DEFAULT_BLOCK));
+    restMock.onGet('blocks/16').reply(200, JSON.stringify(toBlock));
     restMock
       .onGet(
         `contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&timestamp=lte:${toBlock.timestamp.to}&limit=100&order=asc`,
       )
-      .reply(200, filteredLogs);
+      .reply(200, JSON.stringify(filteredLogs));
     for (const log of filteredLogs.logs) {
-      restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
+      restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
     }
 
     const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null, requestDetails);
@@ -421,10 +427,10 @@ describe('@ethGetLogs using MirrorNode', async function () {
   });
 
   it('with non-existing fromBlock filter', async function () {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
 
-    restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCK);
-    restMock.onGet('blocks/16').reply(404, NOT_FOUND_RES);
+    restMock.onGet('blocks/5').reply(200, JSON.stringify(DEFAULT_BLOCK));
+    restMock.onGet('blocks/16').reply(404, JSON.stringify(NOT_FOUND_RES));
 
     const result = await ethImpl.getLogs(null, '0x10', '0x5', null, null, requestDetails);
 
@@ -437,13 +443,13 @@ describe('@ethGetLogs using MirrorNode', async function () {
       logs: [DEFAULT_LOGS.logs[0]],
     };
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-    restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCK);
-    restMock.onGet('blocks/16').reply(404, NOT_FOUND_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+    restMock.onGet('blocks/5').reply(200, JSON.stringify(DEFAULT_BLOCK));
+    restMock.onGet('blocks/16').reply(404, JSON.stringify(NOT_FOUND_RES));
     restMock
       .onGet(`contracts/results/logs?timestamp=gte:${DEFAULT_BLOCK.timestamp.from}&limit=100&order=asc`)
-      .reply(200, filteredLogs);
-    restMock.onGet(`contracts/${filteredLogs.logs[0].address}`).reply(200, DEFAULT_CONTRACT);
+      .reply(200, JSON.stringify(filteredLogs));
+    restMock.onGet(`contracts/${filteredLogs.logs[0].address}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
 
     const result = await ethImpl.getLogs(null, '0x5', '0x10', null, null, requestDetails);
 
@@ -461,9 +467,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
       },
     };
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-    restMock.onGet('blocks/16').reply(200, fromBlock);
-    restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCK);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+    restMock.onGet('blocks/16').reply(200, JSON.stringify(fromBlock));
+    restMock.onGet('blocks/5').reply(200, JSON.stringify(DEFAULT_BLOCK));
 
     await expect(ethImpl.getLogs(null, '0x10', '0x5', null, null, requestDetails)).to.be.rejectedWith(
       predefined.INVALID_BLOCK_RANGE.message,
@@ -471,8 +477,8 @@ describe('@ethGetLogs using MirrorNode', async function () {
   });
 
   it('with only toBlock', async function () {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-    restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCKS_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+    restMock.onGet('blocks/5').reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
 
     await ethGetLogsFailing(ethImpl, [null, null, '0x5', null, null, requestDetails], (error: any) => {
       expect(error.code).to.equal(-32011);
@@ -485,10 +491,10 @@ describe('@ethGetLogs using MirrorNode', async function () {
       logs: [DEFAULT_LOGS.logs[0]],
     };
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
-    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, filteredLogs);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
+    restMock.onGet(CONTRACT_RESULTS_LOGS_WITH_FILTER_URL).reply(200, JSON.stringify(filteredLogs));
     for (const log of filteredLogs.logs) {
-      restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
+      restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
     }
 
     const result = await ethImpl.getLogs(null, 'latest', 'latest', null, null, requestDetails);
@@ -513,9 +519,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
         number: 1007,
       };
 
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [blockBeyondMaximumRange] });
-      restMock.onGet('blocks/1').reply(200, fromBlock);
-      restMock.onGet('blocks/1003').reply(200, toBlock);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [blockBeyondMaximumRange] }));
+      restMock.onGet('blocks/1').reply(200, JSON.stringify(fromBlock));
+      restMock.onGet('blocks/1003').reply(200, JSON.stringify(toBlock));
 
       await ethGetLogsFailing(ethImpl, [null, '0x1', '0x3eb', address, null, requestDetails], (error: any) => {
         expect(error.message).to.equal('Exceeded maximum block range: 1000');
@@ -528,7 +534,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
       logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1]],
     };
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
     restMock
       .onGet(
         `contracts/results/logs` +
@@ -537,9 +543,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
           `&topic0=${DEFAULT_LOG_TOPICS[0]}&topic1=${DEFAULT_LOG_TOPICS[1]}` +
           `&topic2=${DEFAULT_LOG_TOPICS[2]}&topic3=${DEFAULT_LOG_TOPICS[3]}&limit=100&order=asc`,
       )
-      .reply(200, filteredLogs);
+      .reply(200, JSON.stringify(filteredLogs));
     for (const log of filteredLogs.logs) {
-      restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
+      restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
     }
 
     const result = await ethImpl.getLogs(null, 'latest', 'latest', null, DEFAULT_LOG_TOPICS, requestDetails);
@@ -553,7 +559,7 @@ describe('@ethGetLogs using MirrorNode', async function () {
     const filteredLogs = {
       logs: [DEFAULT_LOGS_4[0]],
     };
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, DEFAULT_BLOCKS_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(DEFAULT_BLOCKS_RES));
     restMock
       .onGet(
         `contracts/results/logs` +
@@ -562,9 +568,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
           `&topic0=${DEFAULT_LOG_TOPICS_1[0]}` +
           `&topic1=${DEFAULT_LOG_TOPICS_1[1]}&limit=100&order=asc`,
       )
-      .reply(200, filteredLogs);
+      .reply(200, JSON.stringify(filteredLogs));
     for (const log of filteredLogs.logs) {
-      restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
+      restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
     }
     const result = await ethImpl.getLogs(null, 'latest', 'latest', null, DEFAULT_NULL_LOG_TOPICS, requestDetails);
 
@@ -580,9 +586,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
       logs: [DEFAULT_LOGS.logs[0], DEFAULT_LOGS.logs[1]],
     };
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-    restMock.onGet('blocks/5').reply(200, DEFAULT_BLOCK);
-    restMock.onGet('blocks/16').reply(200, DEFAULT_BLOCK);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+    restMock.onGet('blocks/5').reply(200, JSON.stringify(DEFAULT_BLOCK));
+    restMock.onGet('blocks/16').reply(200, JSON.stringify(DEFAULT_BLOCK));
     restMock
       .onGet(
         `contracts/results/logs` +
@@ -591,9 +597,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
           `&topic0=${DEFAULT_LOG_TOPICS[0]}&topic1=${DEFAULT_LOG_TOPICS[1]}` +
           `&topic2=${DEFAULT_LOG_TOPICS[2]}&topic3=${DEFAULT_LOG_TOPICS[3]}&limit=100&order=asc`,
       )
-      .reply(200, filteredLogs);
+      .reply(200, JSON.stringify(filteredLogs));
     for (const log of filteredLogs.logs) {
-      restMock.onGet(`contracts/${log.address}`).reply(200, DEFAULT_CONTRACT);
+      restMock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
     }
 
     const result = await ethImpl.getLogs(null, '0x5', '0x10', null, DEFAULT_LOG_TOPICS, requestDetails);
@@ -603,9 +609,9 @@ describe('@ethGetLogs using MirrorNode', async function () {
   });
 
   it('Should return empty log if address = ZeroAddress', async () => {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-    restMock.onGet('blocks/0').reply(200, DEFAULT_BLOCK);
-    restMock.onGet('blocks/latest').reply(200, DEFAULT_BLOCK);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+    restMock.onGet('blocks/0').reply(200, JSON.stringify(DEFAULT_BLOCK));
+    restMock.onGet('blocks/latest').reply(200, JSON.stringify(DEFAULT_BLOCK));
     const result = await ethImpl.getLogs(null, '0x0', 'latest', ethers.ZeroAddress, DEFAULT_LOG_TOPICS, requestDetails);
     expect(result.length).to.eq(0);
     expect(result).to.deep.equal([]);
@@ -615,18 +621,24 @@ describe('@ethGetLogs using MirrorNode', async function () {
     const mockedFromTimeStamp = 1651560389;
     const mockedToTimeStamp = mockedFromTimeStamp + 604800 * 2 + 1; // 7 days (604800 seconds) and 1 second greater than mockedFromTimeStamp
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-    restMock.onGet(`blocks/${BLOCK_NUMBER_2}`).reply(200, {
-      ...DEFAULT_BLOCK,
-      timestamp: { ...DEFAULT_BLOCK.timestamp, from: mockedFromTimeStamp.toString() },
-      number: BLOCK_NUMBER_2,
-    });
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+    restMock.onGet(`blocks/${BLOCK_NUMBER_2}`).reply(
+      200,
+      JSON.stringify({
+        ...DEFAULT_BLOCK,
+        timestamp: { ...DEFAULT_BLOCK.timestamp, from: mockedFromTimeStamp.toString() },
+        number: BLOCK_NUMBER_2,
+      }),
+    );
 
-    restMock.onGet(`blocks/${BLOCK_NUMBER_3}`).reply(200, {
-      ...DEFAULT_BLOCK,
-      timestamp: { ...DEFAULT_BLOCK.timestamp, to: mockedToTimeStamp.toString() },
-      number: BLOCK_NUMBER_3,
-    });
+    restMock.onGet(`blocks/${BLOCK_NUMBER_3}`).reply(
+      200,
+      JSON.stringify({
+        ...DEFAULT_BLOCK,
+        timestamp: { ...DEFAULT_BLOCK.timestamp, to: mockedToTimeStamp.toString() },
+        number: BLOCK_NUMBER_3,
+      }),
+    );
 
     await expect(
       ethImpl.getLogs(

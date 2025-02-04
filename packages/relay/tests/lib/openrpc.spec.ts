@@ -150,74 +150,74 @@ describe('Open RPC Specification', function () {
     ethImpl = new EthImpl(clientServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
 
     // mocked data
-    mock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
-    mock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
-    mock.onGet(`blocks/${blockHash}`).reply(200, defaultBlock);
-    mock.onGet('network/fees').reply(200, defaultNetworkFees);
-    mock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, defaultNetworkFees);
-    mock.onGet(`contracts/${contractAddress1}`).reply(200, null);
+    mock.onGet('blocks?limit=1&order=desc').reply(200, JSON.stringify({ blocks: [defaultBlock] }));
+    mock.onGet(`blocks/${defaultBlock.number}`).reply(200, JSON.stringify(defaultBlock));
+    mock.onGet(`blocks/${blockHash}`).reply(200, JSON.stringify(defaultBlock));
+    mock.onGet('network/fees').reply(200, JSON.stringify(defaultNetworkFees));
+    mock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, JSON.stringify(defaultNetworkFees));
+    mock.onGet(`contracts/${contractAddress1}`).reply(200, JSON.stringify(null));
     mock
       .onGet(
         `contracts/results?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
       )
-      .reply(200, defaultContractResults);
+      .reply(200, JSON.stringify(defaultContractResults));
     mock
       .onGet(
         `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
       )
-      .reply(200, defaultLogs);
-    mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, defaultDetailedContractResultByHash);
+      .reply(200, JSON.stringify(defaultLogs));
+    mock.onGet(`contracts/results/${defaultTxHash}`).reply(200, JSON.stringify(defaultDetailedContractResultByHash));
     mock
       .onGet(
         `contracts/results?block.hash=${defaultBlock.hash}&transaction.index=${defaultBlock.count}&limit=100&order=asc`,
       )
-      .reply(200, defaultContractResults);
+      .reply(200, JSON.stringify(defaultContractResults));
     mock
       .onGet(
         `contracts/results?block.number=${defaultBlock.number}&transaction.index=${defaultBlock.count}&limit=100&order=asc`,
       )
-      .reply(200, defaultContractResults);
+      .reply(200, JSON.stringify(defaultContractResults));
     mock
       .onGet(`contracts/${contractAddress1}/results/${contractTimestamp1}`)
-      .reply(200, defaultDetailedContractResults);
+      .reply(200, JSON.stringify(defaultDetailedContractResults));
     mock
       .onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`)
-      .reply(200, defaultDetailedContractResults);
-    mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, defaultDetailedContractResults);
-    mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, defaultDetailedContractResults2);
-    mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, defaultDetailedContractResults3);
-    mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, null);
-    mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, {
+      .reply(200, JSON.stringify(defaultDetailedContractResults));
+    mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, JSON.stringify(defaultDetailedContractResults));
+    mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, JSON.stringify(defaultDetailedContractResults2));
+    mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, JSON.stringify(defaultDetailedContractResults3));
+    mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, JSON.stringify(null));
+    mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, JSON.stringify({
       account: contractAddress1,
       balance: {
         balance: 2000000000000,
       },
-    });
-    mock.onGet(`accounts/${contractAddress3}${noTransactions}`).reply(200, {
+    }));
+    mock.onGet(`accounts/${contractAddress3}${noTransactions}`).reply(200, JSON.stringify({
       account: contractAddress3,
       balance: {
         balance: 100000000000,
       },
-    });
+    }));
     mock
       .onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`)
-      .reply(200, { account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' });
+      .reply(200, JSON.stringify({ account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' }));
 
-    mock.onGet(`network/exchangerate`).reply(200, {
+    mock.onGet(`network/exchangerate`).reply(200, JSON.stringify({
       current_rate: {
         cent_equivalent: 12,
         expiration_time: 4102444800,
         hbar_equivalent: 1,
       },
-    });
+    }));
 
-    mock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, {
+    mock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, JSON.stringify({
       from: `${defaultEvmAddress}`,
-    });
+    }));
     for (const log of defaultLogs.logs) {
-      mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
+      mock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(defaultContract));
     }
-    mock.onPost(`contracts/call`, { ...defaultCallData, estimate: false }).reply(200, { result: '0x12' });
+    mock.onPost(`contracts/call`, { ...defaultCallData, estimate: false }).reply(200, JSON.stringify({ result: '0x12' }));
     sdkClientStub.getAccountBalanceInWeiBar.resolves(BigNumber(1000));
     sdkClientStub.getAccountBalanceInTinyBar.resolves(BigNumber(100000000000));
     sdkClientStub.getContractByteCode.resolves(Buffer.from(bytecode.replace('0x', ''), 'hex'));
@@ -227,9 +227,9 @@ describe('Open RPC Specification', function () {
     mock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
     mock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
     mock.onGet(`accounts/${defaultContractResults.results[1].to}?transactions=false`).reply(200);
-    mock.onGet(`accounts/${CONTRACT_RESULT_MOCK.from}?transactions=false`).reply(200, CONTRACT_RESULT_MOCK);
-    mock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, NOT_FOUND_RES);
-    mock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, NOT_FOUND_RES);
+    mock.onGet(`accounts/${CONTRACT_RESULT_MOCK.from}?transactions=false`).reply(200, JSON.stringify(CONTRACT_RESULT_MOCK));
+    mock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, JSON.stringify(NOT_FOUND_RES));
+    mock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, JSON.stringify(NOT_FOUND_RES));
     mock.onGet(`contracts/${defaultContractResults.results[0].to}`).reply(200);
     mock.onGet(`contracts/${defaultContractResults.results[1].to}`).reply(200);
     mock.onGet(`tokens/${defaultContractResults.results[0].contract_id}`).reply(200);
@@ -379,12 +379,12 @@ describe('Open RPC Specification', function () {
           `&topic0=${defaultLogTopics[0]}&topic1=${defaultLogTopics[1]}` +
           `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}&limit=100&order=asc`,
       )
-      .reply(200, filteredLogs);
-    mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, {
+      .reply(200, JSON.stringify(filteredLogs));
+    mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, JSON.stringify({
       blocks: [defaultBlock],
-    });
+    }));
     for (const log of filteredLogs.logs) {
-      mock.onGet(`contracts/${log.address}`).reply(200, defaultContract);
+      mock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(defaultContract));
     }
 
     const response = await ethImpl.getLogs(null, 'latest', 'latest', null, defaultLogTopics, requestDetails);
@@ -421,7 +421,7 @@ describe('Open RPC Specification', function () {
   it('should execute "eth_getTransactionCount"', async function () {
     mock
       .onGet(`accounts/${contractAddress1}${noTransactions}`)
-      .reply(200, { account: contractAddress1, ethereum_nonce: 5 });
+      .reply(200, JSON.stringify({ account: contractAddress1, ethereum_nonce: 5 }));
     mock.onGet(`contracts/${contractAddress1}${noTransactions}`).reply(404);
     const response = await ethImpl.getTransactionCount(contractAddress1, 'latest', requestDetails);
 

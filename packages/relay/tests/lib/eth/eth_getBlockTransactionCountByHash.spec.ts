@@ -55,7 +55,7 @@ describe('@ethGetBlockTransactionCountByHash using MirrorNode', async function (
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
   });
 
   this.afterEach(() => {
@@ -65,14 +65,14 @@ describe('@ethGetBlockTransactionCountByHash using MirrorNode', async function (
 
   it('eth_getBlockTransactionCountByHash with match', async function () {
     // mirror node request mocks
-    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, JSON.stringify(DEFAULT_BLOCK));
 
     const result = await ethImpl.getBlockTransactionCountByHash(BLOCK_HASH, requestDetails);
     expect(result).equal(numberTo0x(BLOCK_TRANSACTION_COUNT));
   });
 
   it('eth_getBlockTransactionCountByHash with match should hit cache', async function () {
-    restMock.onGet(`blocks/${BLOCK_HASH}`).replyOnce(200, DEFAULT_BLOCK);
+    restMock.onGet(`blocks/${BLOCK_HASH}`).replyOnce(200, JSON.stringify(DEFAULT_BLOCK));
 
     for (let i = 0; i < 3; i++) {
       const result = await ethImpl.getBlockTransactionCountByHash(BLOCK_HASH, requestDetails);
@@ -82,7 +82,7 @@ describe('@ethGetBlockTransactionCountByHash using MirrorNode', async function (
 
   it('eth_getBlockTransactionCountByHash with no match', async function () {
     // mirror node request mocks
-    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(404, NO_SUCH_BLOCK_EXISTS_RES);
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(404, JSON.stringify(NO_SUCH_BLOCK_EXISTS_RES));
 
     const result = await ethImpl.getBlockTransactionCountByHash(BLOCK_HASH, requestDetails);
     expect(result).to.equal(null);

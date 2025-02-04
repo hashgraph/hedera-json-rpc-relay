@@ -236,7 +236,7 @@ describe('Metric Service', function () {
       it('Should execute captureTransactionMetrics() by retrieving transaction record from MIRROR NODE client', async () => {
         mock
           .onGet(`transactions/${mockedTransactionIdFormatted}?nonce=0`)
-          .reply(200, mockedMirrorNodeTransactionRecord);
+          .reply(200, JSON.stringify(mockedMirrorNodeTransactionRecord));
 
         const originalBudget = await hbarLimitService['getRemainingBudget'](requestDetails);
 
