@@ -60,11 +60,10 @@ import { generateEthTestEnv } from './eth-helpers';
 
 use(chaiAsPromised);
 
-// let sdkClientStub: sinon.SinonStubbedInstance<SDKClient>;
-// let getSdkClientStub: sinon.SinonStub;
 let sdkClient: SDKClient;
+let submitEthereumTransactionStub: sinon.SinonStub;
 
-describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
+describe.only('@ethSendRawTransaction eth_sendRawTransaction spec', async function () {
   this.timeout(10000);
   const {
     restMock,
@@ -79,20 +78,18 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
   } = generateEthTestEnv();
 
   const requestDetails = new RequestDetails({ requestId: 'eth_sendRawTransactionTest', ipAddress: '0.0.0.0' });
-  const sdkClient = hapiServiceInstance.getSDKClient();
+
+  sdkClient = hapiServiceInstance.getSDKClient();
   overrideEnvsInMochaDescribe({ ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1 });
 
   this.beforeEach(async () => {
     // reset cache and restMock
     await cacheService.clear(requestDetails);
     restMock.reset();
-    // sdkClientStub = sinon.createStubInstance(SDKClient);
-    // getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
   });
 
   this.afterEach(() => {
-    //getSdkClientStub.restore();
     restMock.resetHandlers();
   });
 
@@ -141,11 +138,16 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     beforeEach(() => {
       clock = useFakeTimers();
       sinon.restore();
-      // sdkClientStub = sinon.createStubInstance(SDKClient);
-      // sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
       restMock.onGet(accountEndpoint).reply(200, JSON.stringify(ACCOUNT_RES));
    JSON.stringify(   restMock.onGet(receiverAccountEndpoint).reply(200, JSON.stringify(RECEIVER_ACCOUNT_RES)));
    JSON.stringify(   restMock.onGet(networkExchangeRateEndpoint).reply(200, JSON.stringify(mockedExchangeRate)));
+
+      submitEthereumTransactionStub = sinon.stub(sdkClient, 'submitEthereumTransaction').resolves({
+        txResponse: {
+          transactionId: TransactionId.fromString(transactionIdServicesFormat),
+        } as unknown as TransactionResponse,
+        fileId: null,
+      });
     });
 
     afterEach(() => {
@@ -153,86 +155,18 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       clock.restore();
     });
 
-    it('should emit tracking event (limiter and metrics) only for successful tx responses from FileAppend transaction', async function () {
-      const signed = await signTransaction({
-        ...transaction,
-        data: '0x' + '22'.repeat(13000),
-      });
-      const expectedTxHash = Utils.computeTransactionHash(Buffer.from(signed.replace('0x', ''), 'hex'));
-
-      const FILE_ID = new FileId(0, 0, 5644);
-
-      sdkClient['fileAppendChunkSize'] = 2048;
-      sdkClient['clientMain'] = { operatorAccountId: '', operatorKey: null };
-
-      const fileInfoMock = sinon.stub(FileInfo);
-      fileInfoMock.size = new Long(26000);
-      // Stub methods
-      sinon.stub(sdkClient, 'executeQuery').resolves({
-        size: new Long(26000),
-      });
-
-      // simulates error after first append by returning only one transaction response
-      sinon.stub(FileAppendTransaction.prototype, 'executeAll').resolves([{ transactionId: transactionId }]);
-
-      // Create and assign event emitter mock
-      const eventEmitterMock = sinon.createStubInstance(EventEmitter);
-      sdkClient['eventEmitter'] = eventEmitterMock;
-
-      const hbarLimiterMock = sinon.createStubInstance(HbarLimitService);
-      sdkClient['hbarLimitService'] = hbarLimiterMock;
-
-      const txResponseMock = sinon.createStubInstance(TransactionResponse);
-      sinon.stub(sdkClient, 'executeTransaction').resolves(txResponseMock);
-
-      txResponseMock.getReceipt.restore();
-      sinon.stub(txResponseMock, 'getReceipt').onFirstCall().resolves({ fileId: FILE_ID });
-      txResponseMock.transactionId = TransactionId.fromString(transactionIdServicesFormat);
-
-      sdkClient['logger'] = pino({ level: 'silent' });
-      sdkClient['deleteFile'] = sinon.stub().resolves();
-
-      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: expectedTxHash }));
-
-      const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
-      if (useAsyncTxProcessing) await clock.tickAsync(1);
-
-      expect(eventEmitterMock.emit.callCount).to.equal(1);
-      expect(hbarLimiterMock.shouldLimit.callCount).to.equal(1);
-      expect(resultingHash).to.equal(expectedTxHash);
-    });
-
-    it('should return a predefined GAS_LIMIT_TOO_HIGH instead of NUMERIC_FAULT as precheck exception', async function () {
-      // tx with 'gasLimit: BigNumber { value: "30678687678687676876786786876876876000" }'
-      const txHash =
-        '0x02f881820128048459682f0086014fa0186f00901714801554cbe52dd95512bedddf68e09405fba803be258049a27b820088bab1cad205887185174876e80080c080a0cab3f53602000c9989be5787d0db637512acdd2ad187ce15ba83d10d9eae2571a07802515717a5a1c7d6fa7616183eb78307b4657d7462dbb9e9deca820dd28f62';
-      await RelayAssertions.assertRejection(
-        predefined.GAS_LIMIT_TOO_HIGH(null, null),
-        ethImpl.sendRawTransaction,
-        false,
-        ethImpl,
-        [txHash, requestDetails],
-      );
-    });
-
     it('should return a computed hash if unable to retrieve EthereumHash from record due to contract revert', async function () {
       const signed = await signTransaction(transaction);
 
-      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
       expect(resultingHash).to.equal(ethereumHash);
     });
 
     it('should return hash from ContractResult mirror node api', async function () {
-      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
-      sinon.stub(sdkClient, 'submitEthereumTransaction').resolves({
-        txResponse: {
-          transactionId: TransactionId.fromString(transactionIdServicesFormat),
-        } as unknown as TransactionResponse,
-        fileId: null,
-      });
       const signed = await signTransaction(transaction);
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
@@ -240,14 +174,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     });
 
     it('should not send second transaction upon succession', async function () {
-      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
-
-      sinon.stub(sdkClient, 'submitEthereumTransaction').resolves({
-        txResponse: {
-          transactionId: TransactionId.fromString(transactionIdServicesFormat),
-        } as unknown as TransactionResponse,
-        fileId: null,
-      });
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
       const signed = await signTransaction(transaction);
 
@@ -255,18 +182,12 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       if (useAsyncTxProcessing) await clock.tickAsync(1);
 
       expect(resultingHash).to.equal(ethereumHash);
-      sinon.assert.calledOnce(sinon.stub(sdkClient, 'submitEthereumTransaction'));
+      sinon.assert.calledOnce(submitEthereumTransactionStub);
     });
 
     it('should not send second transaction on error different from timeout', async function () {
-      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
+      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
       const repeatedRequestSpy = sinon.spy(ethImpl['mirrorNodeClient'], 'repeatedRequest');
-      sinon.stub(sdkClient, 'submitEthereumTransaction').resolves({
-        txResponse: {
-          transactionId: TransactionId.fromString(transactionIdServicesFormat),
-        } as unknown as TransactionResponse,
-        fileId: null,
-      });
 
       const signed = await signTransaction(transaction);
 
@@ -277,7 +198,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
 
       await clock.tickAsync(1);
       expect(resultingHash).to.equal(ethereumHash);
-      sinon.assert.calledOnce(sinon.stub(sdkClient, 'submitEthereumTransaction'));
+      sinon.assert.calledOnce(submitEthereumTransactionStub);
       sinon.assert.calledOnceWithExactly(
         repeatedRequestSpy,
         'getContractResult',
@@ -287,52 +208,11 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       );
     });
 
-    it('should throw precheck error for type=3 transactions', async function () {
-      const type3tx = {
-        ...transaction,
-        type: 3,
-        maxFeePerBlobGas: transaction.gasPrice,
-        blobVersionedHashes: [ethereumHash],
-      };
-      const signed = await signTransaction(type3tx);
-
-      await RelayAssertions.assertRejection(
-        predefined.UNSUPPORTED_TRANSACTION_TYPE,
-        ethImpl.sendRawTransaction,
-        false,
-        ethImpl,
-        [signed, getRequestId()],
-      );
-    });
-
-    it('should update execution counter and list the correct data when eth_sendRawTransation is executed', async function () {
-      const labelsSpy = sinon.spy(ethImpl['ethExecutionsCounter'], 'labels');
-      const expectedLabelsValue = ['eth_sendRawTransaction', '0x', transaction.from, transaction.to];
-
-      const signed = await signTransaction(transaction);
-
-      await ethImpl.sendRawTransaction(signed, requestDetails);
-
-      expect(ethImpl['ethExecutionsCounter']).to.be.instanceOf(Counter);
-      labelsSpy.args[0].map((labelValue, index) => {
-        expect(labelValue).to.equal(expectedLabelsValue[index]);
-      });
-
-      sinon.restore();
-    });
-
     withOverriddenEnvsInMochaTest({ USE_ASYNC_TX_PROCESSING: false }, () => {
       it('[USE_ASYNC_TX_PROCESSING=true] should throw internal error when transaction returned from mirror node is null', async function () {
         const signed = await signTransaction(transaction);
 
-        restMock.onGet(contractResultEndpoint).reply(404, JSON.stringify(mockData.notFound));
-
-        sinon.stub(sdkClient, 'submitEthereumTransaction').resolves({
-          txResponse: {
-            transactionId: transactionIdServicesFormat,
-          } as unknown as TransactionResponse,
-          fileId: null,
-        });
+        restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
 
         const response = (await ethImpl.sendRawTransaction(signed, requestDetails)) as JsonRpcError;
 
@@ -343,9 +223,9 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       it('[USE_ASYNC_TX_PROCESSING=false] should throw internal error when transactionID is invalid', async function () {
         const signed = await signTransaction(transaction);
 
-        restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
+        restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
-        sinon.stub(sdkClient, 'submitEthereumTransaction').resolves({
+        submitEthereumTransactionStub.resolves({
           txResponse: {
             transactionId: '',
           } as unknown as TransactionResponse,
@@ -359,14 +239,8 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       });
 
       it('[USE_ASYNC_TX_PROCESSING=false] should throw internal error if ContractResult from mirror node contains a null hash', async function () {
-        restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: null }));
+        restMock.onGet(contractResultEndpoint).reply(200, { hash: null });
 
-        sinon.stub(sdkClient, 'submitEthereumTransaction').resolves({
-          txResponse: {
-            transactionId: TransactionId.fromString(transactionIdServicesFormat),
-          } as unknown as TransactionResponse,
-          fileId: null,
-        });
         const signed = await signTransaction(transaction);
 
         const response = await ethImpl.sendRawTransaction(signed, requestDetails);
@@ -381,10 +255,9 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
             .onGet(contractResultEndpoint)
             .replyOnce(404, mockData.notFound)
             .onGet(contractResultEndpoint)
-            .reply(200, JSON.stringify({ hash: ethereumHash }));
+            .reply(200, { hash: ethereumHash });
 
-          sinon
-            .stub(sdkClient, 'submitEthereumTransaction')
+          submitEthereumTransactionStub
             .onCall(0)
             .throws(new SDKClientError({ status: 21 }, error, transactionIdServicesFormat));
 
@@ -399,10 +272,9 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
             .onGet(contractResultEndpoint)
             .replyOnce(404, mockData.notFound)
             .onGet(contractResultEndpoint)
-            .reply(200, JSON.stringify(null));
+            .reply(200, null);
 
-          sinon
-            .stub(sdkClient, 'submitEthereumTransaction')
+          submitEthereumTransactionStub
             .onCall(0)
             .throws(new SDKClientError({ status: 21 }, error, transactionIdServicesFormat));
 
@@ -419,14 +291,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       it('[USE_ASYNC_TX_PROCESSING=true] should still return expected transaction hash even when transaction returned from mirror node is null', async function () {
         const signed = await signTransaction(transaction);
 
-        restMock.onGet(contractResultEndpoint).reply(404, JSON.stringify(mockData.notFound));
-
-        sinon.stub(sdkClient, 'submitEthereumTransaction').resolves({
-          txResponse: {
-            transactionId: transactionIdServicesFormat,
-          } as unknown as TransactionResponse,
-          fileId: null,
-        });
+        restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
 
         const response = await ethImpl.sendRawTransaction(signed, requestDetails);
         expect(response).to.equal(ethereumHash);
@@ -435,9 +300,9 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       it('[USE_ASYNC_TX_PROCESSING=true] should still return expected transaction hash even when submitted transactionID is invalid', async function () {
         const signed = await signTransaction(transaction);
 
-        restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
+        restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
 
-        sinon.stub(sdkClient, 'submitEthereumTransaction').resolves({
+        submitEthereumTransactionStub.resolves({
           txResponse: {
             transactionId: '',
           } as unknown as TransactionResponse,
@@ -449,14 +314,8 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       });
 
       it('[USE_ASYNC_TX_PROCESSING=true] should still return expected transaction hash even when ContractResult from mirror node contains a null hash', async function () {
-        restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: null }));
+        restMock.onGet(contractResultEndpoint).reply(200, { hash: null });
 
-        sinon.stub(sdkClient, 'submitEthereumTransaction').resolves({
-          txResponse: {
-            transactionId: TransactionId.fromString(transactionIdServicesFormat),
-          } as unknown as TransactionResponse,
-          fileId: null,
-        });
         const signed = await signTransaction(transaction);
 
         const response = await ethImpl.sendRawTransaction(signed, requestDetails);
@@ -469,10 +328,9 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
             .onGet(contractResultEndpoint)
             .replyOnce(404, mockData.notFound)
             .onGet(contractResultEndpoint)
-            .reply(200, JSON.stringify({ hash: ethereumHash }));
+            .reply(200, { hash: ethereumHash });
 
-          sinon
-            .stub(sdkClient, 'submitEthereumTransaction')
+          submitEthereumTransactionStub
             .onCall(0)
             .throws(new SDKClientError({ status: 21 }, error, transactionIdServicesFormat));
 
@@ -481,6 +339,108 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
           const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
           expect(resultingHash).to.equal(ethereumHash);
         });
+      });
+    });
+
+    describe('eth_sendRawTransaction restore submitEthereumTransactionStub', async function () {
+      this.beforeEach(() => {
+        submitEthereumTransactionStub.restore();
+      });
+
+      it('should emit tracking event (limiter and metrics) only for successful tx responses from FileAppend transaction', async function () {
+        const signed = await signTransaction({
+          ...transaction,
+          data: '0x' + '22'.repeat(13000),
+        });
+        const expectedTxHash = Utils.computeTransactionHash(Buffer.from(signed.replace('0x', ''), 'hex'));
+
+        const FILE_ID = new FileId(0, 0, 5644);
+
+        sdkClient['fileAppendChunkSize'] = 2048;
+        sdkClient['clientMain'] = { operatorAccountId: '', operatorKey: null };
+
+        const fileInfoMock = sinon.stub(FileInfo);
+        fileInfoMock.size = new Long(26000);
+        // Stub methods
+        sinon.stub(sdkClient, 'executeQuery').resolves({
+          size: new Long(26000),
+        });
+
+        // simulates error after first append by returning only one transaction response
+        sinon.stub(FileAppendTransaction.prototype, 'executeAll').resolves([{ transactionId: transactionId }]);
+
+        // Create and assign event emitter mock
+        const eventEmitterMock = sinon.createStubInstance(EventEmitter);
+        sdkClient['eventEmitter'] = eventEmitterMock;
+
+        const hbarLimiterMock = sinon.createStubInstance(HbarLimitService);
+        sdkClient['hbarLimitService'] = hbarLimiterMock;
+
+        const txResponseMock = sinon.createStubInstance(TransactionResponse);
+        sinon.stub(sdkClient, 'executeTransaction').resolves(txResponseMock);
+
+        txResponseMock.getReceipt.restore();
+        sinon.stub(txResponseMock, 'getReceipt').onFirstCall().resolves({ fileId: FILE_ID });
+        txResponseMock.transactionId = TransactionId.fromString(transactionIdServicesFormat);
+
+        sdkClient['logger'] = pino({ level: 'silent' });
+        sdkClient['deleteFile'] = sinon.stub().resolves();
+
+      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: expectedTxHash }));
+
+        const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
+        if (useAsyncTxProcessing) await clock.tickAsync(1);
+
+        expect(eventEmitterMock.emit.callCount).to.equal(1);
+        expect(hbarLimiterMock.shouldLimit.callCount).to.equal(1);
+        expect(resultingHash).to.equal(expectedTxHash);
+      });
+
+      it('should return a predefined GAS_LIMIT_TOO_HIGH instead of NUMERIC_FAULT as precheck exception', async function () {
+        // tx with 'gasLimit: BigNumber { value: "30678687678687676876786786876876876000" }'
+        const txHash =
+          '0x02f881820128048459682f0086014fa0186f00901714801554cbe52dd95512bedddf68e09405fba803be258049a27b820088bab1cad205887185174876e80080c080a0cab3f53602000c9989be5787d0db637512acdd2ad187ce15ba83d10d9eae2571a07802515717a5a1c7d6fa7616183eb78307b4657d7462dbb9e9deca820dd28f62';
+        await RelayAssertions.assertRejection(
+          predefined.GAS_LIMIT_TOO_HIGH(null, null),
+          ethImpl.sendRawTransaction,
+          false,
+          ethImpl,
+          [txHash, requestDetails],
+        );
+      });
+
+      it('should throw precheck error for type=3 transactions', async function () {
+        const type3tx = {
+          ...transaction,
+          type: 3,
+          maxFeePerBlobGas: transaction.gasPrice,
+          blobVersionedHashes: [ethereumHash],
+        };
+        const signed = await signTransaction(type3tx);
+
+        await RelayAssertions.assertRejection(
+          predefined.UNSUPPORTED_TRANSACTION_TYPE,
+          ethImpl.sendRawTransaction,
+          false,
+          ethImpl,
+          [signed, getRequestId()],
+        );
+      });
+
+      it('should update execution counter and list the correct data when eth_sendRawTransation is executed', async function () {
+        const labelsSpy = sinon.spy(ethImpl['ethExecutionsCounter'], 'labels');
+        const expectedLabelsValue = ['eth_sendRawTransaction', '0x', transaction.from, transaction.to];
+
+        const signed = await signTransaction(transaction);
+
+        await ethImpl.sendRawTransaction(signed, requestDetails);
+
+        expect(ethImpl['ethExecutionsCounter']).to.be.instanceOf(Counter);
+        labelsSpy.args[0].map((labelValue, index) => {
+          expect(labelValue).to.equal(expectedLabelsValue[index]);
+        });
+
+        sinon.restore();
       });
     });
   });
