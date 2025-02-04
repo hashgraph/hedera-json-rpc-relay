@@ -81,10 +81,7 @@ export class MirrorNodeClient {
   private static readonly GET_CONTRACT_RESULTS_DETAILS_BY_CONTRACT_ID_ENDPOINT = `contracts/${MirrorNodeClient.CONTRACT_ID_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
   private static readonly GET_CONTRACT_RESULTS_DETAILS_BY_ADDRESS_AND_TIMESTAMP_ENDPOINT = `contracts/${MirrorNodeClient.ADDRESS_PLACEHOLDER}/results/${MirrorNodeClient.TIMESTAMP_PLACEHOLDER}`;
   private readonly MIRROR_NODE_RETRY_DELAY = ConfigService.get('MIRROR_NODE_RETRY_DELAY');
-  private readonly MIRROR_NODE_REQUEST_RETRY_COUNT = parseNumericEnvVar(
-    'MIRROR_NODE_REQUEST_RETRY_COUNT',
-    'MIRROR_NODE_REQUEST_RETRY_COUNT_DEFAULT',
-  );
+  private readonly MIRROR_NODE_REQUEST_RETRY_COUNT = ConfigService.get('MIRROR_NODE_REQUEST_RETRY_COUNT');
 
   static acceptedErrorStatusesResponsePerRequestPathMap: Map<string, Array<number>> = new Map([
     [MirrorNodeClient.GET_ACCOUNTS_BY_ID_ENDPOINT, [404]],
