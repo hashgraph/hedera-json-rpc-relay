@@ -89,7 +89,7 @@ export class EthImpl implements Eth {
   static emptyArrayHex = '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347';
   static zeroAddressHex = '0x0000000000000000000000000000000000000000';
   static emptyBloom =
-    '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+    '0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
   static defaultTxGas = numberTo0x(constants.TX_DEFAULT_GAS_DEFAULT);
   static gasTxBaseCost = numberTo0x(constants.TX_BASE_COST);
   static minGasTxHollowAccountCreation = numberTo0x(constants.MIN_TX_HOLLOW_ACCOUNT_CREATION_GAS);
@@ -1209,10 +1209,16 @@ export class EthImpl implements Eth {
         constants.TYPE_CONTRACT,
         constants.TYPE_TOKEN,
       ]);
+
       if (result) {
         if (result?.type === constants.TYPE_TOKEN) {
           if (blockNumber && !this.common.blockTagIsLatestOrPending(blockNumber)) {
-            const blockNumberInt = parseInt(blockNumber, 16);
+            let blockNumberInt;
+            if (blockNumber === EthImpl.blockEarliest) {
+              blockNumberInt = 0;
+            } else {
+              blockNumberInt = parseInt(blockNumber, 16);
+            }
             const blockInfo = await this.mirrorNodeClient.getBlock(blockNumberInt, requestDetails);
 
             if (!blockInfo) {
@@ -1220,13 +1226,13 @@ export class EthImpl implements Eth {
             }
 
             const tokenId = Utils.addressToTokenId(address);
-            const tokenInfo = await this.mirrorNodeClient.getTokenById(tokenId, requestDetails);
-
+            const tokenInfo = await this.mirrorNodeClient.getTokenById(
+              tokenId,
+              requestDetails,
+              undefined,
+              blockInfo.timestamp.to,
+            );
             if (!tokenInfo) {
-              return EthImpl.emptyHex;
-            }
-
-            if (parseFloat(tokenInfo.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
               return EthImpl.emptyHex;
             }
           }

@@ -157,27 +157,40 @@ describe('@ethGetCode using MirrorNode', async function () {
     });
 
     it('should return empty bytecode for HTS token before creation block', async () => {
-      const blockNumberBeforeCreation = '0x152a4aa'; // Example block number before creation
+      const blockNumberBeforeCreation = '0x152a4aa';
+      const blockToTimestamp = '1632175203.847228000';
+
       restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, {
         ...DEFAULT_HTS_TOKEN,
         created_timestamp: '1632175205.855270000',
       });
       restMock.onGet(`blocks/${parseInt(blockNumberBeforeCreation, 16)}`).reply(200, {
-        timestamp: { to: '1632175203.847228000' },
+        timestamp: { to: blockToTimestamp },
       });
+
+      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}?timestamp=${blockToTimestamp}`).reply(404, null);
       const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, blockNumberBeforeCreation, requestDetails);
       expect(res).to.equal(EthImpl.emptyHex);
     });
 
     it('should return redirect bytecode for HTS token after creation block', async () => {
-      const blockNumberAfterCreation = '0x152a4ab'; // Example block number after creation
+      const blockNumberAfterCreation = '0x152a4ab';
+      const blockToTimestamp = '1632175206.000000000';
+
       restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, {
         ...DEFAULT_HTS_TOKEN,
         created_timestamp: '1632175205.855270000',
       });
+
       restMock.onGet(`blocks/${parseInt(blockNumberAfterCreation, 16)}`).reply(200, {
-        timestamp: { to: '1632175206.000000000' },
+        timestamp: { to: blockToTimestamp },
       });
+
+      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}?timestamp=${blockToTimestamp}`).reply(200, {
+        ...DEFAULT_HTS_TOKEN,
+        created_timestamp: '1632175205.855270000',
+      });
+
       const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, blockNumberAfterCreation, requestDetails);
       const expectedRedirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${HTS_TOKEN_ADDRESS.slice(
         2,

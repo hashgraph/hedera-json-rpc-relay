@@ -1155,9 +1155,14 @@ export class MirrorNodeClient {
     );
   }
 
-  public async getTokenById(tokenId: string, requestDetails: RequestDetails, retries?: number) {
+  public async getTokenById(tokenId: string, requestDetails: RequestDetails, retries?: number, timestamp?: string) {
+    const queryParamObject = {};
+    if (timestamp) {
+      this.setQueryParam(queryParamObject, 'timestamp', timestamp);
+    }
+    const queryParams = this.getQueryParams(queryParamObject);
     return this.get(
-      `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}`,
+      `${MirrorNodeClient.GET_TOKENS_ENDPOINT}/${tokenId}${queryParams}`,
       MirrorNodeClient.GET_TOKENS_ENDPOINT,
       requestDetails,
       retries,
