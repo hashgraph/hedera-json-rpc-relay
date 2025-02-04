@@ -159,10 +159,7 @@ export class EthImpl implements Eth {
   );
   private readonly maxBlockRange = parseNumericEnvVar('MAX_BLOCK_RANGE', 'MAX_BLOCK_RANGE');
   private readonly contractCallGasLimit = parseNumericEnvVar('CONTRACT_CALL_GAS_LIMIT', 'CONTRACT_CALL_GAS_LIMIT');
-  private readonly ethGetTransactionCountMaxBlockRange = parseNumericEnvVar(
-    'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-    'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-  );
+  private readonly ethGetTransactionCountMaxBlockRange = ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE');
   private readonly ethGetTransactionCountCacheTtl = parseNumericEnvVar(
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
