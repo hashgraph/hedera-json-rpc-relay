@@ -1,8 +1,8 @@
-/* -
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,6 @@ export default {
   SEND_RAW_TRANSACTION_SIZE_LIMIT: ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT'),
   CACHE_KEY,
   CACHE_TTL,
-  CACHE_MAX: 1000,
   DEFAULT_TINY_BAR_GAS: 72, // (853454 / 1000) * (1 / 12)
   ETH_FUNCTIONALITY_CODE: 84,
   DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT: 1000,

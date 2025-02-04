@@ -18,15 +18,16 @@
  *
  */
 
-import { Logger } from 'pino';
-import LRU from 'lru-cache';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import crypto from 'crypto';
+import LRU from 'lru-cache';
+import { Logger } from 'pino';
+import { Counter, Histogram, Registry } from 'prom-client';
+
+import { generateRandomHex } from '../formatters';
+import { Subs } from '../index';
 import constants from './constants';
 import { Poller } from './poller';
-import { generateRandomHex } from '../formatters';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { Counter, Histogram, Registry } from 'prom-client';
-import { Subs } from '../index';
 
 export interface Subscriber {
   connection: any;
@@ -49,7 +50,7 @@ export class SubscriptionController implements Subs {
     this.logger = logger;
     this.subscriptions = {};
 
-    this.cache = new LRU({ max: constants.CACHE_MAX, ttl: CACHE_TTL });
+    this.cache = new LRU({ max: ConfigService.get('CACHE_MAX'), ttl: CACHE_TTL });
 
     const activeSubscriptionHistogramName = 'rpc_websocket_subscription_times';
     register.removeSingleMetric(activeSubscriptionHistogramName);
