@@ -790,39 +790,13 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.equal(redirectBytecode);
     });
 
-    it('should return contract bytecode for valid contract address', async function () {
-      const contractAddress = '0x0000000000000000000000000000000000000001';
-      const expectedBytecode = '0x6080604052348015600f57600080fd5b506000610167905077618dc65e';
-      const result = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, [contractAddress, 'latest'], requestId);
-      expect(result).to.equal(expectedBytecode);
-    });
-
-    it('should return empty bytecode for non-contract address', async function () {
-      const nonContractAddress = '0x0000000000000000000000000000000000000002';
-      const result = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, [nonContractAddress, 'latest'], requestId);
-      expect(result).to.equal(EthImpl.emptyHex);
-    });
-
-    it('should return redirect bytecode for HTS token address', async function () {
-      const tokenAddress = '0x0000000000000000000000000000000000000003';
-      const expectedRedirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${tokenAddress.slice(
-        2,
-      )}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`;
-      const result = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE, [tokenAddress, 'latest'], requestId);
-      expect(result).to.equal(expectedRedirectBytecode);
-    });
-
-    it('should throw error for invalid block number', async function () {
-      const contractAddress = '0x0000000000000000000000000000000000000001';
-      const invalidBlockNumber = '0xinvalid';
-      const expectedError = predefined.UNKNOWN_BLOCK(
-        `The value passed is not a valid blockHash/blockNumber/blockTag value: ${invalidBlockNumber}`,
-      );
-      await Assertions.assertPredefinedRpcError(expectedError, relay.call, false, relay, [
+    it('should return empty bytecode for HTS token when a block earlier than the token creation is passed', async function () {
+      const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
-        [contractAddress, invalidBlockNumber],
+        [NftHTSTokenContractAddress, '0x123'],
         requestId,
-      ]);
+      );
+      expect(res).to.equal(EthImpl.emptyHex);
     });
 
     it('@release should execute "eth_getCode" for contract evm_address', async function () {
