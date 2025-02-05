@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ContractId, FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
+import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import crypto from 'crypto';
 import { Transaction as EthersTransaction } from 'ethers';
 import { Logger } from 'pino';
