@@ -18,22 +18,24 @@
  *
  */
 
-import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
 import { ITracerConfig, RequestDetails } from '@hashgraph/json-rpc-relay/src/lib/types';
+import fs from 'fs';
+import cors from 'koa-cors';
+import path from 'path';
+import pino from 'pino';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
+import { v4 as uuid } from 'uuid';
+
+import { formatRequestIdMessage } from './formatters';
 import KoaJsonRpc from './koaJsonRpc';
 import { TracerType, TYPES, Validator } from './validator';
-import pino from 'pino';
-import path from 'path';
-import fs from 'fs';
-import { v4 as uuid } from 'uuid';
-import { formatRequestIdMessage } from './formatters';
-import cors from 'koa-cors';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
-  level: ConfigService.get('LOG_LEVEL'),
+  // Pino requires the default level to be explicitly set; without fallback value ("trace"), an invalid or missing value could trigger the "default level must be included in custom levels" error.
+  level: ConfigService.get('LOG_LEVEL') || 'trace',
   transport: {
     target: 'pino-pretty',
     options: {
