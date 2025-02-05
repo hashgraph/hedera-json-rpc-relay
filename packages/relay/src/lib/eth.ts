@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
+import { ContractId, FileId, Hbar, PrecheckStatusError } from '@hashgraph/sdk';
 import crypto from 'crypto';
 import { Transaction as EthersTransaction } from 'ethers';
 import { Logger } from 'pino';
@@ -1209,30 +1209,11 @@ export class EthImpl implements Eth {
         constants.TYPE_CONTRACT,
         constants.TYPE_TOKEN,
       ]);
-
       if (result) {
         if (result?.type === constants.TYPE_TOKEN) {
-          if (blockNumber && !this.common.blockTagIsLatestOrPending(blockNumber)) {
-            let blockNumberInt;
-            if (blockNumber === EthImpl.blockEarliest) {
-              blockNumberInt = 0;
-            } else {
-              blockNumberInt = parseInt(blockNumber, 16);
-            }
-            const blockInfo = await this.mirrorNodeClient.getBlock(blockNumberInt, requestDetails);
-
-            if (!blockInfo) {
-              throw predefined.UNKNOWN_BLOCK(`Block number ${blockNumber} does not exist`);
-            }
-
-            const tokenId = Utils.addressToTokenId(address);
-            const tokenInfo = await this.mirrorNodeClient.getTokenById(
-              tokenId,
-              requestDetails,
-              undefined,
-              blockInfo.timestamp.to,
-            );
-            if (!tokenInfo) {
+          const blockInfo = await this.getBlockInfo(blockNumber, requestDetails);
+          if (blockInfo) {
+            if (parseFloat(result.entity?.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
               return EthImpl.emptyHex;
             }
           }
@@ -1241,6 +1222,12 @@ export class EthImpl implements Eth {
           }
           return EthImpl.redirectBytecodeAddressReplace(address);
         } else if (result?.type === constants.TYPE_CONTRACT) {
+          const blockInfo = await this.getBlockInfo(blockNumber, requestDetails);
+          if (blockInfo) {
+            if (parseFloat(result.entity?.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
+              return EthImpl.emptyHex;
+            }
+          }
           if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
             const prohibitedOpcodes = ['CALLCODE', 'DELEGATECALL', 'SELFDESTRUCT', 'SUICIDE'];
             const opcodes = asm.disassemble(result?.entity.runtime_bytecode);
@@ -2857,5 +2844,17 @@ export class EthImpl implements Eth {
 
     const exchangeRateInCents = currentNetworkExchangeRate.cent_equivalent / currentNetworkExchangeRate.hbar_equivalent;
     return exchangeRateInCents;
+  }
+
+  private async getBlockInfo(blockNumber: string | null, requestDetails: RequestDetails): Promise<any> {
+    if (blockNumber && !this.common.blockTagIsLatestOrPending(blockNumber)) {
+      const blockNumberInt = blockNumber === EthImpl.blockEarliest ? 0 : parseInt(blockNumber, 16);
+      const blockInfo = await this.mirrorNodeClient.getBlock(blockNumberInt, requestDetails);
+      if (!blockInfo) {
+        throw predefined.UNKNOWN_BLOCK(`Block number ${blockNumber} does not exist`);
+      }
+      return blockInfo;
+    }
+    return null;
   }
 }

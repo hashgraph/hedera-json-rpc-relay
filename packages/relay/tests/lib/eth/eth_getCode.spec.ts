@@ -18,6 +18,7 @@
  *
  */
 
+import { ContractId } from '@hashgraph/sdk';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -48,8 +49,9 @@ let getSdkClientStub: sinon.SinonStub;
 describe('@ethGetCode using MirrorNode', async function () {
   this.timeout(10000);
   const { restMock, hapiServiceInstance, ethImpl, cacheService } = generateEthTestEnv();
-  const validBlockParam = [null, 'earliest', 'latest', 'pending', 'finalized', 'safe', '0x0', '0x369ABF'];
-  const invalidBlockParam = ['hedera', 'ethereum', '0xhbar', '0x369ABF369ABF369ABF369ABF'];
+  const earlyBlockParams = ['0x0', '0x369ABF', 'earliest'];
+  const otherValidBlockParams = [null, 'latest', 'pending', 'finalized', 'safe'];
+  const invalidBlockParam = ['hedera', 'ethereum', '0xhbar', '0x369ABF369ABF369ABF'];
 
   const requestDetails = new RequestDetails({ requestId: 'eth_getCodeTest', ipAddress: '0.0.0.0' });
 
@@ -131,8 +133,19 @@ describe('@ethGetCode using MirrorNode', async function () {
       expect(res).to.equal(EthImpl.invalidEVMInstruction);
     });
 
-    validBlockParam.forEach((blockParam) => {
-      it(`should pass the validate param check with blockParam=${blockParam} and return the bytecode`, async () => {
+    earlyBlockParams.forEach((blockParam) => {
+      it(`should return empty bytecode for early block param ${blockParam}`, async () => {
+        const paramAsInt = blockParam === 'earliest' ? 0 : parseInt(blockParam, 16);
+        restMock.onGet(`blocks/${paramAsInt}`).reply(200, {
+          timestamp: { to: '1532175203.847228000' },
+        });
+        const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, blockParam, requestDetails);
+        expect(res).to.equal(EthImpl.emptyHex);
+      });
+    });
+
+    otherValidBlockParams.forEach((blockParam) => {
+      it(`should return deployed bytecode for block param ${blockParam}`, async () => {
         const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, blockParam, requestDetails);
         expect(res).to.equal(MIRROR_NODE_DEPLOYED_BYTECODE);
       });
@@ -168,8 +181,24 @@ describe('@ethGetCode using MirrorNode', async function () {
         timestamp: { to: blockToTimestamp },
       });
 
-      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}?timestamp=${blockToTimestamp}`).reply(404, null);
       const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, blockNumberBeforeCreation, requestDetails);
+      expect(res).to.equal(EthImpl.emptyHex);
+    });
+
+    it('should return empty bytecode for contract before creation block', async () => {
+      const blockNumberBeforeCreation = '0x152a4aa';
+      const blockToTimestamp = '1632175203.847228000';
+      const contractId = ContractId.fromEvmAddress(0, 0, CONTRACT_ADDRESS_1);
+
+      restMock.onGet(`contracts/${contractId.toString()}`).reply(200, {
+        ...DEFAULT_CONTRACT,
+        created_timestamp: '1632175205.855270000',
+      });
+      restMock.onGet(`blocks/${parseInt(blockNumberBeforeCreation, 16)}`).reply(200, {
+        timestamp: { to: blockToTimestamp },
+      });
+
+      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, blockNumberBeforeCreation, requestDetails);
       expect(res).to.equal(EthImpl.emptyHex);
     });
 
@@ -184,11 +213,6 @@ describe('@ethGetCode using MirrorNode', async function () {
 
       restMock.onGet(`blocks/${parseInt(blockNumberAfterCreation, 16)}`).reply(200, {
         timestamp: { to: blockToTimestamp },
-      });
-
-      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}?timestamp=${blockToTimestamp}`).reply(200, {
-        ...DEFAULT_HTS_TOKEN,
-        created_timestamp: '1632175205.855270000',
       });
 
       const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, blockNumberAfterCreation, requestDetails);
@@ -218,6 +242,22 @@ describe('@ethGetCode using MirrorNode', async function () {
       await expect(ethImpl.getCode(HTS_TOKEN_ADDRESS, futureBlockNumber, requestDetails)).to.eventually.be.rejectedWith(
         `Block number ${futureBlockNumber} does not exist`,
       );
+    });
+
+    it('should return empty bytecode for contract when earliest block is queried', async () => {
+      const blockToTimestamp = '1632175203.847228000';
+      const contractId = ContractId.fromEvmAddress(0, 0, CONTRACT_ADDRESS_1);
+
+      restMock.onGet(`contracts/${contractId.toString()}`).reply(200, {
+        ...DEFAULT_CONTRACT,
+        created_timestamp: '1632175205.855270000',
+      });
+      restMock.onGet('blocks/0').reply(200, {
+        timestamp: { to: blockToTimestamp },
+      });
+
+      const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, 'earliest', requestDetails);
+      expect(res).to.equal(EthImpl.emptyHex);
     });
   });
 });

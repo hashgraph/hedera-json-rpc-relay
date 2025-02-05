@@ -793,7 +793,16 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('should return empty bytecode for HTS token when a block earlier than the token creation is passed', async function () {
       const res = await relay.call(
         RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
-        [NftHTSTokenContractAddress, '0x123'],
+        [NftHTSTokenContractAddress, '0x123'], // a very early block number
+        requestId,
+      );
+      expect(res).to.equal(EthImpl.emptyHex);
+    });
+
+    it('should return empty bytecode for contract when a block earlier than the contract creation is passed', async function () {
+      const res = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
+        [mainContractAddress, '0x123'], // a very early block number
         requestId,
       );
       expect(res).to.equal(EthImpl.emptyHex);
