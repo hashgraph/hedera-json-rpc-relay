@@ -168,18 +168,4 @@ export class Utils {
       accountId: AccountId.fromString(operatorId.trim()),
     };
   }
-
-  /**
-   * Converts an EVM address to a TokenId string.
-   * @param {string} address - The EVM address to convert
-   * @returns {string} The token ID as a string
-   * @throws {JsonRpcError} If the address format is invalid
-   */
-  public static addressToTokenId(address: string): string {
-    try {
-      return TokenId.fromSolidityAddress(address).toString();
-    } catch (error) {
-      throw predefined.INVALID_PARAMETER(0, `Invalid address format: ${address}`);
-    }
-  }
 }
