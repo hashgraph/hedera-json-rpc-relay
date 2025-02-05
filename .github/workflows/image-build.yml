@@ -62,7 +62,8 @@ jobs:
             echo "Server responded with '$response'. Test failed!"
             exit 1
           fi
-
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Stop server
         if: always()
         run: |
