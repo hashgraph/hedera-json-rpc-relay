@@ -19,7 +19,7 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { AccountId, PrivateKey, TokenId } from '@hashgraph/sdk';
+import { AccountId, PrivateKey } from '@hashgraph/sdk';
 import { Operator } from '@hashgraph/sdk/lib/client/Client';
 import crypto from 'crypto';
 import createHash from 'keccak';
@@ -27,7 +27,6 @@ import { Logger } from 'pino';
 
 import { hexToASCII, prepend0x, strip0x } from './formatters';
 import constants from './lib/constants';
-import { predefined } from './lib/errors/JsonRpcError';
 
 export class Utils {
   public static readonly IP_ADDRESS_REGEX = /\b((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}\b/g;
