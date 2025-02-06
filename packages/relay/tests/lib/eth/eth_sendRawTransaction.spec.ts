@@ -87,7 +87,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
   });
 
   this.afterEach(() => {
@@ -142,9 +142,9 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sinon.restore();
       sdkClientStub = sinon.createStubInstance(SDKClient);
       sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-      restMock.onGet(accountEndpoint).reply(200, ACCOUNT_RES);
-      restMock.onGet(receiverAccountEndpoint).reply(200, RECEIVER_ACCOUNT_RES);
-      restMock.onGet(networkExchangeRateEndpoint).reply(200, mockedExchangeRate);
+      restMock.onGet(accountEndpoint).reply(200, JSON.stringify(ACCOUNT_RES));
+   JSON.stringify(   restMock.onGet(receiverAccountEndpoint).reply(200, JSON.stringify(RECEIVER_ACCOUNT_RES)));
+   JSON.stringify(   restMock.onGet(networkExchangeRateEndpoint).reply(200, JSON.stringify(mockedExchangeRate)));
     });
 
     afterEach(() => {
@@ -190,7 +190,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       sdkClientStub.logger = pino({ level: 'silent' });
       sdkClientStub.deleteFile.resolves();
 
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: expectedTxHash });
+      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: expectedTxHash }));
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
       if (useAsyncTxProcessing) await clock.tickAsync(1);
@@ -216,14 +216,14 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     it('should return a computed hash if unable to retrieve EthereumHash from record due to contract revert', async function () {
       const signed = await signTransaction(transaction);
 
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
 
       const resultingHash = await ethImpl.sendRawTransaction(signed, requestDetails);
       expect(resultingHash).to.equal(ethereumHash);
     });
 
     it('should return hash from ContractResult mirror node api', async function () {
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
 
       sdkClientStub.submitEthereumTransaction.resolves({
         txResponse: {
@@ -238,7 +238,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     });
 
     it('should not send second transaction upon succession', async function () {
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
 
       sdkClientStub.submitEthereumTransaction.resolves({
         txResponse: {
@@ -257,7 +257,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
     });
 
     it('should not send second transaction on error different from timeout', async function () {
-      restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+      restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
       const repeatedRequestSpy = sinon.spy(ethImpl['mirrorNodeClient'], 'repeatedRequest');
       sdkClientStub.submitEthereumTransaction.resolves({
         txResponse: {
@@ -323,7 +323,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       it('[USE_ASYNC_TX_PROCESSING=true] should throw internal error when transaction returned from mirror node is null', async function () {
         const signed = await signTransaction(transaction);
 
-        restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
+        restMock.onGet(contractResultEndpoint).reply(404, JSON.stringify(mockData.notFound));
 
         sdkClientStub.submitEthereumTransaction.resolves({
           txResponse: {
@@ -341,7 +341,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       it('[USE_ASYNC_TX_PROCESSING=false] should throw internal error when transactionID is invalid', async function () {
         const signed = await signTransaction(transaction);
 
-        restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+        restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
 
         sdkClientStub.submitEthereumTransaction.resolves({
           txResponse: {
@@ -357,7 +357,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       });
 
       it('[USE_ASYNC_TX_PROCESSING=false] should throw internal error if ContractResult from mirror node contains a null hash', async function () {
-        restMock.onGet(contractResultEndpoint).reply(200, { hash: null });
+        restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: null }));
 
         sdkClientStub.submitEthereumTransaction.resolves({
           txResponse: {
@@ -379,7 +379,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
             .onGet(contractResultEndpoint)
             .replyOnce(404, mockData.notFound)
             .onGet(contractResultEndpoint)
-            .reply(200, { hash: ethereumHash });
+            .reply(200, JSON.stringify({ hash: ethereumHash }));
 
           sdkClientStub.submitEthereumTransaction
             .onCall(0)
@@ -396,7 +396,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
             .onGet(contractResultEndpoint)
             .replyOnce(404, mockData.notFound)
             .onGet(contractResultEndpoint)
-            .reply(200, null);
+            .reply(200, JSON.stringify(null));
 
           sdkClientStub.submitEthereumTransaction
             .onCall(0)
@@ -415,7 +415,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       it('[USE_ASYNC_TX_PROCESSING=true] should still return expected transaction hash even when transaction returned from mirror node is null', async function () {
         const signed = await signTransaction(transaction);
 
-        restMock.onGet(contractResultEndpoint).reply(404, mockData.notFound);
+        restMock.onGet(contractResultEndpoint).reply(404, JSON.stringify(mockData.notFound));
 
         sdkClientStub.submitEthereumTransaction.resolves({
           txResponse: {
@@ -431,7 +431,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       it('[USE_ASYNC_TX_PROCESSING=true] should still return expected transaction hash even when submitted transactionID is invalid', async function () {
         const signed = await signTransaction(transaction);
 
-        restMock.onGet(contractResultEndpoint).reply(200, { hash: ethereumHash });
+        restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: ethereumHash }));
 
         sdkClientStub.submitEthereumTransaction.resolves({
           txResponse: {
@@ -445,7 +445,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
       });
 
       it('[USE_ASYNC_TX_PROCESSING=true] should still return expected transaction hash even when ContractResult from mirror node contains a null hash', async function () {
-        restMock.onGet(contractResultEndpoint).reply(200, { hash: null });
+        restMock.onGet(contractResultEndpoint).reply(200, JSON.stringify({ hash: null }));
 
         sdkClientStub.submitEthereumTransaction.resolves({
           txResponse: {
@@ -465,7 +465,7 @@ describe('@ethSendRawTransaction eth_sendRawTransaction spec', async function ()
             .onGet(contractResultEndpoint)
             .replyOnce(404, mockData.notFound)
             .onGet(contractResultEndpoint)
-            .reply(200, { hash: ethereumHash });
+            .reply(200, JSON.stringify({ hash: ethereumHash }));
 
           sdkClientStub.submitEthereumTransaction
             .onCall(0)

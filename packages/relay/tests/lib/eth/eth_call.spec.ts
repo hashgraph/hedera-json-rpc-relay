@@ -86,11 +86,11 @@ describe('@ethCall Eth Call spec', async function () {
     restMock.reset();
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, {
+    restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
+    restMock.onGet(`accounts/${ACCOUNT_ADDRESS_1}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({
       account: '0.0.1723',
       evm_address: ACCOUNT_ADDRESS_1,
-    });
+    }));
   });
 
   this.afterEach(() => {
@@ -138,11 +138,11 @@ describe('@ethCall Eth Call spec', async function () {
       it('should execute "eth_call" against mirror node with a false ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
         web3Mock.onPost('contracts/call').reply(200);
         restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-        restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
+        restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({
           account: '0.0.1723',
           evm_address: defaultCallData.from,
-        });
-        restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, DEFAULT_CONTRACT);
+        }));
+        restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
 
         await ethImpl.call(
           { ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` },
@@ -159,11 +159,11 @@ describe('@ethCall Eth Call spec', async function () {
       it('should execute "eth_call" against mirror node with an undefined ETH_CALL_DEFAULT_TO_CONSENSUS_NODE', async function () {
         web3Mock.onPost('contracts/call').reply(200);
         restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-        restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
+        restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({
           account: '0.0.1723',
           evm_address: defaultCallData.from,
-        });
-        restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, DEFAULT_CONTRACT);
+        }));
+        restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
 
         await ethImpl.call(
           { ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` },
@@ -179,11 +179,11 @@ describe('@ethCall Eth Call spec', async function () {
     withOverriddenEnvsInMochaTest({ ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: true }, () => {
       it('should execute "eth_call" against consensus node with a ETH_CALL_DEFAULT_TO_CONSENSUS_NODE set to true', async function () {
         restMock.onGet(`contracts/${defaultCallData.from}`).reply(404);
-        restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, {
+        restMock.onGet(`accounts/${defaultCallData.from}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({
           account: '0.0.1723',
           evm_address: defaultCallData.from,
-        });
-        restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, DEFAULT_CONTRACT);
+        }));
+        restMock.onGet(`contracts/${defaultCallData.to}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
 
         await ethImpl.call(
           { ...defaultCallData, gas: `0x${defaultCallData.gas.toString(16)}` },
@@ -200,7 +200,7 @@ describe('@ethCall Eth Call spec', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(404);
       restMock.onGet(`tokens/${CONTRACT_ID_2}`).reply(404);
-      web3Mock.onPost(`contracts/call`).reply(200, { result: '0x1' });
+      web3Mock.onPost(`contracts/call`).reply(200, JSON.stringify({ result: '0x1' }));
 
       await expect(
         ethImpl.call(
@@ -221,7 +221,7 @@ describe('@ethCall Eth Call spec', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(200);
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200);
       restMock.onGet(`tokens/${CONTRACT_ID_2}`).reply(200);
-      web3Mock.onPost(`contracts/call`).reply(200, { result: '0x1' });
+      web3Mock.onPost(`contracts/call`).reply(200, JSON.stringify({ result: '0x1' }));
 
       await expect(
         ethImpl.call(
@@ -243,7 +243,7 @@ describe('@ethCall Eth Call spec', async function () {
 
     it('eth_call with no gas', async function () {
       restMock.onGet(`contracts/${ACCOUNT_ADDRESS_1}`).reply(404);
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
 
       sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
@@ -273,7 +273,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with no data', async function () {
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
           return Uint8Array.of(0);
@@ -310,7 +310,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
           return Uint8Array.of(0);
@@ -339,7 +339,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with all fields', async function () {
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
           return Uint8Array.of(0);
@@ -361,7 +361,7 @@ describe('@ethCall Eth Call spec', async function () {
 
     //Return once the value, then it's being fetched from cache. After the loop we reset the sdkClientStub, so that it returns nothing, if we get an error in the next request that means that the cache was cleared.
     it('eth_call should cache the response for 200ms', async function () {
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       sdkClientStub.submitContractCallQueryWithRetry.resolves({
         asBytes: function () {
           return Uint8Array.of(0);
@@ -394,7 +394,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('SDK returns a precheck error', async function () {
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       sdkClientStub.submitContractCallQueryWithRetry.throws(
         predefined.CONTRACT_REVERT(defaultErrorMessageText, defaultErrorMessageHex),
       );
@@ -429,7 +429,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call throws internal error when consensus node times out and submitContractCallQueryWithRetry returns undefined', async function () {
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
 
       sdkClientStub.submitContractCallQueryWithRetry.resolves(undefined);
 
@@ -501,7 +501,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
       };
 
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' }, requestDetails);
 
       web3Mock.history.post = [];
@@ -521,7 +521,7 @@ describe('@ethCall Eth Call spec', async function () {
         to: CONTRACT_ADDRESS_2,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' }, requestDetails);
 
       const result = await ethImpl.call(callData, 'latest', requestDetails);
@@ -583,7 +583,7 @@ describe('@ethCall Eth Call spec', async function () {
       };
 
       await mockContractCall({ ...callData, block: 'latest' }, false, 200, { result: '0x00' }, requestDetails);
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
 
       // Relay is called with value in Weibars
       const result = await ethImpl.call({ ...callData, value: ONE_TINYBAR_IN_WEI_HEX }, 'latest', requestDetails);
@@ -612,7 +612,7 @@ describe('@ethCall Eth Call spec', async function () {
         data: CONTRACT_CALL_DATA,
         gas: MAX_GAS_LIMIT,
       };
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted, requestDetails);
       const result = await ethImpl.call(callData, 'latest', requestDetails);
       expect(result).to.be.not.null;
@@ -629,7 +629,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       await mockContractCall({ ...callData, block: 'latest' }, false, 501, mockData.notSuported, requestDetails);
 
       sdkClientStub.submitContractCallQueryWithRetry.resolves({
@@ -660,7 +660,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted, requestDetails);
       sinon.reset();
       const result = await ethImpl.call(callData, 'latest', requestDetails);
@@ -679,7 +679,7 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
 
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, DEFAULT_CONTRACT_2);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       await mockContractCall(
         { ...callData, block: 'latest' },
         false,
@@ -825,7 +825,7 @@ describe('@ethCall Eth Call spec', async function () {
     ) {
       const formattedCallData = { ...callData, estimate };
       await ethImpl.contractCallFormat(formattedCallData, requestDetails);
-      return web3Mock.onPost('contracts/call', formattedCallData).reply(statusCode, result);
+      return web3Mock.onPost('contracts/call', formattedCallData).reply(statusCode, JSON.stringify(result));
     }
   });
 
@@ -834,10 +834,10 @@ describe('@ethCall Eth Call spec', async function () {
     const operatorEvmAddress = ACCOUNT_ADDRESS_1;
 
     beforeEach(() => {
-      restMock.onGet(`accounts/${operatorId!.toString()}?transactions=false`).reply(200, {
+      restMock.onGet(`accounts/${operatorId!.toString()}?transactions=false`).reply(200, JSON.stringify({
         account: operatorId!.toString(),
         evm_address: operatorEvmAddress,
-      });
+      }));
     });
 
     it('should format transaction value to tiny bar integer', async () => {

@@ -308,9 +308,7 @@ export default class ServicesClient {
       .setFunction(functionName, params)
       .setTransactionMemo('Relay test contract execution');
 
-    if (amount > 0) {
-      tx.setPayableAmount(Hbar.fromTinybars(amount));
-    }
+    tx.setPayableAmount(Hbar.fromTinybars(amount));
     let contractExecTransactionResponse: TransactionResponse;
 
     try {

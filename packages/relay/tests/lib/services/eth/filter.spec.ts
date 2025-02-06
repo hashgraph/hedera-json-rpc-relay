@@ -147,7 +147,7 @@ describe('Filter API Test Suite', async function () {
       let filterId: string;
 
       beforeEach(async () => {
-        restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock }] });
+        restMock.onGet(LATEST_BLOCK_QUERY).reply(200, JSON.stringify({ blocks: [{ ...defaultBlock }] }));
         filterId = await filterService.newFilter(undefined, undefined, requestDetails);
       });
 
@@ -157,12 +157,12 @@ describe('Filter API Test Suite', async function () {
       });
 
       it(`should call getFilterChanges`, async function () {
-        restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
+        restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, JSON.stringify(defaultBlock));
         restMock
           .onGet(
             `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
           )
-          .reply(200, defaultLogs1);
+          .reply(200, JSON.stringify(defaultLogs1));
         const filterChanges = await filterService.getFilterChanges(filterId, requestDetails);
         expect(filterChanges).to.exist;
       });
@@ -221,11 +221,11 @@ describe('Filter API Test Suite', async function () {
 
       numberHex = blockNumberHexes[1500];
 
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/5`).reply(200, { ...defaultBlock, number: 5 });
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/1400`).reply(200, { ...defaultBlock, number: 1400 });
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/1500`).reply(200, { ...defaultBlock, number: 1500 });
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/2000`).reply(200, { ...defaultBlock, number: 2000 });
-      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock, number: 2002 }] });
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/5`).reply(200, JSON.stringify({ ...defaultBlock, number: 5 }));
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/1400`).reply(200, JSON.stringify({ ...defaultBlock, number: 1400 }));
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/1500`).reply(200, JSON.stringify({ ...defaultBlock, number: 1500 }));
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}/2000`).reply(200, JSON.stringify({ ...defaultBlock, number: 2000 }));
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, JSON.stringify({ blocks: [{ ...defaultBlock, number: 2002 }] }));
     });
 
     it('Returns a valid filterId', async function () {
@@ -275,7 +275,7 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('validates fromBlock and toBlock', async function () {
-      // fromBlock is larger than toBlock
+      // reject if fromBlock is larger than toBlock
       await RelayAssertions.assertRejection(
         predefined.INVALID_BLOCK_RANGE,
         filterService.newFilter,
@@ -291,13 +291,13 @@ describe('Filter API Test Suite', async function () {
         ['latest', blockNumberHexes[1400], requestDetails],
       );
 
-      // block range is too large
+      // reject when no fromBlock is provided
       await RelayAssertions.assertRejection(
-        predefined.RANGE_TOO_LARGE(1000),
+        predefined.MISSING_FROM_BLOCK_PARAM,
         filterService.newFilter,
         true,
         filterService,
-        [blockNumberHexes[5], blockNumberHexes[2000], requestDetails],
+        [null, blockNumberHexes[1400], requestDetails],
       );
 
       // block range is valid
@@ -342,7 +342,7 @@ describe('Filter API Test Suite', async function () {
 
   describe('eth_newBlockFilter', async function () {
     beforeEach(() => {
-      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [defaultBlock] });
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, JSON.stringify({ blocks: [defaultBlock] }));
     });
 
     it('Returns a valid filterId', async function () {
@@ -402,13 +402,13 @@ describe('Filter API Test Suite', async function () {
         block_number: 3,
       };
 
-      restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [customBlock] });
-      restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, JSON.stringify({ blocks: [customBlock] }));
+      restMock.onGet('blocks/1').reply(200, JSON.stringify({ ...defaultBlock, block_number: 1 }));
       restMock
         .onGet(
           `contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=100&order=asc`,
         )
-        .reply(200, filteredLogs);
+        .reply(200, JSON.stringify(filteredLogs));
 
       const filterId = await filterService.newFilter('0x1', undefined, requestDetails);
 
@@ -429,13 +429,13 @@ describe('Filter API Test Suite', async function () {
         block_number: 3,
       };
 
-      restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [customBlock] });
-      restMock.onGet('blocks/3').reply(200, customBlock);
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, JSON.stringify({ blocks: [customBlock] }));
+      restMock.onGet('blocks/3').reply(200, JSON.stringify(customBlock));
       restMock
         .onGet(
           `contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=100&order=asc`,
         )
-        .reply(200, filteredLogs);
+        .reply(200, JSON.stringify(filteredLogs));
 
       const filterId = await filterService.newFilter(undefined, '0x3', requestDetails);
 
@@ -452,13 +452,13 @@ describe('Filter API Test Suite', async function () {
         }),
       };
 
-      restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
-      restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, JSON.stringify({ blocks: [defaultBlock] }));
+      restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, JSON.stringify(defaultBlock));
       restMock
         .onGet(
           `contracts/${defaultEvmAddress}/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
         )
-        .reply(200, filteredLogs);
+        .reply(200, JSON.stringify(filteredLogs));
 
       const filterId = await filterService.newFilter(undefined, undefined, requestDetails, defaultEvmAddress);
 
@@ -480,13 +480,13 @@ describe('Filter API Test Suite', async function () {
         }),
       };
 
-      restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
-      restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, defaultBlock);
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, JSON.stringify({ blocks: [defaultBlock] }));
+      restMock.onGet(`blocks/${defaultBlock.number}`).reply(200, JSON.stringify(defaultBlock));
       restMock
         .onGet(
           `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&topic0=${customTopic[0]}&limit=100&order=asc`,
         )
-        .reply(200, filteredLogs);
+        .reply(200, JSON.stringify(filteredLogs));
 
       const filterId = await filterService.newFilter(undefined, undefined, requestDetails, undefined, customTopic);
 
@@ -519,17 +519,17 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('should return the hashes of latest blocks', async function () {
-      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock, number: defaultBlock.number + 4 }] });
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, {
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, JSON.stringify({ blocks: [{ ...defaultBlock, number: defaultBlock.number + 4 }] }));
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, JSON.stringify({
         blocks: [
           { ...defaultBlock, number: defaultBlock.number + 1, hash: '0x1' },
           { ...defaultBlock, number: defaultBlock.number + 2, hash: '0x2' },
           { ...defaultBlock, number: defaultBlock.number + 3, hash: '0x3' },
         ],
-      });
+      }));
       restMock
         .onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number + 3}&order=asc`)
-        .reply(200, { blocks: [] });
+        .reply(200, JSON.stringify({ blocks: [] }));
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
       await cacheService.set(
@@ -554,14 +554,14 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('should return no blocks if the second request is for the same block', async function () {
-      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock, number: defaultBlock.number + 3 }] });
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, {
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, JSON.stringify({ blocks: [{ ...defaultBlock, number: defaultBlock.number + 3 }] }));
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, JSON.stringify({
         blocks: [{ ...defaultBlock, number: defaultBlock.number + 1, hash: '0x1' }],
-      });
+      }));
 
       restMock
         .onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number + 1}&order=asc`)
-        .reply(200, { blocks: [] });
+        .reply(200, JSON.stringify({ blocks: [] }));
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
       await cacheService.set(
@@ -593,13 +593,13 @@ describe('Filter API Test Suite', async function () {
         block_number: 9,
       };
 
-      restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [customBlock] });
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, JSON.stringify({ blocks: [customBlock] }));
       restMock
         .onGet(
           `contracts/results/logs?timestamp=gte:${customBlock.timestamp.from}&timestamp=lte:${customBlock.timestamp.to}&limit=100&order=asc`,
         )
-        .reply(200, filteredLogs);
-      restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
+        .reply(200, JSON.stringify(filteredLogs));
+      restMock.onGet('blocks/1').reply(200, JSON.stringify({ ...defaultBlock, block_number: 1 }));
 
       const filterId = await filterService.newFilter('0x1', undefined, requestDetails);
 
@@ -609,13 +609,13 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('should return an empty set if there are no logs', async function () {
-      restMock.onGet('blocks?limit=1&order=desc').reply(200, { blocks: [defaultBlock] });
+      restMock.onGet('blocks?limit=1&order=desc').reply(200, JSON.stringify({ blocks: [defaultBlock] }));
       restMock
         .onGet(
           `contracts/results/logs?timestamp=gte:${defaultBlock.timestamp.from}&timestamp=lte:${defaultBlock.timestamp.to}&limit=100&order=asc`,
         )
-        .reply(200, []);
-      restMock.onGet('blocks/1').reply(200, { ...defaultBlock, block_number: 1 });
+        .reply(200, JSON.stringify([]));
+      restMock.onGet('blocks/1').reply(200, JSON.stringify({ ...defaultBlock, block_number: 1 }));
 
       const filterId = await filterService.newFilter('0x1', undefined, requestDetails);
       const logs = await filterService.getFilterChanges(filterId, requestDetails);
@@ -623,10 +623,10 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('should return an empty set if there are no block hashes (e.g. 2 requests within 2 seconds)', async function () {
-      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, { blocks: [{ ...defaultBlock, number: defaultBlock.number }] });
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, {
+      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, JSON.stringify({ blocks: [{ ...defaultBlock, number: defaultBlock.number }] }));
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, JSON.stringify({
         blocks: [],
-      });
+      }));
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
       await cacheService.set(

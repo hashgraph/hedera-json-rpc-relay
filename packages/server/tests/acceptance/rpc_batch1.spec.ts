@@ -21,13 +21,14 @@
 // External resources
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 // Other imports
-import { numberTo0x, prepend0x } from '@hashgraph/json-rpc-relay/dist/formatters';
+import { formatTransactionId, numberTo0x, prepend0x } from '@hashgraph/json-rpc-relay/dist/formatters';
 import Constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 // Errors and constants from local resources
 import { predefined } from '@hashgraph/json-rpc-relay/dist/lib/errors/JsonRpcError';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import {
   AccountCreateTransaction,
+  ContractFunctionParameters,
   FileInfo,
   FileInfoQuery,
   Hbar,
@@ -315,6 +316,24 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           expect(parseInt(logs[i].blockNumber, 16)).to.be.greaterThanOrEqual(log0BlockInt);
           expect(parseInt(logs[i].blockNumber, 16)).to.be.lessThanOrEqual(log4BlockInt);
         }
+      });
+
+      it('should return empty logs if `toBlock` is not found', async () => {
+        const notExistedLog = latestBlock + 99;
+
+        const logs = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
+          [
+            {
+              fromBlock: log0Block.blockNumber,
+              toBlock: `0x${notExistedLog.toString(16)}`,
+              address: [contractAddress, contractAddress2],
+            },
+          ],
+          requestIdPrefix,
+        );
+
+        expect(logs.length).to.eq(0);
       });
 
       it('should be able to use `address` param', async () => {
@@ -725,6 +744,44 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           // due to the mirror node block updating after it was retrieved and before the relay.call completes
           expect(blockNumber).to.be.oneOf([mirrorBlockNumber, mirrorBlockNumber + 1]);
         });
+      });
+
+      it('should execute "eth_getBlockByNumber", hydrated transactions = true for a block that contains a call with CONTRACT_NEGATIVE_VALUE status', async function () {
+        let transactionId;
+        let hasContractNegativeValueError = false;
+        try {
+          await servicesNode.executeContractCallWithAmount(
+            mirrorContractDetails.contract_id,
+            '',
+            new ContractFunctionParameters(),
+            500_000,
+            -100,
+            requestId,
+          );
+        } catch (e: any) {
+          // regarding the docs and HederaResponseCodes.sol the CONTRACT_NEGATIVE_VALUE code equals 96;
+          expect(e.status._code).to.equal(96);
+          hasContractNegativeValueError = true;
+          transactionId = e.transactionId;
+        }
+        expect(hasContractNegativeValueError).to.be.true;
+
+        // waiting for at least one block time for data to be populated in the mirror node
+        // because on the step above we sent a sdk call
+        await new Promise((r) => setTimeout(r, 2100));
+        const mirrorResult = await mirrorNode.get(
+          `/contracts/results/${formatTransactionId(transactionId.toString())}`,
+          requestId,
+        );
+        const txHash = mirrorResult.hash;
+        const blockResult = await relay.call(
+          RelayCalls.ETH_ENDPOINTS.ETH_GET_BLOCK_BY_NUMBER,
+          [numberTo0x(mirrorResult.block_number), true],
+          requestIdPrefix,
+        );
+        expect(blockResult.transactions).to.not.be.empty;
+        expect(blockResult.transactions.map((tx) => tx.hash)).to.contain(txHash);
+        expect(blockResult.transactions.filter((tx) => tx.hash == txHash)[0].value).to.equal('0xffffffffffffff9c');
       });
     });
 

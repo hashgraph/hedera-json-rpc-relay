@@ -63,11 +63,11 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   ) {
     const formattedData = { ...callData, estimate };
     await ethImpl.contractCallFormat(formattedData, requestDetails);
-    return web3Mock.onPost('contracts/call', formattedData).reply(statusCode, result);
+    return web3Mock.onPost('contracts/call', formattedData).reply(statusCode, JSON.stringify(result));
   }
 
   function mockGetAccount(idOrAliasOrEvmAddress: string, statusCode: number, result: any) {
-    return restMock.onGet(`accounts/${idOrAliasOrEvmAddress}?transactions=false`).reply(statusCode, result);
+    return restMock.onGet(`accounts/${idOrAliasOrEvmAddress}?transactions=false`).reply(statusCode, JSON.stringify(result));
   }
 
   const transaction = {
@@ -89,7 +89,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     sdkClientStub = createStubInstance(SDKClient);
     getSdkClientStub = stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
     ethImplOverridden = new EthImpl(hapiServiceInstance, mirrorNodeInstance, logger, '0x12a', registry, cacheService);
-    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
     restMock.onGet(`accounts/undefined${NO_TRANSACTIONS}`).reply(404);
     mockGetAccount(hapiServiceInstance.getMainClientInstance().operatorAccountId!.toString(), 200, {
       evm_address: ACCOUNT_ADDRESS_1,
@@ -171,7 +171,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
     restMock
       .onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`)
-      .reply(200, { address: RECEIVER_ADDRESS }, requestDetails);
+      .reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }, requestDetails));
 
     const gas = await ethImpl.estimateGas(callData, null, requestDetails);
     expect(gas).to.equal(numberTo0x(constants.TX_BASE_COST));
@@ -199,7 +199,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       value: 10, //in tinybars
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
-    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, { address: RECEIVER_ADDRESS });
+    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
 
     const gas = await ethImpl.estimateGas(
       {
@@ -218,7 +218,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       value: 10, //in tinybars
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
-    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, { address: RECEIVER_ADDRESS });
+    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
 
     const gasBeforeCache = await ethImpl.estimateGas(
       {
@@ -269,7 +269,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       value: 0, //in tinybars
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
-    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, { address: RECEIVER_ADDRESS });
+    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
     const gas = await ethImpl.estimateGas(
       {
         to: RECEIVER_ADDRESS,
@@ -305,7 +305,7 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       value: -100_000_000_000, //in tinybars
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
-    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, { address: RECEIVER_ADDRESS });
+    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
     const result = await ethImpl.estimateGas(
       {
         to: RECEIVER_ADDRESS,

@@ -80,20 +80,20 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
   this.beforeEach(function () {
     restMock.reset();
-    restMock.onGet(`accounts/${defaultFromLongZeroAddress}${NO_TRANSACTIONS}`).reply(200, {
+    restMock.onGet(`accounts/${defaultFromLongZeroAddress}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({
       evm_address: `${DEFAULT_TRANSACTION.from}`,
-    });
-    restMock.onGet(`accounts/${from}?transactions=false`).reply(200, {
+    }));
+    restMock.onGet(`accounts/${from}?transactions=false`).reply(200, JSON.stringify({
       evm_address: evm_address,
-    });
+    }));
   });
 
   it('returns 155 transaction for type 0', async function () {
     const uniqueTxHash = '0x27cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify({
       ...contractResultMock,
       type: 0,
-    });
+    }));
 
     const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
     expect(result).to.be.an.instanceOf(Transaction);
@@ -101,11 +101,11 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
   it('returns 2930 transaction for type 1', async function () {
     const uniqueTxHash = '0x28cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify({
       ...contractResultMock,
       type: 1,
       access_list: [],
-    });
+    }));
 
     const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
     expect(result).to.be.an.instanceOf(Transaction2930);
@@ -113,13 +113,13 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
   it('returns 1559 transaction for type 2', async function () {
     const uniqueTxHash = '0x27cad7b827375d12d73af57b7a3e84353645fd31305ea58ff52dda53ec640533';
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, {
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify({
       ...contractResultMock,
       type: 2,
       access_list: [],
       max_fee_per_gas: '0x47',
       max_priority_fee_per_gas: '0x47',
-    });
+    }));
 
     const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
     expect(result).to.be.an.instanceOf(Transaction1559);
@@ -127,17 +127,17 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
   it('returns `null` for non-existing hash', async function () {
     const uniqueTxHash = '0x27cAd7b838375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(404, DETAILD_CONTRACT_RESULT_NOT_FOUND);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(404, JSON.stringify(DETAILD_CONTRACT_RESULT_NOT_FOUND));
     restMock
       .onGet(`contracts/results/logs?transaction.hash=${uniqueTxHash}&limit=100&order=asc`)
-      .reply(200, EMPTY_LOGS_RESPONSE);
+      .reply(200, JSON.stringify(EMPTY_LOGS_RESPONSE));
 
     const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
     expect(result).to.equal(null);
   });
 
   it('account should be cached', async function () {
-    restMock.onGet(`contracts/results/${DEFAULT_TX_HASH}`).reply(200, defaultDetailedContractResultByHash);
+    restMock.onGet(`contracts/results/${DEFAULT_TX_HASH}`).reply(200, JSON.stringify(defaultDetailedContractResultByHash));
     const resBeforeCache = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH, requestDetails);
     restMock.onGet(`accounts/${defaultFromLongZeroAddress}${NO_TRANSACTIONS}`).reply(404);
     const resAfterCache = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH, requestDetails);
@@ -145,7 +145,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   });
 
   it('returns correct transaction for existing hash', async function () {
-    restMock.onGet(`contracts/results/${DEFAULT_TX_HASH}`).reply(200, defaultDetailedContractResultByHash);
+    restMock.onGet(`contracts/results/${DEFAULT_TX_HASH}`).reply(200, JSON.stringify(defaultDetailedContractResultByHash));
     const result = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH, requestDetails);
     RelayAssertions.assertTransaction(result, {
       ...DEFAULT_TRANSACTION,
@@ -163,7 +163,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
     const uniqueTxHash = '0x97cad7b827375d12d73af57b6a3f84353645fd31305ea58ff52dda53ec640533';
 
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithZeroXZeroValues);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify(detailedResultsWithZeroXZeroValues));
     const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
     RelayAssertions.assertTransaction(result, {
       ...DEFAULT_TRANSACTION,
@@ -181,7 +181,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     };
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify(detailedResultsWithNullNullableValues));
     const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
     expect(result).to.not.be.null;
 
@@ -196,7 +196,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     };
     const uniqueTxHash = '0x0aaad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify(detailedResultsWithNullNullableValues));
     const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
     expect(result).to.not.be.null;
 
@@ -212,7 +212,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     };
     const uniqueTxHash = '0xb4cad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640533';
 
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify(detailedResultsWithNullNullableValues));
     const result = await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
     expect(result).to.not.be.null;
 
@@ -227,7 +227,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     };
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640534';
 
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify(detailedResultsWithNullNullableValues));
 
     try {
       await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
@@ -245,7 +245,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
     };
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52dda53ec640511';
 
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify(detailedResultsWithNullNullableValues));
     try {
       await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
       expect.fail('should have thrown an error');
@@ -264,7 +264,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
 
     const uniqueTxHash = '0x14aad7b827375d12d73af57b6a3e84353645fd31305ea58ff52d1a53ec640511';
 
-    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, detailedResultsWithNullNullableValues);
+    restMock.onGet(`contracts/results/${uniqueTxHash}`).reply(200, JSON.stringify(detailedResultsWithNullNullableValues));
     try {
       await ethImpl.getTransactionByHash(uniqueTxHash, requestDetails);
       expect.fail('should have thrown an error');
@@ -277,7 +277,7 @@ describe('@ethGetTransactionByHash eth_getTransactionByHash tests', async functi
   it('returns reverted transactions', async function () {
     restMock
       .onGet(`contracts/results/${DEFAULT_TX_HASH}`)
-      .reply(200, DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED);
+      .reply(200, JSON.stringify(DEFAULT_DETAILED_CONTRACT_RESULT_BY_HASH_REVERTED));
 
     const result = await ethImpl.getTransactionByHash(DEFAULT_TX_HASH, requestDetails);
     RelayAssertions.assertTransaction(result, {

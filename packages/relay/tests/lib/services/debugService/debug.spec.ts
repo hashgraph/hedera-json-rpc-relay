@@ -282,12 +282,12 @@ describe('Debug API Test Suite', async function () {
 
   describe('debug_traceTransaction', async function () {
     beforeEach(() => {
-      restMock.onGet(CONTARCTS_RESULTS_ACTIONS).reply(200, contractsResultsActionsResult);
-      restMock.onGet(CONTRACTS_RESULTS_BY_HASH).reply(200, contractsResultsByHashResult);
-      restMock.onGet(CONTRACT_BY_ADDRESS).reply(200, contractResult);
-      restMock.onGet(SENDER_BY_ADDRESS).reply(200, accountsResult);
-      restMock.onGet(CONTRACT_BY_ADDRESS2).reply(200, contractResultSecond);
-      restMock.onGet(`contracts/${senderAddress}`).reply(404, {
+      restMock.onGet(CONTARCTS_RESULTS_ACTIONS).reply(200, JSON.stringify(contractsResultsActionsResult));
+      restMock.onGet(CONTRACTS_RESULTS_BY_HASH).reply(200, JSON.stringify(contractsResultsByHashResult));
+      restMock.onGet(CONTRACT_BY_ADDRESS).reply(200, JSON.stringify(contractResult));
+      restMock.onGet(SENDER_BY_ADDRESS).reply(200, JSON.stringify(accountsResult));
+      restMock.onGet(CONTRACT_BY_ADDRESS2).reply(200, JSON.stringify(contractResultSecond));
+      restMock.onGet(`contracts/${senderAddress}`).reply(404, JSON.stringify({
         _status: {
           messages: [
             {
@@ -295,7 +295,7 @@ describe('Debug API Test Suite', async function () {
             },
           ],
         },
-      });
+      }));
       for (const config of opcodeLoggerConfigs) {
         const opcodeLoggerParams = getQueryParams({
           memory: !!config.enableMemory,
@@ -303,7 +303,7 @@ describe('Debug API Test Suite', async function () {
           storage: !config.disableStorage,
         });
 
-        web3Mock.onGet(`${CONTRACTS_RESULTS_OPCODES}${opcodeLoggerParams}`).reply(200, {
+        web3Mock.onGet(`${CONTRACTS_RESULTS_OPCODES}${opcodeLoggerParams}`).reply(200, JSON.stringify({
           ...opcodesResponse,
           opcodes: opcodesResponse.opcodes?.map((opcode) => ({
             ...opcode,
@@ -311,7 +311,7 @@ describe('Debug API Test Suite', async function () {
             memory: config.enableMemory ? opcode.memory : [],
             storage: config.disableStorage ? {} : opcode.storage,
           })),
-        });
+        }));
       }
     });
 
@@ -471,8 +471,8 @@ describe('Debug API Test Suite', async function () {
               ],
             },
           };
-          restMock.onGet(CONTRACTS_RESULTS_BY_NON_EXISTENT_HASH).reply(404, notFound);
-          restMock.onGet(CONTRACT_RESULTS_BY_ACTIONS_NON_EXISTENT_HASH).reply(404, notFound);
+          restMock.onGet(CONTRACTS_RESULTS_BY_NON_EXISTENT_HASH).reply(404, JSON.stringify(notFound));
+          restMock.onGet(CONTRACT_RESULTS_BY_ACTIONS_NON_EXISTENT_HASH).reply(404, JSON.stringify(notFound));
         });
 
         afterEach(() => {
@@ -513,7 +513,7 @@ describe('Debug API Test Suite', async function () {
           });
 
           it('should return passed address on notFound entity from the mirror node', async function () {
-            restMock.onGet(ACCOUNT_BY_ADDRESS).reply(404, notFound);
+            restMock.onGet(ACCOUNT_BY_ADDRESS).reply(404, JSON.stringify(notFound));
             const address = await debugService.resolveAddress(accountAddress, requestDetails);
             expect(address).to.eq(accountAddress);
           });

@@ -78,10 +78,10 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
-    restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, DEFAULT_BLOCK);
-    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, DEFAULT_BLOCK);
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOST_RECENT_BLOCK);
+    restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
+    restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, JSON.stringify(DEFAULT_BLOCK));
+    restMock.onGet(`blocks/${BLOCK_HASH}`).reply(200, JSON.stringify(DEFAULT_BLOCK));
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(MOST_RECENT_BLOCK));
   });
 
   this.afterEach(() => {
@@ -96,7 +96,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=0x101&limit=100&order=desc`,
         )
-        .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
+        .reply(200, JSON.stringify(DEFAULT_CURRENT_CONTRACT_STATE));
 
       const result = await ethImpl.getStorageAt(CONTRACT_ADDRESS_1, '0x101', requestDetails, numberTo0x(BLOCK_NUMBER));
       confirmResult(result);
@@ -111,7 +111,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=0x0000101&limit=100&order=desc`,
         )
-        .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
+        .reply(200, JSON.stringify(DEFAULT_CURRENT_CONTRACT_STATE));
 
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
@@ -131,7 +131,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=0x0000000000000000000000000000000000000000000000000000000000000101&limit=100&order=desc`,
         )
-        .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
+        .reply(200, JSON.stringify(DEFAULT_CURRENT_CONTRACT_STATE));
 
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
@@ -151,7 +151,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=0x0000000000000000000000000000000000000000000000000000000000000101&limit=100&order=desc`,
         )
-        .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
+        .reply(200, JSON.stringify(DEFAULT_CURRENT_CONTRACT_STATE));
 
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
@@ -171,7 +171,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?slot=${DEFAULT_CURRENT_CONTRACT_STATE.state[0].slot}&limit=100&order=desc`,
         )
-        .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
+        .reply(200, JSON.stringify(DEFAULT_CURRENT_CONTRACT_STATE));
 
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
@@ -190,7 +190,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?slot=${DEFAULT_CURRENT_CONTRACT_STATE.state[0].slot}&limit=100&order=desc`,
         )
-        .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
+        .reply(200, JSON.stringify(DEFAULT_CURRENT_CONTRACT_STATE));
 
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
@@ -209,7 +209,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?slot=${DEFAULT_CURRENT_CONTRACT_STATE.state[0].slot}&limit=100&order=desc`,
         )
-        .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
+        .reply(200, JSON.stringify(DEFAULT_CURRENT_CONTRACT_STATE));
 
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
@@ -230,7 +230,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?slot=${DEFAULT_CURRENT_CONTRACT_STATE.state[0].slot}&limit=100&order=desc`,
         )
-        .reply(200, DEFAULT_CURRENT_CONTRACT_STATE);
+        .reply(200, JSON.stringify(DEFAULT_CURRENT_CONTRACT_STATE));
 
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
@@ -244,7 +244,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     });
 
     it('eth_getStorageAt should throw a predefined RESOURCE_NOT_FOUND when block not found', async function () {
-      restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, null);
+      restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, JSON.stringify(null));
 
       const args = [
         CONTRACT_ADDRESS_1,
@@ -268,7 +268,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=${wrongSlot}&limit=100&order=desc`,
         )
-        .reply(200, DEFAULT_CONTRACT_STATE_EMPTY_ARRAY);
+        .reply(200, JSON.stringify(DEFAULT_CONTRACT_STATE_EMPTY_ARRAY));
 
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
@@ -280,12 +280,12 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
     });
 
     it('eth_getStorageAt should return old state when passing older block number', async function () {
-      restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, OLDER_BLOCK);
+      restMock.onGet(`blocks/${BLOCK_NUMBER}`).reply(200, JSON.stringify(OLDER_BLOCK));
       restMock
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${OLDER_BLOCK.timestamp.to}&slot=${DEFAULT_OLDER_CONTRACT_STATE.state[0].slot}&limit=100&order=desc`,
         )
-        .reply(200, DEFAULT_OLDER_CONTRACT_STATE);
+        .reply(200, JSON.stringify(DEFAULT_OLDER_CONTRACT_STATE));
 
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,
@@ -302,7 +302,7 @@ describe('@ethGetStorageAt eth_getStorageAt spec', async function () {
         .onGet(
           `contracts/${CONTRACT_ADDRESS_1}/state?timestamp=${DEFAULT_BLOCK.timestamp.to}&slot=${DEFAULT_OLDER_CONTRACT_STATE.state[0].slot}&limit=100&order=desc`,
         )
-        .reply(404, DETAILD_CONTRACT_RESULT_NOT_FOUND);
+        .reply(404, JSON.stringify(DETAILD_CONTRACT_RESULT_NOT_FOUND));
 
       const result = await ethImpl.getStorageAt(
         CONTRACT_ADDRESS_1,

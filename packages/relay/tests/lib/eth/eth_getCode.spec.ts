@@ -64,11 +64,11 @@ describe('@ethGetCode using MirrorNode', async function () {
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
 
     restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, null);
     restMock.onGet(`tokens/0.0.${parseInt(CONTRACT_ADDRESS_1, 16)}`).reply(404, null);
-    restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(200, DEFAULT_CONTRACT);
+    restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
     sdkClientStub.getContractByteCode.resolves(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
   });
 
@@ -79,7 +79,7 @@ describe('@ethGetCode using MirrorNode', async function () {
 
   describe('eth_getCode', async function () {
     it('should return non cached value for not found contract', async () => {
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(404, DEFAULT_CONTRACT);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(404, JSON.stringify(DEFAULT_CONTRACT));
       sdkClientStub.getContractByteCode.throws(
         new SDKClientError({
           status: {
@@ -100,7 +100,7 @@ describe('@ethGetCode using MirrorNode', async function () {
     });
 
     it('should return the bytecode from SDK if Mirror Node returns 404', async () => {
-      restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(404, DEFAULT_CONTRACT);
+      restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(404, JSON.stringify(DEFAULT_CONTRACT));
       const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, null, requestDetails);
       expect(res).to.equal(DEPLOYED_BYTECODE);
     });
@@ -115,9 +115,9 @@ describe('@ethGetCode using MirrorNode', async function () {
     });
 
     it('should return redirect bytecode for HTS token', async () => {
-      restMock.onGet(`contracts/${HTS_TOKEN_ADDRESS}`).reply(404, null);
-      restMock.onGet(`accounts/${HTS_TOKEN_ADDRESS}?limit=100`).reply(404, null);
-      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, DEFAULT_HTS_TOKEN);
+      restMock.onGet(`contracts/${HTS_TOKEN_ADDRESS}`).reply(404, JSON.stringify(null));
+      restMock.onGet(`accounts/${HTS_TOKEN_ADDRESS}?limit=100`).reply(404, JSON.stringify(null));
+      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, JSON.stringify(DEFAULT_HTS_TOKEN));
       const redirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${HTS_TOKEN_ADDRESS.slice(
         2,
       )}600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033`;
@@ -126,8 +126,8 @@ describe('@ethGetCode using MirrorNode', async function () {
     });
 
     it('should return the static bytecode for address(0x167) call', async () => {
-      restMock.onGet(`contracts/${EthImpl.iHTSAddress}`).reply(200, DEFAULT_CONTRACT);
-      restMock.onGet(`accounts/${EthImpl.iHTSAddress}${NO_TRANSACTIONS}`).reply(404, null);
+      restMock.onGet(`contracts/${EthImpl.iHTSAddress}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
+      restMock.onGet(`accounts/${EthImpl.iHTSAddress}${NO_TRANSACTIONS}`).reply(404, JSON.stringify(null));
 
       const res = await ethImpl.getCode(EthImpl.iHTSAddress, null, requestDetails);
       expect(res).to.equal(EthImpl.invalidEVMInstruction);

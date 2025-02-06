@@ -80,15 +80,17 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     const latestFees = JSON.parse(JSON.stringify(DEFAULT_NETWORK_FEES));
 
     this.beforeEach(() => {
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-      restMock.onGet(`blocks/${previousBlock.number}`).reply(200, previousBlock);
-      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
-      restMock.onGet(`network/fees?timestamp=lte:${previousBlock.timestamp.to}`).reply(200, previousFees);
-      restMock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+      restMock.onGet(`blocks/${previousBlock.number}`).reply(200, JSON.stringify(previousBlock));
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, JSON.stringify(latestBlock));
+      restMock.onGet(`network/fees?timestamp=lte:${previousBlock.timestamp.to}`).reply(200, JSON.stringify(previousFees));
+      restMock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, JSON.stringify(latestFees));
     });
 
     it('eth_feeHistory', async function () {
+      const updatedFees = previousFees;
       previousFees.fees[2].gas += 1;
+      restMock.onGet(`network/fees?timestamp=lte:${previousBlock.timestamp.to}`).reply(200, JSON.stringify(updatedFees));
       const feeHistory = await ethImpl.feeHistory(2, 'latest', [25, 75], requestDetails);
 
       expect(feeHistory).to.exist;
@@ -145,10 +147,10 @@ describe('@ethFeeHistory using MirrorNode', async function () {
   it('eth_feeHistory with max results', async function () {
     const maxResultsCap = Number(constants.DEFAULT_FEE_HISTORY_MAX_RESULTS);
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [{ ...DEFAULT_BLOCK, number: 10 }] });
-    restMock.onGet(`network/fees?timestamp=lte:${DEFAULT_BLOCK.timestamp.to}`).reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [{ ...DEFAULT_BLOCK, number: 10 }] }));
+    restMock.onGet(`network/fees?timestamp=lte:${DEFAULT_BLOCK.timestamp.to}`).reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
     Array.from(Array(11).keys()).map((blockNumber) =>
-      restMock.onGet(`blocks/${blockNumber}`).reply(200, { ...DEFAULT_BLOCK, number: blockNumber }),
+      restMock.onGet(`blocks/${blockNumber}`).reply(200, JSON.stringify({ ...DEFAULT_BLOCK, number: blockNumber })),
     );
 
     const feeHistory = await ethImpl.feeHistory(200, '0x9', [0], requestDetails);
@@ -165,9 +167,9 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     const latestFees = DEFAULT_NETWORK_FEES;
     const hexBlockNumber = `0x${latestBlock.number.toString(16)}`;
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-    restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
-    restMock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, latestFees);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+    restMock.onGet(`blocks/${latestBlock.number}`).reply(200, JSON.stringify(latestBlock));
+    restMock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(200, JSON.stringify(latestFees));
 
     const firstFeeHistory = await ethImpl.feeHistory(1, hexBlockNumber, null, requestDetails);
     const secondFeeHistory = await ethImpl.feeHistory(1, hexBlockNumber, null, requestDetails);
@@ -194,10 +196,10 @@ describe('@ethFeeHistory using MirrorNode', async function () {
 
     this.beforeEach(() => {
       sdkClientStub.getTinyBarGasFee.resolves(fauxGasTinyBars);
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
-      restMock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(404, NOT_FOUND_RES);
-      restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, JSON.stringify(latestBlock));
+      restMock.onGet(`network/fees?timestamp=lte:${latestBlock.timestamp.to}`).reply(404, JSON.stringify(NOT_FOUND_RES));
+      restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
     });
 
     it('eth_feeHistory on mirror 404', async function () {
@@ -224,7 +226,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
 
     function defineLatestBlockRestMock(latestBlockNumber: number) {
       const latestBlock = { ...DEFAULT_BLOCK, number: latestBlockNumber };
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
 
       return latestBlock;
     }
@@ -234,13 +236,13 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     beforeEach(async function () {
       await cacheService.clear(requestDetails);
       restMock.reset();
-      restMock.onGet(`network/fees`).reply(200, DEFAULT_NETWORK_FEES);
+      restMock.onGet(`network/fees`).reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
     });
 
     it('eth_feeHistory with fixed fees', async function () {
       const latestBlockNumber = 20;
       const latestBlock = defineLatestBlockRestMock(latestBlockNumber);
-      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, JSON.stringify(latestBlock));
 
       const countBlocks = 2;
 
@@ -254,7 +256,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     it('eth_feeHistory 5 blocks with latest with fixed fees', async function () {
       const latestBlockNumber = 20;
       const latestBlock = defineLatestBlockRestMock(latestBlockNumber);
-      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, JSON.stringify(latestBlock));
 
       const countBlocks = 5;
 
@@ -268,7 +270,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     it('eth_feeHistory 5 blocks with custom newest with fixed fees', async function () {
       const latestBlockNumber = 10;
       const latestBlock = defineLatestBlockRestMock(latestBlockNumber);
-      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, JSON.stringify(latestBlock));
 
       const countBlocks = 5;
 
@@ -282,7 +284,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     it('eth_feeHistory with pending param', async function () {
       const latestBlockNumber = 20;
       const latestBlock = defineLatestBlockRestMock(latestBlockNumber);
-      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, JSON.stringify(latestBlock));
 
       const countBlocks = 5;
 
@@ -297,7 +299,7 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     it('eth_feeHistory with earliest param', async function () {
       const latestBlockNumber = 10;
       const latestBlock = defineLatestBlockRestMock(latestBlockNumber);
-      restMock.onGet(`blocks/1`).reply(200, latestBlock);
+      restMock.onGet(`blocks/1`).reply(200, JSON.stringify(latestBlock));
       const countBlocks = 1;
 
       const feeHistory = await ethImpl.feeHistory(countBlocks, 'earliest', [], requestDetails);
@@ -311,8 +313,8 @@ describe('@ethFeeHistory using MirrorNode', async function () {
     it('eth_feeHistory with fixed fees using cache', async function () {
       const latestBlockNumber = 20;
       const latestBlock = defineLatestBlockRestMock(latestBlockNumber);
-      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, latestBlock);
-      restMock.onGet(`network/fees`).reply(200, DEFAULT_NETWORK_FEES);
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(200, JSON.stringify(latestBlock));
+      restMock.onGet(`network/fees`).reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
 
       const countBlocks = 2;
 
@@ -322,8 +324,8 @@ describe('@ethFeeHistory using MirrorNode', async function () {
       expect(feeHistory['oldestBlock']).to.eq(numberTo0x(latestBlockNumber - countBlocks + 1));
       expect(feeHistory['baseFeePerGas'].length).to.eq(countBlocks + 1);
 
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(404, {});
-      restMock.onGet(`blocks/${latestBlock.number}`).reply(404, {});
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(404, JSON.stringify({}));
+      restMock.onGet(`blocks/${latestBlock.number}`).reply(404, JSON.stringify({}));
 
       const feeHistoryUsingCache = await ethImpl.feeHistory(countBlocks, 'latest', [], requestDetails);
       checkCommonFeeHistoryFields(feeHistoryUsingCache);

@@ -2771,6 +2771,37 @@ export class EthImpl implements Eth {
     return await this.getAcccountNonceFromContractResult(address, blockNum, requestDetails);
   }
 
+  /**
+   * Retrieves logs based on the provided parameters.
+   *
+   * The function handles log retrieval as follows:
+   *
+   * - Using `blockHash`:
+   *   - If `blockHash` is provided, logs are retrieved based on the timestamp of the block associated with the `blockHash`.
+   *
+   * - Without `blockHash`:
+   *
+   *   - If only `fromBlock` is provided:
+   *     - Logs are retrieved from `fromBlock` to the latest block.
+   *     - If `fromBlock` does not exist, an empty array is returned.
+   *
+   *   - If only `toBlock` is provided:
+   *     - A predefined error `MISSING_FROM_BLOCK_PARAM` is thrown because `fromBlock` is required.
+   *
+   *   - If both `fromBlock` and `toBlock` are provided:
+   *     - Logs are retrieved from `fromBlock` to `toBlock`.
+   *     - If `toBlock` does not exist, an empty array is returned.
+   *     - If the timestamp range between `fromBlock` and `toBlock` exceeds 7 days, a predefined error `TIMESTAMP_RANGE_TOO_LARGE` is thrown.
+   *
+   * @param {string | null} blockHash - The block hash to prioritize log retrieval.
+   * @param {string | 'latest'} fromBlock - The starting block for log retrieval.
+   * @param {string | 'latest'} toBlock - The ending block for log retrieval.
+   * @param {string | string[] | null} address - The address(es) to filter logs by.
+   * @param {any[] | null} topics - The topics to filter logs by.
+   * @param {RequestDetails} requestDetails - The details of the request.
+   * @returns {Promise<Log[]>} - A promise that resolves to an array of logs or an empty array if no logs are found.
+   * @throws {Error} Throws specific errors like `MISSING_FROM_BLOCK_PARAM` or `TIMESTAMP_RANGE_TOO_LARGE` when applicable.
+   */
   async getLogs(
     blockHash: string | null,
     fromBlock: string | 'latest',

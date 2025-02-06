@@ -25,6 +25,7 @@ import { install as betterLookupInstall } from 'better-lookup';
 import { ethers } from 'ethers';
 import http from 'http';
 import https from 'https';
+import JSONBigInt from 'json-bigint';
 import { Logger } from 'pino';
 import { Histogram, Registry } from 'prom-client';
 
@@ -361,6 +362,22 @@ export class MirrorNodeClient {
         if (pathLabel == MirrorNodeClient.GET_CONTRACTS_RESULTS_OPCODES) {
           response = await this.web3Client.get<T>(path, axiosRequestConfig);
         } else {
+          // JavaScript supports integers only up to 53 bits. When a number exceeding this limit
+          // is converted to a JS Number type, precision is lost due to rounding.
+          // To prevent this, `transformResponse` is used to intercept
+          // and process the response before Axios’s default JSON.parse conversion.
+          // JSONBigInt reads the string representation from the received JSON
+          // and converts large numbers into BigNumber objects to maintain accuracy.
+          axiosRequestConfig['transformResponse'] = [
+            (data) => {
+              // if the data is not valid, just return it to stick to the current behaviour
+              if (data) {
+                return JSONBigInt.parse(data);
+              }
+
+              return data;
+            },
+          ];
           response = await this.restClient.get<T>(path, axiosRequestConfig);
         }
       } else {
@@ -369,7 +386,13 @@ export class MirrorNodeClient {
 
       const ms = Date.now() - start;
       if (this.logger.isLevelEnabled('debug')) {
-        this.logger.debug(`${requestDetails.formattedRequestId} [${method}] ${path} ${response.status} ${ms} ms`);
+        this.logger.debug(
+          `${
+            requestDetails.formattedRequestId
+          } Successfully received response from mirror node server: method=${method}, path=${path}, status=${
+            response.status
+          }, duration:${ms}ms, data:${JSON.stringify(response.data)}`,
+        );
       }
       this.mirrorResponseHistogram.labels(pathLabel, response.status?.toString()).observe(ms);
       return response.data;
@@ -428,7 +451,9 @@ export class MirrorNodeClient {
 
     if (error.response && acceptedErrorResponses?.includes(effectiveStatusCode)) {
       if (this.logger.isLevelEnabled('debug')) {
-        this.logger.debug(`${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`);
+        this.logger.debug(
+          `${requestIdPrefix} An accepted error occurred while communicating with the mirror node server: method=${method}, path=${path}, status=${effectiveStatusCode}`,
+        );
       }
       return null;
     }
@@ -445,7 +470,7 @@ export class MirrorNodeClient {
     } else {
       this.logger.error(
         new Error(error.message),
-        `${requestIdPrefix} [${method}] ${path} ${effectiveStatusCode} status`,
+        `${requestIdPrefix} Error encountered while communicating with the mirror node server: method=${method}, path=${path}, status=${effectiveStatusCode}`,
       );
     }
 
@@ -1036,6 +1061,7 @@ export class MirrorNodeClient {
     if (address === ethers.ZeroAddress) return [];
 
     const queryParams = this.prepareLogsParams(contractLogsResultsParams, limitOrderParams);
+
     const apiEndpoint = MirrorNodeClient.GET_CONTRACT_RESULT_LOGS_BY_ADDRESS_ENDPOINT.replace(
       MirrorNodeClient.ADDRESS_PLACEHOLDER,
       address,

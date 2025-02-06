@@ -65,7 +65,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
 
     sdkClientStub = sinon.createStubInstance(SDKClient);
     getSdkClientStub = sinon.stub(hapiServiceInstance, 'getSDKClient').returns(sdkClientStub);
-    restMock.onGet('network/fees').reply(200, DEFAULT_NETWORK_FEES);
+    restMock.onGet('network/fees').reply(200, JSON.stringify(DEFAULT_NETWORK_FEES));
   });
 
   this.afterEach(() => {
@@ -74,16 +74,16 @@ describe('@ethGetBalance using MirrorNode', async function () {
   });
 
   it('should return balance from mirror node', async () => {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOCK_BLOCK_NUMBER_1000_RES);
-    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, MOCK_BALANCE_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(MOCK_BLOCK_NUMBER_1000_RES));
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, JSON.stringify(MOCK_BALANCE_RES));
 
     const resBalance = await ethImpl.getBalance(CONTRACT_ADDRESS_1, null, requestDetails);
     expect(resBalance).to.equal(DEF_HEX_BALANCE);
   });
 
   it('should return balance for latest block from cache', async () => {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOCK_BLOCK_NUMBER_1000_RES);
-    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, MOCK_BALANCE_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(MOCK_BLOCK_NUMBER_1000_RES));
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, JSON.stringify(MOCK_BALANCE_RES));
 
     const resBalance = await ethImpl.getBalance(CONTRACT_ADDRESS_1, null, requestDetails);
     expect(resBalance).to.equal(DEF_HEX_BALANCE);
@@ -97,12 +97,12 @@ describe('@ethGetBalance using MirrorNode', async function () {
     // Third call should return new number using mirror node
     const newBalance = 55555;
     const newBalanceHex = numberTo0x(BigInt(newBalance) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
-    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, {
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, JSON.stringify({
       account: CONTRACT_ADDRESS_1,
       balance: {
         balance: newBalance,
       },
-    });
+    }));
     // expire cache, instead of waiting for ttl we clear it to simulate expiry faster.
     await cacheService.clear(requestDetails);
 
@@ -112,8 +112,8 @@ describe('@ethGetBalance using MirrorNode', async function () {
 
   it('should return balance from mirror node with block number passed as param the same as latest', async () => {
     const blockNumber = '0x2710';
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOCK_BLOCKS_FOR_BALANCE_RES);
-    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, MOCK_BALANCE_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(MOCK_BLOCKS_FOR_BALANCE_RES));
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, JSON.stringify(MOCK_BALANCE_RES));
 
     const resBalance = await ethImpl.getBalance(CONTRACT_ADDRESS_1, blockNumber, requestDetails);
     expect(resBalance).to.equal(DEF_HEX_BALANCE);
@@ -121,11 +121,11 @@ describe('@ethGetBalance using MirrorNode', async function () {
 
   it('should return balance from mirror node with block hash passed as param the same as latest', async () => {
     const blockHash = '0x43da6a71f66d6d46d2b487c8231c04f01b3ba3bd91d165266d8eb39de3c0152b';
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOCK_BLOCKS_FOR_BALANCE_RES);
-    restMock.onGet(`blocks/${blockHash}`).reply(200, {
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(MOCK_BLOCKS_FOR_BALANCE_RES));
+    restMock.onGet(`blocks/${blockHash}`).reply(200, JSON.stringify({
       number: 10000,
-    });
-    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, MOCK_BALANCE_RES);
+    }));
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, JSON.stringify(MOCK_BALANCE_RES));
 
     const resBalance = await ethImpl.getBalance(CONTRACT_ADDRESS_1, blockHash, requestDetails);
     expect(resBalance).to.equal(DEF_HEX_BALANCE);
@@ -133,8 +133,8 @@ describe('@ethGetBalance using MirrorNode', async function () {
 
   it('should return balance from mirror node with block number passed as param, one behind latest', async () => {
     const blockNumber = '0x270F';
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOCK_BLOCKS_FOR_BALANCE_RES);
-    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, MOCK_BALANCE_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(MOCK_BLOCKS_FOR_BALANCE_RES));
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, JSON.stringify(MOCK_BALANCE_RES));
 
     const resBalance = await ethImpl.getBalance(CONTRACT_ADDRESS_1, blockNumber, requestDetails);
     expect(resBalance).to.equal(DEF_HEX_BALANCE);
@@ -142,39 +142,39 @@ describe('@ethGetBalance using MirrorNode', async function () {
 
   it('should return balance from mirror node with block hash passed as param, one behind latest', async () => {
     const blockHash = '0x43da6a71f66d6d46d2b487c8231c04f01b3ba3bd91d165266d8eb39de3c0152b';
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOCK_BLOCKS_FOR_BALANCE_RES);
-    restMock.onGet(`blocks/${blockHash}`).reply(200, {
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(MOCK_BLOCKS_FOR_BALANCE_RES));
+    restMock.onGet(`blocks/${blockHash}`).reply(200, JSON.stringify({
       number: 9998,
       timestamp: {
         from: '1651550386',
       },
-    });
+    }));
 
-    restMock.onGet(balancesByAccountIdByTimestampURL(CONTRACT_ADDRESS_1, '1651550386')).reply(200, {
+    restMock.onGet(balancesByAccountIdByTimestampURL(CONTRACT_ADDRESS_1, '1651550386')).reply(200, JSON.stringify({
       account: CONTRACT_ADDRESS_1,
       balances: [
         {
           balance: DEF_BALANCE,
         },
       ],
-    });
+    }));
 
     const resBalance = await ethImpl.getBalance(CONTRACT_ADDRESS_1, blockHash, requestDetails);
     expect(resBalance).to.equal(DEF_HEX_BALANCE);
   });
 
   it('should return balance from consensus node', async () => {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOCK_BLOCK_NUMBER_1000_RES);
-    restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(200, null);
-    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, NOT_FOUND_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(MOCK_BLOCK_NUMBER_1000_RES));
+    restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(200, JSON.stringify(null));
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, JSON.stringify(NOT_FOUND_RES));
 
     const resBalance = await ethImpl.getBalance(CONTRACT_ADDRESS_1, null, requestDetails);
     expect(resBalance).to.equal(EthImpl.zeroHex);
   });
 
   it('should return cached value for mirror nodes', async () => {
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, MOCK_BLOCK_NUMBER_1000_RES);
-    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, MOCK_BALANCE_RES);
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify(MOCK_BLOCK_NUMBER_1000_RES));
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, JSON.stringify(MOCK_BALANCE_RES));
 
     const resNoCache = await ethImpl.getBalance(CONTRACT_ADDRESS_1, null, requestDetails);
 
@@ -187,9 +187,9 @@ describe('@ethGetBalance using MirrorNode', async function () {
 
   it('should return cached value for mirror nodes that is not latest so will need to query mirror node', async () => {
     const blockNumber = '0x1';
-    restMock.onGet('blocks/1').reply(200, DEFAULT_BLOCK);
+    restMock.onGet('blocks/1').reply(200, JSON.stringify(DEFAULT_BLOCK));
 
-    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, {
+    restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({
       blocks: [
         {
           number: 3,
@@ -199,9 +199,9 @@ describe('@ethGetBalance using MirrorNode', async function () {
           },
         },
       ],
-    });
+    }));
 
-    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, {
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(200, JSON.stringify({
       account: CONTRACT_ADDRESS_1,
       balance: {
         balance: DEF_BALANCE,
@@ -214,11 +214,11 @@ describe('@ethGetBalance using MirrorNode', async function () {
       links: {
         next: null,
       },
-    });
+    }));
 
     const resNoCache = await ethImpl.getBalance(CONTRACT_ADDRESS_1, blockNumber, requestDetails);
 
-    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, NOT_FOUND_RES);
+    restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, JSON.stringify(NOT_FOUND_RES));
 
     const resCached = await ethImpl.getBalance(CONTRACT_ADDRESS_1, blockNumber, requestDetails);
     expect(resNoCache).to.equal(DEF_HEX_BALANCE);
@@ -265,22 +265,22 @@ describe('@ethGetBalance using MirrorNode', async function () {
     };
 
     beforeEach(async () => {
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, { blocks: [latestBlock] });
-      restMock.onGet(`blocks/3`).reply(200, DEFAULT_BLOCK);
-      restMock.onGet(`blocks/0`).reply(200, BLOCK_ZERO);
-      restMock.onGet(`blocks/2`).reply(200, recentBlock);
-      restMock.onGet(`blocks/1`).reply(200, earlierBlock);
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({ blocks: [latestBlock] }));
+      restMock.onGet(`blocks/3`).reply(200, JSON.stringify(DEFAULT_BLOCK));
+      restMock.onGet(`blocks/0`).reply(200, JSON.stringify(BLOCK_ZERO));
+      restMock.onGet(`blocks/2`).reply(200, JSON.stringify(recentBlock));
+      restMock.onGet(`blocks/1`).reply(200, JSON.stringify(earlierBlock));
 
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, {
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
           timestamp: `${timestamp4}.060890949`,
         },
         transactions: [],
-      });
+      }));
 
-      restMock.onGet(balancesByAccountIdByTimestampURL(CONTRACT_ID_1, earlierBlock.timestamp.from)).reply(200, {
+      restMock.onGet(balancesByAccountIdByTimestampURL(CONTRACT_ID_1, earlierBlock.timestamp.from)).reply(200, JSON.stringify({
         timestamp: `${timestamp1}.060890949`,
         balances: [
           {
@@ -292,9 +292,9 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: null,
         },
-      });
+      }));
 
-      restMock.onGet(balancesByAccountIdByTimestampURL(CONTRACT_ID_1, recentBlock.timestamp.from)).reply(200, {
+      restMock.onGet(balancesByAccountIdByTimestampURL(CONTRACT_ID_1, recentBlock.timestamp.from)).reply(200, JSON.stringify({
         timestamp: `${timestamp2}.060890949`,
         balances: [
           {
@@ -306,9 +306,9 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: null,
         },
-      });
+      }));
 
-      restMock.onGet(balancesByAccountIdByTimestampURL(CONTRACT_ID_1)).reply(200, {
+      restMock.onGet(balancesByAccountIdByTimestampURL(CONTRACT_ID_1)).reply(200, JSON.stringify({
         timestamp: `${timestamp4}.060890949`,
         balances: [
           {
@@ -320,15 +320,15 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: null,
         },
-      });
+      }));
 
-      restMock.onGet(balancesByAccountIdByTimestampURL(CONTRACT_ID_1, BLOCK_ZERO.timestamp.from)).reply(200, {
+      restMock.onGet(balancesByAccountIdByTimestampURL(CONTRACT_ID_1, BLOCK_ZERO.timestamp.from)).reply(200, JSON.stringify({
         timestamp: null,
         balances: [],
         links: {
           next: null,
         },
-      });
+      }));
     });
 
     it('latest', async () => {
@@ -368,9 +368,9 @@ describe('@ethGetBalance using MirrorNode', async function () {
         },
       };
 
-      restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
+      restMock.onGet(`blocks/2`).reply(200, JSON.stringify(recentBlockWithinLastfifteen));
 
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, {
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
@@ -384,7 +384,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: null,
         },
-      });
+      }));
 
       const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, '2', requestDetails);
       const historicalBalance = numberTo0x(BigInt(balance3) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
@@ -392,14 +392,14 @@ describe('@ethGetBalance using MirrorNode', async function () {
     });
 
     it('blockNumber is not in the latest 15 minutes', async () => {
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, {
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
           timestamp: `${timestamp4}.060890949`,
         },
         transactions: [],
-      });
+      }));
 
       const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, '1', requestDetails);
       expect(resBalance).to.equal(hexBalance1);
@@ -415,8 +415,8 @@ describe('@ethGetBalance using MirrorNode', async function () {
           to: `${blockTimestamp}.060890941`,
         },
       };
-      restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, {
+      restMock.onGet(`blocks/2`).reply(200, JSON.stringify(recentBlockWithinLastfifteen));
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
@@ -430,7 +430,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: null,
         },
-      });
+      }));
 
       const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, '2', requestDetails);
       const historicalBalance = numberTo0x(BigInt(balance3 - 175) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
@@ -447,8 +447,8 @@ describe('@ethGetBalance using MirrorNode', async function () {
         },
       };
 
-      restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, {
+      restMock.onGet(`blocks/2`).reply(200, JSON.stringify(recentBlockWithinLastfifteen));
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
@@ -462,7 +462,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: null,
         },
-      });
+      }));
 
       const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, '2', requestDetails);
       const historicalBalance = numberTo0x(BigInt(balance3 + 175) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
@@ -479,8 +479,8 @@ describe('@ethGetBalance using MirrorNode', async function () {
         },
       };
 
-      restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, {
+      restMock.onGet(`blocks/2`).reply(200, JSON.stringify(recentBlockWithinLastfifteen));
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
@@ -495,7 +495,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: null,
         },
-      });
+      }));
 
       const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, '2', requestDetails);
       const historicalBalance = numberTo0x(BigInt(balance3 + 65) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
@@ -511,8 +511,8 @@ describe('@ethGetBalance using MirrorNode', async function () {
           to: '1651550585.060890941',
         },
       };
-      restMock.onGet(`blocks/1`).reply(200, recentBlockWithinLastfifteen);
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, {
+      restMock.onGet(`blocks/1`).reply(200, JSON.stringify(recentBlockWithinLastfifteen));
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
@@ -527,9 +527,9 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: `/api/v1/accounts/${CONTRACT_ID_1}?limit=100&timestamp=lt:1651550575.060890941`,
         },
-      });
+      }));
 
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, {
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({
         blocks: [
           {
             ...DEFAULT_BLOCK,
@@ -540,7 +540,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
             },
           },
         ],
-      });
+      }));
 
       const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, '1', requestDetails);
       const historicalBalance = numberTo0x(BigInt(balance3 - 230) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
@@ -557,8 +557,8 @@ describe('@ethGetBalance using MirrorNode', async function () {
         },
       };
 
-      restMock.onGet(`blocks/1`).reply(200, recentBlockWithinLastfifteen);
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, {
+      restMock.onGet(`blocks/1`).reply(200, JSON.stringify(recentBlockWithinLastfifteen));
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
@@ -573,9 +573,9 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: `/api/v1/accounts/${CONTRACT_ID_1}?limit=100&timestamp=lt:1651550575.060890941`,
         },
-      });
+      }));
 
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100&timestamp=lt:1651550575.060890941`).reply(200, {
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100&timestamp=lt:1651550575.060890941`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
@@ -588,7 +588,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: null,
         },
-      });
+      }));
 
       const latestBlock = {
         ...DEFAULT_BLOCK,
@@ -599,9 +599,9 @@ describe('@ethGetBalance using MirrorNode', async function () {
         },
       };
 
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, {
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({
         blocks: [latestBlock],
-      });
+      }));
 
       const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, '1', requestDetails);
       const historicalBalance = numberTo0x(BigInt(balance3 - 480) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
@@ -617,8 +617,8 @@ describe('@ethGetBalance using MirrorNode', async function () {
           to: '1651550565.060890941',
         },
       };
-      restMock.onGet(`blocks/1`).reply(200, recentBlockWithinLastfifteen);
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, {
+      restMock.onGet(`blocks/1`).reply(200, JSON.stringify(recentBlockWithinLastfifteen));
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
@@ -633,9 +633,9 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: `/api/v1/accounts/${CONTRACT_ID_1}?limit=100&timestamp=lt:1651550575.060890941`,
         },
-      });
+      }));
 
-      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100&timestamp=lt:1651550575.060890941`).reply(200, {
+      restMock.onGet(`accounts/${CONTRACT_ID_1}?limit=100&timestamp=lt:1651550575.060890941`).reply(200, JSON.stringify({
         account: CONTRACT_ID_1,
         balance: {
           balance: balance3,
@@ -648,7 +648,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
         links: {
           next: null,
         },
-      });
+      }));
 
       const latestBlock = {
         ...DEFAULT_BLOCK,
@@ -659,9 +659,9 @@ describe('@ethGetBalance using MirrorNode', async function () {
         },
       };
 
-      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, {
+      restMock.onGet(BLOCKS_LIMIT_ORDER_URL).reply(200, JSON.stringify({
         blocks: [latestBlock],
-      });
+      }));
 
       const resBalance = await ethImpl.getBalance(CONTRACT_ID_1, '1', requestDetails);
       const historicalBalance = numberTo0x(BigInt(balance3 - 80) * TINYBAR_TO_WEIBAR_COEF_BIGINT);
@@ -678,7 +678,7 @@ describe('@ethGetBalance using MirrorNode', async function () {
       const notFoundEvmAddress = '0x1234567890123456789012345678901234567890';
       restMock
         .onGet(balancesByAccountIdByTimestampURL(notFoundEvmAddress, '1651550386.060890949'))
-        .reply(404, NOT_FOUND_RES);
+        .reply(404, JSON.stringify(NOT_FOUND_RES));
 
       const resBalance = await ethImpl.getBalance(notFoundEvmAddress, '1', requestDetails);
       expect(resBalance).to.equal(EthImpl.zeroHex);
@@ -696,8 +696,8 @@ describe('@ethGetBalance using MirrorNode', async function () {
           to: `${blockTimestamp}.060890941`,
         },
       };
-      restMock.onGet(`blocks/2`).reply(200, recentBlockWithinLastfifteen);
-      restMock.onGet(`accounts/${notFoundEvmAddress}?limit=100`).reply(404, NOT_FOUND_RES);
+      restMock.onGet(`blocks/2`).reply(200, JSON.stringify(recentBlockWithinLastfifteen));
+      restMock.onGet(`accounts/${notFoundEvmAddress}?limit=100`).reply(404, JSON.stringify(NOT_FOUND_RES));
 
       const resBalance = await ethImpl.getBalance(notFoundEvmAddress, '2', requestDetails);
       expect(resBalance).to.equal(EthImpl.zeroHex);
