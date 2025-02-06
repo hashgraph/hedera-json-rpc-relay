@@ -20,11 +20,11 @@
 
 // Assertions and constants from local resources
 
-import Assertions from '../helpers/assertions';
-import testConstants from '../../tests/helpers/constants';
-import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+
+import testConstants from '../../tests/helpers/constants';
 import RelayClient from '../clients/relayClient';
+import Assertions from '../helpers/assertions';
 
 describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   this.timeout(480 * 1000); // 480 seconds
@@ -35,10 +35,8 @@ describe('@ratelimiter Rate Limiters Acceptance Tests', function () {
   // cached entities
   let requestId: string;
 
-  const TIER_2_RATE_LIMIT =
-    (ConfigService.get('TIER_2_RATE_LIMIT') as unknown as number) || relayConstants.DEFAULT_RATE_LIMIT.TIER_2;
-  const LIMIT_DURATION =
-    (ConfigService.get('LIMIT_DURATION') as unknown as number) || relayConstants.DEFAULT_RATE_LIMIT.DURATION;
+  const TIER_2_RATE_LIMIT = ConfigService.get('TIER_2_RATE_LIMIT');
+  const LIMIT_DURATION = ConfigService.get('LIMIT_DURATION');
 
   describe('RPC Rate Limiter Acceptance Tests', () => {
     const sendMultipleRequests = async (method: string, params: any[], threshold: number) => {

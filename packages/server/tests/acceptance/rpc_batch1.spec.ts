@@ -73,7 +73,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   let account2Address: string;
   let expectedGasPrice: string;
 
-  const CHAIN_ID = (ConfigService.get('CHAIN_ID') as string) || '0x12a';
+  const CHAIN_ID = ConfigService.get('CHAIN_ID');
   const requestId = 'rpc_batch1Test';
   const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
   const requestDetails = JSON.stringify(new RequestDetails({ requestId: 'rpc_batch1Test', ipAddress: '0.0.0.0' }));
@@ -84,9 +84,9 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
   const TEN_HBAR = Utils.add0xPrefix(
     (BigInt(new Hbar(10).toTinybars().toString()) * BigInt(Constants.TINYBAR_TO_WEIBAR_COEF)).toString(16),
   );
-  const gasPriceDeviation = parseFloat((ConfigService.get('TEST_GAS_PRICE_DEVIATION') ?? '0.2') as string);
+  const gasPriceDeviation = ConfigService.get('TEST_GAS_PRICE_DEVIATION');
   const sendRawTransaction = relay.sendRawTransaction;
-  const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING') as boolean;
+  const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING');
 
   /**
    * resolves long zero addresses to EVM addresses by querying mirror node
@@ -356,15 +356,15 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
       });
 
       it('should be able to use `address` param with a large block range', async () => {
-        const blockRangeLimit = Constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT;
-        Constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT = 10;
+        const blockRangeLimit = ConfigService.get('ETH_GET_LOGS_BLOCK_RANGE_LIMIT');
+        let customBlockRangeLimit = 10;
         try {
           //when we pass only address, it defaults to the latest block
           const logs = await relay.call(
             RelayCalls.ETH_ENDPOINTS.ETH_GET_LOGS,
             [
               {
-                fromBlock: numberTo0x(latestBlock - Constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT - 1),
+                fromBlock: numberTo0x(latestBlock - customBlockRangeLimit - 1),
                 address: contractAddress,
               },
             ],
@@ -376,7 +376,7 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
             expect(logs[i].address.toLowerCase()).to.equal(contractAddress.toLowerCase());
           }
         } finally {
-          Constants.DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT = blockRangeLimit;
+          customBlockRangeLimit = blockRangeLimit;
         }
       });
 
@@ -1381,7 +1381,10 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
         };
 
         const signedTx = await accounts[1].wallet.signTransaction(transaction);
-        const error = predefined.TRANSACTION_SIZE_TOO_BIG('132320', String(Constants.SEND_RAW_TRANSACTION_SIZE_LIMIT));
+        const error = predefined.TRANSACTION_SIZE_TOO_BIG(
+          '132320',
+          String(ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT')),
+        );
 
         await Assertions.assertPredefinedRpcError(error, sendRawTransaction, true, relay, [signedTx, requestDetails]);
       });

@@ -19,7 +19,6 @@
  */
 
 import type { Server } from 'http';
-import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
 export function hasOwnProperty(obj: any, prop: PropertyKey): boolean {
@@ -27,32 +26,26 @@ export function hasOwnProperty(obj: any, prop: PropertyKey): boolean {
 }
 
 export function setServerTimeout(server: Server): void {
-  // @ts-ignore
-  const requestTimeoutMs = parseInt(ConfigService.get('SERVER_REQUEST_TIMEOUT_MS') ?? '60000');
+  const requestTimeoutMs = ConfigService.get('SERVER_REQUEST_TIMEOUT_MS');
   server.setTimeout(requestTimeoutMs);
 }
 
 export function getBatchRequestsMaxSize(): number {
-  // @ts-ignore
-  return parseInt(ConfigService.get('BATCH_REQUESTS_MAX_SIZE') ?? '100');
+  return ConfigService.get('BATCH_REQUESTS_MAX_SIZE');
 }
 
 export function getLimitDuration(): number {
-  // @ts-ignore
-  return parseInt(ConfigService.get('LIMIT_DURATION') ?? constants.DEFAULT_RATE_LIMIT.DURATION.toString());
+  return ConfigService.get('LIMIT_DURATION');
 }
 
 export function getDefaultRateLimit(): number {
-  // @ts-ignore
-  return parseInt(ConfigService.get('DEFAULT_RATE_LIMIT') ?? '200');
+  return ConfigService.get('DEFAULT_RATE_LIMIT');
 }
 
 export function getRequestIdIsOptional(): boolean {
-  // @ts-ignore
   return ConfigService.get('REQUEST_ID_IS_OPTIONAL');
 }
 
 export function getBatchRequestsEnabled(): boolean {
-  // @ts-ignore
-  return ConfigService.get('BATCH_REQUESTS_ENABLED') ?? false;
+  return ConfigService.get('BATCH_REQUESTS_ENABLED');
 }

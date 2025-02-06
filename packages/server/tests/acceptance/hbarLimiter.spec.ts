@@ -31,7 +31,7 @@ import { ITransfer, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/ty
 import { SpendingPlanConfig } from '@hashgraph/json-rpc-relay/src/lib/types/spendingPlanConfig';
 import { estimateFileTransactionsFee, overrideEnvsInMochaDescribe } from '@hashgraph/json-rpc-relay/tests/helpers';
 import { expect } from 'chai';
-import dotenv, { config } from 'dotenv';
+import { config } from 'dotenv';
 import { BaseContract, ethers } from 'ethers';
 import findConfig from 'find-config';
 import fs from 'fs';
@@ -72,9 +72,9 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
     metrics: MetricsClient;
     relayIsLocal: boolean;
   } = global;
-  const mockTTL = ConfigService.get('HBAR_RATE_LIMIT_DURATION') as number; // 1 day
-  const operatorAccount = ConfigService.get('OPERATOR_ID_MAIN') as string;
-  const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+  const mockTTL = ConfigService.get('HBAR_RATE_LIMIT_DURATION');
+  const operatorAccount = ConfigService.get('OPERATOR_ID_MAIN');
+  const fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE'));
   const requestId = 'hbarLimiterTest';
   const requestDetails = new RequestDetails({ requestId: requestId, ipAddress: '0.0.0.0' });
   const cacheService = new CacheService(logger.child({ name: 'cache-service' }), new Registry());
@@ -126,7 +126,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
       return contract;
     };
-    const transactionReecordCostTolerance = Number(ConfigService.get(`TEST_TRANSACTION_RECORD_COST_TOLERANCE`) || 0.02);
+    const transactionReecordCostTolerance = ConfigService.get('TEST_TRANSACTION_RECORD_COST_TOLERANCE');
 
     const verifyRemainingLimit = (expectedCost: number, remainingHbarsBefore: number, remainingHbarsAfter: number) => {
       const delta = transactionReecordCostTolerance * expectedCost;
@@ -219,7 +219,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
       const accounts: AliasAccount[] = [];
       const defaultLondonTransactionData = {
         value: Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10))), // 1 tinybar
-        chainId: Number(ConfigService.get('CHAIN_ID') || 0),
+        chainId: Number(ConfigService.get('CHAIN_ID')),
         maxPriorityFeePerGas: Assertions.defaultGasPrice,
         maxFeePerGas: Assertions.defaultGasPrice,
         gasLimit: 3_000_000,
@@ -738,7 +738,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           };
 
           describe('given a valid JSON file with pre-configured spending plans', async () => {
-            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG') as string;
+            const SPENDING_PLANS_CONFIG_FILE = ConfigService.get('HBAR_SPENDING_PLANS_CONFIG');
             const configPath = findConfig(SPENDING_PLANS_CONFIG_FILE);
 
             if (configPath) {
@@ -898,7 +898,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
                 return { ...aliasAccount, hbarSpendingPlan: accountAliasPlan.hbarSpendingPlan };
               });
 
-            const totalHbarBudget = ConfigService.get(`HBAR_RATE_LIMIT_TINYBAR`) as number;
+            const totalHbarBudget = ConfigService.get('HBAR_RATE_LIMIT_TINYBAR');
 
             let totalHbarSpent =
               totalHbarBudget - Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));

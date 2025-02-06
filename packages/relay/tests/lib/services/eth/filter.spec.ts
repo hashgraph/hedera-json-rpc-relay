@@ -111,7 +111,7 @@ describe('Filter API Test Suite', async function () {
   });
 
   describe('all methods require a filter flag', async function () {
-    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: undefined }, () => {
+    withOverriddenEnvsInMochaTest({ FILTER_API_ENABLED: false }, () => {
       it(`should throw UNSUPPORTED_METHOD for newFilter`, async function () {
         await RelayAssertions.assertRejection(
           predefined.UNSUPPORTED_METHOD,

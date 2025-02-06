@@ -61,7 +61,7 @@ describe('Utils', () => {
   describe('estimateFileTransactionsFee', () => {
     const callDataSize = 6000;
     const mockedExchangeRateInCents: number = 12;
-    const fileChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+    const fileChunkSize = ConfigService.get('FILE_APPEND_CHUNK_SIZE');
     it('Should execute estimateFileTransactionFee() to estimate total fee of file transactions', async () => {
       const result = Utils.estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
       const expectedResult = estimateFileTransactionsFee(callDataSize, fileChunkSize, mockedExchangeRateInCents);
@@ -83,7 +83,6 @@ describe('Utils', () => {
       ).to.be.false;
     });
 
-    // @ts-ignore
     JSON.parse(ConfigService.get('HEDERA_SPECIFIC_REVERT_STATUSES')).forEach((status) => {
       it(`should exclude transaction with result ${status}`, () => {
         expect(Utils.isRevertedDueToHederaSpecificValidation({ result: status, error_message: null })).to.be.true;
@@ -181,15 +180,10 @@ describe('Utils', () => {
         OPERATOR_KEY_MAIN: null,
       },
       () => {
-        it('should return null and log a warning if operatorKey is missing', () => {
-          const warnSpy = sinon.spy(logger, 'warn');
-
-          const operator = Utils.getOperator(logger);
-
-          expect(operator).to.be.null;
-          expect(warnSpy.calledOnce).to.be.true;
-          expect(warnSpy.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
-          warnSpy.restore();
+        it('should throw error if OPERATOR_KEY_MAIN is missing', () => {
+          expect(() => Utils.getOperator(logger)).to.throw(
+            'Configuration error: OPERATOR_KEY_MAIN is a mandatory configuration for relay operation.',
+          );
         });
       },
     );
@@ -200,15 +194,10 @@ describe('Utils', () => {
         OPERATOR_KEY_MAIN: privateKeys[0].keyValue,
       },
       () => {
-        it('should return null and log a warning if operatorId is missing', () => {
-          const warnSpy = sinon.spy(logger, 'warn');
-
-          const operator = Utils.getOperator(logger);
-
-          expect(operator).to.be.null;
-          expect(warnSpy.calledOnce).to.be.true;
-          expect(warnSpy.firstCall.args[0]).to.equal('Invalid operatorId or operatorKey for main client.');
-          warnSpy.restore();
+        it('should throw error if OPERATOR_ID_MAIN is missing', () => {
+          expect(() => Utils.getOperator(logger)).to.throw(
+            'Configuration error: OPERATOR_ID_MAIN is a mandatory configuration for relay operation.',
+          );
         });
       },
     );

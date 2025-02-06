@@ -1,8 +1,8 @@
-/* -
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,18 +87,10 @@ export default {
   HBAR_TO_TINYBAR_COEF: 100_000_000,
   TINYBAR_TO_WEIBAR_COEF: 10_000_000_000,
   TOTAL_SUPPLY_TINYBARS: 5_000_000_000_000_000_000,
-  // 131072 bytes are 128kbytes
-  SEND_RAW_TRANSACTION_SIZE_LIMIT: ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT')
-    ? // @ts-ignore
-      parseInt(ConfigService.get('SEND_RAW_TRANSACTION_SIZE_LIMIT'))
-    : 131072,
-
   CACHE_KEY,
   CACHE_TTL,
-  CACHE_MAX: 1000,
   DEFAULT_TINY_BAR_GAS: 72, // (853454 / 1000) * (1 / 12)
   ETH_FUNCTIONALITY_CODE: 84,
-  DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT: 1000,
   EXCHANGE_RATE_FILE_ID: '0.0.112',
   FEE_SCHEDULE_FILE_ID: '0.0.111',
 
@@ -145,7 +137,6 @@ export default {
 
   // block ranges
   MAX_BLOCK_RANGE: 5,
-  ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE: 1000,
   BLOCK_HASH_REGEX: '^0[xX][a-fA-F0-9]',
 
   DEFAULT_RATE_LIMIT: {
@@ -155,29 +146,19 @@ export default {
     DURATION: 60000,
   },
 
-  // @ts-ignore
-  HBAR_RATE_LIMIT_DURATION: parseInt(ConfigService.get('HBAR_RATE_LIMIT_DURATION')),
-  // @ts-ignore
-  // The logical OR operator || returns the first truthy value and 0 is falsy.
-  // The nullish coalescing operator ?? falls back to the default value when the left-hand operand is null or undefined, not when it's 0 or any other falsy value.
+  HBAR_RATE_LIMIT_DURATION: ConfigService.get('HBAR_RATE_LIMIT_DURATION'),
   HBAR_RATE_LIMIT_TOTAL: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_TINYBAR')),
-  // @ts-ignore
   HBAR_RATE_LIMIT_BASIC: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_BASIC')),
-  // @ts-ignore
   HBAR_RATE_LIMIT_EXTENDED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_EXTENDED')),
-  // @ts-ignore
   HBAR_RATE_LIMIT_PRIVILEGED: BigNumber(ConfigService.get('HBAR_RATE_LIMIT_PRIVILEGED')),
-  // @ts-ignore
-  GAS_PRICE_TINY_BAR_BUFFER: parseInt(ConfigService.get('GAS_PRICE_TINY_BAR_BUFFER') || '10000000000'),
-  WEB_SOCKET_PORT: ConfigService.get('WEB_SOCKET_PORT') || 8546,
-  WEB_SOCKET_HTTP_PORT: ConfigService.get('WEB_SOCKET_HTTP_PORT') || 8547,
+  GAS_PRICE_TINY_BAR_BUFFER: ConfigService.get('GAS_PRICE_TINY_BAR_BUFFER'),
+  WEB_SOCKET_PORT: ConfigService.get('WEB_SOCKET_PORT'),
+  WEB_SOCKET_HTTP_PORT: ConfigService.get('WEB_SOCKET_HTTP_PORT'),
 
-  RELAY_PORT: ConfigService.get('SERVER_PORT') || 7546,
+  RELAY_PORT: ConfigService.get('SERVER_PORT'),
   RELAY_HOST: ConfigService.get('SERVER_HOST') || 'localhost',
 
   FUNCTION_SELECTOR_CHAR_LENGTH: 10,
-  MIRROR_NODE_RETRY_DELAY_DEFAULT: 2000,
-  MIRROR_NODE_REQUEST_RETRY_COUNT_DEFAULT: 10,
   BASE_HEX_REGEX: '^0[xX][a-fA-F0-9]',
 
   TRANSACTION_RESULT_STATUS: {
@@ -195,8 +176,7 @@ export default {
       LOG: 'log',
       PENDING_TRANSACTION: 'pendingTransaction',
     },
-    // @ts-ignore
-    TTL: parseInt(ConfigService.get('FILTER_TTL') || '300000'), // default is 5 minutes
+    TTL: ConfigService.get('FILTER_TTL'),
   },
 
   METHODS: {

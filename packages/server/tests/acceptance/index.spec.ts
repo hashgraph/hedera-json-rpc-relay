@@ -23,8 +23,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
-// Constants
+// External resources
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+// Constants
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { app as wsApp } from '@hashgraph/json-rpc-ws-server/dist/webSocketServer';
 // Hashgraph SDK
@@ -56,7 +57,7 @@ describe('RPC Server Acceptance Tests', function () {
 
   const testLogger = pino({
     name: 'hedera-json-rpc-relay',
-    level: (ConfigService.get('LOG_LEVEL') as string) || 'trace',
+    level: ConfigService.get('LOG_LEVEL'),
     transport: {
       target: 'pino-pretty',
       options: {
@@ -67,14 +68,14 @@ describe('RPC Server Acceptance Tests', function () {
   });
   const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-  const NETWORK = ConfigService.get('HEDERA_NETWORK') as string;
-  const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN') as string;
-  const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN') as string;
-  const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL') as string;
+  const NETWORK = ConfigService.get('HEDERA_NETWORK');
+  const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN');
+  const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN');
+  const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL');
   const LOCAL_RELAY_URL = 'http://localhost:7546';
   const RELAY_URL = ConfigService.get('E2E_RELAY_HOST') || LOCAL_RELAY_URL;
-  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
-  const INITIAL_BALANCE = ConfigService.get('INITIAL_BALANCE') || '5000000000';
+  const CHAIN_ID = ConfigService.get('CHAIN_ID');
+  const INITIAL_BALANCE = ConfigService.get('INITIAL_BALANCE');
 
   global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
   global.servicesNode = new ServicesClient(
@@ -125,7 +126,7 @@ describe('RPC Server Acceptance Tests', function () {
       RELAY_URL,
       CHAIN_ID,
       Utils.generateRequestId(),
-      Number(ConfigService.get('TEST_INITIAL_ACCOUNT_STARTING_BALANCE') || 2000),
+      ConfigService.get('TEST_INITIAL_ACCOUNT_STARTING_BALANCE'),
     );
 
     global.accounts = new Array<AliasAccount>(initialAccount);

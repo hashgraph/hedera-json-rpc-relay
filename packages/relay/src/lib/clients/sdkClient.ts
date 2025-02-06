@@ -140,18 +140,16 @@ export class SDKClient {
   ) {
     this.clientMain = clientMain;
 
-    if (ConfigService.get('CONSENSUS_MAX_EXECUTION_TIME')) {
-      // sets the maximum time in ms for the SDK to wait when submitting
-      // a transaction/query before throwing a TIMEOUT error
-      this.clientMain = clientMain.setMaxExecutionTime(Number(ConfigService.get('CONSENSUS_MAX_EXECUTION_TIME')));
-    }
+    // sets the maximum time in ms for the SDK to wait when submitting
+    // a transaction/query before throwing a TIMEOUT error
+    this.clientMain = clientMain.setMaxExecutionTime(ConfigService.get('CONSENSUS_MAX_EXECUTION_TIME'));
 
     this.logger = logger;
     this.cacheService = cacheService;
     this.eventEmitter = eventEmitter;
     this.hbarLimitService = hbarLimitService;
-    this.maxChunks = Number(ConfigService.get('FILE_APPEND_MAX_CHUNKS')) || 20;
-    this.fileAppendChunkSize = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
+    this.maxChunks = ConfigService.get('FILE_APPEND_MAX_CHUNKS');
+    this.fileAppendChunkSize = ConfigService.get('FILE_APPEND_CHUNK_SIZE');
   }
 
   /**
@@ -519,8 +517,7 @@ export class SDKClient {
   ): Promise<ContractFunctionResult> {
     let retries = 0;
     let resp;
-    // @ts-ignore
-    while (parseInt(ConfigService.get('CONTRACT_QUERY_TIMEOUT_RETRIES') || '1') > retries) {
+    while (ConfigService.get('CONTRACT_QUERY_TIMEOUT_RETRIES') > retries) {
       try {
         resp = await this.submitContractCallQuery(to, data, gas, from, callerName, requestDetails);
         return resp;

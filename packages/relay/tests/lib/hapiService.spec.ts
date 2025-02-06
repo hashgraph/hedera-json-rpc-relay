@@ -123,7 +123,7 @@ describe('HAPI Service', async function () {
 
   withOverriddenEnvsInMochaTest({ HAPI_CLIENT_ERROR_RESET: '[50]' }, () => {
     it('should be able to reinitialise SDK instance upon error status code encounter', async function () {
-      const hapiClientErrorReset: Array<number> = JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET') as string);
+      const hapiClientErrorReset: Array<number> = JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET'));
 
       hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
       expect(hapiService.getErrorCodes()[0]).to.eq(hapiClientErrorReset[0]);

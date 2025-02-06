@@ -148,7 +148,7 @@ describe('SdkClient', async function () {
 
     // mirror node client
     mirrorNodeClient = new MirrorNodeClient(
-      ConfigService.get('MIRROR_NODE_URL') || '',
+      ConfigService.get('MIRROR_NODE_URL'),
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),
@@ -335,8 +335,8 @@ describe('SdkClient', async function () {
   });
 
   describe('HBAR Limiter', async () => {
-    const FILE_APPEND_CHUNK_SIZE = Number(ConfigService.get('FILE_APPEND_CHUNK_SIZE')) || 5120;
-    const MAX_CHUNKS = Number(ConfigService.get('FILE_APPEND_MAX_CHUNKS')) || 20;
+    const FILE_APPEND_CHUNK_SIZE = ConfigService.get('FILE_APPEND_CHUNK_SIZE');
+    const MAX_CHUNKS = ConfigService.get('FILE_APPEND_MAX_CHUNKS');
     const transactionBuffer = new Uint8Array([
       2, 249, 250, 182, 130, 1, 42, 7, 1, 133, 209, 56, 92, 123, 240, 131, 228, 225, 192, 148, 61, 176, 51, 137, 34,
       205, 229, 74, 102, 224, 197, 133, 1, 18, 73, 145, 93, 50, 210, 37, 134, 9, 24, 78, 114, 160, 0, 185, 250, 68, 130,
@@ -2743,7 +2743,7 @@ describe('SdkClient', async function () {
     });
 
     it('Should execute getTransferAmountSumForAccount() to calculate transactionFee by only transfers that are paid by the specify accountId', () => {
-      const accountId = ConfigService.get('OPERATOR_ID_MAIN') || '';
+      const accountId = ConfigService.get('OPERATOR_ID_MAIN');
       const mockedTxRecord = getMockedTransactionRecord(EthereumTransaction.name, true);
 
       const transactionFee = sdkClient.getTransferAmountSumForAccount(mockedTxRecord, accountId);

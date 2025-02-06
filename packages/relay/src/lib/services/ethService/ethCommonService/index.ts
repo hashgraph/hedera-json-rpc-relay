@@ -82,7 +82,7 @@ export class CommonService implements ICommonService {
   private readonly maxTimestampParamRange = 604800; // 7 days
 
   private getLogsBlockRangeLimit() {
-    return parseNumericEnvVar('ETH_GET_LOGS_BLOCK_RANGE_LIMIT', 'DEFAULT_ETH_GET_LOGS_BLOCK_RANGE_LIMIT');
+    return ConfigService.get('ETH_GET_LOGS_BLOCK_RANGE_LIMIT');
   }
 
   constructor(mirrorNodeClient: MirrorNodeClient, logger: Logger, cacheService: CacheService) {

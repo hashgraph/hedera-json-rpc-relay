@@ -19,20 +19,10 @@
  */
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import CONSTANTS from '@hashgraph/json-rpc-relay/dist/lib/constants';
 
-const tier1rateLimit = parseInt(
-  // @ts-ignore
-  ConfigService.get('TIER_1_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_1.toString(),
-);
-const tier2rateLimit = parseInt(
-  // @ts-ignore
-  ConfigService.get('TIER_2_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_2.toString(),
-);
-const tier3rateLimit = parseInt(
-  // @ts-ignore
-  ConfigService.get('TIER_3_RATE_LIMIT') ?? CONSTANTS.DEFAULT_RATE_LIMIT.TIER_3.toString(),
-);
+const tier1rateLimit = ConfigService.get('TIER_1_RATE_LIMIT');
+const tier2rateLimit = ConfigService.get('TIER_2_RATE_LIMIT');
+const tier3rateLimit = ConfigService.get('TIER_3_RATE_LIMIT');
 
 export interface IMethodRateLimit {
   total: number;

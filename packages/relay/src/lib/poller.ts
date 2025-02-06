@@ -50,9 +50,8 @@ export class Poller {
     this.eth = eth;
     this.logger = logger;
     this.polls = [];
-    this.pollingInterval = Number(ConfigService.get('WS_POLLING_INTERVAL')) || 500;
-    // @ts-ignore
-    this.newHeadsEnabled = ConfigService.get('WS_NEW_HEADS_ENABLED') ?? true;
+    this.pollingInterval = ConfigService.get('WS_POLLING_INTERVAL');
+    this.newHeadsEnabled = ConfigService.get('WS_NEW_HEADS_ENABLED');
 
     const activePollsGaugeName = 'rpc_websocket_active_polls';
     register.removeSingleMetric(activePollsGaugeName);

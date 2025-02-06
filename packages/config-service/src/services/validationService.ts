@@ -30,26 +30,33 @@ export class ValidationService {
     Object.entries(GlobalConfig.ENTRIES).forEach(([entryName, entryInfo]) => {
       if (entryInfo.required) {
         if (!envs.hasOwnProperty(entryName)) {
-          throw new Error(`${entryName} is a mandatory and the relay cannot operate without its value.`);
+          throw new Error(`Configuration error: ${entryName} is a mandatory configuration for relay operation.`);
         }
 
         if (entryInfo.type === 'number' && isNaN(Number(envs[entryName]))) {
-          throw new Error(`${entryName} must be a valid number.`);
+          throw new Error(`Configuration error: ${entryName} must be a valid number.`);
         }
       }
     });
   }
 
   /**
-   * Transform string env variables to the proper formats (number/boolean/string)
-   * @param envs
+   * Transform string environment variables to their proper types based on GlobalConfig.ENTRIES.
+   * For each entry:
+   * - If the env var is missing but has a default value, use the default
+   * - For 'number' type, converts to Number
+   * - For 'boolean' type, converts 'true' string to true boolean
+   * - For 'string' and 'array' types, keeps as string
+   *
+   * @param envs - Dictionary of environment variables and their string values
+   * @returns Dictionary with environment variables cast to their proper types
    */
   static typeCasting(envs: NodeJS.Dict<string>): NodeJS.Dict<any> {
     const typeCastedEnvs: NodeJS.Dict<any> = {};
 
     Object.entries(GlobalConfig.ENTRIES).forEach(([entryName, entryInfo]) => {
       if (!envs.hasOwnProperty(entryName)) {
-        if (entryInfo.defaultValue) {
+        if (entryInfo.defaultValue != null) {
           typeCastedEnvs[entryName] = entryInfo.defaultValue;
         }
         return;

@@ -29,6 +29,7 @@ import { RedisInMemoryServer } from './redisInMemoryServer';
 import { Logger } from 'pino';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { ConfigServiceTestHelper } from '../../config-service/tests/configServiceTestHelper';
+import { ConfigKey } from '@hashgraph/json-rpc-config-service/dist/services/globalConfig';
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -940,7 +941,7 @@ export const overrideEnvsInMochaDescribe = (envs: NodeJS.Dict<any>) => {
 
   before(() => {
     for (const key in envs) {
-      envsToReset[key] = ConfigService.get(key);
+      envsToReset[key] = ConfigService.get(key as ConfigKey);
       overrideEnv(key, envs[key]);
     }
   });
