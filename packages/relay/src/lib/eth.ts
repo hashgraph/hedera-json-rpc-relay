@@ -1210,24 +1210,16 @@ export class EthImpl implements Eth {
         constants.TYPE_TOKEN,
       ]);
       if (result) {
+        const blockInfo = await this.getBlockInfo(blockNumber, requestDetails);
+        if (blockInfo && parseFloat(result.entity?.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
+          return EthImpl.emptyHex;
+        }
         if (result?.type === constants.TYPE_TOKEN) {
-          const blockInfo = await this.getBlockInfo(blockNumber, requestDetails);
-          if (blockInfo) {
-            if (parseFloat(result.entity?.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
-              return EthImpl.emptyHex;
-            }
-          }
           if (this.logger.isLevelEnabled('trace')) {
             this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
           }
           return EthImpl.redirectBytecodeAddressReplace(address);
         } else if (result?.type === constants.TYPE_CONTRACT) {
-          const blockInfo = await this.getBlockInfo(blockNumber, requestDetails);
-          if (blockInfo) {
-            if (parseFloat(result.entity?.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
-              return EthImpl.emptyHex;
-            }
-          }
           if (result?.entity.runtime_bytecode !== EthImpl.emptyHex) {
             const prohibitedOpcodes = ['CALLCODE', 'DELEGATECALL', 'SELFDESTRUCT', 'SUICIDE'];
             const opcodes = asm.disassemble(result?.entity.runtime_bytecode);
