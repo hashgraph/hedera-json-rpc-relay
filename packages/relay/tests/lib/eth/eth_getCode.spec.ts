@@ -136,9 +136,12 @@ describe('@ethGetCode using MirrorNode', async function () {
     earlyBlockParams.forEach((blockParam) => {
       it(`should return empty bytecode for early block param ${blockParam}`, async () => {
         const paramAsInt = blockParam === 'earliest' ? 0 : parseInt(blockParam, 16);
-        restMock.onGet(`blocks/${paramAsInt}`).reply(200, {
-          timestamp: { to: '1532175203.847228000' },
-        });
+        restMock.onGet(`blocks/${paramAsInt}`).reply(
+          200,
+          JSON.stringify({
+            timestamp: { to: '1532175203.847228000' },
+          }),
+        );
         const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, blockParam, requestDetails);
         expect(res).to.equal(EthImpl.emptyHex);
       });
@@ -173,13 +176,19 @@ describe('@ethGetCode using MirrorNode', async function () {
       const blockNumberBeforeCreation = '0x152a4aa';
       const blockToTimestamp = '1632175203.847228000';
 
-      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, {
-        ...DEFAULT_HTS_TOKEN,
-        created_timestamp: '1632175205.855270000',
-      });
-      restMock.onGet(`blocks/${parseInt(blockNumberBeforeCreation, 16)}`).reply(200, {
-        timestamp: { to: blockToTimestamp },
-      });
+      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(
+        200,
+        JSON.stringify({
+          ...DEFAULT_HTS_TOKEN,
+          created_timestamp: '1632175205.855270000',
+        }),
+      );
+      restMock.onGet(`blocks/${parseInt(blockNumberBeforeCreation, 16)}`).reply(
+        200,
+        JSON.stringify({
+          timestamp: { to: blockToTimestamp },
+        }),
+      );
 
       const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, blockNumberBeforeCreation, requestDetails);
       expect(res).to.equal(EthImpl.emptyHex);
@@ -190,13 +199,19 @@ describe('@ethGetCode using MirrorNode', async function () {
       const blockToTimestamp = '1632175203.847228000';
       const contractId = ContractId.fromEvmAddress(0, 0, CONTRACT_ADDRESS_1);
 
-      restMock.onGet(`contracts/${contractId.toString()}`).reply(200, {
-        ...DEFAULT_CONTRACT,
-        created_timestamp: '1632175205.855270000',
-      });
-      restMock.onGet(`blocks/${parseInt(blockNumberBeforeCreation, 16)}`).reply(200, {
-        timestamp: { to: blockToTimestamp },
-      });
+      restMock.onGet(`contracts/${contractId.toString()}`).reply(
+        200,
+        JSON.stringify({
+          ...DEFAULT_CONTRACT,
+          created_timestamp: '1632175205.855270000',
+        }),
+      );
+      restMock.onGet(`blocks/${parseInt(blockNumberBeforeCreation, 16)}`).reply(
+        200,
+        JSON.stringify({
+          timestamp: { to: blockToTimestamp },
+        }),
+      );
 
       const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, blockNumberBeforeCreation, requestDetails);
       expect(res).to.equal(EthImpl.emptyHex);
@@ -206,14 +221,20 @@ describe('@ethGetCode using MirrorNode', async function () {
       const blockNumberAfterCreation = '0x152a4ab';
       const blockToTimestamp = '1632175206.000000000';
 
-      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, {
-        ...DEFAULT_HTS_TOKEN,
-        created_timestamp: '1632175205.855270000',
-      });
+      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(
+        200,
+        JSON.stringify({
+          ...DEFAULT_HTS_TOKEN,
+          created_timestamp: '1632175205.855270000',
+        }),
+      );
 
-      restMock.onGet(`blocks/${parseInt(blockNumberAfterCreation, 16)}`).reply(200, {
-        timestamp: { to: blockToTimestamp },
-      });
+      restMock.onGet(`blocks/${parseInt(blockNumberAfterCreation, 16)}`).reply(
+        200,
+        JSON.stringify({
+          timestamp: { to: blockToTimestamp },
+        }),
+      );
 
       const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, blockNumberAfterCreation, requestDetails);
       const expectedRedirectBytecode = `6080604052348015600f57600080fd5b506000610167905077618dc65e${HTS_TOKEN_ADDRESS.slice(
@@ -236,7 +257,7 @@ describe('@ethGetCode using MirrorNode', async function () {
       const futureBlockNumber = '0x1000000';
       restMock.onGet(`contracts/${HTS_TOKEN_ADDRESS}`).reply(404, null);
       restMock.onGet(`accounts/${HTS_TOKEN_ADDRESS}?limit=100`).reply(404, null);
-      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, DEFAULT_HTS_TOKEN);
+      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, JSON.stringify(DEFAULT_HTS_TOKEN));
       restMock.onGet(`blocks/${parseInt(futureBlockNumber, 16)}`).reply(404, null);
 
       await expect(ethImpl.getCode(HTS_TOKEN_ADDRESS, futureBlockNumber, requestDetails)).to.eventually.be.rejectedWith(
@@ -248,13 +269,19 @@ describe('@ethGetCode using MirrorNode', async function () {
       const blockToTimestamp = '1632175203.847228000';
       const contractId = ContractId.fromEvmAddress(0, 0, CONTRACT_ADDRESS_1);
 
-      restMock.onGet(`contracts/${contractId.toString()}`).reply(200, {
-        ...DEFAULT_CONTRACT,
-        created_timestamp: '1632175205.855270000',
-      });
-      restMock.onGet('blocks/0').reply(200, {
-        timestamp: { to: blockToTimestamp },
-      });
+      restMock.onGet(`contracts/${contractId.toString()}`).reply(
+        200,
+        JSON.stringify({
+          ...DEFAULT_CONTRACT,
+          created_timestamp: '1632175205.855270000',
+        }),
+      );
+      restMock.onGet('blocks/0').reply(
+        200,
+        JSON.stringify({
+          timestamp: { to: blockToTimestamp },
+        }),
+      );
 
       const res = await ethImpl.getCode(CONTRACT_ADDRESS_1, 'earliest', requestDetails);
       expect(res).to.equal(EthImpl.emptyHex);
