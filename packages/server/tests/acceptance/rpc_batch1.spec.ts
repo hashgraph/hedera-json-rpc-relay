@@ -1739,6 +1739,25 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
           expect(info).to.exist;
           expect(info.result).to.equal('SUCCESS');
         });
+
+        it('should fail "eth_sendRawTransaction" for transaction with null gasPrice, null maxFeePerGas, and null maxPriorityFeePerGas', async function () {
+          const transaction = {
+            ...defaultLegacyTransactionData,
+            chainId: Number(CHAIN_ID),
+            gasPrice: null,
+            maxFeePerGas: null,
+            maxPriorityFeePerGas: null,
+            to: parentContractAddress,
+            nonce: await relay.getAccountNonce(accounts[2].address, requestId),
+          };
+          const signedTx = await accounts[2].wallet.signTransaction(transaction);
+          const error = predefined.GAS_PRICE_TOO_LOW(0, GAS_PRICE_REF);
+
+          await Assertions.assertPredefinedRpcError(error, sendRawTransaction, false, relay, [
+            signedTx,
+            requestDetails,
+          ]);
+        });
       });
 
       it('@release should execute "eth_getTransactionByHash" for existing transaction', async function () {
