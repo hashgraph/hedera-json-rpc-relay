@@ -79,7 +79,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   let createChildTx: ethers.ContractTransactionResponse;
   let accounts0StartBalance: bigint;
 
-  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID');
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
   const ONE_WEIBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 18)));
 

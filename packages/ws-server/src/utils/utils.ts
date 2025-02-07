@@ -143,8 +143,7 @@ export const resolveParams = (method: string, params: any): any[] => {
  * @returns {boolean} Returns true if multiple addresses are enabled, otherwise returns false.
  */
 export const getMultipleAddressesEnabled = (): boolean => {
-  // @ts-ignore
-  return ConfigService.get('WS_MULTIPLE_ADDRESSES_ENABLED') ?? false;
+  return ConfigService.get('WS_MULTIPLE_ADDRESSES_ENABLED');
 };
 
 /**
@@ -152,8 +151,7 @@ export const getMultipleAddressesEnabled = (): boolean => {
  * @returns {boolean} A boolean indicating whether WebSocket batch requests are enabled.
  */
 export const getWsBatchRequestsEnabled = (): boolean => {
-  // @ts-ignore
-  return ConfigService.get('WS_BATCH_REQUESTS_ENABLED') ?? true;
+  return ConfigService.get('WS_BATCH_REQUESTS_ENABLED');
 };
 
 /**
@@ -161,7 +159,7 @@ export const getWsBatchRequestsEnabled = (): boolean => {
  * @returns {number} The maximum size of batch requests for WebSocket.
  */
 export const getBatchRequestsMaxSize = (): number => {
-  return Number(ConfigService.get('WS_BATCH_REQUESTS_MAX_SIZE') ?? 20);
+  return ConfigService.get('WS_BATCH_REQUESTS_MAX_SIZE');
 };
 
 /**

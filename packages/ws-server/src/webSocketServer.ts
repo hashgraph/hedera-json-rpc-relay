@@ -18,26 +18,27 @@
  *
  */
 
-import Koa from 'koa';
-import pino from 'pino';
-import { v4 as uuid } from 'uuid';
-import websockify from 'koa-websocket';
-import { collectDefaultMetrics, Registry } from 'prom-client';
-import { getRequestResult } from './controllers';
-import { WS_CONSTANTS } from './utils/constants';
-import WsMetricRegistry from './metrics/wsMetricRegistry';
-import ConnectionLimiter from './metrics/connectionLimiter';
-import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
-import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
-import { JsonRpcError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
-import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
+import { JsonRpcError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
+import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
+import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
+import Koa from 'koa';
+import websockify from 'koa-websocket';
+import pino from 'pino';
+import { collectDefaultMetrics, Registry } from 'prom-client';
+import { v4 as uuid } from 'uuid';
+
+import { getRequestResult } from './controllers';
+import ConnectionLimiter from './metrics/connectionLimiter';
+import WsMetricRegistry from './metrics/wsMetricRegistry';
+import { WS_CONSTANTS } from './utils/constants';
+import { getBatchRequestsMaxSize, getWsBatchRequestsEnabled, handleConnectionClose, sendToClient } from './utils/utils';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
-  // @ts-ignore
+  // Pino requires the default level to be explicitly set; without fallback value ("trace"), an invalid or missing value could trigger the "default level must be included in custom levels" error.
   level: ConfigService.get('LOG_LEVEL') || 'trace',
   transport: {
     target: 'pino-pretty',
@@ -55,7 +56,7 @@ const mirrorNodeClient = relay.mirrorClient();
 const limiter = new ConnectionLimiter(logger, register);
 const wsMetricRegistry = new WsMetricRegistry(register);
 
-const pingInterval = Number(ConfigService.get('WS_PING_INTERVAL') || 100000);
+const pingInterval = ConfigService.get('WS_PING_INTERVAL');
 
 const app = websockify(new Koa());
 app.ws.use(async (ctx: Koa.Context) => {

@@ -194,19 +194,16 @@ export default class HAPIService {
     this.logger = logger;
     this.hbarLimitService = hbarLimitService;
     this.eventEmitter = eventEmitter;
-    this.hederaNetwork = ((ConfigService.get('HEDERA_NETWORK') as string) || '{}').toLowerCase();
+    this.hederaNetwork = ConfigService.get('HEDERA_NETWORK').toLowerCase();
     this.clientMain = this.initClient(logger, this.hederaNetwork);
 
     this.cacheService = cacheService;
     this.client = this.initSDKClient(logger);
 
     const currentDateNow = Date.now();
-    // @ts-ignore
-    this.initialTransactionCount = parseInt(ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET')!) || 0;
-    // @ts-ignore
-    this.initialResetDuration = parseInt(ConfigService.get('HAPI_CLIENT_DURATION_RESET')!) || 0;
-    // @ts-ignore
-    this.initialErrorCodes = JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET') || '[21, 50]');
+    this.initialTransactionCount = ConfigService.get('HAPI_CLIENT_TRANSACTION_RESET');
+    this.initialResetDuration = ConfigService.get('HAPI_CLIENT_DURATION_RESET');
+    this.initialErrorCodes = JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET'));
 
     this.transactionCount = this.initialTransactionCount;
     this.resetDuration = currentDateNow + this.initialResetDuration;
@@ -326,11 +323,9 @@ export default class HAPIService {
       client.setOperator(operator.accountId, operator.privateKey);
     }
 
-    // @ts-ignore
-    client.setTransportSecurity(ConfigService.get('CLIENT_TRANSPORT_SECURITY') ?? false);
+    client.setTransportSecurity(ConfigService.get('CLIENT_TRANSPORT_SECURITY'));
 
-    // @ts-ignore
-    const SDK_REQUEST_TIMEOUT = parseInt(ConfigService.get('SDK_REQUEST_TIMEOUT') || '10000');
+    const SDK_REQUEST_TIMEOUT = ConfigService.get('SDK_REQUEST_TIMEOUT');
     client.setRequestTimeout(SDK_REQUEST_TIMEOUT);
 
     logger.info(

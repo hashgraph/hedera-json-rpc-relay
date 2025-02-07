@@ -40,8 +40,7 @@ export class Utils {
     //   buffered gas price = 126 + 12.6 = 138.6 <--- invalid tinybars
     gasPrice +=
       Math.round(
-        (gasPrice / constants.TINYBAR_TO_WEIBAR_COEF) *
-          (Number(ConfigService.get('GAS_PRICE_PERCENTAGE_BUFFER') || 0) / 100),
+        (gasPrice / constants.TINYBAR_TO_WEIBAR_COEF) * (ConfigService.get('GAS_PRICE_PERCENTAGE_BUFFER') / 100),
       ) * constants.TINYBAR_TO_WEIBAR_COEF;
 
     return gasPrice;
@@ -153,8 +152,8 @@ export class Utils {
       operatorId = ConfigService.get('OPERATOR_ID_ETH_SENDRAWTRANSACTION') as string;
       operatorKey = ConfigService.get('OPERATOR_KEY_ETH_SENDRAWTRANSACTION') as string;
     } else {
-      operatorId = ConfigService.get('OPERATOR_ID_MAIN') as string;
-      operatorKey = ConfigService.get('OPERATOR_KEY_MAIN') as string;
+      operatorId = ConfigService.get('OPERATOR_ID_MAIN');
+      operatorKey = ConfigService.get('OPERATOR_KEY_MAIN');
     }
 
     if (!operatorId || !operatorKey) {

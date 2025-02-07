@@ -189,7 +189,7 @@ describe('LocalLRUCache Test Suite', async function () {
     });
 
     // set default cache ttl to 100ms to test the default ttl will be overridden by the ttl passed in set method
-    withOverriddenEnvsInMochaTest({ CACHE_TTL: '100' }, async () => {
+    withOverriddenEnvsInMochaTest({ CACHE_TTL: 100 }, async () => {
       it('it should set without TTL if -1 is passed for TTL', async () => {
         const customLocalLRUCache = new LocalLRUCache(logger.child({ name: `cache` }), registry);
         const lruCacheSpy = sinon.spy(customLocalLRUCache['cache']);

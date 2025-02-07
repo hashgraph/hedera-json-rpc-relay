@@ -23,10 +23,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 
-import { Server } from 'node:http';
-
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import constants from '@hashgraph/json-rpc-relay/dist/lib/constants';
+import { Server } from 'node:http';
+
 import { setServerTimeout } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/utils';
 import app from '@hashgraph/json-rpc-server/dist/server';
 import MirrorClient from '@hashgraph/json-rpc-server/tests/clients/mirrorClient';
@@ -48,7 +48,7 @@ describe('RPC Server Acceptance Tests', function () {
 
   const testLogger = pino({
     name: 'hedera-json-rpc-relay',
-    level: (ConfigService.get('LOG_LEVEL') as string) || 'trace',
+    level: ConfigService.get('LOG_LEVEL'),
     transport: {
       target: 'pino-pretty',
       options: {
@@ -59,13 +59,13 @@ describe('RPC Server Acceptance Tests', function () {
   });
   const logger = testLogger.child({ name: 'rpc-acceptance-test' });
 
-  const NETWORK = ConfigService.get('HEDERA_NETWORK') as string;
-  const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN') as string;
-  const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN') as string;
-  const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL') as string;
+  const NETWORK = ConfigService.get('HEDERA_NETWORK');
+  const OPERATOR_KEY = ConfigService.get('OPERATOR_KEY_MAIN');
+  const OPERATOR_ID = ConfigService.get('OPERATOR_ID_MAIN');
+  const MIRROR_NODE_URL = ConfigService.get('MIRROR_NODE_URL');
   const LOCAL_RELAY_URL = 'http://localhost:7546';
-  const RELAY_URL = ConfigService.get('E2E_RELAY_HOST') || LOCAL_RELAY_URL;
-  const CHAIN_ID = ConfigService.get('CHAIN_ID') || '0x12a';
+  const RELAY_URL = ConfigService.get('E2E_RELAY_HOST');
+  const CHAIN_ID = ConfigService.get('CHAIN_ID');
 
   global.relayIsLocal = RELAY_URL === LOCAL_RELAY_URL;
   global.servicesNode = new ServicesClient(

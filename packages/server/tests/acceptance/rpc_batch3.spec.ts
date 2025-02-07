@@ -74,7 +74,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   let mirrorPrimaryAccount: ethers.Wallet;
   let mirrorSecondaryAccount: ethers.Wallet;
 
-  const CHAIN_ID = ConfigService.get('CHAIN_ID') || 0x12a;
+  const CHAIN_ID = ConfigService.get('CHAIN_ID');
   const ONE_TINYBAR = Utils.add0xPrefix(Utils.toHex(ethers.parseUnits('1', 10)));
 
   let reverterContract: ethers.Contract;
@@ -611,7 +611,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       };
 
       // Since we want the http status code, we need to perform the call using a client http request instead of using the relay instance directly
-      const testClientPort = ConfigService.get('E2E_SERVER_PORT') || '7546';
+      const testClientPort = ConfigService.get('E2E_SERVER_PORT');
       const testClient = Axios.create({
         baseURL: 'http://localhost:' + testClientPort,
         responseType: 'json' as const,
@@ -797,7 +797,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       let initialEthCallSelectorsAlwaysToConsensus: any, hrc719Contract: ethers.Contract;
 
       before(async () => {
-        initialEthCallSelectorsAlwaysToConsensus = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS');
+        initialEthCallSelectorsAlwaysToConsensus = JSON.parse(ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS'));
 
         hrc719Contract = await Utils.deployContract(
           HRC719ContractJson.abi,
@@ -814,8 +814,8 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
       });
 
       it('should NOT allow eth_call to process IHRC719.isAssociated() method', async () => {
-        const selectorsList = ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS');
-        expect(selectorsList).to.be.undefined;
+        const selectorsList = JSON.parse(ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS'));
+        expect(selectorsList.length).to.eq(0);
 
         // If the selector for `isAssociated` is not included in `ETH_CALL_CONSENSUS_SELECTORS`, the request will fail with a `CALL_EXCEPTION` error code.
         await expect(hrc719Contract.isAssociated(tokenAddress)).to.eventually.be.rejected.and.have.property(

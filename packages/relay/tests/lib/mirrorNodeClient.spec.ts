@@ -22,10 +22,6 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { BigNumber } from 'bignumber.js';
-import { expect } from 'chai';
-import { ethers } from 'ethers';
-import pino from 'pino';
-import { Registry } from 'prom-client';
 
 import { MirrorNodeClientError, predefined } from '../../src';
 import { MirrorNodeClient } from '../../src/lib/clients';
@@ -34,6 +30,10 @@ import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
 import { mockData, random20BytesAddress, withOverriddenEnvsInMochaTest } from '../helpers';
+import { expect } from 'chai';
+import { Registry } from 'prom-client';
+import pino from 'pino';
+import { ethers } from 'ethers';
 
 describe('MirrorNodeClient', async function () {
   this.timeout(20000);
@@ -57,8 +57,7 @@ describe('MirrorNodeClient', async function () {
     });
     cacheService = new CacheService(logger.child({ name: `cache` }), registry);
     mirrorNodeInstance = new MirrorNodeClient(
-      // @ts-ignore
-      ConfigService.get('MIRROR_NODE_URL') || '',
+      ConfigService.get('MIRROR_NODE_URL'),
       logger.child({ name: `mirror-node` }),
       registry,
       cacheService,
@@ -134,8 +133,7 @@ describe('MirrorNodeClient', async function () {
   });
 
   it('`restUrl` is exposed and correct', async () => {
-    // @ts-ignore
-    const domain = (ConfigService.get('MIRROR_NODE_URL') || '').replace(/^https?:\/\//, '');
+    const domain = ConfigService.get('MIRROR_NODE_URL').replace(/^https?:\/\//, '');
     const prodMirrorNodeInstance = new MirrorNodeClient(
       domain,
       logger.child({ name: `mirror-node` }),
@@ -162,7 +160,7 @@ describe('MirrorNodeClient', async function () {
   withOverriddenEnvsInMochaTest({ MIRROR_NODE_URL_HEADER_X_API_KEY: 'abc123iAManAPIkey' }, () => {
     it('Can provide custom x-api-key header', async () => {
       const mirrorNodeInstanceOverridden = new MirrorNodeClient(
-        ConfigService.get('MIRROR_NODE_URL') || '',
+        ConfigService.get('MIRROR_NODE_URL'),
         logger.child({ name: `mirror-node` }),
         registry,
         cacheService,

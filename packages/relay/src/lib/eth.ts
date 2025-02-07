@@ -159,17 +159,12 @@ export class EthImpl implements Eth {
   );
   private readonly maxBlockRange = parseNumericEnvVar('MAX_BLOCK_RANGE', 'MAX_BLOCK_RANGE');
   private readonly contractCallGasLimit = parseNumericEnvVar('CONTRACT_CALL_GAS_LIMIT', 'CONTRACT_CALL_GAS_LIMIT');
-  private readonly ethGetTransactionCountMaxBlockRange = parseNumericEnvVar(
-    'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-    'ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE',
-  );
+  private readonly ethGetTransactionCountMaxBlockRange = ConfigService.get('ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE');
   private readonly ethGetTransactionCountCacheTtl = parseNumericEnvVar(
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
     'ETH_GET_TRANSACTION_COUNT_CACHE_TTL',
   );
-  private readonly estimateGasThrows = ConfigService.get('ESTIMATE_GAS_THROWS')
-    ? ConfigService.get('ESTIMATE_GAS_THROWS')
-    : true;
+  private readonly estimateGasThrows = ConfigService.get('ESTIMATE_GAS_THROWS');
 
   private readonly ethGasPRiceCacheTtlMs = parseNumericEnvVar(
     'ETH_GET_GAS_PRICE_CACHE_TTL_MS',
@@ -183,9 +178,9 @@ export class EthImpl implements Eth {
    */
   private readonly options = {
     //The maximum number (or size) of items that remain in the cache (assuming no TTL pruning or explicit deletions).
-    max: constants.CACHE_MAX,
+    max: ConfigService.get('CACHE_MAX'),
     // Max time to live in ms, for items before they are considered stale.
-    ttl: constants.CACHE_TTL.ONE_HOUR,
+    ttl: ConfigService.get('CACHE_TTL'),
   };
 
   /**
@@ -317,8 +312,7 @@ export class EthImpl implements Eth {
   }
 
   private getEthFeeHistoryFixedFee(): boolean {
-    // @ts-ignore
-    return ConfigService.get('ETH_FEE_HISTORY_FIXED') ?? true;
+    return ConfigService.get('ETH_FEE_HISTORY_FIXED');
   }
 
   /**
@@ -1810,7 +1804,7 @@ export class EthImpl implements Eth {
      * the transaction hash is calculated and returned immediately after passing all prechecks.
      * All transaction processing logic is then handled asynchronously in the background.
      */
-    const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING') as boolean;
+    const useAsyncTxProcessing = ConfigService.get('USE_ASYNC_TX_PROCESSING');
     if (useAsyncTxProcessing) {
       this.sendRawTransactionProcessor(transactionBuffer, parsedTx, networkGasPriceInWeiBars, requestDetails);
       return Utils.computeTransactionHash(transactionBuffer);
@@ -1874,8 +1868,7 @@ export class EthImpl implements Eth {
     // When eth_call is invoked with a selector listed in specialSelectors, it will be routed through the consensus node, regardless of ETH_CALL_DEFAULT_TO_CONSENSUS_NODE.
     // note: this feature is a workaround for when a feature is supported by consensus node but not yet by mirror node.
     // Follow this ticket https://github.com/hashgraph/hedera-json-rpc-relay/issues/2984 to revisit and remove special selectors.
-    // @ts-ignore
-    const specialSelectors: string[] = JSON.parse(ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS') || '[]');
+    const specialSelectors: string[] = JSON.parse(ConfigService.get('ETH_CALL_CONSENSUS_SELECTORS'));
     const shouldForceToConsensus = selector !== '' && specialSelectors.includes(selector);
 
     // ETH_CALL_DEFAULT_TO_CONSENSUS_NODE = false enables the use of Mirror node

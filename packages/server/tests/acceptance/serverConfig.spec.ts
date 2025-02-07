@@ -17,16 +17,17 @@
  * limitations under the License.
  *
  */
-import { expect } from 'chai';
-import { Utils } from '../helpers/utils';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { expect } from 'chai';
+
+import { Utils } from '../helpers/utils';
 
 describe('@server-config Server Configuration Options Coverage', function () {
   describe('Koa Server Timeout', () => {
     it('should timeout a request after the specified time', async () => {
-      const requestTimeoutMs: number = parseInt(ConfigService.get('SERVER_REQUEST_TIMEOUT_MS') || '3000');
+      const requestTimeoutMs: number = ConfigService.get('SERVER_REQUEST_TIMEOUT_MS');
       const host = ConfigService.get('SERVER_HOST') || 'localhost';
-      const port = parseInt(ConfigService.get('SERVER_PORT') || '7546');
+      const port = ConfigService.get('SERVER_PORT');
       const method = 'eth_blockNumber';
       const params: any[] = [];
 

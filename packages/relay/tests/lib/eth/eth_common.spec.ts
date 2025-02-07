@@ -42,8 +42,7 @@ describe('@ethCommon', async function () {
   describe('@ethCommon', async function () {
     it('should execute "eth_chainId"', async function () {
       const chainId = Relay.eth().chainId(requestDetails);
-
-      expect(chainId).to.be.equal('0x' + Number(ConfigService.get('CHAIN_ID')).toString(16));
+      expect(chainId).to.be.equal(ConfigService.get('CHAIN_ID'));
     });
 
     it('should execute "eth_accounts"', async function () {

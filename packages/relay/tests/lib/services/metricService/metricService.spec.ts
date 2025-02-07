@@ -144,15 +144,15 @@ describe('Metric Service', function () {
 
   before(() => {
     // consensus node client
-    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')! as string;
+    const hederaNetwork = ConfigService.get('HEDERA_NETWORK')!;
     if (hederaNetwork in constants.CHAIN_IDS) {
       client = Client.forName(hederaNetwork);
     } else {
       client = Client.forNetwork(JSON.parse(hederaNetwork));
     }
     client = client.setOperator(
-      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')! as string),
-      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')! as string),
+      AccountId.fromString(ConfigService.get('OPERATOR_ID_MAIN')!),
+      Utils.createPrivateKeyBasedOnFormat(ConfigService.get('OPERATOR_KEY_MAIN')!),
     );
 
     // mirror node client
@@ -165,7 +165,7 @@ describe('Metric Service', function () {
       timeout: 20 * 1000,
     });
     mirrorNodeClient = new MirrorNodeClient(
-      (ConfigService.get('MIRROR_NODE_URL') as string) || '',
+      ConfigService.get('MIRROR_NODE_URL'),
       logger.child({ name: `mirror-node` }),
       registry,
       new CacheService(logger.child({ name: `cache` }), registry),

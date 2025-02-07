@@ -38,9 +38,10 @@ describe('Web3', function () {
   });
 
   withOverriddenEnvsInMochaTest({ npm_package_version: undefined }, () => {
-    it('should return "relay/"', () => {
-      const version = Relay.web3().clientVersion();
-      expect(version).to.equal('relay/');
+    it('should throw an error if npm_package_version is undefined', () => {
+      expect(() => Relay.web3().clientVersion()).to.throw(
+        'Configuration error: npm_package_version is a mandatory configuration for relay operation.',
+      );
     });
   });
 });

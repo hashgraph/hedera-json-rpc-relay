@@ -88,10 +88,7 @@ export default class ConnectionLimiter {
       registers: [register],
     });
 
-    const rateLimitDuration = ConfigService.get('LIMIT_DURATION')
-      ? // @ts-ignore
-        parseInt(ConfigService.get('LIMIT_DURATION'))
-      : constants.DEFAULT_RATE_LIMIT.DURATION;
+    const rateLimitDuration = ConfigService.get('LIMIT_DURATION');
     this.rateLimit = new RateLimit(logger.child({ name: 'ip-rate-limit' }), register, rateLimitDuration);
   }
 
@@ -126,9 +123,8 @@ export default class ConnectionLimiter {
 
   public applyLimits(ctx) {
     // Limit total connections
-    const MAX_CONNECTION_LIMIT = ConfigService.get('WS_CONNECTION_LIMIT') || '10';
-    // @ts-ignore
-    if (this.connectedClients > parseInt(MAX_CONNECTION_LIMIT)) {
+    const MAX_CONNECTION_LIMIT = ConfigService.get('WS_CONNECTION_LIMIT');
+    if (this.connectedClients > MAX_CONNECTION_LIMIT) {
       this.logger.info(
         `Closing connection ${ctx.websocket.id} due to exceeded maximum connections (max_con=${MAX_CONNECTION_LIMIT})`,
       );
@@ -153,9 +149,8 @@ export default class ConnectionLimiter {
 
     // Limit connections from a single IP address
     const { ip } = ctx.request;
-    const MAX_CONNECTION_LIMIT_PER_IP = ConfigService.get('WS_CONNECTION_LIMIT_PER_IP') || '10';
-    // @ts-ignore
-    if (this.clientIps[ip] && this.clientIps[ip] > parseInt(MAX_CONNECTION_LIMIT_PER_IP)) {
+    const MAX_CONNECTION_LIMIT_PER_IP = ConfigService.get('WS_CONNECTION_LIMIT_PER_IP');
+    if (this.clientIps[ip] && this.clientIps[ip] > MAX_CONNECTION_LIMIT_PER_IP) {
       this.logger.info(
         `Closing connection ${ctx.websocket.id} due to exceeded maximum connections from a single IP: address ${ip} - ${this.clientIps[ip]} connections. (max_con=${MAX_CONNECTION_LIMIT_PER_IP})`,
       );
@@ -191,14 +186,12 @@ export default class ConnectionLimiter {
   }
 
   public validateSubscriptionLimit(ctx) {
-    // @ts-ignore
-    return ctx.websocket.subscriptions < parseInt(ConfigService.get('WS_SUBSCRIPTION_LIMIT') || '10');
+    return ctx.websocket.subscriptions < ConfigService.get('WS_SUBSCRIPTION_LIMIT');
   }
 
   // Starts a timeout timer that closes the connection
   public startInactivityTTLTimer(websocket) {
-    // @ts-ignore
-    const maxInactivityTTL = parseInt(ConfigService.get('WS_MAX_INACTIVITY_TTL') || '300000');
+    const maxInactivityTTL = ConfigService.get('WS_MAX_INACTIVITY_TTL');
     websocket.inactivityTTL = setTimeout(() => {
       if (websocket.readyState !== 3) {
         // 3 = CLOSED, Avoid closing already closed connections
