@@ -345,6 +345,44 @@ describe('Precheck', async function () {
       const adjustedGasPrice = parsedTxGasPrice + Number(constants.GAS_PRICE_TINY_BAR_BUFFER);
       precheck.gasPrice(parsedTxWithMatchingChainId, adjustedGasPrice, requestDetails);
     });
+
+    it('should pass for gas price if the transaction has valid gasPrice but null maxFeePerGas and null maxPriorityFeePerGas', async function () {
+      const parsedTx = {
+        ...parsedTxWithMatchingChainId,
+        gasPrice: BigInt(100),
+        maxFeePerGas: null,
+        maxPriorityFeePerGas: null,
+      } as Transaction;
+
+      expect(() => precheck.gasPrice(parsedTx, 50, requestDetails)).to.not.throw();
+    });
+
+    it('should pass for gas price if the transaction has null gasPrice but valid maxFeePerGas and valid maxPriorityFeePerGas', async function () {
+      const parsedTx = {
+        ...parsedTxWithMatchingChainId,
+        gasPrice: null,
+        maxFeePerGas: BigInt(100),
+        maxPriorityFeePerGas: BigInt(100),
+      } as Transaction;
+
+      expect(() => precheck.gasPrice(parsedTx, 50, requestDetails)).to.not.throw();
+    });
+
+    it('should not pass for gas price if the transaction has null gasPrice and null maxFeePerGas and null maxPriorityFeePerGas', async function () {
+      const tx = {
+        ...parsedTxWithMatchingChainId,
+        gasPrice: null,
+        maxFeePerGas: null,
+        maxPriorityFeePerGas: null,
+      };
+      const signed = await signTransaction(tx);
+      const parsedTx = ethers.Transaction.from(signed);
+      const minGasPrice = 1000 * constants.TINYBAR_TO_WEIBAR_COEF;
+
+      expect(() => precheck.gasPrice(parsedTx, minGasPrice, requestDetails)).to.throw(
+        `Gas price '0' is below configured minimum gas price '${minGasPrice}'`,
+      );
+    });
   });
 
   describe('balance', async function () {
@@ -443,6 +481,68 @@ describe('Precheck', async function () {
 
       const result = precheck.balance(parsedTransaction, account, requestDetails);
       expect(result).to.not.exist;
+    });
+
+    it('should calculate balance correctly when transaction has valid gasPrice but null maxFeePerGas and null maxPriorityFeePerGas', async function () {
+      const tx = {
+        ...parsedTxWithMatchingChainId,
+        value: BigInt(1000),
+        gasPrice: BigInt(100),
+        gasLimit: BigInt(21000),
+        maxFeePerGas: null,
+        maxPriorityFeePerGas: null,
+      } as Transaction;
+
+      const account = {
+        account: accountId,
+        balance: {
+          // Set balance higher than value + (gasPrice * gasLimit)
+          balance: (BigInt(1000) + BigInt(100) * BigInt(21000) + BigInt(1000)).toString(),
+        },
+      };
+
+      expect(() => precheck.balance(tx, account, requestDetails)).to.not.throw();
+    });
+
+    it('should calculate balance correctly when transaction has null gasPrice but valid maxFeePerGas and maxPriorityFeePerGas', async function () {
+      const tx = {
+        ...parsedTxWithMatchingChainId,
+        value: BigInt(1000),
+        gasPrice: null,
+        gasLimit: BigInt(21000),
+        maxFeePerGas: BigInt(100),
+        maxPriorityFeePerGas: BigInt(100),
+      } as Transaction;
+
+      const account = {
+        account: accountId,
+        balance: {
+          // Set balance higher than value + ((maxFeePerGas + maxPriorityFeePerGas) * gasLimit)
+          balance: (BigInt(1000) + BigInt(200) * BigInt(21000) + BigInt(1000)).toString(),
+        },
+      };
+
+      expect(() => precheck.balance(tx, account, requestDetails)).to.not.throw();
+    });
+
+    it('should still pass when transaction has null gasPrice, null maxFeePerGas, and null maxPriorityFeePerGas', async function () {
+      const tx = {
+        ...parsedTxWithMatchingChainId,
+        value: BigInt(1000),
+        gasPrice: null,
+        gasLimit: BigInt(21000),
+        maxFeePerGas: null,
+        maxPriorityFeePerGas: null,
+      } as Transaction;
+
+      const account = {
+        account: accountId,
+        balance: {
+          balance: BigInt(1000).toString(), // Any balance would fail as txTotalValue calculation would error
+        },
+      };
+
+      expect(() => precheck.balance(tx, account, requestDetails)).to.not.throw();
     });
   });
 
