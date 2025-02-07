@@ -170,7 +170,8 @@ export class Precheck {
    */
   gasPrice(tx: Transaction, networkGasPriceInWeiBars: number, requestDetails: RequestDetails): void {
     const networkGasPrice = BigInt(networkGasPriceInWeiBars);
-    const txGasPrice = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
+
+    const txGasPrice = BigInt(tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!);
 
     // **notice: Pass gasPrice precheck if txGasPrice is greater than the minimum network's gas price value,
     //          OR if the transaction is the deterministic deployment transaction (a special case).
@@ -221,8 +222,9 @@ export class Precheck {
       passes: false,
       error: predefined.INSUFFICIENT_ACCOUNT_BALANCE,
     };
-    const txGas = tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!;
-    const txTotalValue = tx.value + txGas * tx.gasLimit;
+
+    const txGasPrice = BigInt(tx.gasPrice || tx.maxFeePerGas! + tx.maxPriorityFeePerGas!);
+    const txTotalValue = tx.value + txGasPrice * tx.gasLimit;
 
     if (account == null) {
       if (this.logger.isLevelEnabled('trace')) {
