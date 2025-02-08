@@ -19,15 +19,16 @@
  */
 
 // external resources
-import { solidity } from 'ethereum-waffle';
+import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import chai, { expect } from 'chai';
-import Constants from '../../helpers/constants';
-import Assertions from '../../helpers/assertions';
+import { solidity } from 'ethereum-waffle';
 import { ethers } from 'ethers';
+
 import ERC20MockJson from '../../contracts/ERC20Mock.json';
 import TokenManagementJson from '../../contracts/TokenManagementContract.json';
+import Assertions from '../../helpers/assertions';
+import Constants from '../../helpers/constants';
 import { Utils } from '../../helpers/utils';
-import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import { AliasAccount } from '../../types/AliasAccount';
 
 chai.use(solidity);
@@ -793,7 +794,10 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       const epoch = parseInt((Date.now() / 1000 + Number(NEW_AUTO_RENEW_PERIOD)).toFixed(0));
 
       // get current expiry info
-      const getTokenExpiryInfoTxBefore = await mainContract.getTokenExpiryInfoPublic(HTSTokenContractAddress);
+      const getTokenExpiryInfoTxBefore = await mainContract.getTokenExpiryInfoPublic(
+        HTSTokenContractAddress,
+        Constants.GAS.LIMIT_1_000_000,
+      );
       const responseCode = (await getTokenExpiryInfoTxBefore.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode,
       )[0].args.responseCode;
@@ -823,7 +827,10 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       )[0].args.responseCode;
 
       // get updated expiryInfo
-      const getTokenExpiryInfoTxAfter = await mainContract.getTokenExpiryInfoPublic(HTSTokenContractAddress);
+      const getTokenExpiryInfoTxAfter = await mainContract.getTokenExpiryInfoPublic(
+        HTSTokenContractAddress,
+        Constants.GAS.LIMIT_1_000_000,
+      );
       const getExpiryInfoResponseCode = (await getTokenExpiryInfoTxAfter.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode,
       )[0].args.responseCode;
@@ -847,7 +854,10 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       //get current epoch + auto renew period , which result to expiry info second
       const epoch = parseInt((Date.now() / 1000 + NEW_AUTO_RENEW_PERIOD).toFixed(0));
       // get current expiry info
-      const getTokenExpiryInfoTxBefore = await mainContract.getTokenExpiryInfoPublic(NftHTSTokenContractAddress);
+      const getTokenExpiryInfoTxBefore = await mainContract.getTokenExpiryInfoPublic(
+        NftHTSTokenContractAddress,
+        Constants.GAS.LIMIT_1_000_000,
+      );
       const responseCode = (await getTokenExpiryInfoTxBefore.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode,
       )[0].args.responseCode;
@@ -880,7 +890,10 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       )[0].args.responseCode;
 
       // get updated expiryInfo
-      const getTokenExpiryInfoTxAfter = await mainContract.getTokenExpiryInfoPublic(NftHTSTokenContractAddress);
+      const getTokenExpiryInfoTxAfter = await mainContract.getTokenExpiryInfoPublic(
+        NftHTSTokenContractAddress,
+        Constants.GAS.LIMIT_1_000_000,
+      );
       const getExpiryInfoResponseCode = (await getTokenExpiryInfoTxAfter.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode,
       )[0].args.responseCode;
@@ -904,7 +917,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
   describe('HTS Precompile Key management Tests', async function () {
     it('should be able to execute updateTokenKeys', async function () {
       // Get key value before update
-      const getKeyTx = await mainContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
+      const getKeyTx = await mainContract.getTokenKeyPublic(HTSTokenContractAddress, 2, Constants.GAS.LIMIT_1_000_000);
       const originalKey = (await getKeyTx.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.TokenKey,
       )[0].args.key;
@@ -917,14 +930,18 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
       ];
 
       // Update keys. After updating there should be only one key with keyValue = 6. Other keys are removed
-      const updateTx = await mainContract.updateTokenKeysPublic(HTSTokenContractAddress, [[2, updateKey]]);
+      const updateTx = await mainContract.updateTokenKeysPublic(
+        HTSTokenContractAddress,
+        [[2, updateKey]],
+        Constants.GAS.LIMIT_1_000_000,
+      );
       const updateResponseCode = (await updateTx.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode,
       )[0].args.responseCode;
       expect(updateResponseCode).to.equal(TX_SUCCESS_CODE);
 
       // Assert updated key
-      const tx = await mainContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
+      const tx = await mainContract.getTokenKeyPublic(HTSTokenContractAddress, 2, Constants.GAS.LIMIT_1_000_000);
       const result = await tx.wait();
       const { responseCode } = result.logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode,
@@ -943,7 +960,7 @@ describe('@tokenmanagement HTS Precompile Token Management Acceptance Tests', as
     });
 
     it('should be able to execute getTokenKey', async function () {
-      const tx = await mainContract.getTokenKeyPublic(HTSTokenContractAddress, 2);
+      const tx = await mainContract.getTokenKeyPublic(HTSTokenContractAddress, 2, Constants.GAS.LIMIT_1_000_000);
       const result = await tx.wait();
       const { responseCode } = result.logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.ResponseCode,

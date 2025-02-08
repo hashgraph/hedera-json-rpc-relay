@@ -19,16 +19,17 @@
  */
 
 // external resources
-import { solidity } from 'ethereum-waffle';
+import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import chai, { expect } from 'chai';
-import Constants from '../../helpers/constants';
+import { solidity } from 'ethereum-waffle';
 import { ethers } from 'ethers';
+
 import ERC20MockJson from '../../contracts/ERC20Mock.json';
 import ERC721MockJson from '../../contracts/ERC721Mock.json';
 import TokenCreateJson from '../../contracts/TokenCreateContract.json';
-import { Utils } from '../../helpers/utils';
-import relayConstants from '@hashgraph/json-rpc-relay/dist/lib/constants';
 import Assertions from '../../helpers/assertions';
+import Constants from '../../helpers/constants';
+import { Utils } from '../../helpers/utils';
 import { AliasAccount } from '../../types/AliasAccount';
 
 chai.use(solidity);
@@ -319,6 +320,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         HTSTokenContractAddress,
         mainContractAddress,
         accounts[2].wallet.address,
+        Constants.GAS.LIMIT_1_000_000,
       );
       const beforeAmount = (await txBefore.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.AllowanceValue,
@@ -380,6 +382,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         HTSTokenContractAddress,
         mainContractAddress,
         accounts[2].wallet.address,
+        Constants.GAS.LIMIT_1_000_000,
       );
       const afterAmount = (await txAfter.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.AllowanceValue,
@@ -426,6 +429,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         NftHTSTokenContractAddress,
         mainContractAddress,
         accounts[1].wallet.address,
+        Constants.GAS.LIMIT_1_000_000,
       );
       const txBeforeReceipt = await txBefore.wait();
       const beforeFlag = txBeforeReceipt.logs.filter(
@@ -451,6 +455,7 @@ describe('@tokencreate HTS Precompile Token Create Acceptance Tests', async func
         NftHTSTokenContractAddress,
         mainContractAddress,
         accounts[1].wallet.address,
+        Constants.GAS.LIMIT_1_000_000,
       );
       const afterFlag = (await txAfter.wait()).logs.filter(
         (e) => e.fragment.name === Constants.HTS_CONTRACT_EVENTS.Approved,

@@ -11,11 +11,11 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
-    "typescript": "^5.5.4"
+    "typescript": "^5.7.3"
   },
   "overrides": {
     "cypress": "^13.13.2",
-    "typescript": "^5.5.4"
+    "typescript": "^5.7.3"
   },
   "devDependencies": {
     "@babel/core": "^7.24.7",
