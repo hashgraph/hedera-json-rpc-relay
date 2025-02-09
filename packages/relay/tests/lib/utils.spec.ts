@@ -202,4 +202,17 @@ describe('Utils', () => {
       },
     );
   });
+
+  describe('generateUuid', () => {
+    it('should generate different uuids', async () => {
+      const uuid1 = Utils.generateUuid();
+      const uuid2 = Utils.generateUuid();
+      expect(uuid1).to.not.equal(uuid2);
+
+      // input eabfd3bd-43c0-4eda-9a00-57973ce474bb and handling case sensitiveness
+      const uuidRegex = '[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}';
+      expect(uuid1.match(uuidRegex)).to.not.be.null;
+      expect(uuid1.match(uuidRegex)).to.not.be.null;
+    });
+  });
 });

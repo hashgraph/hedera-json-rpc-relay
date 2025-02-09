@@ -798,6 +798,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
 
           let accountPlanObject: Record<SubscriptionTier, AliasAccountPlan[]>;
 
+          // @ts-ignore
           const accountPlanRequirements: Record<SubscriptionTier, number> = {
             BASIC: 3,
             EXTENDED: 3,
@@ -807,6 +808,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const createMultipleAliasAccountsWithSpendingPlans = async (
             accountPlanRequirements: Record<SubscriptionTier, number>,
           ) => {
+            // @ts-ignore
             const accountPlanObject: Record<SubscriptionTier, AliasAccountPlan[]> = {
               BASIC: [],
               EXTENDED: [],
@@ -845,6 +847,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
             const results = await Promise.all(deployPromises);
 
             callingAliasAccountPlans.push(
+              // @ts-ignore
               ...results.filter((callingAliasAccountPlan) => callingAliasAccountPlan !== null),
             );
 
