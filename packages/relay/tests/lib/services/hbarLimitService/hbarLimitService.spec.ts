@@ -23,7 +23,6 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import { AccountId, Hbar } from '@hashgraph/sdk';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { randomBytes, uuidV4 } from 'ethers';
 import pino, { Logger } from 'pino';
 import { Counter, Gauge, Registry } from 'prom-client';
 import sinon from 'sinon';
@@ -44,6 +43,7 @@ import { SubscriptionTier } from '../../../../src/lib/db/types/hbarLimiter/subsc
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { HbarLimitService } from '../../../../src/lib/services/hbarLimitService';
 import { RequestDetails } from '../../../../src/lib/types';
+import { Utils } from '../../../../src/utils';
 import { withOverriddenEnvsInMochaTest } from '../../../helpers';
 
 chai.use(chaiAsPromised);
@@ -59,7 +59,7 @@ describe('HBAR Rate Limit Service', function () {
   const mockEvmAddress = '0x123';
   const mockIpAddress = 'x.x.x';
   const mockEstimatedTxFee = 300;
-  const mockPlanId = uuidV4(randomBytes(16));
+  const mockPlanId = Utils.generateUuid();
   const todayAtMidnight = new Date().setHours(0, 0, 0, 0);
 
   const requestDetails = new RequestDetails({ requestId: '', ipAddress: mockIpAddress });
@@ -810,7 +810,7 @@ describe('HBAR Rate Limit Service', function () {
 
   describe('addExpense', function () {
     const testAddExpense = async (evmAddress: string, ipAddress: string, expense: number = 100) => {
-      const otherPlanOfTheSameTier = createSpendingPlan(uuidV4(randomBytes(16)), 200);
+      const otherPlanOfTheSameTier = createSpendingPlan(Utils.generateUuid(), 200);
       await cacheService.set(
         `hbarSpendingPlan:${otherPlanOfTheSameTier.id}`,
         otherPlanOfTheSameTier,

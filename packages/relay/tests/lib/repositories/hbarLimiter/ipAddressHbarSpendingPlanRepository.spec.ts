@@ -20,7 +20,6 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { randomBytes, uuidV4 } from 'ethers';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';
@@ -31,6 +30,7 @@ import { IPAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/t
 import { IIPAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/ipAddressHbarSpendingPlan';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { RequestDetails } from '../../../../src/lib/types';
+import { Utils } from '../../../../src/utils';
 import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
@@ -76,7 +76,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
 
     describe('existsByAddress', () => {
       it('returns true if address plan exists', async () => {
-        const addressPlan = new IPAddressHbarSpendingPlan({ ipAddress, planId: uuidV4(randomBytes(16)) });
+        const addressPlan = new IPAddressHbarSpendingPlan({ ipAddress, planId: Utils.generateUuid() });
         await cacheService.set(
           `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
           addressPlan,
@@ -94,7 +94,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
 
     describe('findAllByPlanId', () => {
       it('retrieves all address plans by plan ID', async () => {
-        const planId = uuidV4(randomBytes(16));
+        const planId = Utils.generateUuid();
         const ipAddressPlans = [
           new IPAddressHbarSpendingPlan({ ipAddress: '555.555.555.555', planId }),
           new IPAddressHbarSpendingPlan({ ipAddress: '666.666.666.666', planId }),
@@ -113,7 +113,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
       });
 
       it('returns an empty array if no address plans are found for the plan ID', async () => {
-        const planId = uuidV4(randomBytes(16));
+        const planId = Utils.generateUuid();
         const result = await repository.findAllByPlanId(planId, 'findAllByPlanId', requestDetails);
         expect(result).to.deep.equal([]);
       });
@@ -121,7 +121,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
 
     describe('deleteAllByPlanId', () => {
       it('deletes all address plans by plan ID', async () => {
-        const planId = uuidV4(randomBytes(16));
+        const planId = Utils.generateUuid();
         const ipAddresses = ['555.555.555.555', '666.666.666.666'];
         for (const ipAddress of ipAddresses) {
           const addressPlan = new IPAddressHbarSpendingPlan({ ipAddress, planId });
@@ -147,14 +147,14 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
       });
 
       it('does not throw an error if no address plans are found for the plan ID', async () => {
-        const planId = uuidV4(randomBytes(16));
+        const planId = Utils.generateUuid();
         await expect(repository.deleteAllByPlanId(planId, 'deleteAllByPlanId', requestDetails)).to.be.fulfilled;
       });
     });
 
     describe('findByAddress', () => {
       it('retrieves an address plan by ip', async () => {
-        const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: Utils.generateUuid() };
         await cacheService.set(
           `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
           addressPlan,
@@ -176,7 +176,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
 
     describe('save', () => {
       it('saves an address plan successfully', async () => {
-        const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: Utils.generateUuid() };
 
         await repository.save(addressPlan, requestDetails, ttl);
         const result = await cacheService.getAsync<IIPAddressHbarSpendingPlan>(
@@ -196,7 +196,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
       });
 
       it('overwrites an existing address plan', async () => {
-        const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: Utils.generateUuid() };
         await cacheService.set(
           `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
           addressPlan,
@@ -204,7 +204,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
           requestDetails,
         );
 
-        const newPlanId = uuidV4(randomBytes(16));
+        const newPlanId = Utils.generateUuid();
         const newAddressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: newPlanId };
         await repository.save(newAddressPlan, requestDetails, ttl);
         const result = await cacheService.getAsync<IIPAddressHbarSpendingPlan>(
@@ -226,7 +226,7 @@ describe('IPAddressHbarSpendingPlanRepository', function () {
 
     describe('delete', () => {
       it('deletes an address plan successfully', async () => {
-        const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IIPAddressHbarSpendingPlan = { ipAddress, planId: Utils.generateUuid() };
         await cacheService.set(
           `${IPAddressHbarSpendingPlanRepository.collectionKey}:${ipAddress}`,
           addressPlan,

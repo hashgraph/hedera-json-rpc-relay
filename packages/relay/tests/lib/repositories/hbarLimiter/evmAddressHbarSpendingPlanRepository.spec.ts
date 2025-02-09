@@ -20,7 +20,6 @@
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { randomBytes, uuidV4 } from 'ethers';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 import sinon from 'sinon';
@@ -31,6 +30,7 @@ import { EvmAddressHbarSpendingPlanRepository } from '../../../../src/lib/db/rep
 import { EvmAddressHbarSpendingPlanNotFoundError } from '../../../../src/lib/db/types/hbarLimiter/errors';
 import { IEvmAddressHbarSpendingPlan } from '../../../../src/lib/db/types/hbarLimiter/evmAddressHbarSpendingPlan';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
+import { Utils } from '../../../../src/utils';
 import { overrideEnvsInMochaDescribe, useInMemoryRedisServer } from '../../../helpers';
 
 chai.use(chaiAsPromised);
@@ -75,7 +75,7 @@ describe('EvmAddressHbarSpendingPlanRepository', function () {
     describe('existsByAddress', () => {
       it('returns true if address plan exists', async () => {
         const evmAddress = '0x123';
-        const addressPlan = new EvmAddressHbarSpendingPlan({ evmAddress, planId: uuidV4(randomBytes(16)) });
+        const addressPlan = new EvmAddressHbarSpendingPlan({ evmAddress, planId: Utils.generateUuid() });
         await cacheService.set(
           `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           addressPlan,
@@ -94,7 +94,7 @@ describe('EvmAddressHbarSpendingPlanRepository', function () {
 
     describe('findAllByPlanId', () => {
       it('retrieves all address plans by plan ID', async () => {
-        const planId = uuidV4(randomBytes(16));
+        const planId = Utils.generateUuid();
         const evmAddressPlans = [
           new EvmAddressHbarSpendingPlan({ evmAddress: '0x123', planId }),
           new EvmAddressHbarSpendingPlan({ evmAddress: '0x456', planId }),
@@ -113,7 +113,7 @@ describe('EvmAddressHbarSpendingPlanRepository', function () {
       });
 
       it('returns an empty array if no address plans are found for the plan ID', async () => {
-        const planId = uuidV4(randomBytes(16));
+        const planId = Utils.generateUuid();
         const result = await repository.findAllByPlanId(planId, 'findAllByPlanId', requestDetails);
         expect(result).to.deep.equal([]);
       });
@@ -121,7 +121,7 @@ describe('EvmAddressHbarSpendingPlanRepository', function () {
 
     describe('deleteAllByPlanId', () => {
       it('deletes all address plans by plan ID', async () => {
-        const planId = uuidV4(randomBytes(16));
+        const planId = Utils.generateUuid();
         const evmAddresses = ['0x123', '0x456', '0x789'];
         for (const evmAddress of evmAddresses) {
           const addressPlan = new EvmAddressHbarSpendingPlan({ evmAddress, planId });
@@ -147,7 +147,7 @@ describe('EvmAddressHbarSpendingPlanRepository', function () {
       });
 
       it('does not throw an error if no address plans are found for the plan ID', async () => {
-        const planId = uuidV4(randomBytes(16));
+        const planId = Utils.generateUuid();
         await expect(repository.deleteAllByPlanId(planId, 'deleteAllByPlanId', requestDetails)).to.be.fulfilled;
       });
     });
@@ -155,7 +155,7 @@ describe('EvmAddressHbarSpendingPlanRepository', function () {
     describe('findByAddress', () => {
       it('retrieves an address plan by address', async () => {
         const evmAddress = '0x123';
-        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: Utils.generateUuid() };
         await cacheService.set(
           `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           addressPlan,
@@ -179,7 +179,7 @@ describe('EvmAddressHbarSpendingPlanRepository', function () {
     describe('save', () => {
       it('saves an address plan successfully', async () => {
         const evmAddress = '0x123';
-        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: Utils.generateUuid() };
 
         await repository.save(addressPlan, requestDetails, ttl);
         const result = await cacheService.getAsync<IEvmAddressHbarSpendingPlan>(
@@ -200,7 +200,7 @@ describe('EvmAddressHbarSpendingPlanRepository', function () {
 
       it('overwrites an existing address plan', async () => {
         const evmAddress = '0x123';
-        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: Utils.generateUuid() };
         await cacheService.set(
           `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           addressPlan,
@@ -208,7 +208,7 @@ describe('EvmAddressHbarSpendingPlanRepository', function () {
           requestDetails,
         );
 
-        const newPlanId = uuidV4(randomBytes(16));
+        const newPlanId = Utils.generateUuid();
         const newAddressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: newPlanId };
         await repository.save(newAddressPlan, requestDetails, ttl);
         const result = await cacheService.getAsync<IEvmAddressHbarSpendingPlan>(
@@ -231,7 +231,7 @@ describe('EvmAddressHbarSpendingPlanRepository', function () {
     describe('delete', () => {
       it('deletes an address plan successfully', async () => {
         const evmAddress = '0x123';
-        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: uuidV4(randomBytes(16)) };
+        const addressPlan: IEvmAddressHbarSpendingPlan = { evmAddress, planId: Utils.generateUuid() };
         await cacheService.set(
           `${EvmAddressHbarSpendingPlanRepository.collectionKey}:${evmAddress}`,
           addressPlan,

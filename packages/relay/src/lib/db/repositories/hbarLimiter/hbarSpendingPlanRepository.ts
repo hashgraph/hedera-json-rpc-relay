@@ -1,8 +1,8 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,17 @@
  *
  */
 
-import { randomBytes, uuidV4 } from 'ethers';
 import { Logger } from 'pino';
-import { IHbarSpendingRecord } from '../../types/hbarLimiter/hbarSpendingRecord';
+
+import { Utils } from '../../../../utils';
 import { CacheService } from '../../../services/cacheService/cacheService';
+import { RequestDetails } from '../../../types';
+import { HbarSpendingPlan } from '../../entities/hbarLimiter/hbarSpendingPlan';
+import { HbarSpendingRecord } from '../../entities/hbarLimiter/hbarSpendingRecord';
 import { HbarSpendingPlanNotActiveError, HbarSpendingPlanNotFoundError } from '../../types/hbarLimiter/errors';
 import { IDetailedHbarSpendingPlan, IHbarSpendingPlan } from '../../types/hbarLimiter/hbarSpendingPlan';
-import { HbarSpendingRecord } from '../../entities/hbarLimiter/hbarSpendingRecord';
+import { IHbarSpendingRecord } from '../../types/hbarLimiter/hbarSpendingRecord';
 import { SubscriptionTier } from '../../types/hbarLimiter/subscriptionTier';
-import { HbarSpendingPlan } from '../../entities/hbarLimiter/hbarSpendingPlan';
-import { RequestDetails } from '../../../types';
 
 export class HbarSpendingPlanRepository {
   public static readonly collectionKey = 'hbarSpendingPlan';
@@ -100,7 +101,7 @@ export class HbarSpendingPlanRepository {
     planId?: string,
   ): Promise<IDetailedHbarSpendingPlan> {
     const plan: IDetailedHbarSpendingPlan = {
-      id: planId ?? uuidV4(randomBytes(16)),
+      id: planId ?? Utils.generateUuid(),
       subscriptionTier: subscriptionTier,
       createdAt: new Date(),
       active: true,

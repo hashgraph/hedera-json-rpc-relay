@@ -22,6 +22,7 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import { AccountId, PrivateKey } from '@hashgraph/sdk';
 import { Operator } from '@hashgraph/sdk/lib/client/Client';
 import crypto from 'crypto';
+import { randomBytes, uuidV4 } from 'ethers';
 import createHash from 'keccak';
 import { Logger } from 'pino';
 
@@ -165,5 +166,9 @@ export class Utils {
       privateKey: Utils.createPrivateKeyBasedOnFormat(operatorKey),
       accountId: AccountId.fromString(operatorId.trim()),
     };
+  }
+
+  public static generateUuid(): string {
+    return uuidV4(randomBytes(16));
   }
 }
