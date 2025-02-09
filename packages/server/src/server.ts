@@ -1,8 +1,8 @@
-/*
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
+import { Utils } from '@hashgraph/json-rpc-relay/dist/utils';
 import { ITracerConfig, RequestDetails } from '@hashgraph/json-rpc-relay/src/lib/types';
 import fs from 'fs';
 import cors from 'koa-cors';
 import path from 'path';
 import pino from 'pino';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
-import { v4 as uuid } from 'uuid';
 
 import { formatRequestIdMessage } from './formatters';
 import KoaJsonRpc from './koaJsonRpc';
@@ -188,7 +188,7 @@ app.getKoaApp().use(async (ctx, next) => {
   }
 
   if (!id) {
-    id = uuid();
+    id = Utils.generateUuid();
   }
 
   if (options.expose) {
@@ -725,10 +725,7 @@ app.useRpc('eth_newFilter', async (params: any) => {
 
 app.useRpc('eth_getFilterLogs', async (params: any) => {
   return logAndHandleResponse('eth_getFilterLogs', params, (requestDetails) =>
-    relay
-      .eth()
-      .filterService()
-      .getFilterLogs(params?.[0], requestDetails),
+    relay.eth().filterService().getFilterLogs(params?.[0], requestDetails),
   );
 });
 
@@ -767,10 +764,7 @@ app.useRpc('eth_newPendingTransactionFilter', async () => {
  */
 app.useRpc('eth_uninstallFilter', async (params: any) => {
   return logAndHandleResponse('eth_uninstallFilter', params, (requestDetails) =>
-    relay
-      .eth()
-      .filterService()
-      .uninstallFilter(params?.[0], requestDetails),
+    relay.eth().filterService().uninstallFilter(params?.[0], requestDetails),
   );
 });
 

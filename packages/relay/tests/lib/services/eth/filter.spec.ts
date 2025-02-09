@@ -23,7 +23,6 @@ import MockAdapter from 'axios-mock-adapter';
 import { expect } from 'chai';
 import pino from 'pino';
 import { Registry } from 'prom-client';
-import { v4 as uuid } from 'uuid';
 
 import { predefined } from '../../../../src';
 import { MirrorNodeClient } from '../../../../src/lib/clients';
@@ -31,6 +30,7 @@ import constants from '../../../../src/lib/constants';
 import { CacheService } from '../../../../src/lib/services/cacheService/cacheService';
 import { CommonService, FilterService } from '../../../../src/lib/services/ethService';
 import { RequestDetails } from '../../../../src/lib/types';
+import { Utils } from '../../../../src/utils';
 import RelayAssertions from '../../../assertions';
 import {
   defaultBlock,
@@ -52,7 +52,7 @@ let cacheService: CacheService;
 describe('Filter API Test Suite', async function () {
   this.timeout(10000);
 
-  const requestDetails = new RequestDetails({ requestId: uuid(), ipAddress: '0.0.0.0' });
+  const requestDetails = new RequestDetails({ requestId: Utils.generateUuid(), ipAddress: '0.0.0.0' });
   const filterObject = {
     toBlock: 'latest',
   };
@@ -519,14 +519,19 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('should return the hashes of latest blocks', async function () {
-      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, JSON.stringify({ blocks: [{ ...defaultBlock, number: defaultBlock.number + 4 }] }));
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, JSON.stringify({
-        blocks: [
-          { ...defaultBlock, number: defaultBlock.number + 1, hash: '0x1' },
-          { ...defaultBlock, number: defaultBlock.number + 2, hash: '0x2' },
-          { ...defaultBlock, number: defaultBlock.number + 3, hash: '0x3' },
-        ],
-      }));
+      restMock
+        .onGet(LATEST_BLOCK_QUERY)
+        .reply(200, JSON.stringify({ blocks: [{ ...defaultBlock, number: defaultBlock.number + 4 }] }));
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(
+        200,
+        JSON.stringify({
+          blocks: [
+            { ...defaultBlock, number: defaultBlock.number + 1, hash: '0x1' },
+            { ...defaultBlock, number: defaultBlock.number + 2, hash: '0x2' },
+            { ...defaultBlock, number: defaultBlock.number + 3, hash: '0x3' },
+          ],
+        }),
+      );
       restMock
         .onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number + 3}&order=asc`)
         .reply(200, JSON.stringify({ blocks: [] }));
@@ -554,10 +559,15 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('should return no blocks if the second request is for the same block', async function () {
-      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, JSON.stringify({ blocks: [{ ...defaultBlock, number: defaultBlock.number + 3 }] }));
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, JSON.stringify({
-        blocks: [{ ...defaultBlock, number: defaultBlock.number + 1, hash: '0x1' }],
-      }));
+      restMock
+        .onGet(LATEST_BLOCK_QUERY)
+        .reply(200, JSON.stringify({ blocks: [{ ...defaultBlock, number: defaultBlock.number + 3 }] }));
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(
+        200,
+        JSON.stringify({
+          blocks: [{ ...defaultBlock, number: defaultBlock.number + 1, hash: '0x1' }],
+        }),
+      );
 
       restMock
         .onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number + 1}&order=asc`)
@@ -623,10 +633,15 @@ describe('Filter API Test Suite', async function () {
     });
 
     it('should return an empty set if there are no block hashes (e.g. 2 requests within 2 seconds)', async function () {
-      restMock.onGet(LATEST_BLOCK_QUERY).reply(200, JSON.stringify({ blocks: [{ ...defaultBlock, number: defaultBlock.number }] }));
-      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(200, JSON.stringify({
-        blocks: [],
-      }));
+      restMock
+        .onGet(LATEST_BLOCK_QUERY)
+        .reply(200, JSON.stringify({ blocks: [{ ...defaultBlock, number: defaultBlock.number }] }));
+      restMock.onGet(`${BLOCK_BY_NUMBER_QUERY}?block.number=gt:${defaultBlock.number}&order=asc`).reply(
+        200,
+        JSON.stringify({
+          blocks: [],
+        }),
+      );
 
       const cacheKey = `${constants.CACHE_KEY.FILTERID}_${existingFilterId}`;
       await cacheService.set(

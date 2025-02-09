@@ -18,18 +18,19 @@
  *
  */
 
-import crypto from 'crypto';
-import { expect } from 'chai';
-import { ethers } from 'ethers';
-import { v4 as uuid } from 'uuid';
-import constants from '../src/lib/constants';
-import { Hbar, HbarUnit } from '@hashgraph/sdk';
-import { formatRequestIdMessage, numberTo0x, toHash32 } from '../src/formatters';
-import { RedisInMemoryServer } from './redisInMemoryServer';
-import { Logger } from 'pino';
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { ConfigServiceTestHelper } from '../../config-service/tests/configServiceTestHelper';
 import { ConfigKey } from '@hashgraph/json-rpc-config-service/dist/services/globalConfig';
+import { Hbar, HbarUnit } from '@hashgraph/sdk';
+import { expect } from 'chai';
+import crypto from 'crypto';
+import { ethers } from 'ethers';
+import { Logger } from 'pino';
+
+import { ConfigServiceTestHelper } from '../../config-service/tests/configServiceTestHelper';
+import { formatRequestIdMessage, numberTo0x, toHash32 } from '../src/formatters';
+import constants from '../src/lib/constants';
+import { Utils } from '../src/utils';
+import { RedisInMemoryServer } from './redisInMemoryServer';
 
 // Randomly generated key
 const defaultPrivateKey = '8841e004c6f47af679c91d9282adc62aeb9fabd19cdff6a9da5a358d0613c30a';
@@ -73,7 +74,7 @@ export const toHex = (num) => {
 };
 
 const getRequestId = () => {
-  return formatRequestIdMessage(uuid());
+  return formatRequestIdMessage(Utils.generateUuid());
 };
 
 export const ethCallFailing = async (ethImpl, args, block, requestDetails, assertFunc) => {
@@ -929,7 +930,7 @@ export const stopRedisInMemoryServer = async (redisInMemoryServer: RedisInMemory
  * });
  */
 export const overrideEnvsInMochaDescribe = (envs: NodeJS.Dict<any>) => {
-  let envsToReset: NodeJS.Dict<any> = {};
+  const envsToReset: NodeJS.Dict<any> = {};
 
   const overrideEnv = (key: string, value: any) => {
     if (value === undefined) {

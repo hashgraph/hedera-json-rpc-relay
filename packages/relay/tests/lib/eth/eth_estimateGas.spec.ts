@@ -22,7 +22,6 @@ import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { AbiCoder, keccak256 } from 'ethers';
 import { createStubInstance, SinonStub, SinonStubbedInstance, stub } from 'sinon';
-import { v4 as uuid } from 'uuid';
 
 import { Eth, JsonRpcError } from '../../../src';
 import { numberTo0x } from '../../../src/formatters';
@@ -31,6 +30,7 @@ import constants from '../../../src/lib/constants';
 import { EthImpl } from '../../../src/lib/eth';
 import { Precheck } from '../../../src/lib/precheck';
 import { IContractCallRequest, IContractCallResponse, RequestDetails } from '../../../src/lib/types';
+import { Utils } from '../../../src/utils';
 import { overrideEnvsInMochaDescribe, withOverriddenEnvsInMochaTest } from '../../helpers';
 import {
   ACCOUNT_ADDRESS_1,
@@ -67,14 +67,16 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
   }
 
   function mockGetAccount(idOrAliasOrEvmAddress: string, statusCode: number, result: any) {
-    return restMock.onGet(`accounts/${idOrAliasOrEvmAddress}?transactions=false`).reply(statusCode, JSON.stringify(result));
+    return restMock
+      .onGet(`accounts/${idOrAliasOrEvmAddress}?transactions=false`)
+      .reply(statusCode, JSON.stringify(result));
   }
 
   const transaction = {
     from: '0x05fba803be258049a27b820088bab1cad2058871',
     data: '0x60806040523480156200001157600080fd5b50604051620019f4380380620019f48339818101604052810190620000379190620001fa565b818181600390816200004a9190620004ca565b5080600490816200005c9190620004ca565b5050505050620005b1565b6000604051905090565b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b620000d08262000085565b810181811067ffffffffffffffff82111715620000f257620000f162000096565b5b80604052505',
   };
-  const id = uuid();
+  const id = Utils.generateUuid();
   const defaultGasOverride = constants.TX_DEFAULT_GAS_DEFAULT + 1;
 
   overrideEnvsInMochaDescribe({
@@ -199,7 +201,9 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       value: 10, //in tinybars
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
-    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
+    restMock
+      .onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`)
+      .reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
 
     const gas = await ethImpl.estimateGas(
       {
@@ -218,7 +222,9 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       value: 10, //in tinybars
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
-    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
+    restMock
+      .onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`)
+      .reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
 
     const gasBeforeCache = await ethImpl.estimateGas(
       {
@@ -269,7 +275,9 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       value: 0, //in tinybars
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
-    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
+    restMock
+      .onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`)
+      .reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
     const gas = await ethImpl.estimateGas(
       {
         to: RECEIVER_ADDRESS,
@@ -305,7 +313,9 @@ describe('@ethEstimateGas Estimate Gas spec', async function () {
       value: -100_000_000_000, //in tinybars
     };
     await mockContractCall(callData, true, 501, { errorMessage: '', statusCode: 501 }, requestDetails);
-    restMock.onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`).reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
+    restMock
+      .onGet(`accounts/${RECEIVER_ADDRESS}${NO_TRANSACTIONS}`)
+      .reply(200, JSON.stringify({ address: RECEIVER_ADDRESS }));
     const result = await ethImpl.estimateGas(
       {
         to: RECEIVER_ADDRESS,

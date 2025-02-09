@@ -1,8 +1,8 @@
-/* -
+/*-
  *
  * Hedera JSON RPC Relay
  *
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { JsonRpcError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
 import { RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
+import { Utils } from '@hashgraph/json-rpc-relay/dist/utils';
 import KoaJsonRpc from '@hashgraph/json-rpc-server/dist/koaJsonRpc';
 import { IJsonRpcRequest } from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/IJsonRpcRequest';
 import jsonResp from '@hashgraph/json-rpc-server/dist/koaJsonRpc/lib/RpcResponse';
@@ -28,7 +29,6 @@ import Koa from 'koa';
 import websockify from 'koa-websocket';
 import pino from 'pino';
 import { collectDefaultMetrics, Registry } from 'prom-client';
-import { v4 as uuid } from 'uuid';
 
 import { getRequestResult } from './controllers';
 import ConnectionLimiter from './metrics/connectionLimiter';
@@ -67,7 +67,7 @@ app.ws.use(async (ctx: Koa.Context) => {
   const startTime = process.hrtime();
 
   ctx.websocket.id = relay.subs()?.generateId();
-  ctx.websocket.requestId = uuid();
+  ctx.websocket.requestId = Utils.generateUuid();
   ctx.websocket.limiter = limiter;
   ctx.websocket.wsMetricRegistry = wsMetricRegistry;
 
@@ -215,7 +215,9 @@ httpApp.use(async (ctx: Koa.Context, next: Koa.Next) => {
   } else if (ctx.url === '/health/readiness') {
     // readiness endpoint
     try {
-      const result = relay.eth().chainId(new RequestDetails({ requestId: uuid(), ipAddress: ctx.request.ip }));
+      const result = relay
+        .eth()
+        .chainId(new RequestDetails({ requestId: Utils.generateUuid(), ipAddress: ctx.request.ip }));
       if (result.includes('0x12')) {
         ctx.status = 200;
         ctx.body = 'OK';
