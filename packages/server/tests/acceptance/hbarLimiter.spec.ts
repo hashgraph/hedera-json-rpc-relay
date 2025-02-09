@@ -336,7 +336,7 @@ describe('@hbarlimiter HBAR Limiter Acceptance Tests', function () {
           const initialRemainingHbars = Number(await metrics.get(testConstants.METRICS.REMAINING_HBAR_LIMIT));
           expect(initialRemainingHbars).to.be.gt(0);
 
-          // This flow should not spend any major amount of hbars from the operator but only small query fees
+          // 1This flow should not spend any major amount of hbars from the operator but only small query fees
           const tx = await deployContract(EstimateGasContract, accounts[0].wallet);
           await tx.waitForDeployment();
 
