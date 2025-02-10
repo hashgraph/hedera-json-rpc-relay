@@ -2871,8 +2871,7 @@ export class EthImpl implements Eth {
 
   private async getBlockInfo(blockNumber: string | null, requestDetails: RequestDetails): Promise<any> {
     if (blockNumber && !this.common.blockTagIsLatestOrPending(blockNumber)) {
-      const blockNumberInt = blockNumber === EthImpl.blockEarliest ? 0 : parseInt(blockNumber, 16);
-      const blockInfo = await this.mirrorNodeClient.getBlock(blockNumberInt, requestDetails);
+      const blockInfo = await this.common.getHistoricalBlockResponse(requestDetails, blockNumber, true);
       if (!blockInfo) {
         throw predefined.UNKNOWN_BLOCK(`Block number ${blockNumber} does not exist`);
       }

@@ -69,6 +69,20 @@ describe('@ethGetCode using MirrorNode', async function () {
     restMock.onGet(`accounts/${CONTRACT_ADDRESS_1}?limit=100`).reply(404, null);
     restMock.onGet(`tokens/0.0.${parseInt(CONTRACT_ADDRESS_1, 16)}`).reply(404, null);
     restMock.onGet(`contracts/${CONTRACT_ADDRESS_1}`).reply(200, JSON.stringify(DEFAULT_CONTRACT));
+    restMock.onGet(`blocks?limit=1&order=desc`).reply(
+      200,
+      JSON.stringify({
+        blocks: [
+          {
+            number: '0x555555',
+            timestamp: {
+              from: '1718000000',
+              to: '1718000000',
+            },
+          },
+        ],
+      }),
+    );
     sdkClientStub.getContractByteCode.resolves(Buffer.from(DEPLOYED_BYTECODE.replace('0x', ''), 'hex'));
   });
 
