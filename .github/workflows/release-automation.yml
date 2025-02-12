@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release Version (semver ie. 0.24.0):"
+        description: 'Release Version (semver ie. 0.24.0):'
         type: string
         required: true
 
@@ -18,6 +18,7 @@ jobs:
       next_version_snapshot: ${{ env.NEXT_VERSION_SNAPSHOT }}
       pr_title: ${{ env.PR_TITLE }}
       release_branch: ${{ env.RELEASE_BRANCH }}
+      milestone: ${{ env.MILESTONE }}
 
     steps:
       - name: Harden Runner
@@ -46,6 +47,7 @@ jobs:
           RELEASE_BRANCH=$RELEASE_BRANCH
           RELEASE_TAG=$RELEASE_TAG
           VERSION=$VERSION
+          MILESTONE=${{ steps.version_parser.outputs.release}}
           EOF
 
       - name: Checkout repository
@@ -64,7 +66,7 @@ jobs:
           git_user_signingkey: true
           gpg_private_key: ${{ secrets.GPG_KEY_CONTENTS }}
           passphrase: ${{ secrets.GPG_KEY_PASSPHRASE }}
-      
+
       - name: Create and Switch to Release Branch
         run: |
           if ! git ls-remote --exit-code --heads --quiet origin refs/heads/${RELEASE_BRANCH}; then
@@ -146,6 +148,7 @@ jobs:
       NEXT_VERSION_SNAPSHOT: ${{ needs.branch_bump_tag.outputs.next_version_snapshot }}
       RELEASE_BRANCH: ${{ needs.branch_bump_tag.outputs.release_branch }}
       PR_TITLE: ${{ needs.branch_bump_tag.outputs.pr_title }}
+      MILE_STONE: ${{ needs.branch_bump_tag.outputs.milestone }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -205,6 +208,7 @@ jobs:
           delete-branch: true
           signoff: true
           title: ${{ env.PR_TITLE }}
+          milestone: ${{ env.MILE_STONE }}
           labels: 'process'
           assignees: 'swirlds-automation'
           token: ${{ secrets.GH_ACCESS_TOKEN }}
