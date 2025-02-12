@@ -98,6 +98,15 @@ jobs:
       - name: Bump Versions
         run: npm run bump-version --semver=${{ env.VERSION }}
 
+      - name: Close the Milestone
+        if: ${{ steps.version_parser.outputs.prerelease == '' }}
+        id: milestone
+        uses: step-security/close-milestone@ca235f00d0aac66e5c6543a1d4d7f88b3072e4a0 # v2.1.1
+        with:
+          milestone_name: ${{ steps.version_parser.outputs.release }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release Notes
         if: ${{ steps.milestone.outputs.milestone_id != '' }}
         uses: step-security/release-notes-generator-action@d7cdbb310d4aab8d98f273f4ae20fdd7cb055799 # v3.1.6
