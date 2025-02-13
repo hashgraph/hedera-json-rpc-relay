@@ -267,6 +267,17 @@ describe('@ethGetCode using MirrorNode', async function () {
       );
     });
 
+    it('should return empty hex when block does not exist', async () => {
+      const futureBlockNumber = '0x1000000';
+      restMock.onGet(`contracts/${HTS_TOKEN_ADDRESS}`).reply(404, null);
+      restMock.onGet(`accounts/${HTS_TOKEN_ADDRESS}?limit=100`).reply(404, null);
+      restMock.onGet(`tokens/0.0.${parseInt(HTS_TOKEN_ADDRESS, 16)}`).reply(200, JSON.stringify(DEFAULT_HTS_TOKEN));
+      restMock.onGet(`blocks/${parseInt(futureBlockNumber, 16)}`).reply(404, null);
+
+      const res = await ethImpl.getCode(HTS_TOKEN_ADDRESS, futureBlockNumber, requestDetails);
+      expect(res).to.equal(EthImpl.emptyHex);
+    });
+
     it('should return empty bytecode for contract when earliest block is queried', async () => {
       const blockToTimestamp = '1632175203.847228000';
       const contractId = ContractId.fromEvmAddress(0, 0, CONTRACT_ADDRESS_1);

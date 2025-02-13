@@ -1211,7 +1211,7 @@ export class EthImpl implements Eth {
       ]);
       if (result) {
         const blockInfo = await this.common.getHistoricalBlockResponse(requestDetails, blockNumber, true);
-        if (blockInfo && parseFloat(result.entity?.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
+        if (!blockInfo || parseFloat(result.entity?.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
           return EthImpl.emptyHex;
         }
         if (result?.type === constants.TYPE_TOKEN) {
