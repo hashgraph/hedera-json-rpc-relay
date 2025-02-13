@@ -1210,7 +1210,7 @@ export class EthImpl implements Eth {
         constants.TYPE_TOKEN,
       ]);
       if (result) {
-        const blockInfo = await this.getBlockInfo(blockNumber, requestDetails);
+        const blockInfo = await this.common.getHistoricalBlockResponse(requestDetails, blockNumber, true);
         if (blockInfo && parseFloat(result.entity?.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
           return EthImpl.emptyHex;
         }
@@ -2867,16 +2867,5 @@ export class EthImpl implements Eth {
 
     const exchangeRateInCents = currentNetworkExchangeRate.cent_equivalent / currentNetworkExchangeRate.hbar_equivalent;
     return exchangeRateInCents;
-  }
-
-  private async getBlockInfo(blockNumber: string | null, requestDetails: RequestDetails): Promise<any> {
-    if (blockNumber && !this.common.blockTagIsLatestOrPending(blockNumber)) {
-      const blockInfo = await this.common.getHistoricalBlockResponse(requestDetails, blockNumber, true);
-      if (!blockInfo) {
-        throw predefined.UNKNOWN_BLOCK(`Block number ${blockNumber} does not exist`);
-      }
-      return blockInfo;
-    }
-    return null;
   }
 }
