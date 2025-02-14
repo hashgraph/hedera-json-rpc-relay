@@ -749,6 +749,7 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     let mainContractAddress: string;
     let NftHTSTokenContractAddress: string;
     let redirectBytecode: string;
+    let blockBeforeContractCreation: number;
 
     async function createNftHTSToken(account) {
       const mainContract = new ethers.Contract(mainContractAddress, TokenCreateJson.abi, accounts[0].wallet);
@@ -767,6 +768,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     }
 
     before(async () => {
+      blockBeforeContractCreation = (await mirrorNode.get(`/blocks?limit=1&order=desc`, requestId)).blocks[0].number;
+
       mainContract = await Utils.deployContract(TokenCreateJson.abi, TokenCreateJson.bytecode, accounts[3].wallet);
       mainContractAddress = mainContract.target as string;
 
@@ -788,6 +791,26 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
         requestId,
       );
       expect(res).to.equal(redirectBytecode);
+    });
+
+    it('@release should return empty bytecode for HTS token when a block earlier than the token creation is passed', async function () {
+      const earlierBlock = numberTo0x(blockBeforeContractCreation);
+      const res = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
+        [NftHTSTokenContractAddress, earlierBlock],
+        requestId,
+      );
+      expect(res).to.equal(EthImpl.emptyHex);
+    });
+
+    it('@release should return empty bytecode for contract when a block earlier than the contract creation is passed', async function () {
+      const earlierBlock = numberTo0x(blockBeforeContractCreation);
+      const res = await relay.call(
+        RelayCalls.ETH_ENDPOINTS.ETH_GET_CODE,
+        [mainContractAddress, earlierBlock],
+        requestId,
+      );
+      expect(res).to.equal(EthImpl.emptyHex);
     });
 
     it('@release should execute "eth_getCode" for contract evm_address', async function () {

@@ -1204,6 +1204,10 @@ export class EthImpl implements Eth {
         constants.TYPE_TOKEN,
       ]);
       if (result) {
+        const blockInfo = await this.common.getHistoricalBlockResponse(requestDetails, blockNumber, true);
+        if (!blockInfo || parseFloat(result.entity?.created_timestamp) > parseFloat(blockInfo.timestamp.to)) {
+          return EthImpl.emptyHex;
+        }
         if (result?.type === constants.TYPE_TOKEN) {
           if (this.logger.isLevelEnabled('trace')) {
             this.logger.trace(`${requestIdPrefix} Token redirect case, return redirectBytecode`);
