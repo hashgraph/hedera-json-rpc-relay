@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 require("@nomicfoundation/hardhat-toolbox-viem");
 require("@nomicfoundation/hardhat-chai-matchers");
 const { task } = require("hardhat/config");
