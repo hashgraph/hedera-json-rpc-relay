@@ -1699,16 +1699,16 @@ describe('@api-batch-1 RPC Server Acceptance Tests', function () {
 
         it(`should execute "eth_sendRawTransaction" if receiver's account has receiver_sig_required disabled`, async function () {
           const newPrivateKey = PrivateKey.generateED25519();
-          const newAccount = await new AccountCreateTransaction()
+          const accountCreateTx = await new AccountCreateTransaction()
             .setKey(newPrivateKey.publicKey)
             .setInitialBalance(100)
-            .setReceiverSignatureRequired(false)
-            .freezeWith(servicesNode.client)
-            .sign(newPrivateKey);
+            .setReceiverSignatureRequired(false);
 
+          await accountCreateTx.freezeWith(servicesNode.client);
+          const newAccount = await accountCreateTx.sign(newPrivateKey);
           const transaction = await newAccount.execute(servicesNode.client);
           const receipt = await transaction.getReceipt(servicesNode.client);
-          await Utils.wait(3000);
+          await Utils.wait(5000);
 
           if (!receipt.accountId) {
             throw new Error('Failed to create new account - accountId is null');
