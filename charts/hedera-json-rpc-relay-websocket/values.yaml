@@ -33,6 +33,7 @@ config:
   REDIS_URL: ''
   REDIS_RECONNECT_DELAY_MS: 1000
   MULTI_SET: true
+  USE_ASYNC_TX_PROCESSING: true
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []
 # - secretRef:
