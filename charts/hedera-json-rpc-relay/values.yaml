@@ -55,6 +55,7 @@ config:
   FILTER_API_ENABLED: true
   MULTI_SET: true
   GAS_PRICE_PERCENTAGE_BUFFER: 0
+  USE_ASYNC_TX_PROCESSING: true
 
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []
