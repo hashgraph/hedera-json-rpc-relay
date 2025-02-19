@@ -84,7 +84,7 @@ const _CONFIG = {
       "eth_getFilterChanges",
       "eth_getFilterLogs",
       "eth_newBlockFilter",
-      "eth_newPendingTransactionFilter",
+      "eth_newPendingTransactionFilter"
     ]`,
   },
   BATCH_REQUESTS_ENABLED: {
