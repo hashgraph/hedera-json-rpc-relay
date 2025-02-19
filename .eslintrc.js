@@ -49,9 +49,6 @@ module.exports = {
         }],
         "simple-import-sort/imports": "error",
         "simple-import-sort/exports": "off",
-        "header/header": [2, "block", [
-            " * SPDX-License-Identifier: Apache-2.0",
-            " ",
-        ]],
+        "header/header": [2, "line", [" SPDX-License-Identifier: Apache-2.0"]],
     },
 };
