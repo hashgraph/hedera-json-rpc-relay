@@ -1,7 +1,7 @@
 changelog:
   exclude:
     labels: ['wontfix', 'question', 'duplicate', 'invalid']
-  categories:
+  sections:
     - title: 'Enhancements'
       labels: ['enhancement']
     - title: 'Bug Fixes'
