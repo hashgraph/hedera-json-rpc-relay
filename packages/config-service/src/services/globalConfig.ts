@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: Apache-2.0
+/* * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * Extracts the type string associated with a specific key in the `_CONFIG` object.
@@ -73,6 +74,20 @@ export interface ConfigProperty {
  * its type, whether it is required, and its default value.
  */
 const _CONFIG = {
+  BATCH_REQUESTS_DISALLOWED_METHODS: {
+    envName: 'BATCH_REQUESTS_DISALLOWED_METHODS',
+    type: 'string',
+    required: false,
+    defaultValue: `[
+      "debug_traceTransaction",
+      "eth_newFilter",
+      "eth_uninstallFilter",
+      "eth_getFilterChanges",
+      "eth_getFilterLogs",
+      "eth_newBlockFilter",
+      "eth_newPendingTransactionFilter"
+    ]`,
+  },
   BATCH_REQUESTS_ENABLED: {
     envName: 'BATCH_REQUESTS_ENABLED',
     type: 'boolean',

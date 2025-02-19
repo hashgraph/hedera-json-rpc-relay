@@ -1,10 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/* * SPDX-License-Identifier: Apache-2.0
+ */
 
-import { IMethodRateLimitConfiguration, methodConfiguration } from './lib/methodConfiguration';
-import jsonResp from './lib/RpcResponse';
-import RateLimit from '../rateLimit';
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay/dist';
+import { IRequestDetails, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 import parse from 'co-body';
+import Koa from 'koa';
 import { Logger } from 'pino';
+import { Histogram, Registry } from 'prom-client';
+
+import RateLimit from '../rateLimit';
+import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
+import { IJsonRpcRequest } from './lib/IJsonRpcRequest';
+import { IJsonRpcResponse } from './lib/IJsonRpcResponse';
+import { IMethodRateLimitConfiguration, methodConfiguration } from './lib/methodConfiguration';
 import {
   InternalError,
   InvalidRequest,
@@ -13,11 +22,7 @@ import {
   MethodNotFound,
   ParseError,
 } from './lib/RpcError';
-import Koa from 'koa';
-import { Histogram, Registry } from 'prom-client';
-import { IRequestDetails, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
-import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay/dist';
-import { RpcErrorCodeToStatusMap } from './lib/HttpStatusCodeAndMessage';
+import jsonResp from './lib/RpcResponse';
 import {
   getBatchRequestsEnabled,
   getBatchRequestsMaxSize,
@@ -26,8 +31,6 @@ import {
   getRequestIdIsOptional,
   hasOwnProperty,
 } from './lib/utils';
-import { IJsonRpcRequest } from './lib/IJsonRpcRequest';
-import { IJsonRpcResponse } from './lib/IJsonRpcResponse';
 
 const INVALID_REQUEST = 'INVALID REQUEST';
 const REQUEST_ID_HEADER_NAME = 'X-Request-Id';
@@ -154,6 +157,9 @@ export default class KoaJsonRpc {
 
     // we do the requests in parallel to save time, but we need to keep track of the order of the responses (since the id might be optional)
     const promises: Promise<any>[] = body.map(async (item: any) => {
+      if (JSON.parse(ConfigService.get('BATCH_REQUESTS_DISALLOWED_METHODS')).includes(item.method)) {
+        return jsonResp(item.id, predefined.BATCH_REQUESTS_METHOD_NOT_PERMITTED(item.method), undefined);
+      }
       const startTime = Date.now();
       return this.getRequestResult(item, ctx.ip).then((res) => {
         const ms = Date.now() - startTime;
