@@ -1,5 +1,4 @@
-/* * SPDX-License-Identifier: Apache-2.0
- */
+// SPDX-License-Identifier: Apache-2.0
 
 /**
  * Extracts the type string associated with a specific key in the `_CONFIG` object.
@@ -85,7 +84,7 @@ const _CONFIG = {
       "eth_getFilterChanges",
       "eth_getFilterLogs",
       "eth_newBlockFilter",
-      "eth_newPendingTransactionFilter"
+      "eth_newPendingTransactionFilter",
     ]`,
   },
   BATCH_REQUESTS_ENABLED: {

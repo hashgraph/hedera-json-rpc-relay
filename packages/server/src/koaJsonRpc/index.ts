@@ -1,5 +1,4 @@
-/* * SPDX-License-Identifier: Apache-2.0
- */
+// SPDX-License-Identifier: Apache-2.0
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import { JsonRpcError, predefined } from '@hashgraph/json-rpc-relay/dist';

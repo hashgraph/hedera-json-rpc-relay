@@ -1,5 +1,4 @@
-/* * SPDX-License-Identifier: Apache-2.0
- */
+// SPDX-License-Identifier: Apache-2.0
 
 // External resources
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
@@ -2039,7 +2038,6 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
 
     it('should return errors for blacklisted methods', async function () {
       const disallowedMethods = JSON.parse(ConfigService.get('BATCH_REQUESTS_DISALLOWED_METHODS'));
-
       const payload: any[] = [];
       for (let index = 0; index < disallowedMethods.length; index++) {
         payload.push({
