@@ -405,6 +405,10 @@ app.useRpc('web3_clientVersion', async () => {
   return logAndHandleResponse('web3_clientVersion', [], () => relay.web3().clientVersion());
 });
 
+app.useRpc('web3_sha3', async (params: any) => {
+  return logAndHandleResponse('web3_sha3', params, () => relay.web3().sha3(params?.[0]));
+});
+
 /**
  * Returns an empty array.
  *

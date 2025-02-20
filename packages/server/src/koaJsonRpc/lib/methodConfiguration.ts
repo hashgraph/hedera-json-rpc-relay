@@ -19,6 +19,9 @@ export const methodConfiguration: IMethodRateLimitConfiguration = {
   web3_clientVersion: {
     total: tier3rateLimit,
   },
+  web3_sha3: {
+    total: tier3rateLimit,
+  },
   net_listening: {
     total: tier3rateLimit,
   },

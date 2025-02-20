@@ -136,7 +136,9 @@ describe('Open RPC Specification', function () {
     mock.onGet(`blocks/${defaultBlock.number}`).reply(200, JSON.stringify(defaultBlock));
     mock.onGet(`blocks/${blockHash}`).reply(200, JSON.stringify(defaultBlock));
     mock.onGet('network/fees').reply(200, JSON.stringify(defaultNetworkFees));
-    mock.onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`).reply(200, JSON.stringify(defaultNetworkFees));
+    mock
+      .onGet(`network/fees?timestamp=lte:${defaultBlock.timestamp.to}`)
+      .reply(200, JSON.stringify(defaultNetworkFees));
     mock.onGet(`contracts/${contractAddress1}`).reply(200, JSON.stringify(null));
     mock
       .onGet(
@@ -165,41 +167,61 @@ describe('Open RPC Specification', function () {
     mock
       .onGet(`contracts/${contractAddress2}/results/${contractTimestamp2}`)
       .reply(200, JSON.stringify(defaultDetailedContractResults));
-    mock.onGet(`contracts/${contractId1}/results/${contractTimestamp1}`).reply(200, JSON.stringify(defaultDetailedContractResults));
-    mock.onGet(`contracts/${contractId1}/results/${contractTimestamp2}`).reply(200, JSON.stringify(defaultDetailedContractResults2));
-    mock.onGet(`contracts/${contractId2}/results/${contractTimestamp3}`).reply(200, JSON.stringify(defaultDetailedContractResults3));
+    mock
+      .onGet(`contracts/${contractId1}/results/${contractTimestamp1}`)
+      .reply(200, JSON.stringify(defaultDetailedContractResults));
+    mock
+      .onGet(`contracts/${contractId1}/results/${contractTimestamp2}`)
+      .reply(200, JSON.stringify(defaultDetailedContractResults2));
+    mock
+      .onGet(`contracts/${contractId2}/results/${contractTimestamp3}`)
+      .reply(200, JSON.stringify(defaultDetailedContractResults3));
     mock.onGet(`tokens/0.0.${parseInt(defaultCallData.to, 16)}`).reply(404, JSON.stringify(null));
-    mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(200, JSON.stringify({
-      account: contractAddress1,
-      balance: {
-        balance: 2000000000000,
-      },
-    }));
-    mock.onGet(`accounts/${contractAddress3}${noTransactions}`).reply(200, JSON.stringify({
-      account: contractAddress3,
-      balance: {
-        balance: 100000000000,
-      },
-    }));
+    mock.onGet(`accounts/${contractAddress1}?limit=100`).reply(
+      200,
+      JSON.stringify({
+        account: contractAddress1,
+        balance: {
+          balance: 2000000000000,
+        },
+      }),
+    );
+    mock.onGet(`accounts/${contractAddress3}${noTransactions}`).reply(
+      200,
+      JSON.stringify({
+        account: contractAddress3,
+        balance: {
+          balance: 100000000000,
+        },
+      }),
+    );
     mock
       .onGet(`accounts/0xbC989b7b17d18702663F44A6004cB538b9DfcBAc?limit=100`)
       .reply(200, JSON.stringify({ account: '0xbC989b7b17d18702663F44A6004cB538b9DfcBAc' }));
 
-    mock.onGet(`network/exchangerate`).reply(200, JSON.stringify({
-      current_rate: {
-        cent_equivalent: 12,
-        expiration_time: 4102444800,
-        hbar_equivalent: 1,
-      },
-    }));
+    mock.onGet(`network/exchangerate`).reply(
+      200,
+      JSON.stringify({
+        current_rate: {
+          cent_equivalent: 12,
+          expiration_time: 4102444800,
+          hbar_equivalent: 1,
+        },
+      }),
+    );
 
-    mock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(200, JSON.stringify({
-      from: `${defaultEvmAddress}`,
-    }));
+    mock.onGet(`accounts/${defaultFromLongZeroAddress}${noTransactions}`).reply(
+      200,
+      JSON.stringify({
+        from: `${defaultEvmAddress}`,
+      }),
+    );
     for (const log of defaultLogs.logs) {
       mock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(defaultContract));
     }
-    mock.onPost(`contracts/call`, { ...defaultCallData, estimate: false }).reply(200, JSON.stringify({ result: '0x12' }));
+    mock
+      .onPost(`contracts/call`, { ...defaultCallData, estimate: false })
+      .reply(200, JSON.stringify({ result: '0x12' }));
     sdkClientStub.getAccountBalanceInWeiBar.resolves(BigNumber(1000));
     sdkClientStub.getAccountBalanceInTinyBar.resolves(BigNumber(100000000000));
     sdkClientStub.getContractByteCode.resolves(Buffer.from(bytecode.replace('0x', ''), 'hex'));
@@ -209,7 +231,9 @@ describe('Open RPC Specification', function () {
     mock.onGet(`accounts/${defaultContractResults.results[1].from}?transactions=false`).reply(200);
     mock.onGet(`accounts/${defaultContractResults.results[0].to}?transactions=false`).reply(200);
     mock.onGet(`accounts/${defaultContractResults.results[1].to}?transactions=false`).reply(200);
-    mock.onGet(`accounts/${CONTRACT_RESULT_MOCK.from}?transactions=false`).reply(200, JSON.stringify(CONTRACT_RESULT_MOCK));
+    mock
+      .onGet(`accounts/${CONTRACT_RESULT_MOCK.from}?transactions=false`)
+      .reply(200, JSON.stringify(CONTRACT_RESULT_MOCK));
     mock.onGet(`contracts/${defaultContractResults.results[0].from}`).reply(404, JSON.stringify(NOT_FOUND_RES));
     mock.onGet(`contracts/${defaultContractResults.results[1].from}`).reply(404, JSON.stringify(NOT_FOUND_RES));
     mock.onGet(`contracts/${defaultContractResults.results[0].to}`).reply(200);
@@ -362,9 +386,12 @@ describe('Open RPC Specification', function () {
           `&topic2=${defaultLogTopics[2]}&topic3=${defaultLogTopics[3]}&limit=100&order=asc`,
       )
       .reply(200, JSON.stringify(filteredLogs));
-    mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(200, JSON.stringify({
-      blocks: [defaultBlock],
-    }));
+    mock.onGet('blocks?block.number=gte:0x5&block.number=lte:0x10').reply(
+      200,
+      JSON.stringify({
+        blocks: [defaultBlock],
+      }),
+    );
     for (const log of filteredLogs.logs) {
       mock.onGet(`contracts/${log.address}`).reply(200, JSON.stringify(defaultContract));
     }
@@ -531,5 +558,11 @@ describe('Open RPC Specification', function () {
     const response = Relay.web3().clientVersion();
 
     validateResponseSchema(methodsResponseSchema.web3_clientVersion, response);
+  });
+
+  it('should execute "web3_sha3"', function () {
+    const response = Relay.web3().sha3('0x5644');
+
+    validateResponseSchema(methodsResponseSchema.web3_sha3, response);
   });
 });

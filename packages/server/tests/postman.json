@@ -970,6 +970,45 @@
       "response": []
     },
     {
+      "name": "web3_sha3",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Success\", () => {",
+              "    var response = pm.response.json();",
+              "    pm.expect(JSON.stringify(response.error)).to.equal(undefined);",
+              "    pm.expect(response.result).to.match(/^relay[/]/);",
+              "    pm.expect(response.id).to.equal(\"test_id\");",
+              "    pm.expect(response.jsonrpc).to.equal(\"2.0\");",
+              "});",
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"id\": \"test_id\",\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"web3_sha3\",\n    \"params\": [\"0x5644\"]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}",
+          "host": ["{{baseUrl}}"]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "eth_getTransactionCount",
       "event": [
         {

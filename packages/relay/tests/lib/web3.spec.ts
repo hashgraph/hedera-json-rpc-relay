@@ -26,4 +26,8 @@ describe('Web3', function () {
       );
     });
   });
+
+  it('should return sha3 of the input', () => {
+    expect(Relay.web3().sha3('0x5644')).to.equal('0xf956fddff3899ff3cf7ac1773fdbf443ffbfb625c1a673abdba8947251f81bae');
+  });
 });
