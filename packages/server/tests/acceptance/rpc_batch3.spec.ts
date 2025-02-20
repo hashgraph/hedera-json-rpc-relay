@@ -2036,6 +2036,29 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   describe('Batch Request Test Suite BATCH_REQUESTS_ENABLED = true', async function () {
     overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: true });
 
+    it('@release Should return errors for blacklisted methods', async function () {
+      const disallowedMethods = JSON.parse(ConfigService.get('BATCH_REQUESTS_DISALLOWED_METHODS'));
+      const payload: any[] = [];
+      for (let index = 0; index < disallowedMethods.length; index++) {
+        payload.push({
+          id: index,
+          method: disallowedMethods[index],
+          params: [],
+        });
+      }
+
+      const res = await relay.callBatch(payload);
+      expect(res.length).to.equal(disallowedMethods.length);
+      for (let index = 0; index < disallowedMethods.length; index++) {
+        expect(res[index]).to.haveOwnProperty('error');
+        expect(res[index].id).to.equal(index);
+        expect(res[index].error.code).to.equal(-32007);
+        expect(res[index].error.message).to.equal(
+          `Method ${disallowedMethods[index]} is not permitted as part of batch requests`,
+        );
+      }
+    });
+
     it('Should return a batch of requests', async function () {
       const testAccount = await Utils.createAliasAccount(mirrorNode, accounts[0], requestId);
 
