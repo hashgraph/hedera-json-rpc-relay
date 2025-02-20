@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 import {
   AccountBalance,
   AccountBalanceQuery,
@@ -18,7 +19,6 @@ import {
   FeeComponents,
   FeeSchedules,
   FileAppendTransaction,
-  Long,
   FileContentsQuery,
   FileCreateTransaction,
   FileDeleteTransaction,
@@ -26,6 +26,7 @@ import {
   FileInfoQuery,
   Hbar,
   HbarUnit,
+  Long,
   PrecheckStatusError,
   Query,
   Status,
@@ -35,23 +36,23 @@ import {
   TransactionRecordQuery,
   TransactionResponse,
 } from '@hashgraph/sdk';
-import { Logger } from 'pino';
-import { Utils } from '../../utils';
-import { EventEmitter } from 'events';
-import constants from './../constants';
 import { BigNumber } from '@hashgraph/sdk/lib/Transfer';
+import { EventEmitter } from 'events';
+import { Logger } from 'pino';
+
 import { weibarHexToTinyBarInt } from '../../formatters';
-import { SDKClientError } from './../errors/SDKClientError';
-import { HbarLimitService } from '../services/hbarLimitService';
-import { JsonRpcError, predefined } from './../errors/JsonRpcError';
-import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
+import { Utils } from '../../utils';
 import { CacheService } from '../services/cacheService/cacheService';
+import { HbarLimitService } from '../services/hbarLimitService';
 import {
   IExecuteQueryEventPayload,
   IExecuteTransactionEventPayload,
   ITransactionRecordMetric,
   RequestDetails,
 } from '../types';
+import constants from './../constants';
+import { JsonRpcError, predefined } from './../errors/JsonRpcError';
+import { SDKClientError } from './../errors/SDKClientError';
 
 const _ = require('lodash');
 
@@ -338,13 +339,19 @@ export class SDKClient {
       throw new SDKClientError({}, 'Invalid FeeSchedules proto format');
     }
 
-    for (const schedule of feeSchedules.current?.transactionFeeSchedule) {
+    for (const schedule of feeSchedules.current?.transactionFeeSchedule ?? []) {
       if (schedule.hederaFunctionality?._code === constants.ETH_FUNCTIONALITY_CODE && schedule.fees !== undefined) {
         // get exchange rate & convert to tiny bar
         const exchangeRates = await this.getExchangeRate(callerName, requestDetails);
         const tinyBars = this.convertGasPriceToTinyBars(schedule.fees[0].servicedata, exchangeRates);
 
-        await this.cacheService.set(constants.CACHE_KEY.GET_TINYBAR_GAS_FEE, tinyBars, callerName, requestDetails);
+        await this.cacheService.set(
+          constants.CACHE_KEY.GET_TINYBAR_GAS_FEE,
+          tinyBars,
+          callerName,
+          requestDetails,
+          parseInt(constants.ETH_GAS_FEE_TTL),
+        );
         return tinyBars;
       }
     }
