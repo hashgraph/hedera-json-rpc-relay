@@ -2036,7 +2036,7 @@ describe('@api-batch-3 RPC Server Acceptance Tests', function () {
   describe('Batch Request Test Suite BATCH_REQUESTS_ENABLED = true', async function () {
     overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: true });
 
-    it('should return errors for blacklisted methods', async function () {
+    it('@release Should return errors for blacklisted methods', async function () {
       const disallowedMethods = JSON.parse(ConfigService.get('BATCH_REQUESTS_DISALLOWED_METHODS'));
       const payload: any[] = [];
       for (let index = 0; index < disallowedMethods.length; index++) {
