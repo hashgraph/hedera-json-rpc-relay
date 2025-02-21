@@ -175,6 +175,18 @@ describe('RPC Server', function () {
     expect(res.data.result).to.be.equal('relay/' + ConfigService.get('npm_package_version'));
   });
 
+  it('should execute "web3_sha3"', async function () {
+    const res = await testClient.post('/', {
+      id: '2',
+      jsonrpc: '2.0',
+      method: RelayCalls.ETH_ENDPOINTS.WEB3_SHA3,
+      params: ['0x5644'],
+    });
+
+    BaseTest.defaultResponseChecks(res);
+    expect(res.data.result).to.be.equal('0xf956fddff3899ff3cf7ac1773fdbf443ffbfb625c1a673abdba8947251f81bae');
+  });
+
   it('should execute "eth_getTransactionByHash with missing transaction"', async function () {
     try {
       await testClient.post('/', {

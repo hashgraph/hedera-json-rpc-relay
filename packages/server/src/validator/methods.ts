@@ -181,4 +181,10 @@ export const METHODS: { [key: string]: IMethodValidation } = {
       type: 'tracerConfig',
     },
   },
+  web3_sha3: {
+    0: {
+      required: true,
+      type: 'hex',
+    },
+  },
 };

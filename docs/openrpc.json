@@ -949,6 +949,18 @@
       }
     },
     {
+      "name": "web3_sha3",
+      "summary": "Returns sha3 of the input.",
+      "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png) ![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/ws_label.png)",
+      "params": [],
+      "result": {
+        "name": "The sha3 result.",
+        "schema": {
+          "$ref": "#/components/schemas/hash32"
+        }
+      }
+    },
+    {
       "name": "eth_subscribe",
       "summary": "Creates a new subscription for desired events. Sends data as soon as it occurs.",
       "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/ws_label.png)",

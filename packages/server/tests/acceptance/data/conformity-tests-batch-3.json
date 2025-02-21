@@ -16,6 +16,10 @@
       "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"web3_clientVersion\",\"params\":[]}",
       "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"relay/0.55.0-SNAPSHOT\"}"
     },
+    "web3_sha3": {
+      "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"web3_sha3\",\"params\":[\"0x5644\"]}",
+      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xf956fddff3899ff3cf7ac1773fdbf443ffbfb625c1a673abdba8947251f81bae\"}"
+    },
     "debug_traceTransaction - existing tx": {
       "request": "{\"jsonrpc\":\"2.0\",\"method\":\"debug_traceTransaction\",\"params\":[\"0x75a7d81c08d33daf327635bd62b7ecaf33c6d3c8cc17d8b19224e7f3e6811cb8\",{\"tracer\":\"callTracer\",\"tracerConfig\":{\"onlyTopCall\":true}}],\"id\":1}",
       "response": "{\"result\":{\"type\":\"CALL\",\"from\":\"0xc37f417fa09933335240fca72dd257bfbde9c275\",\"to\":\"0x67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69\",\"value\":\"0x14\",\"gas\":\"0x3d090\",\"gasUsed\":\"0x30d40\",\"input\":\"0x\",\"output\":\"0x\"},\"jsonrpc\":\"2.0\",\"id\":1}"
