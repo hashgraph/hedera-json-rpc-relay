@@ -710,7 +710,7 @@ const _CONFIG = {
     envName: 'USE_ASYNC_TX_PROCESSING',
     type: 'boolean',
     required: false,
-    defaultValue: false,
+    defaultValue: true,
   },
   WEB_SOCKET_HTTP_PORT: {
     envName: 'WEB_SOCKET_HTTP_PORT',
