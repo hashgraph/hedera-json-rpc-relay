@@ -71,13 +71,37 @@ describe('@web-socket-batch-request Batch Requests', async function () {
       const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, batchRequests);
 
       // individually process each request
-      let promises: any = [];
+      const promises: any = [];
       batchRequests.forEach((request: any) => {
         promises.push(WsTestHelper.sendRequestToStandardWebSocket(request.method, request.params));
       });
       const individualResponses = await Promise.all(promises);
 
       expect(batchResponses).to.deep.eq(individualResponses);
+    });
+
+    it('@release Should return errors for blacklisted methods', async function () {
+      const disallowedMethods = JSON.parse(ConfigService.get('BATCH_REQUESTS_DISALLOWED_METHODS'));
+      const requests: any[] = [];
+      for (let index = 0; index < disallowedMethods.length; index++) {
+        requests.push({
+          id: index,
+          jsonrpc: '2.0',
+          method: disallowedMethods[index],
+          params: [],
+        });
+      }
+
+      const batchResponses = await WsTestHelper.sendRequestToStandardWebSocket(METHOD_NAME, requests);
+      expect(batchResponses.length).to.equal(disallowedMethods.length);
+      for (let index = 0; index < disallowedMethods.length; index++) {
+        expect(batchResponses[index].id).to.equal(index);
+        expect(batchResponses[index].error.code).to.equal(-32007);
+        expect(batchResponses[index]).to.haveOwnProperty('error');
+        expect(batchResponses[index].error.message).to.equal(
+          `Method ${disallowedMethods[index]} is not permitted as part of batch requests`,
+        );
+      }
     });
 
     WsTestHelper.withOverriddenEnvsInMochaTest({ WS_BATCH_REQUESTS_MAX_SIZE: 1 }, () => {
