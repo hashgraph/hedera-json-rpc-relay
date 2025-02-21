@@ -361,7 +361,13 @@ export class EthImpl implements Eth {
           );
         }
         if (newestBlock != EthImpl.blockLatest && newestBlock != EthImpl.blockPending) {
-          await this.cacheService.set(cacheKey, feeHistory, EthImpl.ethFeeHistory, requestDetails);
+          await this.cacheService.set(
+            cacheKey,
+            feeHistory,
+            EthImpl.ethFeeHistory,
+            requestDetails,
+            parseInt(constants.ETH_FEE_HISTORY_TTL),
+          );
         }
       }
 
