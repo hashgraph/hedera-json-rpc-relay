@@ -15,6 +15,11 @@ The WHBAR contract for Wrapped HBAR to help transactions that use native token p
 - Deposit - ``` event Deposit(address dst, uint256 wad)```
 - Withdrawal - ``` event Withdrawal(address src, uint256 wad)```
 
+##### Errors:
+- InsufficientFunds - ```error InsufficientFunds()```
+- InsufficientAllowance - ```error InsufficientAllowance()```
+- SendFailed - ```error SendFailed()```
+
 ##### Methods:
 - receive - ```receive() external payable```
 - fallback - ```fallback() external payable```
@@ -58,14 +63,14 @@ docker run
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 
-Or you can use the already pushed image (natanasow/whbar-hardhat-example:2.2):
+Or you can use the already pushed image (natanasow/whbar-hardhat-example:3.0):
 ```bash
 docker run
     -it
     -e NETWORK='testnet'
     -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
     -e INITIAL_BALANCE='1000'
-    natanasow/whbar-hardhat-example:2.2
+    natanasow/whbar-hardhat-example:3.0
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 
@@ -81,7 +86,7 @@ docker run
     /bin/sh -c 'npx hardhat deploy-whbar-using-ed25519-signer-key'
 ```
 
-Or you can use the already pushed image (natanasow/whbar-hardhat-example:2.2):
+Or you can use the already pushed image (natanasow/whbar-hardhat-example:3.0):
 ```bash
 docker run
     -it
@@ -89,7 +94,7 @@ docker run
     -e ED25519_ACCOUNT_ID='0.0.<num>'
     -e ED25519_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
     -e INITIAL_BALANCE='1000'
-    natanasow/whbar-hardhat-example:2.2
+    natanasow/whbar-hardhat-example:3.0
     /bin/sh -c 'npx hardhat deploy-whbar-using-ed25519-signer-key'
 ```
 
