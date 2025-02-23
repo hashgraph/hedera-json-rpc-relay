@@ -2,7 +2,7 @@
 
 const { expect } = require('chai');
 const hre = require('hardhat');
-const { Hbar, Client, TransferTransaction, PrivateKey, AccountInfoQuery, AccountId } = require('@hashgraph/sdk');
+const { Hbar, Client, TransferTransaction, PrivateKey } = require('@hashgraph/sdk');
 const { ethers } = hre;
 
 const ONE_HBAR = 1n * 100_000_000n;
