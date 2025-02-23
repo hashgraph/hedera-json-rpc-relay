@@ -20,6 +20,7 @@ describe('WHBAR', function() {
   it('should deploy the WHBAR contract', async function() {
     const contractFactory = await ethers.getContractFactory('WHBAR');
     contract = await contractFactory.deploy();
+    console.log(`WHBAR address: ${contract.target}`);
 
     await contract.waitForDeployment();
     expect(contract).to.not.be.undefined;
