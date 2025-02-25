@@ -2,7 +2,7 @@
 
 import { ITracerConfig, RequestDetails } from '@hashgraph/json-rpc-relay/dist/lib/types';
 
-import { TracerType, TYPES } from './validator';
+import { TracerType, TYPES } from '../validator';
 
 const defineDebugRoutes = function (app, relay, logAndHandleResponse) {
   /**

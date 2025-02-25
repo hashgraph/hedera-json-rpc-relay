@@ -9,13 +9,13 @@ import pino from 'pino';
 import { collectDefaultMetrics, Histogram, Registry } from 'prom-client';
 import { v4 as uuid } from 'uuid';
 
-import { defineDebugRoutes } from './debugRoutes';
-import { defineEthRoutes } from './ethRoutes';
 import { formatRequestIdMessage } from './formatters';
 import KoaJsonRpc from './koaJsonRpc';
-import { defineNetRoutes } from './netRoutes';
+import { defineDebugRoutes } from './routes/debugRoutes';
+import { defineEthRoutes } from './routes/ethRoutes';
+import { defineNetRoutes } from './routes/netRoutes';
+import { defineWeb3Routes } from './routes/web3Routes';
 import { Validator } from './validator';
-import { defineWeb3Routes } from './web3Routes';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
