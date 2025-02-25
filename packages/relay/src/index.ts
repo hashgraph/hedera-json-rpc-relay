@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { Block, Log, Receipt, Transaction } from './lib/model';
-import { IContractCallRequest, RequestDetails } from './lib/types';
-import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
-import WebSocketError from './lib/errors/WebSocketError';
-import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
 import { MirrorNodeClient } from './lib/clients';
-import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
+import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
+import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
+import WebSocketError from './lib/errors/WebSocketError';
+import { Block, Log, Receipt, Transaction } from './lib/model';
 import { IDebugService } from './lib/services/debugService/IDebugService';
+import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
+import { IContractCallRequest, RequestDetails } from './lib/types';
 
 export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError };
 
@@ -59,6 +59,8 @@ export interface Eth {
   gasPrice(requestDetails: RequestDetails): Promise<string>;
 
   getBalance(account: string, blockNumber: string | null, requestDetails: RequestDetails): Promise<string>;
+
+  getBlockReceipts(blockHashOrNumber: string, requestDetails: RequestDetails): Promise<Receipt[]>;
 
   getBlockByHash(hash: string, showDetails: boolean, requestDetails: RequestDetails): Promise<Block | null>;
 
