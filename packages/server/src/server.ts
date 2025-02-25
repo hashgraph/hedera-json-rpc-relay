@@ -793,6 +793,10 @@ app.useRpc('eth_coinbase', async () => {
   return logAndHandleResponse('eth_coinbase', [], (requestDetails) => relay.eth().coinbase(requestDetails));
 });
 
+app.useRpcRegex(/^engine_.*$/, async () => {
+  return logAndHandleResponse('engine', [], () => predefined.UNSUPPORTED_METHOD);
+});
+
 const rpcApp = app.rpcApp();
 
 app.getKoaApp().use(async (ctx, next) => {

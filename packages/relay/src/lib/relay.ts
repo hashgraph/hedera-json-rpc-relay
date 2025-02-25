@@ -6,8 +6,7 @@ import EventEmitter from 'events';
 import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
 
-import { prepend0x } from '../formatters';
-import { Eth, Net, Relay, Subs, Web3 } from '../index';
+import { Engine, Eth, Net, Relay, Subs, Web3 } from '../index';
 import { Utils } from '../utils';
 import { MirrorNodeClient } from './clients';
 import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigService';
@@ -15,6 +14,7 @@ import constants from './constants';
 import { EvmAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { EngineImpl } from './engine';
 import { EthImpl } from './eth';
 import { NetImpl } from './net';
 import { Poller } from './poller';
@@ -98,6 +98,13 @@ export class RelayImpl implements Relay {
    * @type {EventEmitter}
    */
   private readonly eventEmitter: EventEmitter;
+
+  /**
+   * @private
+   * @readonly
+   * @property {Engine} engineImpl - The Engine implementation for engine_* methods.
+   */
+  private readonly engineImpl: Engine;
 
   /**
    * Initializes the main components of the relay service, including Hedera network clients,
@@ -186,6 +193,8 @@ export class RelayImpl implements Relay {
       this.subImpl = new SubscriptionController(poller, logger.child({ name: `subscr-ctrl` }), register);
     }
 
+    this.engineImpl = new EngineImpl();
+
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
 
     this.populatePreconfiguredSpendingPlans().then();
@@ -256,6 +265,10 @@ export class RelayImpl implements Relay {
 
   eth(): Eth {
     return this.ethImpl;
+  }
+
+  engine(): Engine {
+    return this.engineImpl;
   }
 
   subs(): Subs | undefined {
