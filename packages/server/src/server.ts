@@ -189,6 +189,10 @@ defineEthRoutes(app, relay, logger);
 defineNetRoutes(app, relay, logger);
 defineWeb3Routes(app, relay, logger);
 
+app.useRpcRegex(/^engine_.*$/, async () => {
+  return logAndHandleResponse('engine', [], () => predefined.UNSUPPORTED_METHOD);
+});
+
 const rpcApp = app.rpcApp();
 
 app.getKoaApp().use(async (ctx, next) => {
