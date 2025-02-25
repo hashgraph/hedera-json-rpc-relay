@@ -20,6 +20,8 @@ export interface Relay {
 
   eth(): Eth;
 
+  engine(): Engine;
+
   subs(): Subs | undefined;
 
   mirrorClient(): MirrorNodeClient;
@@ -43,6 +45,11 @@ export interface Net {
   listening(): boolean;
 
   version(): string;
+}
+
+export interface Engine {
+  // This interface is intentionally empty as all engine_* methods are unsupported
+  // and will return UNSUPPORTED_METHOD error
 }
 
 export interface Eth {
