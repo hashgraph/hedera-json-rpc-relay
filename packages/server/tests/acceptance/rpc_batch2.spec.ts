@@ -685,8 +685,8 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.be.equal(false);
     });
 
-    it('should execute "web3_client_version"', async function () {
-      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.WEB3_CLIENT_VERSION, [], requestId);
+    it('should execute "web3_clientVersion"', async function () {
+      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.WEB3_CLIENTVERSION, [], requestId);
       expect(res).to.contain('relay/');
     });
 
