@@ -178,4 +178,16 @@ export const methodConfiguration: IMethodRateLimitConfiguration = {
   engine_exchangeCapabilities: {
     total: tier2rateLimit,
   },
+  trace_block: {
+    total: tier2rateLimit,
+  },
+  trace_transaction: {
+    total: tier2rateLimit,
+  },
+  trace_call: {
+    total: tier2rateLimit,
+  },
+  trace_callMany: {
+    total: tier2rateLimit,
+  },
 };

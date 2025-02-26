@@ -96,5 +96,9 @@ export const WS_CONSTANTS = {
     ENGINE_NEWPAYLOADV1: 'engine_newPayloadV1',
     ENGINE_FORKCHOICEUPDATEDV1: 'engine_forkchoiceUpdatedV1',
     ENGINE_EXCHANGECAPABILITIES: 'engine_exchangeCapabilities',
+    TRACE_BLOCK: 'trace_block',
+    TRACE_TRANSACTION: 'trace_transaction',
+    TRACE_CALL: 'trace_call',
+    TRACE_CALLMANY: 'trace_callMany',
   },
 };

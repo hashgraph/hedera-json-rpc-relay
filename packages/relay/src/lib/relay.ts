@@ -6,7 +6,7 @@ import EventEmitter from 'events';
 import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
 
-import { Engine, Eth, Net, Relay, Subs, Web3 } from '../index';
+import { Engine, Eth, Net, Relay, Subs, Trace, Web3 } from '../index';
 import { Utils } from '../utils';
 import { MirrorNodeClient } from './clients';
 import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigService';
@@ -23,6 +23,7 @@ import HAPIService from './services/hapiService/hapiService';
 import { HbarLimitService } from './services/hbarLimitService';
 import MetricService from './services/metricService/metricService';
 import { SubscriptionController } from './subscriptionController';
+import { TraceImpl } from './trace';
 import { RequestDetails } from './types';
 import { Web3Impl } from './web3';
 
@@ -105,6 +106,13 @@ export class RelayImpl implements Relay {
    * @property {Engine} engineImpl - The Engine implementation for engine_* methods.
    */
   private readonly engineImpl: Engine;
+
+  /**
+   * @private
+   * @readonly
+   * @property {Trace} traceImpl - The Trace implementation for trace_* methods.
+   */
+  private readonly traceImpl: Trace;
 
   /**
    * Initializes the main components of the relay service, including Hedera network clients,
@@ -194,7 +202,7 @@ export class RelayImpl implements Relay {
     }
 
     this.engineImpl = new EngineImpl();
-
+    this.traceImpl = new TraceImpl();
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
 
     this.populatePreconfiguredSpendingPlans().then();
@@ -269,6 +277,10 @@ export class RelayImpl implements Relay {
 
   engine(): Engine {
     return this.engineImpl;
+  }
+
+  trace(): Trace {
+    return this.traceImpl;
   }
 
   subs(): Subs | undefined {
