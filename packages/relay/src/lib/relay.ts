@@ -22,6 +22,7 @@ import HAPIService from './services/hapiService/hapiService';
 import { HbarLimitService } from './services/hbarLimitService';
 import MetricService from './services/metricService/metricService';
 import { SubscriptionController } from './subscriptionController';
+import { TraceImpl } from './trace';
 import { RequestDetails } from './types';
 import { Web3Impl } from './web3';
 
