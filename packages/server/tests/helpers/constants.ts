@@ -62,6 +62,8 @@ const ETH_ENDPOINTS = {
   TRACE_TRANSACTION: 'trace_transaction',
   TRACE_CALL: 'trace_call',
   TRACE_CALLMANY: 'trace_callMany',
+  DEBUG_TRACE_BLOCK_BY_HASH: 'debug_traceBlockByHash',
+  DEBUG_TRACE_BLOCK_BY_NUMBER: 'debug_traceBlockByNumber',
 };
 
 //Events

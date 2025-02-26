@@ -6,7 +6,7 @@ import EventEmitter from 'events';
 import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
 
-import { Engine, Eth, Net, Relay, Subs, Trace, Web3 } from '../index';
+import { Debug, Engine, Eth, Net, Relay, Subs, Trace, Web3 } from '../index';
 import { Utils } from '../utils';
 import { MirrorNodeClient } from './clients';
 import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigService';
@@ -14,6 +14,7 @@ import constants from './constants';
 import { EvmAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { DebugImpl } from './debug';
 import { EngineImpl } from './engine';
 import { EthImpl } from './eth';
 import { NetImpl } from './net';
@@ -115,6 +116,13 @@ export class RelayImpl implements Relay {
   private readonly traceImpl: Trace;
 
   /**
+   * @private
+   * @readonly
+   * @property {Debug} debugImpl - The Debug implementation for debug_* methods.
+   */
+  private readonly debugImpl: Debug;
+
+  /**
    * Initializes the main components of the relay service, including Hedera network clients,
    * Ethereum-compatible interfaces, caching, metrics, and subscription management.
    *
@@ -203,6 +211,7 @@ export class RelayImpl implements Relay {
 
     this.engineImpl = new EngineImpl();
     this.traceImpl = new TraceImpl();
+    this.debugImpl = new DebugImpl();
     this.initOperatorMetric(this.clientMain, this.mirrorNodeClient, logger, register);
 
     this.populatePreconfiguredSpendingPlans().then();
@@ -281,6 +290,10 @@ export class RelayImpl implements Relay {
 
   trace(): Trace {
     return this.traceImpl;
+  }
+
+  debug(): Debug {
+    return this.debugImpl;
   }
 
   subs(): Subs | undefined {

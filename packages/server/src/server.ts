@@ -801,6 +801,10 @@ app.useRpcRegex(/^trace_.*$/, async () => {
   return logAndHandleResponse('trace', [], () => predefined.NOT_YET_IMPLEMENTED);
 });
 
+app.useRpcRegex(/^debug_.*$/, async () => {
+  return logAndHandleResponse('debug', [], () => predefined.NOT_YET_IMPLEMENTED);
+});
+
 const rpcApp = app.rpcApp();
 
 app.getKoaApp().use(async (ctx, next) => {

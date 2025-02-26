@@ -100,5 +100,7 @@ export const WS_CONSTANTS = {
     TRACE_TRANSACTION: 'trace_transaction',
     TRACE_CALL: 'trace_call',
     TRACE_CALLMANY: 'trace_callMany',
+    DEBUG_TRACEBLOCKBYHASH: 'debug_traceBlockByHash',
+    DEBUG_TRACEBLOCKBYNUMBER: 'debug_traceBlockByNumber',
   },
 };

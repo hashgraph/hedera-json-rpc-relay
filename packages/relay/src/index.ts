@@ -24,6 +24,8 @@ export interface Relay {
 
   trace(): Trace;
 
+  debug(): Debug;
+
   subs(): Subs | undefined;
 
   mirrorClient(): MirrorNodeClient;
@@ -56,6 +58,11 @@ export interface Engine {
 
 export interface Trace {
   // This interface is intentionally empty as all trace_* methods are not yet supported
+  // and will return NOT_YET_IMPLEMENTED error
+}
+
+export interface Debug {
+  // This interface is intentionally empty as all debug_* methods are not yet supported
   // and will return NOT_YET_IMPLEMENTED error
 }
 
