@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import { JsonRpcError, MirrorNodeClientError, predefined, Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
+import { Relay, RelayImpl } from '@hashgraph/json-rpc-relay/dist';
 import fs from 'fs';
 import cors from 'koa-cors';
 import path from 'path';
@@ -15,7 +15,6 @@ import { defineDebugRoutes } from './routes/debugRoutes';
 import { defineEthRoutes } from './routes/ethRoutes';
 import { defineNetRoutes } from './routes/netRoutes';
 import { defineWeb3Routes } from './routes/web3Routes';
-import { Validator } from './validator';
 
 const mainLogger = pino({
   name: 'hedera-json-rpc-relay',
@@ -185,70 +184,10 @@ app.getKoaApp().use(async (ctx, next) => {
   return next();
 });
 
-const logAndHandleResponse = async (methodName: string, methodParams: any[], methodFunction: any) => {
-  const requestDetails = app.getRequestDetails();
-
-  try {
-    const methodValidations = Validator.METHODS[methodName];
-    if (methodValidations) {
-      if (logger.isLevelEnabled('debug')) {
-        logger.debug(
-          `${
-            requestDetails.formattedRequestId
-          } Validating method parameters for ${methodName}, params: ${JSON.stringify(methodParams)}`,
-        );
-      }
-      Validator.validateParams(methodParams, methodValidations);
-    }
-    const response = await methodFunction(requestDetails);
-    if (response instanceof JsonRpcError) {
-      // log error only if it is not a contract revert, otherwise log it as debug
-      if (response.code === predefined.CONTRACT_REVERT().code) {
-        if (logger.isLevelEnabled('debug')) {
-          logger.debug(`${requestDetails.formattedRequestId} ${response.message}`);
-        }
-      } else {
-        logger.error(`${requestDetails.formattedRequestId} ${response.message}`);
-      }
-
-      return new JsonRpcError(
-        {
-          code: response.code,
-          message: response.message,
-          data: response.data,
-        },
-        requestDetails.requestId,
-      );
-    }
-    return response;
-  } catch (e: any) {
-    let error = predefined.INTERNAL_ERROR();
-    if (e instanceof MirrorNodeClientError) {
-      if (e.isTimeout()) {
-        error = predefined.REQUEST_TIMEOUT;
-      }
-    } else if (e instanceof JsonRpcError) {
-      error = e;
-    } else {
-      logger.error(`${requestDetails.formattedRequestId} ${e.message}`);
-    }
-
-    logger.error(`${requestDetails.formattedRequestId} ${error.message}`);
-    return new JsonRpcError(
-      {
-        code: error.code,
-        message: error.message,
-        data: error.data,
-      },
-      requestDetails.requestId,
-    );
-  }
-};
-
-defineDebugRoutes(app, relay, logAndHandleResponse);
-defineEthRoutes(app, relay, logAndHandleResponse);
-defineNetRoutes(app, relay, logAndHandleResponse);
-defineWeb3Routes(app, relay, logAndHandleResponse);
+defineDebugRoutes(app, relay, logger);
+defineEthRoutes(app, relay, logger);
+defineNetRoutes(app, relay, logger);
+defineWeb3Routes(app, relay, logger);
 
 const rpcApp = app.rpcApp();
 
