@@ -190,4 +190,10 @@ export const methodConfiguration: IMethodRateLimitConfiguration = {
   trace_callMany: {
     total: tier2rateLimit,
   },
+  debug_traceBlockByHash: {
+    total: tier1rateLimit,
+  },
+  debug_traceBlockByNumber: {
+    total: tier1rateLimit,
+  },
 };
