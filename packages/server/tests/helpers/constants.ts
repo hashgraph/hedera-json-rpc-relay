@@ -58,6 +58,10 @@ const ETH_ENDPOINTS = {
   ENGINE_NEW_PAYLOAD_V1: 'engine_newPayloadV1',
   ENGINE_FORKCHOICE_UPDATED_V1: 'engine_forkchoiceUpdatedV1',
   ENGINE_EXCHANGE_CAPABILITIES: 'engine_exchangeCapabilities',
+  TRACE_BLOCK: 'trace_block',
+  TRACE_TRANSACTION: 'trace_transaction',
+  TRACE_CALL: 'trace_call',
+  TRACE_CALLMANY: 'trace_callMany',
 };
 
 //Events
