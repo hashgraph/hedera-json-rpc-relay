@@ -167,15 +167,15 @@ export const methodConfiguration: IMethodRateLimitConfiguration = {
     total: tier1rateLimit,
   },
   engine_getPayloadV1: {
-    total: tier1rateLimit,
+    total: tier2rateLimit,
   },
   engine_newPayloadV1: {
-    total: tier1rateLimit,
+    total: tier2rateLimit,
   },
   engine_forkchoiceUpdatedV1: {
-    total: tier1rateLimit,
+    total: tier2rateLimit,
   },
   engine_exchangeCapabilities: {
-    total: tier1rateLimit,
+    total: tier2rateLimit,
   },
 };
