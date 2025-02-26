@@ -17,12 +17,12 @@
     "trace_callback": {
       "status": 400,
       "request": "{\"jsonrpc\":\"2.0\",\"method\":\"trace_callback\",\"params\":[\"0x1\"],\"id\":1}",
-      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Unsupported JSON-RPC method\"}}"
+      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Not yet implemented\"}}"
     },
     "trace_anyMethod": {
       "status": 400,
       "request": "{\"jsonrpc\":\"2.0\",\"method\":\"trace_anyMethod\",\"params\":[\"0x1\"],\"id\":1}",
-      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Unsupported JSON-RPC method\"}}"
+      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Not yet implemented\"}}"
     },
     "net_listening": {
       "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"net_listening\",\"params\":[]}",
