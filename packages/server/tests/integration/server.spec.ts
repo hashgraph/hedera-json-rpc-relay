@@ -485,79 +485,26 @@ describe('RPC Server', function () {
     expect(res.data.result).to.be.equal('0x0');
   });
 
-  it('should execute "engine_getPayloadV1" and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.ENGINE_GET_PAYLOAD_V1,
-        params: [null],
-      });
+  // Test all engine methods
+  const engineMethods = [...RelayCalls.ETH_ENDPOINTS.ENGINE, 'engine_anyMethod'];
 
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
-  });
+  engineMethods.forEach((method) => {
+    const methodName = method === 'engine_anyMethod' ? 'any engine_* method' : `"${method}"`;
 
-  it('should execute "engine_newPayloadV1" and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.ENGINE_NEW_PAYLOAD_V1,
-        params: [null],
-      });
+    it(`should execute ${methodName} and return UNSUPPORTED_METHOD`, async function () {
+      try {
+        await testClient.post('/', {
+          id: '2',
+          jsonrpc: '2.0',
+          method: method,
+          params: [null],
+        });
 
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
-  });
-
-  it('should execute "engine_forkchoiceUpdatedV1" and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.ENGINE_FORKCHOICE_UPDATED_V1,
-        params: [null],
-      });
-
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
-  });
-
-  it('should execute "engine_exchangeCapabilities" and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.ENGINE_EXCHANGE_CAPABILITIES,
-        params: [null],
-      });
-
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
-  });
-
-  it('should execute any engine_* method and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: 'engine_anyMethod',
-        params: [null],
-      });
-
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
+        Assertions.expectedError();
+      } catch (error: any) {
+        BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+      }
+    });
   });
 
   describe('batchRequest Test Cases', async function () {
