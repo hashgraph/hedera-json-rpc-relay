@@ -257,6 +257,14 @@ app.useRpc('net_version', async () => {
 });
 
 /**
+ * Originally supposed to return number of peers currently connected to the client.
+ * Not supported on Hedera.
+ */
+app.useRpc('net_peerCount', async () => {
+  return logAndHandleResponse('net_peerCount', [], () => relay.net().peerCount());
+});
+
+/**
  * Returns the number of most recent block.
  *
  * returns: Block number - hex encoded integer
