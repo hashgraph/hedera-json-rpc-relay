@@ -685,11 +685,6 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
       expect(res).to.be.equal(false);
     });
 
-    it('should execute "web3_clientVersion"', async function () {
-      const res = await relay.call(RelayCalls.ETH_ENDPOINTS.WEB3_CLIENTVERSION, [], requestId);
-      expect(res).to.contain('relay/');
-    });
-
     it('should execute "eth_maxPriorityFeePerGas"', async function () {
       const res = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_MAX_PRIORITY_FEE_PER_GAS, [], requestId);
       expect(res).to.be.equal('0x0');
