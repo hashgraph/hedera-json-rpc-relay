@@ -4,6 +4,16 @@
       "request": "{\"jsonrpc\":\"2.0\", \"method\":\"eth_submitWork\",\"params\":[\"0x0000000000000001\",\"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\"0xD1FE5700000000000000000000000000D1FE5700000000000000000000000000\"],\"id\":1}",
       "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":false}"
     },
+    "engine_getPayloadV1": {
+      "status": 400,
+      "request": "{\"jsonrpc\":\"2.0\",\"method\":\"engine_getPayloadV1\",\"params\":[\"0x1\"],\"id\":1}",
+      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Unsupported JSON-RPC method\"}}"
+    },
+    "engine_anyMethod": {
+      "status": 400,
+      "request": "{\"jsonrpc\":\"2.0\",\"method\":\"engine_anyMethod\",\"params\":[\"0x1\"],\"id\":1}",
+      "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Unsupported JSON-RPC method\"}}"
+    },
     "net_listening": {
       "request": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"net_listening\",\"params\":[]}",
       "response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"false\"}"
