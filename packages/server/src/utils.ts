@@ -1,10 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
+
 import { JsonRpcError, MirrorNodeClientError, predefined } from '@hashgraph/json-rpc-relay';
 import pino from 'pino';
 
 import KoaJsonRpc from './koaJsonRpc';
 import { Validator } from './validator';
 
+/**
+ * Receives the request, validates it, and returns the response
+ * if it succeeds, otherwise throws a json rpc error.
+ *
+ * @param methodName
+ * @param methodParams
+ * @param methodFunction
+ * @param app
+ * @param logger
+ */
 const logAndHandleResponse = async (
   methodName: string,
   methodParams: any[],
