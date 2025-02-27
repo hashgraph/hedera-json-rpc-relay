@@ -22,8 +22,6 @@ export interface Relay {
 
   engine(): Engine;
 
-  trace(): Trace;
-
   subs(): Subs | undefined;
 
   mirrorClient(): MirrorNodeClient;
@@ -52,11 +50,6 @@ export interface Net {
 export interface Engine {
   // This interface is intentionally empty as all engine_* methods are unsupported
   // and will return UNSUPPORTED_METHOD error
-}
-
-export interface Trace {
-  // This interface is intentionally empty as all trace_* methods are not yet supported
-  // and will return NOT_YET_IMPLEMENTED error
 }
 
 export interface Eth {
