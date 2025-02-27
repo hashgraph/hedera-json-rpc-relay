@@ -43,6 +43,8 @@ export interface Net {
   listening(): boolean;
 
   version(): string;
+
+  peerCount(): JsonRpcError;
 }
 
 export interface Eth {
