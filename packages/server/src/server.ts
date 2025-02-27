@@ -295,6 +295,12 @@ app.useRpc('eth_getBalance', async (params: any) => {
   );
 });
 
+app.useRpc('eth_getBlockReceipts', async (params: any) => {
+  return logAndHandleResponse('eth_getBlockReceipts', params, (requestDetails) =>
+    relay.eth().getBlockReceipts(params?.[0], requestDetails),
+  );
+});
+
 /**
  * Returns code at a given address.
  * params: Address - hex encoded address
