@@ -554,6 +554,12 @@ describe('Open RPC Specification', function () {
     validateResponseSchema(methodsResponseSchema.net_version, response);
   });
 
+  it('should execute "net_peerCount"', function () {
+    const response = Relay.net().peerCount();
+
+    validateResponseSchema(methodsResponseSchema.net_peerCount, response);
+  });
+
   it('should execute "web3_clientVersion"', function () {
     const response = Relay.web3().clientVersion();
 
