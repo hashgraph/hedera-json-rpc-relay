@@ -14,6 +14,7 @@ import KoaJsonRpc from './koaJsonRpc';
 import { defineDebugRoutes } from './routes/debugRoutes';
 import { defineEthRoutes } from './routes/ethRoutes';
 import { defineNetRoutes } from './routes/netRoutes';
+import { defineOtherRoutes } from './routes/otherRoutes';
 import { defineWeb3Routes } from './routes/web3Routes';
 
 const mainLogger = pino({
@@ -188,10 +189,7 @@ defineDebugRoutes(app, relay, logger);
 defineEthRoutes(app, relay, logger);
 defineNetRoutes(app, relay, logger);
 defineWeb3Routes(app, relay, logger);
-
-app.useRpcRegex(/^engine_.*$/, async () => {
-  return logAndHandleResponse('engine', [], () => predefined.UNSUPPORTED_METHOD);
-});
+defineOtherRoutes(app, relay, logger);
 
 const rpcApp = app.rpcApp();
 
