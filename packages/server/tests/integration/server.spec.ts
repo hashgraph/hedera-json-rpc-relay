@@ -507,79 +507,25 @@ describe('RPC Server', function () {
     });
   });
 
-  it('should execute "trace_block" and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.TRACE_BLOCK,
-        params: ['latest'],
-      });
+  const traceMethods = [...RelayCalls.ETH_ENDPOINTS.TRACE, 'trace_anyMethod'];
 
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
-  });
+  traceMethods.forEach((method) => {
+    const methodName = method === 'trace_anyMethod' ? 'any trace_* method' : `"${method}"`;
 
-  it('should execute "trace_transaction" and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.TRACE_TRANSACTION,
-        params: ['0x0000000000000000000000000000000000000000000000000000000000000001'],
-      });
+    it(`should execute ${methodName} and return UNSUPPORTED_METHOD`, async function () {
+      try {
+        await testClient.post('/', {
+          id: '2',
+          jsonrpc: '2.0',
+          method: method,
+          params: ['latest'],
+        });
 
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
-  });
-
-  it('should execute "trace_call" and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.TRACE_CALL,
-        params: [{ to: '0x0000000000000000000000000000000000000001' }, ['trace'], 'latest'],
-      });
-
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
-  });
-
-  it('should execute "trace_callMany" and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.TRACE_CALLMANY,
-        params: [[{ to: '0x0000000000000000000000000000000000000001' }], ['trace'], 'latest'],
-      });
-
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
-  });
-
-  it('should execute any trace_* method and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: 'trace_anyMethod',
-        params: [null],
-      });
-
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
+        Assertions.expectedError();
+      } catch (error: any) {
+        BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+      }
+    });
   });
 
   describe('batchRequest Test Cases', async function () {

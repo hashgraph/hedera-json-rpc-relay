@@ -191,10 +191,6 @@ defineNetRoutes(app, relay, logger);
 defineWeb3Routes(app, relay, logger);
 defineOtherRoutes(app, relay, logger);
 
-app.useRpcRegex(/^trace_.*$/, async () => {
-  return logAndHandleResponse('trace', [], () => predefined.NOT_YET_IMPLEMENTED);
-});
-
 const rpcApp = app.rpcApp();
 
 app.getKoaApp().use(async (ctx, next) => {
