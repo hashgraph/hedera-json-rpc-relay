@@ -112,6 +112,18 @@ docker run
     /bin/sh -c 'npx hardhat deploy-whbar-multichain'
 ```
 
+Execute tests against already deployed contract
+```bash
+docker run
+    -it
+    -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
+    -e DEPLOY_CONTRACT=false
+    -e network=hedera_testnet
+    -e WHBAR_CONTRACT_ADDRESS='0x0000000000000000000000000000000000000000'
+    whbar-hardhat-example-1.0
+    /bin/sh -c 'npx hardhat test'
+```
+
 #### Verification
 
 You can use `verification_file.json` from the root directory to verify your contract in Hashscan. The process is pretty

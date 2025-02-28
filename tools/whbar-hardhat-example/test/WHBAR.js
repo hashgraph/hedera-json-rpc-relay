@@ -18,8 +18,11 @@ describe('WHBAR', function() {
   });
 
   it('should deploy the WHBAR contract', async function() {
-    const contractFactory = await ethers.getContractFactory('WHBAR');
-    contract = await contractFactory.deploy();
+    if (process.env.DEPLOY_CONTRACT === 'false') {
+      contract = await ethers.getContractAt('WHBAR', process.env.WHBAR_CONTRACT_ADDRESS);
+    } else {
+      contract = await (await ethers.getContractFactory('WHBAR')).deploy();
+    }
     console.log(`WHBAR address: ${contract.target}`);
 
     await contract.waitForDeployment();
