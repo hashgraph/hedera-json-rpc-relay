@@ -507,6 +507,27 @@ describe('RPC Server', function () {
     });
   });
 
+  const traceMethods = [...RelayCalls.ETH_ENDPOINTS.TRACE, 'trace_anyMethod'];
+
+  traceMethods.forEach((method) => {
+    const methodName = method === 'trace_anyMethod' ? 'any trace_* method' : `"${method}"`;
+
+    it(`should execute ${methodName} and return UNSUPPORTED_METHOD`, async function () {
+      try {
+        await testClient.post('/', {
+          id: '2',
+          jsonrpc: '2.0',
+          method: method,
+          params: ['latest'],
+        });
+
+        Assertions.expectedError();
+      } catch (error: any) {
+        BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+      }
+    });
+  });
+
   describe('batchRequest Test Cases', async function () {
     overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: true });
 
