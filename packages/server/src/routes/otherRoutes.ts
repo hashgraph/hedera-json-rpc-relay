@@ -18,6 +18,10 @@ const defineOtherRoutes = function (app: KoaJsonRpc, relay: Relay, logger: pino.
   app.useRpcRegex(/^trace_.*$/, async () => {
     return logAndHandleResponse('trace', [], () => predefined.UNSUPPORTED_METHOD, app, logger);
   });
+
+  app.useRpcRegex(/^debug_.*$/, async () => {
+    return logAndHandleResponse('debug', [], () => predefined.UNSUPPORTED_METHOD, app, logger);
+  });
 };
 
 export { defineOtherRoutes };

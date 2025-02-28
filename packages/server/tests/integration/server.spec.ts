@@ -528,49 +528,25 @@ describe('RPC Server', function () {
     });
   });
 
-  it('should execute "debug_traceBlockByHash" and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_BLOCK_BY_HASH,
-        params: ['0x0000000000000000000000000000000000000000000000000000000000000001'],
-      });
+  const debugMethods = [...RelayCalls.ETH_ENDPOINTS.DEBUG, 'debug_anyMethod'];
 
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
-  });
+  debugMethods.forEach((method) => {
+    const methodName = method === 'debug_anyMethod' ? 'any debug_* method' : `"${method}"`;
 
-  it('should execute "debug_traceBlockByNumber" and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: RelayCalls.ETH_ENDPOINTS.DEBUG_TRACE_BLOCK_BY_NUMBER,
-        params: ['latest'],
-      });
+    it(`should execute ${methodName} and return UNSUPPORTED_METHOD`, async function () {
+      try {
+        await testClient.post('/', {
+          id: '2',
+          jsonrpc: '2.0',
+          method: method,
+          params: ['latest'],
+        });
 
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
-  });
-
-  it('should execute any debug_* method and return UNSUPPORTED_METHOD', async function () {
-    try {
-      await testClient.post('/', {
-        id: '2',
-        jsonrpc: '2.0',
-        method: 'debug_anyMethod',
-        params: [null],
-      });
-
-      Assertions.expectedError();
-    } catch (error: any) {
-      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
-    }
+        Assertions.expectedError();
+      } catch (error: any) {
+        BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+      }
+    });
   });
 
   describe('batchRequest Test Cases', async function () {
