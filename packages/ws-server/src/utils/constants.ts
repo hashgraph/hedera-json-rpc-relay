@@ -92,9 +92,5 @@ export const WS_CONSTANTS = {
     ETH_MAXPRIORITYFEEPERGAS: 'eth_maxPriorityFeePerGas',
     WEB3_CLIENTVERSION: 'web3_clientVersion',
     WEB3_SHA3: 'web3_sha3',
-    ENGINE_GETPAYLOADV1: 'engine_getPayloadV1',
-    ENGINE_NEWPAYLOADV1: 'engine_newPayloadV1',
-    ENGINE_FORKCHOICEUPDATEDV1: 'engine_forkchoiceUpdatedV1',
-    ENGINE_EXCHANGECAPABILITIES: 'engine_exchangeCapabilities',
   },
 };
