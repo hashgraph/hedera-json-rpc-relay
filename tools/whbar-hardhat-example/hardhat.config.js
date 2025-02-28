@@ -10,13 +10,14 @@ module.exports = {
       optimizer: {
         enabled: true,
         runs: 500
-      }
+      },
+      evmVersion: 'cancun',
     }
   },
   mocha: {
     timeout: 3600000
   },
-  defaultNetwork: 'hedera_' + process.env.NETWORK,
+  defaultNetwork: process.env.NETWORK,
   networks: {
     hedera_mainnet: {
       url: 'https://mainnet.hashio.io/api',
@@ -32,9 +33,75 @@ module.exports = {
       url: 'https://previewnet.hashio.io/api',
       accounts: [process.env.ECDSA_HEX_PRIVATE_KEY],
       chainId: 297
+    },
+    bsc_testnet: {
+      url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
+      chainId: 97,
+      gasPrice: 20000000000,
+      accounts: [process.env.ECDSA_HEX_PRIVATE_KEY]
     }
   }
 };
+
+task('deploy-whbar-multichain')
+  .setAction(async (taskArgs, hre) => {
+    const targetNetworks = process.env.MULTICHAIN_NETWORKS.split(',');
+
+    const networksConfig = hre.config.networks;
+    const existentNetworks = Object.keys(networksConfig).filter(el => targetNetworks.includes(el));
+    if (existentNetworks.length !== targetNetworks.length) {
+      throw Error('The network you passed is not defined in hardhat.config.js.');
+    }
+
+    const wallet = new ethers.Wallet(process.env.ECDSA_HEX_PRIVATE_KEY);
+    const signerCrossChainInfo = {};
+    for (const network of targetNetworks) {
+      const provider = new ethers.JsonRpcProvider(
+        networksConfig[network].url,
+        new ethers.Network(network, networksConfig[network].chainId),
+        { batchMaxSize: 1 }
+      );
+
+      signerCrossChainInfo[network] = {
+        nonce: await provider.getTransactionCount(wallet.address),
+        balance: await provider.getBalance(wallet.address)
+      };
+    }
+
+    let signerNonce = Object.values(signerCrossChainInfo)[0].nonce;
+    for (const info of Object.values(signerCrossChainInfo)) {
+      if (info.nonce !== signerNonce) {
+        console.log(signerCrossChainInfo);
+        console.log('----- Nonces are not the same on all targeted networks.');
+        throw Error('Nonces are not the same on all targeted networks.');
+      }
+
+      if (info.balance === 0n) {
+        console.log(signerCrossChainInfo);
+        console.log('-----  The signer doesnt have enough balance on some network to cover deployment gas.');
+        throw Error('The signer doesnt have enough balance on some network to cover deployment gas.');
+      }
+    }
+
+    if (process.env.INITIAL_BALANCE !== '0') {
+      throw Error('The INITIAL_VALUE env var must be 0 for cross-chain deployment.');
+    }
+
+    for (const network of targetNetworks) {
+      const provider = new ethers.JsonRpcProvider(
+        networksConfig[network].url,
+        new ethers.Network(network, networksConfig[network].chainId),
+        { batchMaxSize: 1 }
+      );
+
+      const connectedWallet = wallet.connect(provider);
+      const contractFactory = await ethers.getContractFactory('WHBAR', connectedWallet);
+      const contract = await contractFactory.deploy();
+      await contract.waitForDeployment();
+
+      console.log(`(${network}) WHBAR deployed to: ` + contract.target);
+    }
+  });
 
 task('deploy-whbar', 'Deploy WHBAR')
   .setAction(async (taskArgs, hre) => {
