@@ -26,7 +26,7 @@ RATE_LIMIT_DISABLED = false;
 The following table highlights each relay endpoint and the TIER associated with it as dictated by [methodConfiguration.ts](/packages/server/src/koaJsonRpc/lib/methodConfiguration.ts)
 
 | Method endpoint                           | Tier              |
-|-------------------------------------------|-------------------|
+| ----------------------------------------- | ----------------- |
 | `eth_accounts`                            | TIER_2_RATE_LIMIT |
 | `eth_blockNumber`                         | TIER_2_RATE_LIMIT |
 | `eth_call`                                | TIER_1_RATE_LIMIT |
@@ -71,5 +71,6 @@ The following table highlights each relay endpoint and the TIER associated with 
 | `eth_syncing`                             | TIER_1_RATE_LIMIT |
 | `net_listening`                           | TIER_3_RATE_LIMIT |
 | `net_version`                             | TIER_3_RATE_LIMIT |
+| `net_peerCount`                           | TIER_3_RATE_LIMIT |
 | `web3_clientVersion`                      | TIER_3_RATE_LIMIT |
 | `web3_sha3`                               | TIER_3_RATE_LIMIT |
