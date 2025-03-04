@@ -1026,8 +1026,8 @@ export class SDKClient {
     let transactionFee: number = 0;
     let txRecordChargeAmount: number = 0;
     try {
-      if (this.logger.isLevelEnabled('trace')) {
-        this.logger.trace(
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
           `${requestDetails.formattedRequestId} Get transaction record via consensus node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
         );
       }

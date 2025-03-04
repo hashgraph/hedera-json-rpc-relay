@@ -1448,8 +1448,8 @@ export class MirrorNodeClient {
         break;
       }
 
-      if (this.logger.isLevelEnabled('trace')) {
-        this.logger.trace(
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
           `${requestDetails?.formattedRequestId} Repeating request ${methodName} with args ${JSON.stringify(
             args,
           )} retry count ${i} of ${repeatCount}. Waiting ${this.MIRROR_NODE_RETRY_DELAY} ms before repeating request`,
@@ -1482,17 +1482,17 @@ export class MirrorNodeClient {
   ): Promise<ITransactionRecordMetric> {
     const formattedRequestId = requestDetails.formattedRequestId;
 
-    if (this.logger.isLevelEnabled('trace')) {
-      this.logger.trace(
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(
         `${formattedRequestId} Get transaction record via mirror node: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}`,
       );
     }
 
     // Create a modified copy of requestDetails
-    const modifiedRequestDetails = {
-      ...requestDetails,
+    const modifiedRequestDetails = new RequestDetails({
+      requestId: requestDetails.requestId,
       ipAddress: constants.MASKED_IP_ADDRESS,
-    };
+    });
 
     const transactionRecords = await this.repeatedRequest(
       this.getTransactionById.name,

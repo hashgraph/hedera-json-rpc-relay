@@ -206,9 +206,9 @@ export class HbarLimitService implements IHbarLimitService {
       );
       return false;
     }
-    const user = `(evmAddress=${evmAddress})`;
-    if (this.logger.isLevelEnabled('trace')) {
-      this.logger.trace(`${requestDetails.formattedRequestId} Checking if ${user} should be limited...`);
+    const signer = `signerAddress=${evmAddress}`;
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(`${requestDetails.formattedRequestId} Checking if signer account should be limited: ${signer}`);
     }
     let spendingPlan = await this.getSpendingPlan(evmAddress, requestDetails);
     if (!spendingPlan) {
@@ -226,9 +226,9 @@ export class HbarLimitService implements IHbarLimitService {
       spendingLimit.toTinybars().lt(spendingPlan.amountSpent + estimatedTxFee);
 
     this.logger.info(
-      `${requestDetails.formattedRequestId} User ${
+      `${requestDetails.formattedRequestId} Signer account ${
         exceedsLimit ? 'has' : 'has NOT'
-      } exceeded HBAR rate limit threshold: user=${user}, amountSpent=${Hbar.fromTinybars(
+      } exceeded HBAR rate limit threshold: ${signer}, amountSpent=${Hbar.fromTinybars(
         spendingPlan.amountSpent,
       )}, estimatedTxFee=${Hbar.fromTinybars(estimatedTxFee)}, spendingLimit=${spendingLimit}, spandingPlanId=${
         spendingPlan.id
@@ -298,7 +298,9 @@ export class HbarLimitService implements IHbarLimitService {
     this.logger.info(
       `${requestDetails.formattedRequestId} HBAR rate limit expense update: cost=${Hbar.fromTinybars(
         cost,
-      )}, remainingBudget=${remainingBudget}`,
+      )}, remainingBudget=${remainingBudget}, spendingPlanId=${
+        spendingPlan.id
+      }, signerAddress=${evmAddress}, subscriptionTier=${spendingPlan.subscriptionTier}`,
     );
   }
 
@@ -338,8 +340,8 @@ export class HbarLimitService implements IHbarLimitService {
       );
       return true;
     } else {
-      if (this.logger.isLevelEnabled('trace')) {
-        this.logger.trace(
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
           `${
             requestDetails.formattedRequestId
           } Total HBAR rate limit NOT reached: remainingBudget=${remainingBudget}, totalBudget=${totalBudget}, estimatedTxFee=${Hbar.fromTinybars(
@@ -368,6 +370,16 @@ export class HbarLimitService implements IHbarLimitService {
     const totalUsage = plans.reduce((total, plan) => total + plan.amountSpent, 0);
     const averageUsage = Math.round(totalUsage / plans.length);
     this.averageSpendingPlanAmountSpentGauge[subscriptionTier].set(averageUsage);
+
+    if (this.logger.isLevelEnabled('debug')) {
+      this.logger.debug(
+        `${
+          requestDetails.formattedRequestId
+        } Updated average amount spent: subsriptionTier=${subscriptionTier}, newAverageUsage=${Hbar.fromTinybars(
+          averageUsage,
+        )}`,
+      );
+    }
   }
 
   /**
@@ -428,9 +440,9 @@ export class HbarLimitService implements IHbarLimitService {
       try {
         return await this.getSpendingPlanByEvmAddress(evmAddress, requestDetails);
       } catch (error) {
-        this.logger.warn(
-          `${requestDetails.formattedRequestId} Failed to get spending plan for evm address '${evmAddress}'`,
-        );
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(`${requestDetails.formattedRequestId} Spending plan not found: evmAddress='${evmAddress}'`);
+        }
       }
     }
 
@@ -438,7 +450,9 @@ export class HbarLimitService implements IHbarLimitService {
       try {
         return await this.getSpendingPlanByIPAddress(requestDetails);
       } catch (error) {
-        this.logger.warn(`${requestDetails.formattedRequestId} Failed to get spending plan for ip address`);
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(`${requestDetails.formattedRequestId}  Spending plan not found for IP address.`);
+        }
       }
     }
 
@@ -502,11 +516,6 @@ export class HbarLimitService implements IHbarLimitService {
       this.limitDuration,
     );
 
-    if (this.logger.isLevelEnabled('trace')) {
-      this.logger.trace(
-        `${requestDetails.formattedRequestId} Linking spending plan with ID ${spendingPlan.id} to evm address ${evmAddress}`,
-      );
-    }
     await this.evmAddressHbarSpendingPlanRepository.save(
       { evmAddress, planId: spendingPlan.id },
       requestDetails,

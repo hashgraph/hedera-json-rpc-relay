@@ -1540,8 +1540,8 @@ export class EthImpl implements Eth {
   ): Promise<EthersTransaction> {
     const parsedTx = Precheck.parseTxIfNeeded(transaction);
     try {
-      if (this.logger.isLevelEnabled('trace')) {
-        this.logger.trace(
+      if (this.logger.isLevelEnabled('debug')) {
+        this.logger.debug(
           `${requestDetails.formattedRequestId} Transaction undergoing prechecks: transaction=${JSON.stringify(
             parsedTx,
           )}`,
