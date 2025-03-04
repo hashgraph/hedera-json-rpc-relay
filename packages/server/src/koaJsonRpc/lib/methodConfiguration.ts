@@ -166,16 +166,4 @@ export const methodConfiguration: IMethodRateLimitConfiguration = {
   batch_request: {
     total: tier1rateLimit,
   },
-  engine_getPayloadV1: {
-    total: tier2rateLimit,
-  },
-  engine_newPayloadV1: {
-    total: tier2rateLimit,
-  },
-  engine_forkchoiceUpdatedV1: {
-    total: tier2rateLimit,
-  },
-  engine_exchangeCapabilities: {
-    total: tier2rateLimit,
-  },
 };
