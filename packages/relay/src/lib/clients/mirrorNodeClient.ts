@@ -31,15 +31,6 @@ import {
 import constants from './../constants';
 import { IOpcodesResponse } from './models/IOpcodesResponse';
 
-// Add custom type definitions
-declare module 'axios' {
-  export interface InternalAxiosRequestConfig {
-    meta?: {
-      requestStartedAt: number;
-    };
-  }
-}
-
 type REQUEST_METHODS = 'GET' | 'POST';
 
 export class MirrorNodeClient {
@@ -242,27 +233,24 @@ export class MirrorNodeClient {
   private setupMirrorNodeInterceptors(client: AxiosInstance): AxiosInstance {
     // Add request interceptor for timing
     client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-      config.meta = { requestStartedAt: Date.now() };
+      config.data.metadata = { requestStartedAt: Date.now() };
       return config;
     });
 
-    // Add response interceptor for error handling
+    // Add response interceptor for request duration and error handling
     client.interceptors.response.use(
       // Success handler - Any status code that lie within the range of 2xx
       (response) => {
         const config = response.config;
-        const duration = Date.now() - (config.meta?.requestStartedAt || Date.now());
+        const duration = Date.now() - (config.data.metadata?.requestStartedAt || Date.now());
         const pathLabel = config.headers[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
+        const requestId = config.headers?.[MirrorNodeClient.REQUESTID_LABEL] || '';
 
         this.mirrorResponseHistogram.labels(pathLabel, response.status.toString()).observe(duration);
 
         if (this.logger.isLevelEnabled('debug')) {
           this.logger.debug(
-            `${
-              config.headers?.[MirrorNodeClient.REQUESTID_LABEL] || ''
-            } Successfully received response from mirror node server: method=${config.method}, path=${
-              config.url
-            }, status=${response.status}, duration:${duration}ms`,
+            `${requestId} Successfully received response from mirror node server: method=${config.method}, path=${config.url}, status=${response.status}, duration:${duration}ms`,
           );
         }
 
@@ -272,8 +260,8 @@ export class MirrorNodeClient {
       // Error handler - Any status codes that falls outside the range of 2xx
       (error) => {
         const config = error.config || {};
+        const duration = Date.now() - (config.data.metadata?.requestStartedAt || Date.now());
         const pathLabel = config.headers?.[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
-        const duration = Date.now() - (config.metadata?.startTime || Date.now());
         const requestId = config.headers?.[MirrorNodeClient.REQUESTID_LABEL] || '';
 
         // Calculate effective status code
