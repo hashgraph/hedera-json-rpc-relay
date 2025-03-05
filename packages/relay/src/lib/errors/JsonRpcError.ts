@@ -139,6 +139,11 @@ export const predefined = {
     code: -32608,
     message: 'Exceeded maximum allowed subscriptions',
   }),
+  MIRROR_NODE_UPSTREAM_FAIL: (errCode: number, errMessage: string) =>
+    new JsonRpcError({
+      code: -32020,
+      message: `Mirror Node upstream failure - ${errMessage}, error code: ${errCode}`,
+    }),
   MISSING_FROM_BLOCK_PARAM: new JsonRpcError({
     code: -32011,
     message: 'Provided toBlock parameter without specifying fromBlock',
