@@ -90,9 +90,11 @@ export class MirrorNodeClientError extends Error {
  * Centralizes error handling logic for consistent error responses.
  */
 export class MirrorNodeErrorMapper {
+  private static readonly REQUESTID_LABEL = 'requestId';
+
   // Map HTTP status codes to JsonRpcError factory functions
   private static errorMap = {
-    400: (error: any) => this.handleBadRequest(error),
+    400: (error: any, logger: Logger) => this.handleBadRequest(error, logger),
     429: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(429, 'Rate limit exceeded'),
     500: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(500, 'Internal server error'),
     501: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(501, 'Not implemented'),
@@ -102,13 +104,24 @@ export class MirrorNodeErrorMapper {
   };
 
   // Special handling for 400 errors which could be contract reverts or other issues
-  private static handleBadRequest(error: any): JsonRpcError {
+  private static handleBadRequest(error: any, logger: Logger): JsonRpcError {
     // Handle contract reverts differently
     if (
       error.response?.data?._status?.messages?.some(
         (m: any) => m.message === MirrorNodeClientError.messages.CONTRACT_REVERT_EXECUTED,
       )
     ) {
+      const config = error.config || {};
+      const requestId = config.headers?.[MirrorNodeErrorMapper.REQUESTID_LABEL] || '';
+
+      if (logger.isLevelEnabled('debug')) {
+        logger.debug(
+          `${requestId} [${config.method}] ${config.url} Contract Revert: ( statusCode: ${error.response
+            ?.status}, statusText: '${error.response?.statusText || ''}', detail: '${JSON.stringify(
+            error.response?.detail || '',
+          )}', data: '${JSON.stringify(error.response?.data || '')}')`,
+        );
+      }
       return predefined.CONTRACT_REVERT();
     }
     // Handle other 400 errors
@@ -145,6 +158,6 @@ export class MirrorNodeErrorMapper {
       this.errorMap[effectiveStatusCode] ||
       (() => predefined.MIRROR_NODE_UPSTREAM_FAIL(effectiveStatusCode, error.message));
 
-    return errorMapper(error);
+    return errorMapper(error, logger);
   }
 }

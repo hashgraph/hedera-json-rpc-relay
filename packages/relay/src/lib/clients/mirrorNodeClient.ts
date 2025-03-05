@@ -289,26 +289,26 @@ export class MirrorNodeClient {
 
         // Special handling for contract call revert
         // if (pathLabel === MirrorNodeClient.CONTRACT_CALL_ENDPOINT && effectiveStatusCode === 400) {
-        if (mappedError === predefined.CONTRACT_REVERT()) {
-          if (this.logger.isLevelEnabled('debug')) {
-            this.logger.debug(
-              `${requestId} [${config.method}] ${
-                config.url
-              } Contract Revert: ( StatusCode: '${effectiveStatusCode}', StatusText: '${
-                error.response?.statusText || ''
-              }', Detail: '${JSON.stringify(error.response?.detail || '')}',Data: '${JSON.stringify(
-                error.response?.data || '',
-              )}')`,
-            );
-          }
-        } else {
-          this.logger.error(
-            new Error(error.message),
-            `${requestId} Error encountered while communicating with the mirror node server: method=${
-              config.method || ''
-            }, path=${config.url || ''}, status=${effectiveStatusCode}`,
-          );
-        }
+        // if (mappedError === predefined.CONTRACT_REVERT()) {
+        //   if (this.logger.isLevelEnabled('debug')) {
+        //     this.logger.debug(
+        //       `${requestId} [${config.method}] ${
+        //         config.url
+        //       } Contract Revert: ( StatusCode: '${effectiveStatusCode}', StatusText: '${
+        //         error.response?.statusText || ''
+        //       }', Detail: '${JSON.stringify(error.response?.detail || '')}',Data: '${JSON.stringify(
+        //         error.response?.data || '',
+        //       )}')`,
+        //     );
+        //   }
+        // } else {
+        this.logger.error(
+          new Error(error.message),
+          `${requestId} Error encountered while communicating with the mirror node server: method=${
+            config.method || ''
+          }, path=${config.url || ''}, status=${effectiveStatusCode}`,
+        );
+        // }
 
         return Promise.reject(mappedError);
       },
