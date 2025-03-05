@@ -2,7 +2,6 @@
 
 //Relay Calls
 const ETH_ENDPOINTS = {
-  WEB3_CLIENT_VERSION: 'web3_client_version',
   WEB3_CLIENTVERSION: 'web3_clientVersion',
   WEB3_SHA3: 'web3_sha3',
   ETH_CALL: 'eth_call',
