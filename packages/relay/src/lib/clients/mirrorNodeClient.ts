@@ -274,7 +274,13 @@ export class MirrorNodeClient {
         const acceptedErrorStatuses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
 
         // Map the error using the imported mapper
-        const mappedError = MirrorNodeErrorMapper.mapError(error, pathLabel, acceptedErrorStatuses, this.logger);
+        const mappedError = MirrorNodeErrorMapper.mapError(
+          error,
+          effectiveStatusCode,
+          pathLabel,
+          acceptedErrorStatuses,
+          this.logger,
+        );
 
         // If null is returned, it's an accepted error response
         if (mappedError === null) {
