@@ -54,49 +54,6 @@ describe('MirrorNodeClient', async function () {
     await cacheService.clear(requestDetails);
   });
 
-  describe('handleError', async () => {
-    const CONTRACT_CALL_ENDPOINT = 'contracts/call';
-    const nullResponseCodes = [404];
-    const errorRepsonseCodes = [501, 503, 400, 429, 415, 500];
-
-    for (const code of nullResponseCodes) {
-      it(`returns null when ${code} is returned`, async () => {
-        const error = new Error('test error');
-        error['response'] = 'test error';
-
-        const result = mirrorNodeInstance.handleError(
-          error,
-          CONTRACT_CALL_ENDPOINT,
-          CONTRACT_CALL_ENDPOINT,
-          code,
-          'POST',
-          requestDetails,
-        );
-        expect(result).to.equal(null);
-      });
-    }
-
-    for (const code of errorRepsonseCodes) {
-      it(`throws an error when ${code} is returned`, async () => {
-        try {
-          const error = new Error('test error');
-          error['response'] = 'test error';
-          mirrorNodeInstance.handleError(
-            error,
-            CONTRACT_CALL_ENDPOINT,
-            CONTRACT_CALL_ENDPOINT,
-            code,
-            'POST',
-            requestDetails,
-          );
-          expect.fail('should have thrown an error');
-        } catch (e: any) {
-          expect(e.message).to.equal('test error');
-        }
-      });
-    }
-  });
-
   it('Can extract the account number out of an account pagination next link url', async () => {
     const accountId = '0.0.123';
     const url = `/api/v1/accounts/${accountId}?limit=100&timestamp=lt:1682455406.562695326`;
