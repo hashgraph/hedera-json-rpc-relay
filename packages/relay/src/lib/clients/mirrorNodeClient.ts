@@ -264,6 +264,19 @@ export class MirrorNodeClient {
 
       // Error handler - Any status codes that falls outside the range of 2xx
       (error) => {
+        // axios-retry applies retries after the Axios interceptors run but before the error reaches application code.
+        // This creates a problem with error handling consistency:
+        // 1. When a request fails, this interceptor transforms the error into a MirrorNodeClientError
+        // 2. On retry, axios-retry catches this transformed error which has a different structure than original Axios errors
+        // 3. This causes the retry condition to evaluate differently on subsequent retries
+        //
+        // If the error is already a MirrorNodeClientError, it should pass through without further transformation
+        // to prevent cascading transformations across multiple retries.
+        // Note: axios-retry is planned for deprecation in future versions of this client.
+        if (error instanceof MirrorNodeClientError) {
+          return Promise.reject(error);
+        }
+
         const config = error.config || {};
         const duration = Date.now() - (config.headers?.['request-startTime'] || Date.now());
         const pathLabel = config.headers?.[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
