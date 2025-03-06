@@ -168,11 +168,10 @@ export class MirrorNodeErrorMapper {
       return null; // Return null for accepted errors
     }
 
-    logger.error(
-      new Error(error.message),
+    logger.warn(
       `${requestId} Error encountered while communicating with the mirror node server: method=${
         config.method || ''
-      }, path=${pathLabel || ''}, status=${effectiveStatusCode}`,
+      }, path=${pathLabel || ''}, status=${effectiveStatusCode}, error=${JSON.stringify(error)}`,
     );
 
     // Find the appropriate error mapper
