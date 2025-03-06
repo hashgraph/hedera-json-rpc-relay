@@ -115,9 +115,11 @@ export class MirrorNodeErrorMapper {
   // Special handling for 400 errors which could be contract reverts or other issues
   private static handleBadRequest(error: any, logger: Logger, requestDetails: RequestDetails): JsonRpcError {
     // Handle contract reverts differently
+    //    - condition a: must be a 400 MN response
+    //    - condition b: error.response.data._status.messages[0].message = "CONTRACT_REVERT_EXECUTED"
     if (
-      error.response?.data?._status?.messages?.some((m: any) =>
-        m.message.includes(MirrorNodeClientError.messages.CONTRACT_REVERT_EXECUTED),
+      error.response?.data?._status?.messages?.some(
+        (m: any) => m.message === MirrorNodeClientError.messages.CONTRACT_REVERT_EXECUTED,
       )
     ) {
       const config = error.config || {};
