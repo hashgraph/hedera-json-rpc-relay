@@ -5,13 +5,14 @@ import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { BigNumber } from 'bignumber.js';
 import { expect } from 'chai';
-import { ethers } from 'ethers';
+import { ethers, JsonRpcError } from 'ethers';
 import pino from 'pino';
 import { Registry } from 'prom-client';
 
 import { MirrorNodeClientError, predefined } from '../../src';
 import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
+import { MirrorNodeErrorMapper } from '../../src/lib/errors/MirrorNodeClientError';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
@@ -21,7 +22,7 @@ describe('MirrorNodeClient', async function () {
   this.timeout(20000);
 
   const registry = new Registry();
-  const logger = pino({ level: 'silent' });
+  const logger = pino({ level: 'trace' });
   const noTransactions = '?transactions=false';
   const requestDetails = new RequestDetails({ requestId: 'mirrorNodeClientTest', ipAddress: '0.0.0.0' });
 
@@ -1772,6 +1773,157 @@ describe('MirrorNodeClient', async function () {
 
       const rateLimitError = new MirrorNodeClientError({ message: 'too many requests' }, 429);
       expect(rateLimitError.isRateLimit()).to.be.true;
+    });
+  });
+
+  describe('MirrorNodeErrorMapper', () => {
+    const TEST_REQUEST_ID = '123';
+    const TEST_BLOCK_PATH = 'blocks/';
+    const TEST_CONTRACTS_CALL_PATH = 'contracts/call';
+    const TEST_CONFIG = {
+      method: 'GET',
+      headers: { requestId: TEST_REQUEST_ID },
+    };
+
+    const createErrorResponse = (status: number, messages?: any[]) => ({
+      response: {
+        status,
+        data: messages
+          ? {
+              _status: { messages },
+            }
+          : undefined,
+      },
+      config: TEST_CONFIG,
+    });
+
+    const assertJsonRpcError = (result: any, expectedCode: number, expectedMessage: string) => {
+      expect(result).to.not.be.null;
+      expect(result!.code).to.equal(expectedCode);
+      expect(result!.message).to.equal(expectedMessage);
+    };
+
+    it('should return null for accepted error statuses', () => {
+      const error = createErrorResponse(MirrorNodeClientError.statusCodes.NOT_FOUND);
+      const result = MirrorNodeErrorMapper.mapError(
+        error,
+        MirrorNodeClientError.statusCodes.NOT_FOUND,
+        TEST_BLOCK_PATH,
+        [MirrorNodeClientError.statusCodes.NOT_FOUND],
+        logger,
+      );
+      expect(result).to.be.null;
+    });
+
+    it('should map contract revert errors correctly', () => {
+      const customRevertError = {
+        detail: 'Reverted with reason',
+        data: '0x1234',
+      };
+
+      const error = createErrorResponse(MirrorNodeClientError.ErrorCodes.CONTRACT_REVERT_EXECUTED, [
+        {
+          message: MirrorNodeClientError.messages.CONTRACT_REVERT_EXECUTED,
+          detail: customRevertError.detail,
+          data: customRevertError.data,
+        },
+      ]);
+      error.config = {
+        ...TEST_CONFIG,
+        method: 'POST',
+      };
+
+      const result = MirrorNodeErrorMapper.mapError(
+        error,
+        MirrorNodeClientError.ErrorCodes.CONTRACT_REVERT_EXECUTED,
+        TEST_CONTRACTS_CALL_PATH,
+        undefined,
+        logger,
+      );
+
+      const expected = predefined.CONTRACT_REVERT(customRevertError.detail, customRevertError.data);
+      assertJsonRpcError(result, expected.code, expected.message);
+    });
+
+    it('should map non-contract-revert 400 errors to bad request', () => {
+      const error = createErrorResponse(400, [
+        {
+          message: 'Invalid parameter',
+          detail: 'Some validation error',
+        },
+      ]);
+      error.config.method = 'POST';
+
+      const result = MirrorNodeErrorMapper.mapError(error, 400, TEST_CONTRACTS_CALL_PATH, undefined, logger);
+      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(400, 'Bad request');
+      assertJsonRpcError(result, expected.code, expected.message);
+    });
+
+    it('should map 429 errors to rate limit errors', () => {
+      const error = createErrorResponse(MirrorNodeClientError.statusCodes.TOO_MANY_REQUESTS);
+      const result = MirrorNodeErrorMapper.mapError(
+        error,
+        MirrorNodeClientError.statusCodes.TOO_MANY_REQUESTS,
+        TEST_BLOCK_PATH,
+        undefined,
+        logger,
+      );
+      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(429, 'Rate limit exceeded');
+      assertJsonRpcError(result, expected.code, expected.message);
+    });
+
+    it('should map timeout errors correctly', () => {
+      const error = {
+        code: 'ECONNABORTED',
+        config: TEST_CONFIG,
+      };
+
+      const result = MirrorNodeErrorMapper.mapError(
+        error,
+        MirrorNodeClientError.ErrorCodes.ECONNABORTED,
+        TEST_BLOCK_PATH,
+        undefined,
+        logger,
+      );
+      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(504, 'Gateway timeout');
+      assertJsonRpcError(result, expected.code, expected.message);
+    });
+
+    it('should handle other error codes with default mapper', () => {
+      const TEAPOT_STATUS = 418;
+      const error = {
+        message: 'Unknown error',
+        config: TEST_CONFIG,
+      };
+
+      const result = MirrorNodeErrorMapper.mapError(error, TEAPOT_STATUS, TEST_BLOCK_PATH, undefined, logger);
+      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(TEAPOT_STATUS, 'Unknown error');
+      assertJsonRpcError(result, expected.code, expected.message);
+    });
+
+    it('should handle non-response errors', () => {
+      const error = {
+        message: 'Network Error',
+        config: TEST_CONFIG,
+      };
+
+      const result = MirrorNodeErrorMapper.mapError(error, 500, TEST_BLOCK_PATH, undefined, logger);
+      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(500, 'Internal server error');
+      assertJsonRpcError(result, expected.code, expected.message);
+    });
+
+    it('should handle 502 bad gateway errors', () => {
+      const error = createErrorResponse(502);
+      const result = MirrorNodeErrorMapper.mapError(error, 502, TEST_BLOCK_PATH, undefined, logger);
+      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(502, 'Bad gateway');
+      assertJsonRpcError(result, expected.code, expected.message);
+    });
+
+    it('should handle 503 service unavailable errors', () => {
+      const error = createErrorResponse(503);
+      const result = MirrorNodeErrorMapper.mapError(error, 503, TEST_BLOCK_PATH, undefined, logger);
+      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(503, 'Service unavailable');
+      assertJsonRpcError(result, expected.code, expected.message);
     });
   });
 });
