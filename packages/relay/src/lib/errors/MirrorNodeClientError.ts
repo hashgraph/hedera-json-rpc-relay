@@ -9,6 +9,7 @@ export class MirrorNodeClientError extends Error {
   public statusCode: number;
   public data?: string;
   public detail?: string;
+  public mappedJsonRpcError?: JsonRpcError;
 
   static ErrorCodes = {
     ECONNABORTED: 504,
@@ -27,7 +28,7 @@ export class MirrorNodeClientError extends Error {
     CONTRACT_REVERT_EXECUTED: Status.ContractRevertExecuted.toString(),
   };
 
-  constructor(error: any, statusCode: number) {
+  constructor(error: any, statusCode: number, jsonRpcError?: JsonRpcError) {
     // mirror node web3 module sends errors in this format, this is why we need a check to distinguish
     if (error.response?.data?._status?.messages?.length) {
       const msg = error.response.data._status.messages[0];
@@ -36,6 +37,7 @@ export class MirrorNodeClientError extends Error {
 
       this.detail = detail;
       this.data = data;
+      this.mappedJsonRpcError = jsonRpcError;
     } else {
       super(error.message);
     }
@@ -83,6 +85,11 @@ export class MirrorNodeClientError extends Error {
   isInvalidTransaction() {
     return this.message === 'INVALID_TRANSACTION';
   }
+
+  // get the mapped JsonRpcError
+  public getMappedJsonRpcError(): JsonRpcError | undefined {
+    return this.mappedJsonRpcError;
+  }
 }
 
 /**
@@ -114,6 +121,7 @@ export class MirrorNodeErrorMapper {
       const config = error.config || {};
       const requestId = config.headers?.[MirrorNodeErrorMapper.REQUESTID_LABEL] || '';
 
+      // Contract Call returns 400 for a CONTRACT_REVERT but is a valid response, expected and should not be logged as error:
       if (logger.isLevelEnabled('debug')) {
         logger.debug(
           `${requestId} [${config.method}] ${config.url} Contract Revert: ( statusCode: ${error.response

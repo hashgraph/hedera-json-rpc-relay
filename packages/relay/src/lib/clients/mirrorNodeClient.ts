@@ -282,6 +282,20 @@ export class MirrorNodeClient {
           this.logger,
         );
 
+        // For accepted errors, reject with null
+        if (mappedError === null) {
+          return Promise.reject(null);
+        }
+
+        // New MirrorNodeClientError that wraps both the original error and the mapped JsonRpcError
+        const mirrorNodeError = new MirrorNodeClientError(
+          error,
+          effectiveStatusCode,
+          mappedError, // Store the mapped JsonRpcError
+        );
+
+        return Promise.reject(mirrorNodeError);
+
         // // If null is returned, it's an accepted error response
         // if (mappedError === null) {
         //   return Promise.reject(null);
@@ -309,9 +323,6 @@ export class MirrorNodeClient {
         //   }, path=${config.url || ''}, status=${effectiveStatusCode}`,
         // );
         // }
-
-        // always reject error even though it's an accepted error
-        return Promise.reject(mappedError);
       },
     );
 
@@ -466,14 +477,31 @@ export class MirrorNodeClient {
 
       // this.handleError(error, path, pathLabel, effectiveStatusCode, method, requestDetails);
 
-      // The error has already been processed by the interceptor
-      // If it's a JsonRpcError, rethrow it
-      if (error instanceof JsonRpcError) {
-        throw error;
+      // error after interceptor is only null for accepted errors, return null
+      if (error === null) {
+        return null;
       }
 
-      // For null responses (accepted errors) or other errors like axios native or nodejs
-      return null;
+      // The error has already been processed by the interceptor and is expected to always be MirrorNodeClientError
+      // Rethrow MirrorNodeClientError with its embedded JsonRpcError
+      // if (error instanceof MirrorNodeClientError) {
+      //   throw error;
+      // }
+
+      // The error has already been processed by the interceptor, and if not null, it is expected to always be a MirrorNodeClientError.
+      // If not MirrorNodeClientError, they are unexpected errors (e.g., Axios or Node.js native errors that somehow bypassed the interceptor).
+      if (!(error instanceof MirrorNodeClientError)) {
+        this.logger.warn(
+          `${requestDetails.formattedRequestId} Unexpected error type in Mirror Node request: ${error.message}`,
+          error,
+        );
+      }
+
+      // re-throw all errors that are not accepted (i.e. MirrorNodeClientError or unexpected errors)
+      throw error;
+
+      // return null for unexpected or an accepted error (error === null)
+      // return null;
     }
   }
 
