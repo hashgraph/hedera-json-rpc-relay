@@ -56,7 +56,7 @@ config:
   MULTI_SET: true
   GAS_PRICE_PERCENTAGE_BUFFER: 0
   USE_ASYNC_TX_PROCESSING: true
-  MAX_TRANSACTION_FEE_THRESHOLD: 15_000_000
+  MAX_TRANSACTION_FEE_THRESHOLD: 15000000
 
 # -- Extra environment variables from existing secrets or configmaps
 extraEnvFrom: []
