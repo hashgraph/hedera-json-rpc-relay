@@ -100,11 +100,13 @@ export class MirrorNodeErrorMapper {
   private static readonly REQUESTID_LABEL = 'requestId';
 
   // Map HTTP status codes to JsonRpcError factory functions
+  // No 404 and 501 because:
+  //   - 404 - NOT FOUND: are mostly accepted error and handled gracefully
+  //   - 501 - NOT IMPLEMENTED: are handled by MirrorNodeClientError.isNotSupported()
   private static errorMap = {
     400: (error: any, logger: Logger) => this.handleBadRequest(error, logger),
     429: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(429, 'Rate limit exceeded'),
     500: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(500, 'Internal server error'),
-    501: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(501, 'Not implemented'),
     502: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(502, 'Bad gateway'),
     503: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(503, 'Service unavailable'),
     504: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(504, 'Gateway timeout'),
@@ -114,8 +116,8 @@ export class MirrorNodeErrorMapper {
   private static handleBadRequest(error: any, logger: Logger): JsonRpcError {
     // Handle contract reverts differently
     if (
-      error.response?.data?._status?.messages?.some(
-        (m: any) => m.message === MirrorNodeClientError.messages.CONTRACT_REVERT_EXECUTED,
+      error.response?.data?._status?.messages?.some((m: any) =>
+        m.message.includes(MirrorNodeClientError.messages.CONTRACT_REVERT_EXECUTED),
       )
     ) {
       const config = error.config || {};
