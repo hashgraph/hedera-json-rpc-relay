@@ -1972,12 +1972,12 @@ describe('MirrorNodeClient', async function () {
       expect(mockAxiosInstance.interceptors.request.use.calledOnce).to.be.true;
 
       // Test the interceptor
-      const config = { data: {} };
+      const config = { headers: {} };
       const result = requestInterceptor(config);
 
-      // Verify it added metadata with requestStartedAt
-      expect(result.data.metadata).to.have.property('requestStartedAt');
-      expect(typeof result.data.metadata.requestStartedAt).to.equal('number');
+      // Verify it added request-startTime headers
+      expect(result.headers).to.have.property('request-startTime');
+      expect(typeof result.headers['request-startTime']).to.equal('number');
     });
 
     it('should add response success interceptor that records metrics', () => {

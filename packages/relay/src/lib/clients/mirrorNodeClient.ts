@@ -233,7 +233,7 @@ export class MirrorNodeClient {
   private setupMirrorNodeInterceptors(client: AxiosInstance): AxiosInstance {
     // Add request interceptor for timing
     client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-      config.data.metadata = { requestStartedAt: Date.now() };
+      config.headers['request-startTime'] = Date.now();
       return config;
     });
 
@@ -242,7 +242,7 @@ export class MirrorNodeClient {
       // Success handler - Any status code that lie within the range of 2xx
       (response) => {
         const config = response.config;
-        const duration = Date.now() - (config.data.metadata?.requestStartedAt || Date.now());
+        const duration = Date.now() - (config.headers?.['request-startTime'] || Date.now());
         const pathLabel = config.headers[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
         const requestId = config.headers?.[MirrorNodeClient.REQUESTID_LABEL] || '';
 
@@ -260,7 +260,7 @@ export class MirrorNodeClient {
       // Error handler - Any status codes that falls outside the range of 2xx
       (error) => {
         const config = error.config || {};
-        const duration = Date.now() - (config.data.metadata?.requestStartedAt || Date.now());
+        const duration = Date.now() - (config.headers?.['request-startTime'] || Date.now());
         const pathLabel = config.headers?.[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
 
         // Calculate effective status code
