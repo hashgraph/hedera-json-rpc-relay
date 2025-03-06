@@ -345,19 +345,19 @@ export class MirrorNodeClient {
       this.restUrl = '';
       this.web3Url = '';
 
-      this.restClient = restClient;
+      this.restClient = this.setupMirrorNodeInterceptors(restClient);
       this.web3Client = web3Client ? web3Client : restClient;
     } else {
       this.restUrl = this.buildUrl(restUrl);
       this.web3Url = this.buildUrl(web3Url);
 
-      this.restClient = restClient ? restClient : this.createAxiosClient(this.restUrl);
-      this.web3Client = web3Client ? web3Client : this.createAxiosClient(this.web3Url);
+      this.restClient = this.setupMirrorNodeInterceptors(
+        restClient ? restClient : this.createAxiosClient(this.restUrl),
+      );
+      this.web3Client = this.setupMirrorNodeInterceptors(
+        web3Client ? web3Client : this.createAxiosClient(this.web3Url),
+      );
     }
-
-    // Set up interceptors for REST and Web3 clients
-    this.restClient = this.setupMirrorNodeInterceptors(this.restClient);
-    this.web3Client = this.setupMirrorNodeInterceptors(this.web3Client);
 
     this.logger = logger;
     this.register = register;
