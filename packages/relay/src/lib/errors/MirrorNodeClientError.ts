@@ -37,12 +37,12 @@ export class MirrorNodeClientError extends Error {
 
       this.detail = detail;
       this.data = data;
-      this.mappedJsonRpcError = jsonRpcError;
     } else {
       super(error.message);
     }
 
     this.statusCode = statusCode;
+    this.mappedJsonRpcError = jsonRpcError;
     Object.setPrototypeOf(this, MirrorNodeClientError.prototype);
   }
 
