@@ -5,9 +5,10 @@ import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { BigNumber } from 'bignumber.js';
 import { expect } from 'chai';
-import { ethers, JsonRpcError } from 'ethers';
+import { ethers } from 'ethers';
 import pino from 'pino';
 import { Registry } from 'prom-client';
+import sinon from 'sinon';
 
 import { MirrorNodeClientError, predefined } from '../../src';
 import { MirrorNodeClient } from '../../src/lib/clients';
@@ -22,7 +23,7 @@ describe('MirrorNodeClient', async function () {
   this.timeout(20000);
 
   const registry = new Registry();
-  const logger = pino({ level: 'trace' });
+  const logger = pino({ level: 'silent' });
   const noTransactions = '?transactions=false';
   const requestDetails = new RequestDetails({ requestId: 'mirrorNodeClientTest', ipAddress: '0.0.0.0' });
 
@@ -1924,6 +1925,298 @@ describe('MirrorNodeClient', async function () {
       const result = MirrorNodeErrorMapper.mapError(error, 503, TEST_BLOCK_PATH, undefined, logger);
       const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(503, 'Service unavailable');
       assertJsonRpcError(result, expected.code, expected.message);
+    });
+  });
+
+  describe('setupMirrorNodeInterceptors', () => {
+    const TEST_CONTRACTS_CALL_PATH = 'contracts/call';
+    const TEST_UNKNOWN_PATH = 'unknown-path';
+    const TEST_REQUEST_ID = '123456';
+    const TEST_START_TIME = Date.now() - 100; // 100ms ago
+
+    let mirrorNodeClient;
+    let mockAxiosInstance;
+    let mockHistogram;
+    let requestInterceptor;
+    let errorInterceptor;
+    let successInterceptor;
+
+    // Helper function to create mock error objects
+    const createMockError = (status: number, pathLabel = TEST_CONTRACTS_CALL_PATH, additionalProps: any = {}) => {
+      return {
+        config: {
+          data: { metadata: { requestStartedAt: TEST_START_TIME } },
+          headers: {
+            'x-path-label': pathLabel,
+            requestId: TEST_REQUEST_ID,
+          },
+          ...additionalProps,
+        },
+        response: {
+          status,
+          ...additionalProps.response,
+        },
+        ...additionalProps,
+      };
+    };
+
+    // Helper function to verify JsonRpcError properties
+    const verifyJsonRpcError = (error, expectedJsonRpcError) => {
+      expect(error.mappedJsonRpcError).to.not.be.undefined;
+      expect(error.mappedJsonRpcError.code).to.equal(expectedJsonRpcError.code);
+      expect(error.mappedJsonRpcError.message).to.equal(expectedJsonRpcError.message);
+
+      if (expectedJsonRpcError.data) {
+        expect(error.mappedJsonRpcError.data).to.equal(expectedJsonRpcError.data);
+      }
+    };
+
+    beforeEach(() => {
+      // Mock Axios instance
+      mockAxiosInstance = {
+        interceptors: {
+          request: {
+            use: sinon.stub(),
+          },
+          response: {
+            use: sinon.stub(),
+          },
+        },
+      };
+
+      // Mock histogram for metrics
+      mockHistogram = {
+        labels: sinon.stub().returns({
+          observe: sinon.stub(),
+        }),
+      };
+
+      // Create a minimal MirrorNodeClient instance with required properties
+      mirrorNodeClient = new MirrorNodeClient(
+        ConfigService.get('MIRROR_NODE_URL'),
+        logger.child({ name: `mirror-node` }),
+        registry,
+        cacheService,
+      );
+      // Replace the histogram with our mock
+      mirrorNodeClient.mirrorResponseHistogram = mockHistogram;
+
+      // Setup interceptors
+      mirrorNodeClient.setupMirrorNodeInterceptors(mockAxiosInstance);
+
+      // Get the interceptor functions
+      requestInterceptor = mockAxiosInstance.interceptors.request.use.getCall(0).args[0];
+      successInterceptor = mockAxiosInstance.interceptors.response.use.getCall(0).args[0];
+      errorInterceptor = mockAxiosInstance.interceptors.response.use.getCall(0).args[1];
+    });
+
+    it('should add request interceptor that adds request start time', () => {
+      // Verify request interceptor was added
+      expect(mockAxiosInstance.interceptors.request.use.calledOnce).to.be.true;
+
+      // Test the interceptor
+      const config = { data: {} };
+      const result = requestInterceptor(config);
+
+      // Verify it added metadata with requestStartedAt
+      expect(result.data.metadata).to.have.property('requestStartedAt');
+      expect(typeof result.data.metadata.requestStartedAt).to.equal('number');
+    });
+
+    it('should add response success interceptor that records metrics', () => {
+      // Verify response interceptor was added
+      expect(mockAxiosInstance.interceptors.response.use.calledOnce).to.be.true;
+
+      // Create a mock response
+      const mockResponse = {
+        config: {
+          data: { metadata: { requestStartedAt: TEST_START_TIME } },
+          method: 'GET',
+          url: '/test/path',
+          headers: {
+            'x-path-label': TEST_CONTRACTS_CALL_PATH,
+            requestId: TEST_REQUEST_ID,
+          },
+        },
+        status: 200,
+      };
+
+      // Test the interceptor
+      const result = successInterceptor(mockResponse);
+
+      // Verify metrics were recorded
+      expect(mockHistogram.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '200')).to.be.true;
+      expect(mockHistogram.labels().observe.called).to.be.true;
+
+      // Verify the original response is returned
+      expect(result).to.equal(mockResponse);
+    });
+
+    it('should handle error responses and map them appropriately', () => {
+      // Create a mock error with 404 status - accepted error code
+      const mockError = createMockError(404);
+
+      // Test the interceptor with a 404 error for an endpoint that accepts 404s
+      return errorInterceptor(mockError).catch((error) => {
+        // Should reject with null for accepted error status
+        expect(error).to.be.null;
+
+        // Verify metrics were recorded
+        expect(mockHistogram.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '404')).to.be.true;
+      });
+    });
+
+    it('should map 500 internal server error to appropriate JsonRpcError', () => {
+      // Create a mock error with 500 status
+      const mockError = createMockError(500, TEST_UNKNOWN_PATH, {
+        response: {
+          data: { message: 'Internal Server Error' },
+        },
+      });
+
+      // Test the interceptor with a 500 error
+      return errorInterceptor(mockError).catch((error) => {
+        // Should be a MirrorNodeClientError
+        expect(error).to.be.instanceOf(MirrorNodeClientError);
+
+        // Should have a mapped JsonRpcError
+        const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(500, 'Internal server error');
+        verifyJsonRpcError(error, expectedJsonRpcError);
+
+        // Verify metrics were recorded
+        expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '500')).to.be.true;
+      });
+    });
+
+    it('should map 502 bad gateway error to appropriate JsonRpcError', () => {
+      // Create a mock error with 502 status
+      const mockError = createMockError(502, TEST_UNKNOWN_PATH, {
+        response: {
+          status: 502,
+          data: { message: 'Bad Gateway' },
+        },
+      });
+
+      // Test the interceptor with a 502 error
+      return errorInterceptor(mockError).catch((error) => {
+        // Should be a MirrorNodeClientError
+        expect(error).to.be.instanceOf(MirrorNodeClientError);
+
+        // Should have a mapped JsonRpcError
+        const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(502, 'Bad gateway');
+        verifyJsonRpcError(error, expectedJsonRpcError);
+
+        // Verify metrics were recorded
+        expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '502')).to.be.true;
+      });
+    });
+
+    it('should map 503 service unavailable error to appropriate JsonRpcError', () => {
+      // Create a mock error with 503 status
+      const mockError = createMockError(503, TEST_UNKNOWN_PATH, {
+        response: {
+          status: 503,
+          data: { message: 'Service Unavailable' },
+        },
+      });
+
+      // Test the interceptor with a 503 error
+      return errorInterceptor(mockError).catch((error) => {
+        // Should be a MirrorNodeClientError
+        expect(error).to.be.instanceOf(MirrorNodeClientError);
+
+        // Should have a mapped JsonRpcError
+        const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(503, 'Service unavailable');
+        verifyJsonRpcError(error, expectedJsonRpcError);
+
+        // Verify metrics were recorded
+        expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '503')).to.be.true;
+      });
+    });
+
+    it('should handle network errors without response', () => {
+      // Create a mock network error without response
+      const mockError = createMockError(504, TEST_CONTRACTS_CALL_PATH, {
+        code: 'ECONNABORTED',
+        message: 'timeout of 10000ms exceeded',
+        response: undefined,
+      });
+
+      // Test the interceptor with a network error
+      return errorInterceptor(mockError).catch((error) => {
+        // Should be a MirrorNodeClientError
+        expect(error).to.be.instanceOf(MirrorNodeClientError);
+
+        // Should have a mapped JsonRpcError for timeout
+        const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(504, 'Gateway timeout');
+        verifyJsonRpcError(error, expectedJsonRpcError);
+
+        // Verify metrics were recorded with the mapped status code
+        expect(mockHistogram.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '504')).to.be.true;
+      });
+    });
+
+    it('should handle 429 rate limit errors', () => {
+      // Create a mock rate limit error
+      const mockError = createMockError(429, TEST_UNKNOWN_PATH, {
+        response: {
+          status: 429,
+          data: { message: 'Rate limit exceeded' },
+        },
+      });
+
+      // Test the interceptor with a 429 error
+      return errorInterceptor(mockError).catch((error) => {
+        // Should be a MirrorNodeClientError
+        expect(error).to.be.instanceOf(MirrorNodeClientError);
+
+        // Should have a mapped JsonRpcError
+        const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(429, 'Rate limit exceeded');
+        verifyJsonRpcError(error, expectedJsonRpcError);
+
+        // Verify metrics were recorded
+        expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '429')).to.be.true;
+      });
+    });
+
+    it('should handle contract revert errors', () => {
+      // Create custom revert error details
+      const customRevertError = {
+        detail: 'Reverted with reason',
+        data: '0x1234',
+      };
+
+      // Create a mock contract revert error
+      const mockError = createMockError(400, TEST_CONTRACTS_CALL_PATH, {
+        method: 'POST',
+        response: {
+          status: 400,
+          data: {
+            _status: {
+              messages: [
+                {
+                  message: MirrorNodeClientError.messages.CONTRACT_REVERT_EXECUTED,
+                  detail: customRevertError.detail,
+                  data: customRevertError.data,
+                },
+              ],
+            },
+          },
+        },
+      });
+
+      // Test the interceptor with a contract revert error
+      return errorInterceptor(mockError).catch((error) => {
+        // Should be a MirrorNodeClientError
+        expect(error).to.be.instanceOf(MirrorNodeClientError);
+
+        // Should have a mapped JsonRpcError for contract revert
+        const expectedJsonRpcError = predefined.CONTRACT_REVERT(customRevertError.detail, customRevertError.data);
+        verifyJsonRpcError(error, expectedJsonRpcError);
+
+        // Verify metrics were recorded
+        expect(mockHistogram.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '400')).to.be.true;
+      });
     });
   });
 });

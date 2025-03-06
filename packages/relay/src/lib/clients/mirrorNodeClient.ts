@@ -262,7 +262,6 @@ export class MirrorNodeClient {
         const config = error.config || {};
         const duration = Date.now() - (config.data.metadata?.requestStartedAt || Date.now());
         const pathLabel = config.headers?.[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
-        const requestId = config.headers?.[MirrorNodeClient.REQUESTID_LABEL] || '';
 
         // Calculate effective status code
         const effectiveStatusCode = error.response?.status || MirrorNodeClientError.ErrorCodes[error.code] || 500; // Use standard 500 as fallback
