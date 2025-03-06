@@ -2017,18 +2017,18 @@ export class EthImpl implements Eth {
           return EthImpl.emptyHex;
         }
 
-        if (e.isRateLimit()) {
-          return predefined.IP_RATE_LIMIT_EXCEEDED(e.data || `Rate limit exceeded on ${EthImpl.ethCall}`);
-        }
-
-        if (e.isContractReverted()) {
-          if (this.logger.isLevelEnabled('trace')) {
-            this.logger.trace(
-              `${requestIdPrefix} mirror node eth_call request encountered contract revert. message: ${e.message}, details: ${e.detail}, data: ${e.data}`,
-            );
-          }
-          return predefined.CONTRACT_REVERT(e.detail || e.message, e.data);
-        }
+        // @removeme
+        // if (e.isRateLimit()) {
+        //   return predefined.IP_RATE_LIMIT_EXCEEDED(e.data || `Rate limit exceeded on ${EthImpl.ethCall}`);
+        // }
+        // if (e.isContractReverted()) {
+        //   if (this.logger.isLevelEnabled('trace')) {
+        //     this.logger.trace(
+        //       `${requestIdPrefix} mirror node eth_call request encountered contract revert. message: ${e.message}, details: ${e.detail}, data: ${e.data}`,
+        //     );
+        //   }
+        //   return predefined.CONTRACT_REVERT(e.detail || e.message, e.data);
+        // }
 
         // Temporary workaround until mirror node web3 module implements the support of precompiles
         // If mirror node throws, rerun eth_call and force it to go through the Consensus network
@@ -2044,6 +2044,11 @@ export class EthImpl implements Eth {
           }
           return await this.callConsensusNode(call, gas, requestDetails);
         }
+      }
+
+      // for any other errors (rate limitted, contract revert, etc.)
+      if (e.mappedJsonRpcError) {
+        return e.mappedJsonRpcError;
       }
 
       this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);

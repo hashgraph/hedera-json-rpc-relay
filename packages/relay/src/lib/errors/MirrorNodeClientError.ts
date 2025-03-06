@@ -120,6 +120,8 @@ export class MirrorNodeErrorMapper {
     ) {
       const config = error.config || {};
       const requestId = config.headers?.[MirrorNodeErrorMapper.REQUESTID_LABEL] || '';
+      const msg = error.response.data._status.messages[0];
+      const { message, detail, data } = msg;
 
       // Contract Call returns 400 for a CONTRACT_REVERT but is a valid response, expected and should not be logged as error:
       if (logger.isLevelEnabled('debug')) {
@@ -130,7 +132,7 @@ export class MirrorNodeErrorMapper {
           )}', data: '${JSON.stringify(error.response?.data || '')}')`,
         );
       }
-      return predefined.CONTRACT_REVERT();
+      return predefined.CONTRACT_REVERT(detail || message, data);
     }
     // Handle other 400 errors
     return predefined.MIRROR_NODE_UPSTREAM_FAIL(400, 'Bad request');
