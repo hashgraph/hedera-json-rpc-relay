@@ -302,12 +302,12 @@ export class MirrorNodeClient {
         //     );
         //   }
         // } else {
-        this.logger.error(
-          new Error(error.message),
-          `${requestId} Error encountered while communicating with the mirror node server: method=${
-            config.method || ''
-          }, path=${config.url || ''}, status=${effectiveStatusCode}`,
-        );
+        // this.logger.error(
+        //   new Error(error.message),
+        //   `${requestId} Error encountered while communicating with the mirror node server: method=${
+        //     config.method || ''
+        //   }, path=${config.url || ''}, status=${effectiveStatusCode}`,
+        // );
         // }
 
         return Promise.reject(mappedError);

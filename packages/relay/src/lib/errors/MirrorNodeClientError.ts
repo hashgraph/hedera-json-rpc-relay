@@ -143,15 +143,25 @@ export class MirrorNodeErrorMapper {
     acceptedErrorStatuses: number[] | undefined,
     logger: Logger,
   ): JsonRpcError | null {
+    const config = error.config || {};
+    const requestId = config.headers?.[MirrorNodeErrorMapper.REQUESTID_LABEL] || '';
+
     // Check if this is an accepted error for this path
     if (acceptedErrorStatuses?.includes(effectiveStatusCode)) {
       if (logger.isLevelEnabled('debug')) {
         logger.debug(
-          `An accepted error occurred while communicating with the mirror node server: status=${effectiveStatusCode}, path=${pathLabel}`,
+          `${requestId} An accepted error occurred while communicating with the mirror node server: method=${config.method}, path=${pathLabel}, status=${effectiveStatusCode}`,
         );
       }
       return null; // Return null for accepted errors
     }
+
+    logger.error(
+      new Error(error.message),
+      `${requestId} Error encountered while communicating with the mirror node server: method=${
+        config.method || ''
+      }, path=${pathLabel || ''}, status=${effectiveStatusCode}`,
+    );
 
     // Find the appropriate error mapper
     const errorMapper =
