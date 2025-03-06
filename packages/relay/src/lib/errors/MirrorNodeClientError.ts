@@ -3,6 +3,7 @@
 import { Status } from '@hashgraph/sdk';
 import { Logger } from 'pino';
 
+import { RequestDetails } from '../types';
 import { JsonRpcError, predefined } from './JsonRpcError';
 
 export class MirrorNodeClientError extends Error {
@@ -97,14 +98,13 @@ export class MirrorNodeClientError extends Error {
  * Centralizes error handling logic for consistent error responses.
  */
 export class MirrorNodeErrorMapper {
-  private static readonly REQUESTID_LABEL = 'requestId';
-
   // Map HTTP status codes to JsonRpcError factory functions
   // No 404 and 501 because:
   //   - 404 - NOT FOUND: are mostly accepted error and handled gracefully
   //   - 501 - NOT IMPLEMENTED: are handled by MirrorNodeClientError.isNotSupported()
   private static errorMap = {
-    400: (error: any, logger: Logger) => this.handleBadRequest(error, logger),
+    400: (error: any, logger: Logger, requestDetails: RequestDetails) =>
+      this.handleBadRequest(error, logger, requestDetails),
     429: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(429, 'Rate limit exceeded'),
     500: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(500, 'Internal server error'),
     502: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(502, 'Bad gateway'),
@@ -113,7 +113,7 @@ export class MirrorNodeErrorMapper {
   };
 
   // Special handling for 400 errors which could be contract reverts or other issues
-  private static handleBadRequest(error: any, logger: Logger): JsonRpcError {
+  private static handleBadRequest(error: any, logger: Logger, requestDetails: RequestDetails): JsonRpcError {
     // Handle contract reverts differently
     if (
       error.response?.data?._status?.messages?.some((m: any) =>
@@ -121,17 +121,19 @@ export class MirrorNodeErrorMapper {
       )
     ) {
       const config = error.config || {};
-      const requestId = config.headers?.[MirrorNodeErrorMapper.REQUESTID_LABEL] || '';
       const msg = error.response.data._status.messages[0];
       const { message, detail, data } = msg;
 
       // Contract Call returns 400 for a CONTRACT_REVERT but is a valid response, expected and should not be logged as error:
       if (logger.isLevelEnabled('debug')) {
         logger.debug(
-          `${requestId} [${config.method}] ${config.url} Contract Revert: ( statusCode: ${error.response
-            ?.status}, statusText: '${error.response?.statusText || ''}', detail: '${JSON.stringify(
-            error.response?.detail || '',
-          )}', data: '${JSON.stringify(error.response?.data || '')}')`,
+          `${requestDetails.formattedRequestId} Contract execution reverted: method=[${config.method}], url=${
+            config.url
+          }, statusCode=${error.response?.status}, reason=${
+            error.response?.statusText || 'Unknown'
+          }, details=${JSON.stringify(error.response?.detail || {})}, response=${JSON.stringify(
+            error.response?.data || {},
+          )}`,
         );
       }
       return predefined.CONTRACT_REVERT(detail || message, data);
@@ -154,24 +156,24 @@ export class MirrorNodeErrorMapper {
     pathLabel: string,
     acceptedErrorStatuses: number[] | undefined,
     logger: Logger,
+    requestDetails: RequestDetails,
   ): JsonRpcError | null {
     const config = error.config || {};
-    const requestId = config.headers?.[MirrorNodeErrorMapper.REQUESTID_LABEL] || '';
 
     // Check if this is an accepted error for this path
     if (acceptedErrorStatuses?.includes(effectiveStatusCode)) {
       if (logger.isLevelEnabled('debug')) {
         logger.debug(
-          `${requestId} An accepted error occurred while communicating with the mirror node server: method=${config.method}, path=${pathLabel}, status=${effectiveStatusCode}`,
+          `${requestDetails.formattedRequestId} An accepted error occurred while communicating with the mirror node server: method=${config.method}, path=${pathLabel}, status=${effectiveStatusCode}`,
         );
       }
       return null; // Return null for accepted errors
     }
 
     logger.warn(
-      `${requestId} Error encountered while communicating with the mirror node server: method=${
+      `${requestDetails.formattedRequestId} Error encountered while communicating with the mirror node server: method=${
         config.method || ''
-      }, path=${pathLabel || ''}, status=${effectiveStatusCode}, error=${JSON.stringify(error)}`,
+      }, path=${pathLabel || ''}, status=${effectiveStatusCode}.`,
     );
 
     // Find the appropriate error mapper
@@ -179,6 +181,6 @@ export class MirrorNodeErrorMapper {
       this.errorMap[effectiveStatusCode] ||
       (() => predefined.MIRROR_NODE_UPSTREAM_FAIL(effectiveStatusCode, error.message));
 
-    return errorMapper(error, logger);
+    return errorMapper(error, logger, requestDetails);
   }
 }

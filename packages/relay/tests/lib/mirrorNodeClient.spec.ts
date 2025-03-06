@@ -1769,6 +1769,7 @@ describe('MirrorNodeClient', async function () {
         TEST_BLOCK_PATH,
         [MirrorNodeClientError.statusCodes.NOT_FOUND],
         logger,
+        requestDetails,
       );
       expect(result).to.be.null;
     });
@@ -1797,6 +1798,7 @@ describe('MirrorNodeClient', async function () {
         TEST_CONTRACTS_CALL_PATH,
         undefined,
         logger,
+        requestDetails,
       );
 
       const expected = predefined.CONTRACT_REVERT(customRevertError.detail, customRevertError.data);
@@ -1812,7 +1814,14 @@ describe('MirrorNodeClient', async function () {
       ]);
       error.config.method = 'POST';
 
-      const result = MirrorNodeErrorMapper.mapError(error, 400, TEST_CONTRACTS_CALL_PATH, undefined, logger);
+      const result = MirrorNodeErrorMapper.mapError(
+        error,
+        400,
+        TEST_CONTRACTS_CALL_PATH,
+        undefined,
+        logger,
+        requestDetails,
+      );
       const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(400, 'Bad request');
       assertJsonRpcError(result, expected.code, expected.message);
     });
@@ -1825,6 +1834,7 @@ describe('MirrorNodeClient', async function () {
         TEST_BLOCK_PATH,
         undefined,
         logger,
+        requestDetails,
       );
       const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(429, 'Rate limit exceeded');
       assertJsonRpcError(result, expected.code, expected.message);
@@ -1842,6 +1852,7 @@ describe('MirrorNodeClient', async function () {
         TEST_BLOCK_PATH,
         undefined,
         logger,
+        requestDetails,
       );
       const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(504, 'Gateway timeout');
       assertJsonRpcError(result, expected.code, expected.message);
@@ -1854,7 +1865,14 @@ describe('MirrorNodeClient', async function () {
         config: TEST_CONFIG,
       };
 
-      const result = MirrorNodeErrorMapper.mapError(error, TEAPOT_STATUS, TEST_BLOCK_PATH, undefined, logger);
+      const result = MirrorNodeErrorMapper.mapError(
+        error,
+        TEAPOT_STATUS,
+        TEST_BLOCK_PATH,
+        undefined,
+        logger,
+        requestDetails,
+      );
       const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(TEAPOT_STATUS, 'Unknown error');
       assertJsonRpcError(result, expected.code, expected.message);
     });
@@ -1865,21 +1883,21 @@ describe('MirrorNodeClient', async function () {
         config: TEST_CONFIG,
       };
 
-      const result = MirrorNodeErrorMapper.mapError(error, 500, TEST_BLOCK_PATH, undefined, logger);
+      const result = MirrorNodeErrorMapper.mapError(error, 500, TEST_BLOCK_PATH, undefined, logger, requestDetails);
       const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(500, 'Internal server error');
       assertJsonRpcError(result, expected.code, expected.message);
     });
 
     it('should handle 502 bad gateway errors', () => {
       const error = createErrorResponse(502);
-      const result = MirrorNodeErrorMapper.mapError(error, 502, TEST_BLOCK_PATH, undefined, logger);
+      const result = MirrorNodeErrorMapper.mapError(error, 502, TEST_BLOCK_PATH, undefined, logger, requestDetails);
       const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(502, 'Bad gateway');
       assertJsonRpcError(result, expected.code, expected.message);
     });
 
     it('should handle 503 service unavailable errors', () => {
       const error = createErrorResponse(503);
-      const result = MirrorNodeErrorMapper.mapError(error, 503, TEST_BLOCK_PATH, undefined, logger);
+      const result = MirrorNodeErrorMapper.mapError(error, 503, TEST_BLOCK_PATH, undefined, logger, requestDetails);
       const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(503, 'Service unavailable');
       assertJsonRpcError(result, expected.code, expected.message);
     });

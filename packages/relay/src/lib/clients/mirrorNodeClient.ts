@@ -12,7 +12,7 @@ import { Logger } from 'pino';
 import { Histogram, Registry } from 'prom-client';
 
 import { formatRequestIdMessage, formatTransactionId, parseNumericEnvVar } from '../../formatters';
-import { JsonRpcError, predefined } from '../errors/JsonRpcError';
+import { predefined } from '../errors/JsonRpcError';
 import { MirrorNodeClientError, MirrorNodeErrorMapper } from '../errors/MirrorNodeClientError';
 import { SDKClientError } from '../errors/SDKClientError';
 import { EthImpl } from '../eth';
@@ -245,12 +245,17 @@ export class MirrorNodeClient {
         const duration = Date.now() - (config.headers?.['request-startTime'] || Date.now());
         const pathLabel = config.headers[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
         const requestId = config.headers?.[MirrorNodeClient.REQUESTID_LABEL] || '';
+        const requestDetails = new RequestDetails({ requestId, ipAddress: '' });
 
         this.mirrorResponseHistogram.labels(pathLabel, response.status.toString()).observe(duration);
 
         if (this.logger.isLevelEnabled('debug')) {
           this.logger.debug(
-            `${requestId} Successfully received response from mirror node server: method=${config.method}, path=${config.url}, status=${response.status}, duration:${duration}ms`,
+            `${requestDetails.formattedRequestId} Successfully received response from mirror node server: method=${
+              config.method
+            }, path=${config.url}, status=${response.status}, duration:${duration}ms, data:${JSON.stringify(
+              response.data,
+            )}`,
           );
         }
 
@@ -262,6 +267,8 @@ export class MirrorNodeClient {
         const config = error.config || {};
         const duration = Date.now() - (config.headers?.['request-startTime'] || Date.now());
         const pathLabel = config.headers?.[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
+        const requestId = config.headers?.[MirrorNodeClient.REQUESTID_LABEL] || '';
+        const requestDetails = new RequestDetails({ requestId, ipAddress: '' });
 
         // Calculate effective status code
         const effectiveStatusCode = error.response?.status || MirrorNodeClientError.ErrorCodes[error.code] || 500; // Use standard 500 as fallback
@@ -279,6 +286,7 @@ export class MirrorNodeClient {
           pathLabel,
           acceptedErrorStatuses,
           this.logger,
+          requestDetails,
         );
 
         // For accepted errors, reject with null
