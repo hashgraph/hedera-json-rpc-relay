@@ -417,6 +417,12 @@ const _CONFIG = {
     required: false,
     defaultValue: 5,
   },
+  MAX_TRANSACTION_FEE_THRESHOLD: {
+    envName: 'MAX_TRANSACTION_FEE_THRESHOLD',
+    type: 'number',
+    required: false,
+    defaultValue: 15_000_000,
+  },
   MEMWATCH_ENABLED: {
     envName: 'MEMWATCH_ENABLED',
     type: 'boolean',
