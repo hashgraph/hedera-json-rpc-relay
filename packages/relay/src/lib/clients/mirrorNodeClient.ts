@@ -282,10 +282,10 @@ export class MirrorNodeClient {
           this.logger,
         );
 
-        // If null is returned, it's an accepted error response
-        if (mappedError === null) {
-          return Promise.resolve(null);
-        }
+        // // If null is returned, it's an accepted error response
+        // if (mappedError === null) {
+        //   return Promise.reject(null);
+        // }
 
         // Special handling for contract call revert
         // if (pathLabel === MirrorNodeClient.CONTRACT_CALL_ENDPOINT && effectiveStatusCode === 400) {
@@ -310,6 +310,7 @@ export class MirrorNodeClient {
         // );
         // }
 
+        // always reject error even though it's an accepted error
         return Promise.reject(mappedError);
       },
     );
@@ -471,7 +472,7 @@ export class MirrorNodeClient {
         throw error;
       }
 
-      // For null responses (accepted errors) or other errors
+      // For null responses (accepted errors) or other errors like axios native or nodejs
       return null;
     }
   }
