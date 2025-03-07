@@ -200,15 +200,23 @@ export class CommonService implements ICommonService {
 
     // If either or both fromBlockNumber and toBlockNumber are not set, it means fromBlock and/or toBlock is set to latest, involve MN to retrieve their block number.
     if (!fromBlockNumber || !toBlockNumber) {
-      const fromBlockResponse = await this.getHistoricalBlockResponse(requestDetails, fromBlock, true);
-      const toBlockResponse = await this.getHistoricalBlockResponse(requestDetails, toBlock, true);
+      try {
+        const fromBlockResponse = await this.getHistoricalBlockResponse(requestDetails, fromBlock, true);
+        const toBlockResponse = await this.getHistoricalBlockResponse(requestDetails, toBlock, true);
 
-      if (fromBlockResponse) {
-        fromBlockNumber = parseInt(fromBlockResponse.number);
-      }
+        if (fromBlockResponse) {
+          fromBlockNumber = parseInt(fromBlockResponse.number);
+        }
 
-      if (toBlockResponse) {
-        toBlockNumber = parseInt(toBlockResponse.number);
+        if (toBlockResponse) {
+          toBlockNumber = parseInt(toBlockResponse.number);
+        }
+      } catch (error: any) {
+        if (error.statusCode === 400) {
+          throw predefined.INVALID_PARAMETERS;
+        } else {
+          throw error;
+        }
       }
     }
 
