@@ -103,7 +103,6 @@ export class Utils {
     result: string;
     error_message: any;
   }): boolean {
-    // Use JSON.parse for backward compatibility until all code is updated to use array type
     const statuses = ConfigService.get('HEDERA_SPECIFIC_REVERT_STATUSES');
     return (
       statuses.includes(contractResult.result) ||
