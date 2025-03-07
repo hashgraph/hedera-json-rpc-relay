@@ -485,6 +485,29 @@ describe('RPC Server', function () {
     expect(res.data.result).to.be.equal('0x0');
   });
 
+  describe('Unsupported engine methods', async function () {
+    const engineMethods = [...RelayCalls.ETH_ENDPOINTS.ENGINE, 'engine_anyMethod'];
+
+    engineMethods.forEach((method) => {
+      const methodName = method === 'engine_anyMethod' ? 'any engine_* method' : `"${method}"`;
+
+      it(`should execute ${methodName} and return UNSUPPORTED_METHOD`, async function () {
+        try {
+          await testClient.post('/', {
+            id: '2',
+            jsonrpc: '2.0',
+            method: method,
+            params: [null],
+          });
+
+          Assertions.expectedError();
+        } catch (error: any) {
+          BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+        }
+      });
+    });
+  });
+
   describe('batchRequest Test Cases', async function () {
     overrideEnvsInMochaDescribe({ BATCH_REQUESTS_ENABLED: true });
 

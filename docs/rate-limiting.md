@@ -69,6 +69,7 @@ The following table highlights each relay endpoint and the TIER associated with 
 | `eth_submitHashrate`                      | TIER_1_RATE_LIMIT |
 | `eth_submitWork`                          | TIER_1_RATE_LIMIT |
 | `eth_syncing`                             | TIER_1_RATE_LIMIT |
+| `engine_*` (all engine methods)           | TIER_2_RATE_LIMIT |
 | `net_listening`                           | TIER_3_RATE_LIMIT |
 | `net_version`                             | TIER_3_RATE_LIMIT |
 | `net_peerCount`                           | TIER_3_RATE_LIMIT |

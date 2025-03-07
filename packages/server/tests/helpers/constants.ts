@@ -53,6 +53,7 @@ const ETH_ENDPOINTS = {
   ETH_UNINSTALL_FILTER: 'eth_uninstallFilter',
   ETH_GET_FILTER_CHANGES: 'eth_getFilterChanges',
   DEBUG_TRACE_TRANSACTION: 'debug_traceTransaction',
+  ENGINE: ['engine_getPayloadV1', 'engine_newPayloadV1', 'engine_forkchoiceUpdatedV1', 'engine_exchangeCapabilities'],
 };
 
 //Events
