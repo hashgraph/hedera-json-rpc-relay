@@ -125,11 +125,6 @@ export const predefined = {
     code: -32600,
     message: 'Invalid request',
   }),
-  IP_RATE_LIMIT_EXCEEDED: (methodName: string) =>
-    new JsonRpcError({
-      code: -32605,
-      message: `IP Rate limit exceeded on ${methodName}`,
-    }),
   MAX_BLOCK_SIZE: (count: number) =>
     new JsonRpcError({
       code: -32000,
