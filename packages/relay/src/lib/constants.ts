@@ -140,7 +140,7 @@ export default {
   WEB_SOCKET_HTTP_PORT: ConfigService.get('WEB_SOCKET_HTTP_PORT'),
 
   RELAY_PORT: ConfigService.get('SERVER_PORT'),
-  RELAY_HOST: ConfigService.get('SERVER_HOST') || 'localhost',
+  RELAY_HOST: ConfigService.get('SERVER_HOST'),
 
   FUNCTION_SELECTOR_CHAR_LENGTH: 10,
   BASE_HEX_REGEX: '^0[xX][a-fA-F0-9]',
