@@ -11,12 +11,13 @@
 type ExtractTypeStringFromKey<K extends string> = K extends keyof typeof _CONFIG ? (typeof _CONFIG)[K]['type'] : never;
 
 /**
- * Maps string representations of types (`'string'`, `'boolean'`, `'number'`) to their actual TypeScript types.
+ * Maps string representations of types (`'string'`, `'boolean'`, `'number'`, `'array'`) to their actual TypeScript types.
  *
  * Example:
  * - `'string'` → string
  * - `'boolean'` → boolean
  * - `'number'` → number
+ * - `'array'` → any[]
  */
 type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   ? string
@@ -24,6 +25,8 @@ type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   ? boolean
   : Tstr extends 'number'
   ? number
+  : Tstr extends 'array'
+  ? any[]
   : never;
 
 /**
@@ -62,9 +65,9 @@ export type GetTypeOfConfigKey<K extends string> = CanBeUndefined<K> extends tru
  */
 export interface ConfigProperty {
   envName: string; // Environment variable name
-  type: 'string' | 'number' | 'boolean'; // Data type of the configuration property
+  type: 'string' | 'number' | 'boolean' | 'array'; // Data type of the configuration property
   required: boolean; // Whether the property is required
-  defaultValue: string | number | boolean | null; // Default value (if any)
+  defaultValue: string | number | boolean | readonly any[] | null; // Default value (if any)
 }
 
 /**
@@ -75,17 +78,17 @@ export interface ConfigProperty {
 const _CONFIG = {
   BATCH_REQUESTS_DISALLOWED_METHODS: {
     envName: 'BATCH_REQUESTS_DISALLOWED_METHODS',
-    type: 'string',
+    type: 'array',
     required: false,
-    defaultValue: `[
-      "debug_traceTransaction",
-      "eth_newFilter",
-      "eth_uninstallFilter",
-      "eth_getFilterChanges",
-      "eth_getFilterLogs",
-      "eth_newBlockFilter",
-      "eth_newPendingTransactionFilter"
-    ]`,
+    defaultValue: [
+      'debug_traceTransaction',
+      'eth_newFilter',
+      'eth_uninstallFilter',
+      'eth_getFilterChanges',
+      'eth_getFilterLogs',
+      'eth_newBlockFilter',
+      'eth_newPendingTransactionFilter',
+    ],
   },
   BATCH_REQUESTS_ENABLED: {
     envName: 'BATCH_REQUESTS_ENABLED',
@@ -185,9 +188,9 @@ const _CONFIG = {
   },
   ETH_CALL_ACCEPTED_ERRORS: {
     envName: 'ETH_CALL_ACCEPTED_ERRORS',
-    type: 'string',
+    type: 'array',
     required: false,
-    defaultValue: '[]',
+    defaultValue: [],
   },
   ETH_CALL_CACHE_TTL: {
     envName: 'ETH_CALL_CACHE_TTL',
@@ -197,9 +200,9 @@ const _CONFIG = {
   },
   ETH_CALL_CONSENSUS_SELECTORS: {
     envName: 'ETH_CALL_CONSENSUS_SELECTORS',
-    type: 'string',
+    type: 'array',
     required: false,
-    defaultValue: '[]',
+    defaultValue: [],
   },
   ETH_CALL_DEFAULT_TO_CONSENSUS_NODE: {
     envName: 'ETH_CALL_DEFAULT_TO_CONSENSUS_NODE',
@@ -245,9 +248,9 @@ const _CONFIG = {
   },
   HEDERA_SPECIFIC_REVERT_STATUSES: {
     envName: 'HEDERA_SPECIFIC_REVERT_STATUSES',
-    type: 'string',
+    type: 'array',
     required: false,
-    defaultValue: '["WRONG_NONCE", "INVALID_ACCOUNT_ID"]',
+    defaultValue: ['WRONG_NONCE', 'INVALID_ACCOUNT_ID'],
   },
   FEE_HISTORY_MAX_RESULTS: {
     envName: 'FEE_HISTORY_MAX_RESULTS',
@@ -329,9 +332,9 @@ const _CONFIG = {
   },
   HAPI_CLIENT_ERROR_RESET: {
     envName: 'HAPI_CLIENT_ERROR_RESET',
-    type: 'string',
+    type: 'array',
     required: false,
-    defaultValue: '[21, 50]',
+    defaultValue: [21, 50],
   },
   HAPI_CLIENT_TRANSACTION_RESET: {
     envName: 'HAPI_CLIENT_TRANSACTION_RESET',
@@ -497,9 +500,9 @@ const _CONFIG = {
   },
   MIRROR_NODE_RETRY_CODES: {
     envName: 'MIRROR_NODE_RETRY_CODES',
-    type: 'string',
+    type: 'array',
     required: false,
-    defaultValue: '[]',
+    defaultValue: [],
   },
   MIRROR_NODE_RETRY_DELAY: {
     envName: 'MIRROR_NODE_RETRY_DELAY',
@@ -632,7 +635,7 @@ const _CONFIG = {
     envName: 'SERVER_HOST',
     type: 'string',
     required: false,
-    defaultValue: null,
+    defaultValue: 'localhost',
   },
   SERVER_PORT: {
     envName: 'SERVER_PORT',

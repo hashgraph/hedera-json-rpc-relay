@@ -52,7 +52,7 @@ describe('HAPI Service', async function () {
   overrideEnvsInMochaDescribe({
     HAPI_CLIENT_TRANSACTION_RESET: 0,
     HAPI_CLIENT_DURATION_RESET: 0,
-    HAPI_CLIENT_ERROR_RESET: '[50]',
+    HAPI_CLIENT_ERROR_RESET: [50],
   });
 
   it('should be able to initialize SDK instance', async function () {
@@ -103,9 +103,10 @@ describe('HAPI Service', async function () {
     });
   });
 
-  withOverriddenEnvsInMochaTest({ HAPI_CLIENT_ERROR_RESET: '[50]' }, () => {
+  withOverriddenEnvsInMochaTest({ HAPI_CLIENT_ERROR_RESET: [50] }, () => {
     it('should be able to reinitialise SDK instance upon error status code encounter', async function () {
-      const hapiClientErrorReset: Array<number> = JSON.parse(ConfigService.get('HAPI_CLIENT_ERROR_RESET'));
+      // Use type assertion for backward compatibility until all code is updated
+      const hapiClientErrorReset = ConfigService.get('HAPI_CLIENT_ERROR_RESET');
 
       hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
       expect(hapiService.getErrorCodes()[0]).to.eq(hapiClientErrorReset[0]);
@@ -124,7 +125,7 @@ describe('HAPI Service', async function () {
 
   withOverriddenEnvsInMochaTest(
     {
-      HAPI_CLIENT_ERROR_RESET: '[50]',
+      HAPI_CLIENT_ERROR_RESET: [50],
       HAPI_CLIENT_TRANSACTION_RESET: 50,
       HAPI_CLIENT_DURATION_RESET: 36000,
     },
@@ -151,7 +152,7 @@ describe('HAPI Service', async function () {
 
   withOverriddenEnvsInMochaTest(
     {
-      HAPI_CLIENT_ERROR_RESET: '[50]',
+      HAPI_CLIENT_ERROR_RESET: [50],
       HAPI_CLIENT_TRANSACTION_RESET: 50,
       HAPI_CLIENT_DURATION_RESET: 36000,
     },
@@ -184,7 +185,7 @@ describe('HAPI Service', async function () {
     {
       HAPI_CLIENT_TRANSACTION_RESET: 0,
       HAPI_CLIENT_DURATION_RESET: 0,
-      HAPI_CLIENT_ERROR_RESET: '[]',
+      HAPI_CLIENT_ERROR_RESET: [],
     },
     () => {
       it('should not be able to reinitialise and decrement counters, if it is disabled', async function () {
