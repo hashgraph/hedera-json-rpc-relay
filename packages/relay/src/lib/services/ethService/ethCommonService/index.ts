@@ -331,6 +331,11 @@ export class CommonService implements ICommonService {
     if (error instanceof JsonRpcError) {
       throw error;
     }
+
+    if (error instanceof MirrorNodeClientError && error.mappedJsonRpcError) {
+      throw error.mappedJsonRpcError;
+    }
+
     throw predefined.INTERNAL_ERROR(error.message.toString());
   }
 
