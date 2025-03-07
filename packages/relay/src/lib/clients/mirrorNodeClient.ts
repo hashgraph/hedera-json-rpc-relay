@@ -9,7 +9,7 @@ import http from 'http';
 import https from 'https';
 import JSONBigInt from 'json-bigint';
 import { Logger } from 'pino';
-import { Histogram, Registry } from 'prom-client';
+import { Counter, Histogram, Registry } from 'prom-client';
 
 import { formatRequestIdMessage, formatTransactionId, parseNumericEnvVar } from '../../formatters';
 import { predefined } from '../errors/JsonRpcError';
@@ -126,6 +126,12 @@ export class MirrorNodeClient {
    * @private
    */
   private readonly mirrorResponseHistogram: Histogram;
+
+  /**
+   * The counter used for tracking error codes returned by the mirror node.
+   * @private
+   */
+  private readonly mirrorErrorCodeCounter: Counter;
 
   /**
    * The cache service used for caching responses.
@@ -287,6 +293,9 @@ export class MirrorNodeClient {
         // Record metrics
         this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode.toString()).observe(duration);
 
+        // Increment the counter with appropriate labels
+        this.mirrorErrorCodeCounter.labels(pathLabel, effectiveStatusCode.toString()).inc();
+
         // Get accepted error statuses for this path
         const acceptedErrorStatuses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
 
@@ -362,6 +371,15 @@ export class MirrorNodeClient {
       labelNames: ['method', 'statusCode'],
       registers: [register],
       buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000], // ms (milliseconds)
+    });
+
+    // Initialize the error counter
+    this.register.removeSingleMetric('rpc_relay_mirror_node_http_error_code_count');
+    this.mirrorErrorCodeCounter = new Counter({
+      name: 'rpc_relay_mirror_node_http_error_code_count',
+      help: 'Count of errors returned from Mirror Node by HTTP status code and error type',
+      labelNames: ['method', 'statusCode'],
+      registers: [register],
     });
 
     this.logger.info(

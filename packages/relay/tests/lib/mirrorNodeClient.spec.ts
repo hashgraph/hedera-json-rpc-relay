@@ -1912,6 +1912,7 @@ describe('MirrorNodeClient', async function () {
     let mirrorNodeClient;
     let mockAxiosInstance;
     let mockHistogram;
+    let mockCounter;
     let requestInterceptor;
     let errorInterceptor;
     let successInterceptor;
@@ -1965,6 +1966,11 @@ describe('MirrorNodeClient', async function () {
           observe: sinon.stub(),
         }),
       };
+      mockCounter = {
+        labels: sinon.stub().returns({
+          inc: sinon.stub(),
+        }),
+      };
 
       // Create a minimal MirrorNodeClient instance with required properties
       mirrorNodeClient = new MirrorNodeClient(
@@ -1975,6 +1981,7 @@ describe('MirrorNodeClient', async function () {
       );
       // Replace the histogram with our mock
       mirrorNodeClient.mirrorResponseHistogram = mockHistogram;
+      mirrorNodeClient.mirrorErrorCodeCounter = mockCounter;
 
       // Setup interceptors
       mirrorNodeClient.setupMirrorNodeInterceptors(mockAxiosInstance);
@@ -2038,6 +2045,7 @@ describe('MirrorNodeClient', async function () {
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '404')).to.be.true;
+        expect(mockCounter.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '404')).to.be.true;
       });
     });
 
@@ -2060,6 +2068,7 @@ describe('MirrorNodeClient', async function () {
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '500')).to.be.true;
+        expect(mockCounter.labels.calledWith(TEST_UNKNOWN_PATH, '500')).to.be.true;
       });
     });
 
@@ -2083,6 +2092,7 @@ describe('MirrorNodeClient', async function () {
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '502')).to.be.true;
+        expect(mockCounter.labels.calledWith(TEST_UNKNOWN_PATH, '502')).to.be.true;
       });
     });
 
@@ -2106,6 +2116,7 @@ describe('MirrorNodeClient', async function () {
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '503')).to.be.true;
+        expect(mockCounter.labels.calledWith(TEST_UNKNOWN_PATH, '503')).to.be.true;
       });
     });
 
@@ -2128,6 +2139,7 @@ describe('MirrorNodeClient', async function () {
 
         // Verify metrics were recorded with the mapped status code
         expect(mockHistogram.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '504')).to.be.true;
+        expect(mockCounter.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '504')).to.be.true;
       });
     });
 
@@ -2151,6 +2163,7 @@ describe('MirrorNodeClient', async function () {
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '429')).to.be.true;
+        expect(mockCounter.labels.calledWith(TEST_UNKNOWN_PATH, '429')).to.be.true;
       });
     });
 
@@ -2191,6 +2204,7 @@ describe('MirrorNodeClient', async function () {
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '400')).to.be.true;
+        expect(mockCounter.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '400')).to.be.true;
       });
     });
   });
