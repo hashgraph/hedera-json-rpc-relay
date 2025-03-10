@@ -719,6 +719,12 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
     it('should not support "eth_signTransaction"', async function () {
       await relay.callUnsupported(RelayCalls.ETH_ENDPOINTS.ETH_SIGN_TRANSACTION, [], requestId);
     });
+
+    it('should not support any engine method', async function () {
+      for (const method of RelayCalls.ETH_ENDPOINTS.ENGINE) {
+        await relay.callUnsupported(method, [], requestId);
+      }
+    });
   });
 
   describe('eth_getCode', () => {
