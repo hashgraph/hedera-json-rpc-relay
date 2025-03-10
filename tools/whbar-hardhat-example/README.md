@@ -39,14 +39,14 @@ npx hardhat deploy-whbar
 ```
 
 #### Build a docker image and deploy the WHBAR within it
-Build the docker image (optionaly you can push it to registry):
+Build the docker image (optionally you can push it to registry):
 ```bash
 docker build . --tag whbar-hardhat-example-1.0
 ```
 
 And deploy the whbar (local docker image tag):
 - envs:
-  - NETWORK='testnet' # available networks (mainnet, testnet, previewnet)
+  - NETWORK='hedera_testnet' # available networks (hedera_mainnet, hedera_testnet, hedera_previewnet, bsc_testnet)
   - ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000' # 32 bytes ECDSA private key
   - ED25519_ACCOUNT_ID=0.0.0 # Account ID of ED25519 in format <realm>.<shard>.<num>
   - ED25519_HEX_PRIVATE_KEY=0x0000000000000000000000000000000000000000000000000000000000000000 # 32 bytes ED25519 private key
@@ -56,21 +56,21 @@ And deploy the whbar (local docker image tag):
 ```bash
 docker run
     -it
-    -e NETWORK='testnet'
+    -e NETWORK='hedera_testnet'
     -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
     -e INITIAL_BALANCE='1000'
     whbar-hardhat-example-1.0
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 
-Or you can use the already pushed image (natanasow/whbar-hardhat-example:3.2):
+Or you can use the already pushed image (natanasow/whbar-hardhat-example:4.2):
 ```bash
 docker run
     -it
-    -e NETWORK='testnet'
+    -e NETWORK='hedera_testnet'
     -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
     -e INITIAL_BALANCE='1000'
-    natanasow/whbar-hardhat-example:3.2
+    natanasow/whbar-hardhat-example:4.2
     /bin/sh -c 'npx hardhat deploy-whbar'
 ```
 
@@ -78,7 +78,7 @@ docker run
 ```bash
 docker run
     -it
-    -e NETWORK='testnet'
+    -e NETWORK='hedera_testnet'
     -e ED25519_ACCOUNT_ID='0.0.<num>'
     -e ED25519_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
     -e INITIAL_BALANCE='1000'
@@ -86,16 +86,42 @@ docker run
     /bin/sh -c 'npx hardhat deploy-whbar-using-ed25519-signer-key'
 ```
 
-Or you can use the already pushed image (natanasow/whbar-hardhat-example:3.2):
+Or you can use the already pushed image (natanasow/whbar-hardhat-example:4.2):
 ```bash
 docker run
     -it
-    -e NETWORK='testnet'
+    -e NETWORK='hedera_testnet'
     -e ED25519_ACCOUNT_ID='0.0.<num>'
     -e ED25519_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
     -e INITIAL_BALANCE='1000'
-    natanasow/whbar-hardhat-example:3.2
+    natanasow/whbar-hardhat-example:4.2
     /bin/sh -c 'npx hardhat deploy-whbar-using-ed25519-signer-key'
+```
+
+Multi-chain deployment
+- Runtime validations:
+-- nonces on each chain should equal
+-- balance on each chain should be greater than 0 for gas covering
+```bash
+docker run
+    -it
+    -e MULTICHAIN_NETWORKS='hedera_testnet,bsc_testnet'
+    -e INITIAL_BALANCE='0'
+    -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
+    whbar-hardhat-example-1.0
+    /bin/sh -c 'npx hardhat deploy-whbar-multichain'
+```
+
+Execute tests against already deployed contract
+```bash
+docker run
+    -it
+    -e ECDSA_HEX_PRIVATE_KEY='0x0000000000000000000000000000000000000000000000000000000000000000'
+    -e DEPLOY_CONTRACT=false
+    -e network=hedera_testnet
+    -e WHBAR_CONTRACT_ADDRESS='0x0000000000000000000000000000000000000000'
+    whbar-hardhat-example-1.0
+    /bin/sh -c 'npx hardhat test'
 ```
 
 #### Verification
