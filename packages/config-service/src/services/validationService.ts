@@ -19,11 +19,21 @@ export class ValidationService {
           throw new Error(`Configuration error: ${entryName} must be a valid number.`);
         }
 
-        if (entryInfo.type === 'array' && envs[entryName]) {
+        if ((entryInfo.type === 'strArray' || entryInfo.type === 'numArray') && envs[entryName]) {
+          let parsed;
           try {
-            JSON.parse(envs[entryName] as string);
+            parsed = JSON.parse(envs[entryName] as string);
           } catch (e) {
             throw new Error(`Configuration error: ${entryName} must be a valid JSON array.`);
+          }
+          if (!Array.isArray(parsed)) {
+            throw new Error(`Configuration error: ${entryName} must be a valid JSON array.`);
+          }
+          if (entryInfo.type === 'numArray' && !parsed.every((item) => typeof item === 'number')) {
+            throw new Error(`Configuration error: ${entryName} must contain only numbers.`);
+          }
+          if (entryInfo.type === 'strArray' && !parsed.every((item) => typeof item === 'string')) {
+            throw new Error(`Configuration error: ${entryName} must contain only strings.`);
           }
         }
       }
@@ -60,14 +70,9 @@ export class ValidationService {
         case 'boolean':
           typeCastedEnvs[entryName] = envs[entryName] === 'true';
           break;
-        case 'array':
-          try {
-            const value = envs[entryName];
-            typeCastedEnvs[entryName] = value ? JSON.parse(value) : [];
-          } catch (e) {
-            // If parsing fails, fall back to the string value
-            typeCastedEnvs[entryName] = envs[entryName];
-          }
+        case 'numArray':
+        case 'strArray':
+          typeCastedEnvs[entryName] = JSON.parse(envs[entryName] || '[]');
           break;
         default:
           // handle "string" type

@@ -65,7 +65,6 @@ describe('Utils', () => {
       ).to.be.false;
     });
 
-    // Use JSON.parse for backward compatibility until all code is updated to use array type
     ConfigService.get('HEDERA_SPECIFIC_REVERT_STATUSES').forEach((status) => {
       it(`should exclude transaction with result ${status}`, () => {
         expect(Utils.isRevertedDueToHederaSpecificValidation({ result: status, error_message: null })).to.be.true;

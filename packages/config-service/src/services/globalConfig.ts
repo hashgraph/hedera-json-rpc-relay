@@ -11,13 +11,14 @@
 type ExtractTypeStringFromKey<K extends string> = K extends keyof typeof _CONFIG ? (typeof _CONFIG)[K]['type'] : never;
 
 /**
- * Maps string representations of types (`'string'`, `'boolean'`, `'number'`, `'array'`) to their actual TypeScript types.
+ * Maps string representations of types (`'string'`, `'boolean'`, `'number'`, `'strArray'`, `'numArray'`) to their actual TypeScript types.
  *
  * Example:
  * - `'string'` → string
  * - `'boolean'` → boolean
  * - `'number'` → number
- * - `'array'` → any[]
+ * - `'strArray'` → string[]
+ * - `'numArray'` → number[]
  */
 type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   ? string
@@ -25,8 +26,10 @@ type StringTypeToActualType<Tstr extends string> = Tstr extends 'string'
   ? boolean
   : Tstr extends 'number'
   ? number
-  : Tstr extends 'array'
-  ? any[]
+  : Tstr extends 'strArray'
+  ? string[]
+  : Tstr extends 'numArray'
+  ? number[]
   : never;
 
 /**
@@ -65,9 +68,9 @@ export type GetTypeOfConfigKey<K extends string> = CanBeUndefined<K> extends tru
  */
 export interface ConfigProperty {
   envName: string; // Environment variable name
-  type: 'string' | 'number' | 'boolean' | 'array'; // Data type of the configuration property
+  type: 'string' | 'number' | 'boolean' | 'strArray' | 'numArray'; // Updated types
   required: boolean; // Whether the property is required
-  defaultValue: string | number | boolean | readonly any[] | null; // Default value (if any)
+  defaultValue: string | number | boolean | readonly string[] | readonly number[] | null; // Default value (if any)
 }
 
 /**
@@ -78,7 +81,7 @@ export interface ConfigProperty {
 const _CONFIG = {
   BATCH_REQUESTS_DISALLOWED_METHODS: {
     envName: 'BATCH_REQUESTS_DISALLOWED_METHODS',
-    type: 'array',
+    type: 'strArray',
     required: false,
     defaultValue: [
       'debug_traceTransaction',
@@ -188,7 +191,7 @@ const _CONFIG = {
   },
   ETH_CALL_ACCEPTED_ERRORS: {
     envName: 'ETH_CALL_ACCEPTED_ERRORS',
-    type: 'array',
+    type: 'numArray',
     required: false,
     defaultValue: [],
   },
@@ -200,7 +203,7 @@ const _CONFIG = {
   },
   ETH_CALL_CONSENSUS_SELECTORS: {
     envName: 'ETH_CALL_CONSENSUS_SELECTORS',
-    type: 'array',
+    type: 'strArray',
     required: false,
     defaultValue: [],
   },
@@ -248,7 +251,7 @@ const _CONFIG = {
   },
   HEDERA_SPECIFIC_REVERT_STATUSES: {
     envName: 'HEDERA_SPECIFIC_REVERT_STATUSES',
-    type: 'array',
+    type: 'strArray',
     required: false,
     defaultValue: ['WRONG_NONCE', 'INVALID_ACCOUNT_ID'],
   },
@@ -332,7 +335,7 @@ const _CONFIG = {
   },
   HAPI_CLIENT_ERROR_RESET: {
     envName: 'HAPI_CLIENT_ERROR_RESET',
-    type: 'array',
+    type: 'numArray',
     required: false,
     defaultValue: [21, 50],
   },
@@ -500,7 +503,7 @@ const _CONFIG = {
   },
   MIRROR_NODE_RETRY_CODES: {
     envName: 'MIRROR_NODE_RETRY_CODES',
-    type: 'array',
+    type: 'strArray',
     required: false,
     defaultValue: [],
   },
