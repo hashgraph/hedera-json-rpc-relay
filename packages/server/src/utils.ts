@@ -61,11 +61,7 @@ const logAndHandleResponse = async (
     return response;
   } catch (e: any) {
     let error = predefined.INTERNAL_ERROR();
-    if (e instanceof MirrorNodeClientError) {
-      if (e.isTimeout()) {
-        error = predefined.REQUEST_TIMEOUT;
-      }
-    } else if (e instanceof JsonRpcError) {
+    if (e instanceof JsonRpcError) {
       error = e;
     } else {
       logger.error(`${requestDetails.formattedRequestId} ${e.message}`);

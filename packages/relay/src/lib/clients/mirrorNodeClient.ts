@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
-import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import Axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import axiosRetry from 'axios-retry';
 import { install as betterLookupInstall } from 'better-lookup';
 import { ethers } from 'ethers';
@@ -9,9 +9,9 @@ import http from 'http';
 import https from 'https';
 import JSONBigInt from 'json-bigint';
 import { Logger } from 'pino';
-import { Histogram, Registry } from 'prom-client';
+import { Counter, Histogram, Registry } from 'prom-client';
 
-import { formatRequestIdMessage, formatTransactionId, parseNumericEnvVar } from '../../formatters';
+import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import { predefined } from '../errors/JsonRpcError';
 import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import { SDKClientError } from '../errors/SDKClientError';
@@ -88,22 +88,21 @@ export class MirrorNodeClient {
     [MirrorNodeClient.CONTRACT_ADDRESS_STATE_ENDPOINT, [404]],
   ]);
 
-  private static readonly ETHEREUM_TRANSACTION_TYPE = 'ETHEREUMTRANSACTION';
-
   private static readonly ORDER = {
     ASC: 'asc',
     DESC: 'desc',
   };
 
-  private static readonly unknownServerErrorHttpStatusCode = 567;
-
   // The following constants are used in requests objects
   private static readonly X_API_KEY = 'x-api-key';
+  private static readonly X_PATH_LABEL = 'x-path-label';
+  private static readonly REQUEST_START_TIME = 'request-start-time';
   private static readonly FORWARD_SLASH = '/';
   private static readonly HTTPS_PREFIX = 'https://';
   private static readonly API_V1_POST_FIX = 'api/v1/';
   private static readonly HTTP_GET = 'GET';
   private static readonly REQUESTID_LABEL = 'requestId';
+  private static readonly ETHEREUM_TRANSACTION_TYPE = 'ETHEREUMTRANSACTION';
 
   /**
    * The logger used for logging all output from this class.
@@ -128,6 +127,12 @@ export class MirrorNodeClient {
    * @private
    */
   private readonly mirrorResponseHistogram: Histogram;
+
+  /**
+   * The counter used for tracking error codes returned by the mirror node.
+   * @private
+   */
+  private readonly mirrorErrorCodeCounter: Counter;
 
   /**
    * The cache service used for caching responses.
@@ -225,6 +230,86 @@ export class MirrorNodeClient {
     return axiosClient;
   }
 
+  /**
+   * Sets up Axios interceptors for consistent error handling and metrics
+   * @param client The Axios client instance
+   * @returns The configured Axios client
+   */
+  private setupMirrorNodeInterceptors(client: AxiosInstance): AxiosInstance {
+    // Add request interceptor for timing
+    client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+      config.headers[MirrorNodeClient.REQUEST_START_TIME] = Date.now();
+      return config;
+    });
+
+    // Add response interceptor for request duration and error handling
+    client.interceptors.response.use(
+      // Success handler - Any status code that lie within the range of 2xx
+      (response) => {
+        const config = response.config;
+        const duration = Date.now() - (config.headers?.[MirrorNodeClient.REQUEST_START_TIME] || Date.now());
+        const pathLabel = config.headers[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
+        const requestId = config.headers?.[MirrorNodeClient.REQUESTID_LABEL] || '';
+        const requestDetails = new RequestDetails({ requestId, ipAddress: '' });
+
+        this.mirrorResponseHistogram.labels(pathLabel, response.status.toString()).observe(duration);
+
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(
+            `${requestDetails.formattedRequestId} Successfully received response from mirror node server: method=${
+              config.method
+            }, path=${config.url}, status=${response.status}, duration:${duration}ms, data:${JSON.stringify(
+              response.data,
+            )}`,
+          );
+        }
+
+        return response;
+      },
+
+      // Error handler - Any status codes that falls outside the range of 2xx
+      (error) => {
+        // axios-retry applies retries after the Axios interceptors run but before the error reaches application code.
+        // This creates a problem with error handling consistency:
+        // 1. When a request fails, this interceptor transforms the error into a MirrorNodeClientError
+        // 2. On retry, axios-retry catches this transformed error which has a different structure than original Axios errors
+        // 3. This causes the retry condition to evaluate differently on subsequent retries
+        //
+        // If the error is already a MirrorNodeClientError, it should pass through without further transformation
+        // to prevent cascading transformations across multiple retries.
+        // Note: axios-retry is planned for deprecation in future versions of this client.
+        if (error instanceof MirrorNodeClientError) {
+          return Promise.reject(error);
+        }
+
+        const config = error.config || {};
+        const duration = Date.now() - (config.headers?.[MirrorNodeClient.REQUEST_START_TIME] || Date.now());
+        const pathLabel = config.headers?.[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
+
+        // Calculate effective status code
+        const effectiveStatusCode =
+          error.response?.status || MirrorNodeClientError.HttpStatusResponses[error.code]?.statusCode || 500; // Use standard 500 as fallback
+
+        // Record metrics
+        this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode.toString()).observe(duration);
+
+        // Increment the counter with appropriate labels
+        this.mirrorErrorCodeCounter.labels(pathLabel, effectiveStatusCode.toString()).inc();
+
+        // Get accepted error statuses for this path
+        const acceptedErrorStatuses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
+        if (acceptedErrorStatuses?.includes(effectiveStatusCode)) {
+          return Promise.reject(null);
+        }
+
+        // return MirrorNodeClientError
+        return Promise.reject(new MirrorNodeClientError(error, effectiveStatusCode));
+      },
+    );
+
+    return client;
+  }
+
   constructor(
     restUrl: string,
     logger: Logger,
@@ -242,14 +327,18 @@ export class MirrorNodeClient {
       this.restUrl = '';
       this.web3Url = '';
 
-      this.restClient = restClient;
-      this.web3Client = web3Client ? web3Client : restClient;
+      this.restClient = this.setupMirrorNodeInterceptors(restClient);
+      this.web3Client = web3Client ? this.setupMirrorNodeInterceptors(web3Client) : this.restClient;
     } else {
       this.restUrl = this.buildUrl(restUrl);
       this.web3Url = this.buildUrl(web3Url);
 
-      this.restClient = restClient ? restClient : this.createAxiosClient(this.restUrl);
-      this.web3Client = web3Client ? web3Client : this.createAxiosClient(this.web3Url);
+      this.restClient = this.setupMirrorNodeInterceptors(
+        restClient ? restClient : this.createAxiosClient(this.restUrl),
+      );
+      this.web3Client = this.setupMirrorNodeInterceptors(
+        web3Client ? web3Client : this.createAxiosClient(this.web3Url),
+      );
     }
 
     this.logger = logger;
@@ -264,6 +353,15 @@ export class MirrorNodeClient {
       labelNames: ['method', 'statusCode'],
       registers: [register],
       buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000], // ms (milliseconds)
+    });
+
+    // Initialize the error counter
+    this.register.removeSingleMetric('rpc_relay_mirror_node_http_error_code_count');
+    this.mirrorErrorCodeCounter = new Counter({
+      name: 'rpc_relay_mirror_node_http_error_code_count',
+      help: 'Count of errors returned from Mirror Node by HTTP status code and error type',
+      labelNames: ['method', 'statusCode'],
+      registers: [register],
     });
 
     this.logger.info(
@@ -301,12 +399,12 @@ export class MirrorNodeClient {
     data?: any,
     retries?: number,
   ): Promise<T | null> {
-    const start = Date.now();
     const controller = new AbortController();
     try {
       const axiosRequestConfig: AxiosRequestConfig = {
         headers: {
           [MirrorNodeClient.REQUESTID_LABEL]: requestDetails.requestId,
+          [MirrorNodeClient.X_PATH_LABEL]: pathLabel,
         },
         signal: controller.signal,
       };
@@ -343,33 +441,33 @@ export class MirrorNodeClient {
         response = await this.web3Client.post<T>(path, data, axiosRequestConfig);
       }
 
-      const ms = Date.now() - start;
-      if (this.logger.isLevelEnabled('debug')) {
-        this.logger.debug(
-          `${
-            requestDetails.formattedRequestId
-          } Successfully received response from mirror node server: method=${method}, path=${path}, status=${
-            response.status
-          }, duration:${ms}ms, data:${JSON.stringify(response.data)}`,
-        );
-      }
-      this.mirrorResponseHistogram.labels(pathLabel, response.status?.toString()).observe(ms);
       return response.data;
     } catch (error: any) {
-      const ms = Date.now() - start;
-      const effectiveStatusCode =
-        error.response?.status ||
-        MirrorNodeClientError.ErrorCodes[error.code] ||
-        MirrorNodeClient.unknownServerErrorHttpStatusCode;
-      this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode).observe(ms);
-
       // always abort the request on failure as the axios call can hang until the parent code/stack times out (might be a few minutes in a server-side applications)
       controller.abort();
 
-      this.handleError(error, path, pathLabel, effectiveStatusCode, method, requestDetails);
-    }
+      // error after interceptor is only null for accepted errors, return null
+      if (error === null) {
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(
+            `${requestDetails.formattedRequestId} An accepted error occurred while communicating with the mirror node server: method=${method}, path=${pathLabel}.`,
+          );
+        }
+        return null;
+      }
 
-    return null;
+      // The error has already been processed by the interceptor, and if not null, it is expected to always be a MirrorNodeClientError.
+      // If not MirrorNodeClientError, they are unexpected errors (e.g., Axios or Node.js native errors that somehow bypassed the interceptor).
+      if (!(error instanceof MirrorNodeClientError)) {
+        this.logger.warn(
+          `${requestDetails.formattedRequestId} Unexpected error type in Mirror Node request: ${error.message}`,
+          error,
+        );
+      }
+
+      // re-throw all errors that are not accepted (i.e. MirrorNodeClientError or unexpected errors)
+      throw error;
+    }
   }
 
   async get<T = any>(
@@ -390,50 +488,6 @@ export class MirrorNodeClient {
   ): Promise<T | null> {
     if (!data) data = {};
     return this.request<T>(path, pathLabel, 'POST', requestDetails, data, retries);
-  }
-
-  /**
-   * @returns null if the error code is in the accepted error responses,
-   * @throws MirrorNodeClientError if the error code is not in the accepted error responses.
-   */
-  handleError(
-    error: any,
-    path: string,
-    pathLabel: string,
-    effectiveStatusCode: number,
-    method: REQUEST_METHODS,
-    requestDetails: RequestDetails,
-  ): null {
-    const requestIdPrefix = requestDetails.formattedRequestId;
-    const mirrorError = new MirrorNodeClientError(error, effectiveStatusCode);
-    const acceptedErrorResponses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
-
-    if (error.response && acceptedErrorResponses?.includes(effectiveStatusCode)) {
-      if (this.logger.isLevelEnabled('debug')) {
-        this.logger.debug(
-          `${requestIdPrefix} An accepted error occurred while communicating with the mirror node server: method=${method}, path=${path}, status=${effectiveStatusCode}`,
-        );
-      }
-      return null;
-    }
-
-    // Contract Call returns 400 for a CONTRACT_REVERT but is a valid response, expected and should not be logged as error:
-    if (pathLabel === MirrorNodeClient.CONTRACT_CALL_ENDPOINT && effectiveStatusCode === 400) {
-      if (this.logger.isLevelEnabled('debug')) {
-        this.logger.debug(
-          `${requestIdPrefix} [${method}] ${path} Contract Revert: ( StatusCode: '${effectiveStatusCode}', StatusText: '${
-            error.response.statusText
-          }', Detail: '${JSON.stringify(error.response.detail)}',Data: '${JSON.stringify(error.response.data)}')`,
-        );
-      }
-    } else {
-      this.logger.error(
-        new Error(error.message),
-        `${requestIdPrefix} Error encountered while communicating with the mirror node server: method=${method}, path=${path}, status=${effectiveStatusCode}`,
-      );
-    }
-
-    throw mirrorError;
   }
 
   async getPaginatedResults(
@@ -1503,7 +1557,10 @@ export class MirrorNodeClient {
 
     if (!transactionRecords) {
       const notFoundMessage = `No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}.`;
-      throw new MirrorNodeClientError({ message: notFoundMessage }, MirrorNodeClientError.statusCodes.NOT_FOUND);
+      throw new MirrorNodeClientError(
+        { message: notFoundMessage },
+        MirrorNodeClientError.HttpStatusResponses.NOT_FOUND.statusCode,
+      );
     }
 
     const transactionRecord: IMirrorNodeTransactionRecord = transactionRecords.transactions.find(

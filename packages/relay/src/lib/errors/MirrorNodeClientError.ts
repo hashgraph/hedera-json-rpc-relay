@@ -1,22 +1,53 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Status } from '@hashgraph/sdk';
+import { Logger } from 'pino';
+
+import { RequestDetails } from '../types';
+import { JsonRpcError, predefined } from './JsonRpcError';
 
 export class MirrorNodeClientError extends Error {
   public statusCode: number;
   public data?: string;
   public detail?: string;
 
-  static ErrorCodes = {
-    ECONNABORTED: 504,
-    CONTRACT_REVERT_EXECUTED: 400,
-    NOT_SUPPORTED: 501,
-  };
-
-  static statusCodes = {
-    NOT_FOUND: 404,
-    TOO_MANY_REQUESTS: 429,
-    NO_CONTENT: 204,
+  static HttpStatusResponses = {
+    BAD_GATEWAY: {
+      statusCode: 502,
+      message: 'Bad Gateway',
+    },
+    CONTRACT_REVERT_EXECUTED: {
+      statusCode: 400,
+      message: 'Contract Revert Executed',
+    },
+    ECONNABORTED: {
+      statusCode: 504,
+      message: 'Connection Aborted',
+    },
+    INTERNAL_SERVER_ERROR: {
+      statusCode: 500,
+      message: 'Internal Server Error',
+    },
+    NO_CONTENT: {
+      statusCode: 204,
+      message: 'No Content',
+    },
+    NOT_FOUND: {
+      statusCode: 404,
+      message: 'Not Found',
+    },
+    NOT_SUPPORTED: {
+      statusCode: 501,
+      message: 'Not Supported',
+    },
+    SERVICE_UNAVAILABLE: {
+      statusCode: 503,
+      message: 'Service Unavailable',
+    },
+    TOO_MANY_REQUESTS: {
+      statusCode: 429,
+      message: 'Too Many Requests',
+    },
   };
 
   static messages = {
@@ -41,12 +72,8 @@ export class MirrorNodeClientError extends Error {
     Object.setPrototypeOf(this, MirrorNodeClientError.prototype);
   }
 
-  public isTimeout(): boolean {
-    return this.statusCode === MirrorNodeClientError.ErrorCodes.ECONNABORTED;
-  }
-
   public isContractReverted(): boolean {
-    return this.statusCode === MirrorNodeClientError.ErrorCodes.CONTRACT_REVERT_EXECUTED;
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.CONTRACT_REVERT_EXECUTED.statusCode;
   }
 
   public isContractRevertOpcodeExecuted() {
@@ -54,19 +81,15 @@ export class MirrorNodeClientError extends Error {
   }
 
   public isNotFound(): boolean {
-    return this.statusCode === MirrorNodeClientError.statusCodes.NOT_FOUND;
-  }
-
-  public isNotSupported(): boolean {
-    return this.statusCode === MirrorNodeClientError.ErrorCodes.NOT_SUPPORTED;
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.NOT_FOUND.statusCode;
   }
 
   public isEmpty(): boolean {
-    return this.statusCode === MirrorNodeClientError.statusCodes.NO_CONTENT;
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.NO_CONTENT.statusCode;
   }
 
   public isRateLimit(): boolean {
-    return this.statusCode === MirrorNodeClientError.statusCodes.TOO_MANY_REQUESTS;
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.TOO_MANY_REQUESTS.statusCode;
   }
 
   public isNotSupportedSystemContractOperaton(): boolean {
@@ -79,5 +102,29 @@ export class MirrorNodeClientError extends Error {
 
   isInvalidTransaction() {
     return this.message === 'INVALID_TRANSACTION';
+  }
+
+  isInternalServerError() {
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.INTERNAL_SERVER_ERROR.statusCode;
+  }
+
+  isNotSupported(): boolean {
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.NOT_SUPPORTED.statusCode;
+  }
+
+  isBadGateway() {
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.BAD_GATEWAY.statusCode;
+  }
+
+  isServiceUnavailable() {
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.SERVICE_UNAVAILABLE.statusCode;
+  }
+
+  isTimeout(): boolean {
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.ECONNABORTED.statusCode;
+  }
+
+  isAcceptedError(): boolean {
+    return true;
   }
 }
