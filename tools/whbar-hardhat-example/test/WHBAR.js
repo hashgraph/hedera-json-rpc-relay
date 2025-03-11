@@ -334,7 +334,7 @@ describe('WHBAR', function() {
     expect(tryToWithdrawReceipt.logs[0].args[1]).to.equal('0x81063e51');
   });
 
-  it('should not be transfer to the WHBAR contract', async () => {
+  it('should not be able to transfer WHBAR to the actual WHBAR contract', async () => {
     const txDeposit = await contract.deposit({
       value: ONE_HBAR_AS_WEIBAR
     });
@@ -344,7 +344,7 @@ describe('WHBAR', function() {
       .to.be.revertedWithCustomError(contract, `SendFailed`);
   });
 
-  it('should not be transferFrom to the WHBAR contract', async () => {
+  it('should not be able to transferFrom WHBAR to the actual WHBAR contract', async () => {
     const amount = 1;
 
     // create a new random signer
