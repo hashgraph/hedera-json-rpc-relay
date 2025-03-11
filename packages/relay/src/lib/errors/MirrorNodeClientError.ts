@@ -10,18 +10,44 @@ export class MirrorNodeClientError extends Error {
   public statusCode: number;
   public data?: string;
   public detail?: string;
-  public mappedJsonRpcError?: JsonRpcError;
 
-  static ErrorCodes = {
-    ECONNABORTED: 504,
-    CONTRACT_REVERT_EXECUTED: 400,
-    NOT_SUPPORTED: 501,
-  };
-
-  static statusCodes = {
-    NOT_FOUND: 404,
-    TOO_MANY_REQUESTS: 429,
-    NO_CONTENT: 204,
+  static HttpStatusResponses = {
+    BAD_GATEWAY: {
+      statusCode: 502,
+      message: 'Bad Gateway',
+    },
+    CONTRACT_REVERT_EXECUTED: {
+      statusCode: 400,
+      message: 'Contract Revert Executed',
+    },
+    ECONNABORTED: {
+      statusCode: 504,
+      message: 'Connection Aborted',
+    },
+    INTERNAL_SERVER_ERROR: {
+      statusCode: 500,
+      message: 'Internal Server Error',
+    },
+    NO_CONTENT: {
+      statusCode: 204,
+      message: 'No Content',
+    },
+    NOT_FOUND: {
+      statusCode: 404,
+      message: 'Not Found',
+    },
+    NOT_SUPPORTED: {
+      statusCode: 501,
+      message: 'Not Supported',
+    },
+    SERVICE_UNAVAILABLE: {
+      statusCode: 503,
+      message: 'Service Unavailable',
+    },
+    TOO_MANY_REQUESTS: {
+      statusCode: 429,
+      message: 'Too Many Requests',
+    },
   };
 
   static messages = {
@@ -29,7 +55,7 @@ export class MirrorNodeClientError extends Error {
     CONTRACT_REVERT_EXECUTED: Status.ContractRevertExecuted.toString(),
   };
 
-  constructor(error: any, statusCode: number, jsonRpcError?: JsonRpcError) {
+  constructor(error: any, statusCode: number) {
     // mirror node web3 module sends errors in this format, this is why we need a check to distinguish
     if (error.response?.data?._status?.messages?.length) {
       const msg = error.response.data._status.messages[0];
@@ -43,16 +69,11 @@ export class MirrorNodeClientError extends Error {
     }
 
     this.statusCode = statusCode;
-    this.mappedJsonRpcError = jsonRpcError;
     Object.setPrototypeOf(this, MirrorNodeClientError.prototype);
   }
 
-  public isTimeout(): boolean {
-    return this.statusCode === MirrorNodeClientError.ErrorCodes.ECONNABORTED;
-  }
-
   public isContractReverted(): boolean {
-    return this.statusCode === MirrorNodeClientError.ErrorCodes.CONTRACT_REVERT_EXECUTED;
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.CONTRACT_REVERT_EXECUTED.statusCode;
   }
 
   public isContractRevertOpcodeExecuted() {
@@ -60,19 +81,15 @@ export class MirrorNodeClientError extends Error {
   }
 
   public isNotFound(): boolean {
-    return this.statusCode === MirrorNodeClientError.statusCodes.NOT_FOUND;
-  }
-
-  public isNotSupported(): boolean {
-    return this.statusCode === MirrorNodeClientError.ErrorCodes.NOT_SUPPORTED;
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.NOT_FOUND.statusCode;
   }
 
   public isEmpty(): boolean {
-    return this.statusCode === MirrorNodeClientError.statusCodes.NO_CONTENT;
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.NO_CONTENT.statusCode;
   }
 
   public isRateLimit(): boolean {
-    return this.statusCode === MirrorNodeClientError.statusCodes.TOO_MANY_REQUESTS;
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.TOO_MANY_REQUESTS.statusCode;
   }
 
   public isNotSupportedSystemContractOperaton(): boolean {
@@ -87,102 +104,27 @@ export class MirrorNodeClientError extends Error {
     return this.message === 'INVALID_TRANSACTION';
   }
 
-  // get the mapped JsonRpcError
-  public getMappedJsonRpcError(): JsonRpcError | undefined {
-    return this.mappedJsonRpcError;
-  }
-}
-
-/**
- * Maps Mirror Node HTTP errors to appropriate JsonRpcError types.
- * Centralizes error handling logic for consistent error responses.
- */
-export class MirrorNodeErrorMapper {
-  // Map HTTP status codes to JsonRpcError factory functions
-  // No 404 and 501 because:
-  //   - 404 - NOT FOUND: are mostly accepted error and handled gracefully
-  //   - 501 - NOT IMPLEMENTED: are handled by MirrorNodeClientError.isNotSupported()
-  private static errorMap = {
-    400: (error: any, logger: Logger, requestDetails: RequestDetails) =>
-      this.handleBadRequest(error, logger, requestDetails),
-    429: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(429, 'Rate limit exceeded'),
-    500: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(500, 'Internal server error'),
-    502: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(502, 'Bad gateway'),
-    503: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(503, 'Service unavailable'),
-    504: () => predefined.MIRROR_NODE_UPSTREAM_FAIL(504, 'Gateway timeout'),
-  };
-
-  // Special handling for 400 errors which could be contract reverts or other issues
-  private static handleBadRequest(error: any, logger: Logger, requestDetails: RequestDetails): JsonRpcError {
-    // Handle contract reverts differently
-    //    - condition a: must be a 400 MN response
-    //    - condition b: error.response.data._status.messages[0].message = "CONTRACT_REVERT_EXECUTED"
-    if (
-      error.response?.data?._status?.messages?.some(
-        (m: any) => m.message === MirrorNodeClientError.messages.CONTRACT_REVERT_EXECUTED,
-      )
-    ) {
-      const config = error.config || {};
-      const msg = error.response.data._status.messages[0];
-      const { message, detail, data } = msg;
-
-      // Contract Call returns 400 for a CONTRACT_REVERT but is a valid response, expected and should not be logged as error:
-      if (logger.isLevelEnabled('debug')) {
-        logger.debug(
-          `${requestDetails.formattedRequestId} Contract execution reverted: method=[${config.method}], url=${
-            config.url
-          }, statusCode=${error.response?.status}, reason=${
-            error.response?.statusText || 'Unknown'
-          }, details=${JSON.stringify(error.response?.detail || {})}, response=${JSON.stringify(
-            error.response?.data || {},
-          )}`,
-        );
-      }
-      return predefined.CONTRACT_REVERT(detail || message, data);
-    }
-    // Handle other 400 errors
-    return predefined.MIRROR_NODE_UPSTREAM_FAIL(400, 'Bad request');
+  isInternalServerError() {
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.INTERNAL_SERVER_ERROR.statusCode;
   }
 
-  /**
-   * Maps HTTP errors to JsonRpcErrors
-   * @param error The HTTP error from Axios
-   * @param pathLabel The endpoint path label for context
-   * @param acceptedErrorStatuses List of status codes that are considered "accepted" errors
-   * @param logger The logger instance
-   * @returns JsonRpcError or null for accepted errors
-   */
-  public static mapError(
-    error: any,
-    effectiveStatusCode: any,
-    pathLabel: string,
-    acceptedErrorStatuses: number[] | undefined,
-    logger: Logger,
-    requestDetails: RequestDetails,
-  ): JsonRpcError | null {
-    const config = error.config || {};
+  isNotSupported(): boolean {
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.NOT_SUPPORTED.statusCode;
+  }
 
-    // Check if this is an accepted error for this path
-    if (acceptedErrorStatuses?.includes(effectiveStatusCode)) {
-      if (logger.isLevelEnabled('debug')) {
-        logger.debug(
-          `${requestDetails.formattedRequestId} An accepted error occurred while communicating with the mirror node server: method=${config.method}, path=${pathLabel}, status=${effectiveStatusCode}`,
-        );
-      }
-      return null; // Return null for accepted errors
-    }
+  isBadGateway() {
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.BAD_GATEWAY.statusCode;
+  }
 
-    logger.warn(
-      `${requestDetails.formattedRequestId} Error encountered while communicating with the mirror node server: method=${
-        config.method || ''
-      }, path=${pathLabel || ''}, status=${effectiveStatusCode}.`,
-    );
+  isServiceUnavailable() {
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.SERVICE_UNAVAILABLE.statusCode;
+  }
 
-    // Find the appropriate error mapper
-    const errorMapper =
-      this.errorMap[effectiveStatusCode] ||
-      (() => predefined.MIRROR_NODE_UPSTREAM_FAIL(effectiveStatusCode, error.message));
+  isTimeout(): boolean {
+    return this.statusCode === MirrorNodeClientError.HttpStatusResponses.ECONNABORTED.statusCode;
+  }
 
-    return errorMapper(error, logger, requestDetails);
+  isAcceptedError(): boolean {
+    return true;
   }
 }

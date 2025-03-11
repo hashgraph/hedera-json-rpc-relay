@@ -1886,6 +1886,11 @@ export class EthImpl implements Eth {
       if (e instanceof JsonRpcError) {
         return e;
       }
+
+      if (e instanceof MirrorNodeClientError) {
+        throw e;
+      }
+
       return predefined.INTERNAL_ERROR(e.message.toString());
     }
   }
@@ -2032,13 +2037,9 @@ export class EthImpl implements Eth {
           return await this.callConsensusNode(call, gas, requestDetails);
         }
 
-        // for any other errors (rate limitted, contract revert, etc.)
-        if (e.mappedJsonRpcError) {
-          return e.mappedJsonRpcError;
-        }
+        // for any other errors (rate limitted, contract revert, etc.), preserve the original error and re-throw to the upper layer
+        throw e;
       }
-
-      this.logger.error(e, `${requestIdPrefix} Failed to successfully submit eth_call`);
 
       return predefined.INTERNAL_ERROR(e.message.toString());
     }

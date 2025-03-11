@@ -13,7 +13,6 @@ import sinon from 'sinon';
 import { MirrorNodeClientError, predefined } from '../../src';
 import { MirrorNodeClient } from '../../src/lib/clients';
 import constants from '../../src/lib/constants';
-import { MirrorNodeErrorMapper } from '../../src/lib/errors/MirrorNodeClientError';
 import { SDKClientError } from '../../src/lib/errors/SDKClientError';
 import { CacheService } from '../../src/lib/services/cacheService/cacheService';
 import { MirrorNodeTransactionRecord, RequestDetails } from '../../src/lib/types';
@@ -1406,7 +1405,7 @@ describe('MirrorNodeClient', async function () {
         const notFoundMessage = `No transaction record retrieved: transactionId=${mockedTransactionId}, txConstructorName=${mockedConstructorName}, callerName=${mockedCallerName}.`;
         const expectedError = new MirrorNodeClientError(
           { message: notFoundMessage },
-          MirrorNodeClientError.statusCodes.NOT_FOUND,
+          MirrorNodeClientError.HttpStatusResponses.NOT_FOUND.statusCode,
         );
 
         expect(error).to.deep.eq(expectedError);
@@ -1684,225 +1683,6 @@ describe('MirrorNodeClient', async function () {
     });
   });
 
-  describe('MirrorNodeClientError', () => {
-    it('should store mappedJsonRpcError when provided', () => {
-      const mockError = { message: 'Test error' };
-      const mockJsonRpcError = predefined.INTERNAL_ERROR('Test mapped error');
-      const clientError = new MirrorNodeClientError(mockError, 500, mockJsonRpcError);
-      expect(clientError.mappedJsonRpcError).to.equal(mockJsonRpcError);
-      expect(clientError.getMappedJsonRpcError()).to.equal(mockJsonRpcError);
-    });
-
-    it('should handle mirror node web3 errors with _status messages', () => {
-      const mirrorNodeError = {
-        response: {
-          data: {
-            _status: {
-              messages: [
-                {
-                  message: 'Contract revert executed',
-                  detail: 'Error details',
-                  data: '0xabcd',
-                },
-              ],
-            },
-          },
-        },
-      };
-
-      const jsonRpcError = predefined.CONTRACT_REVERT('Error details', '0xabcd');
-      const clientError = new MirrorNodeClientError(mirrorNodeError, 400, jsonRpcError);
-
-      expect(clientError.message).to.equal('Contract revert executed');
-      expect(clientError.detail).to.equal('Error details');
-      expect(clientError.data).to.equal('0xabcd');
-      expect(clientError.mappedJsonRpcError).to.equal(jsonRpcError);
-    });
-
-    it('should correctly report error types based on status codes', () => {
-      const timeoutError = new MirrorNodeClientError({ message: 'timeout' }, 504);
-      expect(timeoutError.isTimeout()).to.be.true;
-
-      const contractRevertError = new MirrorNodeClientError({ message: 'revert' }, 400);
-      expect(contractRevertError.isContractReverted()).to.be.true;
-
-      const notFoundError = new MirrorNodeClientError({ message: 'not found' }, 404);
-      expect(notFoundError.isNotFound()).to.be.true;
-
-      const rateLimitError = new MirrorNodeClientError({ message: 'too many requests' }, 429);
-      expect(rateLimitError.isRateLimit()).to.be.true;
-    });
-  });
-
-  describe('MirrorNodeErrorMapper', () => {
-    const TEST_REQUEST_ID = '123';
-    const TEST_BLOCK_PATH = 'blocks/';
-    const TEST_CONTRACTS_CALL_PATH = 'contracts/call';
-    const TEST_CONFIG = {
-      method: 'GET',
-      headers: { requestId: TEST_REQUEST_ID },
-    };
-
-    const createErrorResponse = (status: number, messages?: any[]) => ({
-      response: {
-        status,
-        data: messages
-          ? {
-              _status: { messages },
-            }
-          : undefined,
-      },
-      config: TEST_CONFIG,
-    });
-
-    const assertJsonRpcError = (result: any, expectedCode: number, expectedMessage: string) => {
-      expect(result).to.not.be.null;
-      expect(result!.code).to.equal(expectedCode);
-      expect(result!.message).to.equal(expectedMessage);
-    };
-
-    it('should return null for accepted error statuses', () => {
-      const error = createErrorResponse(MirrorNodeClientError.statusCodes.NOT_FOUND);
-      const result = MirrorNodeErrorMapper.mapError(
-        error,
-        MirrorNodeClientError.statusCodes.NOT_FOUND,
-        TEST_BLOCK_PATH,
-        [MirrorNodeClientError.statusCodes.NOT_FOUND],
-        logger,
-        requestDetails,
-      );
-      expect(result).to.be.null;
-    });
-
-    it('should map contract revert errors correctly', () => {
-      const customRevertError = {
-        detail: 'Reverted with reason',
-        data: '0x1234',
-      };
-
-      const error = createErrorResponse(MirrorNodeClientError.ErrorCodes.CONTRACT_REVERT_EXECUTED, [
-        {
-          message: MirrorNodeClientError.messages.CONTRACT_REVERT_EXECUTED,
-          detail: customRevertError.detail,
-          data: customRevertError.data,
-        },
-      ]);
-      error.config = {
-        ...TEST_CONFIG,
-        method: 'POST',
-      };
-
-      const result = MirrorNodeErrorMapper.mapError(
-        error,
-        MirrorNodeClientError.ErrorCodes.CONTRACT_REVERT_EXECUTED,
-        TEST_CONTRACTS_CALL_PATH,
-        undefined,
-        logger,
-        requestDetails,
-      );
-
-      const expected = predefined.CONTRACT_REVERT(customRevertError.detail, customRevertError.data);
-      assertJsonRpcError(result, expected.code, expected.message);
-    });
-
-    it('should map non-contract-revert 400 errors to bad request', () => {
-      const error = createErrorResponse(400, [
-        {
-          message: 'Invalid parameter',
-          detail: 'Some validation error',
-        },
-      ]);
-      error.config.method = 'POST';
-
-      const result = MirrorNodeErrorMapper.mapError(
-        error,
-        400,
-        TEST_CONTRACTS_CALL_PATH,
-        undefined,
-        logger,
-        requestDetails,
-      );
-      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(400, 'Bad request');
-      assertJsonRpcError(result, expected.code, expected.message);
-    });
-
-    it('should map 429 errors to rate limit errors', () => {
-      const error = createErrorResponse(MirrorNodeClientError.statusCodes.TOO_MANY_REQUESTS);
-      const result = MirrorNodeErrorMapper.mapError(
-        error,
-        MirrorNodeClientError.statusCodes.TOO_MANY_REQUESTS,
-        TEST_BLOCK_PATH,
-        undefined,
-        logger,
-        requestDetails,
-      );
-      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(429, 'Rate limit exceeded');
-      assertJsonRpcError(result, expected.code, expected.message);
-    });
-
-    it('should map timeout errors correctly', () => {
-      const error = {
-        code: 'ECONNABORTED',
-        config: TEST_CONFIG,
-      };
-
-      const result = MirrorNodeErrorMapper.mapError(
-        error,
-        MirrorNodeClientError.ErrorCodes.ECONNABORTED,
-        TEST_BLOCK_PATH,
-        undefined,
-        logger,
-        requestDetails,
-      );
-      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(504, 'Gateway timeout');
-      assertJsonRpcError(result, expected.code, expected.message);
-    });
-
-    it('should handle other error codes with default mapper', () => {
-      const TEAPOT_STATUS = 418;
-      const error = {
-        message: 'Unknown error',
-        config: TEST_CONFIG,
-      };
-
-      const result = MirrorNodeErrorMapper.mapError(
-        error,
-        TEAPOT_STATUS,
-        TEST_BLOCK_PATH,
-        undefined,
-        logger,
-        requestDetails,
-      );
-      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(TEAPOT_STATUS, 'Unknown error');
-      assertJsonRpcError(result, expected.code, expected.message);
-    });
-
-    it('should handle non-response errors', () => {
-      const error = {
-        message: 'Network Error',
-        config: TEST_CONFIG,
-      };
-
-      const result = MirrorNodeErrorMapper.mapError(error, 500, TEST_BLOCK_PATH, undefined, logger, requestDetails);
-      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(500, 'Internal server error');
-      assertJsonRpcError(result, expected.code, expected.message);
-    });
-
-    it('should handle 502 bad gateway errors', () => {
-      const error = createErrorResponse(502);
-      const result = MirrorNodeErrorMapper.mapError(error, 502, TEST_BLOCK_PATH, undefined, logger, requestDetails);
-      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(502, 'Bad gateway');
-      assertJsonRpcError(result, expected.code, expected.message);
-    });
-
-    it('should handle 503 service unavailable errors', () => {
-      const error = createErrorResponse(503);
-      const result = MirrorNodeErrorMapper.mapError(error, 503, TEST_BLOCK_PATH, undefined, logger, requestDetails);
-      const expected = predefined.MIRROR_NODE_UPSTREAM_FAIL(503, 'Service unavailable');
-      assertJsonRpcError(result, expected.code, expected.message);
-    });
-  });
-
   describe('setupMirrorNodeInterceptors', () => {
     const TEST_CONTRACTS_CALL_PATH = 'contracts/call';
     const TEST_UNKNOWN_PATH = 'unknown-path';
@@ -1934,17 +1714,6 @@ describe('MirrorNodeClient', async function () {
         },
         ...additionalProps,
       };
-    };
-
-    // Helper function to verify JsonRpcError properties
-    const verifyJsonRpcError = (error, expectedJsonRpcError) => {
-      expect(error.mappedJsonRpcError).to.not.be.undefined;
-      expect(error.mappedJsonRpcError.code).to.equal(expectedJsonRpcError.code);
-      expect(error.mappedJsonRpcError.message).to.equal(expectedJsonRpcError.message);
-
-      if (expectedJsonRpcError.data) {
-        expect(error.mappedJsonRpcError.data).to.equal(expectedJsonRpcError.data);
-      }
     };
 
     beforeEach(() => {
@@ -1993,6 +1762,9 @@ describe('MirrorNodeClient', async function () {
     });
 
     it('should add request interceptor that adds request start time', () => {
+      // @ts-ignore - private variable
+      const requestStartTimeKey = MirrorNodeClient.REQUEST_START_TIME;
+
       // Verify request interceptor was added
       expect(mockAxiosInstance.interceptors.request.use.calledOnce).to.be.true;
 
@@ -2001,8 +1773,8 @@ describe('MirrorNodeClient', async function () {
       const result = requestInterceptor(config);
 
       // Verify it added request-startTime headers
-      expect(result.headers).to.have.property('request-startTime');
-      expect(typeof result.headers['request-startTime']).to.equal('number');
+      expect(result.headers).to.have.property(requestStartTimeKey);
+      expect(typeof result.headers[requestStartTimeKey]).to.equal('number');
     });
 
     it('should add response success interceptor that records metrics', () => {
@@ -2034,7 +1806,7 @@ describe('MirrorNodeClient', async function () {
       expect(result).to.equal(mockResponse);
     });
 
-    it('should handle error responses and map them appropriately', () => {
+    it('should handle error responses appropriately', () => {
       // Create a mock error with 404 status - accepted error code
       const mockError = createMockError(404);
 
@@ -2061,10 +1833,8 @@ describe('MirrorNodeClient', async function () {
       return errorInterceptor(mockError).catch((error) => {
         // Should be a MirrorNodeClientError
         expect(error).to.be.instanceOf(MirrorNodeClientError);
-
-        // Should have a mapped JsonRpcError
-        const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(500, 'Internal server error');
-        verifyJsonRpcError(error, expectedJsonRpcError);
+        expect(error.statusCode).to.eq(500);
+        expect((error as MirrorNodeClientError).isInternalServerError()).to.be.true;
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '500')).to.be.true;
@@ -2085,10 +1855,8 @@ describe('MirrorNodeClient', async function () {
       return errorInterceptor(mockError).catch((error) => {
         // Should be a MirrorNodeClientError
         expect(error).to.be.instanceOf(MirrorNodeClientError);
-
-        // Should have a mapped JsonRpcError
-        const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(502, 'Bad gateway');
-        verifyJsonRpcError(error, expectedJsonRpcError);
+        expect(error.statusCode).to.eq(502);
+        expect((error as MirrorNodeClientError).isBadGateway()).to.be.true;
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '502')).to.be.true;
@@ -2109,10 +1877,8 @@ describe('MirrorNodeClient', async function () {
       return errorInterceptor(mockError).catch((error) => {
         // Should be a MirrorNodeClientError
         expect(error).to.be.instanceOf(MirrorNodeClientError);
-
-        // Should have a mapped JsonRpcError
-        const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(503, 'Service unavailable');
-        verifyJsonRpcError(error, expectedJsonRpcError);
+        expect(error.statusCode).to.eq(503);
+        expect((error as MirrorNodeClientError).isServiceUnavailable()).to.be.true;
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '503')).to.be.true;
@@ -2132,10 +1898,8 @@ describe('MirrorNodeClient', async function () {
       return errorInterceptor(mockError).catch((error) => {
         // Should be a MirrorNodeClientError
         expect(error).to.be.instanceOf(MirrorNodeClientError);
-
-        // Should have a mapped JsonRpcError for timeout
-        const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(504, 'Gateway timeout');
-        verifyJsonRpcError(error, expectedJsonRpcError);
+        expect(error.statusCode).to.eq(504);
+        expect((error as MirrorNodeClientError).isTimeout()).to.be.true;
 
         // Verify metrics were recorded with the mapped status code
         expect(mockHistogram.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '504')).to.be.true;
@@ -2156,10 +1920,8 @@ describe('MirrorNodeClient', async function () {
       return errorInterceptor(mockError).catch((error) => {
         // Should be a MirrorNodeClientError
         expect(error).to.be.instanceOf(MirrorNodeClientError);
-
-        // Should have a mapped JsonRpcError
-        const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(429, 'Rate limit exceeded');
-        verifyJsonRpcError(error, expectedJsonRpcError);
+        expect(error.statusCode).to.eq(429);
+        expect((error as MirrorNodeClientError).isRateLimit()).to.be.true;
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_UNKNOWN_PATH, '429')).to.be.true;
@@ -2197,10 +1959,8 @@ describe('MirrorNodeClient', async function () {
       return errorInterceptor(mockError).catch((error) => {
         // Should be a MirrorNodeClientError
         expect(error).to.be.instanceOf(MirrorNodeClientError);
-
-        // Should have a mapped JsonRpcError for contract revert
-        const expectedJsonRpcError = predefined.CONTRACT_REVERT(customRevertError.detail, customRevertError.data);
-        verifyJsonRpcError(error, expectedJsonRpcError);
+        expect(error.statusCode).to.eq(400);
+        expect((error as MirrorNodeClientError).isContractRevertOpcodeExecuted()).to.be.true;
 
         // Verify metrics were recorded
         expect(mockHistogram.labels.calledWith(TEST_CONTRACTS_CALL_PATH, '400')).to.be.true;

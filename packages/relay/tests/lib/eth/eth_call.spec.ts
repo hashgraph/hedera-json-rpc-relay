@@ -6,6 +6,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { Counter } from 'prom-client';
 import sinon from 'sinon';
 
+import { MirrorNodeClientError } from '../../../src';
 import { SDKClient } from '../../../src/lib/clients';
 import constants from '../../../src/lib/constants';
 import { JsonRpcError, predefined } from '../../../src/lib/errors/JsonRpcError';
@@ -593,10 +594,11 @@ describe('@ethCall Eth Call spec', async function () {
         gas: MAX_GAS_LIMIT,
       };
       await mockContractCall({ ...callData, block: 'latest' }, false, 429, mockData.tooManyRequests, requestDetails);
-      const result = await ethImpl.call(callData, 'latest', requestDetails);
-      const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(429, 'Rate limit exceeded');
-      expect(result).to.not.be.null;
-      expect(result).to.deep.eq(expectedJsonRpcError);
+
+      await expect(ethImpl.call(callData, 'latest', requestDetails)).to.be.rejectedWith(
+        MirrorNodeClientError,
+        `Too Many Requests`,
+      );
     });
 
     it('eth_call with all fields but mirrorNode throws 400', async function () {
@@ -609,10 +611,10 @@ describe('@ethCall Eth Call spec', async function () {
       };
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted, requestDetails);
-      const result = await ethImpl.call(callData, 'latest', requestDetails);
-      expect(result).to.be.not.null;
-      expect((result as JsonRpcError).code).to.eq(3);
-      expect((result as JsonRpcError).message).to.contain(mockData.contractReverted._status.messages[0].message);
+      await expect(ethImpl.call(callData, 'latest', requestDetails)).to.be.rejectedWith(
+        MirrorNodeClientError,
+        `CONTRACT_REVERT_EXECUTED`,
+      );
     });
 
     it('eth_call with all fields, but mirror node throws NOT_SUPPORTED', async function () {
@@ -658,11 +660,10 @@ describe('@ethCall Eth Call spec', async function () {
       restMock.onGet(`contracts/${CONTRACT_ADDRESS_2}`).reply(200, JSON.stringify(DEFAULT_CONTRACT_2));
       await mockContractCall({ ...callData, block: 'latest' }, false, 400, mockData.contractReverted, requestDetails);
       sinon.reset();
-      const result = await ethImpl.call(callData, 'latest', requestDetails);
-      sinon.assert.notCalled(sdkClientStub.submitContractCallQueryWithRetry);
-      expect(result).to.not.be.null;
-      expect((result as JsonRpcError).code).to.eq(3);
-      expect((result as JsonRpcError).message).to.contain(mockData.contractReverted._status.messages[0].message);
+      await expect(ethImpl.call(callData, 'latest', requestDetails)).to.be.rejectedWith(
+        MirrorNodeClientError,
+        `CONTRACT_REVERT_EXECUTED`,
+      );
     });
 
     it('SDK returns a precheck error', async function () {
@@ -693,12 +694,10 @@ describe('@ethCall Eth Call spec', async function () {
         requestDetails,
       );
 
-      const result = await ethImpl.call(callData, 'latest', requestDetails);
-
-      expect(result).to.exist;
-      expect((result as JsonRpcError).code).to.eq(3);
-      expect((result as JsonRpcError).message).to.equal(`execution reverted: ${defaultErrorMessageText}`);
-      expect((result as JsonRpcError).data).to.equal(defaultErrorMessageHex);
+      await expect(ethImpl.call(callData, 'latest', requestDetails)).to.be.rejectedWith(
+        MirrorNodeClientError,
+        `CONTRACT_REVERT_EXECUTED`,
+      );
     });
 
     it('eth_call with wrong `to` field', async function () {
@@ -977,6 +976,7 @@ describe('@ethCall Eth Call spec', async function () {
     });
 
     it('eth_call with non-matched selector redirects to consensus', async function () {
+      web3Mock.onPost('contracts/call').reply(200, { result: '0x00' }); // Mock the response for the call
       await ethImpl.call(
         {
           to: ACCOUNT_ADDRESS_1,

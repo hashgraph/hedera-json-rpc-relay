@@ -11,9 +11,9 @@ import JSONBigInt from 'json-bigint';
 import { Logger } from 'pino';
 import { Counter, Histogram, Registry } from 'prom-client';
 
-import { formatRequestIdMessage, formatTransactionId, parseNumericEnvVar } from '../../formatters';
+import { formatRequestIdMessage, formatTransactionId } from '../../formatters';
 import { predefined } from '../errors/JsonRpcError';
-import { MirrorNodeClientError, MirrorNodeErrorMapper } from '../errors/MirrorNodeClientError';
+import { MirrorNodeClientError } from '../errors/MirrorNodeClientError';
 import { SDKClientError } from '../errors/SDKClientError';
 import { EthImpl } from '../eth';
 import { CacheService } from '../services/cacheService/cacheService';
@@ -96,6 +96,7 @@ export class MirrorNodeClient {
   // The following constants are used in requests objects
   private static readonly X_API_KEY = 'x-api-key';
   private static readonly X_PATH_LABEL = 'x-path-label';
+  private static readonly REQUEST_START_TIME = 'request-start-time';
   private static readonly FORWARD_SLASH = '/';
   private static readonly HTTPS_PREFIX = 'https://';
   private static readonly API_V1_POST_FIX = 'api/v1/';
@@ -237,7 +238,7 @@ export class MirrorNodeClient {
   private setupMirrorNodeInterceptors(client: AxiosInstance): AxiosInstance {
     // Add request interceptor for timing
     client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-      config.headers['request-startTime'] = Date.now();
+      config.headers[MirrorNodeClient.REQUEST_START_TIME] = Date.now();
       return config;
     });
 
@@ -246,7 +247,7 @@ export class MirrorNodeClient {
       // Success handler - Any status code that lie within the range of 2xx
       (response) => {
         const config = response.config;
-        const duration = Date.now() - (config.headers?.['request-startTime'] || Date.now());
+        const duration = Date.now() - (config.headers?.[MirrorNodeClient.REQUEST_START_TIME] || Date.now());
         const pathLabel = config.headers[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
         const requestId = config.headers?.[MirrorNodeClient.REQUESTID_LABEL] || '';
         const requestDetails = new RequestDetails({ requestId, ipAddress: '' });
@@ -282,13 +283,12 @@ export class MirrorNodeClient {
         }
 
         const config = error.config || {};
-        const duration = Date.now() - (config.headers?.['request-startTime'] || Date.now());
+        const duration = Date.now() - (config.headers?.[MirrorNodeClient.REQUEST_START_TIME] || Date.now());
         const pathLabel = config.headers?.[MirrorNodeClient.X_PATH_LABEL] || 'unknown';
-        const requestId = config.headers?.[MirrorNodeClient.REQUESTID_LABEL] || '';
-        const requestDetails = new RequestDetails({ requestId, ipAddress: '' });
 
         // Calculate effective status code
-        const effectiveStatusCode = error.response?.status || MirrorNodeClientError.ErrorCodes[error.code] || 500; // Use standard 500 as fallback
+        const effectiveStatusCode =
+          error.response?.status || MirrorNodeClientError.HttpStatusResponses[error.code]?.statusCode || 500; // Use standard 500 as fallback
 
         // Record metrics
         this.mirrorResponseHistogram.labels(pathLabel, effectiveStatusCode.toString()).observe(duration);
@@ -298,30 +298,12 @@ export class MirrorNodeClient {
 
         // Get accepted error statuses for this path
         const acceptedErrorStatuses = MirrorNodeClient.acceptedErrorStatusesResponsePerRequestPathMap.get(pathLabel);
-
-        // Map the error using the imported mapper
-        const mappedError = MirrorNodeErrorMapper.mapError(
-          error,
-          effectiveStatusCode,
-          pathLabel,
-          acceptedErrorStatuses,
-          this.logger,
-          requestDetails,
-        );
-
-        // For accepted errors, reject with null
-        if (mappedError === null) {
+        if (acceptedErrorStatuses?.includes(effectiveStatusCode)) {
           return Promise.reject(null);
         }
 
-        // New MirrorNodeClientError that wraps both the original error and the mapped JsonRpcError
-        const mirrorNodeError = new MirrorNodeClientError(
-          error,
-          effectiveStatusCode,
-          mappedError, // Store the mapped JsonRpcError
-        );
-
-        return Promise.reject(mirrorNodeError);
+        // return MirrorNodeClientError
+        return Promise.reject(new MirrorNodeClientError(error, effectiveStatusCode));
       },
     );
 
@@ -466,6 +448,11 @@ export class MirrorNodeClient {
 
       // error after interceptor is only null for accepted errors, return null
       if (error === null) {
+        if (this.logger.isLevelEnabled('debug')) {
+          this.logger.debug(
+            `${requestDetails.formattedRequestId} An accepted error occurred while communicating with the mirror node server: method=${method}, path=${pathLabel}.`,
+          );
+        }
         return null;
       }
 
@@ -1570,7 +1557,10 @@ export class MirrorNodeClient {
 
     if (!transactionRecords) {
       const notFoundMessage = `No transaction record retrieved: transactionId=${transactionId}, txConstructorName=${txConstructorName}, callerName=${callerName}.`;
-      throw new MirrorNodeClientError({ message: notFoundMessage }, MirrorNodeClientError.statusCodes.NOT_FOUND);
+      throw new MirrorNodeClientError(
+        { message: notFoundMessage },
+        MirrorNodeClientError.HttpStatusResponses.NOT_FOUND.statusCode,
+      );
     }
 
     const transactionRecord: IMirrorNodeTransactionRecord = transactionRecords.transactions.find(

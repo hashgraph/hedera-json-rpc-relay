@@ -5,7 +5,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
 import { ASCIIToHex, numberTo0x, prepend0x } from '../../../dist/formatters';
-import { predefined } from '../../../src';
+import { MirrorNodeClientError, predefined } from '../../../src';
 import { SDKClient } from '../../../src/lib/clients';
 import { EthImpl } from '../../../src/lib/eth';
 import { RequestDetails } from '../../../src/lib/types';
@@ -295,12 +295,10 @@ describe('@ethGetBlockByHash using MirrorNode', async function () {
       )
       .abortRequest();
 
-    const expectedJsonRpcError = predefined.MIRROR_NODE_UPSTREAM_FAIL(504, 'Gateway timeout');
-    await RelayAssertions.assertRejection(expectedJsonRpcError, ethImpl.getBlockByHash, false, ethImpl, [
-      BLOCK_HASH,
-      false,
-      requestDetails,
-    ]);
+    await expect(ethImpl.getBlockByHash(BLOCK_HASH, false, requestDetails)).to.be.rejectedWith(
+      MirrorNodeClientError,
+      'Request aborted',
+    );
   });
 
   it('eth_getBlockByHash with greater number of transactions than the ETH_GET_TRANSACTION_COUNT_MAX_BLOCK_RANGE', async function () {
