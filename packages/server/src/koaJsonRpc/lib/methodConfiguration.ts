@@ -28,6 +28,9 @@ export const methodConfiguration: IMethodRateLimitConfiguration = {
   net_version: {
     total: tier3rateLimit,
   },
+  net_peerCount: {
+    total: tier3rateLimit,
+  },
   eth_blockNumber: {
     total: tier2rateLimit,
   },
@@ -150,9 +153,6 @@ export const methodConfiguration: IMethodRateLimitConfiguration = {
   },
   eth_newFilter: {
     total: tier2rateLimit,
-  },
-  web3_client_version: {
-    total: tier3rateLimit,
   },
   eth_uninstallFilter: {
     total: tier2rateLimit,

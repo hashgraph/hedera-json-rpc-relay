@@ -936,6 +936,14 @@
       }
     },
     {
+      "name": "net_peerCount",
+      "summary": "Always returns UNSUPPORTED_METHOD error.",
+      "params": [],
+      "result": {
+        "$ref": "#/components/schemas/unsupportedError"
+      }
+    },
+    {
       "name": "web3_clientVersion",
       "summary": "Returns the current client version.",
       "description": "![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/http_label.png) ![](https://raw.githubusercontent.com/hashgraph/hedera-json-rpc-relay/main/docs/images/ws_label.png)",

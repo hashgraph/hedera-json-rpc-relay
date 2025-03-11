@@ -24,6 +24,15 @@ const defineNetRoutes = function (app: KoaJsonRpc, relay: Relay, logger: pino.Lo
   app.useRpc('net_version', async () => {
     return logAndHandleResponse('net_version', [], () => relay.net().version(), app, logger);
   });
+
+  /**
+   * Returns the number of peers currently connected to the client.
+   *
+   * Always returns UNSUPPORTED_METHOD
+   */
+  app.useRpc('net_peerCount', async () => {
+    return logAndHandleResponse('net_peerCount', [], () => relay.net().peerCount(), app, logger);
+  });
 };
 
 export { defineNetRoutes };

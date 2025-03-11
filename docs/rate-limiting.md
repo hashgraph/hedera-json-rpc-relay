@@ -74,5 +74,6 @@ The following table highlights each relay endpoint and the TIER associated with 
 | `debug_*` (all engine methods)            | TIER_2_RATE_LIMIT |
 | `net_listening`                           | TIER_3_RATE_LIMIT |
 | `net_version`                             | TIER_3_RATE_LIMIT |
+| `net_peerCount`                           | TIER_3_RATE_LIMIT |
 | `web3_clientVersion`                      | TIER_3_RATE_LIMIT |
 | `web3_sha3`                               | TIER_3_RATE_LIMIT |

@@ -334,7 +334,7 @@ describe('RPC Server', function () {
 
       Assertions.expectedError();
     } catch (error: any) {
-      BaseTest.methodNotFoundCheck(error.response, RelayCalls.ETH_ENDPOINTS.NET_PEER_COUNT);
+      BaseTest.unsupportedJsonRpcMethodChecks(error.response);
     }
   });
 
