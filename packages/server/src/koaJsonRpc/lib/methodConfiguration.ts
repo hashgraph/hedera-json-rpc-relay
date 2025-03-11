@@ -166,34 +166,4 @@ export const methodConfiguration: IMethodRateLimitConfiguration = {
   batch_request: {
     total: tier1rateLimit,
   },
-  engine_getPayloadV1: {
-    total: tier2rateLimit,
-  },
-  engine_newPayloadV1: {
-    total: tier2rateLimit,
-  },
-  engine_forkchoiceUpdatedV1: {
-    total: tier2rateLimit,
-  },
-  engine_exchangeCapabilities: {
-    total: tier2rateLimit,
-  },
-  trace_block: {
-    total: tier2rateLimit,
-  },
-  trace_transaction: {
-    total: tier2rateLimit,
-  },
-  trace_call: {
-    total: tier2rateLimit,
-  },
-  trace_callMany: {
-    total: tier2rateLimit,
-  },
-  debug_traceBlockByHash: {
-    total: tier1rateLimit,
-  },
-  debug_traceBlockByNumber: {
-    total: tier1rateLimit,
-  },
 };

@@ -512,7 +512,7 @@ describe('RPC Server', function () {
   traceMethods.forEach((method) => {
     const methodName = method === 'trace_anyMethod' ? 'any trace_* method' : `"${method}"`;
 
-    it(`should execute ${methodName} and return UNSUPPORTED_METHOD`, async function () {
+    it(`should execute ${methodName} and return NOT_YET_IMPLEMENTED`, async function () {
       try {
         await testClient.post('/', {
           id: '2',
@@ -523,7 +523,7 @@ describe('RPC Server', function () {
 
         Assertions.expectedError();
       } catch (error: any) {
-        BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+        BaseTest.notYetImplementedErrorCheck(error.response);
       }
     });
   });
@@ -544,7 +544,7 @@ describe('RPC Server', function () {
 
         Assertions.expectedError();
       } catch (error: any) {
-        BaseTest.unsupportedJsonRpcMethodChecks(error.response);
+        BaseTest.notYetImplementedErrorCheck(error.response);
       }
     });
   });
@@ -2859,6 +2859,12 @@ class BaseTest {
     expect(response.status).to.eq(400);
     expect(response.statusText).to.eq('Bad Request');
     this.errorResponseChecks(response, -32601, 'Unsupported JSON-RPC method');
+  }
+
+  static notYetImplementedErrorCheck(response: any) {
+    expect(response.status).to.eq(400);
+    expect(response.statusText).to.eq('Bad Request');
+    this.errorResponseChecks(response, -32601, 'Not yet implemented');
   }
 
   static batchDisabledErrorCheck(response: any) {

@@ -56,7 +56,7 @@ const ETH_ENDPOINTS = {
   DEBUG_TRACE_TRANSACTION: 'debug_traceTransaction',
   ENGINE: ['engine_getPayloadV1', 'engine_newPayloadV1', 'engine_forkchoiceUpdatedV1', 'engine_exchangeCapabilities'],
   TRACE: ['trace_block', 'trace_transaction', 'trace_call', 'trace_callMany'],
-  DEBUG: ['debug_traceBlockByHash', 'debug_traceBlockByNumber', 'debug_traceTransaction', 'debug_traceCall'],
+  DEBUG: ['debug_traceBlockByHash', 'debug_traceBlockByNumber', 'debug_traceCall'],
 };
 
 //Events
