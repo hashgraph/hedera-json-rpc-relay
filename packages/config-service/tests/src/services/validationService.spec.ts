@@ -39,7 +39,7 @@ describe('ValidationService tests', async function () {
       GlobalConfig.ENTRIES.SERVER_PORT.required = false;
     });
 
-    it.only('should validate string array type', async () => {
+    it('should validate string array type', async () => {
       GlobalConfig.ENTRIES.BATCH_REQUESTS_DISALLOWED_METHODS.required = true;
       expect(() =>
         ValidationService.startUp({
@@ -50,7 +50,7 @@ describe('ValidationService tests', async function () {
       GlobalConfig.ENTRIES.BATCH_REQUESTS_DISALLOWED_METHODS.required = false;
     });
 
-    it.only('should validate number array type', async () => {
+    it('should validate number array type', async () => {
       GlobalConfig.ENTRIES.HAPI_CLIENT_ERROR_RESET.required = true;
       expect(() =>
         ValidationService.startUp({
@@ -60,7 +60,7 @@ describe('ValidationService tests', async function () {
       ).to.throw('Configuration error: HAPI_CLIENT_ERROR_RESET must be a valid JSON array.');
     });
 
-    it.only('should validate string array content', async () => {
+    it('should validate string array content', async () => {
       GlobalConfig.ENTRIES.BATCH_REQUESTS_DISALLOWED_METHODS.required = true;
       expect(() =>
         ValidationService.startUp({
@@ -71,7 +71,7 @@ describe('ValidationService tests', async function () {
       GlobalConfig.ENTRIES.BATCH_REQUESTS_DISALLOWED_METHODS.required = false;
     });
 
-    it.only('should validate number array content', async () => {
+    it('should validate number array content', async () => {
       GlobalConfig.ENTRIES.HAPI_CLIENT_ERROR_RESET.required = true;
       expect(() =>
         ValidationService.startUp({
@@ -107,7 +107,7 @@ describe('ValidationService tests', async function () {
     });
   });
 
-  describe.only('typeCasting', () => {
+  describe('typeCasting', () => {
     it('should be able to use default value for missing env if default value is set', async () => {
       const castedEnvs = ValidationService.typeCasting({});
       expect(castedEnvs).to.haveOwnProperty(GlobalConfig.ENTRIES.E2E_RELAY_HOST.envName);
