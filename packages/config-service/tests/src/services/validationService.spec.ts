@@ -10,7 +10,7 @@ import { ValidationService } from '../../../dist/services/validationService';
 chai.use(chaiAsPromised);
 
 describe('ValidationService tests', async function () {
-  describe.only('startUp', () => {
+  describe('startUp', () => {
     const mandatoryStartUpFields = {
       CHAIN_ID: '0x12a',
       HEDERA_NETWORK: '{"127.0.0.1:50211":"0.0.3"}',
