@@ -46,7 +46,7 @@ export class ValidationService {
    * - If the env var is missing but has a default value, use the default
    * - For 'number' type, converts to Number
    * - For 'boolean' type, converts 'true' string to true boolean
-   * - For 'array' type, parses JSON string to array
+   * - For 'numArray' or 'strArray' types, parses JSON string to array
    * - For 'string' type, keeps as string
    *
    * @param envs - Dictionary of environment variables and their string values
