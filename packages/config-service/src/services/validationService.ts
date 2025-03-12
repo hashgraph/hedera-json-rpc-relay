@@ -24,7 +24,7 @@ export class ValidationService {
           try {
             parsed = JSON.parse(envs[entryName] as string);
           } catch (e) {
-            throw new Error(`Configuration error: ${entryName} must be a valid JSON array.`);
+            throw new Error(`Configuration error: ${entryName} must be a valid JSON string.`);
           }
           if (!Array.isArray(parsed)) {
             throw new Error(`Configuration error: ${entryName} must be a valid JSON array.`);

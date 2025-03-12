@@ -10,7 +10,7 @@ import { ValidationService } from '../../../dist/services/validationService';
 chai.use(chaiAsPromised);
 
 describe('ValidationService tests', async function () {
-  describe('startUp', () => {
+  describe.only('startUp', () => {
     const mandatoryStartUpFields = {
       CHAIN_ID: '0x12a',
       HEDERA_NETWORK: '{"127.0.0.1:50211":"0.0.3"}',
@@ -46,7 +46,7 @@ describe('ValidationService tests', async function () {
           ...mandatoryStartUpFields,
           BATCH_REQUESTS_DISALLOWED_METHODS: 'not-an-array',
         }),
-      ).to.throw('Configuration error: BATCH_REQUESTS_DISALLOWED_METHODS must be a valid JSON array.');
+      ).to.throw('Configuration error: BATCH_REQUESTS_DISALLOWED_METHODS must be a valid JSON string.');
       GlobalConfig.ENTRIES.BATCH_REQUESTS_DISALLOWED_METHODS.required = false;
     });
 
@@ -57,7 +57,18 @@ describe('ValidationService tests', async function () {
           ...mandatoryStartUpFields,
           HAPI_CLIENT_ERROR_RESET: 'not-an-array',
         }),
-      ).to.throw('Configuration error: HAPI_CLIENT_ERROR_RESET must be a valid JSON array.');
+      ).to.throw('Configuration error: HAPI_CLIENT_ERROR_RESET must be a valid JSON string.');
+    });
+
+    it('should correctly detect if a string is valid JSON but not a valid JSON array', async () => {
+      GlobalConfig.ENTRIES.BATCH_REQUESTS_DISALLOWED_METHODS.required = true;
+      expect(() =>
+        ValidationService.startUp({
+          ...mandatoryStartUpFields,
+          BATCH_REQUESTS_DISALLOWED_METHODS: '{"foo": "bar"}',
+        }),
+      ).to.throw('Configuration error: BATCH_REQUESTS_DISALLOWED_METHODS must be a valid JSON array.');
+      GlobalConfig.ENTRIES.BATCH_REQUESTS_DISALLOWED_METHODS.required = false;
     });
 
     it('should validate string array content', async () => {

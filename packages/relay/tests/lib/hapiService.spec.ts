@@ -105,7 +105,6 @@ describe('HAPI Service', async function () {
 
   withOverriddenEnvsInMochaTest({ HAPI_CLIENT_ERROR_RESET: [50] }, () => {
     it('should be able to reinitialise SDK instance upon error status code encounter', async function () {
-      // Use type assertion for backward compatibility until all code is updated
       const hapiClientErrorReset = ConfigService.get('HAPI_CLIENT_ERROR_RESET');
 
       hapiService = new HAPIService(logger, registry, cacheService, eventEmitter, hbarLimitService);
