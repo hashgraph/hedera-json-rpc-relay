@@ -638,7 +638,7 @@ const _CONFIG = {
     envName: 'SERVER_HOST',
     type: 'string',
     required: false,
-    defaultValue: 'localhost',
+    defaultValue: null,
   },
   SERVER_PORT: {
     envName: 'SERVER_PORT',
