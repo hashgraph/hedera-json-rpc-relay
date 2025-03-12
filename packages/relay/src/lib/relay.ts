@@ -232,12 +232,22 @@ export class RelayImpl implements Relay {
         // Invoked when the registry collects its metrics' values.
         // Allows for updated account balance tracking
         try {
+          const operatorAccountId = clientMain.operatorAccountId!.toString();
           const account = await mirrorNodeClient.getAccount(
-            clientMain.operatorAccountId!.toString(),
+            operatorAccountId,
             new RequestDetails({ requestId: Utils.generateRequestId(), ipAddress: '' }),
           );
+
           const accountBalance = account.balance?.balance;
-          this.labels({ accountId: clientMain.operatorAccountId?.toString() }).set(accountBalance);
+
+          // Note: In some cases, the account balance returned from the Mirror Node is of type BigNumber.
+          // However, the Prometheus client’s set() method only accepts standard JavaScript numbers.
+          const numericBalance =
+            typeof accountBalance === 'object' && accountBalance.toNumber
+              ? accountBalance.toNumber()
+              : Number(accountBalance);
+
+          this.labels({ accountId: operatorAccountId }).set(numericBalance);
         } catch (e: any) {
           logger.error(e, `Error collecting operator balance. Skipping balance set`);
         }
