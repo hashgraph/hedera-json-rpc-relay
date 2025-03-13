@@ -6,7 +6,7 @@ import EventEmitter from 'events';
 import { Logger } from 'pino';
 import { Gauge, Registry } from 'prom-client';
 
-import { Eth, Net, Relay, Subs, Web3 } from '../index';
+import type { Debug, Eth, Net, Subs, Web3 } from '../index';
 import { Utils } from '../utils';
 import { MirrorNodeClient } from './clients';
 import { HbarSpendingPlanConfigService } from './config/hbarSpendingPlanConfigService';
@@ -14,6 +14,7 @@ import constants from './constants';
 import { EvmAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/evmAddressHbarSpendingPlanRepository';
 import { HbarSpendingPlanRepository } from './db/repositories/hbarLimiter/hbarSpendingPlanRepository';
 import { IPAddressHbarSpendingPlanRepository } from './db/repositories/hbarLimiter/ipAddressHbarSpendingPlanRepository';
+import { DebugImpl } from './debug';
 import { EthImpl } from './eth';
 import { NetImpl } from './net';
 import { Poller } from './poller';
@@ -25,7 +26,7 @@ import { SubscriptionController } from './subscriptionController';
 import { RequestDetails } from './types';
 import { Web3Impl } from './web3';
 
-export class RelayImpl implements Relay {
+export class RelayImpl {
   /**
    * @private
    * @readonly
@@ -39,6 +40,11 @@ export class RelayImpl implements Relay {
    * @property {MirrorNodeClient} mirrorNodeClient - The client used to interact with the Hedera Mirror Node for retrieving historical data.
    */
   private readonly mirrorNodeClient: MirrorNodeClient;
+
+  /**
+   * The Debug Service implementation that takes care of all filter API operations.
+   */
+  private readonly debugImpl: DebugImpl;
 
   /**
    * @private
@@ -143,8 +149,8 @@ export class RelayImpl implements Relay {
 
     this.clientMain = hapiService.getMainClientInstance();
 
-    this.web3Impl = new Web3Impl(this.clientMain);
-    this.netImpl = new NetImpl(this.clientMain);
+    this.web3Impl = new Web3Impl();
+    this.netImpl = new NetImpl();
 
     this.mirrorNodeClient = new MirrorNodeClient(
       ConfigService.get('MIRROR_NODE_URL'),
@@ -172,6 +178,8 @@ export class RelayImpl implements Relay {
       register,
       this.cacheService,
     );
+
+    this.debugImpl = new DebugImpl(this.mirrorNodeClient, logger, (this.ethImpl as EthImpl).common);
 
     this.hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
       logger.child({ name: 'hbar-spending-plan-config-service' }),
@@ -245,6 +253,10 @@ export class RelayImpl implements Relay {
     });
   }
 
+  debug(): Debug {
+    return this.debugImpl;
+  }
+
   web3(): Web3 {
     return this.web3Impl;
   }
@@ -264,4 +276,27 @@ export class RelayImpl implements Relay {
   mirrorClient(): MirrorNodeClient {
     return this.mirrorNodeClient;
   }
+
+  methods() {
+    return ['debug', 'net', 'web3'].flatMap((namespace) => {
+      const obj = this[namespace]();
+      const descriptors = Object.getOwnPropertyDescriptors(Object.getPrototypeOf(obj));
+      // @ts-ignore
+      delete descriptors['constructor'];
+      return Object.entries(descriptors).map(([methodName, descriptor]) => ({
+        methodName: `${namespace}_${methodName}`,
+        func: descriptor.value,
+        obj,
+      }));
+    });
+  }
 }
+
+// function params(...args: (string | { optional: string })[]) {
+//   return function <T>(target: T, key: string, descriptor: PropertyDescriptor): TypedPropertyDescriptor<IFormatter> {
+//     console.log(target, key, descriptor);
+//     descriptor.value.newProp = 123;
+//     return descriptor;
+//     // return 1;
+//   }
+// }

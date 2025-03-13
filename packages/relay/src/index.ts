@@ -1,29 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { MirrorNodeClient } from './lib/clients';
+import type { TracerType } from './lib/constants';
 import { JsonRpcError, predefined } from './lib/errors/JsonRpcError';
 import { MirrorNodeClientError } from './lib/errors/MirrorNodeClientError';
 import WebSocketError from './lib/errors/WebSocketError';
 import { Block, Log, Receipt, Transaction } from './lib/model';
-import { IDebugService } from './lib/services/debugService/IDebugService';
 import { IFilterService } from './lib/services/ethService/ethFilterService/IFilterService';
-import { IContractCallRequest, RequestDetails } from './lib/types';
+import type { IContractCallRequest, ITracerConfig, RequestDetails } from './lib/types';
 
 export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError };
 
 export { RelayImpl } from './lib/relay';
-
-export interface Relay {
-  web3(): Web3;
-
-  net(): Net;
-
-  eth(): Eth;
-
-  subs(): Subs | undefined;
-
-  mirrorClient(): MirrorNodeClient;
-}
 
 export interface Subs {
   generateId(): string;
@@ -31,6 +18,15 @@ export interface Subs {
   subscribe(connection, event: string, filters?: {}): string;
 
   unsubscribe(connection, subscriptionId?: string): number;
+}
+
+export interface Debug {
+  traceTransaction: (
+    transactionIdOrHash: string,
+    tracer: TracerType,
+    tracerConfig: ITracerConfig,
+    requestDetails: RequestDetails,
+  ) => Promise<any>;
 }
 
 export interface Web3 {
@@ -156,6 +152,4 @@ export interface Eth {
   accounts(requestDetails: RequestDetails): Array<any>;
 
   filterService(): IFilterService;
-
-  debugService(): IDebugService;
 }
