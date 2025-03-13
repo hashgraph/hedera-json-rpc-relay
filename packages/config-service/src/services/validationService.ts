@@ -20,20 +20,27 @@ export class ValidationService {
         }
 
         if ((entryInfo.type === 'strArray' || entryInfo.type === 'numArray') && envs[entryName]) {
-          let parsed;
           try {
-            parsed = JSON.parse(envs[entryName] as string);
+            const parsed = JSON.parse(envs[entryName] as string);
+
+            if (!Array.isArray(parsed)) {
+              throw new Error(`Configuration error: ${entryName} must be a valid JSON array.`);
+            }
+
+            const isCorrectType =
+              entryInfo.type === 'numArray'
+                ? parsed.every((item) => typeof item === 'number')
+                : parsed.every((item) => typeof item === 'string');
+
+            if (!isCorrectType) {
+              const expectedType = entryInfo.type === 'numArray' ? 'numbers' : 'strings';
+              throw new Error(`Configuration error: ${entryName} must contain only ${expectedType}.`);
+            }
           } catch (e) {
-            throw new Error(`Configuration error: ${entryName} must be a valid JSON string.`);
-          }
-          if (!Array.isArray(parsed)) {
-            throw new Error(`Configuration error: ${entryName} must be a valid JSON array.`);
-          }
-          if (entryInfo.type === 'numArray' && !parsed.every((item) => typeof item === 'number')) {
-            throw new Error(`Configuration error: ${entryName} must contain only numbers.`);
-          }
-          if (entryInfo.type === 'strArray' && !parsed.every((item) => typeof item === 'string')) {
-            throw new Error(`Configuration error: ${entryName} must contain only strings.`);
+            if (e instanceof SyntaxError) {
+              throw new Error(`Configuration error: ${entryName} must be a valid JSON string.`);
+            }
+            throw e;
           }
         }
       }
