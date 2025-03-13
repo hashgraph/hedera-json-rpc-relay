@@ -43,6 +43,12 @@ export class HbarLimitService implements IHbarLimitService {
   private readonly hbarLimitRemainingGauge: Gauge;
 
   /**
+   * Tracks the total configured HBAR rate limit.
+   * @private
+   */
+  private readonly totalHbarLimitGauge: Gauge;
+
+  /**
    * Tracks the number of unique spending plans that have been utilized during the limit duration.
    * (i.e., plans that had expenses added to them).
    *
@@ -111,6 +117,15 @@ export class HbarLimitService implements IHbarLimitService {
       registers: [register],
     });
     this.hbarLimitRemainingGauge.set(totalBudget.toTinybars().toNumber());
+
+    const totalHbarLimitGaugeName = 'rpc_relay_hbar_rate_total_limit';
+    this.register.removeSingleMetric(totalHbarLimitGaugeName);
+    this.totalHbarLimitGauge = new Gauge({
+      name: totalHbarLimitGaugeName,
+      help: 'Total configured HBAR rate limit',
+      registers: [register],
+    });
+    this.totalHbarLimitGauge.set(totalBudget.toTinybars().toNumber());
 
     this.uniqueSpendingPlansCounter = Object.values(SubscriptionTier).reduce(
       (acc, tier) => {
