@@ -297,6 +297,6 @@ export class RelayImpl {
 
   dispatch(methodName: string, params: unknown[], requestDetails: RequestDetails) {
     const { func, obj } = this.methods[methodName];
-    return func.call(obj, ...params, requestDetails);
+    return func.call(obj, ...(params ?? []), requestDetails);
   }
 }
