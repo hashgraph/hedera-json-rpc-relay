@@ -295,7 +295,7 @@ export class RelayImpl {
     return this.mirrorNodeClient;
   }
 
-  dispatch(methodName: string, params: unknown[], requestDetails: RequestDetails) {
+  dispatch(methodName: string, params: unknown[] | undefined, requestDetails: RequestDetails) {
     const { func, obj } = this.methods[methodName];
     return func.call(obj, ...(params ?? []), requestDetails);
   }
