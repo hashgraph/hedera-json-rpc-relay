@@ -184,7 +184,7 @@ export class RelayImpl {
     this.debugImpl = new DebugImpl(this.mirrorNodeClient, logger, (this.ethImpl as EthImpl).common);
 
     this.methods = Object.fromEntries(
-      ['debug', 'net', 'web3'].flatMap((namespace) => {
+      ['net', 'web3'].flatMap((namespace) => {
         const obj = this[namespace]();
         const descriptors = Object.getOwnPropertyDescriptors(Object.getPrototypeOf(obj));
         return Object.entries(descriptors)

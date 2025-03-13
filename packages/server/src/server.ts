@@ -11,7 +11,7 @@ import { v4 as uuid } from 'uuid';
 
 import { formatRequestIdMessage } from './formatters';
 import KoaJsonRpc from './koaJsonRpc';
-// import { defineDebugRoutes } from './routes/debugRoutes';
+import { defineDebugRoutes } from './routes/debugRoutes';
 import { defineEthRoutes } from './routes/ethRoutes';
 import { logAndHandleResponse } from './utils';
 
@@ -183,7 +183,7 @@ app.getKoaApp().use(async (ctx, next) => {
   return next();
 });
 
-// defineDebugRoutes(app, relay, logger);
+defineDebugRoutes(app, relay, logger);
 defineEthRoutes(app, relay, logger);
 
 for (const methodName of Object.keys(relay.methods)) {
