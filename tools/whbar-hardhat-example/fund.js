@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 const SDK = require('@hashgraph/sdk');
 
 const fundECDSA = async function(hre, initialHbarBalance, contractAddress) {

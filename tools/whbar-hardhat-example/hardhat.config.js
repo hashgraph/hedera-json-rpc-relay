@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 require('dotenv').config();
 require('@nomicfoundation/hardhat-toolbox');
 const SDK = require('@hashgraph/sdk');
