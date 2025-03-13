@@ -426,7 +426,7 @@ export class SDKClient {
     const networkGasPriceInTinyBars = weibarHexToTinyBarInt(networkGasPriceInWeiBars);
 
     ethereumTransaction.setMaxTransactionFee(
-      Hbar.fromTinybars(Math.floor(networkGasPriceInTinyBars * constants.MAX_GAS_PER_SEC)),
+      Hbar.fromTinybars(Math.floor(networkGasPriceInTinyBars * constants.MAX_TRANSACTION_FEE_THRESHOLD)),
     );
 
     return {
