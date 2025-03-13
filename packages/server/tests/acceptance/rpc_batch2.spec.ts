@@ -106,12 +106,9 @@ describe('@api-batch-2 RPC Server Acceptance Tests', function () {
   this.beforeAll(async () => {
     requestId = Utils.generateRequestId();
     const requestIdPrefix = Utils.formatRequestIdMessage(requestId);
+    expectedGasPrice = await relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestIdPrefix);
 
-    const [gasPrice, initialAccount] = await Promise.all([
-      relay.call(RelayCalls.ETH_ENDPOINTS.ETH_GAS_PRICE, [], requestIdPrefix),
-      global.accounts[0],
-    ]);
-    expectedGasPrice = gasPrice;
+    const initialAccount: AliasAccount = global.accounts[0];
 
     const neededAccounts = 4;
     const newAccounts = await Utils.createMultipleAliasAccounts(
