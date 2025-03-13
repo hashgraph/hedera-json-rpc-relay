@@ -137,7 +137,7 @@ app.ws.use(async (ctx: Koa.Context) => {
 
       // process requests
       const requestPromises = request.map((item: any) => {
-        if (JSON.parse(ConfigService.get('BATCH_REQUESTS_DISALLOWED_METHODS')).includes(item.method)) {
+        if (ConfigService.get('BATCH_REQUESTS_DISALLOWED_METHODS').includes(item.method)) {
           return jsonResp(item.id, predefined.BATCH_REQUESTS_METHOD_NOT_PERMITTED(item.method), undefined);
         }
         return getRequestResult(ctx, relay, logger, item, limiter, mirrorNodeClient, wsMetricRegistry, requestDetails);

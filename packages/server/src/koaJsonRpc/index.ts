@@ -167,7 +167,7 @@ export default class KoaJsonRpc {
 
     // we do the requests in parallel to save time, but we need to keep track of the order of the responses (since the id might be optional)
     const promises: Promise<any>[] = body.map(async (item: any) => {
-      if (JSON.parse(ConfigService.get('BATCH_REQUESTS_DISALLOWED_METHODS')).includes(item.method)) {
+      if (ConfigService.get('BATCH_REQUESTS_DISALLOWED_METHODS').includes(item.method)) {
         return jsonResp(item.id, predefined.BATCH_REQUESTS_METHOD_NOT_PERMITTED(item.method), undefined);
       }
       const startTime = Date.now();
