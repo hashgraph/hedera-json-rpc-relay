@@ -10,6 +10,10 @@ import type { IContractCallRequest, ITracerConfig, RequestDetails } from './lib/
 
 export { JsonRpcError, predefined, MirrorNodeClientError, WebSocketError };
 
+export function rpc(_target: unknown, _key: string, descriptor: PropertyDescriptor) {
+  descriptor.value.rpc = true;
+}
+
 export { RelayImpl } from './lib/relay';
 
 export interface Subs {

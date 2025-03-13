@@ -11,7 +11,7 @@ import { v4 as uuid } from 'uuid';
 
 import { formatRequestIdMessage } from './formatters';
 import KoaJsonRpc from './koaJsonRpc';
-import { defineDebugRoutes } from './routes/debugRoutes';
+// import { defineDebugRoutes } from './routes/debugRoutes';
 import { defineEthRoutes } from './routes/ethRoutes';
 import { logAndHandleResponse } from './utils';
 
@@ -183,17 +183,16 @@ app.getKoaApp().use(async (ctx, next) => {
   return next();
 });
 
-console.log(relay.methods());
-
-defineDebugRoutes(app, relay, logger);
+// defineDebugRoutes(app, relay, logger);
 defineEthRoutes(app, relay, logger);
 
-for (const { methodName, func, obj } of relay.methods()) {
+for (const methodName of Object.keys(relay.methods)) {
+  logger.debug('Setting up RPC handler for method %s', methodName);
   app.useRpc(methodName, async (params: any) => {
     return logAndHandleResponse(
       methodName,
       params,
-      (requestDetails) => func.call(obj, ...params, requestDetails),
+      (requestDetails) => relay.dispatch(methodName, params, requestDetails),
       app,
       logger,
     );

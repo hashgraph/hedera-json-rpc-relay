@@ -4,7 +4,7 @@ import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services'
 import type { Logger } from 'pino';
 
 import { decodeErrorMessage, mapKeysAndValues, numberTo0x, strip0x } from '../formatters';
-import type { Debug } from '../index';
+import { type Debug, rpc } from '../index';
 import type { MirrorNodeClient } from './clients';
 import { IOpcode } from './clients/models/IOpcode';
 import { IOpcodesResponse } from './clients/models/IOpcodesResponse';
@@ -79,6 +79,7 @@ export class DebugImpl implements Debug {
    * @example
    * const result = await debug_traceTransaction('0x123abc', TracerType.CallTracer, {"tracerConfig": {"onlyTopCall": false}}, some request id);
    */
+  @rpc
   async traceTransaction(
     transactionIdOrHash: string,
     tracer: TracerType,
@@ -91,9 +92,9 @@ export class DebugImpl implements Debug {
     try {
       DebugImpl.requireDebugAPIEnabled();
       if (tracer === TracerType.CallTracer) {
-        return await this.#callTracer(transactionIdOrHash, tracerConfig as ICallTracerConfig, requestDetails);
+        return await this.callTracer(transactionIdOrHash, tracerConfig as ICallTracerConfig, requestDetails);
       } else if (tracer === TracerType.OpcodeLogger) {
-        return await this.#callOpcodeLogger(transactionIdOrHash, tracerConfig as IOpcodeLoggerConfig, requestDetails);
+        return await this.callOpcodeLogger(transactionIdOrHash, tracerConfig as IOpcodeLoggerConfig, requestDetails);
       }
     } catch (e) {
       throw this.common.genericErrorHandler(e);
@@ -108,10 +109,10 @@ export class DebugImpl implements Debug {
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<[] | any>} The formatted actions response in an array.
    */
-  async #formatActionsResult(result: any, requestDetails: RequestDetails): Promise<[] | any> {
+  async formatActionsResult(result: any, requestDetails: RequestDetails): Promise<[] | any> {
     return await Promise.all(
       result.map(async (action, index) => {
-        const { resolvedFrom, resolvedTo } = await this.#resolveMultipleAddresses(
+        const { resolvedFrom, resolvedTo } = await this.resolveMultipleAddresses(
           action.from,
           action.to,
           requestDetails,
@@ -147,7 +148,7 @@ export class DebugImpl implements Debug {
    * @param {object} options - The options used for the opcode tracer.
    * @returns {Promise<object>} The formatted opcode response.
    */
-  async #formatOpcodesResult(
+  async formatOpcodesResult(
     result: IOpcodesResponse | null,
     options: { memory?: boolean; stack?: boolean; storage?: boolean },
   ): Promise<object> {
@@ -190,7 +191,7 @@ export class DebugImpl implements Debug {
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<string>} The address returned as an EVM address.
    */
-  async #resolveAddress(
+  async resolveAddress(
     address: string,
     requestDetails: RequestDetails,
     types: string[] = [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT],
@@ -216,18 +217,18 @@ export class DebugImpl implements Debug {
     return address;
   }
 
-  async #resolveMultipleAddresses(
+  private async resolveMultipleAddresses(
     from: string,
     to: string,
     requestDetails: RequestDetails,
   ): Promise<{ resolvedFrom: string; resolvedTo: string }> {
     const [resolvedFrom, resolvedTo] = await Promise.all([
-      this.#resolveAddress(from, requestDetails, [
+      this.resolveAddress(from, requestDetails, [
         constants.TYPE_CONTRACT,
         constants.TYPE_TOKEN,
         constants.TYPE_ACCOUNT,
       ]),
-      this.#resolveAddress(to, requestDetails, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT]),
+      this.resolveAddress(to, requestDetails, [constants.TYPE_CONTRACT, constants.TYPE_TOKEN, constants.TYPE_ACCOUNT]),
     ]);
 
     return { resolvedFrom, resolvedTo };
@@ -244,7 +245,7 @@ export class DebugImpl implements Debug {
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<object>} The formatted response.
    */
-  async #callOpcodeLogger(
+  private async callOpcodeLogger(
     transactionIdOrHash: string,
     tracerConfig: IOpcodeLoggerConfig,
     requestDetails: RequestDetails,
@@ -260,7 +261,7 @@ export class DebugImpl implements Debug {
         requestDetails,
         options,
       );
-      return await this.#formatOpcodesResult(response, options);
+      return await this.formatOpcodesResult(response, options);
     } catch (e) {
       throw this.common.genericErrorHandler(e);
     }
@@ -275,7 +276,7 @@ export class DebugImpl implements Debug {
    * @param {RequestDetails} requestDetails - The request details for logging and tracking.
    * @returns {Promise<object>} The formatted response.
    */
-  async #callTracer(
+  private async callTracer(
     transactionHash: string,
     tracerConfig: ICallTracerConfig,
     requestDetails: RequestDetails,
@@ -294,7 +295,7 @@ export class DebugImpl implements Debug {
       }
 
       const { call_type: type } = actionsResponse.actions[0];
-      const formattedActions = await this.#formatActionsResult(actionsResponse.actions, requestDetails);
+      const formattedActions = await this.formatActionsResult(actionsResponse.actions, requestDetails);
 
       const {
         from,
@@ -308,7 +309,7 @@ export class DebugImpl implements Debug {
         result,
       } = transactionsResponse;
 
-      const { resolvedFrom, resolvedTo } = await this.#resolveMultipleAddresses(from, to, requestDetails);
+      const { resolvedFrom, resolvedTo } = await this.resolveMultipleAddresses(from, to, requestDetails);
 
       const value = amount === 0 ? EthImpl.zeroHex : numberTo0x(amount);
       const errorResult = result !== constants.SUCCESS ? result : undefined;

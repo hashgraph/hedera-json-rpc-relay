@@ -2,7 +2,7 @@
 
 import { ConfigService } from '@hashgraph/json-rpc-config-service/dist/services';
 
-import { JsonRpcError, Net, predefined } from '../index';
+import { JsonRpcError, Net, predefined, rpc } from '../index';
 
 export class NetImpl implements Net {
   private readonly chainId: string;
@@ -14,6 +14,7 @@ export class NetImpl implements Net {
   /**
    * We always return true for this.
    */
+  @rpc
   listening(): boolean {
     return false;
   }
@@ -21,6 +22,7 @@ export class NetImpl implements Net {
   /**
    * This is the chain id we registered.
    */
+  @rpc
   version(): string {
     return this.chainId;
   }
@@ -28,6 +30,7 @@ export class NetImpl implements Net {
   /**
    * Always returns UNSUPPORTED_METHOD error.
    */
+  @rpc
   peerCount(): JsonRpcError {
     return predefined.UNSUPPORTED_METHOD;
   }

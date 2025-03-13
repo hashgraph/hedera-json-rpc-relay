@@ -74,6 +74,8 @@ export class RelayImpl {
    */
   private readonly subImpl?: Subs;
 
+  readonly methods: { [methodName: string]: { func: any; obj: any } };
+
   /**
    * @private
    * @readonly
@@ -181,6 +183,22 @@ export class RelayImpl {
 
     this.debugImpl = new DebugImpl(this.mirrorNodeClient, logger, (this.ethImpl as EthImpl).common);
 
+    this.methods = Object.fromEntries(
+      ['debug', 'net', 'web3'].flatMap((namespace) => {
+        const obj = this[namespace]();
+        const descriptors = Object.getOwnPropertyDescriptors(Object.getPrototypeOf(obj));
+        return Object.entries(descriptors)
+          .filter(([, descriptor]) => 'rpc' in descriptor.value)
+          .map(([methodName, descriptor]) => [
+            `${namespace}_${methodName}`,
+            {
+              func: descriptor.value,
+              obj,
+            },
+          ]);
+      }),
+    );
+
     this.hbarSpendingPlanConfigService = new HbarSpendingPlanConfigService(
       logger.child({ name: 'hbar-spending-plan-config-service' }),
       hbarSpendingPlanRepository,
@@ -277,26 +295,8 @@ export class RelayImpl {
     return this.mirrorNodeClient;
   }
 
-  methods() {
-    return ['debug', 'net', 'web3'].flatMap((namespace) => {
-      const obj = this[namespace]();
-      const descriptors = Object.getOwnPropertyDescriptors(Object.getPrototypeOf(obj));
-      // @ts-ignore
-      delete descriptors['constructor'];
-      return Object.entries(descriptors).map(([methodName, descriptor]) => ({
-        methodName: `${namespace}_${methodName}`,
-        func: descriptor.value,
-        obj,
-      }));
-    });
+  dispatch(methodName: string, params: unknown[], requestDetails: RequestDetails) {
+    const { func, obj } = this.methods[methodName];
+    return func.call(obj, ...params, requestDetails);
   }
 }
-
-// function params(...args: (string | { optional: string })[]) {
-//   return function <T>(target: T, key: string, descriptor: PropertyDescriptor): TypedPropertyDescriptor<IFormatter> {
-//     console.log(target, key, descriptor);
-//     descriptor.value.newProp = 123;
-//     return descriptor;
-//     // return 1;
-//   }
-// }
