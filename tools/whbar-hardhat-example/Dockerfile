@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /home/node/app/
 
-COPY --chown=node:node ./ ./
+COPY --chown=root:root --chmod=755 ./ ./
 
 RUN apt-get update && \
     apt-get upgrade -y --no-install-recommends && \
@@ -17,5 +17,5 @@ RUN apt-get update && \
 
 USER node
 
-RUN npm install
+RUN npm install --ignore-scripts
 RUN npx hardhat compile
