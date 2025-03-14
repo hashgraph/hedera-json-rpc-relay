@@ -21,6 +21,12 @@ export interface IRequestDetails {
    * @type {string | undefined}
    */
   connectionId?: string;
+
+  /**
+   * The JSON-RPC request ID associated with the request (optional).
+   * @type {string | undefined}
+   */
+  jsonRpcRequestId?: string;
 }
 
 /**
@@ -43,6 +49,11 @@ export class RequestDetails {
   connectionId?: string;
 
   /**
+   * The JSON-RPC request ID associated with the request (optional).
+   */
+  jsonRpcRequestId?: string | number | null;
+
+  /**
    * Creates an instance of RequestDetails.
    * @param {IRequestDetails} details - The details of the request.
    */
@@ -50,6 +61,7 @@ export class RequestDetails {
     this.requestId = details.requestId;
     this.ipAddress = details.ipAddress;
     this.connectionId = details.connectionId;
+    this.jsonRpcRequestId = details.jsonRpcRequestId;
   }
 
   /**

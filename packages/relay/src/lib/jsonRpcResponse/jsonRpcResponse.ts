@@ -38,7 +38,6 @@ export class JsonRpcResponse implements IJsonRpcResponse {
       throw new Error('JSON-RPC response must have either result or error');
     }
 
-    // Create a plain object instance
     const responseObj: any = {
       jsonrpc: this.jsonrpc,
       id: id,
