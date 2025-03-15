@@ -14,6 +14,15 @@ export function rpc(_target: unknown, _key: string, descriptor: PropertyDescript
   descriptor.value.rpc = true;
 }
 
+export function params(...paramsDescriptors: (string | { optional: string })[]) {
+  return function (_target: unknown, _key: string, descriptor: PropertyDescriptor) {
+    descriptor.value.params = [];
+    for (const p of paramsDescriptors) {
+      descriptor.value.params.push({ type: p, required: typeof p === 'string' });
+    }
+  };
+}
+
 export { RelayImpl } from './lib/relay';
 
 export interface Subs {

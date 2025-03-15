@@ -184,7 +184,7 @@ export class RelayImpl {
     this.debugImpl = new DebugImpl(this.mirrorNodeClient, logger, (this.ethImpl as EthImpl).common);
 
     this.methods = Object.fromEntries(
-      ['net', 'web3'].flatMap((namespace) => {
+      ['debug', 'net', 'web3'].flatMap((namespace) => {
         const obj = this[namespace]();
         const descriptors = Object.getOwnPropertyDescriptors(Object.getPrototypeOf(obj));
         return Object.entries(descriptors)
@@ -295,8 +295,16 @@ export class RelayImpl {
     return this.mirrorNodeClient;
   }
 
-  dispatch(methodName: string, params: unknown[] | undefined, requestDetails: RequestDetails) {
-    const { func, obj } = this.methods[methodName];
-    return func.call(obj, ...(params ?? []), requestDetails);
+  dispatch(methodName: string, args: unknown[] | undefined, requestDetails: RequestDetails) {
+    const method = this.methods[methodName];
+    // if (method === undefined) {
+    //   throw new JsonRpcError("Method not found", -32601);
+    // }
+    const { func, obj } = method;
+    // const params = func.params;
+
+    // Validator.validateParams(args, params);
+
+    return func.call(obj, ...(args ?? []), requestDetails);
   }
 }
